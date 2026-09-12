@@ -6,6 +6,39 @@ This file is the hand-off log for the reconstruction described in
 `SOLID_RESTRUCTURE.MD`. Update it whenever a migration slice starts, passes its
 acceptance checks, or exposes a blocker.
 
+## Annotation monitor — scoped conversion completed, 12 September 2026
+
+Interaction follow-up: 21px annotation clearance, draggable header, resizable
+corner grip with responsive container layout, per-row trash controls, and
+shortcut labels. Plain arrows navigate the list/action group; whole-word edits
+now use Alt/Option+arrows. Manual positioning persists for the open session.
+See `ANNOTATION_MONITOR_MIGRATION.md` for navigation and ownership details.
+Verified: 122 tests / 20 suites, typecheck, client/server build and Chrome checks
+including real pointer drag/resize, lower positioning and narrow-screen bounds.
+
+Horizontal-layout follow-up: a responsive three-column monitor now keeps the
+annotation list at 23% of its grid width, range/actions in the middle and settings
+on the right. It follows the selected annotation's start (100px left / 6px below,
+viewport-clamped), with read-only annotation ID and conditional entity ID/name
+fields from existing cached/embedded metadata. Missing names are explicit; no
+automatic entity hydration was introduced. Chrome verified proportions, anchor,
+visibility, narrow-screen overflow and editing/history. 119 tests / 20 suites,
+typecheck and build pass. See the monitor migration document for details.
+
+Original shortcut/window/property methods investigated and written up before
+implementation in [ANNOTATION_MONITOR_MIGRATION.md](ANNOTATION_MONITOR_MIGRATION.md).
+Ctrl+period and original slash aliases open a bounded caret-local annotation
+popup, with range preview, keyboard/button movement, whole-word selection,
+expansion/contraction, tombstone deletion and a working JSON attribute editor.
+Commands are validated, paragraph-local, undoable and shared-view reactive;
+external mutations dismiss stale sessions, and close restores source focus.
+
+116 tests / 20 suites, typecheck and build pass. Real Chrome opening, geometry,
+preview, editing, deletion, undo and focus-return checks pass. Seven new monitor
+tests include zero-snapshot property edits and serialization/unknown-field
+preservation. Cached entity lookup and schema/plugin-specific attribute pickers
+remain outside scope; the original Edit button was unwired, now explicitly extended.
+
 ## Margin creation shortcuts — completed, 12 September 2026
 
 Original Ctrl+Shift+ArrowLeft/Right handlers investigated and documented before

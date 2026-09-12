@@ -14,6 +14,8 @@ export interface OverlayDescriptor {
   returnInlineSelection?: { anchor: number; head: number };
   returnElement?: HTMLElement;
   returnDomRange?: Range;
+  annotationIndexes?: number[];
+  annotationPreview?: { start: number; end: number };
 }
 
 let overlayCounter = 0;
@@ -73,6 +75,11 @@ export class OverlayService {
         if (overlay.returnInlineSelection) this.mounts.get(overlay.returnFocusKey!)?.restoreInlineSelection?.(overlay.returnInlineSelection);
       });
     }
+  }
+
+  previewAnnotation(key: NodeKey, range?: { start: number; end: number }): void {
+    const index = this.overlays.findIndex(overlay => overlay.key === key);
+    if (index >= 0) this.setOverlays(index, "annotationPreview", range);
   }
 
   dismissTopWithoutRestoring(): void {

@@ -21,6 +21,8 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
     setPosition({ x: Math.max(8, Math.min(props.overlay.anchor.x, window.innerWidth - rect.width - 8)), y: Math.max(8, Math.min(props.overlay.anchor.y, window.innerHeight - rect.height - 8)) });
   };
   onMount(() => {
+    const custom = (event: Event) => { if (event instanceof CustomEvent && props.editor.bindings.dispatchCustom(event.detail?.name, ["menu"], id => runBinding(id, event.target), event.detail?.payload)) { event.preventDefault(); event.stopPropagation(); } };
+    root.addEventListener("speedy-input", custom); onCleanup(() => root.removeEventListener("speedy-input", custom));
     dispose = props.editor.mounts.register(props.overlay.key, { root, focusElement: root, inputPolicy: "opaque-widget", focus: focusFirst });
     clamp(); focusFirst();
     const outside = (event: PointerEvent) => { if (!root.contains(event.target as Node)) props.editor.overlays.close(props.overlay.key, false); };
@@ -57,22 +59,25 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
       props.editor.overlays.close(props.overlay.key, props.editor.focus.state.requestToken === previousFocus);
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
   };
-  const keys = (event: KeyboardEvent) => {
-    event.stopPropagation();
-    if (event.key === "Escape") { event.preventDefault(); props.editor.overlays.close(props.overlay.key); return; }
-    if (event.key === "Tab") { props.editor.overlays.close(props.overlay.key); event.preventDefault(); return; }
-    if (event.target instanceof HTMLInputElement) return;
-    if (event.key === "ArrowLeft" && (path().length || form())) { event.preventDefault(); back(); return; }
+  const runBinding = (id: string, target: EventTarget | null): boolean | void => {
+    if (id === "menu.close" || id === "menu.tab") { props.editor.overlays.close(props.overlay.key); return; }
+    if (target instanceof HTMLInputElement) return false;
+    if (id === "menu.back" && (path().length || form())) { back(); return; }
     const buttons = [...root.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')];
     const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
-    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
-      event.preventDefault();
-      const index = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (current + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
-      buttons[index]?.focus();
-    } else if (event.key === "ArrowRight" && buttons[current]?.hasAttribute("aria-haspopup")) { event.preventDefault(); buttons[current].click(); }
+    if (["menu.next", "menu.previous", "menu.first", "menu.last"].includes(id)) {
+      const index = id === "menu.first" ? 0 : id === "menu.last" ? buttons.length - 1 : (current + (id === "menu.next" ? 1 : -1) + buttons.length) % buttons.length;
+      buttons[index]?.focus(); return;
+    }
+    if (id === "menu.enter" && buttons[current]?.hasAttribute("aria-haspopup")) { buttons[current].click(); return; }
+    return false;
+  };
+  const keys = (event: KeyboardEvent | MouseEvent) => {
+    event.stopPropagation();
+    props.editor.bindings.dispatch(event, ["menu"], id => runBinding(id, event.target));
   };
   return <div ref={root} class="reactive-block-menu" role={form() ? "dialog" : "menu"} aria-label="Block menu" tabIndex={-1}
-    data-session-overlay={props.overlay.key} data-native-context-menu style={{ left: `${position().x}px`, top: `${position().y}px` }} onKeyDown={keys} onContextMenu={event => event.stopPropagation()}>
+    data-session-overlay={props.overlay.key} data-native-context-menu style={{ left: `${position().x}px`, top: `${position().y}px` }} onKeyDown={keys} onClick={keys} onDblClick={keys} onContextMenu={keys}>
     <header><span>{form()?.label ?? path().at(-1)?.label ?? "Block menu"}</span><button type="button" aria-label="Close block menu" onClick={() => props.editor.overlays.close(props.overlay.key)}>×</button></header>
     <Show when={path().length || form()}><button role="menuitem" type="button" onClick={back}>‹ Back</button></Show>
     <Show when={form()} fallback={<For each={items()}>{item => <button type="button" role="menuitem" aria-haspopup={item.children ? "menu" : item.input ? "dialog" : undefined} disabled={item.disabled || busy()} title={item.reason} onClick={() => void activate(item)}><span>{item.label}</span><Show when={item.children || item.input}><span aria-hidden="true">›</span></Show></button>}</For>}>

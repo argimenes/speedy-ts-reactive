@@ -1,0 +1,45 @@
+.reactive-annotation-monitor { position:fixed; z-index:1900; width:960px; max-width:calc(100vw - 16px); max-height:calc(100dvh - 16px); overflow:auto; box-sizing:border-box; padding:12px; border:1px solid #78958f; border-radius:8px; background:#fff; color:#263a35; box-shadow:0 12px 40px #0005; font:14px/1.4 Arial,sans-serif; }
+.reactive-annotation-monitor { container-type:inline-size; display:flex; flex-direction:column; }
+.reactive-annotation-monitor > * { flex-shrink:0; }
+.reactive-annotation-monitor header { display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid #d9e2df; cursor:move; touch-action:none; user-select:none; }
+.reactive-annotation-monitor .annotation-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px; }
+.reactive-annotation-monitor .annotation-trash { padding:4px; align-self:start; color:#922; }
+.reactive-annotation-monitor .annotation-action { display:grid; gap:2px; }
+.reactive-annotation-monitor kbd { text-align:center; font:10px/1.4 Arial,sans-serif; color:#526960; }
+.reactive-annotation-monitor .annotation-resize { position:sticky; bottom:0; align-self:flex-end; width:18px; height:18px; margin-top:auto; margin-right:-9px; margin-bottom:-9px; cursor:nwse-resize; touch-action:none; background:repeating-linear-gradient(135deg,transparent 0 3px,#78958f 3px 5px); clip-path:polygon(100% 0,100% 100%,0 100%); }
+.reactive-annotation-monitor button { padding:5px 8px; border:1px solid #9cb5ae; border-radius:4px; background:#f3f8f6; color:inherit; cursor:pointer; font:inherit; }
+.reactive-annotation-monitor button:focus-visible,.reactive-annotation-monitor button[aria-pressed=true] { outline:2px solid #237a76; background:#dcefe9; }
+.reactive-annotation-monitor .annotation-layout { display:grid; grid-template-columns:minmax(0,23fr) minmax(0,77fr); gap:12px; margin-top:10px; align-items:start; }
+.reactive-annotation-monitor nav { display:grid; align-content:start; gap:4px; max-height:340px; overflow:auto; padding:2px; min-width:0; }
+.reactive-annotation-monitor nav button { text-align:left; overflow-wrap:anywhere; }
+.reactive-annotation-monitor .annotation-editor { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:12px; min-width:0; }
+.reactive-annotation-monitor .annotation-main,.reactive-annotation-monitor .annotation-settings { display:grid; align-content:start; gap:10px; min-width:0; }
+.reactive-annotation-monitor .annotation-settings { border-left:1px solid #d9e2df; padding-left:12px; }
+.reactive-annotation-monitor blockquote { margin:0; padding:8px; background:#fff2bc; max-height:70px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+.reactive-annotation-monitor .annotation-actions { display:flex; flex-wrap:wrap; gap:4px; }
+.reactive-annotation-monitor label { display:grid; gap:5px; min-width:0; }
+.reactive-annotation-monitor .annotation-range { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+.reactive-annotation-monitor input,.reactive-annotation-monitor textarea { box-sizing:border-box; width:100%; min-width:0; border:1px solid #90aaa4; padding:5px; color:#263a35; background:white; font:inherit; }
+.reactive-annotation-monitor textarea { resize:vertical; }
+.reactive-annotation-monitor input[readonly] { background:#f2f5f4; font-size:12px; }
+.reactive-annotation-monitor .annotation-entity { display:grid; gap:7px; min-width:0; margin:0; padding:8px; border:1px solid #c4d8d1; }
+.reactive-annotation-monitor .annotation-entity legend { padding:0 4px; font-weight:600; }
+.reactive-annotation-monitor footer { grid-column:1/-1; display:flex; justify-content:flex-end; }
+.reactive-annotation-monitor [role=alert] { color:#922; background:#fff0ed; padding:8px; }
+@media (max-width:760px) {
+  .reactive-annotation-monitor .annotation-layout { grid-template-columns:minmax(0,25fr) minmax(0,75fr); gap:8px; }
+  .reactive-annotation-monitor .annotation-editor { grid-template-columns:minmax(0,1fr); }
+  .reactive-annotation-monitor .annotation-settings { border-left:0; border-top:1px solid #d9e2df; padding:10px 0 0; }
+}
+@media (max-width:440px) {
+  .reactive-annotation-monitor .annotation-layout { grid-template-columns:minmax(0,1fr); }
+  .reactive-annotation-monitor nav { max-height:110px; }
+}
+@container (max-width:720px) {
+  .reactive-annotation-monitor .annotation-editor { grid-template-columns:minmax(0,1fr); }
+  .reactive-annotation-monitor .annotation-settings { border-left:0; border-top:1px solid #d9e2df; padding:10px 0 0; }
+}
+@container (max-width:410px) {
+  .reactive-annotation-monitor .annotation-layout { grid-template-columns:minmax(0,1fr); }
+  .reactive-annotation-monitor nav { max-height:110px; }
+}

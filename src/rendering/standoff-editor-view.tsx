@@ -179,6 +179,8 @@ export function StandoffEditorView(props: BlockViewProps) {
     });
     const selectionSet = editor.selections.sets[props.nodeKey];
     const selected: DecorationShape[] = [];
+    const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
+    if (preview) selected.push(...highlightShapes(`${props.nodeKey}:annotation-preview`, rangeFragments(flow, surface, preview.start, preview.end), "#f2c767"));
     selectionSet?.items.forEach((item) => {
       const start = Math.min(item.anchor.boundary.index, item.head.boundary.index);
       const end = Math.max(item.anchor.boundary.index, item.head.boundary.index);
@@ -225,8 +227,10 @@ export function StandoffEditorView(props: BlockViewProps) {
 
   createEffect(() => {
     node()?.inlineContent.length;
-    annotations();
+    JSON.stringify(annotations());
     editor.selections.sets[props.nodeKey]?.revision;
+    const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
+    preview?.start; preview?.end;
     scheduleMeasure();
   });
 

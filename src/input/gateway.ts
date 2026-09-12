@@ -7,6 +7,7 @@ import type { BlockNode } from "../block-tree/types";
 import type { MultiSelectionEditor } from "./multi-selection-editor";
 import type { OverlayService } from "../runtime/overlays";
 import { graphemeBoundaries } from "./graphemes";
+import type { BindingRegistry } from "./bindings";
 
 function textareaSelection(target: HTMLTextAreaElement): NativeTextSelection {
   return {
@@ -32,6 +33,7 @@ export class InputGateway {
     private readonly adjacentSibling: (nodeKey: NodeKey, direction: -1 | 1) => BlockNode | undefined,
     private readonly adjacentEditable: (nodeKey: NodeKey, direction: -1 | 1) => BlockNode | undefined,
     private readonly focusFallback: (nodeKey: NodeKey) => NodeKey | undefined,
+    private readonly bindings: BindingRegistry,
   ) {}
 
   install(): () => void {
@@ -50,6 +52,8 @@ export class InputGateway {
     this.document.addEventListener("paste", this.onPaste, true);
     this.document.addEventListener("contextmenu", this.onContextMenu, true);
     this.document.addEventListener("click", this.onControlClick, true);
+    this.document.addEventListener("dblclick", this.onControlClick, true);
+    this.document.addEventListener("speedy-input", this.onCustomInput, true);
     return () => this.dispose();
   }
 
@@ -66,7 +70,7 @@ export class InputGateway {
     }
   };
 
-  private openContextMenu(event: MouseEvent | KeyboardEvent): void {
+  private openContextMenu(event: Event): void {
     if (event.defaultPrevented) return;
     const resolved = this.mounts.resolveEvent(event);
     const target = event.target instanceof Element ? event.target : undefined;
@@ -84,9 +88,19 @@ export class InputGateway {
     this.overlays.open({ ownerKey: key, viewType: "context-menu", title: "Block menu", anchor: event instanceof MouseEvent ? { x: event.clientX, y: event.clientY } : { x: rect.left + 12, y: rect.top + 24 } });
   }
 
-  private onContextMenu = (event: MouseEvent) => this.openContextMenu(event);
-  private onControlClick = (event: MouseEvent) => {
-    if (event.ctrlKey && event.button === 0 && !event.altKey && !event.shiftKey && !event.metaKey) this.openContextMenu(event);
+  private scopes(event: Event) {
+    const resolved = this.mounts.resolveEvent(event);
+    if (!resolved || resolved.handle.composing || resolved.handle.inputPolicy === "opaque-widget" || (event.target instanceof Element && event.target.closest('[data-bindings-window], [role="dialog"]'))) return [];
+    return resolved.handle.inputPolicy === "standoff" ? ["editor/standoff", "editor"] : ["editor"];
+  }
+  private onKeyDown = (event: KeyboardEvent) => { this.bindings.dispatch(event, this.scopes(event), id => this.runBinding(id, event)); };
+  private onContextMenu = (event: MouseEvent) => this.onControlClick(event);
+  private onControlClick = (event: MouseEvent) => { this.bindings.dispatch(event, this.scopes(event), id => this.runBinding(id, event)); };
+  private onCustomInput = (event: Event) => {
+    if (!(event instanceof CustomEvent) || event.defaultPrevented) return;
+    const { name, payload } = event.detail ?? {};
+    // Dispatch on the target Block, preserving occurrence-local context.
+    if (this.bindings.dispatchCustom(name, this.scopes(event), id => this.runBinding(id, event), payload)) { event.preventDefault(); event.stopPropagation(); }
   };
 
   private onBeforeInput = (event: InputEvent) => {
@@ -261,7 +275,7 @@ export class InputGateway {
   };
 
   private onPointerDown = (event: PointerEvent) => {
-    if (event.ctrlKey && event.button === 0 && !event.shiftKey && !event.altKey && !event.metaKey) {
+    if (this.bindings.matches("menu.open", new MouseEvent("click", { button: event.button, ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey, shiftKey: event.shiftKey }))) {
       const target = event.target instanceof Element ? event.target : undefined;
       const resolved = this.mounts.resolveEvent(event);
       if (resolved && this.node(resolved.nodeKey) && !resolved.handle.composing && resolved.handle.inputPolicy !== "opaque-widget" &&
@@ -404,33 +418,45 @@ export class InputGateway {
     });
   };
 
-  private onKeyDown = (event: KeyboardEvent) => {
-    if (event.isComposing) return;
-    const top = this.overlays.overlays.at(-1);
-    if (event.key === "Escape" && top?.viewType === "context-menu") {
-      event.preventDefault(); event.stopPropagation(); this.overlays.close(top.key); return;
-    }
-    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey)) {
-      this.openContextMenu(event); return;
-    }
+  private runBinding = (id: string, event: Event): boolean | void => {
+    if (event instanceof KeyboardEvent && event.isComposing) return false;
+    if (id === "menu.open") { this.openContextMenu(event); return event.defaultPrevented; }
     const resolved = this.mounts.resolveEvent(event);
-    if (!resolved || !["native-text", "standoff"].includes(resolved.handle.inputPolicy)) return;
-    if (resolved.handle.inputPolicy === "native-text" && !(event.target instanceof HTMLTextAreaElement)) return;
+    if (!resolved || resolved.handle.composing || !["native-text", "standoff"].includes(resolved.handle.inputPolicy)) return false;
+    if (resolved.handle.inputPolicy === "native-text" && !(event.target instanceof HTMLTextAreaElement)) return false;
 
-    if (resolved.handle.inputPolicy === "standoff" && event.ctrlKey && event.shiftKey &&
-      !event.altKey && !event.metaKey && ["ArrowLeft", "ArrowRight"].includes(event.key) &&
-      !event.isComposing && !resolved.handle.composing && !event.defaultPrevented &&
+    if (id === "annotation.open" && resolved.handle.inputPolicy === "standoff" &&
+      !(event.target instanceof Element && event.target.closest('input, textarea, select, [role="dialog"]'))) {
+      event.preventDefault(); event.stopPropagation();
+      if (event instanceof KeyboardEvent && event.repeat) return;
+      const node = this.node(resolved.nodeKey);
+      const selection = resolved.handle.captureInlineSelection?.();
+      if (!node || !selection) return;
+      for (const overlay of [...this.overlays.overlays]) if (overlay.viewType === "annotation-panel") this.overlays.close(overlay.key, false);
+      const cell = Math.max(0, Math.min(node.inlineContent.length - 1, selection.anchor - 1));
+      const properties = node.payload.standoffProperties;
+      const indexes = Array.isArray(properties) ? properties.flatMap((p, index) =>
+        p && !p.isDeleted && Number.isInteger(p.start) && Number.isInteger(p.end) && p.start >= 0 &&
+          p.end < node.inlineContent.length && p.start <= cell && cell <= p.end ? [index] : []) : [];
+      const range = this.document.getSelection()?.rangeCount ? this.document.getSelection()!.getRangeAt(0) : undefined;
+      const rect = range && typeof range.getBoundingClientRect === "function" ? range.getBoundingClientRect() : resolved.handle.root.getBoundingClientRect();
+      this.overlays.open({ viewType: "annotation-panel", ownerKey: node.key, annotationIndexes: indexes,
+        anchor: { x: rect.left, y: rect.bottom + 5 }, title: "Annotations at caret" });
+      return;
+    }
+
+    if (["margin.left", "margin.right"].includes(id) && resolved.handle.inputPolicy === "standoff" &&
       !(event.target instanceof Element && event.target.closest('input, textarea, select, [data-native-context-menu], [role="dialog"]'))) {
       event.preventDefault(); event.stopPropagation();
-      if (event.repeat) return;
+      if (event instanceof KeyboardEvent && event.repeat) return;
       const node = this.node(resolved.nodeKey);
       if (!node) return;
       try {
         const caret = resolved.handle.captureInlineSelection?.()?.anchor ?? 0;
-        const placement = this.commands.ensureMargin(node.key, event.key === "ArrowLeft" ? "left" : "right");
+        const placement = this.commands.ensureMargin(node.key, id === "margin.left" ? "left" : "right");
         this.selections.clearSecondary(node.key);
         this.selections.setPrimary(node.key, node.contentKey, node.viewId, caret);
-        const margin = this.node(node.ownedRelations[event.key === "ArrowLeft" ? "leftMargin" : "rightMargin"]);
+        const margin = this.node(node.ownedRelations[id === "margin.left" ? "leftMargin" : "rightMargin"]);
         const target = margin?.children.map(key => this.node(key)).find(child => child?.placementKey === placement);
         if (target) queueMicrotask(() => this.focus.request(target.key, { reason: "open-margin", caret: "start" }));
       } catch (error) {
@@ -439,15 +465,7 @@ export class InputGateway {
       return;
     }
 
-    if (
-      resolved.handle.inputPolicy === "standoff" &&
-      event.key === "Enter" &&
-      !event.shiftKey &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      !event.altKey &&
-      !event.isComposing
-    ) {
+    if (id === "text.paragraph" && resolved.handle.inputPolicy === "standoff") {
       const selection = resolved.handle.captureInlineSelection?.();
       const node = this.node(resolved.nodeKey);
       if (!selection || !node) return;
@@ -463,13 +481,7 @@ export class InputGateway {
       return;
     }
 
-    if (
-      ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) &&
-      !event.shiftKey &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      !event.altKey
-    ) {
+    if (["block.left", "block.right", "block.up", "block.down"].includes(id)) {
       const node = this.node(resolved.nodeKey);
       if (!node) return;
       let start: number;
@@ -487,23 +499,21 @@ export class InputGateway {
         end = Math.max(selection.anchor, selection.head);
         length = node.inlineContent.length;
       }
-      if (start !== end) return;
-      const backwards = event.key === "ArrowLeft" || event.key === "ArrowUp";
-      if ((backwards && start !== 0) || (!backwards && end !== length)) return;
+      if (start !== end) return false;
+      const backwards = id === "block.left" || id === "block.up";
+      if ((backwards && start !== 0) || (!backwards && end !== length)) return false;
       const target = this.adjacentEditable(resolved.nodeKey, backwards ? -1 : 1);
-      if (!target) return;
+      if (!target) return false;
       if (event.cancelable) event.preventDefault();
       event.stopPropagation();
       this.focus.request(target.key, {
-        caret: backwards && event.key === "ArrowLeft" ? "end" : "start",
-        reason: `navigate-${event.key.toLowerCase()}`,
+        caret: id === "block.left" ? "end" : "start",
+        reason: `navigate-${id}`,
       });
       return;
     }
 
-    const structuralDelete =
-      event.shiftKey && (event.key === "Delete" || event.key === "Backspace");
-    if (!structuralDelete) return;
+    if (id !== "block.delete") return false;
     if (event.cancelable) event.preventDefault();
     event.stopPropagation();
     const fallback = this.focusFallback(resolved.nodeKey);
@@ -624,5 +634,7 @@ export class InputGateway {
     this.document.removeEventListener("paste", this.onPaste, true);
     this.document.removeEventListener("contextmenu", this.onContextMenu, true);
     this.document.removeEventListener("click", this.onControlClick, true);
+    this.document.removeEventListener("dblclick", this.onControlClick, true);
+    this.document.removeEventListener("speedy-input", this.onCustomInput, true);
   }
 }

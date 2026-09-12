@@ -15,8 +15,11 @@ import { MultiSelectionEditor } from "../input/multi-selection-editor";
 import { OverlayService } from "../runtime/overlays";
 import { ModelEventBus } from "../runtime/model-events";
 import { MeasurementService } from "../runtime/measurements";
+import { BindingRegistry } from "../input/bindings";
+import { registerInputActions } from "../input/binding-catalog";
 
 export class ReactiveEditor {
+  readonly bindings = new BindingRegistry();
   readonly repository: CanonicalRepository;
   readonly occurrences = new OccurrenceIndex();
   readonly commands: TreeCommands;
@@ -34,6 +37,7 @@ export class ReactiveEditor {
   private gateway?: InputGateway;
 
   constructor(dto: ExistingBlockDto) {
+    registerInputActions(this.bindings);
     const decoded = decodeBlockTree(dto);
     this.repository = new CanonicalRepository(decoded.state);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
@@ -100,6 +104,7 @@ export class ReactiveEditor {
       (nodeKey, direction) => this.adjacentSibling(nodeKey, direction),
       (nodeKey, direction) => this.adjacentEditable(nodeKey, direction),
       (nodeKey) => this.focusFallback(nodeKey),
+      this.bindings,
     );
     return this.gateway.install();
   }
@@ -227,6 +232,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.bindings.dispose();
     this.gateway?.dispose();
     this.focus.dispose();
     for (const projection of this.projections.values()) projection.dispose();

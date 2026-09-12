@@ -1,4 +1,5 @@
 import { clone } from "./clone";
+import { editAnnotation, type AnnotationAction, type AnnotationPatch } from "./annotation-commands";
 import { isTextLeaf } from "./inline-plan";
 import { decodeDetachedSubtree, encodeDocument } from "./codecs";
 import { createContentKey, createPlacementKey } from "./ids";
@@ -86,6 +87,21 @@ function mapStandoffPropertiesForReplacement(
 
 export class TreeCommands {
   private pending?: PendingTransaction;
+
+  editStandoffProperty(key: NodeKey | PlacementKey, index: number, expected: Record<string, unknown>, action: AnnotationAction | AnnotationPatch): Record<string, unknown> {
+    const state = this.pending?.draft ?? this.repository.readState();
+    const content = state.contents[state.placements[this.placementKey(key, state)].contentKey];
+    const properties = content.payload.standoffProperties;
+    if (content.inlineKind !== "standoff" || !Array.isArray(properties) || !Number.isInteger(index) ||
+      !properties[index] || JSON.stringify(properties[index]) !== JSON.stringify(expected)) throw new TreeCommandError("Annotation changed; reopen the monitor");
+    const next = editAnnotation(properties[index], action, content, () => content.inlineContent.map(key => String(state.contents[state.placements[key].contentKey].payload.text ?? "\uFFFC")).join(""));
+    if (JSON.stringify(next) === JSON.stringify(properties[index])) return next;
+    const updated = clone(properties); updated[index] = next;
+    this.publish("Edit Standoff annotation", [{ kind: "put-content", record: {
+      ...clone(content), payload: { ...clone(content.payload), standoffProperties: updated }, revision: content.revision + 1,
+    } }]);
+    return clone(next);
+  }
 
   constructor(
     private readonly repository: CanonicalRepository,

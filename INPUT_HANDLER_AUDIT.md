@@ -3,6 +3,14 @@
 Source audit date: 11 September 2026  
 Status: documentation-only investigation; no implementation changes or new runtime tests in this pass.
 
+Subsequent annotation-monitor checkpoint, 12 September 2026: the intent of
+`blocks-document-block-binding-44` and monitor bindings 01–10 is converted in
+[ANNOTATION_MONITOR_MIGRATION.md](ANNOTATION_MONITOR_MIGRATION.md). Requested
+Ctrl+period joins the original slash aliases. The session popup, inclusive-range
+selection, movement/resize/deletion, focus return and new validated attribute
+editor are qualified; original word-linking/contraction bugs are intentionally
+fixed. Entity caches, plugin dialogs and historical AMD monitors are not claimed.
+
 Subsequent margin checkpoint, 12 September 2026: ledger entries
 `blocks-document-block-binding-12` and `blocks-document-block-binding-13` now route
 Ctrl+Shift+Left/Right from Standoff editors to source-owned left/right margins.

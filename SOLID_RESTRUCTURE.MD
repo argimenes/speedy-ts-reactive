@@ -2,6 +2,10 @@
 
 Technical migration proposal · 11 September 2026
 
+Annotation-monitor extension (12 September 2026): original shortcut/action
+inventory, requested Ctrl+period alias, attribute editing and verification are in
+[ANNOTATION_MONITOR_MIGRATION.md](ANNOTATION_MONITOR_MIGRATION.md).
+
 Margin-handler extension (12 September 2026): original bindings, owned-relation
 creation/reuse, relative layout, focus policy and qualification are documented in
 [MARGIN_HANDLER_MIGRATION.md](MARGIN_HANDLER_MIGRATION.md).
