@@ -1,5 +1,16 @@
 # Reactive reconstruction progress
 
+## New page layout — 13 September 2026
+
+“Add page” now creates document-tab-block → page-block → empty standoff-editor-block,
+matching the existing demo pages. Previously it omitted PageBlock, bypassing the
+page's left/right gutter padding and scroll rules. “Convert to page” now inserts
+the same wrapper around existing content. Gutters remain layout spaces; margin
+notes are source-Block-owned relations created on demand, not empty independent
+page-level documents. Activation/focus, atomic undo/redo, both margin relations
+and save/reload are covered by page-creation tests. Existing saved pages are not
+rewritten by this change.
+
 ## Document annotation toolbar — 13 September 2026
 
 Shared DocumentStyleBar now serves demo and DocumentWindowBlock, exposing all 15

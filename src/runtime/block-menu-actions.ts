@@ -122,7 +122,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     if (key !== doc.key && key !== root && !node.viewType.endsWith("-row-block") && !node.viewType.endsWith("-cell-block")) {
       if (!ancestor("grid-block")) items.push({ label: "Convert to grid (1 × 2)", run: () => convert(grid(1, 2, true), 2) });
       if (!ancestor("tab-row-block")) items.push({ label: "Convert to tab", run: () => convert(dto("tab-row-block", [dto("tab-block", [], { name: "Tab 1", active: true })]), 1) });
-      if (!ancestor("document-tab-row-block")) items.push({ label: "Convert to page", run: () => convert(dto("document-tab-row-block", [dto("document-tab-block", [], { name: "Page 1", active: true })]), 1) });
+      if (!ancestor("document-tab-row-block")) items.push({ label: "Convert to page", run: () => convert(dto("document-tab-row-block", [dto("document-tab-block", [dto("page-block")], { name: "Page 1", active: true })]), 2) });
       if (!ancestor("indented-list-block")) items.push({ label: "Convert to list", run: () => convert(dto("indented-list-block"), 0) });
       items.push(unavailable("Convert to pocket", "This action is a no-op in the original source; existing pocket controls are available."));
     }
@@ -136,7 +136,10 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
           const owner = row?.key ?? editor.commands.insert(dto(rowType), { kind: "at", parentKey: doc.key, index: doc.children.length });
           row?.children.forEach(key => editMetadata(key, { active: false }, "Activate tab"));
           const length = editor.commands.childrenOf(owner).length;
-          placement = editor.commands.insert(dto(tabType, [text()], { name: `${label === "Pages" ? "Page" : "Tab"} ${length + 1}`, text: `Sticky tag ${length + 1}`, active: true }), { kind: "at", parentKey: owner, index: length });
+          // PageView reserves the left/right gutters around its main-text children.
+          // A bare TextBlock under the tab bypasses that layout and page scrolling.
+          const content = label === "Pages" ? dto("page-block", [text()]) : text();
+          placement = editor.commands.insert(dto(tabType, [content], { name: `${label === "Pages" ? "Page" : "Tab"} ${length + 1}`, text: `Sticky tag ${length + 1}`, active: true }), { kind: "at", parentKey: owner, index: length });
         });
         focus(find(placement).key);
       };

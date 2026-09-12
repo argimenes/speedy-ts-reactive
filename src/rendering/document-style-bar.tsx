@@ -11,7 +11,7 @@ export const annotationTools = [
   ["style/superscript", "Superscript", "x²"], ["style/subscript", "Subscript", "x₂"],
   ["style/uppercase", "Uppercase", "AA"], ["style/highlight", "Highlight", "Highlight"],
   ["style/highlighter", "Highlighter", "Marker"], ["style/rainbow", "Rainbow underline", "Rainbow"],
-  ["style/rectangle", "Rectangle", "□"], ["style/spiky", "Spiky outline", "Spiky"],
+  ["style/rectangle", "Rectangle", "□ Rectangle"], ["style/spiky", "Spiky outline", "Spiky"],
   ["style/blur", "Blur", "Blur"], ["style/flip", "Flip", "Flip"], ["style/mirror", "Mirror", "Mirror"],
 ] as const;
 
