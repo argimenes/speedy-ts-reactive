@@ -5,6 +5,7 @@ import { blockAppearance } from "./appearance";
 import { BlockOutlet, ChildBlocks, RelationBlocks } from "./block-outlet";
 import { BackgroundMedia } from "./background-media";
 import { youtubeId } from "./backgrounds";
+import { DocumentStyleBar } from "./document-style-bar";
 
 function useContainerMount(nodeKey: NodeKey, root: () => HTMLElement) {
   const { editor } = useReactiveView();
@@ -447,7 +448,10 @@ export function WindowView(props: BlockViewProps) {
           <button type="button" aria-label="Close window" onPointerDown={(e) => e.stopPropagation()} onClick={() => editor.commands.remove(props.nodeKey)}>×</button>
         </span>
       </header>
-      <Show when={!minimized()}><div class="reactive-window__content"><ChildBlocks parentKey={props.nodeKey} /></div></Show>
+      <Show when={!minimized()}>
+        <Show when={node()?.viewType === "document-window-block"}><DocumentStyleBar editor={editor} scopeKey={props.nodeKey} /></Show>
+        <div class="reactive-window__content"><ChildBlocks parentKey={props.nodeKey} /></div>
+      </Show>
     </div>
   );
 }

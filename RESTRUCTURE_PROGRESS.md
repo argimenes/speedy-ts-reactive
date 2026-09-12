@@ -1,5 +1,14 @@
 # Reactive reconstruction progress
 
+## Document annotation toolbar — 13 September 2026
+
+Shared DocumentStyleBar now serves demo and DocumentWindowBlock, exposing all 15
+style schemas and both colour annotations. Range capture and unwrapped payload
+data fix selection loss/DataCloneError when applying formatting. Paragraph indent
+buttons adjust block/indent in 20px steps, not structural nesting. Original Tab /
+Shift-Tab list commands are explicitly separate. See DOCUMENT_STYLE_BAR_MIGRATION.md
+for inventory, limits (blur/flip/mirror visual wrappers remain deferred) and tests.
+
 Last updated: 12 September 2026
 
 This file is the hand-off log for the reconstruction described in

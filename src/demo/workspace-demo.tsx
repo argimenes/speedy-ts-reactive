@@ -11,65 +11,8 @@ import { createWorkspaceDocuments } from "./workspace-documents";
 import { ReactiveEditor as BackgroundEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "../rendering/register-core-views";
 import "./workspace-demo.css";
+import { DocumentStyleBar } from "../rendering/document-style-bar";
 
-function DemoStyleBar(props: { editor: ReactiveEditor }) {
-  const focused = () => props.editor.node(props.editor.focus.state.focusedKey ?? "");
-  const setBlockProperty = (type: string, value?: string) => {
-    const node = focused();
-    if (!node) return;
-    const current = (node.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? [];
-    props.editor.commands.setPayloadField(
-      node.key,
-      "blockProperties",
-      [...current.filter((property) => property.type !== type), { type, ...(value ? { value } : {}) }],
-      "Format Block",
-    );
-  };
-  const setInlineStyle = (type: string) => {
-    const node = focused();
-    const selection = node && props.editor.selections.sets[node.key];
-    const primary = selection?.items.find((item) => item.id === selection.primaryId);
-    if (!node || !primary) return;
-    const start = Math.min(primary.anchor.boundary.index, primary.head.boundary.index);
-    const end = Math.max(primary.anchor.boundary.index, primary.head.boundary.index) - 1;
-    if (end < start) return;
-    const current = (node.payload.standoffProperties as Array<Record<string, unknown>> | undefined) ?? [];
-    const exists = current.some((property) => property.type === type && property.start === start && property.end === end);
-    const next = exists
-      ? current.filter((property) => !(property.type === type && property.start === start && property.end === end))
-      : [...current, { id: globalThis.crypto.randomUUID(), type, start, end }];
-    props.editor.commands.setPayloadField(node.key, "standoffProperties", next, "Format Selection");
-  };
-  const clear = () => {
-    const node = focused();
-    if (!node) return;
-    props.editor.commands.transaction("Clear Formatting", () => {
-      props.editor.commands.setPayloadField(node.key, "blockProperties", [], "Clear Formatting");
-      if (node.viewType === "standoff-editor-block") {
-        props.editor.commands.setPayloadField(node.key, "standoffProperties", [], "Clear Formatting");
-      }
-    });
-  };
-  const retainSelection = (event: PointerEvent) => event.preventDefault();
-  return (
-    <nav class="workspace-demo__stylebar" aria-label="Document formatting">
-      <button type="button" title="Bold selection" onPointerDown={retainSelection} onClick={() => setInlineStyle("style/bold")}><strong>B</strong></button>
-      <button type="button" title="Italicise selection" onPointerDown={retainSelection} onClick={() => setInlineStyle("style/italics")}><em>I</em></button>
-      <i />
-      <button type="button" title="Align left" onPointerDown={retainSelection} onClick={() => setBlockProperty("block/alignment", "left")}>≡</button>
-      <button type="button" title="Align centre" onPointerDown={retainSelection} onClick={() => setBlockProperty("block/alignment", "center")}>≣</button>
-      <button type="button" title="Align right" onPointerDown={retainSelection} onClick={() => setBlockProperty("block/alignment", "right")}>≡</button>
-      <button type="button" title="Justify" onPointerDown={retainSelection} onClick={() => setBlockProperty("block/alignment", "justify")}>☰</button>
-      <i />
-      <For each={["h1", "h2", "h3", "h4"]}>{(size) => <button type="button" title={`Apply ${size.toUpperCase()}`} onPointerDown={retainSelection} onClick={() => setBlockProperty("block/font/size", size)}>{size.toUpperCase()}</button>}</For>
-      <i />
-      <button type="button" title="Increase indent" onPointerDown={retainSelection} onClick={() => setBlockProperty("block/indent", "1")}>⇥</button>
-      <button type="button" title="Decrease indent" onPointerDown={retainSelection} onClick={() => setBlockProperty("block/indent", "0")}>⇤</button>
-      <i />
-      <button type="button" title="Clear formatting" onPointerDown={retainSelection} onClick={clear}>T×</button>
-    </nav>
-  );
-}
 
 function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; onBackground: (event: MouseEvent) => void; onReset: () => void; document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean; onClose: (document?: ExistingBlockDto, location?: DocumentLocation) => void; onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void }) {
   const editor = props.document ? createWorkspaceEditor(props.document) : createWorkspaceDemoEditor();
@@ -160,7 +103,7 @@ function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; 
             </span>
           </header>
           <Show when={windowState() !== "minimized"}>
-            <DemoStyleBar editor={editor} />
+            <DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} />
             <Show when={documents.error() && !documents.browser() && !documents.pending()}><p class="workspace-demo__file-notice" role="alert">{documents.error()}</p></Show>
             <Show when={editor.persistence.state.warning}><p class="workspace-demo__file-notice" role="status">{editor.persistence.state.warning}</p></Show>
             <section class="workspace-demo__document" classList={{ "workspace-demo__document--tabbed": hasDocumentTabs(), "workspace-demo__document--flow": !hasDocumentTabs() }} aria-label={title()}>
