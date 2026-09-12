@@ -2,6 +2,7 @@ import { For, createEffect, createSignal } from "solid-js";
 import { unwrap } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
+import { createTextTab } from "../runtime/text-tabs";
 import "./document-style-bar.css";
 
 /** Canonical style types, including the three preserved range-wrapper styles. */
@@ -94,6 +95,11 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <For each={["h1", "h2", "h3", "h4"]}>{size => <button type="button" title={`Apply ${size.toUpperCase()}`} onClick={() => blockStyle("block/font/size", size)}>{size.toUpperCase()}</button>}</For>
     <button type="button" title="Increase indent" onClick={() => indent(1)}>⇥</button>
     <button type="button" title="Decrease indent" onClick={() => indent(-1)}>⇤</button>
+    <button type="button" aria-label="To tab / add tab" title={`To tab / add tab (${editor.bindings.label("tabs.create")})`} onClick={() => {
+      capture(); const node = target();
+      if (!node || !createTextTab(editor, node.key, savedRange)) setNotice("Focus a text Block in this document first.");
+      else { savedRange = undefined; setNotice(""); }
+    }}>To tab / + Tab</button>
     <button type="button" title="Clear formatting" onClick={clear}>T×</button>
     <span role="status">{notice()}</span>
   </nav>;

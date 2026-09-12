@@ -34,6 +34,7 @@ export class InputGateway {
     private readonly adjacentEditable: (nodeKey: NodeKey, direction: -1 | 1) => BlockNode | undefined,
     private readonly focusFallback: (nodeKey: NodeKey) => NodeKey | undefined,
     private readonly bindings: BindingRegistry,
+    private readonly createTextTab: (key: NodeKey) => boolean,
   ) {}
 
   install(): () => void {
@@ -424,6 +425,12 @@ export class InputGateway {
     const resolved = this.mounts.resolveEvent(event);
     if (!resolved || resolved.handle.composing || !["native-text", "standoff"].includes(resolved.handle.inputPolicy)) return false;
     if (resolved.handle.inputPolicy === "native-text" && !(event.target instanceof HTMLTextAreaElement)) return false;
+
+    if (id === "tabs.create" && resolved.handle.inputPolicy === "standoff") {
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [role="dialog"]')) return false;
+      if (event instanceof KeyboardEvent && event.repeat) return;
+      return this.createTextTab(resolved.nodeKey);
+    }
 
     if (id === "annotation.open" && resolved.handle.inputPolicy === "standoff" &&
       !(event.target instanceof Element && event.target.closest('input, textarea, select, [role="dialog"]'))) {

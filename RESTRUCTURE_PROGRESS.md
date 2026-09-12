@@ -1,5 +1,15 @@
 # Reactive reconstruction progress
 
+## Text-block tabs — 13 September 2026
+
+Original convertBlockToTab/handleCreateNewTab behaviour now uses a shared runtime
+action: wrap the current text Block in TabRowBlock/TabBlock, or append an independent
+copy when already inside a TabBlock. Added “To tab / add tab” to the document toolbar
+and Block context menu, plus registry bindings Ctrl+T / Alt+T. Existing Convert to tab
+uses the same action for text Blocks. No separate InlineTabBlock DTO is invented.
+See INLINE_TABS_MIGRATION.md for original semantics, browser-shortcut caveats,
+identity/focus/undo safeguards and verification.
+
 ## New page layout — 13 September 2026
 
 “Add page” now creates document-tab-block → page-block → empty standoff-editor-block,

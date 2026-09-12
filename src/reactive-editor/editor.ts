@@ -17,6 +17,7 @@ import { ModelEventBus } from "../runtime/model-events";
 import { MeasurementService } from "../runtime/measurements";
 import { BindingRegistry } from "../input/bindings";
 import { registerInputActions } from "../input/binding-catalog";
+import { createTextTab } from "../runtime/text-tabs";
 
 export class ReactiveEditor {
   readonly bindings = new BindingRegistry();
@@ -105,6 +106,7 @@ export class ReactiveEditor {
       (nodeKey, direction) => this.adjacentEditable(nodeKey, direction),
       (nodeKey) => this.focusFallback(nodeKey),
       this.bindings,
+      key => createTextTab(this, key),
     );
     return this.gateway.install();
   }

@@ -1,6 +1,7 @@
 import type { BlockNode, ExistingBlockDto, NodeKey } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { unwrap as unwrapStore } from "solid-js/store";
+import { createTextTab } from "./text-tabs";
 import { backgroundImages, defaultBackgroundUrls, isBackgroundType, mediaUrl, youtubeId, type BackgroundType } from "../rendering/backgrounds";
 
 export interface BlockMenuItem {
@@ -121,11 +122,15 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     items.push({ label: "File", children: [...files, unavailable("Duplicate document", "Independent document-window sessions are not yet migrated; use Save as to make a stored copy."), unavailable("Rename document", "The original action is unimplemented; Save as creates a named copy.")] });
     if (key !== doc.key && key !== root && !node.viewType.endsWith("-row-block") && !node.viewType.endsWith("-cell-block")) {
       if (!ancestor("grid-block")) items.push({ label: "Convert to grid (1 × 2)", run: () => convert(grid(1, 2, true), 2) });
-      if (!ancestor("tab-row-block")) items.push({ label: "Convert to tab", run: () => convert(dto("tab-row-block", [dto("tab-block", [], { name: "Tab 1", active: true })]), 1) });
+      if (!ancestor("tab-row-block")) items.push({ label: "Convert to tab", run: () => {
+        if (node.viewType === "standoff-editor-block") createTextTab(editor, key);
+        else convert(dto("tab-row-block", [dto("tab-block", [], { name: "Tab 1", active: true })]), 1);
+      } });
       if (!ancestor("document-tab-row-block")) items.push({ label: "Convert to page", run: () => convert(dto("document-tab-row-block", [dto("document-tab-block", [dto("page-block")], { name: "Page 1", active: true })]), 2) });
       if (!ancestor("indented-list-block")) items.push({ label: "Convert to list", run: () => convert(dto("indented-list-block"), 0) });
       items.push(unavailable("Convert to pocket", "This action is a no-op in the original source; existing pocket controls are available."));
     }
+    if (node.viewType === "standoff-editor-block") items.push({ label: "To tab / add tab", run: () => { createTextTab(editor, key); } });
     for (const [label, rowType, tabType] of [["Tabs", "tab-row-block", "tab-block"], ["Pages", "document-tab-row-block", "document-tab-block"], ["Tags", "sticky-tab-row-block", "sticky-tab-block"]]) {
       const row = ancestor(rowType) ?? (label === "Tags" ? doc.children.map(key => editor.node(key)).find(item => item?.viewType === rowType) : undefined);
       const tab = ancestor(tabType);
