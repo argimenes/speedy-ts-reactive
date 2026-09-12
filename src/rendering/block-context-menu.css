@@ -1,0 +1,12 @@
+.reactive-block-menu { position: fixed; z-index: 1800; width: 265px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow-y: auto; box-sizing: border-box; border: 1px solid #7e9995; border-radius: 7px; padding: 5px; color: #263a35; background: #fff; box-shadow: 0 12px 42px #0005; font: 14px/1.4 Arial, sans-serif; }
+.reactive-block-menu header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 8px 6px; border-bottom: 1px solid #d9e2df; font-weight: 600; }
+.reactive-block-menu button { color: inherit; font: inherit; cursor: pointer; }
+.reactive-block-menu header button { border: 0; background: transparent; font-size: 22px; }
+.reactive-block-menu > button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-radius: 3px; background: transparent; text-align: left; }
+.reactive-block-menu > button:hover:not(:disabled), .reactive-block-menu > button:focus-visible { background: #deeff0; outline: 2px solid #1d747e; outline-offset: -2px; }
+.reactive-block-menu button:disabled { color: #697c76; cursor: not-allowed; opacity: .65; }
+.reactive-block-menu form { display: grid; gap: 10px; padding: 12px 8px; }
+.reactive-block-menu label { display: grid; gap: 7px; }
+.reactive-block-menu input { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; border: 1px solid #90aaa4; border-radius: 3px; font: inherit; }
+.reactive-block-menu form button { justify-self: end; padding: 6px 14px; border: 1px solid #126873; border-radius: 3px; background: #126873; color: white; }
+.reactive-block-menu p[role=alert] { padding: 8px; color: #a32617; background: #fff1ec; }

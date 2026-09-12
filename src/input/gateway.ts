@@ -1,0 +1,628 @@
+import type { NodeKey, PlacementKey, ViewId } from "../block-tree/types";
+import type { TreeCommands } from "../block-tree/commands";
+import type { FocusService } from "../runtime/focus";
+import type { MountHandle, MountRegistry, NativeTextSelection } from "../runtime/mounts";
+import type { SelectionService } from "../runtime/selections";
+import type { BlockNode } from "../block-tree/types";
+import type { MultiSelectionEditor } from "./multi-selection-editor";
+import type { OverlayService } from "../runtime/overlays";
+import { graphemeBoundaries } from "./graphemes";
+
+function textareaSelection(target: HTMLTextAreaElement): NativeTextSelection {
+  return {
+    start: target.selectionStart,
+    end: target.selectionEnd,
+    direction: target.selectionDirection,
+  };
+}
+
+export class InputGateway {
+  private installed = false;
+
+  constructor(
+    private readonly document: Document,
+    private readonly mounts: MountRegistry,
+    private readonly focus: FocusService,
+    private readonly commands: TreeCommands,
+    private readonly multiSelections: MultiSelectionEditor,
+    private readonly selections: SelectionService,
+    private readonly overlays: OverlayService,
+    private readonly node: (nodeKey: NodeKey) => BlockNode | undefined,
+    private readonly nodeForPlacement: (placementKey: PlacementKey, viewId: ViewId) => BlockNode | undefined,
+    private readonly adjacentSibling: (nodeKey: NodeKey, direction: -1 | 1) => BlockNode | undefined,
+    private readonly adjacentEditable: (nodeKey: NodeKey, direction: -1 | 1) => BlockNode | undefined,
+    private readonly focusFallback: (nodeKey: NodeKey) => NodeKey | undefined,
+  ) {}
+
+  install(): () => void {
+    if (this.installed) return () => this.dispose();
+    this.installed = true;
+    this.document.addEventListener("input", this.onInput, true);
+    this.document.addEventListener("beforeinput", this.onBeforeInput, true);
+    this.document.addEventListener("focusin", this.onFocusIn, true);
+    this.document.addEventListener("keydown", this.onKeyDown, true);
+    this.document.addEventListener("compositionstart", this.onCompositionStart, true);
+    this.document.addEventListener("compositionend", this.onCompositionEnd, true);
+    this.document.addEventListener("selectionchange", this.onSelectionChange, true);
+    this.document.addEventListener("pointerdown", this.onPointerDown, true);
+    this.document.addEventListener("copy", this.onCopy, true);
+    this.document.addEventListener("cut", this.onCut, true);
+    this.document.addEventListener("paste", this.onPaste, true);
+    this.document.addEventListener("contextmenu", this.onContextMenu, true);
+    this.document.addEventListener("click", this.onControlClick, true);
+    return () => this.dispose();
+  }
+
+  private onInput = (event: Event) => {
+    const resolved = this.mounts.resolveEvent(event);
+    if (!resolved) return;
+    if (resolved.handle.composing) return;
+    if (resolved.handle.inputPolicy === "native-text" && event.target instanceof HTMLTextAreaElement) {
+      this.recordNativeText(resolved.nodeKey, event.target);
+      return;
+    }
+    if (resolved.handle.inputPolicy === "standoff" && resolved.handle.captureText) {
+      this.reconcileStandoffText(resolved.nodeKey, resolved.handle);
+    }
+  };
+
+  private openContextMenu(event: MouseEvent | KeyboardEvent): void {
+    if (event.defaultPrevented) return;
+    const resolved = this.mounts.resolveEvent(event);
+    const target = event.target instanceof Element ? event.target : undefined;
+    if (!resolved || resolved.handle.composing || resolved.handle.inputPolicy === "opaque-widget" ||
+      target?.closest('input, textarea, select, video, audio, iframe, [data-native-context-menu], [role="dialog"]')) return;
+    const explicit = target?.closest<HTMLElement>("[data-context-target]")?.dataset.contextTarget;
+    const key = explicit && this.node(explicit)?.viewId === this.node(resolved.nodeKey)?.viewId ? explicit : resolved.nodeKey;
+    if (!this.node(key)) return;
+    event.preventDefault(); event.stopPropagation();
+    const existing = this.overlays.overlays.find(item => item.viewType === "context-menu");
+    // macOS can emit both Control-click and contextmenu for one gesture.
+    if (existing?.ownerKey === key) return;
+    if (existing) this.overlays.close(existing.key, false);
+    const rect = resolved.handle.root.getBoundingClientRect();
+    this.overlays.open({ ownerKey: key, viewType: "context-menu", title: "Block menu", anchor: event instanceof MouseEvent ? { x: event.clientX, y: event.clientY } : { x: rect.left + 12, y: rect.top + 24 } });
+  }
+
+  private onContextMenu = (event: MouseEvent) => this.openContextMenu(event);
+  private onControlClick = (event: MouseEvent) => {
+    if (event.ctrlKey && event.button === 0 && !event.altKey && !event.shiftKey && !event.metaKey) this.openContextMenu(event);
+  };
+
+  private onBeforeInput = (event: InputEvent) => {
+    const resolved = this.mounts.resolveEvent(event);
+    if (!resolved || resolved.handle.inputPolicy !== "standoff" || resolved.handle.composing) return;
+    const selection = resolved.handle.captureInlineSelection?.();
+    const node = this.node(resolved.nodeKey);
+    if (!selection || !node) return;
+    let start = Math.min(selection.anchor, selection.head);
+    let end = Math.max(selection.anchor, selection.head);
+    let text: string | undefined;
+
+    const selectionSet = this.selections.sets[resolved.nodeKey];
+    if (
+      selectionSet?.items.length > 1 &&
+      (event.inputType === "insertText" ||
+        event.inputType === "deleteContentBackward" ||
+        event.inputType === "deleteContentForward")
+    ) {
+      const sourceText = node.inlineContent
+        .map((cellKey) => this.node(cellKey)?.payload.text ?? "")
+        .join("");
+      const boundaries = graphemeBoundaries(sourceText);
+      const replacements = selectionSet.items.map((item) => {
+        let itemStart = Math.min(item.anchor.boundary.index, item.head.boundary.index);
+        let itemEnd = Math.max(item.anchor.boundary.index, item.head.boundary.index);
+        if (itemStart === itemEnd && event.inputType === "deleteContentBackward") {
+          itemStart = boundaries.filter((boundary) => boundary < itemStart).at(-1) ?? 0;
+        }
+        if (itemStart === itemEnd && event.inputType === "deleteContentForward") {
+          itemEnd = boundaries.find((boundary) => boundary > itemEnd) ?? node.inlineContent.length;
+        }
+        return {
+          item,
+          start: itemStart,
+          end: itemEnd,
+          text: event.inputType === "insertText" ? event.data ?? "" : "",
+        };
+      });
+      if (event.cancelable) event.preventDefault();
+      event.stopPropagation();
+      this.multiSelections.replace(resolved.nodeKey, replacements);
+      return;
+    }
+
+    if (event.inputType === "insertText" || event.inputType === "insertCompositionText") {
+      text = event.data ?? "";
+    } else if (event.inputType === "insertParagraph" || event.inputType === "insertLineBreak") {
+      if (event.cancelable) event.preventDefault();
+      event.stopPropagation();
+      this.insertStandoffParagraph(resolved.nodeKey, resolved.handle, node, start, end);
+      return;
+    } else if (event.inputType === "deleteContentBackward") {
+      if (start === end && start > 0) {
+        const textValue = node.inlineContent
+          .map((cellKey) => this.node(cellKey)?.payload.text ?? "")
+          .join("");
+        start = graphemeBoundaries(textValue).filter((boundary) => boundary < start).at(-1) ?? 0;
+      } else if (start === end && start === 0) {
+        const previous = this.adjacentSibling(resolved.nodeKey, -1);
+        if (previous) {
+          if (event.cancelable) event.preventDefault();
+          event.stopPropagation();
+          if (node.inlineContent.length === 0) {
+            this.focus.clearRemoved(resolved.nodeKey);
+            this.commands.remove(resolved.nodeKey);
+            queueMicrotask(() => this.focus.request(previous.key, { reason: "remove-empty", caret: "end" }));
+            return;
+          }
+          if (previous.viewType !== "standoff-editor-block") {
+            queueMicrotask(() => this.focus.request(previous.key, { reason: "backspace-boundary", caret: "end" }));
+            return;
+          }
+          if (previous.inlineContent.length === 0) {
+            this.commands.remove(previous.key);
+            queueMicrotask(() => {
+              this.focus.request(resolved.nodeKey, { reason: "remove-empty-previous" });
+              resolved.handle.restoreInlineSelection?.({ anchor: 0, head: 0 });
+            });
+            return;
+          }
+          const joinIndex = previous.inlineContent.length;
+          this.commands.joinStandoff(previous.key, resolved.nodeKey);
+          queueMicrotask(() => {
+            this.focus.request(previous.key, { reason: "join" });
+            this.mounts.get(previous.key)?.restoreInlineSelection?.({ anchor: joinIndex, head: joinIndex });
+          });
+          return;
+        }
+      }
+      text = "";
+    } else if (event.inputType === "deleteContentForward") {
+      if (start === end && end < node.inlineContent.length) {
+        const textValue = node.inlineContent
+          .map((cellKey) => this.node(cellKey)?.payload.text ?? "")
+          .join("");
+        end = graphemeBoundaries(textValue).find((boundary) => boundary > end) ?? node.inlineContent.length;
+      } else if (start === end && end === node.inlineContent.length) {
+        const next = this.adjacentSibling(resolved.nodeKey, 1);
+        if (next) {
+          if (event.cancelable) event.preventDefault();
+          event.stopPropagation();
+          if (next.viewType !== "standoff-editor-block") {
+            queueMicrotask(() => this.focus.request(next.key, { reason: "delete-boundary", caret: "start" }));
+            return;
+          }
+          const joinIndex = node.inlineContent.length;
+          if (next.inlineContent.length === 0) this.commands.remove(next.key);
+          else this.commands.joinStandoff(resolved.nodeKey, next.key);
+          queueMicrotask(() => resolved.handle.restoreInlineSelection?.({ anchor: joinIndex, head: joinIndex }));
+          return;
+        }
+      }
+      text = "";
+    } else {
+      return;
+    }
+
+    if (event.cancelable) event.preventDefault();
+    event.stopPropagation();
+    this.commands.replaceInlineRange(resolved.nodeKey, start, end, text);
+    const caret = start + [...text].length;
+    this.selections.mapContentEdit(node.contentKey, start, end, [...text].length);
+    this.selections.setPrimary(resolved.nodeKey, node.contentKey, node.viewId, caret);
+    queueMicrotask(() => resolved.handle.restoreInlineSelection?.({ anchor: caret, head: caret }));
+  };
+
+  private onFocusIn = (event: FocusEvent) => {
+    const resolved = this.mounts.resolveEvent(event);
+    if (resolved) this.focus.adopt(resolved.nodeKey);
+  };
+
+  private onCompositionStart = (event: CompositionEvent) => {
+    const resolved = this.mounts.resolveEvent(event);
+    if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
+      resolved.handle.composing = true;
+    }
+  };
+
+  private onCompositionEnd = (event: CompositionEvent) => {
+    const resolved = this.mounts.resolveEvent(event);
+    if (!resolved) return;
+    resolved.handle.composing = false;
+    if (resolved.handle.inputPolicy === "native-text" && event.target instanceof HTMLTextAreaElement) {
+      this.recordNativeText(resolved.nodeKey, event.target);
+    } else if (resolved.handle.inputPolicy === "standoff" && resolved.handle.captureText) {
+      this.reconcileStandoffText(resolved.nodeKey, resolved.handle);
+    }
+  };
+
+  private onSelectionChange = () => {
+    const selection = this.document.getSelection();
+    const anchorElement =
+      selection?.anchorNode instanceof Element
+        ? selection.anchorNode
+        : selection?.anchorNode?.parentNode instanceof Element
+          ? selection.anchorNode.parentNode
+          : null;
+    const resolved = this.mounts.resolveElement(anchorElement);
+    if (!resolved || resolved.handle.inputPolicy !== "standoff") return;
+    const inline = resolved.handle.captureInlineSelection?.();
+    const node = this.node(resolved.nodeKey);
+    if (inline && node) {
+      this.selections.setPrimary(
+        resolved.nodeKey,
+        node.contentKey,
+        node.viewId,
+        inline.anchor,
+        inline.head,
+      );
+    }
+  };
+
+  private onPointerDown = (event: PointerEvent) => {
+    if (event.ctrlKey && event.button === 0 && !event.shiftKey && !event.altKey && !event.metaKey) {
+      const target = event.target instanceof Element ? event.target : undefined;
+      const resolved = this.mounts.resolveEvent(event);
+      if (resolved && this.node(resolved.nodeKey) && !resolved.handle.composing && resolved.handle.inputPolicy !== "opaque-widget" &&
+        !target?.closest('input, textarea, select, video, audio, iframe, [data-native-context-menu], [role="dialog"]')) event.preventDefault();
+    }
+    if (!this.overlays.overlays.length) return;
+    const resolved = this.mounts.resolveEvent(event);
+    if (resolved && this.overlays.isOverlayKey(resolved.nodeKey)) return;
+    this.overlays.dismissTopWithoutRestoring();
+  };
+
+  private standoffClipboardContext(event: ClipboardEvent) {
+    const resolved = this.mounts.resolveEvent(event);
+    if (!resolved || resolved.handle.inputPolicy !== "standoff") return undefined;
+    const node = this.node(resolved.nodeKey);
+    const set = this.selections.sets[resolved.nodeKey];
+    if (!node || !set) return undefined;
+    return { resolved, node, set };
+  }
+
+  private writeStandoffClipboard(event: ClipboardEvent): boolean {
+    const context = this.standoffClipboardContext(event);
+    if (!context || !event.clipboardData) return false;
+    const ordered = [...context.set.items].sort((a, b) => {
+      const ai = Math.min(a.anchor.boundary.index, a.head.boundary.index);
+      const bi = Math.min(b.anchor.boundary.index, b.head.boundary.index);
+      return ai - bi;
+    });
+    const fragments = ordered.map((item) => {
+      const start = Math.min(item.anchor.boundary.index, item.head.boundary.index);
+      const end = Math.max(item.anchor.boundary.index, item.head.boundary.index);
+      return context.node.inlineContent.slice(start, end).map((cellKey) => {
+        const cell = this.node(cellKey);
+        return cell?.viewType === "image-cell"
+          ? { kind: "image", ...cell.payload }
+          : { kind: "text", text: String(cell?.payload.text ?? "") };
+      });
+    });
+    const plain = fragments
+      .map((fragment) =>
+        fragment
+          .map((item) =>
+            item.kind === "text"
+              ? String(item.text ?? "")
+              : String((item as Record<string, unknown>).alt ?? ""),
+          )
+          .join(""),
+      )
+      .join("\n");
+    event.clipboardData.setData("text/plain", plain);
+    event.clipboardData.setData(
+      "application/json",
+      JSON.stringify({
+        source: "codex",
+        format: "standoff-inline-v1",
+        context: { ranges: fragments.length },
+        data: fragments,
+      }),
+    );
+    if (event.cancelable) event.preventDefault();
+    event.stopPropagation();
+    return true;
+  }
+
+  private onCopy = (event: ClipboardEvent) => {
+    this.writeStandoffClipboard(event);
+  };
+
+  private onCut = (event: ClipboardEvent) => {
+    if (!this.writeStandoffClipboard(event)) return;
+    const context = this.standoffClipboardContext(event);
+    if (!context) return;
+    const replacements = context.set.items.map((item) => ({
+      item,
+      start: Math.min(item.anchor.boundary.index, item.head.boundary.index),
+      end: Math.max(item.anchor.boundary.index, item.head.boundary.index),
+      text: "",
+    }));
+    this.multiSelections.replace(context.resolved.nodeKey, replacements);
+  };
+
+  private onPaste = (event: ClipboardEvent) => {
+    const context = this.standoffClipboardContext(event);
+    if (!context || !event.clipboardData) return;
+    const primary = context.set.items.find((item) => item.id === context.set.primaryId);
+    if (!primary) return;
+    const plain = event.clipboardData.getData("text/plain");
+    if (context.set.items.length > 1) {
+      if (event.cancelable) event.preventDefault();
+      event.stopPropagation();
+      this.multiSelections.replace(
+        context.resolved.nodeKey,
+        context.set.items.map((item) => ({
+          item,
+          start: Math.min(item.anchor.boundary.index, item.head.boundary.index),
+          end: Math.max(item.anchor.boundary.index, item.head.boundary.index),
+          text: plain,
+        })),
+      );
+      return;
+    }
+
+    let rich: Array<Record<string, unknown>> | undefined;
+    try {
+      const envelope = JSON.parse(event.clipboardData.getData("application/json") || "null");
+      if (envelope?.source === "codex" && envelope?.format === "standoff-inline-v1") {
+        rich = envelope.data?.[0];
+      }
+    } catch {
+      rich = undefined;
+    }
+    const start = Math.min(primary.anchor.boundary.index, primary.head.boundary.index);
+    const end = Math.max(primary.anchor.boundary.index, primary.head.boundary.index);
+    if (event.cancelable) event.preventDefault();
+    event.stopPropagation();
+    if (!rich?.length) {
+      this.commands.replaceInlineRange(context.resolved.nodeKey, start, end, plain, "Paste text");
+      return;
+    }
+    let index = start;
+    this.commands.transaction("Paste rich inline content", () => {
+      this.commands.replaceInlineRange(context.resolved.nodeKey, start, end, "");
+      for (const item of rich!) {
+        if (item.kind === "image") {
+          this.commands.insertInlineImage(context.resolved.nodeKey, index, {
+            assetId: String(item.assetId ?? globalThis.crypto.randomUUID()),
+            src: String(item.src ?? ""),
+            alt: String(item.alt ?? ""),
+            width: typeof item.width === "number" ? item.width : undefined,
+            height: typeof item.height === "number" ? item.height : undefined,
+            status: "ready",
+          });
+          index += 1;
+        } else {
+          const value = String(item.text ?? "");
+          this.commands.replaceInlineRange(context.resolved.nodeKey, index, index, value);
+          index += [...value].length;
+        }
+      }
+    });
+  };
+
+  private onKeyDown = (event: KeyboardEvent) => {
+    if (event.isComposing) return;
+    const top = this.overlays.overlays.at(-1);
+    if (event.key === "Escape" && top?.viewType === "context-menu") {
+      event.preventDefault(); event.stopPropagation(); this.overlays.close(top.key); return;
+    }
+    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey)) {
+      this.openContextMenu(event); return;
+    }
+    const resolved = this.mounts.resolveEvent(event);
+    if (!resolved || !["native-text", "standoff"].includes(resolved.handle.inputPolicy)) return;
+    if (resolved.handle.inputPolicy === "native-text" && !(event.target instanceof HTMLTextAreaElement)) return;
+
+    if (resolved.handle.inputPolicy === "standoff" && event.ctrlKey && event.shiftKey &&
+      !event.altKey && !event.metaKey && ["ArrowLeft", "ArrowRight"].includes(event.key) &&
+      !event.isComposing && !resolved.handle.composing && !event.defaultPrevented &&
+      !(event.target instanceof Element && event.target.closest('input, textarea, select, [data-native-context-menu], [role="dialog"]'))) {
+      event.preventDefault(); event.stopPropagation();
+      if (event.repeat) return;
+      const node = this.node(resolved.nodeKey);
+      if (!node) return;
+      try {
+        const caret = resolved.handle.captureInlineSelection?.()?.anchor ?? 0;
+        const placement = this.commands.ensureMargin(node.key, event.key === "ArrowLeft" ? "left" : "right");
+        this.selections.clearSecondary(node.key);
+        this.selections.setPrimary(node.key, node.contentKey, node.viewId, caret);
+        const margin = this.node(node.ownedRelations[event.key === "ArrowLeft" ? "leftMargin" : "rightMargin"]);
+        const target = margin?.children.map(key => this.node(key)).find(child => child?.placementKey === placement);
+        if (target) queueMicrotask(() => this.focus.request(target.key, { reason: "open-margin", caret: "start" }));
+      } catch (error) {
+        console.warn("Cannot open margin without replacing existing data", error);
+      }
+      return;
+    }
+
+    if (
+      resolved.handle.inputPolicy === "standoff" &&
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !event.isComposing
+    ) {
+      const selection = resolved.handle.captureInlineSelection?.();
+      const node = this.node(resolved.nodeKey);
+      if (!selection || !node) return;
+      if (event.cancelable) event.preventDefault();
+      event.stopPropagation();
+      this.insertStandoffParagraph(
+        resolved.nodeKey,
+        resolved.handle,
+        node,
+        Math.min(selection.anchor, selection.head),
+        Math.max(selection.anchor, selection.head),
+      );
+      return;
+    }
+
+    if (
+      ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) &&
+      !event.shiftKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey
+    ) {
+      const node = this.node(resolved.nodeKey);
+      if (!node) return;
+      let start: number;
+      let end: number;
+      let length: number;
+      if (resolved.handle.inputPolicy === "native-text") {
+        const selection = textareaSelection(event.target as HTMLTextAreaElement);
+        start = selection.start;
+        end = selection.end;
+        length = (event.target as HTMLTextAreaElement).value.length;
+      } else {
+        const selection = resolved.handle.captureInlineSelection?.();
+        if (!selection) return;
+        start = Math.min(selection.anchor, selection.head);
+        end = Math.max(selection.anchor, selection.head);
+        length = node.inlineContent.length;
+      }
+      if (start !== end) return;
+      const backwards = event.key === "ArrowLeft" || event.key === "ArrowUp";
+      if ((backwards && start !== 0) || (!backwards && end !== length)) return;
+      const target = this.adjacentEditable(resolved.nodeKey, backwards ? -1 : 1);
+      if (!target) return;
+      if (event.cancelable) event.preventDefault();
+      event.stopPropagation();
+      this.focus.request(target.key, {
+        caret: backwards && event.key === "ArrowLeft" ? "end" : "start",
+        reason: `navigate-${event.key.toLowerCase()}`,
+      });
+      return;
+    }
+
+    const structuralDelete =
+      event.shiftKey && (event.key === "Delete" || event.key === "Backspace");
+    if (!structuralDelete) return;
+    if (event.cancelable) event.preventDefault();
+    event.stopPropagation();
+    const fallback = this.focusFallback(resolved.nodeKey);
+    this.focus.clearRemoved(resolved.nodeKey);
+    this.commands.remove(resolved.nodeKey);
+    if (fallback) queueMicrotask(() => this.focus.request(fallback, { caret: "start" }));
+  };
+
+  private insertStandoffParagraph(
+    nodeKey: NodeKey,
+    handle: MountHandle,
+    node: BlockNode,
+    start: number,
+    end: number,
+  ): void {
+    const resultingLength = node.inlineContent.length - (end - start);
+    let focusPlacement: PlacementKey | undefined;
+    const insert = () => {
+      const emptyDto = {
+        ...JSON.parse(JSON.stringify(node.payload)),
+        id: globalThis.crypto.randomUUID(),
+        type: "standoff-editor-block",
+        text: "",
+        standoffProperties: [],
+        children: [],
+      };
+      if (start !== end) this.commands.replaceInlineRange(nodeKey, start, end, "");
+      if (start === 0) {
+        this.commands.insert(emptyDto, { kind: "before", anchorKey: nodeKey });
+      } else if (start === resultingLength) {
+        focusPlacement = this.commands.insert(emptyDto, { kind: "after", anchorKey: nodeKey });
+      } else {
+        focusPlacement = this.commands.splitStandoff(nodeKey, start);
+      }
+    };
+    // Collapsed-caret Enter is one atomic command at every position. Selected
+    // ranges still need a transaction to combine deletion and insertion.
+    if (start === end) {
+      if (start === 0) this.commands.insertEmptyStandoffSibling(nodeKey, "before");
+      else if (start === resultingLength) focusPlacement = this.commands.insertEmptyStandoffSibling(nodeKey, "after");
+      else focusPlacement = this.commands.splitStandoff(nodeKey, start);
+    } else this.commands.transaction("Insert Standoff paragraph", insert);
+    if (focusPlacement) {
+      const target = this.nodeForPlacement(focusPlacement, node.viewId);
+      if (target) queueMicrotask(() => this.focus.request(target.key, { reason: "split", caret: "start" }));
+    } else {
+      queueMicrotask(() => handle.restoreInlineSelection?.({ anchor: 0, head: 0 }));
+    }
+  }
+
+  private recordNativeText(nodeKey: NodeKey, target: HTMLTextAreaElement): void {
+    this.mounts.rememberSelection(nodeKey, textareaSelection(target));
+    this.commands.setPayloadField(nodeKey, "text", target.value, "Edit PlainText");
+  }
+
+  private reconcileStandoffText(
+    nodeKey: NodeKey,
+    handle: ReturnType<MountRegistry["get"]> & {},
+  ): void {
+    const node = this.node(nodeKey);
+    if (!node || !handle?.captureText) return;
+    const source: string[] = [];
+    for (const cellKey of node.inlineContent) {
+      const cell = this.node(cellKey);
+      // A text-only diff cannot safely infer the position of an inline atom.
+      // Keep the canonical mixed sequence intact until the typed DOM-sequence
+      // reconciler can identify both text runs and atom identities.
+      if (cell?.viewType !== "text-cell") return;
+      source.push(String(cell.payload.text ?? ""));
+    }
+    const actual = [...handle.captureText()];
+    if (source.join("") === actual.join("")) return;
+
+    let start = 0;
+    while (start < source.length && start < actual.length && source[start] === actual[start]) {
+      start += 1;
+    }
+    let sourceEnd = source.length;
+    let actualEnd = actual.length;
+    while (
+      sourceEnd > start &&
+      actualEnd > start &&
+      source[sourceEnd - 1] === actual[actualEnd - 1]
+    ) {
+      sourceEnd -= 1;
+      actualEnd -= 1;
+    }
+
+    const nativeSelection = handle.captureInlineSelection?.();
+    const inserted = actual.slice(start, actualEnd).join("");
+    this.commands.replaceInlineRange(nodeKey, start, sourceEnd, inserted, "Reconcile Standoff input");
+    this.selections.mapContentEdit(node.contentKey, start, sourceEnd, actualEnd - start);
+    if (nativeSelection) {
+      this.selections.setPrimary(
+        nodeKey,
+        node.contentKey,
+        node.viewId,
+        nativeSelection.anchor,
+        nativeSelection.head,
+      );
+      queueMicrotask(() => handle.restoreInlineSelection?.(nativeSelection));
+    }
+  }
+
+  dispose(): void {
+    if (!this.installed) return;
+    this.installed = false;
+    this.document.removeEventListener("input", this.onInput, true);
+    this.document.removeEventListener("beforeinput", this.onBeforeInput, true);
+    this.document.removeEventListener("focusin", this.onFocusIn, true);
+    this.document.removeEventListener("keydown", this.onKeyDown, true);
+    this.document.removeEventListener("compositionstart", this.onCompositionStart, true);
+    this.document.removeEventListener("compositionend", this.onCompositionEnd, true);
+    this.document.removeEventListener("selectionchange", this.onSelectionChange, true);
+    this.document.removeEventListener("pointerdown", this.onPointerDown, true);
+    this.document.removeEventListener("copy", this.onCopy, true);
+    this.document.removeEventListener("cut", this.onCut, true);
+    this.document.removeEventListener("paste", this.onPaste, true);
+    this.document.removeEventListener("contextmenu", this.onContextMenu, true);
+    this.document.removeEventListener("click", this.onControlClick, true);
+  }
+}

@@ -1,0 +1,311 @@
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import type { BlockViewProps, NodeKey } from "../block-tree/types";
+import { useReactiveView } from "../reactive-editor/context";
+import { ChildBlocks, RelationBlocks } from "./block-outlet";
+import {
+  highlightShapes,
+  outlineShapes,
+  rainbowShapes,
+  spikyOutlineShapes,
+  underlineShapes,
+  type DecorationShape,
+  type VisualFragment,
+} from "./decorations";
+import { blockAppearance } from "./appearance";
+import { compileCellStyleRuns, cellStyleAt, standoffSvgStyles, type StandoffAnnotation } from "./standoff-styles";
+
+function pointBoundary(root: HTMLElement, node: Node | null, offset: number): number {
+  if (!node) return 0;
+  if (node === root) {
+    const childOffset = Math.max(0, Math.min(offset, root.childNodes.length));
+    return [...root.childNodes]
+      .slice(0, childOffset)
+      .reduce((boundary, child) => {
+        if (!(child instanceof HTMLElement)) return boundary;
+        if (child.classList.contains("reactive-inline-image")) return boundary + 1;
+        return boundary + [...(child.textContent ?? "")].length;
+      }, 0);
+  }
+  const element = node instanceof Element ? node : node.parentElement;
+  const cell = element?.closest<HTMLElement>("[data-inline-index]");
+  if (cell && root.contains(cell)) {
+    const index = Number(cell.dataset.inlineIndex ?? 0);
+    if (cell.classList.contains("reactive-inline-image")) return index + (offset > 0 ? 1 : 0);
+    if (node.nodeType === Node.TEXT_NODE) {
+      return index + [...(node.textContent ?? "").slice(0, offset)].length;
+    }
+    const range = document.createRange();
+    try {
+      range.setStart(cell, 0);
+      range.setEnd(node, offset);
+      return index + [...range.toString()].length;
+    } catch {
+      return index + (offset > 0 ? 1 : 0);
+    }
+  }
+  return 0;
+}
+
+function restoreBoundary(root: HTMLElement, index: number): { node: Node; offset: number } {
+  const bounded = Math.max(0, Math.min(index, root.childNodes.length));
+  return { node: root, offset: bounded };
+}
+
+function rangeFragments(
+  flow: HTMLElement,
+  surface: HTMLElement,
+  start: number,
+  endInclusive: number,
+): VisualFragment[] {
+  const cells = flow.children;
+  if (!cells.length) return [];
+  const startCell = cells[Math.max(0, Math.min(start, cells.length - 1))];
+  const endCell = cells[Math.max(0, Math.min(endInclusive, cells.length - 1))];
+  const startNode = startCell.firstChild ?? startCell;
+  const endNode = endCell.firstChild ?? endCell;
+  const range = document.createRange();
+  range.setStart(startNode, 0);
+  range.setEnd(
+    endNode,
+    endNode.nodeType === Node.TEXT_NODE ? endNode.textContent?.length ?? 0 : endNode.childNodes.length,
+  );
+  const surfaceRect = surface.getBoundingClientRect();
+  const rects = typeof range.getClientRects === "function" ? [...range.getClientRects()] : [];
+  const fragments = rects
+    .filter((rect) => rect.width > 0 || rect.height > 0)
+    .map((rect) => ({
+      x: rect.left - surfaceRect.left + surface.scrollLeft,
+      y: rect.top - surfaceRect.top + surface.scrollTop,
+      width: rect.width,
+      height: rect.height,
+    }));
+  return fragments.reduce<VisualFragment[]>((merged, fragment) => {
+    const previous = merged.at(-1);
+    const sameLine = previous && Math.abs(previous.y - fragment.y) < 2 && Math.abs(previous.height - fragment.height) < 2;
+    if (sameLine && fragment.x <= previous.x + previous.width + 2) {
+      previous.width = Math.max(previous.x + previous.width, fragment.x + fragment.width) - previous.x;
+    } else {
+      merged.push({ ...fragment });
+    }
+    return merged;
+  }, []);
+}
+
+function DecorationLayer(props: { class: string; shapes: DecorationShape[]; blendMode?: "color-dodge" }) {
+  return (
+    <svg class={props.class} aria-hidden="true" style={{ "mix-blend-mode": props.blendMode }}>
+      <For each={props.shapes}>
+        {(shape) => (
+          <path
+            data-property-type={shape.propertyType}
+            data-decoration-key={shape.key}
+            d={shape.path}
+            stroke={shape.stroke ?? "none"}
+            fill={shape.fill ?? "none"}
+            stroke-width={shape.strokeWidth}
+            opacity={shape.opacity}
+            stroke-dasharray={shape.dashArray}
+            stroke-linejoin="round"
+            classList={{ "reactive-decoration--marching": shape.animated }}
+          />
+        )}
+      </For>
+    </svg>
+  );
+}
+
+export function StandoffEditorView(props: BlockViewProps) {
+  const { editor, projection } = useReactiveView();
+  const node = () => projection.state.nodes[props.nodeKey];
+  const annotations = createMemo(
+    () => (node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? [],
+  );
+  const cellStyles = createMemo(() => compileCellStyleRuns(annotations()), undefined, {
+    equals: (previous, next) => JSON.stringify(previous) === JSON.stringify(next),
+  });
+  const appearance = createMemo(() => blockAppearance(node()));
+  let root!: HTMLDivElement;
+  let surface!: HTMLDivElement;
+  let flow!: HTMLDivElement;
+  let disposeMount: (() => void) | undefined;
+  let observer: ResizeObserver | undefined;
+  let frame = 0;
+  const [highlighterShapes, setHighlighterShapes] = createSignal<DecorationShape[]>([]);
+  const [foregroundShapes, setForegroundShapes] = createSignal<DecorationShape[]>([]);
+  const [selectionShapes, setSelectionShapes] = createSignal<DecorationShape[]>([]);
+
+  const captureSelection = () => {
+    const selection = document.getSelection();
+    if (!selection || !selection.rangeCount || !flow.contains(selection.anchorNode)) return undefined;
+    return {
+      anchor: pointBoundary(flow, selection.anchorNode, selection.anchorOffset),
+      head: pointBoundary(flow, selection.focusNode, selection.focusOffset),
+    };
+  };
+
+  const restoreSelection = (selection: { anchor: number; head: number }) => {
+    const nativeSelection = document.getSelection();
+    if (!nativeSelection) return;
+    const anchor = restoreBoundary(flow, selection.anchor);
+    const head = restoreBoundary(flow, selection.head);
+    nativeSelection.removeAllRanges();
+    const range = document.createRange();
+    range.setStart(anchor.node, anchor.offset);
+    range.collapse(true);
+    nativeSelection.addRange(range);
+    if (selection.anchor !== selection.head && typeof nativeSelection.extend === "function") {
+      nativeSelection.extend(head.node, head.offset);
+    }
+  };
+
+  const measure = () => {
+    frame = 0;
+    const foreground: DecorationShape[] = [];
+    const highlighters: DecorationShape[] = [];
+    standoffSvgStyles(annotations(), node()?.inlineContent.length ?? 0).forEach(({ annotation, svg, offset, index }) => {
+      const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "property"}:${index}`;
+      const fragments = rangeFragments(flow, surface, annotation.start, annotation.end);
+      let shapes: DecorationShape[] = [];
+      switch (svg.kind) {
+        case "rainbow": shapes = rainbowShapes(key, fragments, offset); break;
+        case "underline": shapes = underlineShapes(key, fragments, svg.colour, offset); break;
+        case "highlighter":
+          highlighters.push(...highlightShapes(key, fragments, "yellow").map((shape) => ({ ...shape, opacity: 1, propertyType: annotation.type })));
+          return;
+        case "rectangle": shapes = outlineShapes(key, fragments, "red"); break;
+        case "spiky": shapes = spikyOutlineShapes(key, fragments, "red"); break;
+      }
+      foreground.push(...shapes.map((shape) => ({ ...shape, propertyType: annotation.type })));
+    });
+    const selectionSet = editor.selections.sets[props.nodeKey];
+    const selected: DecorationShape[] = [];
+    selectionSet?.items.forEach((item) => {
+      const start = Math.min(item.anchor.boundary.index, item.head.boundary.index);
+      const end = Math.max(item.anchor.boundary.index, item.head.boundary.index);
+      if (start === end) return;
+      selected.push(
+        ...highlightShapes(
+          `${props.nodeKey}:${item.id}`,
+          rangeFragments(flow, surface, start, Math.max(start, end - 1)),
+          item.id === selectionSet.primaryId ? "#75a99a" : "#b692d1",
+        ),
+      );
+    });
+    setHighlighterShapes(highlighters);
+    setForegroundShapes(foreground);
+    setSelectionShapes(selected);
+  };
+
+  const scheduleMeasure = () => {
+    if (frame) {
+      if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
+      else clearTimeout(frame);
+    }
+    frame = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame(measure)
+      : (setTimeout(measure, 0) as unknown as number);
+  };
+
+  onMount(() => {
+    disposeMount = editor.mounts.register(props.nodeKey, {
+      root,
+      focusElement: flow,
+      inputPolicy: "standoff",
+      focus: () => flow.focus({ preventScroll: true }),
+      captureInlineSelection: captureSelection,
+      restoreInlineSelection: restoreSelection,
+      captureText: () => flow.textContent ?? "",
+    });
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(scheduleMeasure);
+      observer.observe(surface);
+    }
+    scheduleMeasure();
+  });
+
+  createEffect(() => {
+    node()?.inlineContent.length;
+    annotations();
+    editor.selections.sets[props.nodeKey]?.revision;
+    scheduleMeasure();
+  });
+
+  onCleanup(() => {
+    disposeMount?.();
+    observer?.disconnect();
+    if (frame) {
+      if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
+      else clearTimeout(frame);
+    }
+  });
+
+  return (
+    <div
+      ref={root}
+      class={`abstract-block reactive-standoff-block ${appearance().classes.join(" ")}`}
+      style={appearance().style}
+      classList={{ "reactive-block--focused": editor.focus.state.focusedKey === props.nodeKey }}
+      data-block-id={(node()?.payload.id as string | undefined) ?? ""}
+      data-client-id={props.nodeKey}
+      data-runtime-key={props.nodeKey}
+      data-block-type="standoff-editor-block"
+    >
+      <div ref={surface} class="reactive-standoff-surface">
+        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes()} blendMode="color-dodge" />
+        <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />
+        <div
+          ref={flow}
+          class="reactive-standoff-flow"
+          contentEditable={true}
+          role="textbox"
+          aria-multiline="true"
+          spellcheck={true}
+        >
+          <For each={node()?.inlineContent ?? []}>
+            {(cellKey, index) => {
+              const cell = () => projection.state.nodes[cellKey];
+              return (
+                <Show
+                  when={cell()?.viewType === "image-cell"}
+                  fallback={
+                    <span
+                      data-inline-key={cellKey}
+                      data-inline-index={index()}
+                      style={cellStyleAt(cellStyles(), index())}
+                    >
+                      {(cell()?.payload.text as string | undefined) ?? ""}
+                    </span>
+                  }
+                >
+                  <span
+                    class="reactive-inline-image"
+                    data-inline-key={cellKey}
+                    data-inline-index={index()}
+                    contentEditable={false}
+                    role="img"
+                    aria-label={String(cell()?.payload.alt ?? "Inline image")}
+                  >
+                    <img
+                      src={String(cell()?.payload.src ?? "")}
+                      alt={String(cell()?.payload.alt ?? "")}
+                      width={cell()?.payload.width as number | undefined}
+                      height={cell()?.payload.height as number | undefined}
+                      onLoad={() => {
+                        editor.commands.updateInlineImage(cellKey, { status: "ready" });
+                        scheduleMeasure();
+                      }}
+                      onError={() => editor.commands.updateInlineImage(cellKey, { status: "failed" })}
+                    />
+                  </span>
+                </Show>
+              );
+            }}
+          </For>
+        </div>
+        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes()} />
+      </div>
+      <RelationBlocks parentKey={props.nodeKey} />
+      <ChildBlocks parentKey={props.nodeKey} />
+    </div>
+  );
+}

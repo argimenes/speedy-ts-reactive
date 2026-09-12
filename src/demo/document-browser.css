@@ -1,0 +1,42 @@
+.document-dialog__backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 20px; background: #07131d80; font: 14px Arial, sans-serif; color: #27302e; }
+.document-dialog { display: flex; flex-direction: column; width: min(880px, 100%); max-height: calc(100dvh - 40px); overflow: hidden; border: 1px solid #70817d; border-radius: 9px; background: #fff; box-shadow: 0 20px 80px #0006; }
+.document-dialog--compact { width: min(470px, 100%); }
+.document-dialog button, .document-dialog input { box-sizing: border-box; font: inherit; }
+.document-dialog button { border: 1px solid #bccac6; border-radius: 4px; padding: 7px 12px; color: inherit; background: #f6f8f7; cursor: pointer; }
+.document-dialog button:disabled { opacity: .5; cursor: default; }
+.document-dialog button:focus-visible, .document-dialog [tabindex]:focus-visible, .document-dialog input:focus-visible { outline: 2px solid #087c89; outline-offset: -2px; }
+.document-dialog input { min-width: 0; padding: 8px; border: 1px solid #a5b5af; border-radius: 4px; background: white; color: #27302e; }
+.document-dialog__header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; padding: 10px 16px; background: #b9e4e8; }
+.document-dialog__header h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.document-dialog__header button { padding: 2px 8px; border: 0; background: transparent; font-size: 23px; }
+.document-browser__path { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #dbe3df; }
+.document-browser__path span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.document-browser__panes { display: grid; grid-template-columns: minmax(180px, 30%) 1fr; height: min(440px, 52vh); min-height: 120px; }
+.document-browser--busy { opacity: .7; pointer-events: none; }
+.document-browser__tree { overflow: auto; padding: 8px 0; border-right: 1px solid #dbe3df; background: #f6f8f7; }
+.document-browser__tree [role=treeitem] { display: flex; align-items: center; gap: 6px; width: max-content; min-width: 100%; box-sizing: border-box; padding: 8px 12px 8px 8px; cursor: pointer; white-space: nowrap; }
+.document-browser__tree [aria-selected=true], .document-browser__list button[aria-selected=true] { background: #d8edef; color: #075862; }
+.document-browser__expander { display: inline-block; width: 15px; text-align: center; }
+.document-browser__tree-error { margin: 8px; font-size: 12px; color: #a12d21; }
+.document-browser__files { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.document-browser__filter { display: flex; flex-direction: column; gap: 5px; padding: 12px; font-size: 12px; color: #52675f; }
+.document-browser__list { flex: 1; min-height: 0; overflow: auto; padding: 0 8px 8px; }
+.document-browser__list button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px 8px; border: 0; border-radius: 3px; text-align: left; background: transparent; overflow-wrap: anywhere; }
+.document-browser__list button:hover { background: #eef5f3; }
+.document-browser__list p { padding: 18px 10px; color: #61766d; }
+.document-browser__count { padding: 8px 16px; border-top: 1px solid #e5ebe8; color: #61766d; }
+.document-dialog__error { margin: 0; padding: 10px 16px; color: #9b271c; background: #fff2ed; overflow-wrap: anywhere; }
+.document-dialog__body { padding: 18px; line-height: 1.5; }
+.document-dialog__footer { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 8px; padding: 14px 16px; border-top: 1px solid #dbe3df; }
+.document-dialog__footer label { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 200px; }
+.document-dialog__footer input { flex: 1; }
+.document-dialog .document-dialog__primary { color: #fff; background: #126c76; border-color: #126c76; }
+.document-browser__replace { padding: 12px 16px; background: #fff8db; }
+.document-browser__replace p { margin: 0 0 10px; }
+.document-browser__replace button + button { margin-left: 8px; }
+@media (max-width: 640px) {
+  .document-dialog__backdrop { padding: 8px; }
+  .document-dialog { max-height: calc(100dvh - 16px); }
+  .document-browser__panes { grid-template-columns: minmax(125px, 38%) 1fr; }
+  .document-dialog__footer label { flex-basis: 100%; }
+}

@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client", "node"],
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "src/index.tsx",
+    "src/App.tsx",
+    "src/demo/**/*",
+    "src/block-tree/**/*",
+    "src/input/**/*",
+    "src/reactive-editor/**/*",
+    "src/rendering/**/*",
+    "src/runtime/**/*"
+  ]
+}

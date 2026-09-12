@@ -1,0 +1,74 @@
+{
+    "type": "document-block",
+    "metadata": {
+      "name": "Manuscript",
+      "filename": "/templates/manuscript.json"
+    },
+    "children": [
+      {
+        "type": "book-block",
+        "children": [
+          {
+            "type": "fixed-size-page-block",
+            "metadata": {
+              "page": "left",
+              "label": "1"
+            },
+            "children": [
+              {
+                "type": "image-block",
+                "metadata": {
+                  "url": "/templates/images/left-page.png"
+                }
+              }
+            ]
+          },
+          {
+            "type": "fixed-size-page-block",
+            "metadata": {
+              "page": "right",
+              "label": "2"
+            },
+            "children": [
+              {
+                "type": "image-block",
+                "metadata": {
+                  "url": "/templates/images/right-page.png"
+                }
+              }
+            ]
+          },
+          {
+            "type": "fixed-size-page-block",
+            "metadata": {
+              "page": "left",
+              "label": "3"
+            },
+            "children": [
+              {
+                "type": "image-block",
+                "metadata": {
+                  "url": "/templates/images/right-page.png"
+                }
+              }
+            ]
+          },
+          {
+            "type": "fixed-size-page-block",
+            "metadata": {
+              "page": "right",
+              "label": "4"
+            },
+            "children": [
+              {
+                "type": "image-block",
+                "metadata": {
+                  "url": "/templates/images/left-page.png"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }

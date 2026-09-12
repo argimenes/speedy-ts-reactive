@@ -1,0 +1,144 @@
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it } from "vitest";
+import { render } from "solid-js/web";
+import type { ExistingBlockDto } from "../block-tree/types";
+import {
+  createWorkspaceDemoDocument,
+  createWorkspaceDemoEditor,
+  demoSourceCounts,
+  walkDemoBlocks,
+} from "./workspace-demo-model";
+import { WorkspaceDemo } from "./workspace-demo";
+import { workspaceBuilderTypes, workspaceDocumentFixture } from "./workspace-document";
+
+const disposers: Array<() => void> = [];
+
+afterEach(() => {
+  while (disposers.length) disposers.pop()?.();
+  document.body.replaceChildren();
+});
+
+function metadata(block: ExistingBlockDto): Record<string, unknown> {
+  return (block.metadata as Record<string, unknown> | undefined) ?? {};
+}
+
+function button(label: string, root: ParentNode = document): HTMLButtonElement {
+  const match = [...root.querySelectorAll("button")].find((item) => item.textContent?.trim() === label);
+  if (!match) throw new Error(`Button not found: ${label}`);
+  return match as HTMLButtonElement;
+}
+
+function click(element: HTMLElement): void {
+  element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+}
+
+describe("workspace demo fixture", () => {
+  it("loads the complete source sample, rewrites only demo media, and exports it", () => {
+    expect(demoSourceCounts).toEqual({ blocks: 92, types: 27 });
+    expect(workspaceBuilderTypes).toHaveLength(39);
+
+    const document = createWorkspaceDemoDocument();
+    const blocks = walkDemoBlocks(document);
+    expect(new Set(blocks.map((block) => block.id)).size).toBe(92);
+    expect(blocks.every((block) => block.id?.startsWith("workspace-demo-"))).toBe(true);
+
+    const image = blocks.find((block) => block.type === "image-block")!;
+    expect(metadata(image).url).not.toBe(metadata(image).originalUrl);
+    expect(String(metadata(image).url)).toContain("medieval-template");
+    const frame = blocks.find((block) => block.type === "iframe-block")!;
+    expect(metadata(frame).url).toBe("/demo/embedded-page.html");
+    const video = blocks.find((block) => block.type === "youtube-video-block")!;
+    expect(metadata(video).loadOnDemand).toBeUndefined();
+
+    const editor = createWorkspaceDemoEditor();
+    const projection = editor.createView("fixture-test");
+    const encoded = editor.encodeDocument();
+    expect(walkDemoBlocks(encoded)).toHaveLength(92);
+    expect(projection.state.nodes[projection.state.rootKey].viewType).toBe("document-block");
+    expect(["universe-block", ...workspaceBuilderTypes].every((type) => editor.registry.resolve(type)?.view)).toBe(true);
+    editor.dispose();
+
+    expect(workspaceDocumentFixture.id).toBeUndefined();
+    expect(metadata(walkDemoBlocks(workspaceDocumentFixture).find((block) => block.type === "image-block")!).originalUrl).toBeUndefined();
+  });
+});
+
+describe("WorkspaceDemo", () => {
+  function mount() {
+    const host = document.body.appendChild(document.createElement("div"));
+    const dispose = render(() => <WorkspaceDemo />, host);
+    disposers.push(dispose);
+    return host;
+  }
+
+  it("keeps inactive document tabs unmounted and flips card faces in one surface", () => {
+    const host = mount();
+    expect(host.querySelector("[data-demo-state='loaded']")).not.toBeNull();
+    expect(host.textContent).not.toContain("Text on Page 2 ...");
+    click(button("Page 2", host));
+    expect(host.textContent).toContain("Text on Page 2 ...");
+    expect(host.textContent).not.toContain("Standoff Property Text Editor");
+
+    click(button("Page 1", host));
+    click(button("C", host));
+    const surface = host.querySelector(".reactive-flippable")!;
+    const imageSide = surface.querySelector<HTMLElement>("[data-side-label='Image side']")!;
+    const textSide = surface.querySelector<HTMLElement>("[data-side-label='Text side']")!;
+    expect(imageSide.getAttribute("aria-hidden")).toBe("false");
+    expect(textSide.getAttribute("aria-hidden")).toBe("true");
+    click(button("Flip to text side", surface));
+    expect(imageSide.getAttribute("aria-hidden")).toBe("true");
+    expect(textSide.getAttribute("aria-hidden")).toBe("false");
+    expect(surface.querySelectorAll(".reactive-flippable__side")).toHaveLength(2);
+    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe("revision 1");
+
+    surface.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
+    expect(imageSide.getAttribute("aria-hidden")).toBe("false");
+    expect(textSide.getAttribute("aria-hidden")).toBe("true");
+    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe("revision 2");
+  });
+
+  it("loads the YouTube player paused by default", () => {
+    const host = mount();
+    const video = host.querySelector(".reactive-video")!;
+    const frame = video.querySelector("iframe")!;
+    expect(frame.src).toContain("youtube-nocookie.com/embed/");
+    expect(frame.src).toContain("autoplay=0");
+    expect(frame.hasAttribute("autoplay")).toBe(false);
+  });
+
+  it("renders margin relations in named gutters and sticky tabs on the window edge", () => {
+    const host = mount();
+    expect(host.querySelector(".workspace-demo__windowbar")).not.toBeNull();
+    expect(host.querySelector(".workspace-demo__stylebar")).not.toBeNull();
+    expect(host.querySelector(".reactive-relation--leftMargin")?.textContent).toContain("Left margin note 1.");
+    expect(host.querySelector(".reactive-relation--rightMargin")?.textContent).toContain("Right margin note 2a.");
+
+    const sticky = host.querySelector(".reactive-sticky-tabs")!;
+    expect(sticky.textContent).not.toContain("Test text for Sticky Tag #1 ...");
+    click(button("Sticky tag #1", sticky));
+    expect(sticky.textContent).toContain("Test text for Sticky Tag #1 ...");
+    expect(button("Sticky tag #1", sticky).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("records editing and recreates pristine state on reset", () => {
+    const host = mount();
+    const original = "... and this is just a plain text block ...";
+    const textarea = host.querySelector(".reactive-plain-text-block textarea") as HTMLTextAreaElement;
+    expect(textarea.value).toBe(original);
+    textarea.focus();
+    textarea.value = `${original} changed`;
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    textarea.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+    expect(textarea.value).toContain("changed");
+    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe("revision 1");
+
+    click(button("Reset demo", host));
+    expect(host.querySelector(".reactive-plain-text-block textarea")).toBe(textarea);
+    click(button("Discard changes"));
+    const resetTextarea = host.querySelector(".reactive-plain-text-block textarea") as HTMLTextAreaElement;
+    expect(resetTextarea).not.toBe(textarea);
+    expect(resetTextarea.value).toBe(original);
+    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe("revision 0");
+  });
+});
