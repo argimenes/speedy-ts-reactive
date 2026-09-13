@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { OverlayDescriptor } from "../runtime/overlays";
@@ -14,6 +14,19 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
   const [active, setActive] = createSignal(0);
   const selected = () => visible()[Math.min(active(), visible().length - 1)];
   const resolvedProperty = () => { const property = selected()?.property; return property && editor.linkedAnnotations.resolve(property); };
+  const linkedDetails = createMemo(() => {
+    const ids = new Set(visible().map(item => item.property.annotationId).filter((id): id is string => typeof id === "string"));
+    return new Map([...ids].map(id => {
+      const segments = editor.linkedAnnotations.segments(id).map(segment => {
+        const state = editor.repository.state, content = state.contents[segment.contentKey];
+        const text = content.inlineContent.slice(Number(segment.property.start), Number(segment.property.end) + 1)
+          .map(key => String(state.contents[state.placements[key].contentKey].payload.text ?? "\uFFFC")).join("");
+        return { ...segment, text, current: segment.contentKey === node()?.contentKey && segment.index === selected()?.index };
+      });
+      return [id, { segments, blocks: new Set(segments.map(segment => segment.contentKey)).size }] as const;
+    }));
+  });
+  const linked = () => linkedDetails().get(String(selected()?.property.annotationId));
   const [start, setStart] = createSignal(""); const [end, setEnd] = createSignal("");
   const [value, setValue] = createSignal(""); const [metadata, setMetadata] = createSignal(""); const [attributes, setAttributes] = createSignal("");
   const [error, setError] = createSignal(""); const [position, setPosition] = createSignal(overlay.anchor);
@@ -154,12 +167,21 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
       <nav aria-label="Annotations"><For each={visible()}>{(item, index) => <div class="annotation-row"><button class="annotation-select" type="button" aria-pressed={selected()?.index === item.index} onClick={() => setActive(index())}>{String(item.property.type ?? "Unknown annotation")} ({String(item.property.start)}–{String(item.property.end)})</button><button type="button" class="annotation-trash" aria-label={`Delete ${String(item.property.type)} annotation (${item.property.start}–${item.property.end})`} title="Delete this annotation" onClick={() => apply("delete", item)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" /></svg></button></div>}</For></nav>
       <form class="annotation-editor" onSubmit={event => { event.preventDefault(); save(); }}>
       <section class="annotation-main" aria-label="Annotation range and controls">
+      <Show when={linked()}>{details => <div class="annotation-cross-block-summary" role="status">
+        <strong>{details().blocks > 1 ? `Cross-Block annotation · ${details().blocks} Blocks` : "Linked annotation · 1 Block"}</strong>
+        <div>{details().segments.length} linked ranges. The highlighted text and range controls below describe only the current range in this Block.</div>
+      </div>}</Show>
       <blockquote>{excerpt()}</blockquote>
       <label>Annotation ID<input readOnly value={String(selected()?.property.id ?? "Not supplied")} /></label>
       <Show when={selected()?.property.annotationId}>{id => <fieldset><legend>Linked annotation</legend>
         <label>Shared annotation ID<input readOnly value={String(id())} /></label>
         <small>Range controls/delete affect this segment. Value, Metadata and Attributes are shared by every segment.</small>
-        <ul><For each={editor.linkedAnnotations.segments(String(id()))}>{segment => <li>{String(segment.blockId ?? segment.contentKey)}: {String(segment.property.start)}–{String(segment.property.end)}</li>}</For></ul>
+        <div class="annotation-segments"><table aria-label="Linked annotation ranges"><thead><tr><th>Block / range</th><th>Annotated text</th></tr></thead><tbody>
+          <For each={linked()?.segments ?? []}>{segment => <tr aria-current={segment.current ? "true" : undefined}>
+            <td><Show when={segment.current}><strong>Current range<br /></strong></Show><span>{String(segment.blockId ?? segment.contentKey)}</span><br />{String(segment.property.start)}–{String(segment.property.end)} (inclusive)</td>
+            <td><blockquote>{segment.text}</blockquote></td>
+          </tr>}</For>
+        </tbody></table></div>
         <button type="button" onClick={() => {
           try { editing = true; editor.linkedAnnotations.deleteAll(String(id())); close(); }
           catch (error) { setError(error instanceof Error ? error.message : String(error)); }

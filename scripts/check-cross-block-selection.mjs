@@ -97,6 +97,23 @@ try {
     const boundary = (id, index) => evaluate(`(() => {const {editor,node}=crossCheck;const mount=editor.mounts.get(node('${id}').key),p=mount.inlineBoundary(${index});const r=document.createRange();r.setStart(p.node,p.offset);r.collapse(true);const b=r.getClientRects()[0];return {x:b.left+1,y:b.top+b.height/2};})()`);
     const drag = async (a, b) => { await mouse('mousePressed', a, 1); await mouse('mouseMoved', { x: a.x + 5, y: a.y + 3 }, 1); await mouse('mouseMoved', b, 1); await mouse('mouseReleased', b); };
     const original = await evaluate('crossCheck.editor.encodeDocument().children');
+    const checkCounts = async () => {
+      const result = await evaluate(`(async()=>{
+        const {countText}=await import('/src/runtime/text-counts.ts');
+        for(let attempt=0;attempt<100;attempt++) {
+          const bar=crossCheck.host.querySelector('.document-count-bar');
+          if(bar && !bar.textContent.includes('Updating') && !bar.textContent.includes('unavailable')) {
+            const actual=Number(bar.querySelector('tbody tr:last-child td').textContent.replaceAll(',',''));
+            const expected=crossCheck.editor.encodeDocument().children.reduce((sum,b)=>sum+countText(b.text||'').words,0);
+            return {actual,expected};
+          }
+          await new Promise(resolve=>setTimeout(resolve,50));
+        }
+        throw new Error('Text count worker did not finish');
+      })()`);
+      assert.equal(result.actual,result.expected); return result;
+    };
+    report.counts = { initial: await checkCounts() };
     await evaluate(`crossCheck.host.querySelector('[aria-label="Experimental cross-Block text selection"]').click()`);
     await drag(await boundary('a', 3), await boundary('c', 8));
     assert.deepEqual(await evaluate('Object.values(crossCheck.editor.crossText.segments).filter(Boolean).map(s=>[crossCheck.editor.node(s.nodeKey).payload.id,s.start,s.end])'), [['a',3,35],['b',0,35],['c',0,8]]);
@@ -111,7 +128,9 @@ try {
     await drag(await boundary('a', 3), await boundary('c', 8));
     await send('Input.insertText', { text: 'REPLACED' }, sessionId);
     assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children.map(b=>b.text)'), [original[0].text.slice(0,3)+'REPLACED'+original[2].text.slice(8)]);
+    report.counts.replacement = await checkCounts();
     await evaluate('crossCheck.editor.repository.undo()');
+    report.counts.undo = await checkCounts();
     assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children'), formatted.children);
     await drag(await boundary('a', 3), await boundary('c', 8));
     await key('Enter');

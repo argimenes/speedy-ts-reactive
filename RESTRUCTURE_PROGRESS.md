@@ -1,5 +1,13 @@
 # Reactive reconstruction progress
 
+## Cached text counts
+
+Added Block/Page/Document word and grapheme-character counts to the document
+toolbar, with expanded whitespace-excluded counts and explicit inclusion rules.
+Counting is debounced, cached per Block, and segmented in a background worker;
+typing listeners only invalidate keys. See [TEXT_COUNTS_MIGRATION.md](TEXT_COUNTS_MIGRATION.md)
+for scope decisions, performance safeguards, verification and follow-up options.
+
 ## Cross-Block editing and linked annotations
 
 Implemented typing/deletion/Enter, plain-text copy/cut/multiline paste, atomic

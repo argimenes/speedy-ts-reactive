@@ -4,6 +4,7 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
 import { createTextTab } from "../runtime/text-tabs";
 import "./document-style-bar.css";
+import { DocumentCountBar } from "./document-count-bar";
 
 /** Canonical style types, including the three preserved range-wrapper styles. */
 export const annotationTools = [
@@ -129,5 +130,6 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     }}>To tab / + Tab</button>
     <button type="button" title="Clear formatting" onClick={clear}>T×</button>
     <span role="status">{notice() || editor.crossText.message()}</span>
+    <DocumentCountBar editor={editor} scopeKey={props.scopeKey} />
   </nav>;
 }

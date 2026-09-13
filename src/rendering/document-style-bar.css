@@ -7,3 +7,8 @@
 .document-style-bar [data-annotation-type="style/italics"] { font-style:italic; }
 .document-style-bar [data-annotation-type="style/underline"] { text-decoration:underline; }
 .document-style-bar [role=status] { font:12px Arial,sans-serif; flex-basis:100%; height:2.5em; overflow:auto; }
+.document-count-bar { flex-basis:100%; font:12px/1.5 Arial,sans-serif; }
+.document-count-bar summary { cursor:pointer; }
+.document-count-bar summary span { margin-right:12px; }
+.document-count-bar table { border-collapse:collapse; margin:6px 0; }
+.document-count-bar th,.document-count-bar td { padding:3px 10px; border:1px solid #d9e2df; text-align:right; }

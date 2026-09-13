@@ -82,6 +82,14 @@ planner. No new persistent processes or document-store writes.
 
 ### Remaining limits / safe next work
 
+Monitor follow-up: linked annotations now have an explicit cross-Block banner
+with the distinct Block count and active range count. A scrollable table shows
+each Block ID, inclusive endpoints and annotated text, marking the current range.
+The excerpt and editing controls are explicitly identified as local-range controls.
+Deleted ranges are excluded; multiple linked ranges in one Block are not called
+cross-Block. Independent style annotations are not inferred to be linked merely
+because they share a type. Monitor tests cover both cases and live range updates.
+
 Physical OS clipboard shortcuts and real IME candidate-window placement still
 need a manual Mac check (automated clipboard tests dispatch ClipboardEvents;
 composition uses Chrome's input protocol). Other browser engines are unverified.

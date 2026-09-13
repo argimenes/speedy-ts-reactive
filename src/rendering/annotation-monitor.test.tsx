@@ -3,6 +3,7 @@ import { render } from "solid-js/web";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
+import type { ExistingBlockDto } from "../block-tree/types";
 
 const disposers: Array<() => void> = [];
 afterEach(() => { while (disposers.length) disposers.pop()!(); document.body.replaceChildren(); });
@@ -10,8 +11,8 @@ function setup(properties: Record<string, unknown>[] = [
   { id: "a", type: "style/bold", start: 0, end: 2, metadata: { preserved: true }, future: "keep" },
   { type: "codex/entity-reference", start: 1, end: 4, value: "entity-id" },
   { type: "style/italics", start: 0, end: 5, isDeleted: true },
-]) {
-  const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "p", type: "standoff-editor-block", text: "one two three", standoffProperties: properties }] });
+], additional: ExistingBlockDto[] = []) {
+  const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "p", type: "standoff-editor-block", text: "one two three", standoffProperties: properties }, ...additional] });
   registerCoreViews(editor); const projection = editor.createView("monitor-test");
   const host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host);
@@ -32,6 +33,28 @@ function setup(properties: Record<string, unknown>[] = [
 }
 
 describe("annotation monitor", () => {
+  it("distinguishes the current range from a cross-Block annotation and shows other text ranges", async () => {
+    const { editor, projection, open, panel, button } = setup([
+      { id: "local", annotationId: "shared", type: "codex/entity-reference", start: 0, end: 2 },
+      { id: "plain", type: "style/bold", start: 0, end: 2 },
+    ], [{ id: "next", type: "standoff-editor-block", text: "four five", standoffProperties: [
+      { id: "remote", annotationId: "shared", type: "codex/entity-reference", start: 0, end: 3 },
+      { id: "deleted", annotationId: "shared", type: "codex/entity-reference", start: 5, end: 8, isDeleted: true },
+    ] }]);
+    editor.commands.setPayloadField(projection.state.rootKey, "linkedAnnotations", { shared: { id: "shared", type: "codex/entity-reference", value: "entity" } });
+    const before = editor.repository.snapshot(); await open();
+    expect(panel().querySelector('[role="status"]')!.textContent).toContain("Cross-Block annotation · 2 Blocks");
+    const rows = panel().querySelectorAll('table[aria-label="Linked annotation ranges"] tbody tr');
+    expect(rows).toHaveLength(2); expect(rows[0].getAttribute("aria-current")).toBe("true");
+    expect(rows[0].textContent).toContain("Current range"); expect(rows[0].textContent).toContain("one");
+    expect(rows[1].textContent).toContain("next"); expect(rows[1].textContent).toContain("four");
+    expect(rows[1].getAttribute("aria-current")).toBeNull();
+    expect(editor.repository.snapshot()).toEqual(before);
+    button("Expand").click(); expect(panel().querySelector('tr[aria-current=true] blockquote')!.textContent).toBe("one ");
+    panel().querySelectorAll<HTMLButtonElement>(".annotation-select")[1].click();
+    expect(panel().querySelector(".annotation-cross-block-summary")).toBeNull();
+    expect(panel().querySelector('table[aria-label="Linked annotation ranges"]')).toBeNull();
+  });
   it("shows linked identity and segments and deletes the shared annotation with undo", async () => {
     const { editor, projection, open, panel, button, propertiesNow } = setup([
       { id: "segment-a", annotationId: "shared", type: "codex/entity-reference", start: 0, end: 2 },
@@ -39,6 +62,7 @@ describe("annotation monitor", () => {
     ]);
     editor.commands.setPayloadField(projection.state.rootKey, "linkedAnnotations", { shared: { id: "shared", type: "codex/entity-reference", value: "entity-1", metadata: {}, attributes: {} } });
     await open();
+    expect(panel().querySelector('[role="status"]')!.textContent).toContain("Linked annotation · 1 Block");
     expect([...panel().querySelectorAll<HTMLInputElement>("input[readonly]")].map(e => e.value)).toContain("shared");
     expect(panel().textContent).toContain("segment");
     button("Delete whole linked annotation").click();

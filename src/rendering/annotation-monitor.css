@@ -17,6 +17,12 @@
 .reactive-annotation-monitor .annotation-settings { border-left:1px solid #d9e2df; padding-left:12px; }
 .reactive-annotation-monitor blockquote { margin:0; padding:8px; background:#fff2bc; max-height:70px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
 .reactive-annotation-monitor .annotation-actions { display:flex; flex-wrap:wrap; gap:4px; }
+.reactive-annotation-monitor .annotation-cross-block-summary { padding:8px; background:#e5f2f1; border-left:3px solid #237a76; }
+.reactive-annotation-monitor .annotation-segments { max-height:220px; overflow:auto; margin:8px 0; }
+.reactive-annotation-monitor .annotation-segments table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:12px; }
+.reactive-annotation-monitor .annotation-segments th,.reactive-annotation-monitor .annotation-segments td { text-align:left; vertical-align:top; padding:6px; border:1px solid #c4d8d1; overflow-wrap:anywhere; }
+.reactive-annotation-monitor .annotation-segments th:first-child { width:36%; }
+.reactive-annotation-monitor .annotation-segments [aria-current=true] { background:#e5f2f1; }
 .reactive-annotation-monitor label { display:grid; gap:5px; min-width:0; }
 .reactive-annotation-monitor .annotation-range { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
 .reactive-annotation-monitor input,.reactive-annotation-monitor textarea { box-sizing:border-box; width:100%; min-width:0; border:1px solid #90aaa4; padding:5px; color:#263a35; background:white; font:inherit; }
