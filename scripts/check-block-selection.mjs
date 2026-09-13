@@ -75,7 +75,22 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  assert.deepEqual(await evaluate('window.selectionCheck.editor.encodeDocument().children.map(b=>b.id)'),['b','d','a','c']);
  await evaluate('window.selectionCheck.editor.repository.undo()');
  assert.deepEqual(await evaluate('window.selectionCheck.editor.encodeDocument().children.map(b=>b.id)'),['a','b','c','d']);
- console.log(JSON.stringify({single:true,range:true,discontiguous:true,sessionOnly:true,handleLayout,nativeDragGroup:true,undo:true},null,2));
+ const primary=await evaluate('/Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? 4 : 2');
+ const key=async(key,modifiers=0)=>{
+   await send('Input.dispatchKeyEvent',{type:'keyDown',key,code:key.length===1?'Key'+key.toUpperCase():key,modifiers},sessionId);
+   await send('Input.dispatchKeyEvent',{type:'keyUp',key,modifiers},sessionId);
+ };
+ await click('a');await click('c',4);await key('c',primary);
+ await click('d');await key('v',primary);
+ assert.equal(await evaluate('window.selectionCheck.editor.encodeDocument().children.length'),6);
+ assert.equal(await evaluate('new Set(window.selectionCheck.editor.encodeDocument().children.map(b=>b.id)).size'),6);
+ await key('Backspace');
+ assert.deepEqual(await evaluate('window.selectionCheck.editor.encodeDocument().children.map(b=>b.id)'),['a','b','c','d']);
+ await click('a');await click('d',8);await key('x',primary);
+ assert.equal(await evaluate('window.selectionCheck.editor.encodeDocument().children.length'),0);
+ await key('v',primary);
+ assert.deepEqual(await evaluate('window.selectionCheck.editor.encodeDocument().children.map(b=>b.id)'),['a','b','c','d']);
+ console.log(JSON.stringify({single:true,range:true,discontiguous:true,sessionOnly:true,handleLayout,nativeDragGroup:true,undo:true,clipboardKeys:true,cutAllPaste:true},null,2));
  await evaluate('window.selectionCheck.dispose();window.selectionCheck.editor.dispose();window.selectionCheck.host.remove()');
 } finally {
   socket?.close();

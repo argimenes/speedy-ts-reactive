@@ -4,6 +4,8 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import type { ExistingBlockDto } from "../block-tree/types";
+import { BindingRegistry } from "../input/bindings";
+import { registerInputActions } from "../input/binding-catalog";
 const disposers: (() => void)[] = [];
 afterEach(() => { while (disposers.length) disposers.pop()!(); document.body.replaceChildren(); vi.restoreAllMocks(); });
 const paragraph = (id: string): ExistingBlockDto => ({ id, type: "standoff-editor-block", text: `Text ${id}` });
@@ -25,6 +27,84 @@ function setup(children = ["a", "b", "c", "d"].map(paragraph)) {
   return { editor, projection, host, key, root, handle, click, keys };
 }
 describe("Block selection and reordering", () => {
+  it("registers platform-specific, reassignable Block clipboard shortcuts", () => {
+    for (const platform of ["MacIntel", "Win32", "Linux x86_64"]) {
+      const registry = new BindingRegistry(); registerInputActions(registry, platform);
+      const run = vi.fn(); const mac = platform === "MacIntel";
+      expect(registry.dispatch(new KeyboardEvent("keydown", { key: "c", metaKey: mac, ctrlKey: !mac, cancelable: true }), ["block-handle"], run)).toBe(true);
+      expect(run).toHaveBeenCalledWith("selection.copy");
+      expect(registry.dispatch(new KeyboardEvent("keydown", { key: "c", metaKey: !mac, ctrlKey: mac, cancelable: true }), ["block-handle"], run)).toBe(false);
+      registry.dispose();
+    }
+  });
+  it("copies discontiguous Blocks, pastes fresh identities after the destination and supports undo/redo", async () => {
+    const { editor, click, keys } = setup();
+    const primary = /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true };
+    click("a"); click("c", { ctrlKey: true }); keys("c", primary);
+    expect(editor.repository.state.revision).toBe(0);
+    click("d"); keys("v", primary); await tick();
+    const blocks = editor.encodeDocument().children!;
+    expect(blocks.map(b => b.text)).toEqual(["Text a", "Text b", "Text c", "Text d", "Text a", "Text c"]);
+    expect(new Set(blocks.map(b => b.id)).size).toBe(6);
+    expect(editor.blockSelection.ids).toEqual(blocks.slice(4).map(b => b.id));
+    editor.repository.undo(); expect(editor.encodeDocument().children).toHaveLength(4);
+    editor.repository.redo(); expect(editor.encodeDocument().children).toHaveLength(6);
+  });
+  it("cuts all Blocks and pastes from the empty-list inspector, preserving cut IDs once", async () => {
+    const { editor, click, keys } = setup();
+    const primary = /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true };
+    click("a"); click("d", { shiftKey: true }); keys("x", primary); await tick();
+    expect(editor.encodeDocument().children).toEqual([]);
+    expect(document.activeElement?.hasAttribute("data-block-selection-inspector")).toBe(true);
+    keys("v", primary); await tick();
+    expect(editor.encodeDocument().children!.map(b => b.id)).toEqual(["a", "b", "c", "d"]);
+    keys("v", primary); await tick();
+    expect(new Set(editor.encodeDocument().children!.map(b => b.id)).size).toBe(8);
+    editor.repository.undo(); expect(editor.encodeDocument().children).toHaveLength(4);
+    editor.repository.undo(); expect(editor.encodeDocument().children).toHaveLength(0);
+    editor.repository.undo(); expect(editor.encodeDocument().children!.map(b => b.id)).toEqual(["a", "b", "c", "d"]);
+  });
+  it("deletes the selection atomically, ignores repeats, and leaves ID field copy native", async () => {
+    const { editor, click, keys } = setup(); click("a"); click("c", { ctrlKey: true });
+    const input = document.querySelector<HTMLInputElement>('input[aria-label="Selected Block ID"]')!; input.focus();
+    const event = new KeyboardEvent("keydown", { key: "c", ctrlKey: true, bubbles: true, cancelable: true }); input.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    click("a"); click("c", { ctrlKey: true }); keys("Delete", { repeat: true });
+    expect(editor.encodeDocument().children).toHaveLength(4);
+    keys("Backspace"); await tick(); expect(editor.encodeDocument().children!.map(b => b.id)).toEqual(["b", "d"]);
+    editor.repository.undo(); expect(editor.encodeDocument().children!.map(b => b.id)).toEqual(["a", "b", "c", "d"]);
+  });
+  it("keeps nested data and inline images lossless with immutable snapshots and remapped references", () => {
+    const { editor, click, key } = setup([
+      { ...paragraph("a"), standoffProperties: [{ id: "annotation", type: "codex/block-reference", start: 0, end: 2, value: "a" }], relation: { leftMargin: { type: "left-margin-block", children: [paragraph("note")] } } }, paragraph("b"),
+    ]);
+    editor.commands.insertInlineImage(key("a"), 1, { assetId: "image-asset", src: "test.png", alt: "picture" });
+    click("a"); editor.blockClipboard.copy();
+    editor.commands.setPayloadField(key("a"), "metadata", { changed: true });
+    click("b"); editor.blockClipboard.paste();
+    const copied = editor.node(editor.blockSelection.nodeKeys[0])!;
+    expect(copied.payload.metadata).toBeUndefined();
+    const property = (copied.payload.standoffProperties as any[])[0];
+    expect(property.id).not.toBe("annotation"); expect(property.value).toBe(copied.payload.id);
+    expect(copied.inlineContent.map(key => editor.node(key)!.viewType)).toContain("image-cell");
+    expect(Object.keys(copied.ownedRelations)).toContain("leftMargin");
+  });
+  it("shares the clipboard between documents and clones cut IDs when undo restored their source", () => {
+    const first = setup(); first.click("a"); first.editor.blockClipboard.remove(true);
+    first.editor.repository.undo(); first.click("d"); first.editor.blockClipboard.paste();
+    expect(new Set(first.editor.encodeDocument().children!.map(b => b.id)).size).toBe(5);
+    const second = setup([paragraph("destination")]); second.click("destination"); second.editor.blockClipboard.paste();
+    expect(second.editor.encodeDocument().children!.map(b => b.text)).toEqual(["Text destination", "Text a"]);
+  });
+  it("does not partially cut or replace the clipboard on a failed removal", () => {
+    const { editor, click } = setup(); click("b"); editor.blockClipboard.copy();
+    click("a"); click("c", { ctrlKey: true });
+    const before = editor.encodeDocument(), remove = editor.commands.remove.bind(editor.commands);
+    let count = 0; const spy = vi.spyOn(editor.commands, "remove").mockImplementation(key => { if (++count === 2) throw new Error("failed removal"); remove(key); });
+    expect(() => editor.blockClipboard.remove(true)).toThrow("failed removal");
+    expect(editor.encodeDocument()).toEqual(before); spy.mockRestore();
+    click("d"); editor.blockClipboard.paste(); expect(editor.encodeDocument().children!.at(-1)!.text).toBe("Text b");
+  });
   it("selects single, forward/reverse ranges, toggles and additive ranges without changing document data", () => {
     const { editor, click, root } = setup(); const before = editor.encodeDocument();
     const snapshot = vi.spyOn(editor.repository, "snapshot");

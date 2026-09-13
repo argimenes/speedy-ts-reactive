@@ -19,6 +19,7 @@ import { BindingRegistry } from "../input/bindings";
 import { registerInputActions } from "../input/binding-catalog";
 import { createTextTab } from "../runtime/text-tabs";
 import { BlockSelectionService } from "../runtime/block-selection";
+import { BlockClipboardService } from "../runtime/block-clipboard";
 
 export class ReactiveEditor {
   readonly bindings = new BindingRegistry();
@@ -33,6 +34,7 @@ export class ReactiveEditor {
   readonly focus = new FocusService(this.mounts);
   readonly selections = new SelectionService();
   readonly blockSelection = new BlockSelectionService(this);
+  readonly blockClipboard = new BlockClipboardService(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
   readonly persistence = new PersistenceService(this);
   readonly multiSelections: MultiSelectionEditor;
@@ -238,6 +240,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.blockClipboard.dismiss();
     this.blockSelection.clear();
     this.bindings.dispose();
     this.gateway?.dispose();

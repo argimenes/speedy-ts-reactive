@@ -300,6 +300,7 @@ export class InputGateway {
   };
 
   private standoffClipboardContext(event: ClipboardEvent) {
+    if (event.target instanceof Element && event.target.closest("[data-block-selection-handle], [data-block-selection-inspector]")) return undefined;
     const resolved = this.mounts.resolveEvent(event);
     if (!resolved || resolved.handle.inputPolicy !== "standoff") return undefined;
     const node = this.node(resolved.nodeKey);

@@ -19,7 +19,8 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
   let detach: (() => void) | undefined;
   let suppressClick = false;
   const focusHandle = (key: string) => editor.mounts.get(key)?.root.querySelector<HTMLButtonElement>(":scope > [data-block-selection-handle]")?.focus({ preventScroll: true });
-  const run = (id: string): boolean | void => {
+  const run = (id: string, event?: Event): boolean | void => {
+    if (editor.blockClipboard.run(id, event)) return;
     const action = id.replace("selection.", "");
     if (["single", "toggle", "range", "add-range"].includes(action)) {
       selection.select(props.nodeKey, action as BlockSelectionMode); focusHandle(props.nodeKey); return;
@@ -29,7 +30,7 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
       if (key) { focusHandle(key); editor.mounts.get(key)?.root.scrollIntoView?.({ block: "nearest" }); } return;
     }
     if (action === "clear" || action === "edit") {
-      selection.clear(); editor.focus.request(props.nodeKey, { reason: "leave-block-selection" }); return;
+      editor.blockClipboard.dismiss(); selection.clear(); editor.focus.request(props.nodeKey, { reason: "leave-block-selection" }); return;
     }
     return false;
   };
@@ -47,7 +48,7 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
       event.stopPropagation();
       if (event.type === "click" && suppressClick) { suppressClick = false; event.preventDefault(); return; }
       if (event.type === "click" && contextHandled) { contextHandled = false; event.preventDefault(); return; }
-      editor.bindings.dispatch(event, ["block-handle"], run);
+      editor.bindings.dispatch(event, ["block-handle"], id => run(id, event));
       if (event.type === "click") clickHandled = true;
     };
     const pointer = (event: PointerEvent) => { event.stopPropagation(); clickHandled = false; contextHandled = false; }; // Do not prevent native drag initiation.
@@ -101,6 +102,9 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
       clearDrag(editor); suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
     };
     button.addEventListener("pointerdown", pointer);
+    for (const action of ["copy", "cut", "paste"]) button.addEventListener(action, event => {
+      event.preventDefault(); event.stopPropagation(); editor.blockClipboard.run(`selection.${action}`, event);
+    });
     button.addEventListener("click", input); button.addEventListener("keydown", input); button.addEventListener("contextmenu", menu);
     button.addEventListener("dragstart", start); button.addEventListener("dragend", end);
     root.addEventListener("dragover", over); root.addEventListener("drop", drop); root.addEventListener("dragleave", leave);
@@ -128,11 +132,20 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
 
 export function BlockSelectionInspector(props: { editor: ReactiveEditor; viewId: string }) {
   const selection = props.editor.blockSelection;
-  return <Portal><Show when={selection.state.viewId === props.viewId && selection.state.items.length}>
-    <section class="block-selection-inspector" data-block-selection-inspector role="region" aria-label="Selected Blocks" onKeyDown={event => {
-      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); const key = selection.state.leadKey; selection.clear(); if (key) props.editor.focus.request(key, { reason: "clear-block-selection" }); }
+  const clipboard = props.editor.blockClipboard;
+  const clear = () => { clipboard.dismiss(); selection.clear(); };
+  const nativeClipboard = (event: ClipboardEvent) => {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+    event.preventDefault(); event.stopPropagation(); clipboard.run(`selection.${event.type}`, event);
+  };
+  return <Portal><Show when={(selection.state.viewId === props.viewId && selection.state.items.length) || (!selection.state.items.length && clipboard.viewId() === props.viewId)}>
+    <section class="block-selection-inspector" data-block-selection-inspector={clipboard.owner} tabIndex={-1} role="region" aria-label="Selected Blocks" onCopy={nativeClipboard} onCut={nativeClipboard} onPaste={nativeClipboard} onKeyDown={event => {
+      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); const key = selection.state.leadKey; clear(); if (key) props.editor.focus.request(key, { reason: "clear-block-selection" }); return; }
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      props.editor.bindings.dispatch(event, ["block-handle"], id => clipboard.run(id, event));
     }}>
-      <div><strong role="status">{selection.state.items.length} Block(s) selected</strong><button type="button" onClick={() => selection.clear()}>Clear selection</button></div>
+      <div><strong role="status">{selection.state.items.length} Block(s) selected</strong><button type="button" onClick={clear}>Clear selection</button></div>
+      <div class="block-clipboard-actions"><For each={["copy", "cut", "paste", "delete"]}>{action => <button type="button" disabled={action === "paste" ? !clipboard.available() : !selection.state.items.length} title={props.editor.bindings.label(`selection.${action}`)} onClick={() => clipboard.run(`selection.${action}`)}>{action[0].toUpperCase() + action.slice(1)}</button>}</For></div>
       <small>Drag a selected handle to reorder the group. Shift-click: range · Ctrl/Cmd-click: toggle.</small>
       <Show when={selection.state.message}><p role="status">{selection.state.message}</p></Show>
       <details><summary>Selected Block IDs ({selection.actionTargets().length} independent action targets)</summary>

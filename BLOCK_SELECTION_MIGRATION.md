@@ -93,3 +93,10 @@ Full suite: 137 pass, two previously documented context-menu tests fail (synthet
 contextmenu button-0 versus the unfinished registry migration's button-2 binding).
 Typecheck and client/server build pass. Existing inline/split performance tests
 pass; selection tests assert no repository snapshots or revisions from selecting.
+
+## Selected Block operations
+
+Copy, cut, paste, and delete are now implemented; see
+[BLOCK_CLIPBOARD_MIGRATION.md](BLOCK_CLIPBOARD_MIGRATION.md) for clipboard scope,
+identity handling, insertion rules, and verification. The selected IDs remain
+session-only and the existing handle/range/toggle/drag conventions are unchanged.

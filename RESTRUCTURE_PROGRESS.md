@@ -1,5 +1,17 @@
 # Reactive reconstruction progress
 
+## Cross-Block text selection — planning only, 13 September 2026
+
+Agreed to pursue cross-Block text selection and independent Block-local style
+properties incrementally, deferring linked semantic annotation identity until a
+concrete use case warrants it. No implementation has started. The authoritative
+plan and resumable phase checklist are in
+[CROSS_BLOCK_TEXT_SELECTION_PLAN.md](CROSS_BLOCK_TEXT_SELECTION_PLAN.md).
+It records current-code constraints, browser feasibility checks, scope barriers,
+mutation guards, acceptance/performance gates and checkpoint instructions.
+Next action on implementation: P0 baseline verification and browser selection
+prototype. Existing uncommitted Block clipboard work must be preserved.
+
 ## Block selection and drag reordering — 13 September 2026
 
 Dedicated gutter handles support single, Shift-range, Ctrl/Cmd-toggle and additive
@@ -484,3 +496,14 @@ stays native; Standoff input maps through canonical Cell operations.
 The install reports inherited dependency audit findings; dependency
 modernization is outside this renderer slice and remains to be assessed before
 release.
+
+## Selected Block clipboard checkpoint
+
+Implemented session-memory copy/cut/paste plus atomic deletion of normalized Block
+selections. The selection inspector exposes these actions; registry defaults use
+Cmd+C/X/V on Apple platforms and Ctrl+C/X/V elsewhere, plus Delete/Backspace.
+Lossless canonical fragments retain margins, nested Blocks, annotations, and inline
+images. Paste inserts after the selection or at the retained cut/delete position.
+See `BLOCK_CLIPBOARD_MIGRATION.md`. External and inline-text clipboard work remains
+separate. Chrome smoke now exercises clipboard shortcuts and cut-all/paste as well
+as native group dragging.

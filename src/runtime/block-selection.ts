@@ -122,6 +122,12 @@ export class BlockSelectionService {
       leadKey: remaining.some(item => item.nodeKey === this.state.leadKey) ? this.state.leadKey : remaining.at(-1)?.nodeKey,
     });
   }
+  replaceKeys(keys: NodeKey[]) {
+    const nodes = keys.map(key => this.editor.node(key)).filter((node): node is BlockNode => !!node);
+    if (!nodes.length) { this.clear(); return; }
+    const viewId = nodes[0].viewId;
+    this.commit(nodes.map(node => this.entry(node)), { viewId, scopeKey: this.scope(nodes[0].key, this.parents(viewId)), anchorKey: nodes[0].key, leadKey: nodes.at(-1)!.key });
+  }
   clear() { this.commit([], {}); }
   setMessage(message: string) { this.update("message", message); }
   reorderTargets(): NodeKey[] {

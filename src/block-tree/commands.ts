@@ -1,4 +1,5 @@
 import { clone } from "./clone";
+import type { BlockFragment } from "./clipboard";
 import { editAnnotation, type AnnotationAction, type AnnotationPatch } from "./annotation-commands";
 import { isTextLeaf } from "./inline-plan";
 import { decodeDetachedSubtree, encodeDocument } from "./codecs";
@@ -253,6 +254,20 @@ export class TreeCommands {
       children,
       index: anchorIndex + (destination.kind === "after" ? 1 : 0),
     };
+  }
+
+  insertFragment(fragment: BlockFragment, destination: Destination): PlacementKey[] {
+    const state = this.state();
+    const target = this.resolveInsertion(destination, undefined, state);
+    if (Object.keys(fragment.state.contents).some(key => state.contents[key]) || Object.keys(fragment.state.placements).some(key => state.placements[key])) throw new TreeCommandError("Clipboard keys collide with existing Blocks");
+    const children = [...target.children];
+    children.splice(target.index, 0, ...fragment.roots);
+    this.publish("Paste Blocks", [
+      ...Object.values(fragment.state.contents).map(record => ({ kind: "put-content" as const, record: clone(record) })),
+      ...Object.values(fragment.state.placements).map(record => ({ kind: "put-placement" as const, record: clone(record) })),
+      { kind: "put-content", record: this.updatedChildren(target.owner, children) },
+    ]);
+    return [...fragment.roots];
   }
 
   insert(dto: ExistingBlockDto, destination: Destination): PlacementKey {

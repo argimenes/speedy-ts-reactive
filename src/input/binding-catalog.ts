@@ -1,7 +1,10 @@
 import { BindingRegistry, keyboard as k, mouse, type Trigger } from "./bindings";
 
-export function registerInputActions(registry: BindingRegistry) {
+export function registerInputActions(registry: BindingRegistry, platform = typeof navigator === "undefined" ? "" : navigator.platform) {
   const add = (id: string, name: string, description: string, category: string, scope: string, defaults: Trigger[], tags: string[] = []) => registry.register({ id, name, description, category, scope, defaults, tags, handler: context => context.run(id) });
+  const primary = /Mac|iPhone|iPad|iPod/i.test(platform) ? "Meta" : "Ctrl";
+  for (const [id, key] of [["copy", "c"], ["cut", "x"], ["paste", "v"]]) add(`selection.${id}`, `${id[0].toUpperCase()}${id.slice(1)} Blocks`, "Use the internal selected-Block clipboard. Paste inserts after the selection; editor text and external clipboard data are separate.", "Block Selection", "block-handle", [k(key, primary)], ["clipboard", "blocks"]);
+  add("selection.delete", "Delete selected Blocks", "Delete the normalized selection in one undoable operation.", "Block Selection", "block-handle", [k("Delete"), k("Backspace")], ["blocks"]);
   for (const [id, name, defaults] of [
     ["single", "Select Block", [mouse(0, "click"), k(" ")]],
     ["toggle", "Toggle selected Block", [mouse(0, "click", "Ctrl"), mouse(0, "click", "Meta"), k(" ", "Ctrl"), k(" ", "Meta")]],
