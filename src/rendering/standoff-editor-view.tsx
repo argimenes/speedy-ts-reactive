@@ -179,6 +179,9 @@ export function StandoffEditorView(props: BlockViewProps) {
     });
     const selectionSet = editor.selections.sets[props.nodeKey];
     const selected: DecorationShape[] = [];
+    for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search") {
+      for (const range of overlay.entityRanges ?? []) if (range.nodeKey === props.nodeKey && range.end > range.start) selected.push(...highlightShapes(`${props.nodeKey}:entity-search`, rangeFragments(flow, surface, range.start, range.end - 1), "#f2c767"));
+    }
     const cross = editor.crossText.segments[props.nodeKey];
     if (cross && cross.end > cross.start) selected.push(...highlightShapes(`${props.nodeKey}:cross-text`, rangeFragments(flow, surface, cross.start, cross.end - 1), "#75a9e8"));
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;

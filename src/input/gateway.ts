@@ -38,6 +38,7 @@ export class InputGateway {
     private readonly createTextTab: (key: NodeKey) => boolean,
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
+    private readonly entitySearch: (key: string, range: { anchor: number; head: number }) => void,
   ) {}
 
   install(): () => void {
@@ -452,6 +453,11 @@ export class InputGateway {
   };
 
   private runBinding = (id: string, event: Event): boolean | void => {
+    if (id === "entity.open") {
+      const resolved = this.mounts.resolveEvent(event), range = resolved?.handle.captureInlineSelection?.();
+      if (!resolved || !range || range.anchor === range.head) return false;
+      this.entitySearch(resolved.nodeKey, range); return true;
+    }
     if (event instanceof KeyboardEvent && event.isComposing) return false;
     if (id === "menu.open") { this.openContextMenu(event); return event.defaultPrevented; }
     const resolved = this.mounts.resolveEvent(event);

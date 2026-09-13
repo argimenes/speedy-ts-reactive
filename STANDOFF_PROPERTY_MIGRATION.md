@@ -5,6 +5,84 @@ Status: first 22-schema appearance pass implemented and verified. Five grouped,
 plugin, or embedded-editor schemas and the separate interaction workflows remain
 open; this is not a claim of complete Standoff parity.
 
+## Decision: grouped effects deferred by user request
+
+The discussion of `style/blur`, `style/flip` and `style/mirror` concluded with an
+explicit decision to document the approach but **not implement it for now**,
+because of editing and performance regression risks. This supersedes the earlier
+request to start grouped rendering. No wrapper implementation or caret refactor
+was made during that investigation. Resume only after renewed user authorization.
+
+### Preferred approach and layout compromise
+
+The original schemas use `wrap.cssClass`; `wrapRange()` in `src/library/svg.ts`
+moves range Cells into a DIV styled `display: inline-block`. The important part is
+the shared visual box, not the DIV tag: an inline-block SPAN could serve the same
+purpose. Blur filters the range as a group; flip reflects it vertically, while
+mirror reflects it horizontally. Per-character transforms are not equivalent.
+
+Preserving the paragraph's existing line layout is desirable, but the agreed
+compromise is a renderer-managed grouped object. It occupies one atomic box in
+the surrounding inline flow and may move to the next line as a unit. Long text
+can wrap inside that box, depending on sizing and word-break rules, but existing
+paragraph line breaks are not guaranteed to survive. Mirroring reflects the
+whole multiline rectangle horizontally; vertical flipping also reverses the
+visual order of its internal lines. This is not an annotation-length limit.
+A configurable length limit may be considered later; none is currently chosen.
+
+Alternatives discussed, not selected for implementation:
+
+- A separate transformed/filtered visual copy preserves the editable Cell tree,
+  but needs synchronized layout, hidden original paint, hit-testing, selection,
+  accessibility and IME handling.
+- Transforming individual Cells fits the flat renderer but does not reproduce
+  a whole-range mirror or reliable group-filter composition.
+- SVG/canvas text rendering offers control at the cost of substantially more
+  layout and editing infrastructure.
+- Per-line fragment transforms could preserve flow as a later alternative mode,
+  but have different semantics from transforming the complete passage.
+
+### Risk assessment
+
+The standoff data model need not change: Cell identity, annotation IDs/inclusive
+ranges, serialization and history remain the authoritative representation.
+The changes are nevertheless substantial at the rendering/input boundary:
+
+- `standoff-editor-view.tsx` uses direct flow children for caret restoration,
+  boundary lookup, pointer hit-testing and range geometry.
+- `annotation-monitor.tsx` anchors using a direct child at the range start.
+- Moving Cells into wrappers without adapting these assumptions risks caret
+  jumps, wrong selections, misplaced decorations and monitor positions.
+- Imperative reparenting can conflict with Solid's DOM ownership. A future
+  implementation must preserve stable Cell nodes and avoid remounting ordinary
+  paragraphs or adding full-document work to typing.
+- Partially crossing effect ranges cannot both be represented as simple nested
+  wrappers. Fragmenting them changes whole-range transform semantics. A proposed
+  conservative fallback is to leave conflicting group effects unapplied with a
+  notice, but this policy still requires agreement before implementation.
+
+### Staged plan for a future authorized implementation
+
+1. Make Cell lookup wrapper-aware without adding wrappers or changing appearance.
+   Verify caret capture/restoration, pointer and keyboard selection, annotation
+   geometry and monitor placement against the existing flat renderer.
+2. Introduce renderer-owned grouped wrappers behind an experimental switch,
+   restricted to paragraphs with these effects. Preserve the flat fast path for
+   all other paragraphs; do not port imperative wrap/unwrap wholesale.
+3. Resolve identical/nested/crossing effect composition and cross-Block segment
+   semantics explicitly. Shared annotation identity does not imply wrapping
+   multiple Block containers into one visual object.
+4. Verify insert/delete, Enter splits/joins, range resize/delete, undo/redo,
+   save/load, inline images, cross-Block selection/replacement, native clipboard,
+   IME and transformed hit-testing in Chrome on macOS. Test short/multiline
+   groups, stable Cell identity, cleanup, and long-document typing performance
+   against a pre-change baseline before considering general release.
+
+Current behaviour stays unchanged: the toolbar can create and save these
+annotations, but their grouped visual effects remain deferred. No experimental
+switch, overlap fallback, length limit, or wrapper-aware refactor is implemented
+by this documentation update. No runtime tests were necessary for this update.
+
 ## Source map and census
 
 The current TypeScript runtime registers **27** schemas in
@@ -219,7 +297,7 @@ one representative file. Types such as `block/font/size` here really occur in
    and styles must clear correctly after deletion, range changes, value updates,
    and undo. Unknown/unsupported tokens receive no invented visible decoration.
 4. Qualify grouped range wrappers before blur/flip/mirror and clock: the original
-   transforms a whole unbreakable range, not each letter. Crossing ranges need a
+   transforms a shared inline-block box (which may wrap internally), not each letter. Crossing ranges need a
    deterministic grouping policy, nesting-aware DOM/caret mapping, and native
    editing/IME/cleanup tests. Clock requires pause/lifetime and serialization
    policy; micro-documents require loaded child-editor ownership and input scope.

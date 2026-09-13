@@ -8,6 +8,7 @@ import { RecordId, Surreal } from "surrealdb";
 import { surrealdbNodeEngines } from "@surrealdb/node";
 import type { IBlockDto, StandoffEditorBlockDto, BlockType, IndexedBlock } from "./types";
 import { createDocumentStoreRouter } from "./document-store.js";
+import { createEntitySearchRouter } from "./entity-search.js";
 //import { BlockType } from "./types";
 let db: Surreal | undefined;
 
@@ -441,102 +442,9 @@ type AgentMention = {
   mentions: number;
 }
 
-app.get("/api/findAgentsByNameJson", async function(req: Request, res: Response) {
-  try {
+// Keep the original entity-search API paths with validated, failure-safe handlers.
+app.use("/api", createEntitySearchRouter(() => db));
 
-  } catch (ex) {
-    console.log({ ex });
-    res.send({
-      Success: false
-    }); 
-  }
-  const text = req.query.search as string;
-  const byPartial = req.query.byPartial === "true";
-  const page: any = req.query.page || 1;
-  const order: any = req.query.order || "ByMentions";
-  const direction: any = req.query.direction || "Ascending";
-  const byMentionsDescending = "mentions DESC, name";
-  const orderBy = 
-    order == "ByMentions"
-      ? direction == "Ascending" ? "mentions, name" : byMentionsDescending
-      : order == "ByName"
-        ? direction == "Ascending" ? "name, mentions DESC" : "name DESC, mentions DESC"
-        : byMentionsDescending
-  ;
-  const rows: any = 10;
-  const where = byPartial ? "WHERE name CONTAINS $text" : "WHERE name = $text";
-  const query = `SELECT id, name, count(<-standoff_property_refers_to_agent<-StandoffProperty) as mentions
-      FROM Agent 
-      ${where}
-      ORDER BY ${orderBy}`;
-  const pageset = await paginate(query, { text }, page, rows);
-  if (!pageset) {
-    res.send({ Success: false });
-    return;
-  }
-  res.send(pageset);
-});
-
-type AgentAlias = {
-  text: string;
-  mentions: number;
-  id: string;
-  name: string;
-}
-
-const getCount = async (query: string, props: {}) => {
-  const count = (await db.query(`SELECT count() FROM (` + query + `) GROUP BY count`, props))[0][0]?.count;  
-  return count;
-}
-
-const paginate = async (query: string, props: {}, page: number, rows: number) => {
-  const count = await getCount(query, props);
-  const maxPage = Math.ceil(count / rows);
-  page = page > maxPage ? maxPage : page;
-  const pageIndex = (page - 1) * rows;
-  const pageset = await db.query(query + ` START $pageIndex LIMIT BY $rows`, { ...props, rows, pageIndex }); 
-  const results = pageset[0];
-  return {
-      Success: true,
-      Count: count,
-      Page: page,
-      Rows: rows,
-      MaxPage: maxPage,
-      Results: results
-  };
-}
-
-app.get("/api/findAgentsByAliasJson", async function(req: Request, res: Response) {
-  const text = req.query.search as string;
-  const byPartial = req.query.byPartial === "true";
-  const page: any = req.query.page || 1;
-  const order: any = req.query.order || "ByText";
-  const direction: any = req.query.direction || "Ascending";
-  const byMentionsDescending = "count DESC, in.text";
-  const orderBy =
-    order == "ByText"
-      ? direction == "Ascending" ? "in.text, count DESC" : "in.text DESC, count DESC"
-      : order == "ByMentions" 
-        ? direction == "Ascending" ? "count, in.text" : byMentionsDescending
-        : byMentionsDescending
-    ;
-  const rows: any = 10;
-  const where = byPartial ? "WHERE in.text CONTAINS $text" : "WHERE in.text = $text";
-  const query = `SELECT text, count as mentions, out.id as id, out.name as name FROM (
-        SELECT in.text as text, out, count()
-        FROM standoff_property_refers_to_agent  
-        ${where}
-        GROUP BY in.text, out
-        ORDER BY ${orderBy}
-  )`;
-  console.log({ query, text, page, rows});
-  const pageset = await paginate(query, { text }, page, rows);
-  if (!pageset) {
-    res.send({ Success: false });
-    return;
-  }
-  res.send(pageset);
-});
 
 app.post('/api/getEntitiesJson', async function(req: Request, res: Response) {
   console.log('/api/getEntitiesJson', { body: req.body });
@@ -658,7 +566,11 @@ const saveDocumentIndex = async (doc: IBlockDto) => {
     } as TextBlock;
     //console.log({ textBlockData });
     await db.upsert<TextBlock>(new RecordId("TextBlock", textBlock.id), textBlockData);
-    let properties = (textBlock.standoffProperties ?? []).filter(x => x.type == "codex/entity-reference");
+    const definitions = (doc as any).linkedAnnotations ?? {};
+    let properties = (textBlock.standoffProperties ?? []).map((property: any) => {
+      const shared = property.annotationId && definitions[property.annotationId];
+      return shared ? { ...property, ...shared, id: property.id, start: property.start, end: property.end, isDeleted: !!property.isDeleted || !!shared.isDeleted } : property;
+    }).filter((property: any) => property.type === "codex/entity-reference" && !property.isDeleted && typeof property.value === "string" && property.value.length);
     for (let j = 0; j < properties.length; j++) {
       /**
        * Insert StandoffProperty
@@ -667,7 +579,7 @@ const saveDocumentIndex = async (doc: IBlockDto) => {
       let standoffPropertyData = {
         textBlockId: new RecordId("TextBlock", textBlock.id),
         type: property.type,
-        text: textBlock.text.substring(property.start, property.end + 1),
+        text: [...textBlock.text].slice(property.start, property.end + 1).join(""),
         start: property.start,
         end: property.end,
         value: property.value,

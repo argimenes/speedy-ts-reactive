@@ -114,11 +114,26 @@ try {
       assert.equal(result.actual,result.expected); return result;
     };
     report.counts = { initial: await checkCounts() };
+    await evaluate(`(()=>{
+      window.entityCheckFetch=window.fetch;
+      window.fetch=(url,options)=>String(url).startsWith('/api/findAgentsBy') ? Promise.resolve(new Response(JSON.stringify({Success:true,Count:1,Page:1,MaxPage:1,Results:[{id:'test-entity',name:'Browser test entity',mentions:2}]}),{headers:{'Content-Type':'application/json'}})) : entityCheckFetch(url,options);
+      const {editor,node}=crossCheck,m=editor.mounts.get(node('a').key);m.focus();m.restoreInlineSelection({anchor:0,head:9});
+      crossCheck.host.querySelector('[aria-label="Entity reference"]').click();
+    })()`);
+    await evaluate('new Promise(resolve=>setTimeout(resolve,500))');
+    assert.equal(await evaluate('document.querySelector(\'.reactive-entity-search input[aria-label="Search entities"]\').value'),'Paragraph');
+    await key('Enter');
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children[0].standoffProperties.map(p=>({value:p.value,name:p.metadata.entityName,start:p.start,end:p.end}))'),[{value:'test-entity',name:'Browser test entity',start:0,end:8}]);
+    assert.equal(await evaluate('!!document.querySelector(".reactive-entity-search")'),false);
+    await evaluate('crossCheck.editor.repository.undo();window.fetch=entityCheckFetch;delete window.entityCheckFetch');
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children'),original);
+    report.entitySearch={seeded:true,keyboardSelection:true,metadata:true,atomicUndo:true};
+    const selectionRevision = await evaluate('crossCheck.editor.repository.state.revision');
     await evaluate(`crossCheck.host.querySelector('[aria-label="Experimental cross-Block text selection"]').click()`);
     await drag(await boundary('a', 3), await boundary('c', 8));
     assert.deepEqual(await evaluate('Object.values(crossCheck.editor.crossText.segments).filter(Boolean).map(s=>[crossCheck.editor.node(s.nodeKey).payload.id,s.start,s.end])'), [['a',3,35],['b',0,35],['c',0,8]]);
     assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children'), original);
-    assert.equal(await evaluate('crossCheck.editor.repository.state.revision'), 0);
+    assert.equal(await evaluate('crossCheck.editor.repository.state.revision'), selectionRevision);
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
     assert.ok(await evaluate('crossCheck.host.querySelectorAll(".reactive-selection-layer path").length > 0'));
     const bold = await evaluate(`(() => {const r=crossCheck.host.querySelector('[data-annotation-type="style/bold"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);

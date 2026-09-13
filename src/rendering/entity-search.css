@@ -1,0 +1,10 @@
+.reactive-entity-search { position:fixed; z-index:2000; top:12vh; left:50%; transform:translateX(-50%); width:700px; max-width:calc(100vw - 24px); max-height:76vh; overflow:auto; box-sizing:border-box; padding:16px; background:white; color:#263a35; border:1px solid #78958f; border-radius:8px; box-shadow:0 12px 40px #0005; font:14px/1.4 Arial,sans-serif; }
+.reactive-entity-search header,.reactive-entity-search footer,.entity-search-options { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+.reactive-entity-search input[type=text],.reactive-entity-search input:not([type]) { width:100%; box-sizing:border-box; padding:8px; margin:5px 0 12px; }
+.reactive-entity-search button,.reactive-entity-search select { padding:5px 8px; }
+.reactive-entity-search blockquote { margin:8px 0; padding:8px; background:#fff2bc; max-height:60px; overflow:auto; white-space:pre-wrap; }
+.reactive-entity-search table { width:100%; border-collapse:collapse; margin:12px 0; }
+.reactive-entity-search th,.reactive-entity-search td { text-align:left; padding:6px; border-bottom:1px solid #d9e2df; overflow-wrap:anywhere; }
+.reactive-entity-search td small { display:block; }
+.reactive-entity-search tr.current { background:#dcefe9; }
+.reactive-entity-search [role=alert] { color:#922; }

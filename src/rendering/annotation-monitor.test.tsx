@@ -189,7 +189,7 @@ describe("annotation monitor", () => {
   });
 
   it("validates JSON atomically and leaves keyboard input to the attribute fields", async () => {
-    const { editor, open, panel, propertiesNow } = setup(); await open();
+    const { editor, open, panel, propertiesNow, flow } = setup(); await open();
     const areas = panel().querySelectorAll("textarea");
     areas[0].value = "{"; areas[0].dispatchEvent(new InputEvent("input", { bubbles: true }));
     panel().querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
@@ -201,6 +201,21 @@ describe("annotation monitor", () => {
     panel().querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     expect(propertiesNow()[0]).toMatchObject({ metadata: { changed: true }, attributes: { certainty: .8 }, future: "keep" });
     expect(propertiesNow()[0].isDeleted).toBeUndefined();
+    expect(panel()).toBeNull();
+    await Promise.resolve(); expect(document.activeElement).toBe(flow);
+  });
+
+  it("keeps the monitor open when Apply changes fails range validation, and closes after correction", async () => {
+    const { editor, open, panel, button, propertiesNow } = setup(); await open();
+    const start = panel().querySelector<HTMLInputElement>('input[type="number"]')!;
+    start.value = "99"; start.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    button("Apply changes").click();
+    expect(panel()).not.toBeNull(); expect(panel().querySelector('[role="alert"]')!.textContent).toContain("inclusive Cell endpoints");
+    expect(editor.repository.state.revision).toBe(0);
+    start.value = "1"; start.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    button("Apply changes").click();
+    expect(panel()).toBeNull(); expect(propertiesNow()[0]).toMatchObject({ start: 1, end: 2 });
+    editor.repository.undo(); expect(propertiesNow()[0]).toMatchObject({ start: 0, end: 2 });
   });
 
   it("opens an empty state, supports legacy slash aliases and excludes composition/extra modifiers", async () => {

@@ -22,6 +22,7 @@ import { BlockSelectionService } from "../runtime/block-selection";
 import { BlockClipboardService } from "../runtime/block-clipboard";
 import { CrossBlockSelection } from "../runtime/cross-block-selection";
 import { LinkedAnnotations } from "../runtime/linked-annotations";
+import { openEntitySearch } from "../runtime/entity-search";
 import { CrossBlockInput } from "../input/cross-block-input";
 
 export class ReactiveEditor {
@@ -123,6 +124,7 @@ export class ReactiveEditor {
       key => createTextTab(this, key),
       this.blockSelection,
       direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
+      (nodeKey, range) => openEntitySearch(this, [{ nodeKey, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }]),
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;

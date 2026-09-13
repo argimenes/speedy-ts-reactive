@@ -16,6 +16,9 @@ export interface OverlayDescriptor {
   returnDomRange?: Range;
   annotationIndexes?: number[];
   annotationPreview?: { start: number; end: number };
+  entityRanges?: Array<{ nodeKey: string; start: number; end: number }>;
+  entityRevision?: number;
+  entityQuery?: string;
 }
 
 let overlayCounter = 0;

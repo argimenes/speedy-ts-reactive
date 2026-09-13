@@ -19,12 +19,17 @@ export class LinkedAnnotations {
     const range = this.editor.crossText.range(); if (!range) throw new Error("Select text across Blocks first");
     if (!type.trim() || type.startsWith("style/") || type.startsWith("text/")) throw new Error("Choose a semantic annotation type; ordinary styles stay independent");
     const segments = this.editor.crossText.resolve(range.anchor, range.head).filter(s => s.end > s.start);
+    return this.createForSegments(segments, type, value);
+  }
+  createForSegments(segments: Array<{ nodeKey: string; start: number; end: number }>, type: string, value = "", metadata: JsonObject = {}) {
+    if (!type.trim() || type.trim().startsWith("style/") || type.trim().startsWith("text/")) throw new Error("Choose a semantic annotation type; ordinary styles stay independent");
     if (!segments.length) throw new Error("Select a non-empty text range");
     const id = crypto.randomUUID(), state = this.editor.repository.readState();
-    const registry = { ...clone(linkedRegistry(state)), [id]: { id, type: type.trim(), value, metadata: {}, attributes: {} } };
+    const registry = { ...clone(linkedRegistry(state)), [id]: { id, type: type.trim(), value, metadata: clone(metadata), attributes: {} } };
     const updates = new Map<string, { key: string; properties: JsonObject[] }>();
     for (const segment of segments) {
       const node = this.editor.node(segment.nodeKey)!;
+      if (!node || !Number.isInteger(segment.start) || !Number.isInteger(segment.end) || segment.start < 0 || segment.end <= segment.start || segment.end > node.inlineContent.length) throw new Error("The annotation range is no longer valid");
       const properties = updates.get(node.contentKey)?.properties ?? clone(state.contents[node.contentKey].payload.standoffProperties as JsonObject[] ?? []);
       if (!properties.some(p => p.annotationId === id && p.start === segment.start && p.end === segment.end - 1)) properties.push({ id: crypto.randomUUID(), annotationId: id, type: type.trim(), start: segment.start, end: segment.end - 1 });
       updates.set(node.contentKey, { key: node.key, properties });

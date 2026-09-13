@@ -3,6 +3,7 @@ import { unwrap } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
 import { createTextTab } from "../runtime/text-tabs";
+import { openEntitySearch } from "../runtime/entity-search";
 import "./document-style-bar.css";
 import { DocumentCountBar } from "./document-count-bar";
 
@@ -59,7 +60,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     const cross = editor.crossText.range();
     if (cross) {
       if (!inScope(cross.anchor.occurrenceKey)) { setNotice("The text selection belongs to another document."); return; }
-      try { editor.crossText.annotate(type, value); setNotice(""); }
+      try { if (type === "codex/entity-reference") openEntitySearch(editor, editor.crossText.resolve(cross.anchor, cross.head)); else editor.crossText.annotate(type, value); setNotice(""); }
       catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
       return;
     }
@@ -67,6 +68,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     if (!node || !savedRange) { setNotice("Select text in this document first."); return; }
     const start = Math.min(savedRange.anchor, savedRange.head), end = Math.max(savedRange.anchor, savedRange.head) - 1;
     if (start < 0 || end < start || end >= node.inlineContent.length) { setNotice("Select a non-empty text range first."); return; }
+    if (type === "codex/entity-reference") { openEntitySearch(editor, [{ nodeKey: node.key, start, end: end + 1 }]); return; }
     const current = (node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
     // Applying a toolbar style never deletes an existing annotation or its metadata.
     if (!current.some(p => !p.isDeleted && p.type === type && p.start === start && p.end === end && p.value === value)) {
@@ -106,6 +108,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
         const range = editor.crossText.range(); if (!range || !inScope(range.anchor.occurrenceKey)) { setNotice("Select text in this document first."); return; }
         const head = range.head;
         try {
+          if (linkedType().trim() === "codex/entity-reference") { openEntitySearch(editor, editor.crossText.resolve(range.anchor, range.head)); return; }
           const id = editor.linkedAnnotations.create(linkedType(), linkedValue());
           setNotice(`Created linked annotation ${id}`);
           const mount = editor.mounts.get(head.occurrenceKey); mount?.focus(); mount?.restoreInlineSelection?.({ anchor: head.boundary.index, head: head.boundary.index });
@@ -113,6 +116,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       }}>Create linked annotation</button>
     </Show>
     <For each={annotationTools}>{([type, label, glyph]) => <button type="button" title={label} aria-label={label} data-annotation-type={type} onClick={() => annotate(type)}>{glyph}</button>}</For>
+    <button type="button" aria-label="Entity reference" title="Link selected text to an entity" onClick={() => annotate("codex/entity-reference")}>Entity reference</button>
     <label title="Text colour">Text <input type="color" aria-label="Text colour" value={colour()} onInput={e => setColour(e.currentTarget.value)} /></label>
     <button type="button" title="Apply text colour" data-annotation-type="text/colour" onClick={() => annotate("text/colour", colour())}>Apply colour</button>
     <label title="Text background colour">Fill <input type="color" aria-label="Text background colour" value={background()} onInput={e => setBackground(e.currentTarget.value)} /></label>

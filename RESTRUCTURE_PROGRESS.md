@@ -1,5 +1,26 @@
 # Reactive reconstruction progress
 
+## Entity-reference search port
+
+Selected text now opens the migrated name/alias search dialog through the Entity
+reference toolbar button or Cmd+E / Ctrl+Shift+E. Choosing a result creates local
+or linked cross-Block annotations with entity ID/name metadata; cancelling makes
+no document change. Existing Node/SurrealDB API paths are hardened and tested
+against disposable in-memory data. See [ENTITY_SEARCH_MIGRATION.md](ENTITY_SEARCH_MIGRATION.md)
+for contracts, verification, operational requirements and deliberately deferred
+entity-creation/bulk workflows. No populated user database was modified.
+
+## Grouped annotation effects — explicitly deferred
+
+User chose to document, not implement, grouped blur/flip/mirror because of caret,
+selection, DOM ownership and performance risks. The preferred future compromise
+is a shared inline-block object, accepting possible paragraph reflow and internal
+wrapping. No length limit is selected. The risk assessment, alternatives and
+staged verification plan are recorded in
+[STANDOFF_PROPERTY_MIGRATION.md](STANDOFF_PROPERTY_MIGRATION.md#decision-grouped-effects-deferred-by-user-request).
+No runtime code was changed for this decision. Implementation requires renewed
+authorization; existing toolbar creation/persistence remains unchanged.
+
 ## Cached text counts
 
 Added Block/Page/Document word and grapheme-character counts to the document

@@ -83,7 +83,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     queueMicrotask(clamp);
   });
   const apply = (action: AnnotationAction | AnnotationPatch, item = selected()) => {
-    if (!item) return;
+    if (!item) return false;
     const previous = selected()?.index;
     try {
       editing = true;
@@ -95,7 +95,8 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
       if (action === "delete") queueMicrotask(() => {
         if (!root.contains(document.activeElement)) focusAnnotation();
       });
-    } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+      return true;
+    } catch (error) { setError(error instanceof Error ? error.message : String(error)); return false; }
     finally { editing = false; }
   };
   const focusAnnotation = () => {
@@ -112,8 +113,9 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
       };
       const m = object(metadata()), a = object(attributes());
       if (!start().trim() || !end().trim()) throw new Error("Enter both range endpoints");
-      apply({ start: Number(start()), end: Number(end()), ...(p.value !== undefined || value() ? { value: value() } : {}),
+      const applied = apply({ start: Number(start()), end: Number(end()), ...(p.value !== undefined || value() ? { value: value() } : {}),
         ...(p.metadata !== undefined || Object.keys(m).length ? { metadata: m } : {}), ...(p.attributes !== undefined || Object.keys(a).length ? { attributes: a } : {}) });
+      if (applied) close();
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
   };
   const runInput = (id: string, target: Element): boolean | void => {
