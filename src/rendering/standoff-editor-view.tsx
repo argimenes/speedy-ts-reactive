@@ -136,7 +136,7 @@ export function StandoffEditorView(props: BlockViewProps) {
 
   const captureSelection = () => {
     const selection = document.getSelection();
-    if (!selection || !selection.rangeCount || !flow.contains(selection.anchorNode)) return undefined;
+    if (!selection || !selection.rangeCount || !flow.contains(selection.anchorNode) || !flow.contains(selection.focusNode)) return undefined;
     return {
       anchor: pointBoundary(flow, selection.anchorNode, selection.anchorOffset),
       head: pointBoundary(flow, selection.focusNode, selection.focusOffset),
@@ -179,6 +179,8 @@ export function StandoffEditorView(props: BlockViewProps) {
     });
     const selectionSet = editor.selections.sets[props.nodeKey];
     const selected: DecorationShape[] = [];
+    const cross = editor.crossText.segments[props.nodeKey];
+    if (cross && cross.end > cross.start) selected.push(...highlightShapes(`${props.nodeKey}:cross-text`, rangeFragments(flow, surface, cross.start, cross.end - 1), "#75a9e8"));
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
     if (preview) selected.push(...highlightShapes(`${props.nodeKey}:annotation-preview`, rangeFragments(flow, surface, preview.start, preview.end), "#f2c767"));
     selectionSet?.items.forEach((item) => {
@@ -216,6 +218,26 @@ export function StandoffEditorView(props: BlockViewProps) {
       focus: () => flow.focus({ preventScroll: true }),
       captureInlineSelection: captureSelection,
       restoreInlineSelection: restoreSelection,
+      inlinePoint: (node, offset) => flow.contains(node) ? pointBoundary(flow, node, offset) : undefined,
+      inlinePointAt: (x, y) => {
+        // Browser caret hit tests can remain pinned to the active editing host
+        // while dragging. Resolve against the actual paragraph under the pointer.
+        let closest = 0, distance = Infinity;
+        Array.from(flow.children).forEach((cell, index) => {
+          for (const rect of Array.from(cell.getClientRects())) {
+            const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+            const dx = Math.max(rect.left - x, 0, x - rect.right);
+            const score = dy * dy * 10000 + dx * dx;
+            if (score < distance) { distance = score; closest = index + (x >= (rect.left + rect.right) / 2 ? 1 : 0); }
+          }
+        });
+        return closest;
+      },
+      inlineBoundary: index => {
+        const cell = flow.children[Math.min(index, flow.children.length - 1)];
+        if (cell?.firstChild?.nodeType === Node.TEXT_NODE) return { node: cell.firstChild, offset: index < flow.children.length ? 0 : cell.firstChild.textContent!.length };
+        return restoreBoundary(flow, index);
+      },
       captureText: () => flow.textContent ?? "",
     });
     if (typeof ResizeObserver !== "undefined") {
@@ -229,12 +251,15 @@ export function StandoffEditorView(props: BlockViewProps) {
     node()?.inlineContent.length;
     JSON.stringify(annotations());
     editor.selections.sets[props.nodeKey]?.revision;
+    editor.crossText.segments[props.nodeKey]?.start;
+    editor.crossText.segments[props.nodeKey]?.end;
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
     preview?.start; preview?.end;
     scheduleMeasure();
   });
 
   onCleanup(() => {
+    if (editor.crossText.segments[props.nodeKey]) queueMicrotask(() => editor.crossText.validate());
     disposeMount?.();
     observer?.disconnect();
     if (frame) {
@@ -260,7 +285,9 @@ export function StandoffEditorView(props: BlockViewProps) {
         <div
           ref={flow}
           class="reactive-standoff-flow"
-          contentEditable={true}
+          contentEditable={!editor.crossText.segments[props.nodeKey]}
+          tabIndex={0}
+          aria-readonly={!!editor.crossText.segments[props.nodeKey]}
           role="textbox"
           aria-multiline="true"
           spellcheck={true}

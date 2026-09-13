@@ -1,4 +1,4 @@
-import { For, createEffect, createSignal } from "solid-js";
+import { For, Show, createEffect, createSignal } from "solid-js";
 import { unwrap } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
@@ -37,6 +37,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   });
   const target = () => { const key = targetKey(); return key && inScope(key) ? editor.node(key) : undefined; };
   const capture = () => {
+    if (editor.crossText.range()) return;
     const node = target(); if (!node) return;
     const mount = editor.mounts.get(node.key), anchor = document.getSelection()?.anchorNode;
     if (anchor && mount?.root.contains(anchor)) savedRange = mount.captureInlineSelection?.();
@@ -47,11 +48,19 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   };
   const retainSelection = (event: PointerEvent) => { capture(); if ((event.target as Element).closest("button")) event.preventDefault(); };
   const restore = () => {
+    if (editor.crossText.range()) return;
     const node = target(); if (!node) return;
     editor.mounts.get(node.key)?.focusElement?.focus({ preventScroll: true });
     if (savedRange) editor.mounts.get(node.key)?.restoreInlineSelection?.(savedRange);
   };
   const annotate = (type: string, value?: string) => {
+    const cross = editor.crossText.range();
+    if (cross) {
+      if (!inScope(cross.anchor.occurrenceKey)) { setNotice("The text selection belongs to another document."); return; }
+      try { editor.crossText.annotate(type, value); setNotice(""); }
+      catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
+      return;
+    }
     capture(); const node = target();
     if (!node || !savedRange) { setNotice("Select text in this document first."); return; }
     const start = Math.min(savedRange.anchor, savedRange.head), end = Math.max(savedRange.anchor, savedRange.head) - 1;
@@ -64,6 +73,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     setNotice(""); restore();
   };
   const blockStyle = (type: string, value: string) => {
+    if (editor.crossText.range()) { editor.crossText.notice("Collapse the text selection before changing paragraph layout."); return; }
     capture(); const node = target(); if (!node) { setNotice("Focus a text Block first."); return; }
     const current = (node.payload.blockProperties as Record<string, unknown>[] | undefined) ?? [];
     const existing = current.find(p => p.type === type && !p.isDeleted);
@@ -77,6 +87,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     blockStyle("block/indent", String(Math.max(0, (Number.isFinite(value) ? Math.trunc(value) : 0) + delta)));
   };
   const clear = () => {
+    if (editor.crossText.range()) { editor.crossText.notice("Range-aware Clear Formatting is not enabled yet. Existing formatting outside the selection is protected."); return; }
     const node = target(); if (!node) return;
     editor.commands.transaction("Clear Formatting", () => {
       const annotations = (node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
@@ -85,6 +96,8 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     }); restore();
   };
   return <nav class="workspace-demo__stylebar document-style-bar" aria-label="Document formatting" onPointerDown={retainSelection}>
+    <label title="Experimental: select and format across adjacent text Blocks. Text replacement and clipboard are not enabled for these ranges."><input type="checkbox" aria-label="Experimental cross-Block text selection" checked={editor.crossText.enabled()} onChange={event => editor.crossText.enable(event.currentTarget.checked)} />Cross-Block selection (experimental)</label>
+    <Show when={editor.crossText.range()}><button type="button" onClick={() => editor.crossText.collapseToHead()}>Resume text editing</button></Show>
     <For each={annotationTools}>{([type, label, glyph]) => <button type="button" title={label} aria-label={label} data-annotation-type={type} onClick={() => annotate(type)}>{glyph}</button>}</For>
     <label title="Text colour">Text <input type="color" aria-label="Text colour" value={colour()} onInput={e => setColour(e.currentTarget.value)} /></label>
     <button type="button" title="Apply text colour" data-annotation-type="text/colour" onClick={() => annotate("text/colour", colour())}>Apply colour</button>
@@ -96,11 +109,12 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <button type="button" title="Increase indent" onClick={() => indent(1)}>⇥</button>
     <button type="button" title="Decrease indent" onClick={() => indent(-1)}>⇤</button>
     <button type="button" aria-label="To tab / add tab" title={`To tab / add tab (${editor.bindings.label("tabs.create")})`} onClick={() => {
+      if (editor.crossText.range()) { editor.crossText.notice("Collapse the text selection before creating a tab."); return; }
       capture(); const node = target();
       if (!node || !createTextTab(editor, node.key, savedRange)) setNotice("Focus a text Block in this document first.");
       else { savedRange = undefined; setNotice(""); }
     }}>To tab / + Tab</button>
     <button type="button" title="Clear formatting" onClick={clear}>T×</button>
-    <span role="status">{notice()}</span>
+    <span role="status">{notice() || editor.crossText.message()}</span>
   </nav>;
 }

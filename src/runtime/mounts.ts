@@ -16,6 +16,9 @@ export interface MountHandle {
   restoreSelection?(selection: NativeTextSelection): void;
   captureInlineSelection?(): { anchor: number; head: number } | undefined;
   restoreInlineSelection?(selection: { anchor: number; head: number }): void;
+  inlinePoint?(node: Node, offset: number): number | undefined;
+  inlineBoundary?(index: number): { node: Node; offset: number };
+  inlinePointAt?(x: number, y: number): number;
   captureText?(): string;
   composing?: boolean;
 }

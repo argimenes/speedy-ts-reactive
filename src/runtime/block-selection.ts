@@ -71,6 +71,7 @@ export class BlockSelectionService {
       ...(typeof node.payload.id === "string" ? { blockId: node.payload.id } : {}), type: node.viewType };
   }
   select(key: NodeKey, mode: BlockSelectionMode = "single"): boolean {
+    this.editor.crossText.clear();
     const node = this.editor.node(key);
     if (!node || !this.eligible(key) || !this.visible(key)) return false;
     const scopeKey = this.scope(key, this.parents(node.viewId));

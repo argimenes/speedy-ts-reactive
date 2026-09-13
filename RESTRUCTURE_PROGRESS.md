@@ -1,16 +1,52 @@
 # Reactive reconstruction progress
 
-## Cross-Block text selection — planning only, 13 September 2026
+## Cross-Block text selection — experimental milestone, 13 September 2026
 
 Agreed to pursue cross-Block text selection and independent Block-local style
 properties incrementally, deferring linked semantic annotation identity until a
-concrete use case warrants it. No implementation has started. The authoritative
+concrete use case warrants it. The authoritative
 plan and resumable phase checklist are in
 [CROSS_BLOCK_TEXT_SELECTION_PLAN.md](CROSS_BLOCK_TEXT_SELECTION_PLAN.md).
 It records current-code constraints, browser feasibility checks, scope barriers,
 mutation guards, acceptance/performance gates and checkpoint instructions.
-Next action on implementation: P0 baseline verification and browser selection
-prototype. Existing uncommitted Block clipboard work must be preserved.
+Baseline verification and the browser prototype were the first implementation
+steps. Existing Block clipboard work was preserved.
+
+Implementation update: execution authorized. The 32 focused baseline tests pass.
+Chrome native-selection feasibility confirmed editing-host boundaries; a
+default-off model-owned cross-Block layer, local highlights, safe mutation guards
+and independent toolbar style transactions are implemented and under test.
+Seven new focused tests and typecheck pass. See checkpoint 1 in the plan for
+current files, explicit conservative edit invalidation, pending browser/performance
+checks and the exact resume command. Not yet a completed release milestone.
+
+Checkpoint 2: selection and independent formatting are now implemented behind the
+default-off toolbar checkbox. Nine focused tests, Chrome pointer/keyboard/style/
+guard/autoscroll smoke, existing Block clipboard/drag smoke, typecheck and builds
+pass. Model updates for a 20-paragraph selection in 300 paragraphs measured about
+0.2–0.3ms p95 with no snapshots/revisions (not full paint latency). Explicit focus and
+vertical-padding fixes came from browser testing. Safari/physical IME/accessibility
+validation and the default-on release decision remain open; cross-Block replacement
+and linked semantic annotations remain deferred. Resume from checkpoint 2 in
+`CROSS_BLOCK_TEXT_SELECTION_PLAN.md`; do not redo the completed implementation.
+Final full suite: 153 pass, two known context-menu failures, 155 total. No new
+failures; final typecheck/build and cross-Block Chrome smoke pass. Uncommitted.
+
+Selection interaction follow-up: added target-Block geometry fallback for native
+caret APIs pinned to the originating editing host; cleared old local selection
+highlights on click-away; made experimental horizontal Shift-arrow gestures
+model-owned from the first keydown, including repeat. Chrome now checks the real
+demo page/margins with both caret APIs deliberately clamped, both drag directions,
+held Shift+Left and click-away. Eleven focused tests, typecheck/build and browser
+checks pass. Full suite: 155 pass / 157, same two known context-menu failures.
+Checkpoint 3 in the selection plan records the resume state and scope. Uncommitted.
+
+Pointer follow-up (checkpoint 4): after the user still reported confinement,
+added an actual WorkspaceDemo browser probe and changed experimental dragging to
+own pointer-down/capture plus all local/cross moves, instead of taking over only
+when leaving an editing host. Chrome actual-app and fixture smoke, 26 focused
+tests and typecheck pass. User-browser reproduction is still unconfirmed; retain
+that distinction and request browser/document/switch details if it persists.
 
 ## Block selection and drag reordering — 13 September 2026
 

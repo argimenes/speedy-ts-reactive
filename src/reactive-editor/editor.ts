@@ -20,6 +20,8 @@ import { registerInputActions } from "../input/binding-catalog";
 import { createTextTab } from "../runtime/text-tabs";
 import { BlockSelectionService } from "../runtime/block-selection";
 import { BlockClipboardService } from "../runtime/block-clipboard";
+import { CrossBlockSelection } from "../runtime/cross-block-selection";
+import { CrossBlockInput } from "../input/cross-block-input";
 
 export class ReactiveEditor {
   readonly bindings = new BindingRegistry();
@@ -35,11 +37,13 @@ export class ReactiveEditor {
   readonly selections = new SelectionService();
   readonly blockSelection = new BlockSelectionService(this);
   readonly blockClipboard = new BlockClipboardService(this);
+  readonly crossText = new CrossBlockSelection(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
   readonly persistence = new PersistenceService(this);
   readonly multiSelections: MultiSelectionEditor;
   readonly projections = new Map<ViewId, BlockTreeProjection>();
   private gateway?: InputGateway;
+  private crossInput?: CrossBlockInput;
 
   constructor(dto: ExistingBlockDto) {
     registerInputActions(this.bindings);
@@ -52,6 +56,7 @@ export class ReactiveEditor {
       (nodeKey) => this.node(nodeKey),
     );
     this.repository.subscribeBeforeChanges((label) => {
+      this.crossText.beforeChange();
       if (this.events.hasSubscribers("beforeChange")) {
         this.events.publish("beforeChange", { label, state: this.repository.snapshot() });
       }
@@ -97,6 +102,8 @@ export class ReactiveEditor {
 
   installGateway(document: Document): () => void {
     this.gateway?.dispose();
+    this.crossInput?.dispose();
+    this.crossInput = new CrossBlockInput(this, document);
     this.gateway = new InputGateway(
       document,
       this.mounts,
@@ -114,7 +121,9 @@ export class ReactiveEditor {
       key => createTextTab(this, key),
       this.blockSelection,
     );
-    return this.gateway.install();
+    const dispose = this.gateway.install();
+    const crossInput = this.crossInput;
+    return () => { crossInput.dispose(); dispose(); };
   }
 
   node(nodeKey: NodeKey) {
@@ -240,6 +249,8 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.crossInput?.dispose();
+    this.crossText.clear();
     this.blockClipboard.dismiss();
     this.blockSelection.clear();
     this.bindings.dispose();

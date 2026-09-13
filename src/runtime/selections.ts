@@ -130,4 +130,7 @@ export class SelectionService {
   removeOccurrence(occurrenceKey: NodeKey): void {
     this.setSets(occurrenceKey, undefined);
   }
+  clearExcept(occurrenceKey?: NodeKey): void {
+    for (const key of Object.keys(this.sets)) if (key !== occurrenceKey && this.sets[key]) this.removeOccurrence(key);
+  }
 }
