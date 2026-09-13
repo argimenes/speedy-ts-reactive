@@ -1,4 +1,6 @@
 import { clone } from "./clone";
+import { planCrossTextEdit, type CrossTextSegment } from "./cross-text-edit";
+import { linkedRegistry } from "./linked-annotations";
 import type { BlockFragment } from "./clipboard";
 import { editAnnotation, type AnnotationAction, type AnnotationPatch } from "./annotation-commands";
 import { isTextLeaf } from "./inline-plan";
@@ -88,6 +90,15 @@ function mapStandoffPropertiesForReplacement(
 
 export class TreeCommands {
   private pending?: PendingTransaction;
+
+  replaceAcrossBlocks(segments: CrossTextSegment[], text: string) {
+    const state = this.pending?.draft ?? this.repository.readState();
+    const resolved = segments.map(segment => ({ ...segment, placementKey: this.placementKey(segment.placementKey, state) }));
+    const result = planCrossTextEdit(state, resolved, text);
+    this.pruneUnreachable(result.state);
+    this.publish("Replace selected text", this.diff(state, result.state));
+    return { placementKey: result.placementKey, caret: result.caret };
+  }
 
   editStandoffProperty(key: NodeKey | PlacementKey, index: number, expected: Record<string, unknown>, action: AnnotationAction | AnnotationPatch): Record<string, unknown> {
     const state = this.pending?.draft ?? this.repository.readState();
@@ -262,10 +273,26 @@ export class TreeCommands {
     if (Object.keys(fragment.state.contents).some(key => state.contents[key]) || Object.keys(fragment.state.placements).some(key => state.placements[key])) throw new TreeCommandError("Clipboard keys collide with existing Blocks");
     const children = [...target.children];
     children.splice(target.index, 0, ...fragment.roots);
+    const owner = this.updatedChildren(target.owner, children);
+    const extra: RepositoryOperation[] = [];
+    if (Object.keys(fragment.linkedAnnotations ?? {}).length) {
+      const registry = clone(linkedRegistry(state));
+      for (const [id, definition] of Object.entries(fragment.linkedAnnotations!)) {
+        if (registry[id] && JSON.stringify(registry[id]) !== JSON.stringify(definition)) throw new TreeCommandError("Conflicting linked annotation identity; copy the Blocks again");
+        registry[id] = clone(definition);
+      }
+      const rootKey = state.placements[state.rootPlacementKey].contentKey;
+      if (owner.key === rootKey) owner.payload.linkedAnnotations = registry;
+      else {
+        const root = clone(state.contents[rootKey]); root.payload.linkedAnnotations = registry; root.revision++;
+        extra.push({ kind: "put-content", record: root });
+      }
+    }
     this.publish("Paste Blocks", [
       ...Object.values(fragment.state.contents).map(record => ({ kind: "put-content" as const, record: clone(record) })),
       ...Object.values(fragment.state.placements).map(record => ({ kind: "put-placement" as const, record: clone(record) })),
-      { kind: "put-content", record: this.updatedChildren(target.owner, children) },
+      { kind: "put-content", record: owner },
+      ...extra,
     ]);
     return [...fragment.roots];
   }

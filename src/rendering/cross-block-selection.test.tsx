@@ -1,13 +1,16 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { DocumentStyleBar, annotationTools } from "./document-style-bar";
-import type { ExistingBlockDto } from "../block-tree/types";
+import type { ExistingBlockDto, JsonObject } from "../block-tree/types";
+import { CROSS_TEXT_PREFERENCE_KEY } from "../runtime/cross-block-selection";
+import { captureBlocks, cloneBlocks } from "../block-tree/clipboard";
 
 const cleanups: (() => void)[] = [];
-afterEach(() => { cleanups.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); });
+beforeEach(() => localStorage.removeItem(CROSS_TEXT_PREFERENCE_KEY));
+afterEach(() => { cleanups.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); localStorage.removeItem(CROSS_TEXT_PREFERENCE_KEY); });
 const paragraph = (id: string, text = "abc😀def"): ExistingBlockDto => ({ id, type: "standoff-editor-block", text });
 function setup(children = [paragraph("a"), paragraph("b"), paragraph("c")]) {
   const editor = new ReactiveEditor({ type: "document-block", children }); registerCoreViews(editor);
@@ -20,6 +23,83 @@ function setup(children = [paragraph("a"), paragraph("b"), paragraph("c")]) {
   return { editor, projection, host, node, point, flow };
 }
 describe("experimental cross-Block text selection", () => {
+  it("replaces via beforeinput and pastes plain multiline text atomically", () => {
+    const { editor, point, flow } = setup(); editor.crossText.enable(true);
+    const before = editor.encodeDocument();
+    const select = () => editor.crossText.set(point("a", 2), point("b", 3));
+    select();
+    flow("a").dispatchEvent(new InputEvent("beforeinput", { inputType: "insertText", data: "新", bubbles: true, cancelable: true }));
+    expect(editor.encodeDocument().children!.map(b => b.text)).toEqual(["ab新😀def", "abc😀def"]);
+    editor.repository.undo(); expect(editor.encodeDocument().children).toEqual(before.children);
+    select();
+    const paste = (text: string, types = ["text/plain"]) => {
+      const event = new Event("paste", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "clipboardData", { value: { types, getData: () => text } }); flow("a").dispatchEvent(event);
+    };
+    paste(""); paste("image", ["image/png"]); expect(editor.encodeDocument().children).toEqual(before.children);
+    paste("one\r\ntwo"); expect(editor.encodeDocument().children!.map(b => b.text)).toEqual(["abone", "two😀def", "abc😀def"]);
+    editor.repository.undo(); expect(editor.encodeDocument().children).toEqual(before.children);
+    select(); const data = new Map<string,string>(); const copy = new Event("copy", { bubbles: true, cancelable: true });
+    Object.defineProperty(copy, "clipboardData", { value: { setData: (type: string, text: string) => data.set(type,text) } });
+    flow("a").dispatchEvent(copy); expect(data.get("text/plain")).toBe("c😀def\nabc"); expect(editor.encodeDocument().children).toEqual(before.children);
+  });
+  it("commits composition once and preserves selection on composition cancellation", () => {
+    const { editor, node, flow } = setup(); editor.crossText.enable(true);
+    const mount = editor.mounts.get(node("a").key)!; mount.focus(); mount.restoreInlineSelection!({ anchor: 2, head: 7 });
+    flow("a").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true, cancelable: true }));
+    const before = editor.encodeDocument();
+    let input = document.querySelector<HTMLTextAreaElement>('[data-cross-text-input]')!;
+    input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+    input.dispatchEvent(new InputEvent("beforeinput", { inputType: "insertCompositionText", data: "中", isComposing: true, bubbles: true }));
+    expect(editor.encodeDocument()).toEqual(before);
+    input.dispatchEvent(new CompositionEvent("compositionend", { data: "", bubbles: true })); expect(editor.crossText.range()).toBeDefined();
+    input = document.querySelector<HTMLTextAreaElement>('[data-cross-text-input]')!;
+    input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+    input.dispatchEvent(new CompositionEvent("compositionend", { data: "中文", bubbles: true }));
+    expect(editor.encodeDocument().children![0].text).toBe("ab中文abc😀def");
+    editor.repository.undo(); expect(editor.encodeDocument().children).toEqual(before.children);
+  });
+  it("persists linked annotations, shares settings, separates segment deletion, and rekeys Block copies", () => {
+    const { editor, point, node } = setup(); editor.crossText.enable(true);
+    editor.crossText.set(point("a", 2), point("b", 3));
+    const id = editor.linkedAnnotations.create("codex/entity-reference", "entity-1");
+    expect(editor.linkedAnnotations.segments(id)).toHaveLength(2);
+    const property = (id: string) => (node(id).payload.standoffProperties as JsonObject[])[0];
+    const raw = () => JSON.parse(JSON.stringify(property("a")));
+    editor.linkedAnnotations.edit(node("a").key, 0, raw(), { start: 2, end: 6, value: "entity-2", metadata: { name: "Shared name" } });
+    expect(editor.linkedAnnotations.resolve(property("b")).value).toBe("entity-2");
+    const saved = editor.encodeDocument(), reopened = new ReactiveEditor(saved);
+    expect(reopened.encodeDocument()).toEqual(saved); reopened.dispose();
+    const fragment = cloneBlocks(captureBlocks(editor.repository.readState(), [node("a").placementKey, node("b").placementKey]));
+    const freshId = Object.keys(fragment.linkedAnnotations!)[0]; expect(freshId).not.toBe(id);
+    editor.commands.insertFragment(fragment, { kind: "after", anchorKey: node("c").key });
+    expect(editor.linkedAnnotations.segments(freshId)).toHaveLength(2);
+    expect(editor.linkedAnnotations.resolve(editor.linkedAnnotations.segments(freshId)[0].property).value).toBe("entity-2");
+    editor.repository.undo(); expect(editor.encodeDocument()).toEqual(saved);
+    editor.linkedAnnotations.edit(node("a").key, 0, raw(), "delete"); expect(editor.linkedAnnotations.segments(id)).toHaveLength(1);
+    editor.linkedAnnotations.deleteAll(id); expect(editor.linkedAnnotations.resolve(property("b")).isDeleted).toBe(true);
+    editor.repository.undo(); expect(editor.linkedAnnotations.resolve(property("b")).isDeleted).toBe(false);
+  });
+  it("remembers explicit opt-in and opt-out across editor recreation without saving selection or changing documents", () => {
+    const { editor, point } = setup(); const before = editor.encodeDocument();
+    expect(editor.crossText.enabled()).toBe(false);
+    editor.crossText.enable(true); editor.crossText.set(point("a", 1), point("b", 3));
+    expect(localStorage.getItem(CROSS_TEXT_PREFERENCE_KEY)).toBe("true");
+    const reopened = new ReactiveEditor(before);
+    expect(reopened.crossText.enabled()).toBe(true); expect(reopened.crossText.range()).toBeUndefined();
+    expect(editor.encodeDocument()).toEqual(before); expect(editor.repository.state.revision).toBe(0);
+    reopened.crossText.enable(false); reopened.dispose();
+    const next = new ReactiveEditor(before); expect(next.crossText.enabled()).toBe(false); next.dispose();
+  });
+  it("defaults off for invalid preferences and still works when storage is blocked", () => {
+    localStorage.setItem(CROSS_TEXT_PREFERENCE_KEY, "invalid"); const first = setup().editor;
+    expect(first.crossText.enabled()).toBe(false);
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    const second = setup().editor; expect(second.crossText.enabled()).toBe(false);
+    expect(() => second.crossText.enable(true)).not.toThrow(); expect(second.crossText.enabled()).toBe(true);
+    expect(second.crossText.message()).toContain("storage is unavailable");
+  });
   it("owns a held Shift+Left gesture from inside a Block through its first character into the previous Block", () => {
     const { editor, node, flow } = setup(); editor.crossText.enable(true);
     const mount = editor.mounts.get(node("b").key)!; mount.focus(); mount.restoreInlineSelection!({ anchor: 3, head: 3 });
@@ -83,7 +163,7 @@ describe("experimental cross-Block text selection", () => {
     vi.spyOn(editor.commands, "setPayloadField").mockImplementation((...args) => { if (++count === 2) throw new Error("failure"); original(...args); });
     expect(() => editor.crossText.annotate("style/bold")).toThrow("failure"); expect(editor.encodeDocument()).toEqual(before);
   });
-  it("supports keyboard boundary extension, blocks mutations and collapses with Escape", () => {
+  it("supports keyboard boundary extension, guards unsupported events and collapses with Escape", () => {
     const { editor, node, flow } = setup(); editor.crossText.enable(true);
     const mount = editor.mounts.get(node("a").key)!; mount.focus(); mount.restoreInlineSelection!({ anchor: 5, head: 7 });
     flow("a").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true, cancelable: true }));
@@ -93,7 +173,6 @@ describe("experimental cross-Block text selection", () => {
     for (const type of ["beforeinput", "input", "compositionstart", "compositionend", "copy", "cut", "paste", "drop", "contextmenu"]) {
       const event = new Event(type, { bubbles: true, cancelable: true }); flow("a").dispatchEvent(event); expect(event.defaultPrevented).toBe(true);
     }
-    for (const key of ["Enter", "Backspace", "Delete", "q"]) { const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }); flow("a").dispatchEvent(event); expect(event.defaultPrevented).toBe(true); }
     expect(editor.encodeDocument()).toEqual(before);
     flow("a").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
     expect(editor.crossText.range()).toBeUndefined(); expect(flow("a").getAttribute("contenteditable")).toBe("true");

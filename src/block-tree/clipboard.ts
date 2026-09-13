@@ -1,8 +1,9 @@
 import { clone } from "./clone";
 import { createContentKey, createPlacementKey } from "./ids";
-import type { RepositoryState } from "./types";
+import type { JsonObject, RepositoryState } from "./types";
+import { linkedRegistry, type LinkedAnnotationRegistry } from "./linked-annotations";
 
-export interface BlockFragment { state: RepositoryState; roots: string[] }
+export interface BlockFragment { state: RepositoryState; roots: string[]; linkedAnnotations?: LinkedAnnotationRegistry }
 
 /** Canonical capture avoids the legacy DTO format's lossy inline-image export. */
 export function captureBlocks(source: RepositoryState, roots: string[]): BlockFragment {
@@ -18,7 +19,15 @@ export function captureBlocks(source: RepositoryState, roots: string[]): BlockFr
     [...content.children, ...content.inlineContent, ...Object.values(content.ownedRelations)].forEach(visit);
   };
   roots.forEach(visit);
-  return { state, roots: [...roots] };
+  const definitions: LinkedAnnotationRegistry = {};
+  for (const content of Object.values(state.contents)) {
+    delete content.payload.linkedAnnotations;
+    const properties = content.payload.standoffProperties;
+    if (Array.isArray(properties)) for (const property of properties) {
+      if (property?.annotationId && linkedRegistry(source)[property.annotationId]) definitions[property.annotationId] = clone(linkedRegistry(source)[property.annotationId]);
+    }
+  }
+  return { state, roots: [...roots], linkedAnnotations: definitions };
 }
 
 export function cloneBlocks(fragment: BlockFragment, preserveIds = false): BlockFragment {
@@ -26,6 +35,7 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
   const contentKeys = new Map(Object.keys(state.contents).map(key => [key, createContentKey()]));
   const placementKeys = new Map(Object.keys(state.placements).map(key => [key, createPlacementKey()]));
   const ids = new Map<string, string>();
+  const annotationIds = new Map(Object.keys(fragment.linkedAnnotations ?? {}).map(id => [id, preserveIds ? id : crypto.randomUUID()]));
   if (!preserveIds) for (const content of Object.values(state.contents)) {
     if (typeof content.payload.id === "string") ids.set(content.payload.id, crypto.randomUUID());
   }
@@ -35,6 +45,9 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
     content.children = content.children.map(key => placementKeys.get(key)!);
     content.inlineContent = content.inlineContent.map(key => placementKeys.get(key)!);
     content.ownedRelations = Object.fromEntries(Object.entries(content.ownedRelations).map(([name, key]) => [name, placementKeys.get(key)!]));
+    if (Array.isArray(content.payload.standoffProperties)) for (const property of content.payload.standoffProperties) {
+      if (property && annotationIds.has(property.annotationId)) property.annotationId = annotationIds.get(property.annotationId);
+    }
     if (!preserveIds) {
       if (typeof content.payload.id === "string") content.payload.id = ids.get(content.payload.id)!;
       for (const field of ["standoffProperties", "blockProperties"]) {
@@ -55,5 +68,10 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
     return [placement.key, placement];
   }));
   state.rootPlacementKey = placementKeys.get(state.rootPlacementKey)!;
-  return { state, roots: fragment.roots.map(key => placementKeys.get(key)!) };
+  const definitions = Object.fromEntries(Object.entries(fragment.linkedAnnotations ?? {}).map(([id, record]) => {
+    const copied: JsonObject = { ...clone(record), id: annotationIds.get(id)! };
+    if (!preserveIds && copied.type === "codex/block-reference" && typeof copied.value === "string" && ids.has(copied.value)) copied.value = ids.get(copied.value);
+    return [annotationIds.get(id)!, copied];
+  }));
+  return { state, roots: fragment.roots.map(key => placementKeys.get(key)!), linkedAnnotations: definitions };
 }

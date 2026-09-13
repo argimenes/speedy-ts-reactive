@@ -20,6 +20,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const editor = props.editor;
   const [targetKey, setTargetKey] = createSignal<NodeKey>();
   const [notice, setNotice] = createSignal("");
+  const [linkedType, setLinkedType] = createSignal("codex/entity-reference"), [linkedValue, setLinkedValue] = createSignal("");
   const [colour, setColour] = createSignal("#ff0000"), [background, setBackground] = createSignal("#ffff00");
   let savedRange: { anchor: number; head: number } | undefined;
   const inScope = (key: NodeKey): boolean => {
@@ -96,8 +97,20 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     }); restore();
   };
   return <nav class="workspace-demo__stylebar document-style-bar" aria-label="Document formatting" onPointerDown={retainSelection}>
-    <label title="Experimental: select and format across adjacent text Blocks. Text replacement and clipboard are not enabled for these ranges."><input type="checkbox" aria-label="Experimental cross-Block text selection" checked={editor.crossText.enabled()} onChange={event => editor.crossText.enable(event.currentTarget.checked)} />Cross-Block selection (experimental)</label>
-    <Show when={editor.crossText.range()}><button type="button" onClick={() => editor.crossText.collapseToHead()}>Resume text editing</button></Show>
+    <label title="Select, edit and annotate text across adjacent Blocks. This preference is remembered in this browser."><input type="checkbox" aria-label="Experimental cross-Block text selection" checked={editor.crossText.enabled()} onChange={event => editor.crossText.enable(event.currentTarget.checked)} />Cross-Block selection (experimental)</label>
+    <Show when={editor.crossText.enabled()}><button type="button" disabled={!editor.crossText.range()} onClick={() => editor.crossText.collapseToHead()}>Resume text editing</button></Show>
+    <Show when={editor.crossText.enabled()}><label>Linked annotation type<input aria-label="Linked annotation type" value={linkedType()} onInput={event => setLinkedType(event.currentTarget.value)} /></label>
+      <label>Reference/value<input aria-label="Linked annotation value" value={linkedValue()} onInput={event => setLinkedValue(event.currentTarget.value)} /></label>
+      <button type="button" onClick={() => {
+        const range = editor.crossText.range(); if (!range || !inScope(range.anchor.occurrenceKey)) { setNotice("Select text in this document first."); return; }
+        const head = range.head;
+        try {
+          const id = editor.linkedAnnotations.create(linkedType(), linkedValue());
+          setNotice(`Created linked annotation ${id}`);
+          const mount = editor.mounts.get(head.occurrenceKey); mount?.focus(); mount?.restoreInlineSelection?.({ anchor: head.boundary.index, head: head.boundary.index });
+        } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
+      }}>Create linked annotation</button>
+    </Show>
     <For each={annotationTools}>{([type, label, glyph]) => <button type="button" title={label} aria-label={label} data-annotation-type={type} onClick={() => annotate(type)}>{glyph}</button>}</For>
     <label title="Text colour">Text <input type="color" aria-label="Text colour" value={colour()} onInput={e => setColour(e.currentTarget.value)} /></label>
     <button type="button" title="Apply text colour" data-annotation-type="text/colour" onClick={() => annotate("text/colour", colour())}>Apply colour</button>

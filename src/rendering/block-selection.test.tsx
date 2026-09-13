@@ -27,6 +27,27 @@ function setup(children = ["a", "b", "c", "d"].map(paragraph)) {
   return { editor, projection, host, key, root, handle, click, keys };
 }
 describe("Block selection and reordering", () => {
+  it.each(["ctrlKey", "metaKey"] as const)("undoes and redoes document changes with %s from text and Block handles", modifier => {
+    const { editor, key, root, handle } = setup();
+    const flow = root("a").querySelector<HTMLElement>(".reactive-standoff-flow")!;
+    const press = (target: HTMLElement, shiftKey = false) => {
+      const event = new KeyboardEvent("keydown", { key: shiftKey ? "Z" : "z", [modifier]: true, shiftKey, bubbles: true, cancelable: true });
+      target.dispatchEvent(event); return event;
+    };
+    editor.commands.replaceInlineRange(key("a"), 0, 0, "New ");
+    flow.focus(); expect(press(flow).defaultPrevented).toBe(true);
+    expect(editor.encodeDocument().children![0].text).toBe("Text a");
+    expect(press(flow, true).defaultPrevented).toBe(true);
+    expect(editor.encodeDocument().children![0].text).toBe("New Text a");
+    handle("a").focus(); press(handle("a"));
+    expect(editor.encodeDocument().children![0].text).toBe("Text a");
+    press(handle("a"), true); expect(editor.encodeDocument().children![0].text).toBe("New Text a");
+    const input = root("a").appendChild(document.createElement("input")); input.focus();
+    expect(press(input).defaultPrevented).toBe(false);
+    expect(editor.encodeDocument().children![0].text).toBe("New Text a");
+    const composing = new KeyboardEvent("keydown", { key: "z", [modifier]: true, isComposing: true, bubbles: true, cancelable: true });
+    flow.dispatchEvent(composing); expect(composing.defaultPrevented).toBe(false);
+  });
   it("registers platform-specific, reassignable Block clipboard shortcuts", () => {
     for (const platform of ["MacIntel", "Win32", "Linux x86_64"]) {
       const registry = new BindingRegistry(); registerInputActions(registry, platform);

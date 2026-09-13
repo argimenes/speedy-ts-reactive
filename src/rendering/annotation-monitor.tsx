@@ -10,9 +10,10 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
   const node = () => editor.node(overlay.ownerKey);
   const source = node()?.payload.standoffProperties as Array<Record<string, unknown>> | undefined;
   const [items, setItems] = createSignal((overlay.annotationIndexes ?? []).filter(index => source?.[index]).map(index => ({ index, property: JSON.parse(JSON.stringify(source![index])) as Record<string, unknown> })));
-  const visible = () => items().filter(item => !item.property.isDeleted);
+  const visible = () => items().filter(item => !editor.linkedAnnotations.resolve(item.property).isDeleted);
   const [active, setActive] = createSignal(0);
   const selected = () => visible()[Math.min(active(), visible().length - 1)];
+  const resolvedProperty = () => { const property = selected()?.property; return property && editor.linkedAnnotations.resolve(property); };
   const [start, setStart] = createSignal(""); const [end, setEnd] = createSignal("");
   const [value, setValue] = createSignal(""); const [metadata, setMetadata] = createSignal(""); const [attributes, setAttributes] = createSignal("");
   const [error, setError] = createSignal(""); const [position, setPosition] = createSignal(overlay.anchor);
@@ -62,7 +63,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     onCleanup(() => { disposeMount(); disposeChanges(); observer?.disconnect(); window.removeEventListener("resize", clamp); document.removeEventListener("scroll", scroll, true); });
   });
   createEffect(() => {
-    const p = selected()?.property;
+    const p = resolvedProperty();
     setStart(String(p?.start ?? "")); setEnd(String(p?.end ?? "")); setValue(String(p?.value ?? ""));
     setMetadata(JSON.stringify(p?.metadata ?? {}, null, 2)); setAttributes(JSON.stringify(p?.attributes ?? {}, null, 2)); setError("");
     editor.overlays.previewAnnotation(overlay.key, p ? { start: Number(p.start), end: Number(p.end) } : undefined);
@@ -73,7 +74,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     const previous = selected()?.index;
     try {
       editing = true;
-      const property = editor.commands.editStandoffProperty(overlay.ownerKey, item.index, item.property, action);
+      const property = editor.linkedAnnotations.edit(overlay.ownerKey, item.index, item.property, action);
       setItems(items => items.map(row => row.index === item.index ? { ...row, property } : row));
       const retained = visible().findIndex(row => row.index === previous);
       setActive(index => retained >= 0 ? retained : Math.min(index, Math.max(0, visible().length - 1)));
@@ -90,7 +91,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
   };
   const save = () => {
     try {
-      const p = selected()!.property;
+      const p = resolvedProperty()!;
       const object = (text: string) => {
         const parsed = JSON.parse(text);
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Metadata and attributes must be JSON objects");
@@ -132,7 +133,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     return p ? node()?.inlineContent.slice(Number(p.start), Number(p.end) + 1).map(key => String(editor.node(key)?.payload.text ?? "\uFFFC")).join("") : "";
   };
   const entity = () => {
-    const property = selected()?.property;
+    const property = resolvedProperty();
     if (property?.type !== "codex/entity-reference") return undefined;
     const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
     const metadata = object(property.metadata), cache = object(property.cache);
@@ -155,6 +156,16 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
       <section class="annotation-main" aria-label="Annotation range and controls">
       <blockquote>{excerpt()}</blockquote>
       <label>Annotation ID<input readOnly value={String(selected()?.property.id ?? "Not supplied")} /></label>
+      <Show when={selected()?.property.annotationId}>{id => <fieldset><legend>Linked annotation</legend>
+        <label>Shared annotation ID<input readOnly value={String(id())} /></label>
+        <small>Range controls/delete affect this segment. Value, Metadata and Attributes are shared by every segment.</small>
+        <ul><For each={editor.linkedAnnotations.segments(String(id()))}>{segment => <li>{String(segment.blockId ?? segment.contentKey)}: {String(segment.property.start)}–{String(segment.property.end)}</li>}</For></ul>
+        <button type="button" onClick={() => {
+          try { editing = true; editor.linkedAnnotations.deleteAll(String(id())); close(); }
+          catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+          finally { editing = false; }
+        }}>Delete whole linked annotation</button>
+      </fieldset>}</Show>
       <div class="annotation-actions"><For each={[
         "left", "right", "previous-word", "next-word", "expand", "contract", "delete",
       ] as const}>{action => <span class="annotation-action"><kbd>{editor.bindings.label(`annotation.${action}`)}</kbd><button type="button" onClick={() => apply(action)}>{editor.bindings.get(`annotation.${action}`)!.name}</button></span>}</For></div>

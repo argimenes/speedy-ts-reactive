@@ -1,5 +1,23 @@
 # Reactive reconstruction progress
 
+## Cross-Block editing and linked annotations
+
+Implemented typing/deletion/Enter, plain-text copy/cut/multiline paste, atomic
+undo, and shared semantic annotation identity across local Block ranges.
+Monitor and Block clipboard understand linked records; legacy documents remain
+compatible. This supersedes the earlier selection-only mutation guards and
+deferral of linked semantics. See [CROSS_BLOCK_EDITING_MIGRATION.md](CROSS_BLOCK_EDITING_MIGRATION.md)
+for rules, implementation checkpoints, verification, known baseline test failures
+and remaining manual clipboard/IME checks. Existing experimental opt-in remains.
+
+## Remember cross-Block selection preference
+
+User confirmed selection works when enabled and approved remembering the opt-in.
+The browser now remembers explicit enable/disable choices across reloads and new
+document editors. Fresh installations remain default-off; selected ranges and
+document data are never persisted as preferences. Storage failures fall back to
+the current editor with a notice. See selection-plan checkpoint 5.
+
 ## Cross-Block text selection — experimental milestone, 13 September 2026
 
 Agreed to pursue cross-Block text selection and independent Block-local style

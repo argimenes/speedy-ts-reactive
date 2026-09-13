@@ -1,7 +1,14 @@
 # Cross-Block text selection and formatting
 
+Update: the subsequent editing/linked-annotation implementation supersedes the
+historical mutation guards and semantic deferral below. See
+[CROSS_BLOCK_EDITING_MIGRATION.md](CROSS_BLOCK_EDITING_MIGRATION.md) for current
+behavior, completed phases, verification and remaining limits.
+
 Status: selection/formatting milestone implemented, opt-in and default-off.
 See checkpoint 2 for verification and remaining release gates.
+Latest preference behavior (checkpoint 5): explicit opt-in/opt-out is remembered
+in this browser across reloads and document changes; the selection itself is not.
 Recorded: 13 September 2026.
 Implementation authorized by the subsequent “Execute” request.
 
@@ -426,3 +433,26 @@ Chrome profiles/processes are cleaned up. The existing Vite/server is left runni
 - Resume from this actual-app probe and get browser/document/switch details if
   the user still sees confinement. Do not repeat unqualified “fixed” claims based
   solely on the fixture. No commit or user-server restart performed.
+
+### Checkpoint 5 — remember the user's opt-in
+
+- User confirmed cross-Block selection works when enabled and agreed to remember
+  that choice. The unresolved confinement report was therefore switch state, not
+  a reproduced Chrome drag failure.
+- Persist only explicit enabled/disabled choices in browser localStorage under
+  `speedy.cross-block-selection.enabled.v1`. Every new editor reads the preference,
+  covering document changes and page reloads. A fresh/invalid preference defaults
+  off. No document DTO, selection ranges, clipboard, or history are persisted here.
+- If browser storage is blocked, the toggle still works for the current editor
+  and reports that the setting cannot be remembered. Editing/clipboard guards
+  are unchanged. Existing live editor instances retain their current toggle until
+  changed or recreated; no cross-window broadcast is introduced.
+- Added tests for persisted opt-in and opt-out, editor recreation, invalid/blocked
+  storage, and no document mutation. The actual-app Chrome probe now reloads with
+  opt-in, verifies no selection is restored, and then verifies persisted opt-out.
+- This supersedes older checkpoint notes describing the toggle as session-only.
+  No commits or server restarts requested; preserve the working tree on resume.
+- Verification complete: 13 focused tests, typecheck and client/server build pass.
+  Actual-app Chrome reload checks pass for opt-in, opt-out, and non-persistence of
+  selected ranges. The reload harness now waits outside the page execution context
+  to avoid navigation invalidating its own wait. Changes remain uncommitted.

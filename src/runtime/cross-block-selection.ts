@@ -5,6 +5,7 @@ import type { ViewPosition } from "../block-tree/types";
 
 export interface TextSegment { nodeKey: string; contentKey: string; start: number; end: number }
 export interface CrossTextRange { anchor: ViewPosition; head: ViewPosition; viewId: string }
+export const CROSS_TEXT_PREFERENCE_KEY = "speedy.cross-block-selection.enabled.v1";
 
 /** Experimental, ephemeral selection. Never pass these endpoints to local edit APIs. */
 export class CrossBlockSelection {
@@ -21,9 +22,15 @@ export class CrossBlockSelection {
   private formatting = false;
   constructor(private editor: ReactiveEditor) {
     [this.segments, this.setSegments] = createStore<Record<string, TextSegment | undefined>>({});
+    try { this.enabledSignal[1](localStorage.getItem(CROSS_TEXT_PREFERENCE_KEY) === "true"); }
+    catch { /* Storage is optional; retain the safe default when unavailable. */ }
   }
-  enable(value: boolean) { this.clear(); this.enabledSignal[1](value); }
-  notice(text = "Cross-Block selection supports formatting only. Press Escape or click in text to resume editing.") { this.messageSignal[1](text); }
+  enable(value: boolean) {
+    this.clear(); this.enabledSignal[1](value);
+    try { localStorage.setItem(CROSS_TEXT_PREFERENCE_KEY, String(value)); }
+    catch { this.notice("Browser storage is unavailable; this selection preference applies to this editor only."); }
+  }
+  notice(text = "Type or paste to replace the selected text; use the toolbar to format or create a linked annotation. Escape collapses the selection.") { this.messageSignal[1](text); }
   position(key: string, index: number): ViewPosition {
     const node = this.editor.node(key);
     if (!node || node.viewType !== "standoff-editor-block" || !Number.isInteger(index) || index < 0 || index > node.inlineContent.length) throw new Error("Invalid text endpoint");
@@ -86,6 +93,24 @@ export class CrossBlockSelection {
   validate() {
     const range = this.range(); if (!range) return;
     try { this.resolve(range.anchor, range.head); } catch { this.clear(); }
+  }
+  selectedText(): string {
+    const range = this.range(); if (!range) return "";
+    return this.resolve(range.anchor, range.head).map(segment => this.editor.node(segment.nodeKey)!.inlineContent.slice(segment.start, segment.end).map(key => String(this.editor.node(key)?.payload.text ?? "\uFFFC")).join("")).join("\n");
+  }
+  replace(text: string) {
+    const range = this.range(); if (!range) return false;
+    const segments = this.resolve(range.anchor, range.head).map(segment => ({ placementKey: this.editor.node(segment.nodeKey)!.placementKey, start: segment.start, end: segment.end }));
+    const result = this.editor.commands.replaceAcrossBlocks(segments, text);
+    this.clear();
+    const focus = () => {
+      const node = this.editor.nodeForPlacementInView(result.placementKey, range.viewId); if (!node) return;
+      const mount = this.editor.mounts.get(node.key); mount?.focus();
+      mount?.restoreInlineSelection?.({ anchor: result.caret, head: result.caret });
+      this.editor.selections.setPrimary(node.key, node.contentKey, node.viewId, result.caret);
+    };
+    focus(); queueMicrotask(focus);
+    return true;
   }
   /** Until structural edit maps exist, external mutations invalidate, never mis-map. */
   beforeChange() { if (this.range() && !this.formatting) this.clear(); this.stream = undefined; }

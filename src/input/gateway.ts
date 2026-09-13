@@ -37,6 +37,7 @@ export class InputGateway {
     private readonly bindings: BindingRegistry,
     private readonly createTextTab: (key: NodeKey) => boolean,
     private readonly blockSelection: BlockSelectionService,
+    private readonly history: (direction: "undo" | "redo") => void,
   ) {}
 
   install(): () => void {
@@ -97,7 +98,21 @@ export class InputGateway {
     if (!resolved || resolved.handle.composing || resolved.handle.inputPolicy === "opaque-widget" || (event.target instanceof Element && event.target.closest('[data-bindings-window], [role="dialog"]'))) return [];
     return resolved.handle.inputPolicy === "standoff" ? ["editor/standoff", "editor"] : ["editor"];
   }
-  private onKeyDown = (event: KeyboardEvent) => { this.bindings.dispatch(event, this.scopes(event), id => this.runBinding(id, event)); };
+  private onKeyDown = (event: KeyboardEvent) => {
+    const target = event.target instanceof Element ? event.target : undefined;
+    const resolved = this.mounts.resolveEvent(event);
+    const field = target?.closest('input, textarea, select, [contenteditable="true"]');
+    const editorField = field === resolved?.handle.focusElement && ["standoff", "native-text"].includes(resolved?.handle.inputPolicy ?? "");
+    if (resolved && !resolved.handle.composing && resolved.handle.inputPolicy !== "opaque-widget" &&
+      !target?.closest('[data-bindings-window], [role="dialog"], [data-native-context-menu]') && (!field || editorField)) {
+      if (this.bindings.dispatch(event, ["document-history"], id => {
+        if (id !== "history.undo" && id !== "history.redo") return false;
+        this.history(id === "history.undo" ? "undo" : "redo");
+        return true;
+      })) return;
+    }
+    this.bindings.dispatch(event, this.scopes(event), id => this.runBinding(id, event));
+  };
   private onContextMenu = (event: MouseEvent) => this.onControlClick(event);
   private onControlClick = (event: MouseEvent) => { this.bindings.dispatch(event, this.scopes(event), id => this.runBinding(id, event)); };
   private onCustomInput = (event: Event) => {

@@ -15,7 +15,7 @@ try {
   socket = new WebSocket(endpoint); await new Promise(resolve => socket.addEventListener('open', resolve, { once: true }));
   let id = 0; const pending = new Map();
   socket.addEventListener('message', event => { const r = JSON.parse(event.data), p = pending.get(r.id); if (p) { pending.delete(r.id); r.error ? p.reject(new Error(JSON.stringify(r.error))) : p.resolve(r.result); } });
-  const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => { const key = ++id; pending.set(key, { resolve, reject }); socket.send(JSON.stringify({ id: key, method, params, ...(sessionId ? { sessionId } : {}) })); });
+  const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => { const key = ++id; const timer=setTimeout(()=>{pending.delete(key);reject(new Error('Timed out: '+method+' '+JSON.stringify(params).slice(0,180)));},30000); pending.set(key, { resolve: value=>{clearTimeout(timer);resolve(value);}, reject: error=>{clearTimeout(timer);reject(error);} }); socket.send(JSON.stringify({ id: key, method, params, ...(sessionId ? { sessionId } : {}) })); });
   const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
   const evaluate = async expression => {
@@ -41,6 +41,13 @@ try {
     await mouse('mouseMoved',a);await mouse('mousePressed',a,1);await mouse('mouseMoved',{x:a.x+4,y:a.y+2},1);await mouse('mouseMoved',b,1);await mouse('mouseReleased',b);
     const actual = await evaluate(`({checked:document.querySelector('[aria-label="Experimental cross-Block text selection"]').checked,readonly:[...document.querySelectorAll('.reactive-standoff-flow[contenteditable="false"]')].map(e=>e.textContent),status:[...document.querySelectorAll('.document-style-bar [role="status"]')].map(e=>e.textContent),selection:getSelection().toString(),capture:actualCapture})`);
     assert.equal(actual.checked,true);assert.equal(actual.readonly.length,2);assert.ok(actual.readonly[0].startsWith('Once upon'));assert.ok(actual.readonly[1].startsWith('... while'));assert.ok(actual.capture.includes('requested:standoff-editor-block:true:true'),JSON.stringify(actual));
+    await send('Page.reload',{},sessionId);await new Promise(resolve=>setTimeout(resolve,1200));
+    assert.equal(await evaluate('document.querySelector(\'[aria-label="Experimental cross-Block text selection"]\').checked'),true);
+    assert.equal(await evaluate('document.querySelectorAll(\'.reactive-standoff-flow[contenteditable="false"]\').length'),0);
+    await evaluate('document.querySelector(\'[aria-label="Experimental cross-Block text selection"]\').click()');
+    await send('Page.reload',{},sessionId);await new Promise(resolve=>setTimeout(resolve,1200));
+    assert.equal(await evaluate('document.querySelector(\'[aria-label="Experimental cross-Block text selection"]\').checked'),false);
+    actual.preferenceReload={optIn:true,optOut:true,selectionNotPersisted:true};
     console.log(JSON.stringify(actual,null,2));
     process.exitCode = 0;
   } else {
@@ -101,12 +108,37 @@ try {
     await mouse('mousePressed', bold, 1); await mouse('mouseReleased', bold);
     assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children.map(b=>b.standoffProperties.map(p=>[p.type,p.start,p.end]))'), [[['style/bold',3,34]],[['style/bold',0,34]],[['style/bold',0,7]]]);
     const formatted = await evaluate('crossCheck.editor.encodeDocument()');
-    await key('Backspace'); await key('Enter'); await send('Input.insertText', { text: 'MUST NOT INSERT' }, sessionId);
-    try { await send('Input.imeSetComposition', { text: '中', selectionStart: 1, selectionEnd: 1 }, sessionId); report.compositionProbe = 'sent'; }
-    catch { report.compositionProbe = 'browser declined composition into readonly surface'; }
-    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument()'), formatted);
-    assert.equal(await evaluate(`crossCheck.host.textContent.includes('MUST NOT INSERT')`), false);
-    assert.equal(await evaluate(`crossCheck.host.textContent.includes('中')`), false);
+    await drag(await boundary('a', 3), await boundary('c', 8));
+    await send('Input.insertText', { text: 'REPLACED' }, sessionId);
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children.map(b=>b.text)'), [original[0].text.slice(0,3)+'REPLACED'+original[2].text.slice(8)]);
+    await evaluate('crossCheck.editor.repository.undo()');
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children'), formatted.children);
+    await drag(await boundary('a', 3), await boundary('c', 8));
+    await key('Enter');
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children.map(b=>b.text)'), [original[0].text.slice(0,3),original[2].text.slice(8)]);
+    await evaluate('crossCheck.editor.repository.undo()');
+    await drag(await boundary('a', 3), await boundary('c', 8));
+    await key('Backspace');
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children.map(b=>b.text)'), [original[0].text.slice(0,3)+original[2].text.slice(8)]);
+    await evaluate('crossCheck.editor.repository.undo()');
+    await drag(await boundary('a', 3), await boundary('c', 8));
+    report.replacement = {typing:true,enter:true,backspace:true,atomicUndo:true};
+    await evaluate(`(()=>{const data=new DataTransfer();data.setData('text/plain','first\\r\\nsecond');document.activeElement.dispatchEvent(new ClipboardEvent('paste',{clipboardData:data,bubbles:true,cancelable:true}));})()`);
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children.map(b=>b.text)'), [original[0].text.slice(0,3)+'first','second'+original[2].text.slice(8)]);
+    await evaluate('crossCheck.editor.repository.undo()');
+    await drag(await boundary('a', 3), await boundary('c', 8));
+    const copied = await evaluate(`(()=>{const data=new DataTransfer();document.activeElement.dispatchEvent(new ClipboardEvent('cut',{clipboardData:data,bubbles:true,cancelable:true}));return data.getData('text/plain');})()`);
+    assert.equal(copied,[original[0].text.slice(3),original[1].text,original[2].text.slice(0,8)].join('\n'));
+    assert.equal(await evaluate('crossCheck.editor.encodeDocument().children.length'),1);
+    await evaluate('crossCheck.editor.repository.undo()');
+    await drag(await boundary('a', 3), await boundary('c', 8));
+    await send('Input.imeSetComposition', { text: '中', selectionStart: 1, selectionEnd: 1 }, sessionId);
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children'),formatted.children);
+    await send('Input.insertText', { text: '中文' }, sessionId);
+    assert.deepEqual(await evaluate('crossCheck.editor.encodeDocument().children.map(b=>b.text)'),[original[0].text.slice(0,3)+'中文'+original[2].text.slice(8)]);
+    await evaluate('crossCheck.editor.repository.undo()');
+    await drag(await boundary('a', 3), await boundary('c', 8));
+    report.replacement.clipboardEvents=true;report.replacement.composition=true;
     report.focusBeforeEscape = await evaluate('({tag:document.activeElement.tagName,html:document.activeElement.outerHTML.slice(0,300)})');
     await key('Escape');
     assert.equal(await evaluate('!!crossCheck.editor.crossText.range()'), false, JSON.stringify(report.focusBeforeEscape));

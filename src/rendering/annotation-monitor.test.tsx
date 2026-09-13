@@ -32,6 +32,20 @@ function setup(properties: Record<string, unknown>[] = [
 }
 
 describe("annotation monitor", () => {
+  it("shows linked identity and segments and deletes the shared annotation with undo", async () => {
+    const { editor, projection, open, panel, button, propertiesNow } = setup([
+      { id: "segment-a", annotationId: "shared", type: "codex/entity-reference", start: 0, end: 2 },
+      { id: "segment-b", annotationId: "shared", type: "codex/entity-reference", start: 4, end: 6 },
+    ]);
+    editor.commands.setPayloadField(projection.state.rootKey, "linkedAnnotations", { shared: { id: "shared", type: "codex/entity-reference", value: "entity-1", metadata: {}, attributes: {} } });
+    await open();
+    expect([...panel().querySelectorAll<HTMLInputElement>("input[readonly]")].map(e => e.value)).toContain("shared");
+    expect(panel().textContent).toContain("segment");
+    button("Delete whole linked annotation").click();
+    expect(panel()).toBeNull();
+    expect(propertiesNow().every(p => editor.linkedAnnotations.resolve(p).isDeleted)).toBe(true);
+    editor.repository.undo(); expect(propertiesNow().some(p => editor.linkedAnnotations.resolve(p).isDeleted)).toBe(false);
+  });
   it("navigates annotations and action buttons without changing ranges, with explicit editing shortcuts", async () => {
     const { open, panel, propertiesNow } = setup(); await open();
     const key = (key: string, extra: KeyboardEventInit = {}) => document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key, ...extra, bubbles: true, cancelable: true }));

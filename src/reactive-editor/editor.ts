@@ -21,6 +21,7 @@ import { createTextTab } from "../runtime/text-tabs";
 import { BlockSelectionService } from "../runtime/block-selection";
 import { BlockClipboardService } from "../runtime/block-clipboard";
 import { CrossBlockSelection } from "../runtime/cross-block-selection";
+import { LinkedAnnotations } from "../runtime/linked-annotations";
 import { CrossBlockInput } from "../input/cross-block-input";
 
 export class ReactiveEditor {
@@ -38,6 +39,7 @@ export class ReactiveEditor {
   readonly blockSelection = new BlockSelectionService(this);
   readonly blockClipboard = new BlockClipboardService(this);
   readonly crossText = new CrossBlockSelection(this);
+  readonly linkedAnnotations = new LinkedAnnotations(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
   readonly persistence = new PersistenceService(this);
   readonly multiSelections: MultiSelectionEditor;
@@ -120,6 +122,7 @@ export class ReactiveEditor {
       this.bindings,
       key => createTextTab(this, key),
       this.blockSelection,
+      direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;

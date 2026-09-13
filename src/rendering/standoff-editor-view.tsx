@@ -118,7 +118,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const annotations = createMemo(
-    () => (node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? [],
+    () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
   );
   const cellStyles = createMemo(() => compileCellStyleRuns(annotations()), undefined, {
     equals: (previous, next) => JSON.stringify(previous) === JSON.stringify(next),
