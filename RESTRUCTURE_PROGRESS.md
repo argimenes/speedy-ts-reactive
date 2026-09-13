@@ -1,5 +1,22 @@
 # Reactive reconstruction progress
 
+## Scoped Find — plan only, 14 September 2026
+
+Recorded Page-default Container/Page/Document search, recursive model traversal,
+literal/case/whole-word/regex options, immutable reusable match sets and caller-owned
+session-only `editor/search-match` highlights. No runtime implementation yet.
+[SCOPED_FIND_MIGRATION.md](SCOPED_FIND_MIGRATION.md) contains original-code findings,
+official PKM comparisons, scope ambiguities, Unicode/regex/performance safeguards,
+future bulk entity/replacement semantics and the resumable phase checklist.
+Implementation requires a subsequent explicit request; grouped effects remain
+deferred independently.
+
+Design follow-up: user agrees with the scoped Find plan and confirms SVG-filled
+text-region rectangles, inspired by `style/highlighter` and the existing
+`highlightShapes()` pipeline. No wrappers or caret refactor. Session decoration
+types should be extensible beyond `editor/search-match`; implementation remains
+pending. The distinction from CSS-backed `style/highlight` is documented.
+
 ## Entity-reference search port
 
 Selected text now opens the migrated name/alias search dialog through the Entity
