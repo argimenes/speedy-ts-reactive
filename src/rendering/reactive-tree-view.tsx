@@ -4,6 +4,7 @@ import { ReactiveViewProvider } from "../reactive-editor/context";
 import { BlockOutlet } from "./block-outlet";
 import { BlockContextMenuLayer } from "./block-context-menu";
 import { AnnotationMonitorLayer } from "./annotation-monitor";
+import { BlockSelectionInspector } from "./block-selection";
 
 export function ReactiveTreeView(props: {
   editor: ReactiveEditor;
@@ -14,6 +15,7 @@ export function ReactiveTreeView(props: {
       <BlockOutlet nodeKey={props.projection.state.rootKey} />
       <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
       <AnnotationMonitorLayer editor={props.editor} viewId={props.projection.viewId} />
+      <BlockSelectionInspector editor={props.editor} viewId={props.projection.viewId} />
     </ReactiveViewProvider>
   );
 }

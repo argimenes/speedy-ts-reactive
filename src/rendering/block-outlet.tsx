@@ -3,6 +3,7 @@ import { For } from "solid-js";
 import type { NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { UnknownBlockView } from "./unknown-block-view";
+import { BlockSelectionHandle } from "./block-selection";
 
 export function BlockOutlet(props: { nodeKey: NodeKey }) {
   const { editor, projection } = useReactiveView();
@@ -10,7 +11,7 @@ export function BlockOutlet(props: { nodeKey: NodeKey }) {
     const type = projection.state.nodes[props.nodeKey]?.viewType ?? "unknown-block";
     return editor.registry.resolve(type);
   };
-  return <Dynamic component={registration()?.view ?? UnknownBlockView} nodeKey={props.nodeKey} />;
+  return <><Dynamic component={registration()?.view ?? UnknownBlockView} nodeKey={props.nodeKey} /><BlockSelectionHandle editor={editor} nodeKey={props.nodeKey} /></>;
 }
 
 export function ChildBlocks(props: { parentKey: NodeKey }) {

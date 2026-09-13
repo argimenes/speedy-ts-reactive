@@ -1,5 +1,18 @@
 # Reactive reconstruction progress
 
+## Block selection and drag reordering — 13 September 2026
+
+Dedicated gutter handles support single, Shift-range, Ctrl/Cmd-toggle and additive
+range selection, plus keyboard traversal. `editor.blockSelection` stores session
+IDs/occurrence descriptors and supplies normalized future bulk-action targets.
+Selected Blocks are highlighted with a count/ID inspector. Native handle dragging
+reorders single or discontiguous sibling groups before/after a target, preserving
+order in one undoable command; no structural nesting/cross-parent moves. Ctrl-click
+inside text still opens its context menu. Eight new tests and native Chrome drag/
+selection checks pass; typecheck/build pass. Full suite 137 pass / two known prior
+context-menu binding-test failures. See BLOCK_SELECTION_MIGRATION.md for API,
+PKM references, scope/lifecycle guarantees and deferred clipboard/bulk commands.
+
 ## Text-block tabs — 13 September 2026
 
 Original convertBlockToTab/handleCreateNewTab behaviour now uses a shared runtime

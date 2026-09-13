@@ -2,6 +2,15 @@ import { BindingRegistry, keyboard as k, mouse, type Trigger } from "./bindings"
 
 export function registerInputActions(registry: BindingRegistry) {
   const add = (id: string, name: string, description: string, category: string, scope: string, defaults: Trigger[], tags: string[] = []) => registry.register({ id, name, description, category, scope, defaults, tags, handler: context => context.run(id) });
+  for (const [id, name, defaults] of [
+    ["single", "Select Block", [mouse(0, "click"), k(" ")]],
+    ["toggle", "Toggle selected Block", [mouse(0, "click", "Ctrl"), mouse(0, "click", "Meta"), k(" ", "Ctrl"), k(" ", "Meta")]],
+    ["range", "Select Block range", [mouse(0, "click", "Shift"), k(" ", "Shift")]],
+    ["add-range", "Add Block range", [mouse(0, "click", "Ctrl", "Shift"), mouse(0, "click", "Meta", "Shift")]],
+    ["previous", "Select previous Block", [k("ArrowUp")]], ["next", "Select next Block", [k("ArrowDown")]],
+    ["extend-previous", "Extend Block selection upwards", [k("ArrowUp", "Shift")]], ["extend-next", "Extend Block selection downwards", [k("ArrowDown", "Shift")]],
+    ["clear", "Clear selected Blocks", [k("Escape")]], ["edit", "Edit selected Block", [k("Enter")]],
+  ] as Array<[string, string, Trigger[]]>) add(`selection.${id}`, name, "Select whole Blocks using their gutter handles, independently of native text selection. Drag a handle to reorder the selected group within its parent list.", "Block Selection", "block-handle", defaults, ["selection", "blocks"]);
   add("annotation.open", "Inspect annotations", "Open annotations encompassing the caret's left Cell.", "Annotations", "editor/standoff", [k(".", "Ctrl"), k("/", "Ctrl"), k("/", "Meta"), { kind: "custom", name: "inspect-annotation" }]);
   for (const side of ["left", "right"] as const) add(`margin.${side}`, `Open ${side} margin`, "Create or focus the margin owned by the current Block.", "Blocks & Margins", "editor/standoff", [k(side === "left" ? "ArrowLeft" : "ArrowRight", "Ctrl", "Shift")]);
   add("text.paragraph", "New paragraph", "Split at the caret or insert an empty neighbouring paragraph.", "Text Editing", "editor/standoff", [k("Enter")]);

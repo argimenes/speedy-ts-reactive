@@ -18,6 +18,7 @@ import { MeasurementService } from "../runtime/measurements";
 import { BindingRegistry } from "../input/bindings";
 import { registerInputActions } from "../input/binding-catalog";
 import { createTextTab } from "../runtime/text-tabs";
+import { BlockSelectionService } from "../runtime/block-selection";
 
 export class ReactiveEditor {
   readonly bindings = new BindingRegistry();
@@ -31,6 +32,7 @@ export class ReactiveEditor {
   readonly measurements = new MeasurementService(this.mounts);
   readonly focus = new FocusService(this.mounts);
   readonly selections = new SelectionService();
+  readonly blockSelection = new BlockSelectionService(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
   readonly persistence = new PersistenceService(this);
   readonly multiSelections: MultiSelectionEditor;
@@ -73,6 +75,7 @@ export class ReactiveEditor {
     });
     this.repository.subscribeChanges(() => {
       queueMicrotask(() => this.overlays.closeMissingOwners((nodeKey) => !!this.node(nodeKey)));
+      if (this.blockSelection.state.items.length) queueMicrotask(() => this.blockSelection.prune());
     });
   }
 
@@ -107,6 +110,7 @@ export class ReactiveEditor {
       (nodeKey) => this.focusFallback(nodeKey),
       this.bindings,
       key => createTextTab(this, key),
+      this.blockSelection,
     );
     return this.gateway.install();
   }
@@ -234,6 +238,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.blockSelection.clear();
     this.bindings.dispose();
     this.gateway?.dispose();
     this.focus.dispose();

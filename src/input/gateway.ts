@@ -8,6 +8,7 @@ import type { MultiSelectionEditor } from "./multi-selection-editor";
 import type { OverlayService } from "../runtime/overlays";
 import { graphemeBoundaries } from "./graphemes";
 import type { BindingRegistry } from "./bindings";
+import type { BlockSelectionService } from "../runtime/block-selection";
 
 function textareaSelection(target: HTMLTextAreaElement): NativeTextSelection {
   return {
@@ -35,6 +36,7 @@ export class InputGateway {
     private readonly focusFallback: (nodeKey: NodeKey) => NodeKey | undefined,
     private readonly bindings: BindingRegistry,
     private readonly createTextTab: (key: NodeKey) => boolean,
+    private readonly blockSelection: BlockSelectionService,
   ) {}
 
   install(): () => void {
@@ -90,6 +92,7 @@ export class InputGateway {
   }
 
   private scopes(event: Event) {
+    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return [];
     const resolved = this.mounts.resolveEvent(event);
     if (!resolved || resolved.handle.composing || resolved.handle.inputPolicy === "opaque-widget" || (event.target instanceof Element && event.target.closest('[data-bindings-window], [role="dialog"]'))) return [];
     return resolved.handle.inputPolicy === "standoff" ? ["editor/standoff", "editor"] : ["editor"];
@@ -230,6 +233,7 @@ export class InputGateway {
   };
 
   private onFocusIn = (event: FocusEvent) => {
+    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = this.mounts.resolveEvent(event);
     if (resolved) this.focus.adopt(resolved.nodeKey);
   };
@@ -276,6 +280,13 @@ export class InputGateway {
   };
 
   private onPointerDown = (event: PointerEvent) => {
+    const element = event.target instanceof Element ? event.target : undefined;
+    if (element?.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
+    if (this.blockSelection.state.items.length && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey &&
+      !element?.closest('button, [role="dialog"], [role="menu"], .document-style-bar')) {
+      const resolved = this.mounts.resolveEvent(event);
+      if (resolved && !this.overlays.isOverlayKey(resolved.nodeKey)) this.blockSelection.clear();
+    }
     if (this.bindings.matches("menu.open", new MouseEvent("click", { button: event.button, ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey, shiftKey: event.shiftKey }))) {
       const target = event.target instanceof Element ? event.target : undefined;
       const resolved = this.mounts.resolveEvent(event);
