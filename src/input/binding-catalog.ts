@@ -3,6 +3,8 @@ import { BindingRegistry, keyboard as k, mouse, type Trigger } from "./bindings"
 export function registerInputActions(registry: BindingRegistry, platform = typeof navigator === "undefined" ? "" : navigator.platform) {
   const add = (id: string, name: string, description: string, category: string, scope: string, defaults: Trigger[], tags: string[] = []) => registry.register({ id, name, description, category, scope, defaults, tags, handler: context => context.run(id) });
   const primary = /Mac|iPhone|iPad|iPod/i.test(platform) ? "Meta" : "Ctrl";
+  add("find.open", "Find in document", "Find text recursively in the current Page, Container, or Document.", "Find", "document-find-open", [k("f", primary)]);
+  for (const [id, name, trigger] of [["next", "Next match", k("Enter")], ["previous", "Previous match", k("Enter", "Shift")], ["close", "Close Find", k("Escape")]] as const) add(`find.${id}`, name, "Navigate search matches or close the session without changing document content.", "Find", "document-find", [trigger]);
   for (const [id, name, key] of [["close", "Cancel entity search", "Escape"], ["choose", "Link selected entity", "Enter"], ["next", "Next entity result", "ArrowDown"], ["previous", "Previous entity result", "ArrowUp"]]) add(`entity.${id}`, name, "Navigate the entity search dialog without changing the document until a result is selected.", "Entities", "entity-search", [k(key)]);
   add("entity.clear", "Clear entity search", "Clear the entity query.", "Entities", "entity-search", [k("Backspace", "Ctrl"), k("Backspace", "Meta")]);
   add("entity.open", "Entity reference", "Search the graph for an entity to link to selected text.", "Entities", "editor/standoff", [k("e", "Meta"), k("e", "Ctrl", "Shift")]);

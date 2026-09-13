@@ -1,21 +1,27 @@
 # Reactive reconstruction progress
 
-## Scoped Find — plan only, 14 September 2026
+## Scoped Find — implemented, 14 September 2026
 
-Recorded Page-default Container/Page/Document search, recursive model traversal,
+Implemented Page-default Container/Page/Document search, recursive model traversal,
 literal/case/whole-word/regex options, immutable reusable match sets and caller-owned
-session-only `editor/search-match` highlights. No runtime implementation yet.
+session-only `editor/search-match` SVG highlights. Find is available from the
+document toolbar and Cmd+F/Ctrl+F, with Enter/Shift+Enter navigation and Escape.
 [SCOPED_FIND_MIGRATION.md](SCOPED_FIND_MIGRATION.md) contains original-code findings,
 official PKM comparisons, scope ambiguities, Unicode/regex/performance safeguards,
 future bulk entity/replacement semantics and the resumable phase checklist.
-Implementation requires a subsequent explicit request; grouped effects remain
-deferred independently.
+Search uses a cancellable, watchdog-limited worker and dirty-content caches;
+typing does not synchronously search or snapshot the document. Inactive tab
+navigation uses session view state, not undoable document changes. Grouped effects,
+replacement and bulk entity binding remain deferred independently.
 
 Design follow-up: user agrees with the scoped Find plan and confirms SVG-filled
 text-region rectangles, inspired by `style/highlighter` and the existing
 `highlightShapes()` pipeline. No wrappers or caret refactor. Session decoration
-types should be extensible beyond `editor/search-match`; implementation remains
-pending. The distinction from CSS-backed `style/highlight` is documented.
+types are extensible beyond `editor/search-match`. The distinction from CSS-backed
+`style/highlight` is documented. Native textarea matches are searchable/revealable
+but disclose their lack of SVG highlight support. See the implementation checkpoint
+for browser/performance results, limits and the two existing context-menu test
+failures.
 
 ## Entity-reference search port
 

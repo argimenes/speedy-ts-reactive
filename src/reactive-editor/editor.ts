@@ -24,8 +24,16 @@ import { CrossBlockSelection } from "../runtime/cross-block-selection";
 import { LinkedAnnotations } from "../runtime/linked-annotations";
 import { openEntitySearch } from "../runtime/entity-search";
 import { CrossBlockInput } from "../input/cross-block-input";
+import { createStore } from "solid-js/store";
+import { SessionDecorations } from "../runtime/session-decorations";
+import { DocumentFind } from "../runtime/document-find";
 
 export class ReactiveEditor {
+  readonly decorations = new SessionDecorations();
+  readonly find: DocumentFind;
+  readonly viewChildren: Record<string, string | undefined>;
+  readonly setViewChild: (key: string, child?: string) => void;
+  private disposeFindInput?: () => void;
   readonly bindings = new BindingRegistry();
   readonly repository: CanonicalRepository;
   readonly occurrences = new OccurrenceIndex();
@@ -53,6 +61,10 @@ export class ReactiveEditor {
     const decoded = decodeBlockTree(dto);
     this.repository = new CanonicalRepository(decoded.state);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
+    const [viewChildren, setViewChildren] = createStore<Record<string, string | undefined>>({});
+    this.viewChildren = viewChildren;
+    this.setViewChild = (key, child) => setViewChildren(key, child);
+    this.find = new DocumentFind(this);
     this.multiSelections = new MultiSelectionEditor(
       this.commands,
       this.selections,
@@ -106,6 +118,8 @@ export class ReactiveEditor {
   installGateway(document: Document): () => void {
     this.gateway?.dispose();
     this.crossInput?.dispose();
+    this.disposeFindInput?.();
+    this.disposeFindInput = this.find.install(document);
     this.crossInput = new CrossBlockInput(this, document);
     this.gateway = new InputGateway(
       document,
@@ -128,7 +142,8 @@ export class ReactiveEditor {
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
-    return () => { crossInput.dispose(); dispose(); };
+    const disposeFind = this.disposeFindInput;
+    return () => { disposeFind(); crossInput.dispose(); dispose(); };
   }
 
   node(nodeKey: NodeKey) {
@@ -254,6 +269,9 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.disposeFindInput?.();
+    this.find.dispose();
+    this.decorations.clearAll();
     this.crossInput?.dispose();
     this.crossText.clear();
     this.blockClipboard.dismiss();

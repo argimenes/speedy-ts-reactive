@@ -129,10 +129,13 @@ export function StandoffEditorView(props: BlockViewProps) {
   let flow!: HTMLDivElement;
   let disposeMount: (() => void) | undefined;
   let observer: ResizeObserver | undefined;
+  let visibilityObserver: IntersectionObserver | undefined;
+  let searchVisible = true;
   let frame = 0;
   const [highlighterShapes, setHighlighterShapes] = createSignal<DecorationShape[]>([]);
   const [foregroundShapes, setForegroundShapes] = createSignal<DecorationShape[]>([]);
   const [selectionShapes, setSelectionShapes] = createSignal<DecorationShape[]>([]);
+  const [searchShapes, setSearchShapes] = createSignal<DecorationShape[]>([]);
 
   const captureSelection = () => {
     const selection = document.getSelection();
@@ -201,6 +204,13 @@ export function StandoffEditorView(props: BlockViewProps) {
     setHighlighterShapes(highlighters);
     setForegroundShapes(foreground);
     setSelectionShapes(selected);
+    const search: DecorationShape[] = [];
+    for (const decoration of searchVisible ? editor.decorations.nodes[props.nodeKey] ?? [] : []) {
+      const fragments = rangeFragments(flow, surface, decoration.range.start, decoration.range.end - 1);
+      search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
+      if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
+    }
+    setSearchShapes(search);
   };
 
   const scheduleMeasure = () => {
@@ -247,6 +257,10 @@ export function StandoffEditorView(props: BlockViewProps) {
       observer = new ResizeObserver(scheduleMeasure);
       observer.observe(surface);
     }
+    if (typeof IntersectionObserver !== "undefined") {
+      visibilityObserver = new IntersectionObserver(entries => { const visible = entries[0]?.isIntersecting ?? false; if (visible !== searchVisible) { searchVisible = visible; scheduleMeasure(); } });
+      visibilityObserver.observe(surface);
+    }
     scheduleMeasure();
   });
 
@@ -254,6 +268,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     node()?.inlineContent.length;
     JSON.stringify(annotations());
     editor.selections.sets[props.nodeKey]?.revision;
+    JSON.stringify(editor.decorations.nodes[props.nodeKey]);
     editor.crossText.segments[props.nodeKey]?.start;
     editor.crossText.segments[props.nodeKey]?.end;
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
@@ -265,6 +280,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     if (editor.crossText.segments[props.nodeKey]) queueMicrotask(() => editor.crossText.validate());
     disposeMount?.();
     observer?.disconnect();
+    visibilityObserver?.disconnect();
     if (frame) {
       if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
       else clearTimeout(frame);
@@ -285,6 +301,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       <div ref={surface} class="reactive-standoff-surface">
         <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes()} blendMode="color-dodge" />
         <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />
+        <DecorationLayer class="reactive-selection-layer reactive-search-layer" shapes={searchShapes()} />
         <div
           ref={flow}
           class="reactive-standoff-flow"

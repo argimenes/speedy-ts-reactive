@@ -1,0 +1,9 @@
+.document-find { position: fixed; top: 90px; right: 24px; z-index: 10000; width: min(760px, calc(100vw - 48px)); max-height: calc(100vh - 120px); overflow: auto; background: #fffef9; color: #24322f; border: 1px solid #8caaa0; border-radius: 8px; padding: 12px; box-shadow: 0 6px 24px #0003; font: 14px/1.4 system-ui, sans-serif; }
+.document-find__row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.document-find label { display: inline-flex; align-items: center; gap: 5px; margin: 0; }
+.document-find input[type=text] { width: 210px; }
+.document-find button, .document-find select, .document-find input[type=text] { font: inherit; padding: 5px; border: 1px solid #a1b5ae; border-radius: 4px; }
+.document-find small { display: block; overflow-wrap: anywhere; color: #53645e; }
+.document-find p { margin: 6px 0 0; }
+.document-find__snippet { max-height: 90px; overflow: auto; white-space: pre-wrap; }
+.reactive-search-layer { pointer-events: none; mix-blend-mode: normal; }

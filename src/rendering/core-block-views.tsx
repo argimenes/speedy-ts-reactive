@@ -130,6 +130,7 @@ export function TabRowView(props: BlockViewProps) {
   const node = () => projection.state.nodes[props.nodeKey];
   const initial = node()?.children.find((key) => Boolean(projection.state.nodes[key]?.payload.metadata && (projection.state.nodes[key].payload.metadata as any).active)) ?? node()?.children[0];
   const [active, setActive] = createSignal<NodeKey | undefined>(initial);
+  createEffect(() => { const key = editor.viewChildren[props.nodeKey]; if (key && node()?.children.includes(key)) setActive(key); });
   let previousFlags = "";
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
@@ -137,9 +138,10 @@ export function TabRowView(props: BlockViewProps) {
     const children = node()?.children ?? [];
     const flags = JSON.stringify(children.map(key => [key, (projection.state.nodes[key]?.payload.metadata as any)?.active]));
     if (flags !== previousFlags) {
+      const revealed = !previousFlags ? untrack(() => editor.viewChildren[props.nodeKey]) : undefined;
       previousFlags = flags;
       const marked = children.find(key => (projection.state.nodes[key]?.payload.metadata as any)?.active);
-      setActive(marked ?? (children.includes(untrack(active)!) ? untrack(active) : children[0]));
+      setActive((revealed && children.includes(revealed) ? revealed : undefined) ?? marked ?? (children.includes(untrack(active)!) ? untrack(active) : children[0]));
     }
   });
   return (
@@ -149,7 +151,7 @@ export function TabRowView(props: BlockViewProps) {
           {(key, index) => {
             const child = () => projection.state.nodes[key];
             const metadata = () => child()?.payload.metadata as Record<string, unknown> | undefined;
-            return <button type="button" role="tab" data-context-target={key} aria-selected={active() === key} onClick={() => { setActive(key); const target = child()?.children[0] ?? key; editor.focus.request(target, { reason: "activate-tab" }); }}>{String(metadata()?.name ?? metadata()?.text ?? `Tab ${index() + 1}`)}</button>;
+            return <button type="button" role="tab" data-context-target={key} aria-selected={active() === key} onClick={() => { editor.setViewChild(props.nodeKey, key); setActive(key); const target = child()?.children[0] ?? key; editor.focus.request(target, { reason: "activate-tab" }); }}>{String(metadata()?.name ?? metadata()?.text ?? `Tab ${index() + 1}`)}</button>;
           }}
         </For>
       </div>
@@ -162,6 +164,7 @@ export function StickyTabRowView(props: BlockViewProps) {
   const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const [active, setActive] = createSignal<NodeKey>();
+  createEffect(() => { const key = editor.viewChildren[props.nodeKey]; if (key && node()?.children.includes(key)) setActive(key); });
   let previousFlags = "";
   let root!: HTMLElement;
   useContainerMount(props.nodeKey, () => root);
@@ -169,9 +172,10 @@ export function StickyTabRowView(props: BlockViewProps) {
     const children = node()?.children ?? [];
     const flags = JSON.stringify(children.map(key => [key, (projection.state.nodes[key]?.payload.metadata as any)?.active]));
     if (flags !== previousFlags) {
+      const revealed = !previousFlags ? untrack(() => editor.viewChildren[props.nodeKey]) : undefined;
       previousFlags = flags;
       const marked = children.find(key => (projection.state.nodes[key]?.payload.metadata as any)?.active);
-      setActive(marked ?? (children.includes(untrack(active)!) ? untrack(active) : undefined));
+      setActive((revealed && children.includes(revealed) ? revealed : undefined) ?? marked ?? (children.includes(untrack(active)!) ? untrack(active) : undefined));
     }
   });
   return (
@@ -192,6 +196,7 @@ export function StickyTabRowView(props: BlockViewProps) {
               }}
               onClick={() => {
                 const next = active() === key ? undefined : key;
+                editor.setViewChild(props.nodeKey, next);
                 setActive(next);
                 if (next) {
                   const target = child()?.children[0] ?? key;
@@ -219,7 +224,7 @@ export function FlippableSurfaceView(props: BlockViewProps) {
   const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const children = () => node()?.children ?? [];
-  const active = () => children().find((key) => {
+  const active = () => editor.viewChildren[props.nodeKey] ?? children().find((key) => {
     const metadata = projection.state.nodes[key]?.payload.metadata as Record<string, unknown> | undefined;
     return metadata?.active === true;
   }) ?? children()[0];
@@ -242,6 +247,7 @@ export function FlippableSurfaceView(props: BlockViewProps) {
     if (available.length < 2) return;
     const current = Math.max(0, available.indexOf(active()!));
     const next = available[(current + 1) % available.length];
+    editor.setViewChild(props.nodeKey, undefined);
     editor.commands.transaction("Flip Surface", () => {
       available.forEach((key) => {
         const child = projection.state.nodes[key];

@@ -6,6 +6,7 @@ import { BlockContextMenuLayer } from "./block-context-menu";
 import { AnnotationMonitorLayer } from "./annotation-monitor";
 import { EntitySearchLayer } from "./entity-search";
 import { BlockSelectionInspector } from "./block-selection";
+import { DocumentFindLayer } from "./document-find";
 
 export function ReactiveTreeView(props: {
   editor: ReactiveEditor;
@@ -17,6 +18,7 @@ export function ReactiveTreeView(props: {
       <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
       <AnnotationMonitorLayer editor={props.editor} viewId={props.projection.viewId} />
       <EntitySearchLayer editor={props.editor} viewId={props.projection.viewId} />
+      <DocumentFindLayer editor={props.editor} viewId={props.projection.viewId} />
       <BlockSelectionInspector editor={props.editor} viewId={props.projection.viewId} />
     </ReactiveViewProvider>
   );

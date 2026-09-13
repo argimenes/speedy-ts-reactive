@@ -1,14 +1,13 @@
 # Scoped Find and reusable match sets
 
-Recorded 14 September 2026. **Planning only; no implementation authorized in this
-turn.** This document is the resumable design checkpoint. Replacement and bulk
+Recorded 14 September 2026. **Implementation authorized and started.**
+This document is the resumable design checkpoint. Replacement and bulk
 entity binding are future consumers, not part of the initial Find release.
 Grouped blur/flip/mirror rendering remains explicitly deferred.
 
 User follow-up: the plan is agreed, with explicit confirmation that search
 highlights use coloured SVG rectangles over text fragments, never wrappers.
-Agreement on the design is recorded here; implementation is still pending a
-subsequent request.
+The subsequent user request authorizes implementation of scoped Find only.
 
 ## Direction
 
@@ -149,7 +148,7 @@ traversals include those owned text relations.
   and then reuse the transformed string's offsets. State Unicode case-folding
   semantics; locale-specific full case folding is not assumed.
 
-## Reusable API and result model (design sketch, not implemented code)
+## Reusable API and result model (design contract; concrete API below)
 
 `searchText({ query, options, scope, signal }) -> Promise<SearchMatchSet>`
 
@@ -302,12 +301,12 @@ and structural barriers require their own plan. Find itself has no writes.
 
 - [x] Inspect old Find/entity attempts and current model/highlight infrastructure.
 - [x] Compare official PKM conventions and record this proposal.
-- [ ] After explicit implementation authorization: scope resolver + pure search
+- [x] After explicit implementation authorization: scope resolver + pure search
   results, worker cancellation/regex budgets, Unicode offset mapping and tests.
-- [ ] Independent session decorations/visibility ownership, with no document or
+- [x] Independent session decorations/visibility ownership, with no document or
   caret mutation; test coexistence and cleanup.
-- [ ] Find UI/bindings/navigation, including inactive tab reveal and scope pinning.
-- [ ] Real-document performance and browser qualification; update checkpoints
+- [x] Find UI/bindings/navigation, including inactive tab reveal and scope pinning.
+- [x] Real-document performance and browser qualification; update checkpoints
   with commands/results before declaring the initial Find feature complete.
 - [ ] Separately authorize entity-candidate bulk actions and replacement later.
 
@@ -318,7 +317,96 @@ and pathological regex; overlapping candidate protection; independent highlight
 sessions; edits during search; undo/redo; document close/reload; no history,
 clipboard or persisted search decorations; large match sets and hidden mounts.
 
-Checkpoint: planning complete, no runtime/schema/UI changes or new dependencies.
-No implementation tests run for this documentation-only turn. Pending details to
-review before coding are the precise nearest-container adapter rules, widget
-coverage, navigation-only tab activation and measured regex/result budgets.
+## Implementation checkpoint — 14 September 2026
+
+Initial Find is implemented; no new dependencies or server/API changes.
+
+- `runtime/text-search.ts`: `TextSearch.searchText()` and explicit
+  `resolveSearchScope(editor, occurrenceKey, kind)`. Immutable, end-exclusive
+  match sets retain occurrence paths, canonical-target deduplication, captures,
+  Cell/UTF-16 coordinates, source versions and capabilities. Search never creates
+  highlights as a side effect. The editor's reusable instance is
+  `editor.find.search`; other callers may construct an independent `TextSearch`.
+- `runtime/search-matching.ts`, `search.worker.ts`, `search-worker.ts`: literal
+  Unicode regex matching, word/grapheme segmentation, inline-atom barriers,
+  code-unit-to-Cell mapping, cached dirty-content results and cancellable worker
+  execution. Queries debounce for 200 ms; source extraction yields between
+  batches and inside long paragraphs. A worker is terminated after five seconds
+  (including startup), with a visible error and no main-thread regex fallback.
+- Preview maximum: 5,000 matches. A separate worker safety ceiling of 50,000
+  intermediate candidates fails with an explicit memory-budget message. Partial
+  sets and unsupported widget adapters are disclosed, never treated as all
+  actionable matches. These conservative budgets can be tuned later.
+- `runtime/session-decorations.ts`: typed, owner-isolated, occurrence-indexed
+  session decorations. Whole-layer/per-match visibility, active match and owner
+  disposal are independent of canonical annotations. Changed-content invalidation
+  uses an index, with no text scan or layout read on keypress. Hidden layers are
+  also invalidated, so toggling them cannot resurrect obsolete ranges.
+- `rendering/standoff-editor-view.tsx`: separate pointer-transparent SVG search
+  layer, fragment rectangles and active outline; no wrappers, Cell reparenting,
+  blend-mode inheritance, persistence or caret-model changes. Offscreen Blocks
+  defer search geometry through IntersectionObserver.
+- `runtime/document-find.ts` / `rendering/document-find.tsx`: nonmodal Find bar,
+  Page default, pinned Container/Page/Document scopes, literal/Match case/Whole
+  words/Regex (including multiline and dotAll), count/status/snippet/breadcrumb,
+  next/previous and visibility controls. Toolbar Find button and remappable
+  Cmd+F (Mac)/Ctrl+F, Enter/Shift+Enter and Escape actions. Query focus stays in
+  Find during navigation. Close restores the opening local selection or the
+  explicitly navigated match. Searching alone does not navigate.
+- Tab rows, document tab rows, sticky tabs and card surfaces accept session view
+  overrides to reveal hidden ancestors without document writes or history. This
+  includes initially unmounted nested tab rows. Existing manual card flips retain
+  their prior saved behaviour; Find navigation itself is session-only.
+
+### Explicit first-release boundaries
+
+Native textarea Blocks are searched and have snippets and navigation, but cannot
+paint per-match SVG ranges inside the native textarea. Results/UI disclose this;
+closing on such a result selects its native range. Standoff Blocks receive the
+full SVG treatment. Code/media internals remain excluded; text-bearing unsupported
+Block types are reported. There is no full result-list UI yet (only the active
+snippet and breadcrumb), so no large list requiring virtualization.
+
+Matches remain Block-local. Replacement, bulk entity binding, cross-Block phrase
+search, overlap/zero-width editing, normalized/accent-folded matching, and grouped
+blur/flip wrappers remain deferred. Future actions must validate freshness and
+capabilities, not assume that a returned preview is complete or still current.
+
+### Verification
+
+- Typecheck and client/server production build passed; Vite emits a separate
+  search worker bundle.
+- Initial full suite: 192 passed, 2 known pre-existing failures in
+  `block-context-menu.test.tsx` (synthetic context-menu events omit the registered
+  secondary-button value). Additional focused search cases are recorded in the
+  final checkpoint below. No unrelated context-menu changes made.
+- Existing inline performance (7) and split performance (6) tests pass, including
+  their no-snapshot/no-whole-projection-rebuild assertions.
+- `node scripts/check-document-find.mjs`: isolated Chrome, actual worker and SVG
+  paths; seeded Find, hidden-tab reveal, pinned scope, query focus, close-to-match,
+  no history, regex watchdog termination and successful subsequent search.
+- 300-paragraph / 2,701-match Chrome fixture: model-edit p95 around 1.3 ms closed,
+  1.3 ms highlighted, 1.7 ms hidden in one run; zero snapshots. These are model
+  timings, not an end-to-end typing-latency guarantee; short runs include GC noise.
+- Read-only `data/siena.json` loaded into a disposable editor: 39 matches, longest
+  paragraph 564 Cells, mean model edit ~4.9 ms, mean edit-to-animation-frame
+  ~14.6 ms, split model time ~17.3 ms, zero snapshots; undo restores the original
+  encoded document exactly. No source document or database writes occurred.
+- The Vernon Blake introduction is not present in this checkout's document store;
+  qualification of that specific document remains a follow-up, not a claimed pass.
+
+Final checkpoint: 14 new Find tests pass (11 engine/session/cache tests and 3 UI
+tests). Final full run: **197 passed, 2 pre-existing context-menu failures**, 199
+total. Typecheck, production client/server build and Chrome script pass again.
+Added explicit coverage of undo followed by a different edit branch: session text
+epochs are monotonic even when canonical inline revisions repeat. Nested inactive
+tabs, transcluded occurrence deduplication, inline-image barriers, unsupported
+widgets, cancellation, visibility ownership and stale worker responses are tested.
+The concurrent final build/test/browser run showed higher timings under CPU load;
+the earlier isolated figures above are indicative, not fixed latency guarantees.
+
+For resumption: the initial scoped Find slice is complete. No commit was requested.
+The next separately authorized feature can consume `TextSearch` match sets and
+`SessionDecorations` without coupling itself to the Find window. Begin by reviewing
+the deferred consumer contracts above rather than adding persistent search
+annotations or reusing the legacy FindReplaceBlock.
