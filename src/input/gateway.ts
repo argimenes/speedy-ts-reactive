@@ -460,8 +460,8 @@ export class InputGateway {
   private runBinding = (id: string, event: Event): boolean | void => {
     if (id === "entity.open") {
       const resolved = this.mounts.resolveEvent(event), range = resolved?.handle.captureInlineSelection?.();
-      if (!resolved || !range || range.anchor === range.head) return false;
-      this.entitySearch(resolved.nodeKey, range); return true;
+      if (!resolved) return false;
+      this.entitySearch(resolved.nodeKey, range ?? { anchor: 0, head: 0 }); return true;
     }
     if (event instanceof KeyboardEvent && event.isComposing) return false;
     if (id === "menu.open") { this.openContextMenu(event); return event.defaultPrevented; }

@@ -51,6 +51,7 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
     onCleanup(() => { active = false; clearTimeout(timer); controller.abort(); });
   });
   onMount(() => {
+    if (!overlay.entityRanges?.length) candidates.enable();
     const disposeMount = editor.mounts.register(overlay.key, { root, focusElement: input, inputPolicy: "opaque-widget", focus: () => { input.focus(); input.select(); } });
     const unsubscribe = editor.repository.subscribeBeforeChanges(() => { if (!editing) editor.overlays.close(overlay.key, false); });
     input.focus(); input.select();

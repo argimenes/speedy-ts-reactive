@@ -88,7 +88,7 @@ export class EntityCandidates {
   private setState;
   readonly owner: string;
   readonly search: TextSearch;
-  private original: SearchMatch;
+  private original?: SearchMatch;
   private controller?: AbortController;
   private timer?: ReturnType<typeof setTimeout>;
   private generation = 0;
@@ -97,7 +97,7 @@ export class EntityCandidates {
   private sourceSet?: SearchMatchSet;
   constructor(private editor: ReactiveEditor, private overlay: OverlayDescriptor, runner?: SearchRunner) {
     this.owner = `entity-candidates:${overlay.key}`; this.search = new TextSearch(editor,runner);
-    const ranges = overlay.entityRanges!.map(r => { const node = editor.node(r.nodeKey)!; return { ...r, contentKey: node.contentKey, placementKey: node.placementKey, version: 0, coordinate: "cell" as const }; });
+    const ranges = (overlay.entityRanges ?? []).map(r => { const node = editor.node(r.nodeKey)!; return { ...r, contentKey: node.contentKey, placementKey: node.placementKey, version: 0, coordinate: "cell" as const }; });
     const path = ancestorPath(editor,overlay.ownerKey);
     let actionable = true;
     for (const r of ranges) {
@@ -107,8 +107,9 @@ export class EntityCandidates {
       actionable &&= boundaries.includes(r.start) && boundaries.includes(r.end) && cells.slice(r.start,r.end).every(c => c.viewType === "text-cell");
     }
     this.original = { id: `${this.owner}:original`, text: overlay.entityQuery ?? "", context: overlay.entityQuery ?? "", captures: [], ranges, path: path.map(n => n.key), breadcrumb: path.map(nodeLabel).join(" / "), capabilities: { annotate: actionable, highlight: true, reveal: true, replace: false, reason: actionable ? undefined : "The selected passage splits a grapheme or includes inline media." } };
+    if (!ranges.length) this.original = undefined;
     const scope = resolveSearchScope(editor,overlay.ownerKey);
-    [this.state,this.setState] = createStore<{ enabled: boolean; query: string; options: SearchOptions; scope: SearchScope; result?: SearchMatchSet; rows: EntityCandidate[]; entity?: NominatedEntity; pending: boolean; visible: boolean; active?: string; activeMatch?: string; message: string; page: number; undoCount: number }>({ enabled: false, query: ranges.length === 1 ? this.original.text : "", options: { wholeWords: true }, scope, rows: [], pending: false, visible: true, message: "", page: 0, undoCount: 0 });
+[this.state,this.setState] = createStore<{ enabled: boolean; query: string; options: SearchOptions; scope: SearchScope; result?: SearchMatchSet; rows: EntityCandidate[]; entity?: NominatedEntity; pending: boolean; visible: boolean; active?: string; activeMatch?: string; message: string; page: number; undoCount: number }>({ enabled: false, query: ranges.length === 1 ? (this.original?.text ?? "") : "", options: { wholeWords: true }, scope, rows: [], pending: false, visible: true, message: "", page: 0, undoCount: 0 });
   }
   enable() {
     if (this.state.enabled) {
@@ -137,7 +138,7 @@ export class EntityCandidates {
     if (this.disposed || token !== this.generation) return;
     const originalChecked = this.state.rows.find(r => r.original)?.checked ?? true;
     const rows = new Map<string,EntityCandidate>();
-    for (const match of [this.original,...result.matches]) {
+    for (const match of [...(this.original ? [this.original] : []),...result.matches]) {
       const key = candidateKey(match), existing = rows.get(key);
       if (existing) { if (!existing.occurrences.some(m => m.ranges[0].nodeKey === match.ranges[0].nodeKey)) existing.occurrences.push(match); continue; }
       const original = match === this.original, reason = candidateReason(this.editor,match,this.state.entity);

@@ -318,3 +318,6 @@ remain excluded, and ordinary styles remain untouched.
 No server/schema changes, entity creation, source document writes or live database
 writes were made. Replacement, automatic coreference resolution, conflicting
 reference retargeting and edits to incomplete search sets remain out of scope.
+# Selection-free launching
+
+The entity toolbar and existing entity shortcut open with selected text when present. A collapsed caret does not infer a word: without a selection, Mention text and Search entities start empty. The window opens directly in candidate-review mode, scoped to the current Page (using the existing explicit scope fallback). There is no pinned original candidate in this mode; nomination alone cannot write an annotation. Users enter mention text, review/select matches, nominate an entity and explicitly Bind. Existing selected-text and cross-Block workflows remain unchanged.

@@ -65,6 +65,11 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       return;
     }
     capture(); const node = target();
+    if (type === "codex/entity-reference" && (!node || !savedRange || savedRange.anchor === savedRange.head)) {
+      try { openEntitySearch(editor, [], node?.key ?? props.scopeKey); setNotice(""); }
+      catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
+      return;
+    }
     if (!node || !savedRange) { setNotice("Select text in this document first."); return; }
     const start = Math.min(savedRange.anchor, savedRange.head), end = Math.max(savedRange.anchor, savedRange.head) - 1;
     if (start < 0 || end < start || end >= node.inlineContent.length) { setNotice("Select a non-empty text range first."); return; }

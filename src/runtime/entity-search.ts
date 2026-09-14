@@ -3,18 +3,19 @@ import type { OverlayDescriptor } from "./overlays";
 import { clone } from "../block-tree/clone";
 import type { JsonObject } from "../block-tree/types";
 
-export function openEntitySearch(editor: ReactiveEditor, ranges: NonNullable<OverlayDescriptor["entityRanges"]>) {
+export function openEntitySearch(editor: ReactiveEditor, ranges: NonNullable<OverlayDescriptor["entityRanges"]>, contextKey?: string) {
   const selected = ranges.filter(range => range.end > range.start);
-  if (!selected.length) throw new Error("Select text for the entity reference first.");
+  const owner = selected[0]?.nodeKey ?? contextKey ?? ranges[0]?.nodeKey;
+  if (!owner || !editor.node(owner)) throw new Error("Open entity search from a document first.");
   const query = selected.map(range => {
     const node = editor.node(range.nodeKey);
     if (!node || range.start < 0 || range.end > node.inlineContent.length) throw new Error("The selected range is no longer valid.");
     return node.inlineContent.slice(range.start, range.end).map(key => String(editor.node(key)?.payload.text ?? " ")).join("");
   }).join(" ");
-  const owner = selected[0].nodeKey, mount = editor.mounts.get(owner), rect = mount?.root.getBoundingClientRect();
+  const mount = editor.mounts.get(owner), rect = mount?.root.getBoundingClientRect();
   for (const overlay of [...editor.overlays.overlays]) if (overlay.viewType === "entity-search") editor.overlays.close(overlay.key, false);
   editor.crossText.clear();
-  mount?.focus(); mount?.restoreInlineSelection?.({ anchor: selected[0].start, head: selected[0].end });
+  if (selected.length) { mount?.focus(); mount?.restoreInlineSelection?.({ anchor: selected[0].start, head: selected[0].end }); }
   editor.overlays.open({ ownerKey: owner, viewType: "entity-search", anchor: { x: rect?.left ?? 20, y: (rect?.bottom ?? 20) + 8 }, entityRanges: clone(selected), entityRevision: editor.repository.readState().revision, entityQuery: query });
 }
 

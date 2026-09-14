@@ -10,20 +10,56 @@ vi.mock("../runtime/search-worker",() => ({ runSearchWorker: async (sources: Par
 const cleanup: (() => void)[] = [];
 beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal("fetch",vi.fn().mockResolvedValue({ ok: true,json: async () => ({ Success: true,Results: [{ id: "blake",name: "Vernon Blake" }],Count: 1,Page: 1,MaxPage: 1 }) })); });
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); localStorage.clear(); });
-function setup() {
+function setup(selected = true) {
   const editor = new ReactiveEditor({ type: "document-block",children: [{ id: "a",type: "standoff-editor-block",text: "he the he" },{ id: "b",type: "standoff-editor-block",text: "he" }] });
   registerCoreViews(editor); const projection = editor.createView("candidate-ui"),host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />,host); editor.installGateway(document);
   cleanup.push(() => { dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
   editor.mounts.get(node("a").key)!.focus();
-  openEntitySearch(editor,[{ nodeKey: node("a").key,start: 0,end: 2 }]);
+  openEntitySearch(editor,[{ nodeKey: node("a").key,start: 0,end: selected ? 2 : 0 }]);
   const panel = () => document.querySelector<HTMLElement>('[aria-label="Search entities"][role=dialog]')!;
   const button = (label: string) => [...panel().querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent?.startsWith(label))!;
   const field = (label: string) => panel().querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
   return { editor,node,panel,button,field };
 }
 describe("entity candidate review",() => {
+  it("launches from a collapsed caret with the entity shortcut",async () => {
+    const { editor,node,field,panel,button } = setup();
+    button("Cancel").click();
+    const mount = editor.mounts.get(node("a").key)!;
+    mount.focus(); mount.restoreInlineSelection?.({ anchor: 1,head: 1 });
+    const key = new KeyboardEvent("keydown",{ key: "e",metaKey: true,bubbles: true,cancelable: true });
+    (mount.focusElement ?? mount.root).dispatchEvent(key);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(key.defaultPrevented).toBe(true); expect(panel()).toBeTruthy();
+    expect(field("Mention text").value).toBe(""); expect(field("Search entities").value).toBe("");
+    expect(editor.repository.canUndo()).toBe(false);
+  });
+  it("opens empty without selection, never infers the caret word and binds only reviewed matches",async () => {
+    const { editor,field,panel,button } = setup(false);
+    await vi.advanceTimersByTimeAsync(310);
+    expect(field("Mention text").value).toBe("");
+    expect(field("Search entities").value).toBe("");
+    expect(panel().querySelectorAll('[data-candidate-row]')).toHaveLength(0);
+    expect(button("Bind 0").disabled).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+    field("Search entities").value = "Blake";
+    field("Search entities").dispatchEvent(new InputEvent("input",{ bubbles: true }));
+    await vi.advanceTimersByTimeAsync(310);
+    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true }));
+    expect(editor.repository.canUndo()).toBe(false);
+    expect(button("Bind 0").disabled).toBe(true);
+    field("Mention text").value = "he";
+    field("Mention text").dispatchEvent(new InputEvent("input",{ bubbles: true }));
+    await vi.advanceTimersByTimeAsync(250);
+    expect(panel().querySelectorAll('[data-candidate-row]')).toHaveLength(3);
+    expect(panel().textContent).not.toContain("Original selection");
+    button("Select all").click();
+    button("Bind 3").click();
+    expect(panel()).toBeNull(); expect(editor.repository.canUndo()).toBe(true);
+    editor.repository.undo(); expect(editor.encodeDocument().children!.every(d => !d.standoffProperties)).toBe(true);
+  });
   it("keeps native select-all in query fields, supports a remapped opener and only nominates on Enter",async () => {
     const { editor,field,panel,button } = setup(); await vi.advanceTimersByTimeAsync(310);
     const native = new KeyboardEvent("keydown",{ key: "a",ctrlKey: true,bubbles: true,cancelable: true }); field("Search entities").dispatchEvent(native); expect(native.defaultPrevented).toBe(false);
