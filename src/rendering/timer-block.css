@@ -1,20 +1,21 @@
-.reactive-timer { container-type:inline-size; position:relative; box-sizing:border-box; display:flex; max-width:100%; max-height:80vh; min-width:210px; min-height:210px; flex-direction:column; align-items:stretch; justify-content:space-between; overflow:hidden; padding:12px; border:1px solid #839991; border-radius:18px; color:#20332d; background:linear-gradient(150deg,#f8fffc,#deeee8); box-shadow:0 8px 24px #263b3326; font:14px/1.25 Arial,sans-serif; }
+.reactive-timer { container-type:inline-size; position:fixed; z-index:10400; box-sizing:border-box; display:flex; min-width:110px; min-height:110px; flex-direction:column; align-items:stretch; justify-content:space-between; overflow:hidden; padding:5px; border:1px solid #839991; border-radius:10px; color:#20332d; background:linear-gradient(150deg,#f8fffc,#deeee8); box-shadow:0 8px 24px #263b3340; font:11px/1.15 Arial,sans-serif; }
 .reactive-timer:focus-visible { outline:3px solid #4a8171; outline-offset:2px; }
-.reactive-timer > header { color:#64756f; font-size:.72rem; font-weight:750; letter-spacing:.12em; text-align:center; text-transform:uppercase; }
-.reactive-timer__display { display:block; margin:auto 0; font:600 clamp(2.4rem,20cqw,4.7rem)/1 ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums; letter-spacing:-.07em; text-align:center; }
-.reactive-timer__controls,.reactive-timer__setting { display:flex; gap:7px; align-items:center; justify-content:center; }
-.reactive-timer button,.reactive-timer input { box-sizing:border-box; min-height:32px; border:1px solid #8ea29b; border-radius:7px; color:inherit; background:#fff; font:inherit; }
-.reactive-timer button { padding:5px 11px; cursor:pointer; }
+.reactive-timer__header { display:flex; min-height:18px; align-items:center; justify-content:space-between; color:#64756f; font-size:9px; font-weight:750; letter-spacing:.1em; text-transform:uppercase; cursor:grab; user-select:none; touch-action:none; }
+.reactive-timer__header button { width:20px; min-height:18px!important; padding:0!important; border:0!important; color:#9b352c; background:transparent!important; font-size:16px; line-height:1; }
+.reactive-timer__display { display:block; margin:auto 0; font:600 clamp(1.45rem,22cqw,3.5rem)/1 ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums; letter-spacing:-.08em; text-align:center; }
+.reactive-timer__controls,.reactive-timer__setting { display:flex; gap:3px; align-items:center; justify-content:center; }
+.reactive-timer button,.reactive-timer input { box-sizing:border-box; min-height:22px; border:1px solid #8ea29b; border-radius:4px; color:inherit; background:#fff; font:inherit; }
+.reactive-timer button { padding:2px 5px; cursor:pointer; }
 .reactive-timer button:hover:not(:disabled) { border-color:#376d5d; background:#effaf6; }
 .reactive-timer button:disabled { opacity:.48; cursor:default; }
-.reactive-timer__setting { margin-top:8px; }
-.reactive-timer__setting label { font-size:.78rem; }
-.reactive-timer__setting input { width:76px; padding:5px 7px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; text-align:center; }
-.reactive-timer small { margin-top:5px; color:#a0242b; text-align:center; }
-.reactive-timer__finished { display:grid; gap:12px; margin:auto; text-align:center; }
-.reactive-timer__finished strong { color:#9b352c; font-size:clamp(1.4rem,10cqw,2rem); }
-.reactive-timer__done { min-width:90px; border-color:#9b352c!important; }
+.reactive-timer__setting { margin-top:3px; }
+.reactive-timer__setting label { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.reactive-timer__setting input { width:49px; padding:2px 3px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; text-align:center; }
+.reactive-timer small { position:absolute; right:5px; bottom:5px; left:5px; padding:3px; color:#a0242b; background:#fffef5; text-align:center; }
+.reactive-timer__finished { display:grid; gap:7px; margin:auto; text-align:center; }
+.reactive-timer__finished strong { color:#9b352c; font-size:clamp(1rem,11cqw,1.7rem); }
+.reactive-timer__done { min-width:58px; border-color:#9b352c!important; }
 .reactive-timer--done { background:linear-gradient(150deg,#fffaf3,#f4ded6); }
-.reactive-timer__resize { position:absolute; right:0; bottom:0; width:22px; height:22px; cursor:nwse-resize; touch-action:none; background:repeating-linear-gradient(135deg,transparent 0 4px,#6f8980 4px 6px); clip-path:polygon(100% 0,100% 100%,0 100%); }
+.reactive-timer__resize { position:absolute; right:0; bottom:0; width:14px; height:14px; cursor:nwse-resize; touch-action:none; background:repeating-linear-gradient(135deg,transparent 0 3px,#6f8980 3px 4px); clip-path:polygon(100% 0,100% 100%,0 100%); }
 @media (prefers-reduced-motion:no-preference) { .reactive-timer--done { animation:timer-complete 180ms ease-out 2 alternate; } }
 @keyframes timer-complete { to { filter:brightness(1.08); transform:scale(1.01); } }

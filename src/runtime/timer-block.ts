@@ -3,6 +3,8 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 
 export const DEFAULT_TIMER_SECONDS = 5 * 60;
 export const MAX_TIMER_SECONDS = 24 * 60 * 60;
+export const DEFAULT_TIMER_SIZE = 130;
+export const MIN_TIMER_SIZE = 110;
 
 export type TimerMode = "idle" | "running" | "paused";
 export interface TimerPayload {
@@ -27,35 +29,42 @@ export function readTimerPayload(value: unknown): TimerPayload {
   return { durationSeconds, mode: "idle", remainingMilliseconds: durationSeconds * 1000 };
 }
 
-export function timerBlockDto(): ExistingBlockDto {
+export function timerBlockDto(position?: { x: number; y: number }): ExistingBlockDto {
   return {
     id: crypto.randomUUID(),
     type: "timer-block",
     timer: { durationSeconds: DEFAULT_TIMER_SECONDS, mode: "idle", remainingMilliseconds: DEFAULT_TIMER_SECONDS * 1000 },
-    blockProperties: [{ type: "block/size", metadata: { width: 260, height: 260, "min-width": 210 } }],
+    blockProperties: [
+      { type: "block/size", metadata: { width: DEFAULT_TIMER_SIZE, height: DEFAULT_TIMER_SIZE, "min-width": MIN_TIMER_SIZE } },
+      ...(position ? [{ type: "block/position", metadata: { ...position, position: "fixed" } }] : []),
+    ],
   };
 }
 
-function emptyReplaceableText(editor: ReactiveEditor, key: NodeKey) {
-  const node = editor.node(key);
-  if (!node || node.children.length || Object.keys(node.ownedRelations).length) return false;
-  if (node.viewType === "standoff-editor-block") return node.inlineContent.length === 0;
-  return node.viewType === "plain-text-block" && String(node.payload.text ?? "") === "";
+function initialPosition(editor: ReactiveEditor, originKey: NodeKey) {
+  const rect = editor.mounts.get(originKey)?.root.getBoundingClientRect();
+  if (!rect) return { x: 24, y: 80 };
+  const viewportWidth = typeof window === "undefined" ? 1024 : window.innerWidth;
+  const viewportHeight = typeof window === "undefined" ? 768 : window.innerHeight;
+  return {
+    x: Math.max(8, Math.min(rect.left - DEFAULT_TIMER_SIZE, viewportWidth - DEFAULT_TIMER_SIZE - 8)),
+    y: Math.max(8, Math.min(rect.top, viewportHeight - DEFAULT_TIMER_SIZE - 8)),
+  };
 }
 
-/** Replaces a genuinely empty text Block; otherwise inserts beside the origin. */
+/** Adds a persistent timer beside the origin in the model and anchors its floating view to the origin on screen. */
 export function createTimerBlock(editor: ReactiveEditor, originKey: NodeKey): string | undefined {
   let origin = editor.node(originKey);
   if (!origin) return;
+  const position = initialPosition(editor, origin.key);
   if (origin.viewType === "document-window-block") {
     const document = origin.children.find(key => editor.node(key)?.viewType === "document-block");
     if (document) origin = editor.node(document)!;
   }
   const viewId = origin.viewId;
   let placement: string;
-  if (emptyReplaceableText(editor, origin.key)) placement = editor.commands.replace(origin.key, timerBlockDto(), "replace");
-  else if (origin.viewType === "document-block") placement = editor.commands.insert(timerBlockDto(), { kind: "at", parentKey: origin.key, index: origin.children.length });
-  else placement = editor.commands.insert(timerBlockDto(), { kind: "after", anchorKey: origin.key });
+  if (origin.viewType === "document-block") placement = editor.commands.insert(timerBlockDto(position), { kind: "at", parentKey: origin.key, index: origin.children.length });
+  else placement = editor.commands.insert(timerBlockDto(position), { kind: "after", anchorKey: origin.key });
   queueMicrotask(() => {
     const timer = editor.nodeForPlacementInView(placement, viewId);
     if (timer) editor.focus.request(timer.key, { reason: "create-timer" });

@@ -1,8 +1,9 @@
 import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { unwrap } from "solid-js/store";
+import { Portal } from "solid-js/web";
 import type { BlockViewProps } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
-import { MAX_TIMER_SECONDS, readTimerPayload, type TimerPayload } from "../runtime/timer-block";
+import { DEFAULT_TIMER_SIZE, MAX_TIMER_SECONDS, MIN_TIMER_SIZE, readTimerPayload, type TimerPayload } from "../runtime/timer-block";
 import "./timer-block.css";
 
 const formatDuration = (milliseconds: number) => {
@@ -25,12 +26,14 @@ export function TimerBlockView(props: BlockViewProps) {
   const [draft, setDraft] = createSignal(formatDuration(timer().durationSeconds * 1000));
   const [message, setMessage] = createSignal("");
   const [previewSize, setPreviewSize] = createSignal<{ width: number; height: number }>();
+  const [previewPosition, setPreviewPosition] = createSignal<{ x: number; y: number }>();
   let root!: HTMLDivElement;
   let durationInput!: HTMLInputElement;
   let disposeMount: (() => void) | undefined;
   let interval: ReturnType<typeof setInterval> | undefined;
   let audio: AudioContext | undefined;
   let resize: { pointerId: number; x: number; y: number; width: number; height: number } | undefined;
+  let drag: { pointerId: number; x: number; y: number; left: number; top: number } | undefined;
   const mountedAt = Date.now();
   let deadline: number | undefined, notified: number | undefined;
 
@@ -44,7 +47,13 @@ export function TimerBlockView(props: BlockViewProps) {
   const size = createMemo(() => {
     const property = ((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []).find(item => item.type === "block/size" && !item.isDeleted);
     const metadata = property?.metadata as Record<string, unknown> | undefined;
-    return { width: Math.max(210, Number(metadata?.width) || 260), height: Math.max(210, Number(metadata?.height) || 260) };
+    return { width: Math.max(MIN_TIMER_SIZE, Number(metadata?.width) || DEFAULT_TIMER_SIZE), height: Math.max(MIN_TIMER_SIZE, Number(metadata?.height) || DEFAULT_TIMER_SIZE) };
+  });
+  const storedPosition = createMemo(() => {
+    const property = ((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []).find(item => item.type === "block/position" && !item.isDeleted);
+    const metadata = property?.metadata as Record<string, unknown> | undefined;
+    const x = Number(metadata?.x), y = Number(metadata?.y);
+    return { x: Number.isFinite(x) ? x : 24, y: Number.isFinite(y) ? y : 80 };
   });
 
   const commit = (next: TimerPayload, label: string) => editor.commands.setPayloadField(props.nodeKey, "timer", next, label);
@@ -86,11 +95,23 @@ export function TimerBlockView(props: BlockViewProps) {
     editor.focus.clearRemoved(props.nodeKey); editor.commands.remove(props.nodeKey);
     if (fallback) queueMicrotask(() => editor.focus.request(fallback, { reason: "timer-done", caret: "start" }));
   };
+  const setBlockProperty = (type: string, metadata: Record<string, unknown>, label: string) => {
+    const properties = unwrap((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []);
+    editor.commands.setPayloadField(props.nodeKey, "blockProperties", [...properties.filter(item => item.type !== type || item.isDeleted), { type, metadata }], label);
+  };
   const finishResize = (event: PointerEvent) => {
     if (!resize || resize.pointerId !== event.pointerId) return;
     const final = previewSize() ?? size(); resize = undefined; setPreviewSize(undefined);
-    const properties = unwrap((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []);
-    editor.commands.setPayloadField(props.nodeKey, "blockProperties", [...properties.filter(item => item.type !== "block/size" || item.isDeleted), { type: "block/size", metadata: { width: Math.round(final.width), height: Math.round(final.height), "min-width": 210 } }], "Resize Timer");
+    setBlockProperty("block/size", { width: Math.round(final.width), height: Math.round(final.height), "min-width": MIN_TIMER_SIZE }, "Resize Timer");
+  };
+  const clampPosition = (x: number, y: number) => {
+    const dimensions = previewSize() ?? size();
+    return { x: Math.max(0, Math.min(x, window.innerWidth - dimensions.width)), y: Math.max(0, Math.min(y, window.innerHeight - dimensions.height)) };
+  };
+  const finishDrag = (event: PointerEvent) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const final = previewPosition() ?? storedPosition(); drag = undefined; setPreviewPosition(undefined);
+    setBlockProperty("block/position", { x: Math.round(final.x), y: Math.round(final.y), position: "fixed" }, "Move Timer");
   };
 
   createEffect(() => {
@@ -114,10 +135,17 @@ export function TimerBlockView(props: BlockViewProps) {
   onCleanup(() => { clearInterval(interval); disposeMount?.(); void audio?.close(); });
 
   const dimensions = () => previewSize() ?? size();
-  return <div ref={root} class="abstract-block reactive-timer" classList={{ "reactive-timer--done": done() }} tabIndex={-1}
-    style={{ width: `${dimensions().width}px`, height: `${dimensions().height}px` }}
+  const position = () => previewPosition() ?? storedPosition();
+  return <Portal><div ref={root} class="abstract-block reactive-timer" classList={{ "reactive-timer--done": done() }} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Timer"
+    style={{ width: `${dimensions().width}px`, height: `${dimensions().height}px`, left: `${position().x}px`, top: `${position().y}px` }}
+    onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); remove(); } }}
     data-block-id={String(node()?.payload.id ?? "")} data-client-id={props.nodeKey} data-runtime-key={props.nodeKey} data-block-type="timer-block">
-    <header>Timer</header>
+    <header class="reactive-timer__header"
+      onPointerDown={event => { if (event.button !== 0 || (event.target as Element).closest("button")) return; const current = position(); drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: current.x, top: current.y }; event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); }}
+      onPointerMove={event => { if (!drag || drag.pointerId !== event.pointerId) return; setPreviewPosition(clampPosition(drag.left + event.clientX - drag.x, drag.top + event.clientY - drag.y)); }}
+      onPointerUp={finishDrag} onLostPointerCapture={finishDrag} onPointerCancel={() => { drag = undefined; setPreviewPosition(undefined); }}>
+      <span>Timer</span><button type="button" aria-label="Close timer" title="Close timer" onPointerDown={event => event.stopPropagation()} onClick={remove}>×</button>
+    </header>
     <output class="reactive-timer__display" role="timer" aria-label={`${formatDuration(remainingMilliseconds())} remaining`}>{formatDuration(remainingMilliseconds())}</output>
     <Show when={!done()} fallback={<div class="reactive-timer__finished"><strong role="status">Time’s up</strong><button type="button" class="reactive-timer__done" onClick={remove}>Done</button></div>}>
       <div class="reactive-timer__controls">
@@ -134,7 +162,7 @@ export function TimerBlockView(props: BlockViewProps) {
     </Show>
     <div class="reactive-timer__resize" title="Drag to resize timer" aria-hidden="true"
       onPointerDown={event => { if (event.button !== 0) return; const current = dimensions(); resize = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, width: current.width, height: current.height }; event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); event.stopPropagation(); }}
-      onPointerMove={event => { if (!resize || resize.pointerId !== event.pointerId) return; setPreviewSize({ width: Math.max(210, resize.width + event.clientX - resize.x), height: Math.max(210, resize.height + event.clientY - resize.y) }); }}
+      onPointerMove={event => { if (!resize || resize.pointerId !== event.pointerId) return; setPreviewSize({ width: Math.max(MIN_TIMER_SIZE, resize.width + event.clientX - resize.x), height: Math.max(MIN_TIMER_SIZE, resize.height + event.clientY - resize.y) }); }}
       onPointerUp={finishResize} onLostPointerCapture={finishResize} onPointerCancel={() => { resize = undefined; setPreviewSize(undefined); }} />
-  </div>;
+  </div></Portal>;
 }

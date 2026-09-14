@@ -10,14 +10,17 @@ only for user controls and stores an absolute `runningUntil` deadline (or paused
 remainder), so save/reopen and remounts reconstruct elapsed time without interval
 drift. Already-expired timers reopen silently in their Done state.
 
-The Block defaults to 260 × 260 px and commits `block/size` only when a resize
-gesture ends. It is an opaque, selectable control, available from Add Block and
-the Document toolbar. `Ctrl+;`, then `T` is the reassignable browser-safe default;
-the cross-Block dispatcher supports the same chord. Creation replaces only a
-genuinely empty, relation-free text Block and otherwise inserts beside the
-origin, preserving non-empty text. Three TimerBlock tests cover creation,
-countdown without repository revisions, pause, duration changes, one-shot sound,
-save/reload, resize, Done, undo and menu availability. Focused integration tests,
+The Block now defaults to a compact 130 × 130 px—half the original dimensions—and
+renders through a portal as a persistent floating utility window. Creation keeps
+the focused TextBlock and initially aligns the timer's right edge with its left
+edge when viewport space permits. Its header provides drag and close controls;
+position, close and resize are undoable, with `block/position` and `block/size`
+writes occurring only when gestures end. It is an opaque, selectable control,
+available from Add Block and the Document toolbar. `Ctrl+;`, then `T` is the
+reassignable browser-safe default; the cross-Block dispatcher supports the same
+chord. Three TimerBlock tests cover creation and anchoring, countdown without
+repository revisions, pause, duration changes, one-shot sound, save/reload,
+move/resize, close/Done, undo and menu availability. Focused integration tests,
 typecheck, client/server builds and isolated real Chrome checks pass. Full suite:
 232/234, with only the same two documented context-menu baseline failures.
 
