@@ -2,6 +2,12 @@
 
 Status: search-and-select implemented; grouped visual effects remain deferred.
 
+14 September follow-up: scoped “Find/select all matching mentions” is now planned
+in [ENTITY_MATCH_CANDIDATES_PLAN.md](ENTITY_MATCH_CANDIDATES_PLAN.md). It reuses
+TextSearch/session decorations, separates mention text from entity lookup, preserves
+native input shortcuts, and proposes reviewed, atomic binding of independent
+mentions. **Planning only: bulk binding is not implemented or authorized yet.**
+
 Original sources: `src/components/search-entities.tsx`,
 `DocumentBlock.applyEntityReferenceToText()` in `src/blocks/document-block.ts`,
 and the two `/api/findAgentsByNameJson` / `/api/findAgentsByAliasJson` routes in

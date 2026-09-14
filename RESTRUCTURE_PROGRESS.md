@@ -1,5 +1,14 @@
 # Reactive reconstruction progress
 
+## Entity matching candidates — plan only, 14 September 2026
+
+Inspected the original entity window's Control-A handler and DocumentBlock bulk
+callback. Recorded the proposed scoped candidate-review extension in
+[ENTITY_MATCH_CANDIDATES_PLAN.md](ENTITY_MATCH_CANDIDATES_PLAN.md): independent
+mention/entity queries, context-safe shortcuts, owner-isolated SVG highlights,
+reviewed unique targets, conflict/freshness checks and one atomic bind operation.
+No runtime or binding changes; implementation awaits explicit authorization.
+
 ## Scoped Find — implemented, 14 September 2026
 
 Implemented Page-default Container/Page/Document search, recursive model traversal,
