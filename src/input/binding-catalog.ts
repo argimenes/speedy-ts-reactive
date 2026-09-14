@@ -1,4 +1,4 @@
-import { BindingRegistry, keyboard as k, mouse, type Trigger } from "./bindings";
+import { BindingRegistry, chord, keyboard as k, mouse, type Trigger } from "./bindings";
 
 export function registerInputActions(registry: BindingRegistry, platform = typeof navigator === "undefined" ? "" : navigator.platform) {
   const add = (id: string, name: string, description: string, category: string, scope: string, defaults: Trigger[], tags: string[] = []) => registry.register({ id, name, description, category, scope, defaults, tags, handler: context => context.run(id) });
@@ -10,8 +10,12 @@ export function registerInputActions(registry: BindingRegistry, platform = typeo
   add("entity.candidates.open", "Find other occurrences", "Review scoped text matches as candidates for the nominated entity.", "Entities", "entity-search", [k("a",primary,"Shift")], ["search","bulk"]);
   add("entity.candidates.selectAll", "Find/select all matching mentions", "Select all eligible mention targets, not just the visible results page. Native text fields retain Select All.", "Entities", "entity-search", primary === "Meta" ? [k("a","Ctrl"),k("a","Meta")] : [k("a","Ctrl")], ["search","bulk","selection"]);
   for (const [id,name,key] of [["next","Next candidate","ArrowDown"],["previous","Previous candidate","ArrowUp"],["toggle","Toggle candidate"," "]]) add(`entity.candidates.${id}`,name,"Navigate candidate rows; Space checks or excludes a mention.","Entities","entity-search/candidates",[k(key)],["selection"]);
-  add("entity.open", "Entity reference", "Search the graph for an entity to link to selected text.", "Entities", "editor/standoff", [k("e", "Meta"), k("e", "Ctrl", "Shift")]);
-  add("cross.entity", "Entity reference across Blocks", "Search for one entity shared by the selected Block-local ranges.", "Entities", "cross-text", [k("e", "Meta"), k("e", "Ctrl", "Shift")]);
+  const entityReferenceChord = chord(k(";", "Ctrl"), k("r"));
+  const entityListingChord = chord(k(";", "Ctrl"), k("l"));
+  add("entity.open", "Entity reference", "Search the graph for an entity to link to selected text.", "Entities", "editor/standoff", [entityReferenceChord]);
+  add("cross.entity", "Entity reference across Blocks", "Search for one entity shared by the selected Block-local ranges.", "Entities", "cross-text", [entityReferenceChord]);
+  add("entity.list.open", "Entity listing", "List entities referenced by standoff properties in the current Document.", "Entities", "editor", [entityListingChord], ["listing", "mentions"]);
+  add("cross.entityList", "Entity listing from cross-Block selection", "List entities referenced by standoff properties in the current Document.", "Entities", "cross-text", [entityListingChord], ["listing", "mentions"]);
   for (const [id, name, shift] of [["undo", "Undo change", false], ["redo", "Redo change", true]] as const) add(`history.${id}`, name, "Apply document history, including text, annotations and Block changes. Dialog fields retain native undo.", "Text Editing", "document-history", [k("z", "Ctrl", ...(shift ? ["Shift" as const] : [])), k("z", "Meta", ...(shift ? ["Shift" as const] : []))], ["history"]);
   for (const direction of ["Left", "Right", "Up", "Down"]) add(`cross.extend${direction}`, `Extend text selection ${direction.toLowerCase()}`, "Experimental: extend within a supported paragraph stream; structural boundaries are barriers.", "Text Selection", "cross-text", [k(`Arrow${direction}`, "Shift")]);
   add("cross.cancel", "Collapse cross-Block text selection", "Return to editing at the selection head.", "Text Selection", "cross-text", [k("Escape")]);

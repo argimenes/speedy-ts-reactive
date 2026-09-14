@@ -39,6 +39,7 @@ export class InputGateway {
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly entitySearch: (key: string, range: { anchor: number; head: number }) => void,
+    private readonly entityList: (key: string) => void,
   ) {}
 
   install(): () => void {
@@ -59,6 +60,7 @@ export class InputGateway {
     this.document.addEventListener("click", this.onControlClick, true);
     this.document.addEventListener("dblclick", this.onControlClick, true);
     this.document.addEventListener("speedy-input", this.onCustomInput, true);
+    this.document.defaultView?.addEventListener("blur", this.onWindowBlur);
     return () => this.dispose();
   }
 
@@ -249,12 +251,14 @@ export class InputGateway {
   };
 
   private onFocusIn = (event: FocusEvent) => {
+    if (this.bindings.pendingHint()) this.bindings.cancelChord();
     if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = this.mounts.resolveEvent(event);
     if (resolved) this.focus.adopt(resolved.nodeKey);
   };
 
   private onCompositionStart = (event: CompositionEvent) => {
+    this.bindings.cancelChord();
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
       resolved.handle.composing = true;
@@ -296,6 +300,7 @@ export class InputGateway {
   };
 
   private onPointerDown = (event: PointerEvent) => {
+    if (this.bindings.pendingHint()) this.bindings.cancelChord();
     const element = event.target instanceof Element ? event.target : undefined;
     if (element?.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
     if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey &&
@@ -458,6 +463,11 @@ export class InputGateway {
   };
 
   private runBinding = (id: string, event: Event): boolean | void => {
+    if (id === "entity.list.open") {
+      const resolved = this.mounts.resolveEvent(event);
+      if (!resolved) return false;
+      this.entityList(resolved.nodeKey); return true;
+    }
     if (id === "entity.open") {
       const resolved = this.mounts.resolveEvent(event), range = resolved?.handle.captureInlineSelection?.();
       if (!resolved) return false;
@@ -686,5 +696,7 @@ export class InputGateway {
     this.document.removeEventListener("click", this.onControlClick, true);
     this.document.removeEventListener("dblclick", this.onControlClick, true);
     this.document.removeEventListener("speedy-input", this.onCustomInput, true);
+    this.document.defaultView?.removeEventListener("blur", this.onWindowBlur);
   }
+  private onWindowBlur = () => this.bindings.cancelChord();
 }

@@ -1,5 +1,24 @@
 # Reactive reconstruction progress
 
+## Document entities listing — implemented, 14 September 2026
+
+Implemented the Document-scoped Entity/Graph/Document table described in
+[ENTITIES_LISTING_MIGRATION.md](ENTITIES_LISTING_MIGRATION.md). The nonmodal,
+draggable responsive panel inventories only live `codex/entity-reference`
+standoff properties, counts linked cross-Block segments as one logical mention,
+deduplicates transclusions, sorts each column in both directions and previews
+every visible occurrence through owner-isolated yellow SVG decorations. Local
+rows remain usable when the read-only bulk Graph summary endpoint is offline.
+
+The input registry now supports persisted multi-stroke chords with hints,
+cancellation, pass-through and prefix-conflict checks. Browser-safe defaults are
+Ctrl+; then L for Entity listing and Ctrl+; then R for Entity reference, with a
+toolbar fallback. Focus/selection restoration and live repository refresh are
+covered. Focused tests, typecheck, client/server builds and an isolated real
+Chrome narrow-viewport check pass. Full suite: 229/231, with only the same two
+documented context-menu baseline failures. SurrealDB index idempotence, cleanup
+and historical repair remain deliberately deferred.
+
 ## Entity matching candidates — implemented, 14 September 2026
 
 Inspected the original entity window's Control-A handler and DocumentBlock bulk
@@ -41,7 +60,7 @@ failures.
 ## Entity-reference search port
 
 Selected text now opens the migrated name/alias search dialog through the Entity
-reference toolbar button or Cmd+E / Ctrl+Shift+E. Choosing a result creates local
+reference toolbar button or Ctrl+; then R. Choosing a result creates local
 or linked cross-Block annotations with entity ID/name metadata; cancelling makes
 no document change. Existing Node/SurrealDB API paths are hardened and tested
 against disposable in-memory data. See [ENTITY_SEARCH_MIGRATION.md](ENTITY_SEARCH_MIGRATION.md)

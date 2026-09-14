@@ -81,8 +81,9 @@ describe("entity candidate review",() => {
     button("Cancel").click();
     const mount = editor.mounts.get(node("a").key)!;
     mount.focus(); mount.restoreInlineSelection?.({ anchor: 1,head: 1 });
-    const key = new KeyboardEvent("keydown",{ key: "e",metaKey: true,bubbles: true,cancelable: true });
-    (mount.focusElement ?? mount.root).dispatchEvent(key);
+    const prefix = new KeyboardEvent("keydown",{ key: ";",ctrlKey: true,bubbles: true,cancelable: true });
+    const key = new KeyboardEvent("keydown",{ key: "r",bubbles: true,cancelable: true });
+    (mount.focusElement ?? mount.root).dispatchEvent(prefix); (mount.focusElement ?? mount.root).dispatchEvent(key);
     await vi.advanceTimersByTimeAsync(250);
     expect(key.defaultPrevented).toBe(true); expect(panel()).toBeTruthy();
     expect(field("Mention text").value).toBe(""); expect(field("Search entities").value).toBe("");

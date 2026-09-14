@@ -1,8 +1,10 @@
 import { createSignal } from "solid-js";
 
 export type Modifier = "Ctrl" | "Meta" | "Alt" | "Shift";
+export type KeyboardTrigger = { kind: "keyboard"; key: string; modifiers: Modifier[] };
 export type Trigger =
-  | { kind: "keyboard"; key: string; modifiers: Modifier[] }
+  | KeyboardTrigger
+  | { kind: "chord"; steps: KeyboardTrigger[] }
   | { kind: "mouse"; button: number; gesture: "click" | "dblclick" | "contextmenu"; modifiers: Modifier[] }
   | { kind: "custom"; name: string };
 export interface BindingContext { event?: Event; payload?: unknown; run(id: string): boolean | void }
@@ -13,19 +15,22 @@ export interface BindingAction {
 export const CUSTOM_INPUTS = ["inspect-annotation", "save-document", "toggle-bindings"] as const;
 export const STORAGE_KEY = "speedy.input-bindings.v1";
 const modifiers: Modifier[] = ["Ctrl", "Meta", "Alt", "Shift"];
-export const keyboard = (key: string, ...mods: Modifier[]): Trigger => ({ kind: "keyboard", key, modifiers: mods });
-export const mouse = (button: number, gesture: "click" | "dblclick" | "contextmenu", ...mods: Modifier[]): Trigger => ({ kind: "mouse", button, gesture, modifiers: mods });
-export function captureTrigger(event: KeyboardEvent | MouseEvent): Trigger {
+export const keyboard = (key: string, ...mods: Modifier[]): KeyboardTrigger => ({ kind: "keyboard", key, modifiers: mods });
+export const chord = (...steps: KeyboardTrigger[]): Trigger => ({ kind: "chord", steps });
+export const mouse = (button: number, gesture: "click" | "dblclick" | "contextmenu", ...mods: Modifier[]): Extract<Trigger, { kind: "mouse" }> => ({ kind: "mouse", button, gesture, modifiers: mods });
+export function captureTrigger(event: KeyboardEvent | MouseEvent): Exclude<Trigger, { kind: "chord" }> {
   const mods = modifiers.filter((_, i) => [event.ctrlKey, event.metaKey, event.altKey, event.shiftKey][i]);
   return event instanceof KeyboardEvent ? keyboard(event.key, ...mods) : mouse(event.button, event.type === "contextmenu" ? "contextmenu" : event.type === "dblclick" ? "dblclick" : "click", ...mods);
 }
 const normalKey = (key: string) => key.length === 1 ? key.toLowerCase() : key;
 export function triggerKey(trigger: Trigger): string {
+  if (trigger.kind === "chord") return `chord:${trigger.steps.map(triggerKey).join(">")}`;
   if (trigger.kind === "custom") return `custom:${trigger.name}`;
   const mods = modifiers.filter(mod => trigger.modifiers.includes(mod)).join("+");
   return trigger.kind === "keyboard" ? `key:${mods}:${normalKey(trigger.key)}` : `mouse:${mods}:${trigger.gesture}:${trigger.button}`;
 }
 export function triggerLabel(trigger: Trigger): string {
+  if (trigger.kind === "chord") return trigger.steps.map(triggerLabel).join(", then ");
   if (trigger.kind === "custom") return `Event: ${trigger.name}`;
   const mods = modifiers.filter(mod => trigger.modifiers.includes(mod));
   const keys: Record<string, string> = { ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓", " ": "Space", Meta: "Cmd" };
@@ -42,6 +47,12 @@ function validateTrigger(input: unknown): Trigger {
     if (!CUSTOM_INPUTS.includes(t.name as any)) throw new Error("Unknown custom input event");
     return { kind: "custom", name: String(t.name) };
   }
+  if (t.kind === "chord") {
+    if (!Array.isArray(t.steps) || t.steps.length < 2 || t.steps.length > 4) throw new Error("A chord requires two to four keyboard strokes");
+    const steps = t.steps.map(step => validateTrigger(step));
+    if (steps.some(step => step.kind !== "keyboard")) throw new Error("Chord steps must be keyboard strokes");
+    return chord(...steps as KeyboardTrigger[]);
+  }
   if (!Array.isArray(t.modifiers) || t.modifiers.some(m => !modifiers.includes(m)) || new Set(t.modifiers).size !== t.modifiers.length) throw new Error("Invalid modifiers");
   const mods = t.modifiers as Modifier[];
   if (t.kind === "keyboard" && typeof t.key === "string" && t.key.length > 0 && t.key.length <= 40 && !["Control", "Meta", "Alt", "Shift", "Dead", "Unidentified", "Process"].includes(t.key)) return keyboard(t.key, ...mods);
@@ -54,8 +65,12 @@ export class BindingRegistry {
   private actions = new Map<string, BindingAction>();
   private overrides: Record<string, Trigger[]> = Object.create(null);
   private index = new Map<string, BindingAction[]>();
+  private chordStarts = new Map<string, Array<{ action: BindingAction; trigger: Extract<Trigger, { kind: "chord" }> }>>();
+  private pending?: { candidates: Array<{ action: BindingAction; trigger: Extract<Trigger, { kind: "chord" }> }>; step: number };
+  private chordTimer?: ReturnType<typeof setTimeout>;
   private revision = createSignal(0);
   private problem = createSignal("");
+  private chordStatus = createSignal("");
   private paused = 0;
   private storage?: Storage;
   private sync = () => this.restoreStorage();
@@ -64,8 +79,9 @@ export class BindingRegistry {
     catch { this.problem[1]("Binding preferences are session-only: browser storage is unavailable."); }
     if (typeof window !== "undefined") { window.addEventListener("speedy-bindings-changed", this.sync); window.addEventListener("storage", this.sync); }
   }
-  dispose() { if (typeof window !== "undefined") { window.removeEventListener("speedy-bindings-changed", this.sync); window.removeEventListener("storage", this.sync); } }
+  dispose() { this.cancelChord(); if (typeof window !== "undefined") { window.removeEventListener("speedy-bindings-changed", this.sync); window.removeEventListener("storage", this.sync); } }
   warning = () => this.problem[0]();
+  pendingHint = () => this.chordStatus[0]();
   list = () => { this.revision[0](); return [...this.actions.values()]; };
   get(id: string) { return this.actions.get(id); }
   register(action: BindingAction) {
@@ -76,13 +92,40 @@ export class BindingRegistry {
   effective(id: string): Trigger[] { this.revision[0](); return this.overrides[id] ?? this.actions.get(id)?.defaults ?? []; }
   label(id: string) { return this.effective(id).map(triggerLabel).join(" / ") || "Unassigned"; }
   modified(id: string) { this.revision[0](); return Object.hasOwn(this.overrides, id); }
-  suspend() { this.paused++; return () => { this.paused = Math.max(0, this.paused - 1); }; }
-  matches(id: string, event: KeyboardEvent | MouseEvent) { return !this.paused && this.effective(id).some(t => triggerKey(t) === triggerKey(captureTrigger(event))); }
+  suspend() { this.cancelChord(); this.paused++; return () => { this.paused = Math.max(0, this.paused - 1); }; }
+  matches(id: string, event: KeyboardEvent | MouseEvent) { return !this.paused && this.effective(id).some(t => t.kind !== "chord" && triggerKey(t) === triggerKey(captureTrigger(event))); }
   dispatch(event: KeyboardEvent | MouseEvent, scopes: string[], run: BindingContext["run"]): boolean {
-    if (event.defaultPrevented || (event instanceof KeyboardEvent && event.isComposing)) return false;
+    if (this.paused || event.defaultPrevented) return false;
+    if (event instanceof KeyboardEvent && event.isComposing) { this.cancelChord(); return false; }
+    if (event instanceof KeyboardEvent) {
+      if (this.pending && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); this.cancelChord(); return true; }
+      const stroke = captureTrigger(event);
+      if (stroke.kind === "keyboard" && this.pending) {
+        const relevant = this.pending.candidates.filter(candidate => scopes.includes(candidate.action.scope));
+        if (relevant.length) {
+          if (event.repeat) { event.preventDefault(); event.stopPropagation(); return true; }
+          const candidates = relevant.filter(candidate => triggerKey(candidate.trigger.steps[this.pending!.step]) === triggerKey(stroke));
+          if (candidates.length) {
+            const step = this.pending.step + 1, complete = candidates.find(candidate => candidate.trigger.steps.length === step);
+            if (complete) { this.cancelChord(); return this.invokeAction(complete.action, { event, run }); }
+            const continuing = candidates.filter(candidate => candidate.trigger.steps.length > step);
+            if (continuing.length) { this.pending = { candidates: continuing, step }; this.armChord(); this.updateChordHint(); event.preventDefault(); event.stopPropagation(); return true; }
+          }
+          this.cancelChord();
+        }
+      }
+      if (stroke.kind === "keyboard") {
+        const starts = (this.chordStarts.get(triggerKey(stroke)) ?? []).filter(candidate => scopes.includes(candidate.action.scope));
+        if (starts.length) {
+          if (event.repeat) { event.preventDefault(); event.stopPropagation(); return true; }
+          this.pending = { candidates: starts, step: 1 }; this.armChord(); this.updateChordHint(); event.preventDefault(); event.stopPropagation(); return true;
+        }
+      }
+    } else if (this.pending) this.cancelChord();
     return this.invoke(captureTrigger(event), scopes, { event, run });
   }
   dispatchCustom(name: string, scopes: string[], run: BindingContext["run"], payload?: unknown) {
+    this.cancelChord();
     return this.invoke({ kind: "custom", name }, scopes, { payload, run });
   }
   private invoke(trigger: Trigger, scopes: string[], context: BindingContext) {
@@ -90,24 +133,45 @@ export class BindingRegistry {
     const candidates = this.index.get(triggerKey(trigger)) ?? [];
     for (const scope of scopes) for (const action of candidates) {
       if (action.scope !== scope) continue;
-      if (action.handler(context) === false) continue;
-      context.event?.preventDefault(); context.event?.stopPropagation(); return true;
+      if (this.invokeAction(action, context)) return true;
     }
     return false;
   }
+  private invokeAction(action: BindingAction, context: BindingContext) {
+    if (action.handler(context) === false) return false;
+    context.event?.preventDefault(); context.event?.stopPropagation(); return true;
+  }
+  private armChord() { clearTimeout(this.chordTimer); this.chordTimer = setTimeout(() => this.cancelChord(), 1500); }
+  private updateChordHint() {
+    if (!this.pending) { this.chordStatus[1](""); return; }
+    const choices = this.pending.candidates.map(candidate => {
+      const label = triggerLabel(candidate.trigger.steps[this.pending!.step]);
+      return `${label.length === 1 ? label.toUpperCase() : label} ${candidate.action.name}`;
+    });
+    this.chordStatus[1](`Chord: ${[...new Set(choices)].join(" · ")} · Esc Cancel`);
+  }
+  cancelChord() { clearTimeout(this.chordTimer); this.chordTimer = undefined; this.pending = undefined; this.chordStatus[1](""); }
   conflicts(id: string, triggers: Trigger[]) {
     const action = this.actions.get(id); if (!action) throw new Error("Unknown action");
-    const keys = new Set(triggers.map(triggerKey));
-    return this.list().filter(other => other.id !== id && scopesOverlap(action.scope, other.scope) && this.effective(other.id).some(t => keys.has(triggerKey(t))));
+    return this.list().filter(other => other.id !== id && scopesOverlap(action.scope, other.scope) && this.effective(other.id).some(existing => triggers.some(candidate => this.triggerConflict(existing, candidate))));
+  }
+  private triggerConflict(a: Trigger, b: Trigger) {
+    const steps = (trigger: Trigger) => trigger.kind === "chord" ? trigger.steps.map(triggerKey) : [triggerKey(trigger)];
+    const left = steps(a), right = steps(b), length = Math.min(left.length, right.length);
+    return left.slice(0, length).every((key, index) => key === right[index]);
+  }
+  private assertDistinctTriggers(triggers: Trigger[]) {
+    for (let i = 0; i < triggers.length; i++) for (let j = i + 1; j < triggers.length; j++) {
+      if (this.triggerConflict(triggers[i], triggers[j])) throw new Error("Duplicate or ambiguous combination");
+    }
   }
   assign(id: string, triggers: Trigger[], reassign = false) {
     const validated = triggers.map(validateTrigger);
-    if (new Set(validated.map(triggerKey)).size !== validated.length) throw new Error("Duplicate combination");
+    this.assertDistinctTriggers(validated);
     const conflicts = this.conflicts(id, validated);
     if (conflicts.length && !reassign) throw new Error(`Already assigned to: ${conflicts.map(a => a.name).join(", ")}`);
     const next = { ...this.overrides, [id]: validated };
-    const keys = new Set(validated.map(triggerKey));
-    for (const conflict of conflicts) next[conflict.id] = this.effective(conflict.id).filter(t => !keys.has(triggerKey(t)));
+    for (const conflict of conflicts) next[conflict.id] = this.effective(conflict.id).filter(existing => !validated.some(candidate => this.triggerConflict(existing, candidate)));
     this.commit(next);
   }
   reset(id?: string) {
@@ -116,26 +180,26 @@ export class BindingRegistry {
     if (this.conflicts(id, action.defaults).length) throw new Error("Default combination is in use. Remove the conflicting assignment first.");
     const next = { ...this.overrides }; delete next[id]; this.commit(next);
   }
-  export() { return JSON.stringify({ version: 1, overrides: this.overrides }, null, 2); }
+  export() { return JSON.stringify({ version: 2, overrides: this.overrides }, null, 2); }
   import(text: string) {
     const next = this.parse(text);
     for (const id of Object.keys(next)) if (!this.actions.has(id)) throw new Error(`Unknown action: ${id}`);
     const actions = this.list();
     for (let i = 0; i < actions.length; i++) for (let j = i + 1; j < actions.length; j++) {
       const a = actions[i], b = actions[j];
-      if (scopesOverlap(a.scope, b.scope) && (next[a.id] ?? a.defaults).some(t => (next[b.id] ?? b.defaults).some(u => triggerKey(t) === triggerKey(u)))) throw new Error(`Conflicting imported bindings: ${a.name} / ${b.name}`);
+      if (scopesOverlap(a.scope, b.scope) && (next[a.id] ?? a.defaults).some(t => (next[b.id] ?? b.defaults).some(u => this.triggerConflict(t, u)))) throw new Error(`Conflicting imported bindings: ${a.name} / ${b.name}`);
     }
     this.commit(next);
   }
   private parse(text: string): Record<string, Trigger[]> {
     if (text.length > 250000) throw new Error("Binding settings are too large");
     const data = JSON.parse(text);
-    if (data?.version !== 1 || !data.overrides || typeof data.overrides !== "object" || Array.isArray(data.overrides)) throw new Error("Expected version 1 binding settings");
+    if (![1, 2].includes(data?.version) || !data.overrides || typeof data.overrides !== "object" || Array.isArray(data.overrides)) throw new Error("Expected version 1 or 2 binding settings");
     const next: Record<string, Trigger[]> = Object.create(null);
     for (const [id, value] of Object.entries(data.overrides)) {
       if (!/^[a-zA-Z][\w.-]{0,100}$/.test(id) || !Array.isArray(value) || value.length > 20) throw new Error("Invalid binding override");
       next[id] = value.map(validateTrigger);
-      if (new Set(next[id].map(triggerKey)).size !== next[id].length) throw new Error("Duplicate combination");
+      this.assertDistinctTriggers(next[id]);
     }
     return next;
   }
@@ -152,9 +216,13 @@ export class BindingRegistry {
     } catch { this.problem[1]("Changes work for this session but could not be saved to browser storage. Export JSON to keep them."); }
   }
   private rebuild() {
-    this.index.clear();
+    this.cancelChord(); this.index.clear(); this.chordStarts.clear();
     for (const action of this.actions.values()) for (const trigger of this.overrides[action.id] ?? action.defaults) {
-      const key = triggerKey(trigger); this.index.set(key, [...(this.index.get(key) ?? []), action]);
+      if (trigger.kind === "chord") {
+        const key = triggerKey(trigger.steps[0]); this.chordStarts.set(key, [...(this.chordStarts.get(key) ?? []), { action, trigger }]);
+      } else {
+        const key = triggerKey(trigger); this.index.set(key, [...(this.index.get(key) ?? []), action]);
+      }
     }
     this.revision[1](n => n + 1);
   }

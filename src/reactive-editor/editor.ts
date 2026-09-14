@@ -27,10 +27,12 @@ import { CrossBlockInput } from "../input/cross-block-input";
 import { createStore } from "solid-js/store";
 import { SessionDecorations } from "../runtime/session-decorations";
 import { DocumentFind } from "../runtime/document-find";
+import { DocumentEntityList } from "../runtime/document-entity-list";
 
 export class ReactiveEditor {
   readonly decorations = new SessionDecorations();
   readonly find: DocumentFind;
+  readonly entityList: DocumentEntityList;
   readonly viewChildren: Record<string, string | undefined>;
   readonly setViewChild: (key: string, child?: string) => void;
   private disposeFindInput?: () => void;
@@ -65,6 +67,7 @@ export class ReactiveEditor {
     this.viewChildren = viewChildren;
     this.setViewChild = (key, child) => setViewChildren(key, child);
     this.find = new DocumentFind(this);
+    this.entityList = new DocumentEntityList(this);
     this.multiSelections = new MultiSelectionEditor(
       this.commands,
       this.selections,
@@ -139,6 +142,7 @@ export class ReactiveEditor {
       this.blockSelection,
       direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
       (nodeKey, range) => openEntitySearch(this, [{ nodeKey, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }]),
+      nodeKey => this.entityList.open(nodeKey),
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
@@ -271,6 +275,7 @@ export class ReactiveEditor {
   dispose(): void {
     this.disposeFindInput?.();
     this.find.dispose();
+    this.entityList.dispose();
     this.decorations.clearAll();
     this.crossInput?.dispose();
     this.crossText.clear();

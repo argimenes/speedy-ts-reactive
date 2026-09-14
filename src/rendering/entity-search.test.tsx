@@ -37,10 +37,12 @@ describe("entity search overlay", () => {
     const saved = editor.encodeDocument(), restored = new ReactiveEditor(saved); expect(restored.encodeDocument()).toEqual(saved); restored.dispose();
     editor.repository.undo(); expect(editor.encodeDocument().children![0].standoffProperties).toBeUndefined();
   });
-  it("cancels without history and supports original keyboard opener and result selection", async () => {
+  it("cancels without history and supports the chord opener and result selection", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply()));
-    const { editor, select, panel, node } = setup(); select();
-    editor.mounts.get(node("a").key)!.focusElement.dispatchEvent(new KeyboardEvent("keydown", { key: "e", metaKey: true, bubbles: true, cancelable: true }));
+    const { editor, select, panel, node } = setup(); editor.crossText.enable(true); select();
+    const target = editor.mounts.get(node("a").key)!.focusElement;
+    target.dispatchEvent(new KeyboardEvent("keydown", { key: ";", ctrlKey: true, bubbles: true, cancelable: true }));
+    target.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true, cancelable: true }));
     expect(panel()).not.toBeNull(); await vi.advanceTimersByTimeAsync(310);
     document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
     expect(panel()).toBeNull(); expect(editor.repository.canUndo()).toBe(false);

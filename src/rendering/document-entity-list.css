@@ -1,0 +1,21 @@
+.document-entity-list { position:fixed; z-index:10500; display:flex; width:min(360px,calc(100vw - 16px)); max-height:calc(100vh - 16px); box-sizing:border-box; flex-direction:column; overflow:hidden; border:1px solid #78958f; border-radius:8px; color:#263a35; background:#fff; box-shadow:0 12px 40px #0005; font:13px/1.35 Arial,sans-serif; }
+.document-entity-list:focus-visible { outline:2px solid #096d76; outline-offset:2px; }
+.document-entity-list__header { display:flex; min-height:34px; flex-shrink:0; align-items:center; justify-content:space-between; padding:0 5px 0 11px; background:#b9e4e8; cursor:grab; user-select:none; touch-action:none; }
+.document-entity-list__header button { width:30px; height:28px; border:0; color:#b01922; background:transparent; font-size:20px; cursor:pointer; }
+.document-entity-list__header button:hover { background:#ffffff75; }
+.document-entity-list__body { min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px; }
+.document-entity-list table { width:100%; border-collapse:collapse; table-layout:fixed; }
+.document-entity-list th { position:sticky; top:-8px; z-index:1; padding:0; border-bottom:1px solid #9aafaa; background:#fff; text-align:left; }
+.document-entity-list th:first-child { width:auto; }
+.document-entity-list th:nth-child(2) { width:62px; }
+.document-entity-list th:nth-child(3) { width:78px; }
+.document-entity-list th button { width:100%; padding:7px 4px; border:0; color:inherit; background:transparent; font:inherit; font-weight:bold; text-align:inherit; cursor:pointer; }
+.document-entity-list th:nth-child(n+2),.document-entity-list td:nth-child(n+2) { text-align:right; font-variant-numeric:tabular-nums; }
+.document-entity-list td { overflow:hidden; padding:6px 4px; border-bottom:1px solid #e2e8e6; text-overflow:ellipsis; white-space:nowrap; }
+.document-entity-list tbody tr { outline:none; }
+.document-entity-list tbody tr:hover,.document-entity-list tbody tr.active,.document-entity-list tbody tr:focus-visible { background:#fff1a8; }
+.document-entity-list tbody tr:focus-visible { box-shadow:inset 0 0 0 2px #8a6c00; }
+.document-entity-list__empty { margin:14px 4px; color:#53645f; text-align:center; }
+.document-entity-list__status { margin:8px 4px 3px; }
+.document-entity-list small { display:block; margin:3px 4px; color:#53645f; }
+@media (max-width:480px) { .document-entity-list { width:calc(100vw - 16px); } }

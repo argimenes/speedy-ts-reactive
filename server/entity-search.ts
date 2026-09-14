@@ -32,5 +32,22 @@ export function createEntitySearchRouter(database: () => SearchDatabase | undefi
       res.status(503).json({ Success: false, Error: "Entity search is unavailable. Check the Node server and SurrealDB connection." });
     }
   });
+  router.post("/entities/summary", async (req, res) => {
+    const input = req.body?.ids;
+    if (!Array.isArray(input) || input.length > 5000 || input.some(id => typeof id !== "string" || !id.trim() || id.length > 500)) {
+      res.status(400).json({ Success: false, Error: "Supply an array of up to 5,000 non-empty entity IDs." }); return;
+    }
+    const ids = [...new Set(input as string[])];
+    if (!ids.length) { res.json({ Success: true, Results: [] }); return; }
+    const db = database();
+    if (!db) { res.status(503).json({ Success: false, Error: "Entity summaries require the Node server's SurrealDB connection." }); return; }
+    try {
+      const data = await db.query("SELECT id, name, count(<-standoff_property_refers_to_agent<-StandoffProperty) AS mentions FROM Agent WHERE id IN $ids", { ids: ids.map(id => new RecordId("Agent", id)) }) as Array<Array<{ id: unknown; name: string; mentions?: number }>>;
+      res.json({ Success: true, Results: (data[0] ?? []).map(row => ({ id: row.id instanceof RecordId ? String(row.id.id) : String(row.id), name: row.name, mentions: Number(row.mentions ?? 0) })) });
+    } catch (error) {
+      console.error("Entity summary query failed", error);
+      res.status(503).json({ Success: false, Error: "Entity summaries are unavailable. Check the Node server and SurrealDB connection." });
+    }
+  });
   return router;
 }

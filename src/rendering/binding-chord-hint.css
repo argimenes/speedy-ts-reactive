@@ -1,0 +1,1 @@
+.binding-chord-hint { position:fixed; left:50%; bottom:24px; z-index:20000; max-width:calc(100vw - 32px); transform:translateX(-50%); padding:8px 12px; border:1px solid #8ca39d; border-radius:6px; color:#f5fffc; background:#152522ed; box-shadow:0 6px 20px #0005; font:13px/1.35 Arial,sans-serif; pointer-events:none; }

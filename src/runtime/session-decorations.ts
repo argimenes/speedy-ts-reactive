@@ -2,7 +2,8 @@ import { batch } from "solid-js";
 import { createStore } from "solid-js/store";
 import type { SearchMatchSet, SearchRange } from "./text-search";
 export interface SessionDecoration { type: string; owner: string; id: string; range: SearchRange; fill: string; active: boolean; priority: number; excludable: boolean }
-interface Layer { set: SearchMatchSet; visible: boolean; hidden: Set<string>; active?: string; type: string; fill: string; priority: number; exclude?: (id: string) => void }
+interface DecorationMatch { id: string; ranges: SearchRange[]; capabilities: { highlight: boolean } }
+interface Layer { matches: DecorationMatch[]; visible: boolean; hidden: Set<string>; active?: string; type: string; fill: string; priority: number; exclude?: (id: string) => void }
 /** Entirely outside canonical state. Indexed by occurrence so editing one Block does not wake every view. */
 export class SessionDecorations {
   readonly nodes: Record<string, SessionDecoration[]>;
@@ -12,7 +13,11 @@ export class SessionDecorations {
   constructor() { [this.nodes, this.setNodes] = createStore<Record<string, SessionDecoration[]>>({}); }
   attachMatches(owner: string, set: SearchMatchSet, style: { type?: string; fill?: string; priority?: number; exclude?: (id: string) => void } = {}) {
     const previous = this.owners.get(owner);
-    this.owners.set(owner, { set, visible: previous?.visible ?? true, hidden: new Set(), type: style.type ?? "editor/search-match", fill: style.fill ?? "#ffd34d", priority: style.priority ?? 0, exclude: style.exclude });
+    this.owners.set(owner, { matches: set.matches, visible: previous?.visible ?? true, hidden: new Set(), type: style.type ?? "editor/search-match", fill: style.fill ?? "#ffd34d", priority: style.priority ?? 0, exclude: style.exclude });
+    this.rebuild();
+  }
+  attachRanges(owner: string, ranges: SearchRange[], style: { type?: string; fill?: string; priority?: number } = {}) {
+    this.owners.set(owner, { matches: [{ id: owner, ranges, capabilities: { highlight: true } }], visible: true, hidden: new Set(), type: style.type ?? "editor/range-preview", fill: style.fill ?? "#ffd34d", priority: style.priority ?? 0 });
     this.rebuild();
   }
   setHighlightsVisible(owner: string, visible: boolean) { const layer = this.owners.get(owner); if (layer) { layer.visible = visible; this.rebuild(); } }
@@ -33,7 +38,7 @@ export class SessionDecorations {
   private rebuild() {
     const next: Record<string, SessionDecoration[]> = {};
     this.contentIndex.clear();
-    for (const [owner, layer] of this.owners) for (const match of layer.set.matches) {
+    for (const [owner, layer] of this.owners) for (const match of layer.matches) {
       for (const range of match.ranges) {
         let entry = this.contentIndex.get(range.contentKey);
         if (!entry) this.contentIndex.set(range.contentKey, entry = { nodes: new Set(), matches: [] });

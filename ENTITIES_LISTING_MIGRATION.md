@@ -1,6 +1,8 @@
 # Document entities listing migration
 
-Status: **planning only**. No implementation has been authorized or started.
+Status: **implemented**, 14 September 2026. The sections below retain the design
+rationale and deferred backend work; the implementation checkpoint records what
+landed in the reactive application.
 
 Planning direction confirmed by the user: prioritise the reactive client window
 and do not make SurrealDB optimisation, locking or index repair a prerequisite
@@ -12,6 +14,56 @@ Product decisions confirmed by the user:
 - the listing uses a chordal entity command family;
 - a linked cross-Block entity reference counts as one logical Document mention,
   even though it is stored as several local property segments.
+
+## Implementation checkpoint
+
+The reactive editor now owns a single `DocumentEntityList` session. Its pure
+inventory collector traverses the current Document model, stops at nested
+Documents, resolves linked annotations, deduplicates canonical transclusions and
+counts all segments of one linked annotation as one logical mention while keeping
+every occurrence range for previews. Repository notifications refresh the open
+list after projections materialise their new state. The panel itself does not
+write canonical state or history.
+
+`DocumentEntityListLayer` renders a narrow, responsive, draggable, nonmodal Solid
+portal with Entity, Graph and Document columns. All headings toggle deterministic
+sorting; the initial order is Document descending. Pointer hover and row focus
+attach owner-isolated `editor/entity-list-preview` ranges to the existing SVG
+decoration pipeline with `#ffe34d` yellow fill. Leave, blur, sorting, close,
+document invalidation and disposal clear only this preview owner. Escape and the
+close button restore the originating focus and selection. The Document toolbar
+provides a discoverable Entities button.
+
+The generic binding registry supports persisted two-to-four-stroke keyboard
+chords, labels, a 1.5-second pending hint, timeout/Escape/composition/focus-loss
+cancellation, held-key guards, unknown-stroke pass-through, structural prefix
+conflicts and version-1 import. The shipped entity family is `Ctrl+;`, then `L`
+for the listing and `Ctrl+;`, then `R` for entity reference on every platform.
+The cross-Block input path handles the same family with and without an active
+cross-Block range. Cmd+E, Cmd+L, Cmd+N and Ctrl+Shift+E are not shipped defaults
+because browsers reserve them. No dedicated reserved-key warning UI was added:
+the reactive application currently has no binding editor/recorder surface, while
+the toolbar remains the reliable fallback.
+
+A small abortable client adapter calls `POST /api/entities/summary`. The read-only
+router validates and deduplicates bounded entity ID arrays, parameterises
+SurrealDB `RecordId` values, and returns names plus current indexed relation
+counts. Missing/offline Graph data leaves local rows and Document counts usable.
+Index cleanup, uniqueness, idempotence and historical repair remain explicitly
+deferred as requested; the UI labels Graph totals as saved-index values.
+
+Verification at this checkpoint:
+
+- 16 focused binding, inventory, listing, entity-search and in-memory SurrealDB
+  tests pass, including linked logical counts, all sorts, live updates, offline
+  fallback and exact yellow decoration metadata;
+- TypeScript checking and client/server production builds pass;
+- the full suite passes 229 of 231 tests, with only the same two documented
+  Block context-menu baseline failures;
+- `scripts/check-document-entity-list.mjs` passes in isolated real headless
+  Chrome at 375 px: actual chord input, bounded layout, bulk hydration, two visible
+  hover highlights, no history, Escape cleanup, focus return and selection return;
+- no saved Document or populated graph was modified during verification.
 
 ## Requested behaviour
 
