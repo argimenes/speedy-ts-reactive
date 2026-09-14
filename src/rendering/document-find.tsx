@@ -1,6 +1,7 @@
-import { Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { ScopeKind } from "../runtime/text-search";
+import { nodeKeysForPage } from "../runtime/minimap";
 import "./document-find.css";
 
 export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: string }) {
@@ -10,7 +11,15 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
   const unsubscribe = props.editor.mounts.subscribe(() => { if (state.open) setMountRevision(n => n + 1); });
   onCleanup(unsubscribe);
   createEffect(() => { state.focusRequest; if (state.open && state.scope?.viewId === props.viewId) queueMicrotask(() => { input?.focus(); input?.select(); }); });
-  const hidden = () => { mountRevision(); state.active; return state.result?.matches.filter(match => !props.editor.mounts.get(match.ranges[0].nodeKey) || props.editor.mounts.get(match.ranges[0].nodeKey)?.root.closest('[aria-hidden="true"]')).length ?? 0; };
+  const hidden = createMemo(() => {
+    mountRevision(); state.active;
+    const pageNodes = state.pageKey ? nodeKeysForPage(props.editor, state.pageKey) : undefined;
+    return state.result?.matches.filter(match => !match.ranges.some(range => {
+      if (pageNodes && !pageNodes.has(range.nodeKey)) return false;
+      const mount = props.editor.mounts.get(range.nodeKey);
+      return !!mount && !mount.root.closest('[hidden], [aria-hidden="true"]');
+    })).length ?? 0;
+  });
   return <Show when={state.open && state.scope?.viewId === props.viewId}>
     <section class="document-find" data-document-find role="dialog" aria-label="Find in document" aria-modal="false" onKeyDown={event => {
       props.editor.bindings.dispatch(event, ["document-find", "document-find-open"], id => {

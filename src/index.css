@@ -270,6 +270,10 @@ textarea {
   box-shadow: 0 10px 32px rgba(40, 52, 48, .1);
 }
 
+.reactive-page__main {
+  min-width: 0;
+}
+
 .reactive-list {
   display: grid;
   gap: 8px;

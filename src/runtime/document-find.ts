@@ -3,6 +3,7 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import { resolveSearchScope, TextSearch, type ScopeKind, type SearchMatchSet, type SearchScope, type SearchMatch } from "./text-search";
 import type { SearchOptions } from "./search-matching";
 import { revealMatch } from "./reveal-match";
+import { nodeKeysForPage, pageForNode } from "./minimap";
 
 export class DocumentFind {
   readonly state;
@@ -19,13 +20,13 @@ export class DocumentFind {
   readonly owner = "document-find";
   constructor(private editor: ReactiveEditor) {
     this.search = new TextSearch(editor);
-    [this.state, this.setState] = createStore<{ open: boolean; query: string; options: SearchOptions; scope?: SearchScope; result?: SearchMatchSet; pending: boolean; active: number; visible: boolean; message: string; focusRequest: number }>({ open: false, query: "", options: {}, pending: false, active: -1, visible: true, message: "", focusRequest: 0 });
+    [this.state, this.setState] = createStore<{ open: boolean; query: string; options: SearchOptions; scope?: SearchScope; pageKey?: string; result?: SearchMatchSet; pending: boolean; active: number; visible: boolean; message: string; focusRequest: number }>({ open: false, query: "", options: {}, pending: false, active: -1, visible: true, message: "", focusRequest: 0 });
     this.unsubscribe = editor.repository.subscribeChanges(change => {
       // All decoration owners must lose stale ranges, even if Find is closed.
-      if (change.inlineOwner) editor.decorations.invalidateContent(change.inlineOwner);
+      if (change.inlineOwner) { editor.decorations.invalidateContent(change.inlineOwner); editor.minimap.invalidateContent(change.inlineOwner); }
       else for (const [key, previous] of change.previousContents) {
         const current = editor.repository.readState().contents[key];
-        if (!current || !previous || previous.inlineRevision !== current.inlineRevision || previous.payload.text !== current.payload.text) editor.decorations.invalidateContent(key);
+        if (!current || !previous || previous.inlineRevision !== current.inlineRevision || previous.payload.text !== current.payload.text) { editor.decorations.invalidateContent(key); editor.minimap.invalidateContent(key); }
       }
       if (!this.state.open) return;
       this.navigated = undefined;
@@ -40,13 +41,14 @@ export class DocumentFind {
         if (document) key = document;
       }
       const scope = resolveSearchScope(this.editor, key);
+      const pageKey = pageForNode(this.editor, key);
       this.origin = key; this.selection = this.editor.mounts.get(key)?.captureInlineSelection?.(); this.native = this.editor.mounts.get(key)?.captureSelection?.(); this.navigated = undefined;
       let query = this.state.query;
       if (!this.editor.crossText.range() && this.selection) {
         const node = this.editor.node(key)!, start = Math.min(this.selection.anchor, this.selection.head), end = Math.max(this.selection.anchor, this.selection.head);
         if (end > start && end - start <= 200) query = node.inlineContent.slice(start,end).map(k => String(this.editor.node(k)?.payload.text ?? "")).join("");
       }
-      this.setState({ open: true, scope, query, message: "", active: -1, focusRequest: this.state.focusRequest + 1 }); this.schedule();
+      this.setState({ open: true, scope, pageKey, query, message: "", active: -1, focusRequest: this.state.focusRequest + 1 }); this.schedule();
     } catch (error) { this.setState("message", (error as Error).message); }
   }
   setQuery(query: string) { this.setState("query", query); this.schedule(); }
@@ -55,12 +57,12 @@ export class DocumentFind {
     try { this.setState("scope", resolveSearchScope(this.editor, this.origin!, kind)); this.schedule(); }
     catch (error) { this.setState("message", (error as Error).message); }
   }
-  toggleHighlights() { this.setState("visible", v => !v); this.editor.decorations.setHighlightsVisible(this.owner, this.state.visible); }
+  toggleHighlights() { this.setState("visible", v => !v); this.editor.decorations.setHighlightsVisible(this.owner, this.state.visible); this.editor.minimap.setLayerVisible(this.owner, this.state.visible); }
   private schedule(keepUnchangedHighlights = false) {
     clearTimeout(this.timer); this.controller?.abort(); this.generation++;
     this.setState({ pending: !!this.state.query, result: undefined, active: -1 });
     // Query/structure changes must never leave obsolete current-result navigation.
-    if (!keepUnchangedHighlights) this.editor.decorations.clearHighlights(this.owner);
+    if (!keepUnchangedHighlights) { this.editor.decorations.clearHighlights(this.owner); this.editor.minimap.dispose(this.owner); }
     this.timer = setTimeout(() => void this.flush(), 200);
   }
   async flush() {
@@ -71,12 +73,28 @@ export class DocumentFind {
     if (generation !== this.generation || !this.state.open) return;
     this.setState({ result, pending: false, message: result.diagnostics.join(" ") });
     this.editor.decorations.attachMatches(this.owner, result); this.editor.decorations.setHighlightsVisible(this.owner, this.state.visible);
+    if (this.state.pageKey) {
+      const pageNodes = nodeKeysForPage(this.editor, this.state.pageKey);
+      const markers = result.matches.flatMap(match => match.ranges
+        .filter(range => pageNodes.has(range.nodeKey))
+        .map((range, index) => ({ id: `${match.id}:${index}`, group: match.id, anchor: { kind: "text-range" as const, range }, colour: "#ffd34d", opacity: .55, label: match.context })));
+      this.editor.minimap.attach(this.owner, { pageKey: this.state.pageKey, visible: this.state.visible, priority: 10, markers, onActivate: marker => this.navigateTo(marker.group ?? marker.id) });
+    } else this.editor.minimap.dispose(this.owner);
   }
   async navigate(direction: -1 | 1) {
     const result = this.state.result; if (!result?.matches.length || this.state.pending) return;
     const index = this.state.active < 0 ? (direction === 1 ? 0 : result.matches.length - 1) : (this.state.active + direction + result.matches.length) % result.matches.length;
+    await this.activate(index, result);
+  }
+  async navigateTo(matchId: string) {
+    const result = this.state.result; if (!result || this.state.pending) return;
+    const index = result.matches.findIndex(match => match.id === matchId);
+    if (index >= 0) await this.activate(index, result);
+  }
+  private async activate(index: number, result: SearchMatchSet) {
     this.setState("active", index); const match = result.matches[index]; this.navigated = match;
     this.editor.decorations.setActiveMatch(this.owner, match.id);
+    this.editor.minimap.setActive(this.owner, match.id);
     const revealed = await revealMatch(this.editor, match, () => this.state.result === result && this.state.active === index && this.state.open);
     if (this.state.result !== result || this.state.active !== index || !this.state.open) return;
     if (!revealed) { this.setState("message", "This result cannot be mounted by the current view adapter."); return; }
@@ -84,7 +102,7 @@ export class DocumentFind {
   }
   close(restore = true) {
     clearTimeout(this.timer); this.controller?.abort(); this.generation++;
-    this.editor.decorations.disposeSession(this.owner); this.setState({ open: false, result: undefined, pending: false });
+    this.editor.decorations.disposeSession(this.owner); this.editor.minimap.dispose(this.owner); this.setState({ open: false, result: undefined, pending: false });
     if (!restore) return;
     const range = this.navigated?.ranges[0], key = range?.nodeKey ?? this.origin, mount = key && this.editor.mounts.get(key);
     if (mount) {

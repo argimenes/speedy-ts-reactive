@@ -176,7 +176,7 @@
 .workspace-demo__window-controls { flex-shrink: 0; }
 .workspace-demo__save-state[data-save-state="unsaved"] { color: #70471e; font-weight: bold; }
 
-.workspace-demo .reactive-page > * + * { margin-top: 8px; }
+.workspace-demo .reactive-page__main > * + * { margin-top: 8px; }
 .workspace-demo .reactive-standoff-block { position: relative; min-width: 0; border: 0; border-radius: 0; }
 
 .workspace-demo .reactive-standoff-surface {
@@ -204,10 +204,15 @@
 .workspace-demo .reactive-relation--leftMargin { right: calc(100% + 20px); text-align: left; }
 .workspace-demo .reactive-relation--rightMargin { left: calc(100% + 20px); text-align: right; }
 
+.workspace-demo .reactive-page--minimap-left .reactive-relation--leftMargin { right: calc(100% + 62px); }
+.workspace-demo .reactive-page--minimap-right .reactive-relation--rightMargin { left: calc(100% + 62px); }
+
 .workspace-demo .reactive-relation--leftMargin::after,
 .workspace-demo .reactive-relation--rightMargin::before { position: absolute; top: 2px; font-size: 1.35rem; }
 .workspace-demo .reactive-relation--leftMargin::after { right: -30px; content: "☞"; }
 .workspace-demo .reactive-relation--rightMargin::before { left: -30px; content: "☜"; }
+.workspace-demo .reactive-page--minimap-left .reactive-relation--leftMargin::after { right: -56px; }
+.workspace-demo .reactive-page--minimap-right .reactive-relation--rightMargin::before { left: -56px; }
 .workspace-demo .reactive-relation .reactive-standoff-surface { min-height: 1.4em; }
 
 .workspace-demo .reactive-tabs__labels { min-height: 40px; flex-wrap: wrap; padding-left: 0; border-bottom-color: #5b605e; background: #fff; }

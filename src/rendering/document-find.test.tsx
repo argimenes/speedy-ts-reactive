@@ -29,6 +29,7 @@ describe("document Find UI", () => {
     await Promise.resolve(); expect(panel()).not.toBeNull(); expect(query().value).toBe("Hello");
     await editor.find.flush(); expect(editor.find.state.result?.matches).toHaveLength(2);
     expect(editor.find.state.scope?.rootKey).toBe(node("page").key);
+    expect(editor.minimap.layersFor(node("page").key)[0].markers).toHaveLength(2);
     expect(editor.mounts.get(node("b").key)).toBeUndefined();
     await editor.find.navigate(-1); expect(editor.mounts.get(node("b").key)).toBeDefined();
     expect(editor.find.state.active).toBe(1); expect(document.activeElement).toBe(query());
@@ -37,11 +38,14 @@ describe("document Find UI", () => {
     expect(panel()).toBeNull(); expect(document.activeElement).toBe(editor.mounts.get(node("b").key)?.focusElement);
     expect(editor.repository.canUndo()).toBe(false);
     expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
+    expect(editor.minimap.layersFor(node("page").key)).toHaveLength(0);
   });
   it("updates matches after edit/undo and hides highlights without dropping results", async () => {
     const { editor, node } = setup(); editor.find.open(node("a").key); editor.find.setQuery("Hello"); await editor.find.flush();
     editor.find.toggleHighlights(); expect(editor.find.state.result?.matches).toHaveLength(2); expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
+    expect(editor.minimap.layersFor(node("page").key)[0].visible).toBe(false);
     editor.find.toggleHighlights();
+    expect(editor.minimap.layersFor(node("page").key)[0].visible).toBe(true);
     editor.commands.replaceInlineRange(node("a").key, 0, 5, "Bye");
     expect(editor.find.state.pending).toBe(true); expect(editor.decorations.nodes[node("a").key]).toHaveLength(0);
     await editor.find.flush(); expect(editor.find.state.result?.matches).toHaveLength(1);

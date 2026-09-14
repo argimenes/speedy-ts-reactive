@@ -29,9 +29,11 @@ import { SessionDecorations } from "../runtime/session-decorations";
 import { DocumentFind } from "../runtime/document-find";
 import { DocumentEntityList } from "../runtime/document-entity-list";
 import { createTimerBlock } from "../runtime/timer-block";
+import { MinimapService } from "../runtime/minimap";
 
 export class ReactiveEditor {
   readonly decorations = new SessionDecorations();
+  readonly minimap = new MinimapService();
   readonly find: DocumentFind;
   readonly entityList: DocumentEntityList;
   readonly viewChildren: Record<string, string | undefined>;
@@ -279,6 +281,7 @@ export class ReactiveEditor {
     this.find.dispose();
     this.entityList.dispose();
     this.decorations.clearAll();
+    this.minimap.clearAll();
     this.crossInput?.dispose();
     this.crossText.clear();
     this.blockClipboard.dismiss();

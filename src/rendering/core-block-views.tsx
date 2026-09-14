@@ -6,6 +6,7 @@ import { BlockOutlet, ChildBlocks, RelationBlocks } from "./block-outlet";
 import { BackgroundMedia } from "./background-media";
 import { youtubeId } from "./backgrounds";
 import { DocumentStyleBar } from "./document-style-bar";
+import { PageMinimap } from "./page-minimap";
 
 function useContainerMount(nodeKey: NodeKey, root: () => HTMLElement) {
   const { editor } = useReactiveView();
@@ -52,15 +53,17 @@ export function GenericContainerView(props: BlockViewProps) {
 }
 
 export function PageView(props: BlockViewProps) {
-  const { projection } = useReactiveView();
+  const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const appearance = createMemo(() => blockAppearance(node()));
   let root!: HTMLElement;
+  let main!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
   return (
-    <article ref={root} class={`abstract-block reactive-page ${appearance().classes.join(" ")}`} style={appearance().style} tabIndex={-1} {...data(props.nodeKey, node)}>
+    <article ref={root} class={`abstract-block reactive-page ${appearance().classes.join(" ")}`} classList={{ [`reactive-page--minimap-${editor.minimap.state.options.side}`]: editor.minimap.hasVisibleMarkers(props.nodeKey) }} style={appearance().style} tabIndex={-1} {...data(props.nodeKey, node)}>
       <RelationBlocks parentKey={props.nodeKey} />
-      <ChildBlocks parentKey={props.nodeKey} />
+      <div ref={main} class="reactive-page__main"><ChildBlocks parentKey={props.nodeKey} /></div>
+      <Show when={editor.minimap.hasVisibleMarkers(props.nodeKey)}><PageMinimap pageKey={props.nodeKey} page={() => root} main={() => main} /></Show>
     </article>
   );
 }

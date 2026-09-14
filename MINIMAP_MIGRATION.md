@@ -1,6 +1,29 @@
 # Page minimap migration plan
 
-Status: design only; no minimap runtime code has been added.
+Status: implemented for Page-scoped Find on 15 September 2026.
+
+## Implementation checkpoint
+
+The general session service is in `src/runtime/minimap.ts`; it accepts immutable
+semantic text-range, Block-occurrence and normalised-ratio markers in isolated
+owner layers. `src/rendering/page-minimap.tsx` provides the portalled,
+device-pixel-scaled canvas renderer, dynamic scrollport geometry, viewport
+indicator, hidden-marker accounting, overlap hit-testing and delegated marker
+activation. `PageView` supplies a stable main-column anchor, and Document Find
+publishes/disposes its yellow current-Page marker layer alongside its existing
+session highlights.
+
+The implemented options default to right-side placement, 20 CSS px width,
+available scrollport height with a 480 px fallback, two-CSS-pixel minimum marker
+thickness and `multiply` compositing. Left placement, numeric height and
+`source-over` compositing are configurable. The minimap and all of its options
+remain session-only and produce no canonical writes or history entries.
+
+The desktop margin CSS now reserves coordinated lanes when a minimap is active:
+the manicule remains closest to the main text, followed by the minimap and then
+the margin note. The layout mirrors for a left-side minimap. Existing narrow-mode
+rules keep margin notes inline, hide maniculae and allow the minimap renderer to
+hide itself when the gutter is too small.
 
 ## Purpose
 
@@ -223,7 +246,7 @@ There is no Document-scale rail in this increment.
 - Minimap activity must leave repository revision, dirty state and undo/redo
   availability unchanged.
 
-## Proposed verification
+## Verification contract
 
 - Unit-test marker validation, owner/group isolation, ordering, invalidation and
   the guarantee that service operations never touch repository history.

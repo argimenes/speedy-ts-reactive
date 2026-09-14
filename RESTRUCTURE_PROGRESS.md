@@ -1,9 +1,9 @@
 # Reactive reconstruction progress
 
-## Page minimap — design documented, 15 September 2026
+## Page minimap — implemented, 15 September 2026
 
 Reviewed the original DOM-coupled minimap and its entity/search consumers. The
-proposed replacement is a general-purpose, owner-isolated Page marker visualiser
+replacement is a general-purpose, owner-isolated Page marker visualiser
 using semantic occurrence anchors, batched measurement and a viewport-height
 canvas beside the main column. It is explicitly session/view state: no Block payload,
 repository revision, history entry or saved document data. Hidden inactive-tab
@@ -11,9 +11,10 @@ content has no honest Page Y coordinate and is omitted until mounted. Confirmed
 defaults are a 20 px rail dynamically filling the Page scrollport, current-Page
 markers only, marker-click navigation, right-side placement with a left option,
 and configurable `multiply`/`source-over` blending. Empty-rail scrolling is deferred.
-The CSS-generated left/right margin maniculae share this gutter; implementation
-should replace independent hard-coded offsets with explicit manicule/minimap lanes.
-See [MINIMAP_MIGRATION.md](MINIMAP_MIGRATION.md). No runtime code was added.
+The CSS-generated left/right margin maniculae now use coordinated
+manicule/minimap/margin-note lanes while the rail is active. Page-scoped Find is
+the first producer and publishes yellow markers that reuse its existing result
+navigation. See [MINIMAP_MIGRATION.md](MINIMAP_MIGRATION.md).
 
 ## TimerBlock — implemented, 14 September 2026
 
