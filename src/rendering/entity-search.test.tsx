@@ -5,6 +5,8 @@ import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { DocumentStyleBar } from "./document-style-bar";
 import { openEntitySearch } from "../runtime/entity-search";
+import { matchSources } from "../runtime/search-matching";
+vi.mock("../runtime/search-worker",() => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0],query: string,options: Parameters<typeof matchSources>[2]) => matchSources(sources,query,options) }));
 const cleanup: (() => void)[] = [];
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); localStorage.clear(); });
@@ -16,10 +18,11 @@ function setup() {
   cleanup.push(() => { dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
   const select = () => { const mount = editor.mounts.get(node("a").key)!; mount.focus(); mount.restoreInlineSelection!({ anchor: 0, head: 6 }); };
-  const open = () => { select(); host.querySelector<HTMLButtonElement>('[aria-label="Entity reference"]')!.click(); };
+  const pause = () => document.querySelector<HTMLInputElement>('[aria-label="Search additional occurrences"]')!.click();
+  const open = () => { select(); host.querySelector<HTMLButtonElement>('[aria-label="Entity reference"]')!.click(); pause(); };
   const panel = () => document.querySelector<HTMLElement>('[role="dialog"][aria-label="Search entities"]');
   const query = () => panel()!.querySelector<HTMLInputElement>('[aria-label="Search entities"]')!;
-  return { editor, node, select, open, panel, query, host };
+  return { editor, node, select, open, panel, query, host, pause };
 }
 describe("entity search overlay", () => {
   it("seeds the query, searches existing API, commits local reference/name metadata and undoes atomically", async () => {
@@ -45,8 +48,9 @@ describe("entity search overlay", () => {
   });
   it("creates a shared entity annotation across Blocks and invalidates an open search on edits", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply()));
-    const { editor, node, panel } = setup();
+    const { editor, node, panel, pause } = setup();
     openEntitySearch(editor, [{ nodeKey: node("a").key, start: 0, end: 12 }, { nodeKey: node("b").key, start: 0, end: 6 }]);
+    pause();
     await vi.advanceTimersByTimeAsync(310);
     document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     const a = (node("a").payload.standoffProperties as any[])[0], b = (node("b").payload.standoffProperties as any[])[0];

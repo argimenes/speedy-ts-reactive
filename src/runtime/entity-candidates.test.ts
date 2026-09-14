@@ -72,13 +72,26 @@ describe("entity mention candidates", () => {
     expect(editor.linkedAnnotations.resolve(a).value).toBe(entity.id);
     editor.repository.undo(); expect(node("c").payload.standoffProperties).toBeUndefined();
   });
-  it("rejects stale and partial sets before writing", async () => {
+  it("rejects stale, failed and cancelled sets before writing", async () => {
     const { session,editor,node } = setup(); session.enable(); await session.flush(true); session.nominate(entity);
     const set = session.state.result!, targets = session.selected().map(r => r.match);
-    expect(() => bindEntityCandidates(editor,{ ...set,status: "partial",exact: false },targets,entity)).toThrow("complete");
+    for (const status of ["error", "cancelled"] as const) expect(() => bindEntityCandidates(editor,{ ...set,status,exact: false },targets,entity)).toThrow("successful search");
     expect(editor.repository.canUndo()).toBe(false);
     editor.commands.replaceInlineRange(node("a").key,0,0,"x");
     expect(() => session.bind()).toThrow("changed"); expect(node("b").payload.standoffProperties).toBeUndefined();
+  });
+  it("binds reviewed mentions despite unsupported code Blocks without enabling select-all", async () => {
+    const { session,editor,node } = setup([{ id: "a",type: "standoff-editor-block",text: "he he" },{ id: "code",type: "code-mirror-block",text: "he" }]);
+    session.enable(); await session.flush(true); session.nominate(entity);
+    expect(session.state.result?.status).toBe("partial");
+    expect(session.state.result?.diagnostics.join(" ")).toContain("code-mirror-block");
+    session.selectNone(); session.selectAll(); expect(session.selected()).toHaveLength(0);
+    const row = session.state.rows.find(r => !r.original)!;
+    session.toggle(row.key,true); expect(session.canBind()).toBe(true);
+    expect(session.bind()).toBe(1);
+    expect(node("a").payload.standoffProperties).toEqual([expect.objectContaining({ start: 3,end: 4,value: entity.id })]);
+    expect(node("code").payload.standoffProperties).toBeUndefined();
+    editor.repository.undo(); expect(node("a").payload.standoffProperties).toBeUndefined();
   });
   it("synchronizes exclusions across transclusions and writes each canonical range once", async () => {
     const { editor,node,session } = setup(); editor.commands.transclude(node("b").key,{ kind: "at",parentKey: node("page").key,index: 2 });

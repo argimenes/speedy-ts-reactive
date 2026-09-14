@@ -10,8 +10,8 @@ vi.mock("../runtime/search-worker",() => ({ runSearchWorker: async (sources: Par
 const cleanup: (() => void)[] = [];
 beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal("fetch",vi.fn().mockResolvedValue({ ok: true,json: async () => ({ Success: true,Results: [{ id: "blake",name: "Vernon Blake" }],Count: 1,Page: 1,MaxPage: 1 }) })); });
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); localStorage.clear(); });
-function setup(selected = true) {
-  const editor = new ReactiveEditor({ type: "document-block",children: [{ id: "a",type: "standoff-editor-block",text: "he the he" },{ id: "b",type: "standoff-editor-block",text: "he" }] });
+function setup(selected = true, unsupported = false) {
+  const editor = new ReactiveEditor({ type: "document-block",children: [{ id: "a",type: "standoff-editor-block",text: "he the he" },{ id: "b",type: unsupported ? "code-mirror-block" : "standoff-editor-block",text: "he" }] });
   registerCoreViews(editor); const projection = editor.createView("candidate-ui"),host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />,host); editor.installGateway(document);
   cleanup.push(() => { dispose(); editor.dispose(); });
@@ -24,6 +24,58 @@ function setup(selected = true) {
   return { editor,node,panel,button,field };
 }
 describe("entity candidate review",() => {
+  it("binds a manually checked match and closes despite incomplete document coverage",async () => {
+    const { editor,field,panel,button } = setup(false,true);
+    field("Mention text").value = "he";
+    field("Mention text").dispatchEvent(new InputEvent("input",{ bubbles: true }));
+    field("Search entities").value = "Blake";
+    field("Search entities").dispatchEvent(new InputEvent("input",{ bubbles: true }));
+    await vi.advanceTimersByTimeAsync(310);
+    expect(panel().textContent).toContain("Search coverage is incomplete");
+    expect(button("Select all eligible").disabled).toBe(true);
+    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true }));
+    panel().querySelector<HTMLInputElement>('[aria-label="Include mention: he"]')!.click();
+    expect(button("Bind 1").disabled).toBe(false);
+    button("Bind 1").click(); expect(panel()).toBeNull();
+    expect(editor.encodeDocument().children![0].standoffProperties).toHaveLength(1);
+    editor.repository.undo(); expect(editor.encodeDocument().children![0].standoffProperties).toBeUndefined();
+  });
+  it("keeps both columns mounted when search is paused, clears highlights and resumes edited mention text",async () => {
+    const { editor,field,panel } = setup();
+    await vi.advanceTimersByTimeAsync(310);
+    expect(panel().querySelector('.entity-search-columns > .entity-search-lookup')).toBeTruthy();
+    expect(panel().querySelector('.entity-search-columns > .entity-candidates')).toBeTruthy();
+    expect(Object.values(editor.decorations.nodes).flat().length).toBeGreaterThan(0);
+    const toggle = panel().querySelector<HTMLInputElement>('[aria-label="Search additional occurrences"]')!;
+    toggle.click();
+    expect(toggle.checked).toBe(false);
+    expect(field("Mention text").value).toBe("he");
+    expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
+    field("Mention text").value = "the";
+    field("Mention text").dispatchEvent(new InputEvent("input",{ bubbles: true }));
+    await vi.advanceTimersByTimeAsync(250);
+    expect(panel().querySelectorAll('[data-candidate-row]')).toHaveLength(0);
+    expect(editor.repository.canUndo()).toBe(false);
+    toggle.click(); await vi.advanceTimersByTimeAsync(250);
+    expect(field("Mention text").value).toBe("the");
+    expect(panel().querySelectorAll('[data-candidate-row]')).toHaveLength(2);
+    // Cancelling a pending generation must not restore its candidates later.
+    field("Mention text").dispatchEvent(new InputEvent("input",{ bubbles: true }));
+    toggle.click(); await vi.advanceTimersByTimeAsync(250);
+    expect(panel().querySelectorAll('[data-candidate-row]')).toHaveLength(0);
+    expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
+  });
+  it("cannot link an entity with search disabled and no original selection",async () => {
+    const { editor,field,panel } = setup(false);
+    panel().querySelector<HTMLInputElement>('[aria-label="Search additional occurrences"]')!.click();
+    field("Search entities").value = "Blake";
+    field("Search entities").dispatchEvent(new InputEvent("input",{ bubbles: true }));
+    await vi.advanceTimersByTimeAsync(310);
+    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true }));
+    expect(panel().querySelector('[role="alert"]')?.textContent).toContain("Enable Search additional occurrences");
+    expect(editor.repository.canUndo()).toBe(false);
+    expect(field("Mention text")).toBeTruthy();
+  });
   it("launches from a collapsed caret with the entity shortcut",async () => {
     const { editor,node,field,panel,button } = setup();
     button("Cancel").click();
@@ -63,7 +115,7 @@ describe("entity candidate review",() => {
   it("keeps native select-all in query fields, supports a remapped opener and only nominates on Enter",async () => {
     const { editor,field,panel,button } = setup(); await vi.advanceTimersByTimeAsync(310);
     const native = new KeyboardEvent("keydown",{ key: "a",ctrlKey: true,bubbles: true,cancelable: true }); field("Search entities").dispatchEvent(native); expect(native.defaultPrevented).toBe(false);
-    expect(field("Mention text")).toBeNull();
+    expect(field("Mention text").value).toBe("he");
     editor.bindings.assign("entity.candidates.open",[keyboard("m","Alt")]);
     field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "m",altKey: true,bubbles: true,cancelable: true })); await vi.advanceTimersByTimeAsync(250);
     expect(field("Mention text").value).toBe("he"); expect(panel().textContent).toContain("3 selected / 3 unique targets");

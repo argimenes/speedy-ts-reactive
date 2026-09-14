@@ -42,7 +42,7 @@ export function candidateReason(editor: ReactiveEditor, match: SearchMatch, enti
 /** Prevalidate all targets, then one payload update per content and one history entry. */
 export function bindEntityCandidates(editor: ReactiveEditor, set: SearchMatchSet, matches: SearchMatch[], entity: NominatedEntity): number {
   if (!entity.id || !entity.name) throw new Error("Nominate an entity first.");
-  if (set.status !== "complete" || !set.exact) throw new Error("Narrow the search until the candidate set is complete.");
+  if (set.status !== "complete" && set.status !== "partial") throw new Error("Wait for a successful search before binding mentions.");
   if (set.revision !== editor.repository.readState().revision) throw new Error("The document changed. Select the text again.");
   const unique = [...new Map(matches.map(match => [candidateKey(match),match])).values()];
   const eligible: SearchMatch[] = [];
@@ -123,7 +123,14 @@ export class EntityCandidates {
     if (change.query !== undefined) this.setState("query",change.query);
     if (change.options) this.setState("options",change.options);
     if (change.scope) this.setState("scope",resolveSearchScope(this.editor,this.overlay.ownerKey,change.scope));
-    this.schedule(false);
+    if (this.state.enabled) this.schedule(false);
+  }
+  disable() {
+    this.controller?.abort(); clearTimeout(this.timer); this.generation++; this.undo = [];
+    this.sourceSet = undefined;
+    this.setState({ enabled: false, pending: false, result: undefined, rows: [], undoCount: 0, active: undefined, activeMatch: undefined, message: "" });
+    this.editor.decorations.clearHighlights(this.owner);
+    this.editor.overlays.enableEntityCandidates(this.overlay.key, false);
   }
   private schedule(selectAll: boolean) {
     this.controller?.abort(); clearTimeout(this.timer); this.generation++; this.undo = [];
@@ -160,7 +167,16 @@ export class EntityCandidates {
     this.paint();
   }
   selected() { return this.state.rows.filter(r => r.checked && !r.reason); }
-  canBind() { return !!this.state.entity && !!this.selected().length && !this.state.pending && this.state.result?.status === "complete" && this.state.result.exact && this.state.result.revision === this.editor.repository.state.revision; }
+  bindingDisabledReason() {
+    if (!this.state.enabled) return "Enable search to bind matching mentions.";
+    if (this.state.pending) return "Wait for the mention search to finish.";
+    if (!this.state.entity) return "Choose an entity from the results on the left.";
+    if (!this.selected().length) return "Check at least one eligible mention.";
+    if (!this.state.result || !["complete", "partial"].includes(this.state.result.status)) return "Run a successful mention search first.";
+    if (this.state.result.revision !== this.editor.repository.state.revision) return "The document changed. Search again.";
+    return "";
+  }
+  canBind() { return !this.bindingDisabledReason(); }
   toggle(key: string, checked: boolean) {
     const index = this.state.rows.findIndex(r => r.key === key), row = this.state.rows[index];
     if (!row || row.reason || this.state.pending) return;

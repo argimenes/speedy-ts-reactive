@@ -21,6 +21,7 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
   const select = (entity?: Entity) => {
     if (!entity || busy()) return;
     if (candidates.state.enabled) { candidates.nominate(entity); return; }
+    if (!overlay.entityRanges?.length) { setError("Enable Search additional occurrences and enter mention text first, or reopen with selected text."); return; }
     try { editing = true; chooseEntity(editor, overlay, entity); close(); }
     catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { editing = false; }
@@ -51,7 +52,7 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
     onCleanup(() => { active = false; clearTimeout(timer); controller.abort(); });
   });
   onMount(() => {
-    if (!overlay.entityRanges?.length) candidates.enable();
+    candidates.enable();
     const disposeMount = editor.mounts.register(overlay.key, { root, focusElement: input, inputPolicy: "opaque-widget", focus: () => { input.focus(); input.select(); } });
     const unsubscribe = editor.repository.subscribeBeforeChanges(() => { if (!editing) editor.overlays.close(overlay.key, false); });
     input.focus(); input.select();
@@ -90,6 +91,8 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
   };
   return <div ref={root} class="reactive-entity-search" classList={{ "reactive-entity-search--candidates": candidates.state.enabled }} role="dialog" aria-modal={!candidates.state.enabled} aria-label="Search entities" data-native-context-menu onKeyDown={keys}>
     <header><strong>Link text to an entity</strong><button type="button" onClick={close}>Cancel</button></header>
+    <div class="entity-search-columns">
+    <section class="entity-search-lookup" aria-label="Entity lookup">
     <blockquote>{overlay.entityQuery}</blockquote>
     <button type="button" title={editor.bindings.label("entity.candidates.open")} onClick={() => candidates.enable()}>Find other occurrences</button>
     <label>Search entities<input ref={input} aria-label="Search entities" value={query()} maxLength={1000} onInput={event => { candidates.nominate(); setQuery(event.currentTarget.value); setPage(1); }} /></label>
@@ -106,7 +109,9 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
     </tbody></table>
     <footer><button type="button" disabled={busy() || page() <= 1} onClick={() => setPage(page() - 1)}>Previous page</button><span>Page {page()} / {maxPage()}</span><button type="button" disabled={busy() || page() >= maxPage()} onClick={() => setPage(page() + 1)}>Next page</button></footer>
     <small>Up/Down selects an entity result; Enter {candidates.state.enabled ? "nominates it; use Bind to confirm" : "links it"}. Escape cancels. Find other occurrences: {editor.bindings.label("entity.candidates.open")}. Select all mentions outside text fields: {editor.bindings.label("entity.candidates.selectAll")}.</small>
-    <Show when={candidates.state.enabled}><EntityCandidatesPanel session={candidates} bind={bind} /></Show>
+    </section>
+    <EntityCandidatesPanel session={candidates} bind={bind} />
+    </div>
   </div>;
 }
 export function EntitySearchLayer(props: { editor: ReactiveEditor; viewId: string }) {

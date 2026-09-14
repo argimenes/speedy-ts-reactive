@@ -85,9 +85,9 @@ export class OverlayService {
     const index = this.overlays.findIndex(overlay => overlay.key === key);
     if (index >= 0) this.setOverlays(index, "annotationPreview", range);
   }
-  enableEntityCandidates(key: NodeKey) {
+  enableEntityCandidates(key: NodeKey, enabled = true) {
     const index = this.overlays.findIndex(overlay => overlay.key === key);
-    if (index >= 0) this.setOverlays(index,"entityCandidates",true);
+    if (index >= 0) this.setOverlays(index,"entityCandidates",enabled);
   }
 
   dismissTopWithoutRestoring(): void {
