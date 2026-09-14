@@ -1,5 +1,26 @@
 # Reactive reconstruction progress
 
+## TimerBlock — implemented, 14 September 2026
+
+Added a lightweight, persistent `timer-block` with a five-minute default,
+editable `MM:SS` duration, Start/Pause/Resume/Reset controls, a brief Web Audio
+completion tone and an undoable Done removal. A component-local Solid signal
+updates the visible second; no tick writes to the repository. The payload changes
+only for user controls and stores an absolute `runningUntil` deadline (or paused
+remainder), so save/reopen and remounts reconstruct elapsed time without interval
+drift. Already-expired timers reopen silently in their Done state.
+
+The Block defaults to 260 × 260 px and commits `block/size` only when a resize
+gesture ends. It is an opaque, selectable control, available from Add Block and
+the Document toolbar. `Ctrl+;`, then `T` is the reassignable browser-safe default;
+the cross-Block dispatcher supports the same chord. Creation replaces only a
+genuinely empty, relation-free text Block and otherwise inserts beside the
+origin, preserving non-empty text. Three TimerBlock tests cover creation,
+countdown without repository revisions, pause, duration changes, one-shot sound,
+save/reload, resize, Done, undo and menu availability. Focused integration tests,
+typecheck, client/server builds and isolated real Chrome checks pass. Full suite:
+232/234, with only the same two documented context-menu baseline failures.
+
 ## Document entities listing — implemented, 14 September 2026
 
 Implemented the Document-scoped Entity/Graph/Document table described in

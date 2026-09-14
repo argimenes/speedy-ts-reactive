@@ -3,6 +3,7 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import { unwrap as unwrapStore } from "solid-js/store";
 import { createTextTab } from "./text-tabs";
 import { backgroundImages, defaultBackgroundUrls, isBackgroundType, mediaUrl, youtubeId, type BackgroundType } from "../rendering/backgrounds";
+import { timerBlockDto } from "./timer-block";
 
 export interface BlockMenuItem {
   label: string;
@@ -115,6 +116,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   if (doc) {
     items.push({ label: "Add Block", children: [
       { label: "Text", run: () => add(text()) }, { label: "Code", run: () => add({ ...dto("code-mirror-block"), text: "" }) },
+      { label: "Timer", run: () => add(timerBlockDto()) },
       mediaInput("Image URL…", "image-block"), mediaInput("YouTube video URL…", "youtube-video-block"),
       { label: "Canvas", run: () => add(dto("canvas-block")) },
       { label: "Add Grid", children: [1, 2].flatMap(rows => [1, 2, 3].map(columns => ({ label: `${rows} × ${columns}`, run: () => add(grid(rows, columns)) }))) },

@@ -3,6 +3,7 @@ import type { ViewPosition } from "../block-tree/types";
 import { graphemeBoundaries } from "./graphemes";
 import { createEffect, createRoot } from "solid-js";
 import { openEntitySearch } from "../runtime/entity-search";
+import { createTimerBlock } from "../runtime/timer-block";
 
 /** Model-owned selection across separate contenteditables. Installed before InputGateway. */
 export class CrossBlockInput {
@@ -224,6 +225,7 @@ export class CrossBlockInput {
     if (this.editor.bindings.dispatch(event, ["cross-text"], id => {
       if (id.startsWith("cross.extend")) return this.extend(id.slice("cross.extend".length));
       if (id === "cross.entityList") { this.editor.entityList.open(resolved.nodeKey); return true; }
+      if (id === "cross.timerCreate") { createTimerBlock(this.editor, resolved.nodeKey); return true; }
       if (id === "cross.entity") {
         if (active) { openEntitySearch(this.editor, this.editor.crossText.resolve(active.anchor, active.head)); return true; }
         const range = resolved.handle.captureInlineSelection?.();

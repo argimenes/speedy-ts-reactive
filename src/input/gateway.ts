@@ -40,6 +40,7 @@ export class InputGateway {
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly entitySearch: (key: string, range: { anchor: number; head: number }) => void,
     private readonly entityList: (key: string) => void,
+    private readonly createTimer: (key: string) => void,
   ) {}
 
   install(): () => void {
@@ -463,6 +464,11 @@ export class InputGateway {
   };
 
   private runBinding = (id: string, event: Event): boolean | void => {
+    if (id === "timer.create") {
+      const resolved = this.mounts.resolveEvent(event);
+      if (!resolved) return false;
+      this.createTimer(resolved.nodeKey); return true;
+    }
     if (id === "entity.list.open") {
       const resolved = this.mounts.resolveEvent(event);
       if (!resolved) return false;

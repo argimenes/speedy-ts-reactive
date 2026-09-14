@@ -28,6 +28,7 @@ import { createStore } from "solid-js/store";
 import { SessionDecorations } from "../runtime/session-decorations";
 import { DocumentFind } from "../runtime/document-find";
 import { DocumentEntityList } from "../runtime/document-entity-list";
+import { createTimerBlock } from "../runtime/timer-block";
 
 export class ReactiveEditor {
   readonly decorations = new SessionDecorations();
@@ -143,6 +144,7 @@ export class ReactiveEditor {
       direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
       (nodeKey, range) => openEntitySearch(this, [{ nodeKey, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }]),
       nodeKey => this.entityList.open(nodeKey),
+      nodeKey => { createTimerBlock(this, nodeKey); },
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
