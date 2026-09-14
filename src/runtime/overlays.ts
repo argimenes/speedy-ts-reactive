@@ -19,6 +19,7 @@ export interface OverlayDescriptor {
   entityRanges?: Array<{ nodeKey: string; start: number; end: number }>;
   entityRevision?: number;
   entityQuery?: string;
+  entityCandidates?: boolean;
 }
 
 let overlayCounter = 0;
@@ -83,6 +84,10 @@ export class OverlayService {
   previewAnnotation(key: NodeKey, range?: { start: number; end: number }): void {
     const index = this.overlays.findIndex(overlay => overlay.key === key);
     if (index >= 0) this.setOverlays(index, "annotationPreview", range);
+  }
+  enableEntityCandidates(key: NodeKey) {
+    const index = this.overlays.findIndex(overlay => overlay.key === key);
+    if (index >= 0) this.setOverlays(index,"entityCandidates",true);
   }
 
   dismissTopWithoutRestoring(): void {

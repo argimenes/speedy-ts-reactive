@@ -13,6 +13,8 @@ import {
 } from "./decorations";
 import { blockAppearance } from "./appearance";
 import { compileCellStyleRuns, cellStyleAt, standoffSvgStyles, type StandoffAnnotation } from "./standoff-styles";
+import "./candidate-exclusions.css";
+import { exclusionPosition } from "./candidate-exclusion-layout";
 
 function pointBoundary(root: HTMLElement, node: Node | null, offset: number): number {
   if (!node) return 0;
@@ -136,6 +138,15 @@ export function StandoffEditorView(props: BlockViewProps) {
   const [foregroundShapes, setForegroundShapes] = createSignal<DecorationShape[]>([]);
   const [selectionShapes, setSelectionShapes] = createSignal<DecorationShape[]>([]);
   const [searchShapes, setSearchShapes] = createSignal<DecorationShape[]>([]);
+  const [exclusions,setExclusions] = createSignal<Array<{ owner: string; id: string; x: number; y: number; active: boolean; fragments: VisualFragment[] }>>([]);
+  const [hovered,setHovered] = createSignal<string>();
+  let measuredOrigin = { x: 0,y: 0 };
+  const hoverCandidate = (event: PointerEvent) => {
+    if (!exclusions().length) return;
+    const x = event.clientX - measuredOrigin.x, y = event.clientY - measuredOrigin.y;
+    const control = exclusions().find(c => (x >= c.x - 5 && x <= c.x + 25 && y >= c.y - 5 && y <= c.y + 25) || c.fragments.some(f => x >= f.x - 6 && x <= f.x + f.width + 10 && y >= f.y - 12 && y <= f.y + f.height + 6));
+    setHovered(control ? `${control.owner}:${control.id}` : undefined);
+  };
 
   const captureSelection = () => {
     const selection = document.getSelection();
@@ -182,7 +193,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     });
     const selectionSet = editor.selections.sets[props.nodeKey];
     const selected: DecorationShape[] = [];
-    for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search") {
+    for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search" && !overlay.entityCandidates) {
       for (const range of overlay.entityRanges ?? []) if (range.nodeKey === props.nodeKey && range.end > range.start) selected.push(...highlightShapes(`${props.nodeKey}:entity-search`, rangeFragments(flow, surface, range.start, range.end - 1), "#f2c767"));
     }
     const cross = editor.crossText.segments[props.nodeKey];
@@ -205,12 +216,18 @@ export function StandoffEditorView(props: BlockViewProps) {
     setForegroundShapes(foreground);
     setSelectionShapes(selected);
     const search: DecorationShape[] = [];
+    const controls: ReturnType<typeof exclusions> = [];
+    const origin = searchVisible && (editor.decorations.nodes[props.nodeKey] ?? []).some(d => d.excludable) ? surface.getBoundingClientRect() : undefined;
+    if (origin) measuredOrigin = { x: origin.left,y: origin.top };
     for (const decoration of searchVisible ? editor.decorations.nodes[props.nodeKey] ?? [] : []) {
       const fragments = rangeFragments(flow, surface, decoration.range.start, decoration.range.end - 1);
       search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
       if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
+      const position = decoration.excludable && origin ? exclusionPosition(fragments,origin,{ width: window.innerWidth,height: window.innerHeight }) : undefined;
+      if (position) controls.push({ owner: decoration.owner,id: decoration.id,...position,active: decoration.active,fragments });
     }
     setSearchShapes(search);
+    setExclusions(controls);
   };
 
   const scheduleMeasure = () => {
@@ -222,8 +239,10 @@ export function StandoffEditorView(props: BlockViewProps) {
       ? requestAnimationFrame(measure)
       : (setTimeout(measure, 0) as unknown as number);
   };
+  const onCandidateScroll = () => { if (searchVisible && (editor.decorations.nodes[props.nodeKey] ?? []).some(d => d.excludable)) scheduleMeasure(); };
 
   onMount(() => {
+    document.addEventListener("scroll",onCandidateScroll,true);
     disposeMount = editor.mounts.register(props.nodeKey, {
       root,
       focusElement: flow,
@@ -269,6 +288,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     JSON.stringify(annotations());
     editor.selections.sets[props.nodeKey]?.revision;
     JSON.stringify(editor.decorations.nodes[props.nodeKey]);
+    editor.overlays.overlays.find(overlay => overlay.viewType === "entity-search")?.entityCandidates;
     editor.crossText.segments[props.nodeKey]?.start;
     editor.crossText.segments[props.nodeKey]?.end;
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
@@ -277,6 +297,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   });
 
   onCleanup(() => {
+    document.removeEventListener("scroll",onCandidateScroll,true);
     if (editor.crossText.segments[props.nodeKey]) queueMicrotask(() => editor.crossText.validate());
     disposeMount?.();
     observer?.disconnect();
@@ -298,10 +319,15 @@ export function StandoffEditorView(props: BlockViewProps) {
       data-runtime-key={props.nodeKey}
       data-block-type="standoff-editor-block"
     >
-      <div ref={surface} class="reactive-standoff-surface">
+      <div ref={surface} class="reactive-standoff-surface" onPointerMove={hoverCandidate} onPointerLeave={() => setHovered(undefined)}>
         <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes()} blendMode="color-dodge" />
         <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />
         <DecorationLayer class="reactive-selection-layer reactive-search-layer" shapes={searchShapes()} />
+        <For each={exclusions()}>{control => <button type="button" class="candidate-exclusion" data-candidate-exclusion data-native-context-menu aria-label="Exclude this mention" title="Exclude this mention from entity binding" classList={{ "candidate-exclusion--visible": control.active || hovered() === `${control.owner}:${control.id}` }} style={{ left: `${control.x}px`,top: `${control.y}px` }}
+          onPointerDown={event => { event.preventDefault(); event.stopPropagation(); }}
+          onClick={event => { event.preventDefault(); event.stopPropagation(); editor.decorations.exclude(control.owner,control.id); }}
+          onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); editor.decorations.exclude(control.owner,control.id); } }}
+        >×</button>}</For>
         <div
           ref={flow}
           class="reactive-standoff-flow"

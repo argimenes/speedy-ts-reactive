@@ -8,3 +8,12 @@
 .reactive-entity-search td small { display:block; }
 .reactive-entity-search tr.current { background:#dcefe9; }
 .reactive-entity-search [role=alert] { color:#922; }
+.reactive-entity-search { z-index:11000; }
+.reactive-entity-search--candidates { left:auto; right:12px; transform:none; width:min(600px,calc(100vw - 24px)); }
+.entity-candidates { border-top:1px solid #9ab8ad; margin-top:12px; padding-top:10px; }
+.entity-candidates h3 { font-size:16px; margin:0 0 8px; }
+.entity-candidates__actions { display:flex; flex-wrap:wrap; gap:6px; }
+.entity-candidates__bind { background:#dcefe9; font-weight:bold; width:100%; margin-bottom:10px; }
+.entity-candidates small { display:block; }
+.entity-candidates [data-candidate-row]:focus { outline:2px solid #477f6a; outline-offset:-2px; }
+.entity-candidates td select { max-width:120px; }

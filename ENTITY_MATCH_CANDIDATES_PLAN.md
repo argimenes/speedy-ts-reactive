@@ -1,7 +1,7 @@
 # Entity reference: find and bind matching mentions
 
-Status: **planning only**, 14 September 2026. The user explicitly requested a
-plan, not implementation. No runtime, binding, API or schema changes in this turn.
+Status: **implemented**, 14 September 2026.
+The subsequent user request authorizes the candidate workflow and exclusion UI.
 This extends `ENTITY_SEARCH_MIGRATION.md` using the implemented scoped Find
 foundation in `SCOPED_FIND_MIGRATION.md`.
 
@@ -88,8 +88,8 @@ discontiguous mentions to `createForSegments()` as one giant annotation.
 
 ## Agreed inline exclusion control
 
-User approved this addition after reviewing the plan. Implementation remains
-paused; this approval records the design, not authorization to implement it.
+User approved this addition after reviewing the plan and subsequently authorized
+implementation together with the candidate workflow.
 
 - Show an unobtrusive circled × just to the right and slightly above a candidate
   match's final highlighted fragment. For multiline matches, use the final
@@ -144,7 +144,9 @@ category/tags and a scoped handler, not an unconditional keydown interception.
 - Show actual registry-assigned shortcut labels. Test custom reassignment and
   ensure browser/editor Select All is not intercepted outside this window.
 
-These are proposed defaults, not bindings installed by this planning turn.
+These defaults are now registered. The field-safe opener uses Cmd+Shift+A on Mac
+and Ctrl+Shift+A elsewhere; Control-A outside fields is supported on all platforms,
+with Cmd+A additionally supported on Mac. All bindings remain reassignable.
 
 ## Service and state boundaries
 
@@ -237,15 +239,15 @@ may therefore lag and should not be incremented optimistically as if persisted.
 
 - [x] Verify legacy Control-A and document bulk callback; inspect converted APIs.
 - [x] Record workflow, keyboard proposal, validation and atomicity requirements.
-- [ ] On explicit implementation authorization, add candidate-session state and
+- [x] On explicit implementation authorization, add candidate-session state and
   pure target classification/deduplication tests; no document writes yet.
-- [ ] Extract shared reveal navigation with regression tests for ordinary Find;
+- [x] Extract shared reveal navigation with regression tests for ordinary Find;
   add independently owned candidate highlights and lifecycle cleanup.
-- [ ] Add opt-in candidate review UI, separate mention/entity queries, nominated
+- [x] Add opt-in candidate review UI, separate mention/entity queries, nominated
   entity, registry bindings and explicit confirmation; preserve single mode.
-- [ ] Add prevalidated atomic bulk command, duplicate/conflict handling and
+- [x] Add prevalidated atomic bulk command, duplicate/conflict handling and
   independent versus linked mention creation.
-- [ ] Test end-to-end and performance, update this checkpoint with actual results.
+- [x] Test end-to-end and performance, update this checkpoint with actual results.
 
 Acceptance tests: seeded original and fallback-to-single mode; native text-field
 shortcuts versus scoped Control-A/Cmd+A; all eligible vs visible page; checkbox
@@ -258,6 +260,61 @@ without partial writes; large candidate lists and one update per affected Block.
 Use disposable fixtures and mocked lookup/in-memory database tests, never live
 document-store or populated-database writes for verification.
 
-Checkpoint: planning complete. No implementation tests run because no executable
-code changed. Main remaining design preference is the proposed guarded shortcut
-and explicit bulk-confirmation UX; these can be adjusted before implementation.
+The planning checkpoint above is complete; the subsequent implementation and
+verification are recorded below. No commit was requested.
+
+## Implementation checkpoint
+
+Implementation is complete in `runtime/entity-candidates.ts` and the entity search
+views. Shared navigation is extracted into `runtime/reveal-match.ts`; session
+decorations support an optional owner-managed exclude action. Measured SVG fragments
+anchor circled exclusion buttons without wrappers. Bulk binding uses one repository
+operation batch and one history entry, avoiding per-Block transaction draft copies.
+
+Follow-up requirement retained explicitly: **any overlap with an existing reference
+to the nominated entity is excluded**, not merely an identical text range. Larger,
+smaller and linked reference ranges are checked, with a distinct visible reason;
+commit preflight independently enforces the exclusion. Other-entity overlaps also
+remain excluded, and ordinary styles remain untouched.
+
+### Concrete implementation and verification
+
+- `EntityCandidates` owns independent TextSearch state, original target, scope,
+  nomination, checked unique targets, exclusion undo and session cleanup. Candidate
+  rows are paged 25 at a time; Select all covers all eligible rows, not one page.
+  Query/option changes require renewed approval of additional matches. Subsequent
+  entity-query keystrokes do not repeatedly reclassify candidates once nomination
+  has already been cleared.
+- `bindEntityCandidates()` prevalidates freshness, identity, bounds, actual text,
+  capabilities and entity overlaps, deduplicates targets, then commits one batch.
+  Separate mentions get unique IDs; only the single multi-Block original uses a
+  linked definition. Empty/already-linked direct batches create no history entry.
+- Measured fragments anchor accessible circled × buttons on the final visible
+  line, clamped to document/viewport edges. Hover/active/focus reveals the control;
+  exclusion and Undo exclusion synchronize the row and all shared occurrences.
+  Keyboard events on these buttons are isolated from paragraph-edit bindings.
+- Bulk review is nonmodal: document-side controls, scrollbars and tab navigation
+  do not dismiss it. Single-selection mode retains its previous behaviour. Actual
+  repository mutation still closes review and disposes candidate state/highlights.
+- 16 new tests pass: 10 runtime, 3 candidate UI and 3 geometry cases. Coverage
+  includes same-entity larger/smaller/linked overlaps, atomic save/undo/redo,
+  independent/linked mention identities, partial/stale rejection, transclusions,
+  original deduplication, grapheme restrictions, shortcuts, exclusion recovery,
+  query independence, no premature commits and geometry placement/clamping.
+- A 300-mention / 100-Block fixture commits exactly once with 100 content updates
+  and two repository snapshots, independent of match count. One Undo removes the
+  whole batch. The operation uses a single validated repository batch rather than
+  repeatedly cloning a TreeCommands transaction draft per affected Block.
+- Latest full suite: **213 passed / 215 total**; the same two pre-existing
+  `block-context-menu.test.tsx` synthetic-button failures remain. Existing Find,
+  entity search, annotation monitor, typing and split tests pass.
+- Typecheck and client/server builds pass. `node scripts/check-document-find.mjs`
+  passes the real Chrome worker/SVG workflow plus candidate review: pointer
+  exclusion preserves focus/caret, undo restores it, ordinary Find remains
+  unchanged, nomination makes no writes, 28 mentions get 28 distinct IDs, one
+  Undo removes them all. Lookup is mocked; no populated database was touched.
+  The script cleans up only its disposable Chrome profile and owned stdio pipes.
+
+No server/schema changes, entity creation, source document writes or live database
+writes were made. Replacement, automatic coreference resolution, conflicting
+reference retargeting and edits to incomplete search sets remain out of scope.

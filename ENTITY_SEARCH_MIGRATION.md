@@ -2,11 +2,13 @@
 
 Status: search-and-select implemented; grouped visual effects remain deferred.
 
-14 September follow-up: scoped “Find/select all matching mentions” is now planned
+14 September follow-up: scoped “Find/select all matching mentions” is now implemented
 in [ENTITY_MATCH_CANDIDATES_PLAN.md](ENTITY_MATCH_CANDIDATES_PLAN.md). It reuses
 TextSearch/session decorations, separates mention text from entity lookup, preserves
-native input shortcuts, and proposes reviewed, atomic binding of independent
-mentions. **Planning only: bulk binding is not implemented or authorized yet.**
+native input shortcuts, and provides reviewed, atomic binding of independent
+mentions. Circled × controls exclude candidates with undo; any overlap with an
+existing reference to the nominated entity is disabled. Single-selection mode is
+unchanged. See the candidate plan's completed checkpoint for tests and limits.
 
 Original sources: `src/components/search-entities.tsx`,
 `DocumentBlock.applyEntityReferenceToText()` in `src/blocks/document-block.ts`,
@@ -35,8 +37,8 @@ Implementation plan:
 5. Test API contracts/errors, debounce and stale responses, cancel, local/linked
    creation, metadata persistence and undo. Run typecheck and production build.
 
-Scope: existing-entity search and selection. Original Add-to-graph and bulk
-annotate-all-matches are deferred; no entity/database records are created by this
+Scope: existing-entity search and selection, now including reviewed bulk mentions.
+Original Add-to-graph remains deferred; no entity/database records are created by this
 workflow. No live database writes or document-store writes during verification.
 
 ## Completed implementation / resume checkpoint

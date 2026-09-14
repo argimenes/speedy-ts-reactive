@@ -63,6 +63,48 @@ try {
     editor.find.close();result.closed=!editor.find.state.open;result.selected=getSelection().toString();return result;
   })()`);
   assert.equal(navigation.mounted,true);assert.equal(navigation.history,false);assert.equal(navigation.focus,'Find text');assert.equal(navigation.scope,true);assert.equal(navigation.selected,'Hello');
+  const candidates = await evaluate(`(async()=>{
+    const {editor,node}=findCheck;
+    editor.find.open(node('p0').key);editor.find.setQuery('Hello');await editor.find.flush();
+    window.originalEntityFetch=window.fetch;window.fetch=async(url,options)=>String(url).includes('/api/findAgentsBy')?{ok:true,json:async()=>({Success:true,Results:[{id:'blake',name:'Vernon Blake'}],Count:1,Page:1,MaxPage:1})}:originalEntityFetch(url,options);
+    const {openEntitySearch}=await import('/src/runtime/entity-search.ts');
+    openEntitySearch(editor,[{nodeKey:node('p0').key,start:0,end:5}]);
+    window.entityPanel=()=>document.querySelector('[role=dialog][aria-label="Search entities"]');
+    window.entityButton=label=>[...entityPanel().querySelectorAll('button')].find(b=>b.textContent.startsWith(label));
+    entityButton('Find other occurrences').click();
+    for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,100));if(entityPanel().textContent.includes('28 selected / 28 unique targets')&&document.querySelector('[data-candidate-exclusion]'))break;}
+    const control=editor.mounts.get(node('p0').key).root.querySelector('[data-candidate-exclusion]');
+    if(!control)throw new Error('No exclusion controls: '+entityPanel().textContent);
+    const flow=editor.mounts.get(node('p0').key).focusElement,rect=flow.children[0].getBoundingClientRect();
+    flow.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:rect.left+2,clientY:rect.top+2}));
+    window.beforeExclusionFocus=document.activeElement;window.beforeExclusionSelection=getSelection().toString();
+    const r=control.getBoundingClientRect();
+    return {count:entityPanel().textContent.includes('28 selected / 28 unique targets'),opacity:getComputedStyle(control).opacity,x:r.left+r.width/2,y:r.top+r.height/2,history:editor.repository.canUndo(),findOpen:editor.find.state.open};
+  })()`);
+  assert.equal(candidates.count,true);assert.equal(candidates.opacity,'1');assert.equal(candidates.history,false);assert.equal(candidates.findOpen,true);
+  for (const type of ['mouseMoved','mousePressed','mouseReleased']) await send('Input.dispatchMouseEvent',{type,x:candidates.x,y:candidates.y,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:1},sessionId);
+  const binding = await evaluate(`(async()=>{
+    const {editor,node}=findCheck;await new Promise(r=>setTimeout(r,100));
+    const excluded=entityPanel().textContent.includes('27 selected / 28 unique targets'),caretPreserved=getSelection().toString()===beforeExclusionSelection,focusPreserved=document.activeElement===beforeExclusionFocus;
+    const first=editor.decorations.nodes[node('p0').key],findUntouched=first.filter(d=>d.owner==='document-find').length===9;
+    entityButton('Undo exclusion').click();const restored=entityPanel().textContent.includes('28 selected / 28 unique targets');
+    await new Promise(r=>setTimeout(r,100));
+    const keyboardControl=editor.mounts.get(node('p0').key).root.querySelector('[data-candidate-exclusion]');keyboardControl.focus();
+    keyboardControl.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));await Promise.resolve();
+    const keyboardExcluded=!!entityPanel()&&entityPanel().textContent.includes('27 selected / 28 unique targets')&&!editor.repository.canUndo();
+    entityButton('Undo exclusion').click();
+    entityButton('Select').click();
+    const nominatedWithoutWrite=!editor.repository.canUndo()&&!!entityPanel();
+    entityButton('Bind 28').click();await new Promise(r=>setTimeout(r,100));
+    const properties=[...editor.projections.values()][0].state.nodes;
+    const refs=Object.values(properties).filter(n=>n.viewType==='standoff-editor-block').flatMap(n=>n.payload.standoffProperties??[]);
+    const distinct=new Set(refs.map(p=>p.id)).size;
+    editor.repository.undo();
+    const undoCleared=Object.values(properties).filter(n=>n.viewType==='standoff-editor-block').every(n=>!n.payload.standoffProperties?.length);
+    window.fetch=originalEntityFetch;editor.find.close();
+    return {excluded,caretPreserved,focusPreserved,findUntouched,restored,keyboardExcluded,nominatedWithoutWrite,refs:refs.length,distinct,closed:!entityPanel(),undoCleared};
+  })()`);
+  assert.equal(binding.excluded,true);assert.equal(binding.caretPreserved,true);assert.equal(binding.focusPreserved,true);assert.equal(binding.findUntouched,true);assert.equal(binding.restored,true);assert.equal(binding.keyboardExcluded,true);assert.equal(binding.nominatedWithoutWrite,true);assert.equal(binding.refs,28);assert.equal(binding.distinct,28);assert.equal(binding.closed,true);assert.equal(binding.undoCleared,true);
   const worker = await evaluate(`(async()=>{
     const {runSearchWorker}=await import('/src/runtime/search-worker.ts');
     const source=[{contentKey:'timeout',coordinate:'utf16',version:0,runs:[{text:'a'.repeat(32)+'!'}]}];
@@ -103,9 +145,12 @@ try {
     findCheck.dispose();editor.dispose();findCheck.host.remove();return result;
   })()`);
   assert.equal(storedReport.snapshots,0);assert.equal(storedReport.restored,true);assert.ok(storedReport.matches>0);
-  console.log(JSON.stringify({initial,navigation,worker,performance:performanceReport,stored:storedReport},null,2));
+  console.log(JSON.stringify({initial,navigation,candidates,binding,worker,performance:performanceReport,stored:storedReport},null,2));
 } finally {
   socket?.close();
   if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) { const exited = new Promise(resolve => chrome.once('exit', resolve)); chrome.kill('SIGKILL'); await exited; }
+  // Chrome helpers can retain inherited pipes after the browser exits on macOS.
+  // Close only this disposable browser's stdio so the test runner can terminate.
+  chrome.stdin?.destroy(); chrome.stdout?.destroy(); chrome.stderr?.destroy();
   await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

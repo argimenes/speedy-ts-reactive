@@ -94,7 +94,7 @@ export class InputGateway {
   }
 
   private scopes(event: Event) {
-    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return [];
+    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector], [data-candidate-exclusion]')) return [];
     const resolved = this.mounts.resolveEvent(event);
     if (!resolved || resolved.handle.composing || resolved.handle.inputPolicy === "opaque-widget" || (event.target instanceof Element && event.target.closest('[data-bindings-window], [role="dialog"]'))) return [];
     return resolved.handle.inputPolicy === "standoff" ? ["editor/standoff", "editor"] : ["editor"];
@@ -317,6 +317,11 @@ export class InputGateway {
     if (!this.overlays.overlays.length) return;
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && this.overlays.isOverlayKey(resolved.nodeKey)) return;
+    // Bulk mention review is nonmodal: document-side exclusion buttons, scrolling
+    // and tab navigation belong to the same review session. Actual document edits
+    // still invalidate the entity overlay through its before-change subscription.
+    const top = this.overlays.overlays.at(-1);
+    if (top?.viewType === "entity-search" && top.entityCandidates) return;
     this.overlays.dismissTopWithoutRestoring();
   };
 

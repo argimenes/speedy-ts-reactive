@@ -2,6 +2,7 @@ import { createStore } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { resolveSearchScope, TextSearch, type ScopeKind, type SearchMatchSet, type SearchScope, type SearchMatch } from "./text-search";
 import type { SearchOptions } from "./search-matching";
+import { revealMatch } from "./reveal-match";
 
 export class DocumentFind {
   readonly state;
@@ -76,18 +77,9 @@ export class DocumentFind {
     const index = this.state.active < 0 ? (direction === 1 ? 0 : result.matches.length - 1) : (this.state.active + direction + result.matches.length) % result.matches.length;
     this.setState("active", index); const match = result.matches[index]; this.navigated = match;
     this.editor.decorations.setActiveMatch(this.owner, match.id);
-    // Set session navigation overrides from outer to inner; inactive tabs mount afterwards.
-    for (let i = 0; i + 1 < match.path.length; i++) {
-      const node = this.editor.node(match.path[i]);
-      if (node && ["tab-row-block", "document-tab-row-block", "sticky-tab-row-block", "surface-block"].includes(node.viewType)) this.editor.setViewChild(node.key, match.path[i + 1]);
-    }
-    await new Promise(resolve => setTimeout(resolve, 0));
+    const revealed = await revealMatch(this.editor, match, () => this.state.result === result && this.state.active === index && this.state.open);
     if (this.state.result !== result || this.state.active !== index || !this.state.open) return;
-    const range = match.ranges[0], mount = this.editor.mounts.get(range.nodeKey);
-    if (!mount) { this.setState("message", "This result cannot be mounted by the current view adapter."); return; }
-    // Scroll the actual range, not just the top of a potentially very long paragraph.
-    const point = range.coordinate === "cell" ? mount.inlineBoundary?.(range.start) : undefined;
-    (point?.node.parentElement ?? mount.root).scrollIntoView?.({ block: "center", inline: "nearest" });
+    if (!revealed) { this.setState("message", "This result cannot be mounted by the current view adapter."); return; }
     if (!match.capabilities.highlight) this.setState("message", match.capabilities.reason ?? "");
   }
   close(restore = true) {

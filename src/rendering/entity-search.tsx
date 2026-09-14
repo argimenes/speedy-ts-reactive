@@ -3,11 +3,15 @@ import { Portal } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { OverlayDescriptor } from "../runtime/overlays";
 import { chooseEntity } from "../runtime/entity-search";
+import { EntityCandidates } from "../runtime/entity-candidates";
+import { EntityCandidatesPanel } from "./entity-candidates";
 import "./entity-search.css";
 interface Entity { id: string; name: string; text?: string; mentions?: number }
 
 function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
   const { editor, overlay } = props;
+  const candidates = new EntityCandidates(editor,overlay);
+  onCleanup(() => candidates.dispose());
   const [query, setQuery] = createSignal(overlay.entityQuery ?? ""), [alias, setAlias] = createSignal(false), [partial, setPartial] = createSignal(true);
   const [order, setOrder] = createSignal("ByMentions"), [direction, setDirection] = createSignal("Descending"), [page, setPage] = createSignal(1);
   const [results, setResults] = createSignal<Entity[]>([]), [current, setCurrent] = createSignal(0), [total, setTotal] = createSignal(0), [maxPage, setMaxPage] = createSignal(1);
@@ -16,7 +20,13 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
   const close = () => editor.overlays.close(overlay.key);
   const select = (entity?: Entity) => {
     if (!entity || busy()) return;
+    if (candidates.state.enabled) { candidates.nominate(entity); return; }
     try { editing = true; chooseEntity(editor, overlay, entity); close(); }
+    catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+    finally { editing = false; }
+  };
+  const bind = () => {
+    try { editing = true; candidates.bind(); close(); }
     catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { editing = false; }
   };
@@ -48,24 +58,40 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
   });
   const keys = (event: KeyboardEvent) => {
     event.stopPropagation();
+    const target = event.target as Element, rowElement = target.closest<HTMLElement>('[data-candidate-row]');
+    if (rowElement && !target.closest('input,select,button') && editor.bindings.dispatch(event,["entity-search/candidates"],id => {
+      const row = candidates.state.rows.find(r => r.key === rowElement.dataset.candidateKey);
+      if (!row) return false;
+      if (id === "entity.candidates.toggle") { candidates.toggle(row.key,!row.checked); return true; }
+      if (id === "entity.candidates.next" || id === "entity.candidates.previous") {
+        const rows = [...root.querySelectorAll<HTMLElement>('[data-candidate-row]')], index = rows.indexOf(rowElement), next = rows[(index + (id.endsWith("next") ? 1 : -1) + rows.length)%rows.length];
+        next?.focus(); return true;
+      }
+      return false;
+    })) return;
     if (editor.bindings.dispatch(event, ["entity-search"], id => {
+      if (id === "entity.candidates.open") { candidates.enable(); return true; }
+      if (id === "entity.candidates.selectAll") { if (target.closest('input,textarea,select,[contenteditable="true"]')) return false; candidates.enable(); return true; }
       if (id === "entity.close") { close(); return true; }
-      if (id === "entity.clear") { setQuery(""); setPage(1); return true; }
+      if (id === "entity.clear") { if (target.closest('.entity-candidates')) return false; candidates.nominate(); setQuery(""); setPage(1); return true; }
+      if (target.closest('.entity-candidates')) return false;
       if ((event.target as Element).closest("select,button,input[type=checkbox]")) return false;
       if (id === "entity.choose") { select(results()[current()]); return true; }
       if (id === "entity.next" || id === "entity.previous") { const length = results().length; if (length) setCurrent((current() + (id === "entity.next" ? 1 : -1) + length) % length); return true; }
       return false;
     })) return;
     if (event.key === "Tab") {
-      const fields = [...root.querySelectorAll<HTMLElement>('input,select,button:not([disabled])')];
+      if (candidates.state.enabled) return; // Candidate exclusions in the document remain keyboard-accessible.
+      const fields = [...root.querySelectorAll<HTMLElement>('input:not([disabled]),select:not([disabled]),button:not([disabled])')];
       if (event.shiftKey && document.activeElement === fields[0]) { event.preventDefault(); fields.at(-1)?.focus(); }
       else if (!event.shiftKey && document.activeElement === fields.at(-1)) { event.preventDefault(); fields[0]?.focus(); }
     }
   };
-  return <div ref={root} class="reactive-entity-search" role="dialog" aria-modal="true" aria-label="Search entities" data-native-context-menu onKeyDown={keys}>
+  return <div ref={root} class="reactive-entity-search" classList={{ "reactive-entity-search--candidates": candidates.state.enabled }} role="dialog" aria-modal={!candidates.state.enabled} aria-label="Search entities" data-native-context-menu onKeyDown={keys}>
     <header><strong>Link text to an entity</strong><button type="button" onClick={close}>Cancel</button></header>
     <blockquote>{overlay.entityQuery}</blockquote>
-    <label>Search entities<input ref={input} aria-label="Search entities" value={query()} maxLength={1000} onInput={event => { setQuery(event.currentTarget.value); setPage(1); }} /></label>
+    <button type="button" title={editor.bindings.label("entity.candidates.open")} onClick={() => candidates.enable()}>Find other occurrences</button>
+    <label>Search entities<input ref={input} aria-label="Search entities" value={query()} maxLength={1000} onInput={event => { candidates.nominate(); setQuery(event.currentTarget.value); setPage(1); }} /></label>
     <div class="entity-search-options">
       <label><input type="checkbox" checked={alias()} onChange={event => { setAlias(event.currentTarget.checked); setPage(1); }} />Search aliases</label>
       <label><input type="checkbox" checked={partial()} onChange={event => { setPartial(event.currentTarget.checked); setPage(1); }} />Partial match</label>
@@ -78,7 +104,8 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
       <For each={results()}>{(entity, index) => <tr classList={{ current: current() === index() }}><td>{entity.name}<small>{entity.id}</small></td><td>{entity.text ?? "—"}</td><td>{entity.mentions ?? 0}</td><td><button type="button" aria-label={`Select ${entity.name}`} onClick={() => select(entity)}>Select</button></td></tr>}</For>
     </tbody></table>
     <footer><button type="button" disabled={busy() || page() <= 1} onClick={() => setPage(page() - 1)}>Previous page</button><span>Page {page()} / {maxPage()}</span><button type="button" disabled={busy() || page() >= maxPage()} onClick={() => setPage(page() + 1)}>Next page</button></footer>
-    <small>Up/Down selects a result; Enter links it. Escape cancels. No annotation is created until you choose an entity.</small>
+    <small>Up/Down selects an entity result; Enter {candidates.state.enabled ? "nominates it; use Bind to confirm" : "links it"}. Escape cancels. Find other occurrences: {editor.bindings.label("entity.candidates.open")}. Select all mentions outside text fields: {editor.bindings.label("entity.candidates.selectAll")}.</small>
+    <Show when={candidates.state.enabled}><EntityCandidatesPanel session={candidates} bind={bind} /></Show>
   </div>;
 }
 export function EntitySearchLayer(props: { editor: ReactiveEditor; viewId: string }) {

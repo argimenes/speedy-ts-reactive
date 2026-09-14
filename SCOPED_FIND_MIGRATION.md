@@ -410,3 +410,9 @@ The next separately authorized feature can consume `TextSearch` match sets and
 `SessionDecorations` without coupling itself to the Find window. Begin by reviewing
 the deferred consumer contracts above rather than adding persistent search
 annotations or reusing the legacy FindReplaceBlock.
+
+Follow-up: the first such consumer is now implemented. See
+`ENTITY_MATCH_CANDIDATES_PLAN.md` for entity candidate selection/exclusion and
+atomic binding. It uses an independent TextSearch session and decoration owner;
+shared reveal navigation now lives in `runtime/reveal-match.ts`. Ordinary Find
+remains independent, and replacement remains deferred.

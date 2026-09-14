@@ -1,13 +1,19 @@
 # Reactive reconstruction progress
 
-## Entity matching candidates — plan only, 14 September 2026
+## Entity matching candidates — implemented, 14 September 2026
 
 Inspected the original entity window's Control-A handler and DocumentBlock bulk
-callback. Recorded the proposed scoped candidate-review extension in
+callback. Implemented the scoped candidate-review extension documented in
 [ENTITY_MATCH_CANDIDATES_PLAN.md](ENTITY_MATCH_CANDIDATES_PLAN.md): independent
 mention/entity queries, context-safe shortcuts, owner-isolated SVG highlights,
 reviewed unique targets, conflict/freshness checks and one atomic bind operation.
-No runtime or binding changes; implementation awaits explicit authorization.
+The entity window now offers Find other occurrences, guarded Control-A/Cmd-A,
+separate mention/entity queries, paged checkboxes and inline circled × exclusions
+with recovery. Any overlapping reference to the nominated entity is disabled,
+including linked, larger and smaller ranges. Confirmation binds distinct mention
+IDs in one undoable batch. Bulk review is nonmodal; canonical edits invalidate it.
+No Node/API/schema changes. Sixteen new tests and Chrome checks pass; full suite
+213/215 passes with the two existing context-menu failures unchanged.
 
 ## Scoped Find — implemented, 14 September 2026
 
