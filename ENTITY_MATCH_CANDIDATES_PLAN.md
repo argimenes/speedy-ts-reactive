@@ -86,6 +86,43 @@ explicit Block-local Mention text for additional candidates, with a short notice
 Each additional occurrence receives its own annotation identity. Never pass all
 discontiguous mentions to `createForSegments()` as one giant annotation.
 
+## Agreed inline exclusion control
+
+User approved this addition after reviewing the plan. Implementation remains
+paused; this approval records the design, not authorization to implement it.
+
+- Show an unobtrusive circled × just to the right and slightly above a candidate
+  match's final highlighted fragment. For multiline matches, use the final
+  fragment rather than a bounding rectangle spanning all lines.
+- Reveal the control on match hover, when the candidate is active, or when the
+  control has keyboard focus. Keep it visible while the pointer moves from the
+  highlighted text to the control. Avoid covering adjacent text; clamp/adjust
+  placement at viewport or document edges.
+- Clicking means **exclude this mention from the pending entity binding**. It
+  never deletes text, removes an existing annotation, or modifies the document.
+  Route the action through the same candidate-selection state as the list
+  checkbox; update the checked count and confirmation button immediately.
+- Retain excluded candidates in the review list, unchecked, so they can be
+  restored. Offer Undo exclusion or rechecking; do not discard the match record
+  or rerun the search to restore it. Its candidate highlight/control can disappear
+  upon exclusion, independently of the session's overall visibility setting.
+- For transcluded/shared text, exclusion applies to the unique canonical target
+  and synchronizes every displayed occurrence and list row for that target.
+- Use a real focusable button labelled “Exclude this mention”, with a tooltip and
+  visible focus styling. SVG highlight geometry remains pointer-transparent;
+  only the small button receives pointer events. Prevent its activation from
+  moving the editor caret or initiating text/Block selection or drag operations.
+- This control belongs only to the entity-candidate owner/session. It does not
+  appear on ordinary Find highlights or affect another caller's match set.
+- Anchor buttons using the existing measured range fragments; update with
+  layout/scroll/reveal and render only relevant visible controls. Do not add a
+  separate whole-document measurement pass or per-character wrappers.
+
+Extend acceptance tests with checkbox/count synchronization, undo/reinclude,
+multiline placement, edge clamping, hover-to-button movement, keyboard activation,
+transclusion synchronization, no caret/document/history mutation, cleanup on
+cancel, and coexistence with ordinary Find highlights.
+
 ## Keyboard proposal and concern
 
 Control-A has useful historical meaning here, but text fields must retain native
