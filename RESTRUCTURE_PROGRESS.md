@@ -10,11 +10,16 @@ repository revision, history entry or saved document data. Hidden inactive-tab
 content has no honest Page Y coordinate and is omitted until mounted. Confirmed
 defaults are a 20 px rail dynamically filling the Page scrollport, current-Page
 markers only, marker-click navigation, right-side placement with a left option,
-and configurable `multiply`/`source-over` blending. Empty-rail scrolling is deferred.
+and configurable `multiply`/`source-over` blending. Its viewport rectangle is a
+draggable scrollbar thumb and unoccupied rail clicks reposition the Page view.
 The CSS-generated left/right margin maniculae now use coordinated
 manicule/minimap/margin-note lanes while the rail is active. Page-scoped Find is
 the first producer and publishes yellow markers that reuse its existing result
 navigation. See [MINIMAP_MIGRATION.md](MINIMAP_MIGRATION.md).
+
+The Find panel now follows the Document-window chrome structure: a dedicated
+drag handle/title bar, a close control at the right edge and a separately
+scrollable body. Moving it is session UI state and creates no document history.
 
 ## TimerBlock — implemented, 14 September 2026
 

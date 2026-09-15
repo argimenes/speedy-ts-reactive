@@ -7,11 +7,11 @@ Status: implemented for Page-scoped Find on 15 September 2026.
 The general session service is in `src/runtime/minimap.ts`; it accepts immutable
 semantic text-range, Block-occurrence and normalised-ratio markers in isolated
 owner layers. `src/rendering/page-minimap.tsx` provides the portalled,
-device-pixel-scaled canvas renderer, dynamic scrollport geometry, viewport
-indicator, hidden-marker accounting, overlap hit-testing and delegated marker
-activation. `PageView` supplies a stable main-column anchor, and Document Find
-publishes/disposes its yellow current-Page marker layer alongside its existing
-session highlights.
+device-pixel-scaled canvas renderer, dynamic scrollport geometry, draggable
+viewport thumb, track scrolling, hidden-marker accounting, overlap hit-testing
+and delegated marker activation. `PageView` supplies a stable main-column anchor,
+and Document Find publishes/disposes its yellow current-Page marker layer
+alongside its existing session highlights.
 
 The implemented options default to right-side placement, 20 CSS px width,
 available scrollport height with a 480 px fallback, two-CSS-pixel minimum marker
@@ -179,8 +179,8 @@ markers much clearer than the original caret arrows alone.
 
 ## Interaction
 
-The first version supports marker-click navigation without rail dragging or
-click-to-scroll. Activation remains outside persisted data:
+The first version supports marker-click navigation and scrollbar-style Page
+navigation. Activation and scrolling remain outside persisted data:
 
 - The renderer maintains a Y-bin hit index from the resolved marker snapshot.
 - Marker hit targets use a small tolerance around thin lines, without changing
@@ -193,6 +193,15 @@ click-to-scroll. Activation remains outside persisted data:
 - If several marker bands intersect the click, choose the band whose centre is
   nearest the pointer. Ties resolve by highest layer priority and then stable
   marker ID. The hover summary can disclose that multiple markers overlap.
+- The translucent viewport indicator is a draggable thumb. Moving it maps the
+  requested rail position back to the effective Page scroll owner, including the
+  enclosing document flow when the Page is not itself the scroll container.
+- Clicking unoccupied track space centres the viewport thumb at that position.
+  Marker activation wins when a marker and track click coincide; a drag suppresses
+  the synthetic click that follows pointer release.
+- Wheel input over the portalled rail is forwarded to the effective Page scroll
+  owner, so it behaves like part of that Page rather than scrolling the document
+  behind it.
 - Equivalent navigation remains available in the owning tool (such as Find's
   Previous/Next controls); thousands of canvas markers do not become thousands
   of keyboard tab stops.
@@ -264,8 +273,8 @@ There is no Document-scale rail in this increment.
 
 - Omit inactive-tab, other-Page, collapsed, unmounted and otherwise non-spatial
   markers. Keep the omitted count available to the producing UI.
-- Support marker-click navigation. Do not make empty rail space scrollable or
-  draggable yet.
+- Support marker-click navigation, viewport-thumb dragging, wheel scrolling and
+  click-to-scroll on unoccupied track space.
 - Default to 20 CSS px wide and dynamically fill the active Page scrollport's
   visible height. Use 480 px only as the pre-measurement/standalone fallback.
 - Map only the current Page.

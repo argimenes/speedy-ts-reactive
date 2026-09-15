@@ -52,6 +52,8 @@ describe("page minimap", () => {
     ] });
     registerCoreViews(editor); const projection = editor.createView("minimap-view");
     const host = document.body.appendChild(document.createElement("div")); host.id = "minimap-host"; host.style.overflowY = "auto";
+    Object.defineProperty(host, "scrollHeight", { configurable: true, value: 1000 });
+    Object.defineProperty(host, "clientHeight", { configurable: true, value: 520 });
     const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); cleanup.push(() => { dispose(); editor.dispose(); });
     const node = (id: string) => Object.values(projection.state.nodes).find(item => item.payload.id === id)!;
     const pageElement = editor.mounts.get(node("page-a").key)!.root as HTMLElement;
@@ -71,6 +73,20 @@ describe("page minimap", () => {
     expect(operations).toContain("multiply");
     canvas.dispatchEvent(new MouseEvent("click", { clientY: 210, bubbles: true, cancelable: true }));
     expect(highPriority).toHaveBeenCalledWith(expect.objectContaining({ id: "same-position" })); expect(activated).not.toHaveBeenCalled();
+
+    const repositoryRevisionBeforeScroll = editor.repository.state.revision;
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientY: 180, bubbles: true, cancelable: true }));
+    canvas.dispatchEvent(new MouseEvent("pointermove", { button: 0, clientY: 300, bubbles: true, cancelable: true }));
+    canvas.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientY: 300, bubbles: true, cancelable: true }));
+    expect(host.scrollTop).toBeGreaterThan(0);
+    canvas.dispatchEvent(new MouseEvent("click", { clientY: 300, bubbles: true, cancelable: true }));
+    await vi.runAllTimersAsync(); host.scrollTop = 0; await vi.runAllTimersAsync();
+    canvas.dispatchEvent(new MouseEvent("click", { clientY: 570, bubbles: true, cancelable: true }));
+    expect(host.scrollTop).toBeGreaterThan(0);
+    const afterTrackClick = host.scrollTop;
+    canvas.dispatchEvent(new WheelEvent("wheel", { deltaY: -60, bubbles: true, cancelable: true }));
+    expect(host.scrollTop).toBe(afterTrackClick - 60);
+    expect(editor.repository.state.revision).toBe(repositoryRevisionBeforeScroll); expect(editor.repository.canUndo()).toBe(false);
 
     editor.minimap.configure({ side: "left", blendMode: "source-over" }); await vi.runAllTimersAsync();
     expect(rail.style.left).toBe("198px"); expect(pageElement.classList).toContain("reactive-page--minimap-left");

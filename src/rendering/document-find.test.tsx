@@ -27,6 +27,15 @@ describe("document Find UI", () => {
     const mount = editor.mounts.get(node("a").key)!; mount.focus(); mount.restoreInlineSelection!({ anchor: 0, head: 5 });
     mount.focusElement.dispatchEvent(new KeyboardEvent("keydown", { key: "f", metaKey: true, bubbles: true, cancelable: true }));
     await Promise.resolve(); expect(panel()).not.toBeNull(); expect(query().value).toBe("Hello");
+    const findPanel = panel()!, titlebar = findPanel.querySelector<HTMLElement>(".document-find__windowbar")!;
+    expect(titlebar.textContent).toContain("Find in Document");
+    expect(titlebar.lastElementChild?.querySelector('[aria-label="Close Find"]')).not.toBeNull();
+    const originalLeft = Number.parseFloat(findPanel.style.left), originalTop = Number.parseFloat(findPanel.style.top), dragRevision = editor.repository.state.revision;
+    titlebar.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 400, clientY: 100, bubbles: true, cancelable: true }));
+    titlebar.dispatchEvent(new MouseEvent("pointermove", { button: 0, clientX: 350, clientY: 130, bubbles: true, cancelable: true }));
+    titlebar.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientX: 350, clientY: 130, bubbles: true, cancelable: true }));
+    expect(Number.parseFloat(findPanel.style.left)).toBe(originalLeft - 50); expect(Number.parseFloat(findPanel.style.top)).toBe(originalTop + 30);
+    expect(editor.repository.state.revision).toBe(dragRevision); expect(editor.repository.canUndo()).toBe(false);
     await editor.find.flush(); expect(editor.find.state.result?.matches).toHaveLength(2);
     expect(editor.find.state.scope?.rootKey).toBe(node("page").key);
     expect(editor.minimap.layersFor(node("page").key)[0].markers).toHaveLength(2);

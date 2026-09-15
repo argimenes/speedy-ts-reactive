@@ -37,20 +37,36 @@ try {
     const first=Object.values(projection.state.nodes).find(node=>node.payload.id==='p0');editor.find.open(first.key);editor.find.setQuery('Needle');await editor.find.flush();
     window.minimapCheck={editor,projection,host,page,dispose};await new Promise(resolve=>setTimeout(resolve,250));
   })()`);
-  const opened = await evaluate(`(()=>{const rail=document.querySelector('[data-page-minimap]'),canvas=rail.querySelector('canvas'),page=minimapCheck.page,main=page.querySelector('.reactive-page__main'),note=page.querySelector('.reactive-relation--rightMargin'),source=minimapCheck.editor.mounts.get(Object.values(minimapCheck.projection.state.nodes).find(node=>node.payload.id==='p0').key).root,rr=rail.getBoundingClientRect(),mr=main.getBoundingClientRect(),pr=page.getBoundingClientRect(),sr=source.getBoundingClientRect();return{width:rr.width,height:rr.height,pageHeight:pr.height,rightOfMain:rr.left-mr.right,markers:rail.getAttribute('aria-label'),canvasPixels:[canvas.width,canvas.height],revision:minimapCheck.editor.repository.state.revision,active:minimapCheck.editor.find.state.active,noteGap:note.getBoundingClientRect().left-source.getBoundingClientRect().right,clickY:rr.top+((sr.top-pr.top+page.scrollTop)/Math.max(page.scrollHeight,pr.height)*rr.height)};})()`);
+  const opened = await evaluate(`(()=>{const rail=document.querySelector('[data-page-minimap]'),canvas=rail.querySelector('canvas'),page=minimapCheck.page,main=page.querySelector('.reactive-page__main'),note=page.querySelector('.reactive-relation--rightMargin'),source=minimapCheck.editor.mounts.get(Object.values(minimapCheck.projection.state.nodes).find(node=>node.payload.id==='p0').key).root,rr=rail.getBoundingClientRect(),mr=main.getBoundingClientRect(),pr=page.getBoundingClientRect(),sr=source.getBoundingClientRect(),find=document.querySelector('[data-document-find]'),fr=find.getBoundingClientRect(),bar=find.querySelector('.document-find__windowbar').getBoundingClientRect(),close=find.querySelector('[aria-label="Close Find"]').getBoundingClientRect();return{width:rr.width,height:rr.height,pageHeight:pr.height,pageScrollHeight:page.scrollHeight,rightOfMain:rr.left-mr.right,markers:rail.getAttribute('aria-label'),canvasPixels:[canvas.width,canvas.height],revision:minimapCheck.editor.repository.state.revision,active:minimapCheck.editor.find.state.active,noteGap:note.getBoundingClientRect().left-source.getBoundingClientRect().right,clickY:rr.top+((sr.top-pr.top+page.scrollTop)/Math.max(page.scrollHeight,pr.height)*rr.height),railTop:rr.top,find:{left:fr.left,top:fr.top,barX:bar.left+80,barY:bar.top+bar.height/2,closeRight:close.right,panelRight:fr.right}};})()`);
   assert.equal(opened.width, 20); assert.equal(opened.height, opened.pageHeight); assert.equal(opened.rightOfMain, 32); assert.match(opened.markers, /hidden/); assert.deepEqual(opened.canvasPixels, [40, Math.round(opened.height * 2)]); assert.ok(opened.noteGap >= 60); assert.equal(opened.active, -1);
+  assert.ok(Math.abs(opened.find.closeRight - opened.find.panelRight) <= 2);
+  await send("Input.dispatchMouseEvent", { type: "mousePressed", x: opened.find.barX, y: opened.find.barY, button: "left", buttons: 1, clickCount: 1 }, sessionId);
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: opened.find.barX - 80, y: opened.find.barY + 30, button: "left", buttons: 1 }, sessionId);
+  await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: opened.find.barX - 80, y: opened.find.barY + 30, button: "left", buttons: 0, clickCount: 1 }, sessionId);
+  const findMoved = await evaluate(`(()=>{const rect=document.querySelector('[data-document-find]').getBoundingClientRect();return{left:rect.left,top:rect.top,revision:minimapCheck.editor.repository.state.revision};})()`);
+  assert.equal(findMoved.left, opened.find.left - 80); assert.equal(findMoved.top, opened.find.top + 30); assert.equal(findMoved.revision, opened.revision);
   const clickX = await evaluate("document.querySelector('[data-page-minimap]').getBoundingClientRect().left+10");
   await send("Input.dispatchMouseEvent", { type: "mousePressed", x: clickX, y: opened.clickY, button: "left", buttons: 1, clickCount: 1 }, sessionId);
   await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: clickX, y: opened.clickY, button: "left", buttons: 0, clickCount: 1 }, sessionId); await evaluate("new Promise(resolve=>setTimeout(resolve,100))");
   const clicked = await evaluate(`(()=>({active:minimapCheck.editor.find.state.active,revision:minimapCheck.editor.repository.state.revision}))()`);
   assert.equal(clicked.active, 0); assert.equal(clicked.revision, opened.revision);
+  const thumbY = opened.railTop + (opened.pageHeight / opened.pageScrollHeight * opened.height) / 2;
+  await send("Input.dispatchMouseEvent", { type: "mousePressed", x: clickX, y: thumbY, button: "left", buttons: 1, clickCount: 1 }, sessionId);
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: clickX, y: thumbY + 120, button: "left", buttons: 1 }, sessionId);
+  await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: clickX, y: thumbY + 120, button: "left", buttons: 0, clickCount: 1 }, sessionId); await evaluate("new Promise(resolve=>setTimeout(resolve,100))");
+  const scrolled = await evaluate(`(()=>({scrollTop:minimapCheck.page.scrollTop,revision:minimapCheck.editor.repository.state.revision}))()`);
+  assert.ok(scrolled.scrollTop > 0); assert.equal(scrolled.revision, opened.revision);
+  await send("Input.dispatchMouseEvent", { type: "mouseWheel", x: clickX, y: thumbY + 120, deltaX: 0, deltaY: 80 }, sessionId); await evaluate("new Promise(resolve=>setTimeout(resolve,50))");
+  const wheelScrolled = await evaluate(`(()=>({scrollTop:minimapCheck.page.scrollTop,revision:minimapCheck.editor.repository.state.revision}))()`);
+  assert.ok(wheelScrolled.scrollTop > scrolled.scrollTop); assert.equal(wheelScrolled.revision, opened.revision);
+  await evaluate("minimapCheck.page.scrollTop=0");
   await evaluate("minimapCheck.editor.minimap.configure({side:'left',blendMode:'source-over'});new Promise(resolve=>setTimeout(resolve,500))");
   const configured = await evaluate(`(()=>{const rail=document.querySelector('[data-page-minimap]'),main=minimapCheck.page.querySelector('.reactive-page__main'),rr=rail.getBoundingClientRect(),mr=main.getBoundingClientRect();return{side:rail.dataset.side,leftGap:mr.left-rr.right,blend:minimapCheck.editor.minimap.state.options.blendMode,inlineLeft:rail.style.left,revision:minimapCheck.editor.minimap.state.revision};})()`);
   assert.equal(configured.side, "left"); assert.equal(configured.leftGap, 32); assert.equal(configured.blend, "source-over");
   await evaluate("minimapCheck.page.style.height='620px';new Promise(resolve=>setTimeout(resolve,150))");
   assert.equal(await evaluate("document.querySelector('[data-page-minimap]').getBoundingClientRect().height"), 620);
   await evaluate("minimapCheck.editor.find.close(false);new Promise(resolve=>setTimeout(resolve,50))"); assert.equal(await evaluate("document.querySelector('[data-page-minimap]')"), null);
-  console.log(JSON.stringify({ opened, clicked, configured, resizedHeight: 620, closeRemoved: true }, null, 2));
+  console.log(JSON.stringify({ opened, findMoved, clicked, scrolled, wheelScrolled, configured, resizedHeight: 620, closeRemoved: true }, null, 2));
   await evaluate("minimapCheck.dispose();minimapCheck.editor.dispose();minimapCheck.host.remove()");
 } finally {
   socket?.close(); if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) { const exited = new Promise(resolve => chrome.once("exit", resolve)); chrome.kill("SIGKILL"); await exited; }

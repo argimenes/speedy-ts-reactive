@@ -26,6 +26,8 @@ interface Layout {
   height: number;
   total: number;
   omitted: number;
+  viewportTop: number;
+  viewportHeight: number;
 }
 
 const hidden = (element: Element) => !!element.closest('[hidden], [aria-hidden="true"]');
@@ -66,10 +68,12 @@ function textRangeRect(marker: MinimapMarker, page: HTMLElement, handle: { root:
 
 export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; main: () => HTMLElement }) {
   const { editor } = useReactiveView();
-  const [layout, setLayout] = createSignal<Layout>({ visible: false, left: 0, top: 0, width: 20, height: 0, total: 0, omitted: 0 });
+  const [layout, setLayout] = createSignal<Layout>({ visible: false, left: 0, top: 0, width: 20, height: 0, total: 0, omitted: 0, viewportTop: 0, viewportHeight: 0 });
   let canvas!: HTMLCanvasElement;
   let frame = 0;
   let drawn: DrawnMarker[] = [];
+  let thumbDrag: { pointerId: number; offset: number; startY: number; moved: boolean } | undefined;
+  let suppressClick = false;
   let observer: ResizeObserver | undefined;
   let mutation: MutationObserver | undefined;
   let observed = new WeakSet<Element>();
@@ -95,17 +99,17 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     const layers = editor.minimap.layersFor(props.pageKey);
     const visible = layers.filter(layer => layer.visible);
     const total = visible.reduce((count, layer) => count + layer.markers.filter(marker => !marker.group || !layer.hiddenGroups.has(marker.group)).length, 0);
-    if (!page?.isConnected || !main?.isConnected || !total) { drawn = []; setLayout({ visible: false, left: 0, top: 0, width: options.width, height: 0, total, omitted: total }); return; }
+    if (!page?.isConnected || !main?.isConnected || !total) { drawn = []; setLayout({ visible: false, left: 0, top: 0, width: options.width, height: 0, total, omitted: total, viewportTop: 0, viewportHeight: 0 }); return; }
 
     const owner = scrollport(page), available = viewportRect(owner), mainRect = main.getBoundingClientRect();
     observe(page); observe(main); observe(owner);
-    if (mainRect.width <= 0) { drawn = []; setLayout({ visible: false, left: 0, top: 0, width: options.width, height: 0, total, omitted: total }); return; }
+    if (mainRect.width <= 0) { drawn = []; setLayout({ visible: false, left: 0, top: 0, width: options.width, height: 0, total, omitted: total, viewportTop: 0, viewportHeight: 0 }); return; }
     const availableHeight = Math.max(0, available.bottom - available.top);
     const requestedHeight = options.height === "available" ? (availableHeight || options.fallbackHeight) : Math.min(options.height, availableHeight || options.height);
     const height = Math.max(0, requestedHeight);
     const left = options.side === "right" ? mainRect.right + MANICULE_LANE : mainRect.left - MANICULE_LANE - options.width;
     const fitsSide = options.side === "right" ? left + options.width <= available.right : left >= available.left;
-    if (height < MIN_RAIL_HEIGHT || !fitsSide) { drawn = []; setLayout({ visible: false, left, top: available.top, width: options.width, height, total, omitted: total }); return; }
+    if (height < MIN_RAIL_HEIGHT || !fitsSide) { drawn = []; setLayout({ visible: false, left, top: available.top, width: options.width, height, total, omitted: total, viewportTop: 0, viewportHeight: 0 }); return; }
 
     const pageRect = page.getBoundingClientRect();
     const extent = Math.max(1, page.scrollHeight, pageRect.height);
@@ -119,19 +123,20 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
       resolved.push({ owner: layer.owner, priority: layer.priority, marker, y: Math.min(height - Math.min(markerHeight, height), y), height: Math.min(markerHeight, height), active: layer.active === marker.id || layer.active === marker.group });
     }
     drawn = resolved;
-    const next = { visible: true, left, top: available.top, width: options.width, height, total, omitted: total - resolved.length };
+    const pageVisibleTop = Math.max(pageRect.top, available.top), pageVisibleBottom = Math.min(pageRect.bottom, available.bottom);
+    const rawViewportTop = pageVisibleBottom > pageVisibleTop ? (pageVisibleTop - pageRect.top + page.scrollTop) / extent * height : 0;
+    const viewportHeight = pageVisibleBottom > pageVisibleTop ? Math.min(height, Math.max(2, (pageVisibleBottom - pageVisibleTop) / extent * height)) : 0;
+    const viewportTop = Math.max(0, Math.min(Math.max(0, height - viewportHeight), rawViewportTop));
+    const next = { visible: true, left, top: available.top, width: options.width, height, total, omitted: total - resolved.length, viewportTop, viewportHeight };
     setLayout(next);
 
     const ratio = Math.max(1, window.devicePixelRatio || 1);
     canvas.width = Math.max(1, Math.round(options.width * ratio)); canvas.height = Math.max(1, Math.round(height * ratio));
     const context = canvas.getContext("2d"); if (!context) return;
     context.setTransform(ratio, 0, 0, ratio, 0, 0); context.clearRect(0, 0, options.width, height);
-    const pageVisibleTop = Math.max(pageRect.top, available.top), pageVisibleBottom = Math.min(pageRect.bottom, available.bottom);
-    if (pageVisibleBottom > pageVisibleTop) {
-      const top = Math.max(0, (pageVisibleTop - pageRect.top + page.scrollTop) / extent * height);
-      const viewportHeight = Math.max(2, (pageVisibleBottom - pageVisibleTop) / extent * height);
-      context.globalCompositeOperation = "source-over"; context.globalAlpha = 1; context.fillStyle = "rgba(35,58,52,.09)"; context.fillRect(0, top, options.width, viewportHeight);
-      context.strokeStyle = "rgba(35,58,52,.45)"; context.lineWidth = 1; context.strokeRect(.5, top + .5, options.width - 1, Math.max(1, viewportHeight - 1));
+    if (viewportHeight) {
+      context.globalCompositeOperation = "source-over"; context.globalAlpha = 1; context.fillStyle = "rgba(35,58,52,.09)"; context.fillRect(0, viewportTop, options.width, viewportHeight);
+      context.strokeStyle = "rgba(35,58,52,.45)"; context.lineWidth = 1; context.strokeRect(.5, viewportTop + .5, options.width - 1, Math.max(1, viewportHeight - 1));
     }
     for (const item of resolved) {
       context.globalCompositeOperation = options.blendMode; context.globalAlpha = item.marker.opacity;
@@ -147,9 +152,38 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
   };
 
   const candidates = (event: { clientY: number }) => {
-    const rect = canvas.getBoundingClientRect(), y = (event.clientY - rect.top) * (layout().height / Math.max(1, rect.height));
+    const y = pointerY(event);
     return drawn.filter(item => y >= item.y - HIT_TOLERANCE && y <= item.y + item.height + HIT_TOLERANCE)
       .sort((a, b) => Math.abs(y - (a.y + a.height / 2)) - Math.abs(y - (b.y + b.height / 2)) || b.priority - a.priority || a.marker.id.localeCompare(b.marker.id));
+  };
+
+  const pointerY = (event: { clientY: number }) => {
+    const rect = canvas.getBoundingClientRect();
+    return (event.clientY - rect.top) * (layout().height / Math.max(1, rect.height));
+  };
+
+  const overThumb = (y: number) => {
+    const current = layout();
+    return current.viewportHeight > 0 && y >= current.viewportTop && y <= current.viewportTop + current.viewportHeight;
+  };
+
+  const scrollToThumb = (requestedTop: number) => {
+    const current = layout(), page = props.page(), owner = scrollport(page);
+    if (!owner || current.height <= 0 || current.viewportHeight <= 0) return;
+    const top = Math.max(0, Math.min(current.height - current.viewportHeight, requestedTop));
+    const extent = Math.max(1, page.scrollHeight, page.getBoundingClientRect().height);
+    const desiredPageY = top / current.height * extent;
+    if (owner === page) {
+      const visibleHeight = page.clientHeight || page.getBoundingClientRect().height;
+      owner.scrollTop = Math.max(0, Math.min(Math.max(0, page.scrollHeight - visibleHeight), desiredPageY));
+    } else {
+      const ownerRect = owner.getBoundingClientRect(), pageRect = page.getBoundingClientRect();
+      const pageTopInOwner = pageRect.top - ownerRect.top + owner.scrollTop;
+      const visibleTopInOwner = viewportRect(owner).top - ownerRect.top;
+      const maximum = Math.max(0, owner.scrollHeight - (owner.clientHeight || ownerRect.height));
+      owner.scrollTop = Math.max(0, Math.min(maximum, pageTopInOwner + desiredPageY - visibleTopInOwner));
+    }
+    schedule();
   };
 
   createEffect(() => { editor.minimap.state.revision; schedule(); });
@@ -181,9 +215,41 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     <aside class="page-minimap" data-page-minimap={props.pageKey} data-side={editor.minimap.state.options.side} role="complementary" aria-label={`Page minimap: ${summary()}`}
       style={{ left: `${layout().left}px`, top: `${layout().top}px`, width: `${layout().width}px`, height: `${layout().height}px` }}>
       <canvas ref={canvas} aria-hidden="true" style={{ width: `${layout().width}px`, height: `${layout().height}px` }}
-        onPointerMove={event => { const hits = candidates(event); event.currentTarget.title = hits.length ? `${hits[0].marker.label ?? "Marker"}${hits.length > 1 ? ` (+${hits.length - 1} overlapping)` : ""}` : summary(); }}
-        onPointerLeave={event => { event.currentTarget.title = summary(); }}
-        onClick={event => { const hit = candidates(event)[0]; if (hit) { event.preventDefault(); editor.minimap.activate(hit.owner, hit.marker.id); } }} />
+        onPointerDown={event => {
+          const y = pointerY(event);
+          if (event.button !== 0 || !overThumb(y)) return;
+          thumbDrag = { pointerId: event.pointerId, offset: y - layout().viewportTop, startY: y, moved: false };
+          event.currentTarget.setPointerCapture?.(event.pointerId); event.currentTarget.style.cursor = "grabbing"; event.preventDefault();
+        }}
+        onPointerMove={event => {
+          const y = pointerY(event);
+          if (thumbDrag?.pointerId === event.pointerId) {
+            thumbDrag.moved ||= Math.abs(y - thumbDrag.startY) > 2;
+            scrollToThumb(y - thumbDrag.offset); event.currentTarget.style.cursor = "grabbing"; return;
+          }
+          const hits = candidates(event);
+          event.currentTarget.style.cursor = overThumb(y) ? "grab" : "pointer";
+          event.currentTarget.title = hits.length ? `${hits[0].marker.label ?? "Marker"}${hits.length > 1 ? ` (+${hits.length - 1} overlapping)` : ""}` : overThumb(y) ? "Drag to scroll this Page" : `${summary()}; click to scroll`;
+        }}
+        onPointerUp={event => {
+          if (thumbDrag?.pointerId !== event.pointerId) return;
+          suppressClick = thumbDrag.moved; thumbDrag = undefined; event.currentTarget.releasePointerCapture?.(event.pointerId);
+          event.currentTarget.style.cursor = overThumb(pointerY(event)) ? "grab" : "pointer";
+        }}
+        onPointerCancel={event => { if (thumbDrag?.pointerId === event.pointerId) { thumbDrag = undefined; suppressClick = true; event.currentTarget.style.cursor = "pointer"; } }}
+        onPointerLeave={event => { if (!thumbDrag) { event.currentTarget.title = summary(); event.currentTarget.style.cursor = "pointer"; } }}
+        onWheel={event => {
+          const owner = scrollport(props.page()); if (!owner) return;
+          const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? (owner.clientHeight || owner.getBoundingClientRect().height) : 1;
+          owner.scrollTop += event.deltaY * scale; event.preventDefault(); schedule();
+        }}
+        onClick={event => {
+          if (suppressClick) { suppressClick = false; event.preventDefault(); return; }
+          const hit = candidates(event)[0];
+          if (hit) { event.preventDefault(); editor.minimap.activate(hit.owner, hit.marker.id); return; }
+          const y = pointerY(event); if (overThumb(y)) return;
+          event.preventDefault(); scrollToThumb(y - layout().viewportHeight / 2);
+        }} />
     </aside>
   </Show></Portal>;
 }
