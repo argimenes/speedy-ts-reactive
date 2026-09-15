@@ -415,6 +415,8 @@ textarea {
   box-shadow: 0 18px 50px rgba(23, 35, 31, .18);
 }
 
+.reactive-window--minimized { overflow: visible; }
+
 .reactive-window__header {
   display: flex;
   justify-content: space-between;

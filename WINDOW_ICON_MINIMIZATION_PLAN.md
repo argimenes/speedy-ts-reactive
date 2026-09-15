@@ -1,11 +1,35 @@
 # Window-to-icon minimization plan
 
-Status: design agreed on 15 September 2026; not yet implemented.
+Status: implemented on 15 September 2026.
+
+## Implementation checkpoint
+
+`src/rendering/window-icon.tsx` now supplies the shared, code-native semantic
+icon view and normalizes window state, including the legacy `maximised` spelling.
+The registered `WindowView` derives minimized state directly from reactive Block
+metadata and retains one stable mounted window root while switching its children
+between the full window and icon presentations. The Workspace demo uses the same
+icon component and interaction rather than its former compressed title bar.
+
+The document/page and generic-window glyphs are resolved from semantic keys.
+Minimize, restore and completed icon drags are canonical, undoable metadata
+operations; pointer movement remains a local preview. The window's full size is
+never replaced by the 96 × 92 px icon dimensions. Child views unmount while
+minimized, and document-scoped Find, entity-list and owned overlay sessions close
+before their DOM anchors disappear. Focus and native or standoff selections are
+captured before pointer focus reaches the minimize control and restored after the
+child mounts again.
+
+Focused tests cover identity and child preservation, exact selection restoration,
+session cleanup, history synchronization, semantic icon overrides, legacy state
+normalization, save/reload and demo parity. The repeatable real-Chrome check in
+`scripts/check-window-icon.mjs` covers rendered dimensions, pointer drag, click
+suppression, restoration geometry, exact selection and undo/redo.
 
 ## Outcome
 
 Pressing the minimize control on a `window-block` or
-`document-window-block` will replace the full window presentation with a compact,
+`document-window-block` replaces the full window presentation with a compact,
 draggable icon presentation. A minimized document window initially uses a
 document/page glyph and its title. Activating the icon restores the full window.
 
@@ -21,10 +45,10 @@ children, reconstruct the window on restoration and make the whole structural
 operation undoable. It would also make transclusion, selection, focus and child
 identity more fragile without improving the minimized presentation.
 
-Instead, `WindowView` will select between two presentations of one Block:
+Instead, `WindowView` selects between two presentations of one Block:
 
 - the existing full window presentation when the state is `normal`; and
-- a `WindowIconView` presentation when the state is `minimized`.
+- a `WindowIcon` presentation when the state is `minimized`.
 
 An independent `icon-block` may still be useful later for desktop shortcuts,
 links or files that are icons in their own right. That is a separate concept from
@@ -166,20 +190,20 @@ If window layout is later separated from document content into a dedicated
 workspace store, state, position, size and icon overrides can move together. The
 view contract does not depend on which repository owns that metadata.
 
-## Proposed implementation sequence
+## Implemented sequence
 
-1. Define a small typed window metadata/state helper that normalizes defaults and
+1. [x] Define a small typed window metadata/state helper that normalizes defaults and
    reads legacy `maximised` safely.
-2. Make reactive metadata the only settled source for minimized state; remove the
+2. [x] Make reactive metadata the only settled source for minimized state; remove the
    independent initialized-once signal from `WindowView`.
-3. Add a code-native `WindowIconView` and semantic icon resolver, starting with
+3. [x] Add a code-native `WindowIcon` and semantic icon resolver, starting with
    the document/page glyph.
-4. Branch `WindowView` between icon and full presentations while preserving its
+4. [x] Branch `WindowView` between icon and full presentations while preserving its
    root Block identity, appearance and z-index.
-5. Reuse or extract the current drag logic so normal-window and minimized-icon
+5. [x] Reuse or extract the current drag logic so normal-window and minimized-icon
    gestures preview locally and commit once on release.
-6. Align the Workspace demo with the same icon presentation and interaction.
-7. Add focused persistence, history, focus and browser interaction tests.
+6. [x] Align the Workspace demo with the same icon presentation and interaction.
+7. [x] Add focused persistence, history, focus and browser interaction tests.
 
 ## Verification contract
 
@@ -202,7 +226,7 @@ view contract does not depend on which repository owns that metadata.
 - Narrow viewport and real-browser tests confirm that the icon remains reachable
   and does not inherit the full window's width or height.
 
-## Estimate
+## Planning estimate
 
 A basic document glyph, restoration, persistence and focused tests should take
 approximately three to five hours. Including polished icon dragging, responsive

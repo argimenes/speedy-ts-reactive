@@ -91,7 +91,8 @@
   transform: none !important;
 }
 
-.workspace-demo__window--minimized { height: 31px; min-height: 0; }
+.workspace-demo .workspace-demo__window--minimized { height: 92px; min-height: 0; border-color: transparent; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; text-shadow: none; pointer-events: none; }
+.workspace-demo__window--minimized .workspace-demo__window-icon { pointer-events: auto; }
 
 .workspace-demo__windowbar {
   display: flex;

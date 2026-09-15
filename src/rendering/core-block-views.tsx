@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { unwrap } from "solid-js/store";
 import type { BlockViewProps, NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { blockAppearance } from "./appearance";
@@ -7,6 +8,7 @@ import { BackgroundMedia } from "./background-media";
 import { youtubeId } from "./backgrounds";
 import { DocumentStyleBar } from "./document-style-bar";
 import { PageMinimap } from "./page-minimap";
+import { WindowIcon, resolvedWindowIcon, resolvedWindowState } from "./window-icon";
 
 function useContainerMount(nodeKey: NodeKey, root: () => HTMLElement) {
   const { editor } = useReactiveView();
@@ -433,33 +435,111 @@ export function WindowView(props: BlockViewProps) {
   const metadata = () => (node()?.payload.metadata as Record<string, any> | undefined) ?? {};
   const appearance = createMemo(() => blockAppearance(node()));
   const [preview, setPreview] = createSignal<{ x: number; y: number }>();
-  const [minimized, setMinimized] = createSignal(metadata().state === "minimized");
+  const state = () => resolvedWindowState(metadata().state);
+  const minimized = () => state() === "minimized";
+  const title = () => String(metadata().title ?? "Untitled");
   let root!: HTMLDivElement;
   let dispose: (() => void) | undefined;
-  let drag: { pointerId: number; x: number; y: number; originX: number; originY: number } | undefined;
+  let drag: { pointerId: number; x: number; y: number; originX: number; originY: number; moved: boolean } | undefined;
+  let suppressIconClick = false;
+  let suppressTimer: ReturnType<typeof setTimeout> | undefined;
+  let returnFocus: { key: NodeKey; native?: { start: number; end: number; direction: "forward" | "backward" | "none" }; inline?: { anchor: number; head: number } } | undefined;
   onMount(() => {
     dispose = editor.mounts.register(props.nodeKey, {
       root,
       focusElement: root,
       inputPolicy: "container",
-      focus: () => root.focus({ preventScroll: true }),
+      focus: () => (root.querySelector<HTMLButtonElement>("[data-window-icon]") ?? root).focus({ preventScroll: true }),
     });
   });
-  onCleanup(() => dispose?.());
+  onCleanup(() => { dispose?.(); if (suppressTimer) clearTimeout(suppressTimer); });
   const position = () => preview() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
-  const commitMetadata = (patch: Record<string, unknown>, label: string) => editor.commands.setPayloadField(props.nodeKey, "metadata", { ...metadata(), ...patch }, label);
+  const commitMetadata = (patch: Record<string, unknown>, label: string) => editor.commands.setPayloadField(props.nodeKey, "metadata", { ...unwrap(metadata()), ...patch }, label);
+  const subtreeKeys = () => {
+    const seen = new Set<NodeKey>(), pending = [props.nodeKey];
+    while (pending.length) {
+      const key = pending.pop()!;
+      if (seen.has(key)) continue; seen.add(key);
+      const current = projection.state.nodes[key]; if (current) pending.push(...current.children, ...Object.values(current.ownedRelations));
+    }
+    return seen;
+  };
+  const contains = (target?: NodeKey) => !!target && subtreeKeys().has(target);
+  const clampIconPosition = (next: { x: number; y: number }) => {
+    if (!minimized()) return next;
+    const current = position(), rect = root.getBoundingClientRect();
+    const width = rect.width || 96, height = rect.height || 92;
+    return {
+      x: next.x + Math.max(0, 8 - (rect.left + next.x - current.x)) - Math.max(0, rect.left + next.x - current.x + width + 8 - window.innerWidth),
+      y: next.y + Math.max(0, 8 - (rect.top + next.y - current.y)) - Math.max(0, rect.top + next.y - current.y + height + 8 - window.innerHeight),
+    };
+  };
+  const beginDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
+    if (event.ctrlKey || event.button !== 0) return;
+    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y, moved: false };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const moveDrag = (event: PointerEvent) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    drag.moved ||= Math.abs(event.clientX - drag.x) > 2 || Math.abs(event.clientY - drag.y) > 2;
+    setPreview(clampIconPosition({ x: drag.originX + event.clientX - drag.x, y: drag.originY + event.clientY - drag.y }));
+  };
+  const finishDrag = (event: PointerEvent, cancelled = false) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const final = position(), moved = drag.moved, wasMinimized = minimized(); drag = undefined; setPreview(undefined);
+    if (cancelled) return;
+    if (wasMinimized && moved) {
+      suppressIconClick = true; clearTimeout(suppressTimer);
+      suppressTimer = setTimeout(() => { suppressIconClick = false; suppressTimer = undefined; }, 0);
+    }
+    const stored = { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
+    if (moved && (final.x !== stored.x || final.y !== stored.y)) commitMetadata({ position: final }, wasMinimized ? "Move Window Icon" : "Move Window");
+  };
+  const rememberReturnFocus = () => {
+    const key = [editor.focus.state.focusedKey, editor.focus.state.lastFocusedKey].find(candidate => candidate !== props.nodeKey && contains(candidate));
+    if (!key) return;
+    const mount = editor.mounts.get(key);
+    returnFocus = { key, native: mount?.captureSelection?.(), inline: mount?.captureInlineSelection?.() };
+  };
+  const minimizeWindow = () => {
+    const focusWasInside = contains(editor.focus.state.focusedKey);
+    if (focusWasInside) { rememberReturnFocus(); editor.focus.adopt(props.nodeKey); }
+    if (editor.find.state.open && contains(editor.find.state.scope?.rootKey)) editor.find.close(false);
+    if (editor.entityList.state.open && contains(editor.entityList.state.scope?.rootKey)) editor.entityList.close(false);
+    for (const overlay of [...editor.overlays.overlays]) if (contains(overlay.ownerKey)) editor.overlays.close(overlay.key, false);
+    editor.crossText.clear(); commitMetadata({ state: "minimized" }, "Minimize Window");
+    if (focusWasInside) queueMicrotask(() => root.querySelector<HTMLButtonElement>("[data-window-icon]")?.focus({ preventScroll: true }));
+  };
+  const restoreWindow = () => {
+    if (suppressIconClick) { suppressIconClick = false; return; }
+    commitMetadata({ state: "normal" }, "Restore Window");
+    const saved = returnFocus; returnFocus = undefined;
+    queueMicrotask(() => {
+      if (saved && editor.node(saved.key)) {
+        editor.focus.request(saved.key, { reason: "restore-window", ...(saved.native ? { caret: saved.native } : {}) });
+        if (saved.inline) queueMicrotask(() => editor.mounts.get(saved.key)?.restoreInlineSelection?.(saved.inline!));
+        return;
+      }
+      const candidate = [...subtreeKeys()].map(key => projection.state.nodes[key]).find(candidate => candidate?.key !== props.nodeKey && ["native-text", "standoff"].includes(editor.mounts.get(candidate?.key)?.inputPolicy ?? ""));
+      if (candidate) editor.focus.request(candidate.key, { reason: "restore-window" }); else root.focus({ preventScroll: true });
+    });
+  };
   return (
-    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ "reactive-window--minimized": minimized() }} tabIndex={-1} style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: `${Number(metadata().size?.w ?? 840)}px`, height: minimized() ? "auto" : `${Number(metadata().size?.h ?? 620)}px`, "z-index": Number(metadata().zIndex ?? 1) }} {...data(props.nodeKey, node)}>
-      <header class="reactive-window__header" onPointerDown={(event) => { if (event.ctrlKey || event.button !== 0) return; drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y }; event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={(event) => { if (!drag || drag.pointerId !== event.pointerId) return; setPreview({ x: drag.originX + event.clientX - drag.x, y: drag.originY + event.clientY - drag.y }); }} onPointerUp={(event) => { if (!drag || drag.pointerId !== event.pointerId) return; const final = position(); drag = undefined; setPreview(undefined); commitMetadata({ position: final }, "Move Window"); }}>
-        <span>{String(metadata().title ?? "Untitled")}</span>
-        <span class="reactive-window__controls">
-          <button type="button" aria-label="Minimize window" onPointerDown={(e) => e.stopPropagation()} onClick={() => { const next = !minimized(); setMinimized(next); commitMetadata({ state: next ? "minimized" : "normal" }, "Minimize Window"); }}>−</button>
-          <button type="button" aria-label="Close window" onPointerDown={(e) => e.stopPropagation()} onClick={() => editor.commands.remove(props.nodeKey)}>×</button>
-        </span>
-      </header>
-      <Show when={!minimized()}>
+    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ "reactive-window--minimized": minimized() }} tabIndex={-1}
+      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${Number(metadata().size?.w ?? 840)}px`, height: minimized() ? "auto" : `${Number(metadata().size?.h ?? 620)}px`, "z-index": Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
+      <Show when={minimized()} fallback={<>
+        <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
+          <span>{title()}</span>
+          <span class="reactive-window__controls">
+            <button type="button" aria-label="Minimize window" onPointerDown={(e) => { rememberReturnFocus(); e.stopPropagation(); }} onClick={minimizeWindow}>−</button>
+            <button type="button" aria-label="Close window" onPointerDown={(e) => e.stopPropagation()} onClick={() => editor.commands.remove(props.nodeKey)}>×</button>
+          </span>
+        </header>
         <Show when={node()?.viewType === "document-window-block"}><DocumentStyleBar editor={editor} scopeKey={props.nodeKey} /></Show>
         <div class="reactive-window__content"><ChildBlocks parentKey={props.nodeKey} /></div>
+      </>}>
+        <WindowIcon title={title()} kind={resolvedWindowIcon(node()?.viewType ?? "window-block", metadata().icon)} onRestore={restoreWindow}
+          onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)} />
       </Show>
     </div>
   );

@@ -1,0 +1,28 @@
+.window-icon {
+  box-sizing: border-box;
+  display: grid;
+  width: 96px;
+  min-height: 92px;
+  grid-template-rows: 56px auto;
+  place-items: center;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: #24443d;
+  background: rgba(247, 251, 249, .82);
+  box-shadow: 0 5px 15px rgba(23, 35, 31, .18);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.window-icon:hover { border-color: rgba(56, 91, 81, .48); background: rgba(255, 255, 255, .94); }
+.window-icon:active { cursor: grabbing; }
+.window-icon:focus-visible { outline: 2px solid #097882; outline-offset: 2px; }
+.window-icon__glyph { display: grid; width: 56px; height: 56px; place-items: center; }
+.window-icon__glyph svg { width: 48px; height: 48px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.window-icon__label { overflow: hidden; width: 100%; max-height: 2.4em; color: inherit; font: 12px/1.2 system-ui, sans-serif; overflow-wrap: anywhere; text-align: center; }
+
+@media (forced-colors: active) {
+  .window-icon { border-color: ButtonText; color: ButtonText; background: ButtonFace; }
+}

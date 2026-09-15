@@ -1,16 +1,19 @@
 # Reactive reconstruction progress
 
-## Window icon minimization — planned, 15 September 2026
+## Window icon minimization — implemented, 15 September 2026
 
-Agreed the design for minimizing a WindowBlock into a compact icon presentation.
-The canonical window will retain its Block type, key, children and restoration
-geometry; `metadata.state` will select a `WindowIconView` instead of structurally
-converting it to an IconBlock. Document windows default to a document/page glyph,
-stored icon choices are semantic keys, a single click restores the window and
-icon dragging commits one undoable position change. Reactive metadata will
-replace the current duplicate local minimized signal so undo, redo and reload
-cannot disagree with the presentation. Child views may unmount while minimized,
-but their model data remains intact. No server or database work is required. See
+Implemented compact icon minimization without changing the canonical WindowBlock
+type, key, children or restoration geometry. Reactive `metadata.state` now
+selects the shared `WindowIcon` presentation directly, eliminating the duplicate
+local state that could disagree with undo, redo or reload. Document windows default to
+a code-native document/page glyph, stored overrides are semantic keys, one click
+or keyboard activation restores the window, and a completed icon drag creates one
+undoable position change. Child views unmount while minimized but their model
+data remains intact; exact focus/selection restoration and mount-dependent
+session cleanup are covered. The Workspace demo uses the same icon behavior.
+Focused tests, typecheck, builds and a real Chrome minimize/drag/restore/history
+check pass. Full suite: 238/240, with only the same two documented context-menu
+baseline failures. No server or database work was required. See
 [WINDOW_ICON_MINIMIZATION_PLAN.md](WINDOW_ICON_MINIMIZATION_PLAN.md).
 
 ## Page minimap — implemented, 15 September 2026

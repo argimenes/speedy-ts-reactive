@@ -12,6 +12,7 @@ import { ReactiveEditor as BackgroundEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "../rendering/register-core-views";
 import "./workspace-demo.css";
 import { DocumentStyleBar } from "../rendering/document-style-bar";
+import { WindowIcon } from "../rendering/window-icon";
 
 
 function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; onBackground: (event: MouseEvent) => void; onReset: () => void; document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean; onClose: (document?: ExistingBlockDto, location?: DocumentLocation) => void; onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void }) {
@@ -30,14 +31,45 @@ function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; 
   const [showJson, setShowJson] = createSignal(false);
   const [windowState, setWindowState] = createSignal<"normal" | "minimized" | "maximized" | "closed">(props.closed ? "closed" : "normal");
   const [position, setPosition] = createSignal({ x: 0, y: 0 });
-  let drag: { pointerId: number; x: number; y: number; originX: number; originY: number } | undefined;
+  let windowElement!: HTMLElement;
+  let drag: { pointerId: number; x: number; y: number; originX: number; originY: number; moved: boolean } | undefined;
+  let suppressIconClick = false;
+  let suppressTimer: ReturnType<typeof setTimeout> | undefined;
+  const beginWindowDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
+    if (event.ctrlKey || event.button !== 0 || !["normal", "minimized"].includes(windowState()) || (event.target as Element).closest("button") && windowState() !== "minimized") return;
+    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y, moved: false };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const moveWindow = (event: PointerEvent) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    drag.moved ||= Math.abs(event.clientX - drag.x) > 2 || Math.abs(event.clientY - drag.y) > 2;
+    const next = { x: drag.originX + event.clientX - drag.x, y: drag.originY + event.clientY - drag.y };
+    if (windowState() !== "minimized") { setPosition(next); return; }
+    const current = position(), rect = windowElement.getBoundingClientRect(), width = 96, height = 92;
+    setPosition({
+      x: next.x + Math.max(0, 8 - (rect.left + next.x - current.x)) - Math.max(0, rect.left + next.x - current.x + width + 8 - window.innerWidth),
+      y: next.y + Math.max(0, 8 - (rect.top + next.y - current.y)) - Math.max(0, rect.top + next.y - current.y + height + 8 - window.innerHeight),
+    });
+  };
+  const finishWindowDrag = (event: PointerEvent) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (windowState() === "minimized" && drag.moved) {
+      suppressIconClick = true; clearTimeout(suppressTimer);
+      suppressTimer = setTimeout(() => { suppressIconClick = false; suppressTimer = undefined; }, 0);
+    }
+    drag = undefined;
+  };
+  const restoreWindow = () => {
+    if (suppressIconClick) { suppressIconClick = false; return; }
+    setWindowState("normal");
+  };
   const encoded = createMemo(() => {
     editor.repository.state.revision;
     return showJson() ? JSON.stringify(editor.encodeDocument(), null, 2) : "";
   });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
-  onCleanup(() => { releaseEditor(); editor.dispose(); });
+  onCleanup(() => { if (suppressTimer) clearTimeout(suppressTimer); releaseEditor(); editor.dispose(); });
   onMount(() => {
     editor.installGateway(document);
     setLoaded(true);
@@ -72,43 +104,42 @@ function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; 
 
       <Show when={windowState() !== "closed"}>
         <section
+          ref={windowElement}
           class="workspace-demo__window"
           classList={{
             "workspace-demo__window--minimized": windowState() === "minimized",
             "workspace-demo__window--maximized": windowState() === "maximized",
             "workspace-demo__window--glass": glass(),
           }}
-          style={{ transform: windowState() === "normal" ? `translate(${position().x}px, ${position().y}px)` : undefined }}
+          style={{ transform: windowState() !== "maximized" ? `translate(${position().x}px, ${position().y}px)` : undefined }}
         >
-          <header
-            class="workspace-demo__windowbar"
-            onContextMenu={headerMenu}
-            onClick={event => { if (event.ctrlKey) headerMenu(event); }}
-            onPointerDown={(event) => {
-              if (event.ctrlKey || event.button !== 0 || windowState() !== "normal" || (event.target as Element).closest("button")) return;
-              drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y };
-              event.currentTarget.setPointerCapture?.(event.pointerId);
-            }}
-            onPointerMove={(event) => {
-              if (!drag || drag.pointerId !== event.pointerId) return;
-              setPosition({ x: drag.originX + event.clientX - drag.x, y: drag.originY + event.clientY - drag.y });
-            }}
-            onPointerUp={(event) => { if (drag?.pointerId === event.pointerId) drag = undefined; }}
-          >
-            <span class="workspace-demo__window-title" title={documents.location() ? `${documents.location()!.folder}/${title()}` : title()}>{title()}<span class="workspace-demo__save-state" role="status" data-save-state={documents.busy() ? "saving" : documents.dirty() ? "unsaved" : "saved"}> · {documents.busy() ? "Working…" : documents.dirty() ? "Unsaved changes" : documents.location() ? "Saved" : "Sample"}</span></span>
-            <span class="workspace-demo__window-controls">
-              <button type="button" aria-label="Minimize document window" onClick={() => setWindowState((value) => value === "minimized" ? "normal" : "minimized")}>−</button>
-              <button type="button" aria-label="Maximize document window" onClick={() => setWindowState((value) => value === "maximized" ? "normal" : "maximized")}>□</button>
-              <button type="button" aria-label="Close document window" disabled={documents.busy()} onClick={() => documents.guard("close the document window", () => props.onClose(editor.persistence.savedDocument ?? props.document, documents.location()))}>×</button>
-            </span>
-          </header>
-          <Show when={windowState() !== "minimized"}>
+          <Show when={windowState() === "minimized"} fallback={<>
+            <header
+              class="workspace-demo__windowbar"
+              onContextMenu={headerMenu}
+              onClick={event => { if (event.ctrlKey) headerMenu(event); }}
+              onPointerDown={beginWindowDrag}
+              onPointerMove={moveWindow}
+              onPointerUp={finishWindowDrag}
+              onPointerCancel={event => { if (drag?.pointerId === event.pointerId) drag = undefined; }}
+            >
+              <span class="workspace-demo__window-title" title={documents.location() ? `${documents.location()!.folder}/${title()}` : title()}>{title()}<span class="workspace-demo__save-state" role="status" data-save-state={documents.busy() ? "saving" : documents.dirty() ? "unsaved" : "saved"}> · {documents.busy() ? "Working…" : documents.dirty() ? "Unsaved changes" : documents.location() ? "Saved" : "Sample"}</span></span>
+              <span class="workspace-demo__window-controls">
+                <button type="button" aria-label="Minimize document window" onClick={() => setWindowState("minimized")}>−</button>
+                <button type="button" aria-label="Maximize document window" onClick={() => setWindowState((value) => value === "maximized" ? "normal" : "maximized")}>□</button>
+                <button type="button" aria-label="Close document window" disabled={documents.busy()} onClick={() => documents.guard("close the document window", () => props.onClose(editor.persistence.savedDocument ?? props.document, documents.location()))}>×</button>
+              </span>
+            </header>
             <DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} />
             <Show when={documents.error() && !documents.browser() && !documents.pending()}><p class="workspace-demo__file-notice" role="alert">{documents.error()}</p></Show>
             <Show when={editor.persistence.state.warning}><p class="workspace-demo__file-notice" role="status">{editor.persistence.state.warning}</p></Show>
             <section class="workspace-demo__document" classList={{ "workspace-demo__document--tabbed": hasDocumentTabs(), "workspace-demo__document--flow": !hasDocumentTabs() }} aria-label={title()}>
               <ReactiveTreeView editor={editor} projection={projection} />
             </section>
+          </>}>
+            <WindowIcon class="workspace-demo__window-icon" title={title()} kind="document" onRestore={restoreWindow}
+              onPointerDown={beginWindowDrag} onPointerMove={moveWindow} onPointerUp={finishWindowDrag}
+              onPointerCancel={event => { if (drag?.pointerId === event.pointerId) drag = undefined; }} />
           </Show>
         </section>
       </Show>

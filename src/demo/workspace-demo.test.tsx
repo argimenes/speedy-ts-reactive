@@ -121,6 +121,20 @@ describe("WorkspaceDemo", () => {
     expect(button("Sticky tag #1", sticky).getAttribute("aria-selected")).toBe("true");
   });
 
+  it("minimizes the demo document to the shared draggable document icon", () => {
+    const host = mount(), win = host.querySelector<HTMLElement>(".workspace-demo__window")!;
+    click(host.querySelector<HTMLButtonElement>('[aria-label="Minimize document window"]')!);
+    const icon = host.querySelector<HTMLButtonElement>('[data-window-icon]')!;
+    expect(icon.dataset.iconKind).toBe("document"); expect(icon.getAttribute("aria-label")).toContain("Restore Workspace sample document");
+    expect(host.querySelector(".workspace-demo__document")).toBeNull();
+    icon.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 100, clientY: 100, bubbles: true, cancelable: true }));
+    icon.dispatchEvent(new MouseEvent("pointermove", { button: 0, clientX: 130, clientY: 120, bubbles: true, cancelable: true }));
+    icon.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientX: 130, clientY: 120, bubbles: true, cancelable: true }));
+    expect(win.style.transform).toBe("translate(30px, 20px)");
+    click(icon); expect(host.querySelector("[data-window-icon]")).not.toBeNull();
+    click(icon); expect(host.querySelector("[data-window-icon]")).toBeNull(); expect(host.querySelector(".workspace-demo__document")).not.toBeNull();
+  });
+
   it("records editing and recreates pristine state on reset", () => {
     const host = mount();
     const original = "... and this is just a plain text block ...";
