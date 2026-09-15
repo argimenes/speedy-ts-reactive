@@ -1,5 +1,20 @@
 # Reactive reconstruction progress
 
+## Resilient Workspace persistence — planned, 15 September 2026
+
+Approved a short-term Workspace manifest design that retains the current single
+reactive repository and global undo/dirty model. The manifest saves the complete
+Workspace layout—including its BackgroundBlock and window state—but replaces
+hydrated Document content with explicit stable-ID references to separate,
+inspectable Document JSON files. Workspace Save conservatively writes every
+referenced Document from one snapshot and commits the manifest last; Workspace
+Load validates identities and hashes, shares repeated Document references, and
+keeps recoverable placeholders for missing files. Legacy `loadFromExternal` and
+embedded Workspaces are import formats only. Separate Document repositories,
+per-Document dirty/undo state and stronger cross-file transactions remain
+deferred. This entry records planning only; implementation has not started. See
+[WORKSPACE_PERSISTENCE_PLAN.md](WORKSPACE_PERSISTENCE_PLAN.md).
+
 ## Window icon minimization — implemented, 15 September 2026
 
 Implemented compact icon minimization without changing the canonical WindowBlock
