@@ -4,7 +4,7 @@ import { ReactiveTreeView } from "../rendering/reactive-tree-view";
 import { createWorkspaceDemoEditor, createWorkspaceEditor, demoSourceCounts } from "./workspace-demo-model";
 import { workspaceBuilderTypes } from "./workspace-document";
 import type { ExistingBlockDto } from "../block-tree/types";
-import type { DocumentLocation } from "../reactive-editor/persistence";
+import { PersistenceService, type DocumentLocation } from "../reactive-editor/persistence";
 import { DocumentBrowser } from "./document-browser";
 import { DocumentDialog } from "./document-dialog";
 import { createWorkspaceDocuments } from "./workspace-documents";
@@ -13,13 +13,23 @@ import { registerCoreViews } from "../rendering/register-core-views";
 import "./workspace-demo.css";
 import { DocumentStyleBar } from "../rendering/document-style-bar";
 import { WindowIcon } from "../rendering/window-icon";
+import { WorkspaceBrowser } from "./workspace-browser";
+import type { LoadedWorkspace } from "../reactive-editor/workspace-manifest";
+
+type DemoWindowState = "normal" | "minimized" | "maximized" | "closed";
+interface DemoWindowSnapshot { state: DemoWindowState; position: { x: number; y: number }; size: { w: number; h: number } }
+interface DemoEditorBridge {
+  editor: ReactiveEditor;
+  location: () => DocumentLocation | undefined;
+  window: () => DemoWindowSnapshot;
+}
+interface WorkspaceActionResult { success: boolean; error?: string; status?: number }
 
 
-function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; onBackground: (event: MouseEvent) => void; onReset: () => void; document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean; onClose: (document?: ExistingBlockDto, location?: DocumentLocation) => void; onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void }) {
+function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void; onBackground: (event: MouseEvent) => void; onReset: () => void; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; workspaceBusy: boolean; document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean; window?: Partial<DemoWindowSnapshot>; onClose: (document?: ExistingBlockDto, location?: DocumentLocation) => void; onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void }) {
   const editor = props.document ? createWorkspaceEditor(props.document) : createWorkspaceDemoEditor();
   const projection = editor.createView("workspace-demo");
   const documents = createWorkspaceDocuments(editor, props);
-  const releaseEditor = props.onEditor(editor);
   const glass = () => ((projection.state.nodes[projection.state.rootKey].payload.blockProperties ?? []) as Array<{ type?: string }>).some(property => property.type === "block/theme/glass");
   const headerMenu = (event: MouseEvent) => {
     event.preventDefault(); event.stopPropagation();
@@ -29,8 +39,8 @@ function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; 
   const title = () => documents.location()?.filename ?? "Workspace sample document";
   const [loaded, setLoaded] = createSignal(false);
   const [showJson, setShowJson] = createSignal(false);
-  const [windowState, setWindowState] = createSignal<"normal" | "minimized" | "maximized" | "closed">(props.closed ? "closed" : "normal");
-  const [position, setPosition] = createSignal({ x: 0, y: 0 });
+  const [windowState, setWindowState] = createSignal<DemoWindowState>(props.closed ? "closed" : props.window?.state ?? "normal");
+  const [position, setPosition] = createSignal(props.window?.position ?? { x: 0, y: 0 });
   let windowElement!: HTMLElement;
   let drag: { pointerId: number; x: number; y: number; originX: number; originY: number; moved: boolean } | undefined;
   let suppressIconClick = false;
@@ -63,6 +73,14 @@ function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; 
     if (suppressIconClick) { suppressIconClick = false; return; }
     setWindowState("normal");
   };
+  const releaseEditor = props.onEditor({
+    editor,
+    location: documents.location,
+    window: () => ({ state: windowState(), position: position(), size: windowElement?.isConnected ? { w: windowElement.getBoundingClientRect().width, h: windowElement.getBoundingClientRect().height } : props.window?.size ?? { w: 1200, h: 760 } }),
+  });
+  for (const [id, execute] of [["workspace.open", props.onWorkspaceOpen], ["workspace.save", props.onWorkspaceSave]] as const) {
+    editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute });
+  }
   const encoded = createMemo(() => {
     editor.repository.state.revision;
     return showJson() ? JSON.stringify(editor.encodeDocument(), null, 2) : "";
@@ -94,6 +112,8 @@ function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; 
         <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.open")}>Open…</button>
         <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.save")}>Save</button>
         <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs")}>Save as…</button>
+        <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
+        <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace…</button>
         <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
         <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
         <button type="button" disabled={documents.busy()} onClick={() => documents.guard("reset to the sample document", props.onReset)}>Reset demo</button>
@@ -180,12 +200,45 @@ function DemoSession(props: { onEditor: (editor: ReactiveEditor) => () => void; 
   );
 }
 
+function CanonicalWorkspaceSession(props: { loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
+  const editor = new BackgroundEditor(props.loaded);
+  registerCoreViews(editor);
+  const projection = editor.createView("loaded-workspace");
+  const release = props.onEditor(editor);
+  for (const [id, execute] of [["workspace.open", props.onWorkspaceOpen], ["workspace.save", props.onWorkspaceSave]] as const) {
+    editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute });
+  }
+  onMount(() => editor.installGateway(document));
+  onCleanup(() => { release(); editor.dispose(); });
+  const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
+  const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
+  return <main class="workspace-demo workspace-demo--canonical">
+    <nav class="workspace-demo__toolbar" aria-label="Workspace controls">
+      <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
+      <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
+      <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
+      <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
+      <span>{props.filename} · revision {editor.repository.state.revision}</span>
+    </nav>
+    <Show when={editor.persistence.workspaceLoadIssues().length}><aside class="workspace-demo__workspace-notice" role="status">{editor.persistence.workspaceLoadIssues().map(issue => issue.message).join(" · ")}</aside></Show>
+    <ReactiveTreeView editor={editor} projection={projection} />
+  </main>;
+}
+
 export function WorkspaceDemo() {
-  const [session, setSession] = createSignal<{ document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean }>({});
+  const [session, setSession] = createSignal<{ document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean; window?: Partial<DemoWindowSnapshot> }>({});
+  const [loadedWorkspace, setLoadedWorkspace] = createSignal<LoadedWorkspace>();
+  const [workspaceBrowser, setWorkspaceBrowser] = createSignal<"open" | "save">();
+  const [workspaceFilename, setWorkspaceFilename] = createSignal<string>();
+  const [workspaceBusy, setWorkspaceBusy] = createSignal(false);
+  const [workspaceError, setWorkspaceError] = createSignal("");
+  const [workspaceConflict, setWorkspaceConflict] = createSignal(false);
   const background = new BackgroundEditor({ id: "workspace-background", type: "image-background-block", metadata: { url: "/image-backgrounds/green-aurora.jpg" }, children: [] });
   registerCoreViews(background);
   const backgroundView = background.createView("workspace-background");
   let activeEditor: ReactiveEditor | undefined;
+  let activeDemo: DemoEditorBridge | undefined;
+  let activeWorkspaceEditor: ReactiveEditor | undefined;
   for (const id of ["document.open", "document.save", "document.saveAs"]) background.commandRegistry.register({ id, label: id,
     canExecute: () => !!activeEditor?.commandRegistry.canExecute(id, { targetKey: activeEditor.projections.values().next().value!.state.rootKey, args: undefined }),
     execute: () => activeEditor?.commandRegistry.execute(id, { targetKey: activeEditor.projections.values().next().value!.state.rootKey, args: undefined }),
@@ -196,6 +249,55 @@ export function WorkspaceDemo() {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     if (!background.overlays.overlays.some(overlay => overlay.viewType === "context-menu")) background.overlays.open({ viewType: "context-menu", ownerKey: backgroundView.state.rootKey, anchor: { x: rect.left, y: rect.bottom + 4 } });
   };
+  const openWorkspace = () => { if (!workspaceBusy()) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("open"); } };
+  const saveWorkspace = () => { if (!workspaceBusy()) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("save"); } };
+  const saveSplitWorkspace = async (filename: string, createOnly: boolean): Promise<WorkspaceActionResult> => {
+    if (!activeDemo) return { success: false, error: "The current Workspace is not ready." };
+    const location = activeDemo.location();
+    if (!location) return { success: false, error: "Save the current Document with Save as… before saving its Workspace." };
+    const document = activeDemo.editor.encodeDocument();
+    const documentMetadata = (document.metadata as Record<string, unknown> | undefined) ?? {};
+    const documentId = String(documentMetadata.documentId ?? document.id ?? globalThis.crypto.randomUUID());
+    document.metadata = { ...documentMetadata, documentId, folder: location.folder, filename: location.filename };
+    const backgroundDto = background.encodeDocument();
+    const window = activeDemo.window();
+    backgroundDto.children = [{
+      id: "workspace-document-window", type: "document-window-block",
+      metadata: { title: location.filename, position: window.position, size: window.size, state: window.state, zIndex: 1 },
+      children: [document],
+    }];
+    const temporary = new BackgroundEditor({ id: "workspace", type: "workspace-block", children: [backgroundDto] });
+    try {
+      const success = await temporary.persistence.saveWorkspace(filename, { createOnly });
+      if (success) {
+        activeDemo.editor.persistence.markCurrentRevisionSaved(document);
+        background.persistence.markCurrentRevisionSaved();
+      }
+      return { success, error: temporary.persistence.state.error, status: temporary.persistence.state.status };
+    } finally { temporary.dispose(); }
+  };
+  const chooseWorkspace = async (filename: string, overwrite: boolean) => {
+    if (workspaceBusy()) return false;
+    setWorkspaceBusy(true); setWorkspaceError(""); setWorkspaceConflict(false);
+    try {
+      if (workspaceBrowser() === "open") {
+        const loaded = await PersistenceService.loadWorkspace(filename);
+        setLoadedWorkspace(loaded); setWorkspaceFilename(filename); setWorkspaceBrowser(undefined);
+        return true;
+      }
+      const result = activeWorkspaceEditor
+        ? { success: await activeWorkspaceEditor.persistence.saveWorkspace(filename, { createOnly: !overwrite }), error: activeWorkspaceEditor.persistence.state.error, status: activeWorkspaceEditor.persistence.state.status }
+        : await saveSplitWorkspace(filename, !overwrite);
+      if (!result.success) {
+        setWorkspaceError(result.error || "The Workspace could not be saved.");
+        setWorkspaceConflict(result.status === 409);
+        return false;
+      }
+      setWorkspaceFilename(filename); setWorkspaceBrowser(undefined); return true;
+    } catch (error) {
+      setWorkspaceError(error instanceof Error ? error.message : String(error)); return false;
+    } finally { setWorkspaceBusy(false); }
+  };
   return (
     <ErrorBoundary fallback={(error, reset) => (
       <main class="workspace-demo" data-demo-state="error">
@@ -205,10 +307,15 @@ export function WorkspaceDemo() {
       </main>
     )}>
       <div class="workspace-stage">
-        <div class="workspace-stage__background"><ReactiveTreeView editor={background} projection={backgroundView} /></div>
-        <For each={[session()]}>
-          {(initial) => <DemoSession {...initial} onEditor={editor => { activeEditor = editor; return () => { if (activeEditor === editor) activeEditor = undefined; }; }} onBackground={openBackground} onReset={() => setSession({})} onClose={(document, location) => setSession({ document, location, closed: true })} onOpen={(document, location) => setSession({ document, location })} />}
-        </For>
+        <Show when={loadedWorkspace()} fallback={<>
+          <div class="workspace-stage__background"><ReactiveTreeView editor={background} projection={backgroundView} /></div>
+          <For each={[session()]}>
+            {(initial) => <DemoSession {...initial} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onEditor={bridge => { activeDemo = bridge; activeEditor = bridge.editor; return () => { if (activeDemo === bridge) activeDemo = undefined; if (activeEditor === bridge.editor) activeEditor = undefined; }; }} onBackground={openBackground} onReset={() => setSession({})} onClose={(document, location) => setSession({ document, location, closed: true })} onOpen={(document, location) => setSession({ document, location })} />}
+          </For>
+        </>}>
+          {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}
+        </Show>
+        <Show when={workspaceBrowser()}>{mode => <WorkspaceBrowser mode={mode()} initialFilename={workspaceFilename()} busy={workspaceBusy()} error={workspaceError()} conflict={workspaceConflict()} onChoose={chooseWorkspace} onClose={() => { if (!workspaceBusy()) { setWorkspaceBrowser(undefined); setWorkspaceError(""); } }} />}</Show>
       </div>
     </ErrorBoundary>
   );

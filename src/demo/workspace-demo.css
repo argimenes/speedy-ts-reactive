@@ -18,6 +18,10 @@
 .workspace-stage { position: relative; isolation: isolate; min-height: 100vh; background: #061322; }
 .workspace-stage__background { position: fixed; inset: 0; z-index: 0; }
 .workspace-stage__background > .reactive-surface { height: 100%; min-height: 0; }
+.workspace-demo--canonical { min-height: 100vh; padding: 48px 0 0; }
+.workspace-demo--canonical > .reactive-generic-block,
+.workspace-demo--canonical > .reactive-generic-block > .reactive-surface { min-height: calc(100vh - 48px); }
+.workspace-demo__workspace-notice { position: fixed; top: 50px; left: 50%; z-index: 1001; max-width: min(760px, 90vw); padding: 8px 12px; border: 1px solid #b7791f; border-radius: 6px; background: #fffaf0; color: #5f370e; transform: translateX(-50%); }
 .workspace-demo > * { pointer-events: auto; }
 .workspace-demo .workspace-demo__window--glass { --paper: transparent; --ink: #fff; color: #fff; background: linear-gradient(135deg, #ffffff1a, #ffffff00); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-color: #ffffff2e; text-shadow: 1px 1px #000; }
 .workspace-demo .workspace-demo__window--glass .workspace-demo__stylebar button { color: #fff; background: transparent; text-shadow: 1px 1px #000; }
@@ -40,6 +44,8 @@
   right: 14px;
   z-index: 1000;
   display: flex;
+  max-width: calc(100vw - 28px);
+  overflow-x: auto;
   gap: 5px;
   align-items: center;
   padding: 5px 7px;

@@ -14,13 +14,15 @@ individual writes are atomic, failed commits are restored where possible, and
 external file changes produce a conflict instead of being overwritten.
 
 Legacy `loadFromExternal` and embedded Workspaces remain import formats. The
-canonical API is ready for a Workspace host; the current showcase toolbar is
-still intentionally a split background/single-Document presentation and will
-receive host-level open/save controls when it moves to one canonical Workspace
-repository. Fourteen focused tests, typecheck and both builds pass. Full suite:
-249/251, with the same two context-menu baseline failures. Separate Document
-repositories, per-Document dirty/undo state, a richer relink browser and stronger
-crash journalling remain deferred. See
+showcase now has distinct Open Workspace and Save Workspace choosers. Their
+browser-safe defaults are Ctrl+; then O and Ctrl+; then S. Loading switches from
+the initial split showcase to the canonical Workspace renderer, retaining the
+whole background/window tree and shared Documents; replacement needs explicit
+confirmation. Seventeen focused persistence/input tests plus two Workspace UI
+tests, typecheck and both builds pass. Full suite: 252/254, with the same two
+context-menu baseline failures. Separate Document repositories, per-Document
+dirty/undo state, a richer relink browser and stronger crash journalling remain
+deferred. See
 [WORKSPACE_PERSISTENCE_PLAN.md](WORKSPACE_PERSISTENCE_PLAN.md).
 
 ## Window icon minimization — implemented, 15 September 2026

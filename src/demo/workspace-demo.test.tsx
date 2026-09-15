@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
 import type { ExistingBlockDto } from "../block-tree/types";
 import {
@@ -16,6 +16,7 @@ const disposers: Array<() => void> = [];
 afterEach(() => {
   while (disposers.length) disposers.pop()?.();
   document.body.replaceChildren();
+  vi.unstubAllGlobals();
 });
 
 function metadata(block: ExistingBlockDto): Record<string, unknown> {
@@ -154,5 +155,50 @@ describe("WorkspaceDemo", () => {
     expect(resetTextarea).not.toBe(textarea);
     expect(resetTextarea.value).toBe(original);
     expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe("revision 0");
+  });
+
+  it("exposes distinct Workspace controls and opens them with browser-safe chords", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ workspaces: [] }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    const host = mount();
+    expect(button("Open Workspace…", host).title).toContain("Ctrl+;");
+    expect(button("Save Workspace…", host).title).toContain("Ctrl+;");
+    const textarea = host.querySelector("textarea")!; textarea.focus();
+    textarea.dispatchEvent(new KeyboardEvent("keydown", { key: ";", ctrlKey: true, bubbles: true, cancelable: true }));
+    textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "o", bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Open Workspace"));
+  });
+
+  it("loads a whole Workspace into the canonical host and saves its manifest separately from its Document", async () => {
+    const manifest = {
+      kind: "speedy-workspace", schemaVersion: 1, workspaceId: "desk",
+      documents: { doc: { documentId: "doc", source: { kind: "document-store", folder: "notes", filename: "Document.json" } } },
+      root: { type: "workspace-block", children: [{ id: "background", type: "image-background-block", metadata: { url: "/image-backgrounds/green-aurora.jpg" }, children: [{ id: "window", type: "document-window-block", metadata: { title: "Loaded", position: { x: 12, y: 16 }, size: { w: 500, h: 400 }, state: "normal" }, children: [{ type: "document-reference-block", metadata: { documentId: "doc" } }] }] }] },
+    };
+    let savedBody: any;
+    const fetch = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("listWorkspaces")) return new Response(JSON.stringify({ workspaces: ["Desk.json"] }), { status: 200, headers: { "Content-Type": "application/json" } });
+      if (url.includes("loadWorkspaceJson")) return new Response(JSON.stringify({ Success: true, Data: { workspace: manifest } }), { status: 200, headers: { "Content-Type": "application/json" } });
+      if (url.includes("loadDocumentJson")) return new Response(JSON.stringify({ Success: true, Data: { document: { id: "doc", type: "document-block", metadata: { documentId: "doc", folder: "notes", filename: "Document.json" }, children: [{ type: "plain-text-block", text: "Loaded Workspace document" }] } } }), { status: 200, headers: { "Content-Type": "application/json" } });
+      if (url.includes("saveWorkspaceBundle")) { savedBody = JSON.parse(String(init?.body)); return new Response(JSON.stringify({ Success: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
+      throw new Error(`Unexpected request ${url}`);
+    });
+    vi.stubGlobal("fetch", fetch);
+    const host = mount(); click(button("Open Workspace…", host));
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Desk.json"));
+    click(document.querySelector<HTMLButtonElement>('[role="option"]')!); click(button("Open Workspace", document.querySelector('[role="dialog"]')!));
+    await vi.waitFor(() => expect(host.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Loaded Workspace document"));
+    expect(host.textContent).toContain("Desk.json · revision 0");
+
+    click(button("Save Workspace", host));
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Desk.json"));
+    click(button("Save Workspace", document.querySelector('[role="dialog"]')!));
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Replace Workspace"));
+    click(button("Replace Workspace"));
+    await vi.waitFor(() => expect(savedBody).toBeTruthy());
+    expect(savedBody.workspace.root.children[0].type).toBe("image-background-block");
+    expect(savedBody.workspace.root.children[0].children[0].children[0].type).toBe("document-reference-block");
+    expect(JSON.stringify(savedBody.workspace)).not.toContain("Loaded Workspace document");
+    expect(savedBody.documents[0].document.children[0].text).toBe("Loaded Workspace document");
   });
 });

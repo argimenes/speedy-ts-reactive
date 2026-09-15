@@ -203,6 +203,15 @@ export function createWorkspaceStoreRouter(options: {
       }
       const workspaceDirectory = await confinedDirectory(options.workspaceRoot);
       const workspaceTarget = path.join(workspaceDirectory, safeFilename(req.body?.filename, "Workspace"));
+      if (req.header("If-None-Match") === "*") {
+        try {
+          await fs.access(workspaceTarget);
+          throw new WorkspaceStoreError(409, "A Workspace with this name already exists.", "workspace-exists");
+        } catch (error: any) {
+          if (error instanceof WorkspaceStoreError) throw error;
+          if (error?.code !== "ENOENT") throw error;
+        }
+      }
       staged.push({ target: workspaceTarget, temporary: await stagedJson(workspaceTarget, manifest) });
 
       for (const item of staged) {

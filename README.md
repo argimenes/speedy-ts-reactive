@@ -72,13 +72,13 @@ also open the Block/theme menu. Editing commands support undo.
 
 Desktop background choices persist across document opens/resets during the
 current browser session. Background undo/redo is in its own menu; document Save
-still saves only the document. The canonical persistence API now saves and loads
-versioned Workspace manifests with the BackgroundBlock/window layout and
-external, stable-ID references to separate Document JSON files. Missing files
-open as recoverable Retry/Relink placeholders. The current showcase toolbar
-remains a split background/single-Document host, so its whole-Workspace chooser
-will be connected when that presentation moves onto one canonical Workspace
-repository. Disabled legacy actions explain their limits in tooltips. See the
+still saves only the document. Use **Open Workspace…** and **Save Workspace…**
+for versioned Workspace manifests containing the BackgroundBlock/window layout
+and stable-ID references to separate Document JSON files. Their browser-safe
+shortcuts are Ctrl+;, then O and Ctrl+;, then S. A new sample Document must first
+be given a file with Document **Save as…**. Missing files open as recoverable
+Retry/Relink placeholders, and replacing a Workspace requires confirmation.
+Disabled legacy actions explain their limits in tooltips. See the
 [background/context-menu migration notes](BACKGROUND_CONTEXT_MENU_MIGRATION.md)
 for source mapping and verification.
 

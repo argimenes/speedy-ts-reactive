@@ -28,18 +28,24 @@ atomically replace individual Documents and replace the manifest last. A failed
 commit attempts to restore already replaced files. Search-index failure is
 reported separately from successful file storage.
 
-The persistence API is host-ready; the current showcase toolbar remains a
-single-Document demonstration whose background and Document deliberately use
-separate editor instances. Converting that showcase into a canonical
-multi-window Workspace host is presentation integration, not a persistence
-format dependency. The original `/api/saveWorkspaceJson` endpoint remains as a
-safe compatibility writer while older UI code is migrated.
+The showcase now exposes separate **Open Workspace…** and **Save Workspace…**
+controls. Browser-safe, configurable defaults are `Ctrl+;`, then `O` and
+`Ctrl+;`, then `S`; they do not replace the browser's ordinary Open or Save
+bindings. The Workspace chooser lists existing manifests, filters them and
+requires confirmation before replacement. The initial showcase can be saved as
+one Workspace after its sample Document has an external location. Loading a
+manifest switches to the canonical Workspace renderer, preserving all of its
+background, window and shared-Document structure rather than flattening it into
+the showcase's original split presentation. The original
+`/api/saveWorkspaceJson` endpoint remains as a safe compatibility writer while
+older UI code is migrated.
 
-Fourteen focused tests cover manifest validation, exact BackgroundBlock/window
+Seventeen focused persistence/input tests plus two Workspace UI tests cover
+bindings and visible controls, manifest validation, exact BackgroundBlock/window
 round trips, separate Document output, repeated references, missing resources,
 relinking, legacy conversion, real isolated HTTP storage, unsafe input, hashes,
 rollback preconditions and external-write conflicts. Typecheck and client/server
-production builds pass. The full suite is 249/251; its two failures are the
+production builds pass. The full suite is 252/254; its two failures are the
 unchanged context-menu baseline failures documented in the progress log.
 
 ## Outcome
@@ -365,9 +371,8 @@ shape.
 - Add the session-only Document reference registry.
 - Load manifests and Documents without replacing the active editor on failure.
 - Hydrate shared Documents once and render unresolved placeholders.
-- Add Retry/Relink recovery. A richer Document-browser picker can replace the
-  current compact folder/filename prompt when the showcase becomes a canonical
-  Workspace host.
+- Add Retry/Relink recovery. A richer Document-browser picker may later replace
+  the current compact folder/filename prompt.
 
 ### Phase 3 — coordinated save — complete
 
@@ -375,17 +380,16 @@ shape.
 - Add a validated coordinated endpoint that stages writes and commits the
   manifest last.
 - Preserve accurate clean/dirty reporting when edits occur during a save.
-- Expose Save Workspace through the canonical persistence service; host-specific
-  menu wiring remains with the canonical Workspace-host conversion.
+- Expose Open/Save Workspace through distinct chooser controls and browser-safe
+  configurable chords; loaded Workspaces use the canonical Workspace host.
 
 ### Phase 4 — migration and verification — complete for the persistence layer
 
 - Import legacy external stubs and embedded Workspaces.
 - Exercise real temporary Document/Workspace roots, partial failures and path
   attacks without touching user files.
-- Cover save → load, background/window state, shared Document windows and
-  missing-file relink in focused integration tests; add a browser check when the
-  showcase owns a canonical Workspace repository.
+- Cover save → load, background/window state, shared Document windows,
+  missing-file relink and chooser interaction in focused integration tests.
 - Update the README and progress record with the final contract and evidence.
 
 ## Acceptance criteria

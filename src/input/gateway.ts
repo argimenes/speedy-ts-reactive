@@ -41,6 +41,7 @@ export class InputGateway {
     private readonly entitySearch: (key: string, range: { anchor: number; head: number }) => void,
     private readonly entityList: (key: string) => void,
     private readonly createTimer: (key: string) => void,
+    private readonly runCommand: (id: string, key: NodeKey) => boolean,
   ) {}
 
   install(): () => void {
@@ -579,7 +580,7 @@ export class InputGateway {
       return;
     }
 
-    if (id !== "block.delete") return false;
+    if (id !== "block.delete") return this.runCommand(id, resolved.nodeKey);
     if (event.cancelable) event.preventDefault();
     event.stopPropagation();
     const fallback = this.focusFallback(resolved.nodeKey);

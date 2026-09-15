@@ -86,6 +86,11 @@ export class PersistenceService {
     this.workspaceReferences.push(next);
   }
 
+  markCurrentRevisionSaved(document?: ExistingBlockDto): void {
+    if (document) this.savedDocument = structuredClone(document);
+    this.setState("lastSavedRevision", this.editor.repository.state.revision);
+  }
+
   async resolveWorkspaceDocument(documentId: string, replacement?: WorkspaceDocumentSource): Promise<boolean> {
     const registered = this.workspaceReferences.find(reference => reference.documentId === documentId);
     const source = replacement ?? registered?.source;
@@ -178,7 +183,7 @@ export class PersistenceService {
     }
   }
 
-  async saveWorkspace(filename: string): Promise<boolean> {
+  async saveWorkspace(filename: string, options: { createOnly?: boolean } = {}): Promise<boolean> {
     if (this.state.saving) return false;
     let snapshot = this.editor.repository.snapshot();
     const root = snapshot.contents[snapshot.placements[snapshot.rootPlacementKey]?.contentKey];
@@ -208,6 +213,7 @@ export class PersistenceService {
           headers: {
             "Content-Type": "application/json",
             "X-Speedy-Revision": String(revision),
+            ...(options.createOnly ? { "If-None-Match": "*" } : {}),
           },
           body: JSON.stringify({ filename, workspace: bundle.manifest, documents: bundle.documents }),
         }),

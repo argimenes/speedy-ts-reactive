@@ -151,6 +151,12 @@ export class ReactiveEditor {
       (nodeKey, range) => openEntitySearch(this, [{ nodeKey, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }]),
       nodeKey => this.entityList.open(nodeKey),
       nodeKey => { createTimerBlock(this, nodeKey); },
+      (id, targetKey) => {
+        const context = { targetKey, args: undefined };
+        if (!this.commandRegistry.canExecute(id, context)) return false;
+        void this.commandRegistry.execute(id, context);
+        return true;
+      },
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;

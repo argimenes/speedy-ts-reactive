@@ -88,4 +88,16 @@ describe("Workspace store HTTP routes", () => {
     expect(JSON.parse(await fs.readFile(path.join(documents, "research", "Notes.json"), "utf8"))).toEqual(external);
     expect(await fs.readdir(workspaces)).toEqual([]);
   });
+
+  it("supports conditional creation for Workspace Save As", async () => {
+    const value = values();
+    await fs.writeFile(path.join(workspaces, "Desk.json"), JSON.stringify({ existing: true }));
+    const response = await fetch(`${base}/saveWorkspaceBundle`, {
+      method: "POST", headers: { "Content-Type": "application/json", "If-None-Match": "*" },
+      body: JSON.stringify({ filename: "Desk.json", workspace: value.workspace, documents: [{ documentId: "document-one", source: value.source, document: value.document, contentHash: value.contentHash }] }),
+    });
+    expect(response.status).toBe(409);
+    expect(JSON.parse(await fs.readFile(path.join(workspaces, "Desk.json"), "utf8"))).toEqual({ existing: true });
+    expect(await fs.readdir(path.join(documents, "research"))).toEqual([]);
+  });
 });
