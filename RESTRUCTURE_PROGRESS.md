@@ -1,5 +1,19 @@
 # Reactive reconstruction progress
 
+## Window resizing and responsive Document margins — planned, 15 September 2026
+
+Planned direct `WindowBlock` resizing as a local pointer/keyboard preview with
+one committed `metadata.size` history change. Document windows will respond to
+their own container width rather than the browser viewport: margin lanes first
+compact and then collapse before the main text column can fall below an explicit
+design minimum. Hidden marginalia remains canonical Document content and is
+available through a focus-safe temporary drawer; neither responsive state nor
+minimap state is persisted. The plan also accounts for minimap lane width,
+container-resize measurement, minimized-size preservation, accessibility,
+independent geometry for repeated Document windows and browser-level acceptance
+tests. Planning only; no runtime code has changed. See
+[WINDOW_RESIZE_PLAN.md](WINDOW_RESIZE_PLAN.md).
+
 ## Resilient Workspace persistence — implemented, 15 September 2026
 
 Implemented the short-term versioned Workspace manifest while retaining the
