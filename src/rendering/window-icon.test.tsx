@@ -11,7 +11,7 @@ import { matchSources } from "../runtime/search-matching";
 vi.mock("../runtime/search-worker", () => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0], query: string, options: Parameters<typeof matchSources>[2]) => matchSources(sources, query, options) }));
 
 const cleanup: Array<() => void> = [];
-afterEach(() => { while (cleanup.length) cleanup.pop()?.(); document.body.replaceChildren(); });
+afterEach(() => { while (cleanup.length) cleanup.pop()?.(); document.body.replaceChildren(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 function mount(dto: ExistingBlockDto = {
   id: "window",
@@ -108,5 +108,90 @@ describe("Window icon minimization", () => {
     click(host.querySelector<HTMLButtonElement>("[data-window-icon]")!); await Promise.resolve(); await Promise.resolve();
     expect(editor.focus.state.focusedKey).toBe(textKey);
     expect(editor.mounts.get(textKey)?.captureInlineSelection?.()).toEqual({ anchor: 1, head: 5 });
+  });
+});
+
+describe("Window resizing and compact Document margins", () => {
+  it("previews pointer resizing locally, commits once, cancels cleanly and round-trips through history", () => {
+    const { editor, host, node } = mount();
+    const window = host.querySelector<HTMLElement>("[data-block-id='window']")!;
+    const handle = window.querySelector<HTMLElement>(".reactive-window__resize")!;
+    handle.setPointerCapture = vi.fn();
+    const pointer = (type: string, x: number, y: number) => handle.dispatchEvent(new MouseEvent(type, { button: 0, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+    const revision = editor.repository.state.revision;
+
+    pointer("pointerdown", 20, 30); pointer("pointermove", 60, 50);
+    expect(editor.repository.state.revision).toBe(revision);
+    expect(window.style.width).toBe("600px"); expect(window.style.height).toBe("320px");
+    pointer("pointerup", 60, 50);
+    expect(editor.repository.state.revision).toBe(revision + 1);
+    expect((node("window").payload.metadata as any).size).toEqual({ w: 600, h: 320 });
+
+    editor.repository.undo();
+    expect((node("window").payload.metadata as any).size).toEqual({ w: 400, h: 300 });
+    const cancelledRevision = editor.repository.state.revision;
+    pointer("pointerdown", 10, 10); pointer("pointermove", 100, 100); pointer("pointercancel", 100, 100);
+    expect(editor.repository.state.revision).toBe(cancelledRevision);
+    expect(window.style.width).toBe("400px"); expect((node("window").payload.metadata as any).size).toEqual({ w: 400, h: 300 });
+  });
+
+  it("groups keyboard resize presses into one accessible commit", async () => {
+    vi.useFakeTimers();
+    const { editor, host, node } = mount({
+      id: "window", type: "window-block", metadata: { title: "Utility", size: { w: 300, h: 200 }, state: "normal" }, children: [],
+    });
+    const handle = host.querySelector<HTMLElement>(".reactive-window__resize")!;
+    expect(handle.getAttribute("aria-label")).toBe("Resize Utility window");
+    const revision = editor.repository.state.revision;
+    handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+    handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+    expect(editor.repository.state.revision).toBe(revision);
+    expect(host.querySelector<HTMLElement>("[data-block-id='window']")?.style.width).toBe("320px");
+    await vi.advanceTimersByTimeAsync(300);
+    expect(editor.repository.state.revision).toBe(revision + 1);
+    expect((node("window").payload.metadata as any).size).toEqual({ w: 320, h: 200 });
+  });
+
+  it("exposes collapsed marginalia in a session-only drawer without duplicating or changing it", async () => {
+    const observers: Array<{ callback: ResizeObserverCallback; targets: Element[] }> = [];
+    vi.stubGlobal("ResizeObserver", class {
+      private record: { callback: ResizeObserverCallback; targets: Element[] };
+      constructor(callback: ResizeObserverCallback) { this.record = { callback, targets: [] }; observers.push(this.record); }
+      observe(target: Element) { this.record.targets.push(target); }
+      disconnect() {}
+      unobserve() {}
+    });
+    const { editor, host, node } = mount({
+      id: "window", type: "document-window-block", metadata: { title: "Margins", size: { w: 840, h: 500 }, state: "normal" },
+      children: [{ id: "document", type: "document-block", children: [{ id: "page", type: "page-block", children: [{
+        id: "source", type: "standoff-editor-block", text: "Source", relation: { leftMargin: { id: "margin", type: "left-margin-block", children: [{ id: "note", type: "standoff-editor-block", text: "A useful note" }] } },
+      }] }] }],
+    });
+    const before = editor.encodeDocument(), revision = editor.repository.state.revision;
+    const windowObserver = observers.find(observer => observer.targets.some(target => target.classList.contains("reactive-window")))!;
+    windowObserver.callback([{ contentRect: { width: 700 } } as ResizeObserverEntry], {} as ResizeObserver);
+    const trigger = [...host.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent?.trim() === "Margins (1)")!;
+    expect(trigger).toBeTruthy(); expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    click(trigger); await Promise.resolve();
+    expect(host.querySelector(".reactive-window__margin-drawer")).not.toBeNull();
+    expect(host.querySelectorAll("[data-margin-drawer-item]")).toHaveLength(1);
+    expect(host.textContent?.match(/A useful note/g)).toHaveLength(1);
+    expect(editor.repository.state.revision).toBe(revision); expect(editor.encodeDocument()).toEqual(before);
+
+    click(host.querySelector<HTMLButtonElement>('[aria-label="Close margins"]')!); await Promise.resolve();
+    expect(host.querySelector(".reactive-window__margin-drawer")).toBeNull();
+    expect(host.querySelector('[data-relation-name="leftMargin"]')).not.toBeNull();
+    expect(editor.repository.state.revision).toBe(revision);
+
+    windowObserver.callback([{ contentRect: { width: 840 } } as ResizeObserverEntry], {} as ResizeObserver);
+    const noteMount = editor.mounts.get(node("note").key)!;
+    noteMount.focus(); noteMount.restoreInlineSelection?.({ anchor: 2, head: 6 }); editor.focus.adopt(node("note").key);
+    windowObserver.callback([{ contentRect: { width: 700 } } as ResizeObserverEntry], {} as ResizeObserver);
+    await Promise.resolve(); await Promise.resolve();
+    const movedNoteMount = editor.mounts.get(node("note").key)!, movedNote = movedNoteMount.focusElement as HTMLElement;
+    expect(movedNote.closest(".reactive-window__margin-drawer")).not.toBeNull();
+    expect(document.activeElement).toBe(movedNote); expect(movedNoteMount.captureInlineSelection?.()).toEqual({ anchor: 2, head: 6 });
+    expect(editor.repository.state.revision).toBe(revision);
+    expect((((editor.encodeDocument().children?.[0].children?.[0].children?.[0].relation?.leftMargin as any).children?.[0]) as any).text).toBe("A useful note");
   });
 });

@@ -1,17 +1,25 @@
 # Reactive reconstruction progress
 
-## Window resizing and responsive Document margins — planned, 15 September 2026
+## Window resizing and responsive Document margins — implemented, 15 September 2026
 
-Planned direct `WindowBlock` resizing as a local pointer/keyboard preview with
-one committed `metadata.size` history change. Document windows will respond to
-their own container width rather than the browser viewport: margin lanes first
-compact and then collapse before the main text column can fall below an explicit
-design minimum. Hidden marginalia remains canonical Document content and is
-available through a focus-safe temporary drawer; neither responsive state nor
-minimap state is persisted. The plan also accounts for minimap lane width,
-container-resize measurement, minimized-size preservation, accessibility,
-independent geometry for repeated Document windows and browser-level acceptance
-tests. Planning only; no runtime code has changed. See
+Added a bottom-right pointer and keyboard resize handle to normal `WindowBlock`
+views. Pointer movement is component-local, completion creates one undoable
+`metadata.size` change, cancellation creates none, and repeated keyboard steps
+are grouped. Generic and Document-specific minimums keep their controls usable;
+an active minimap reserves its lane, while minimized Windows retain their full
+geometry without exposing a resizer. The initial sample Document shell has the
+same interaction and contributes its final geometry when a Workspace manifest
+is built without dirtying the Document.
+
+Document layout now responds to its Window's inline-size container rather than
+only the browser viewport. Margin lanes compact and then collapse before the
+main text column reaches its design minimum. A counted, session-only Margins
+drawer moves—not duplicates—the mounted relation occurrences and preserves
+their canonical data. Crossing the threshold while editing a margin opens the
+drawer and restores focus and selection. Minimap measurement follows container
+resize without persistence writes. Focused tests, typecheck, both builds and a
+real Chrome minimize/resize/drawer/undo check pass. Full suite: 256/258, with
+only the same two context-menu baseline failures. See
 [WINDOW_RESIZE_PLAN.md](WINDOW_RESIZE_PLAN.md).
 
 ## Resilient Workspace persistence — implemented, 15 September 2026

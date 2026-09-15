@@ -1,7 +1,6 @@
 # Window resizing and responsive Document margins
 
-**Status:** Planned, 15 September 2026. No runtime code has been changed as
-part of this planning step.
+**Status:** Implemented, 15 September 2026.
 
 ## Outcome
 
@@ -14,6 +13,38 @@ design width.
 The resize gesture is a view interaction. Only its completed size is document
 state. Responsive margin presentation, open compact-margin panels and minimap
 measurements are derived session state and are not serialised.
+
+## Implementation result
+
+Canonical Window views now provide a bottom-right pointer and keyboard resize
+handle in their normal state. Pointer movement uses component-local Solid state;
+completion writes one `Resize Window` metadata operation, cancellation writes
+nothing, and keyboard repetitions are grouped into one delayed commit. Generic
+Windows use a 240 x 160 minimum. Document Windows use a 560 x 240 minimum,
+increasing to 602px wide while an active minimap needs its lane. Minimized and
+maximized presentations do not expose the handle, and minimization continues to
+preserve the committed normal size.
+
+Document content is now an inline-size query container. Its margins move from
+full to compact widths, then collapse at a 700px content boundary before the
+main column is squeezed. The corresponding 730px outer-Window accessibility
+controller exposes a counted `Margins` control. Opening it moves each mounted
+left/right relation occurrence into a session-only drawer rather than creating
+a second copy. Closing or widening restores it to its source. If a margin editor
+has focus during collapse, the drawer opens automatically and restores its
+focus and selection.
+
+The initial sample Document shell has the same resize handle, container behavior
+and margin drawer. Its geometry remains local until Workspace Save constructs
+the canonical Window manifest; it never dirties the Document. Existing minimap
+`ResizeObserver` measurement follows live resizing without repository writes.
+
+Focused tests cover pointer preview/commit/cancel, grouped keyboard resize,
+undo, collapsed-margin integrity, one mounted margin occurrence, focus and
+selection restoration, and the initial demo shell. A real Chrome check covers
+minimize/move/restore, resize preview versus committed metadata, margin drawer
+access and resize undo. Typecheck and both builds pass. The full suite is
+256/258; the two failures are the unchanged context-menu baseline failures.
 
 ## Current findings
 
@@ -186,7 +217,7 @@ minimap configurations both require browser checks.
 - Resizing must not consume browser-standard shortcuts or interfere with text
   selection, window dragging, minimap scrolling or margin editing.
 
-## Implementation phases
+## Implementation phases (completed)
 
 ### 1. Establish layout tokens and measurements
 

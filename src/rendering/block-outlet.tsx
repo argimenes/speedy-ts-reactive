@@ -1,9 +1,10 @@
 import { Dynamic } from "solid-js/web";
-import { For } from "solid-js";
+import { For, Show, onCleanup, onMount } from "solid-js";
 import type { NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { UnknownBlockView } from "./unknown-block-view";
 import { BlockSelectionHandle } from "./block-selection";
+import { marginSide, useDocumentMargins } from "./document-margins";
 
 export function BlockOutlet(props: { nodeKey: NodeKey }) {
   const { editor, projection } = useReactiveView();
@@ -26,11 +27,23 @@ export function RelationBlocks(props: { parentKey: NodeKey }) {
     Object.entries(projection.state.nodes[props.parentKey]?.ownedRelations ?? {});
   return (
     <For each={relations()}>
-      {([name, key]) => (
-        <aside class={`reactive-relation reactive-relation--${name}`} data-relation-name={name}>
-          <BlockOutlet nodeKey={key} />
-        </aside>
-      )}
+      {([name, key]) => <RelationBlock ownerKey={props.parentKey} name={name} nodeKey={key} />}
     </For>
   );
+}
+
+function RelationBlock(props: { ownerKey: NodeKey; name: string; nodeKey: NodeKey }) {
+  const margins = useDocumentMargins();
+  const side = marginSide(props.name);
+  let unregister: (() => void) | undefined;
+  onMount(() => {
+    if (margins && side) unregister = margins.register({ ownerKey: props.ownerKey, relationKey: props.nodeKey, side, name: props.name });
+  });
+  onCleanup(() => unregister?.());
+  const movedToDrawer = () => Boolean(side && margins?.collapsed() && margins.drawerOpen());
+  return <Show when={!movedToDrawer()}>
+    <aside class={`reactive-relation reactive-relation--${props.name}`} data-relation-name={props.name}>
+      <BlockOutlet nodeKey={props.nodeKey} />
+    </aside>
+  </Show>;
 }

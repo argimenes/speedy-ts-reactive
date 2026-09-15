@@ -19,7 +19,7 @@ export const annotationTools = [
   ["style/blur", "Blur", "Blur"], ["style/flip", "Flip", "Flip"], ["style/mirror", "Mirror", "Mirror"],
 ] as const;
 
-export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: NodeKey }) {
+export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: NodeKey; margins?: { collapsed: boolean; count: number; open: boolean; controls: string; toggle: () => void } }) {
   const editor = props.editor;
   const [targetKey, setTargetKey] = createSignal<NodeKey>();
   const [notice, setNotice] = createSignal("");
@@ -106,6 +106,11 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     }); restore();
   };
   return <nav class="workspace-demo__stylebar document-style-bar" aria-label="Document formatting" onPointerDown={retainSelection}>
+    <Show when={props.margins?.collapsed && props.margins.count > 0}>
+      <button type="button" class="document-style-bar__margins" aria-expanded={props.margins?.open} aria-controls={props.margins?.controls} onClick={() => props.margins?.toggle()}>
+        Margins ({props.margins?.count})
+      </button>
+    </Show>
     <button type="button" title={editor.bindings.label("find.open")} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.find.open(key); if (!editor.find.state.open) setNotice(editor.find.state.message); } else setNotice("Focus text in a document first."); }}>Find</button>
     <button type="button" title={`Entities in Document (${editor.bindings.label("entity.list.open")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.entityList.open(key); if (!editor.entityList.state.open) setNotice(editor.entityList.state.error); } else setNotice("Focus a document first."); }}>Entities</button>
     <button type="button" title={`Add timer (${editor.bindings.label("timer.create")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (!key || !createTimerBlock(editor, key)) setNotice("Focus a Block in this document first."); else setNotice(""); }}>Timer</button>

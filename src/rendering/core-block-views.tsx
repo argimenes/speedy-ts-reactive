@@ -7,6 +7,8 @@ import { BlockOutlet, ChildBlocks, RelationBlocks } from "./block-outlet";
 import { BackgroundMedia } from "./background-media";
 import { youtubeId } from "./backgrounds";
 import { DocumentStyleBar } from "./document-style-bar";
+import { DocumentMarginContext, type DocumentMarginEntry } from "./document-margins";
+import { DocumentMarginDrawer } from "./document-margin-drawer";
 import { PageMinimap } from "./page-minimap";
 import { WindowIcon, resolvedWindowIcon, resolvedWindowState } from "./window-icon";
 
@@ -435,12 +437,21 @@ export function WindowView(props: BlockViewProps) {
   const metadata = () => (node()?.payload.metadata as Record<string, any> | undefined) ?? {};
   const appearance = createMemo(() => blockAppearance(node()));
   const [preview, setPreview] = createSignal<{ x: number; y: number }>();
+  const [previewSize, setPreviewSize] = createSignal<{ w: number; h: number }>();
+  const [marginEntries, setMarginEntries] = createSignal<DocumentMarginEntry[]>([]);
+  const [marginsCollapsed, setMarginsCollapsed] = createSignal(false);
+  const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
   const state = () => resolvedWindowState(metadata().state);
   const minimized = () => state() === "minimized";
+  const isDocument = () => node()?.viewType === "document-window-block";
   const title = () => String(metadata().title ?? "Untitled");
+  const marginDrawerId = `document-margin-drawer-${props.nodeKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   let root!: HTMLDivElement;
   let dispose: (() => void) | undefined;
   let drag: { pointerId: number; x: number; y: number; originX: number; originY: number; moved: boolean } | undefined;
+  let resize: { pointerId: number; x: number; y: number; width: number; height: number; moved: boolean } | undefined;
+  let marginObserver: ResizeObserver | undefined;
+  let keyboardResizeTimer: ReturnType<typeof setTimeout> | undefined;
   let suppressIconClick = false;
   let suppressTimer: ReturnType<typeof setTimeout> | undefined;
   let returnFocus: { key: NodeKey; native?: { start: number; end: number; direction: "forward" | "backward" | "none" }; inline?: { anchor: number; head: number } } | undefined;
@@ -451,10 +462,55 @@ export function WindowView(props: BlockViewProps) {
       inputPolicy: "container",
       focus: () => (root.querySelector<HTMLButtonElement>("[data-window-icon]") ?? root).focus({ preventScroll: true }),
     });
+    if (typeof ResizeObserver !== "undefined") {
+      marginObserver = new ResizeObserver(entries => {
+        const width = entries.at(-1)?.contentRect.width ?? root.getBoundingClientRect().width;
+        updateMarginState(width);
+      });
+      marginObserver.observe(root);
+    }
+    queueMicrotask(() => updateMarginState(root.getBoundingClientRect().width));
   });
-  onCleanup(() => { dispose?.(); if (suppressTimer) clearTimeout(suppressTimer); });
+  onCleanup(() => {
+    dispose?.(); marginObserver?.disconnect();
+    if (suppressTimer) clearTimeout(suppressTimer);
+    if (keyboardResizeTimer) clearTimeout(keyboardResizeTimer);
+  });
   const position = () => preview() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
+  const storedSize = () => {
+    const w = Number(metadata().size?.w), h = Number(metadata().size?.h);
+    return { w: Number.isFinite(w) && w > 0 ? w : 840, h: Number.isFinite(h) && h > 0 ? h : 620 };
+  };
+  const minimumSize = () => isDocument() ? { w: root?.querySelector(".reactive-page--minimap-left, .reactive-page--minimap-right") ? 602 : 560, h: 240 } : { w: 240, h: 160 };
+  const dimensions = () => previewSize() ?? storedSize();
   const commitMetadata = (patch: Record<string, unknown>, label: string) => editor.commands.setPayloadField(props.nodeKey, "metadata", { ...unwrap(metadata()), ...patch }, label);
+  const registerMargin = (entry: DocumentMarginEntry) => {
+    setMarginEntries(current => current.some(candidate => candidate.ownerKey === entry.ownerKey && candidate.relationKey === entry.relationKey && candidate.name === entry.name) ? current : [...current, entry]);
+    return () => setMarginEntries(current => current.filter(candidate => candidate.ownerKey !== entry.ownerKey || candidate.relationKey !== entry.relationKey || candidate.name !== entry.name));
+  };
+  const marginPresentation = { collapsed: marginsCollapsed, drawerOpen: marginDrawerOpen, register: registerMargin };
+  const restoreMarginFocus = (key: NodeKey, native?: { start: number; end: number; direction: "forward" | "backward" | "none" }, inline?: { anchor: number; head: number }) => queueMicrotask(() => {
+    if (!editor.node(key)) return;
+    editor.focus.request(key, { reason: "show-collapsed-margin", ...(native ? { caret: native } : {}) });
+    if (inline) queueMicrotask(() => editor.mounts.get(key)?.restoreInlineSelection?.(inline));
+  });
+  const updateMarginState = (windowWidth: number) => {
+    if (!isDocument() || minimized() || windowWidth <= 0) return;
+    // 730 outer pixels corresponds to the 700px named content-container query.
+    const next = windowWidth <= 730;
+    if (next === marginsCollapsed()) return;
+    if (next) {
+      const active = document.activeElement as HTMLElement | null;
+      const relation = active?.closest<HTMLElement>(".reactive-relation[data-relation-name$='Margin']");
+      const focusedKey = relation && root.contains(relation) ? editor.focus.state.focusedKey : undefined;
+      const mount = focusedKey ? editor.mounts.get(focusedKey) : undefined;
+      const native = mount?.captureSelection?.(), inline = mount?.captureInlineSelection?.();
+      setMarginsCollapsed(true);
+      if (focusedKey) { setMarginDrawerOpen(true); restoreMarginFocus(focusedKey, native, inline); }
+      return;
+    }
+    setMarginsCollapsed(false); setMarginDrawerOpen(false);
+  };
   const subtreeKeys = () => {
     const seen = new Set<NodeKey>(), pending = [props.nodeKey];
     while (pending.length) {
@@ -495,6 +551,63 @@ export function WindowView(props: BlockViewProps) {
     const stored = { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
     if (moved && (final.x !== stored.x || final.y !== stored.y)) commitMetadata({ position: final }, wasMinimized ? "Move Window Icon" : "Move Window");
   };
+  const clampSize = (w: number, h: number) => {
+    const minimum = minimumSize(), rect = root.getBoundingClientRect();
+    const maximumWidth = Math.max(minimum.w, window.innerWidth - rect.left - 8);
+    const maximumHeight = Math.max(minimum.h, window.innerHeight - rect.top - 8);
+    return { w: Math.max(minimum.w, Math.min(maximumWidth, w)), h: Math.max(minimum.h, Math.min(maximumHeight, h)) };
+  };
+  const beginResize = (event: PointerEvent & { currentTarget: HTMLElement }) => {
+    if (event.button !== 0 || state() !== "normal") return;
+    const rect = root.getBoundingClientRect(), current = dimensions(), minimum = minimumSize();
+    resize = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, width: Math.max(minimum.w, rect.width || current.w), height: Math.max(minimum.h, rect.height || current.h), moved: false };
+    event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); event.stopPropagation();
+  };
+  const moveResize = (event: PointerEvent) => {
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    resize.moved ||= Math.abs(event.clientX - resize.x) > 1 || Math.abs(event.clientY - resize.y) > 1;
+    setPreviewSize(clampSize(resize.width + event.clientX - resize.x, resize.height + event.clientY - resize.y));
+    event.preventDefault(); event.stopPropagation();
+  };
+  const commitSize = (final: { w: number; h: number }) => {
+    const rounded = { w: Math.round(final.w), h: Math.round(final.h) }, stored = storedSize();
+    if (rounded.w !== stored.w || rounded.h !== stored.h) commitMetadata({ size: rounded }, "Resize Window");
+  };
+  const finishResize = (event: PointerEvent, cancelled = false) => {
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    const final = previewSize() ?? dimensions(), moved = resize.moved;
+    resize = undefined; setPreviewSize(undefined);
+    if (!cancelled && moved) commitSize(final);
+    event.stopPropagation();
+  };
+  const finishKeyboardResize = () => {
+    if (keyboardResizeTimer) { clearTimeout(keyboardResizeTimer); keyboardResizeTimer = undefined; }
+    const final = previewSize(); setPreviewSize(undefined); if (final) commitSize(final);
+  };
+  const keyboardResize = (event: KeyboardEvent) => {
+    if (event.key === "Escape" && previewSize()) {
+      clearTimeout(keyboardResizeTimer); keyboardResizeTimer = undefined; setPreviewSize(undefined);
+      event.preventDefault(); event.stopPropagation(); return;
+    }
+    if (event.key === "Enter" && previewSize()) {
+      finishKeyboardResize(); event.preventDefault(); event.stopPropagation(); return;
+    }
+    if (state() !== "normal" || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    const step = event.shiftKey ? 1 : 10, current = previewSize() ?? dimensions();
+    const next = clampSize(current.w + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), current.h + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0));
+    setPreviewSize(next); clearTimeout(keyboardResizeTimer);
+    keyboardResizeTimer = setTimeout(finishKeyboardResize, 300);
+    event.preventDefault(); event.stopPropagation();
+  };
+  const toggleMargins = () => {
+    if (!marginsCollapsed()) return;
+    const opening = !marginDrawerOpen();
+    setMarginDrawerOpen(opening);
+    queueMicrotask(() => {
+      if (opening) root.querySelector<HTMLElement>(".reactive-window__margin-drawer")?.focus({ preventScroll: true });
+      else root.querySelector<HTMLButtonElement>(".document-style-bar__margins")?.focus({ preventScroll: true });
+    });
+  };
   const rememberReturnFocus = () => {
     const key = [editor.focus.state.focusedKey, editor.focus.state.lastFocusedKey].find(candidate => candidate !== props.nodeKey && contains(candidate));
     if (!key) return;
@@ -525,8 +638,8 @@ export function WindowView(props: BlockViewProps) {
     });
   };
   return (
-    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ "reactive-window--minimized": minimized() }} tabIndex={-1}
-      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${Number(metadata().size?.w ?? 840)}px`, height: minimized() ? "auto" : `${Number(metadata().size?.h ?? 620)}px`, "z-index": Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
+    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ "reactive-window--minimized": minimized(), "reactive-window--document": isDocument(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
+      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
       <Show when={minimized()} fallback={<>
         <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
           <span>{title()}</span>
@@ -535,8 +648,16 @@ export function WindowView(props: BlockViewProps) {
             <button type="button" aria-label="Close window" onPointerDown={(e) => e.stopPropagation()} onClick={() => editor.commands.remove(props.nodeKey)}>×</button>
           </span>
         </header>
-        <Show when={node()?.viewType === "document-window-block"}><DocumentStyleBar editor={editor} scopeKey={props.nodeKey} /></Show>
-        <div class="reactive-window__content"><ChildBlocks parentKey={props.nodeKey} /></div>
+        <DocumentMarginContext.Provider value={marginPresentation}>
+          <Show when={isDocument()}><DocumentStyleBar editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
+          <div class="reactive-window__content"><div class="reactive-window__document-body"><ChildBlocks parentKey={props.nodeKey} /></div></div>
+          <Show when={isDocument() && marginsCollapsed() && marginDrawerOpen()}>
+            <DocumentMarginDrawer id={marginDrawerId} entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />
+          </Show>
+        </DocumentMarginContext.Provider>
+        <Show when={state() === "normal"}><div class="reactive-window__resize" role="button" tabIndex={0} aria-label={`Resize ${title()} window`} title="Drag or use arrow keys to resize"
+          onPointerDown={beginResize} onPointerMove={moveResize} onPointerUp={finishResize} onLostPointerCapture={finishResize} onPointerCancel={event => finishResize(event, true)}
+          onKeyDown={keyboardResize} onBlur={finishKeyboardResize} /></Show>
       </>}>
         <WindowIcon title={title()} kind={resolvedWindowIcon(node()?.viewType ?? "window-block", metadata().icon)} onRestore={restoreWindow}
           onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)} />

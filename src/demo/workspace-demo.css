@@ -86,6 +86,8 @@
   background: var(--paper);
   box-shadow: 0 24px 80px rgba(0, 0, 0, .5);
   transition: inset 180ms ease, width 180ms ease, height 180ms ease, transform 100ms linear;
+  container-name: document-window;
+  container-type: inline-size;
 }
 
 .workspace-demo__window--maximized {
@@ -345,4 +347,26 @@
   .workspace-demo .reactive-relation::after { display: none; }
   .workspace-demo__toolbar { left: 8px; right: 8px; flex-wrap: wrap; }
   .reactive-canvas-preview__minimap { width: 120px; height: 90px; }
+}
+
+/* Window-local responsiveness. These queries follow a resized Document window,
+   unlike the viewport fallbacks above. The JS accessibility controller uses
+   the equivalent 700px content / 730px outer boundary. */
+.workspace-demo .reactive-window__content { --margin-column: clamp(145px, 16cqi, 235px); }
+
+@container document-window (max-width: 900px) {
+  .workspace-demo .reactive-page { --margin-column: clamp(92px, 13cqi, 125px); }
+  .workspace-demo__document--flow { --margin-column: clamp(92px, 13cqi, 125px); }
+}
+
+@container document-window (max-width: 700px) {
+  .workspace-demo .reactive-page { padding-right: 16px; padding-left: 16px; }
+  .workspace-demo__document--flow { padding-right: 16px; padding-left: 16px; }
+  .workspace-demo .reactive-page--minimap-left { padding-left: 58px; }
+  .workspace-demo .reactive-page--minimap-right { padding-right: 58px; }
+  .workspace-demo .reactive-window__document-body .reactive-relation[data-relation-name="leftMargin"],
+  .workspace-demo .reactive-window__document-body .reactive-relation[data-relation-name="rightMargin"] { display: none; }
+  .workspace-demo .workspace-demo__window--margins-collapsed .workspace-demo__document--flow { padding-right: 16px; padding-left: 16px; }
+  .workspace-demo .workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="leftMargin"],
+  .workspace-demo .workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="rightMargin"] { display: none; }
 }

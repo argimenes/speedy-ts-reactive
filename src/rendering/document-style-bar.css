@@ -1,6 +1,8 @@
 .document-style-bar { display:flex; flex-wrap:wrap; align-items:center; gap:3px; padding:5px; background:white; color:#333; }
 .document-style-bar button { border:0; background:transparent; color:inherit; padding:5px; cursor:pointer; font:14px Arial,sans-serif; }
 .document-style-bar button:hover,.document-style-bar button:focus-visible { background:#e3efeb; outline:1px solid #57867b; }
+.document-style-bar .document-style-bar__margins { border:1px solid #8aa39c; border-radius:3px; font-weight:650; }
+.document-style-bar .document-style-bar__margins[aria-expanded="true"] { background:#dcebe6; }
 .document-style-bar label { display:flex; align-items:center; gap:3px; font:12px Arial,sans-serif; }
 .document-style-bar input[type=color] { width:28px; height:26px; padding:0; border:0; }
 .document-style-bar [data-annotation-type="style/bold"] { font-weight:bold; }

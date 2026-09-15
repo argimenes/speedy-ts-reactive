@@ -122,6 +122,25 @@ describe("WorkspaceDemo", () => {
     expect(button("Sticky tag #1", sticky).getAttribute("aria-selected")).toBe("true");
   });
 
+  it("resizes the initial Document shell and exposes collapsed margins without editing the Document", async () => {
+    const host = mount(), window = host.querySelector<HTMLElement>(".workspace-demo__window")!;
+    window.getBoundingClientRect = () => ({ x: 100, y: 80, left: 100, top: 80, right: 900, bottom: 580, width: 800, height: 500, toJSON: () => ({}) });
+    const handle = window.querySelector<HTMLElement>(".reactive-window__resize")!;
+    handle.setPointerCapture = vi.fn();
+    const pointer = (type: string, x: number, y: number) => handle.dispatchEvent(new MouseEvent(type, { button: 0, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+    const revision = host.querySelector(".workspace-demo__toolbar span")?.textContent;
+
+    pointer("pointerdown", 900, 580); pointer("pointermove", 800, 480);
+    expect(window.style.width).toBe("700px"); expect(window.style.height).toBe("400px");
+    pointer("pointerup", 800, 480);
+    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe(revision);
+
+    const margins = host.querySelector<HTMLButtonElement>(".document-style-bar__margins")!;
+    expect(margins.textContent).toBe("Margins (2)"); click(margins); await Promise.resolve();
+    expect(window.querySelectorAll("[data-margin-drawer-item]")).toHaveLength(2);
+    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe(revision);
+  });
+
   it("minimizes the demo document to the shared draggable document icon", () => {
     const host = mount(), win = host.querySelector<HTMLElement>(".workspace-demo__window")!;
     click(host.querySelector<HTMLButtonElement>('[aria-label="Minimize document window"]')!);

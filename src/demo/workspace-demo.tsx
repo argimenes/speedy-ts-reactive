@@ -15,6 +15,9 @@ import { DocumentStyleBar } from "../rendering/document-style-bar";
 import { WindowIcon } from "../rendering/window-icon";
 import { WorkspaceBrowser } from "./workspace-browser";
 import type { LoadedWorkspace } from "../reactive-editor/workspace-manifest";
+import { DocumentMarginContext, type DocumentMarginEntry } from "../rendering/document-margins";
+import { DocumentMarginDrawer } from "../rendering/document-margin-drawer";
+import { ReactiveViewProvider } from "../reactive-editor/context";
 
 type DemoWindowState = "normal" | "minimized" | "maximized" | "closed";
 interface DemoWindowSnapshot { state: DemoWindowState; position: { x: number; y: number }; size: { w: number; h: number } }
@@ -41,8 +44,14 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
   const [showJson, setShowJson] = createSignal(false);
   const [windowState, setWindowState] = createSignal<DemoWindowState>(props.closed ? "closed" : props.window?.state ?? "normal");
   const [position, setPosition] = createSignal(props.window?.position ?? { x: 0, y: 0 });
+  const [windowSize, setWindowSize] = createSignal<{ w: number; h: number } | undefined>(props.window?.size);
+  const [marginEntries, setMarginEntries] = createSignal<DocumentMarginEntry[]>([]);
+  const [marginsCollapsed, setMarginsCollapsed] = createSignal(false);
+  const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
   let windowElement!: HTMLElement;
   let drag: { pointerId: number; x: number; y: number; originX: number; originY: number; moved: boolean } | undefined;
+  let resize: { pointerId: number; x: number; y: number; width: number; height: number } | undefined;
+  let windowObserver: ResizeObserver | undefined;
   let suppressIconClick = false;
   let suppressTimer: ReturnType<typeof setTimeout> | undefined;
   const beginWindowDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
@@ -72,6 +81,69 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
   const restoreWindow = () => {
     if (suppressIconClick) { suppressIconClick = false; return; }
     setWindowState("normal");
+    queueMicrotask(observeWindow);
+  };
+  const registerMargin = (entry: DocumentMarginEntry) => {
+    setMarginEntries(current => current.some(candidate => candidate.ownerKey === entry.ownerKey && candidate.relationKey === entry.relationKey && candidate.name === entry.name) ? current : [...current, entry]);
+    return () => setMarginEntries(current => current.filter(candidate => candidate.ownerKey !== entry.ownerKey || candidate.relationKey !== entry.relationKey || candidate.name !== entry.name));
+  };
+  const marginPresentation = { collapsed: marginsCollapsed, drawerOpen: marginDrawerOpen, register: registerMargin };
+  const updateMarginState = (width: number) => {
+    if (windowState() === "minimized" || width <= 0) return;
+    const collapsed = width <= 730;
+    if (collapsed && !marginsCollapsed()) {
+      const active = document.activeElement as HTMLElement | null;
+      const relation = active?.closest<HTMLElement>(".reactive-relation[data-relation-name$='Margin']");
+      const focusedKey = relation && windowElement.contains(relation) ? editor.focus.state.focusedKey : undefined;
+      const mount = focusedKey ? editor.mounts.get(focusedKey) : undefined;
+      const native = mount?.captureSelection?.(), inline = mount?.captureInlineSelection?.();
+      if (focusedKey) {
+        setMarginDrawerOpen(true);
+        queueMicrotask(() => {
+          editor.focus.request(focusedKey, { reason: "show-collapsed-margin", ...(native ? { caret: native } : {}) });
+          if (inline) queueMicrotask(() => editor.mounts.get(focusedKey)?.restoreInlineSelection?.(inline));
+        });
+      }
+    }
+    setMarginsCollapsed(collapsed);
+    if (!collapsed) setMarginDrawerOpen(false);
+  };
+  const resizeMinimum = () => ({ w: windowElement?.querySelector(".reactive-page--minimap-left, .reactive-page--minimap-right") ? 602 : 560, h: 240 });
+  const clampWindowSize = (w: number, h: number) => {
+    const minimum = resizeMinimum(), rect = windowElement.getBoundingClientRect();
+    return {
+      w: Math.max(minimum.w, Math.min(Math.max(minimum.w, window.innerWidth - rect.left - 8), w)),
+      h: Math.max(minimum.h, Math.min(Math.max(minimum.h, window.innerHeight - rect.top - 8), h)),
+    };
+  };
+  const beginWindowResize = (event: PointerEvent & { currentTarget: HTMLElement }) => {
+    if (event.button !== 0 || windowState() !== "normal") return;
+    const rect = windowElement.getBoundingClientRect();
+    resize = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, width: rect.width, height: rect.height };
+    event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); event.stopPropagation();
+  };
+  const moveWindowResize = (event: PointerEvent) => {
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    const next = clampWindowSize(resize.width + event.clientX - resize.x, resize.height + event.clientY - resize.y);
+    setWindowSize(next); updateMarginState(next.w); event.preventDefault(); event.stopPropagation();
+  };
+  const finishWindowResize = (event: PointerEvent, cancelled = false) => {
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    if (cancelled) { setWindowSize({ w: resize.width, h: resize.height }); updateMarginState(resize.width); }
+    resize = undefined; event.stopPropagation();
+  };
+  const toggleMargins = () => {
+    if (!marginsCollapsed()) return;
+    const opening = !marginDrawerOpen(); setMarginDrawerOpen(opening);
+    queueMicrotask(() => (opening ? windowElement.querySelector<HTMLElement>(".reactive-window__margin-drawer") : windowElement.querySelector<HTMLButtonElement>(".document-style-bar__margins"))?.focus({ preventScroll: true }));
+  };
+  const observeWindow = () => {
+    if (!windowElement?.isConnected) return;
+    if (typeof ResizeObserver !== "undefined") {
+      windowObserver ??= new ResizeObserver(entries => updateMarginState(entries.at(-1)?.contentRect.width ?? windowElement.getBoundingClientRect().width));
+      windowObserver.observe(windowElement);
+    }
+    updateMarginState(windowElement.getBoundingClientRect().width);
   };
   const releaseEditor = props.onEditor({
     editor,
@@ -87,10 +159,11 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
   });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
-  onCleanup(() => { if (suppressTimer) clearTimeout(suppressTimer); releaseEditor(); editor.dispose(); });
+  onCleanup(() => { if (suppressTimer) clearTimeout(suppressTimer); windowObserver?.disconnect(); releaseEditor(); editor.dispose(); });
   onMount(() => {
     editor.installGateway(document);
     setLoaded(true);
+    observeWindow();
     if (props.document && !props.closed) queueMicrotask(() => {
       const bookmark = (props.document?.metadata as { focus?: { blockId?: string; caret?: number } } | undefined)?.focus;
       const editable = Object.values(projection.state.nodes).filter((node) => {
@@ -117,7 +190,7 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
         <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
         <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
         <button type="button" disabled={documents.busy()} onClick={() => documents.guard("reset to the sample document", props.onReset)}>Reset demo</button>
-        <Show when={windowState() === "closed"}><button type="button" onClick={() => setWindowState("normal")}>Reopen document</button></Show>
+        <Show when={windowState() === "closed"}><button type="button" onClick={restoreWindow}>Reopen document</button></Show>
         <a href={`${import.meta.env.BASE_URL}pilot`}>Open two-pane pilot</a>
         <span>revision {editor.repository.state.revision}</span>
       </nav>
@@ -130,8 +203,9 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
             "workspace-demo__window--minimized": windowState() === "minimized",
             "workspace-demo__window--maximized": windowState() === "maximized",
             "workspace-demo__window--glass": glass(),
+            "workspace-demo__window--margins-collapsed": marginsCollapsed(),
           }}
-          style={{ transform: windowState() !== "maximized" ? `translate(${position().x}px, ${position().y}px)` : undefined }}
+          style={{ transform: windowState() !== "maximized" ? `translate(${position().x}px, ${position().y}px)` : undefined, ...(windowState() === "normal" && windowSize() ? { width: `${windowSize()!.w}px`, height: `${windowSize()!.h}px` } : {}) }}
         >
           <Show when={windowState() === "minimized"} fallback={<>
             <header
@@ -150,12 +224,27 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
                 <button type="button" aria-label="Close document window" disabled={documents.busy()} onClick={() => documents.guard("close the document window", () => props.onClose(editor.persistence.savedDocument ?? props.document, documents.location()))}>×</button>
               </span>
             </header>
-            <DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} />
-            <Show when={documents.error() && !documents.browser() && !documents.pending()}><p class="workspace-demo__file-notice" role="alert">{documents.error()}</p></Show>
-            <Show when={editor.persistence.state.warning}><p class="workspace-demo__file-notice" role="status">{editor.persistence.state.warning}</p></Show>
-            <section class="workspace-demo__document" classList={{ "workspace-demo__document--tabbed": hasDocumentTabs(), "workspace-demo__document--flow": !hasDocumentTabs() }} aria-label={title()}>
-              <ReactiveTreeView editor={editor} projection={projection} />
-            </section>
+            <DocumentMarginContext.Provider value={marginPresentation}>
+              <DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: "demo-document-margin-drawer", toggle: toggleMargins }} />
+              <Show when={documents.error() && !documents.browser() && !documents.pending()}><p class="workspace-demo__file-notice" role="alert">{documents.error()}</p></Show>
+              <Show when={editor.persistence.state.warning}><p class="workspace-demo__file-notice" role="status">{editor.persistence.state.warning}</p></Show>
+              <section class="workspace-demo__document" classList={{ "workspace-demo__document--tabbed": hasDocumentTabs(), "workspace-demo__document--flow": !hasDocumentTabs() }} aria-label={title()}>
+                <ReactiveTreeView editor={editor} projection={projection} />
+              </section>
+              <Show when={marginsCollapsed() && marginDrawerOpen()}>
+                <ReactiveViewProvider editor={editor} projection={projection}>
+                  <DocumentMarginDrawer id="demo-document-margin-drawer" entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />
+                </ReactiveViewProvider>
+              </Show>
+            </DocumentMarginContext.Provider>
+            <Show when={windowState() === "normal"}><div class="reactive-window__resize" role="button" tabIndex={0} aria-label={`Resize ${title()} window`} title="Drag or use arrow keys to resize"
+              onPointerDown={beginWindowResize} onPointerMove={moveWindowResize} onPointerUp={finishWindowResize} onLostPointerCapture={finishWindowResize} onPointerCancel={event => finishWindowResize(event, true)}
+              onKeyDown={event => {
+                if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+                const rect = windowElement.getBoundingClientRect(), step = event.shiftKey ? 1 : 10;
+                const next = clampWindowSize(rect.width + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), rect.height + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0));
+                setWindowSize(next); updateMarginState(next.w); event.preventDefault(); event.stopPropagation();
+              }} /></Show>
           </>}>
             <WindowIcon class="workspace-demo__window-icon" title={title()} kind="document" onRestore={restoreWindow}
               onPointerDown={beginWindowDrag} onPointerMove={moveWindow} onPointerUp={finishWindowDrag}
