@@ -1,5 +1,18 @@
 # Reactive reconstruction progress
 
+## Window icon minimization — planned, 15 September 2026
+
+Agreed the design for minimizing a WindowBlock into a compact icon presentation.
+The canonical window will retain its Block type, key, children and restoration
+geometry; `metadata.state` will select a `WindowIconView` instead of structurally
+converting it to an IconBlock. Document windows default to a document/page glyph,
+stored icon choices are semantic keys, a single click restores the window and
+icon dragging commits one undoable position change. Reactive metadata will
+replace the current duplicate local minimized signal so undo, redo and reload
+cannot disagree with the presentation. Child views may unmount while minimized,
+but their model data remains intact. No server or database work is required. See
+[WINDOW_ICON_MINIMIZATION_PLAN.md](WINDOW_ICON_MINIMIZATION_PLAN.md).
+
 ## Page minimap — implemented, 15 September 2026
 
 Reviewed the original DOM-coupled minimap and its entity/search consumers. The
