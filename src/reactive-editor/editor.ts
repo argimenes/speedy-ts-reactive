@@ -30,6 +30,7 @@ import { DocumentFind } from "../runtime/document-find";
 import { DocumentEntityList } from "../runtime/document-entity-list";
 import { createTimerBlock } from "../runtime/timer-block";
 import { MinimapService } from "../runtime/minimap";
+import type { LoadedWorkspace } from "./workspace-manifest";
 
 export class ReactiveEditor {
   readonly decorations = new SessionDecorations();
@@ -55,17 +56,20 @@ export class ReactiveEditor {
   readonly crossText = new CrossBlockSelection(this);
   readonly linkedAnnotations = new LinkedAnnotations(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
-  readonly persistence = new PersistenceService(this);
+  readonly persistence: PersistenceService;
   readonly multiSelections: MultiSelectionEditor;
   readonly projections = new Map<ViewId, BlockTreeProjection>();
   private gateway?: InputGateway;
   private crossInput?: CrossBlockInput;
 
-  constructor(dto: ExistingBlockDto) {
+  constructor(dto: ExistingBlockDto | LoadedWorkspace) {
     registerInputActions(this.bindings);
-    const decoded = decodeBlockTree(dto);
+    const loadedWorkspace = "state" in dto && "references" in dto ? dto as LoadedWorkspace : undefined;
+    const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : decodeBlockTree(dto as ExistingBlockDto);
     this.repository = new CanonicalRepository(decoded.state);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
+    this.persistence = new PersistenceService(this);
+    if (loadedWorkspace) this.persistence.attachWorkspace(loadedWorkspace);
     const [viewChildren, setViewChildren] = createStore<Record<string, string | undefined>>({});
     this.viewChildren = viewChildren;
     this.setViewChild = (key, child) => setViewChildren(key, child);
@@ -237,6 +241,10 @@ export class ReactiveEditor {
 
   encodeDocument(): ExistingBlockDto {
     return encodeDocument(this.repository.snapshot(), undefined, this.focusBookmarks());
+  }
+
+  encodeDocumentAt(rootPlacementKey: PlacementKey): ExistingBlockDto {
+    return encodeDocument(this.repository.snapshot(), rootPlacementKey, this.focusBookmarks());
   }
 
   encodeWorkspace(): ExistingBlockDto {

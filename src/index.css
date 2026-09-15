@@ -223,6 +223,27 @@ textarea {
   font-size: .75rem;
 }
 
+.workspace-document-reference {
+  display: grid;
+  gap: 8px;
+  min-width: 260px;
+  padding: 18px;
+  border: 1px solid #b7791f;
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #5f370e;
+}
+
+.workspace-document-reference small {
+  max-width: 52ch;
+}
+
+.workspace-document-reference__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .reactive-pilot__json {
   margin-top: 18px;
   padding: 14px 16px;

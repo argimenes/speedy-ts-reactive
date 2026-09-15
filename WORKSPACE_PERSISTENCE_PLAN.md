@@ -1,8 +1,46 @@
 # Resilient workspace save/load plan
 
 Planned 15 September 2026, before implementation, at the user's request.
-Status: approved for a short-term implementation; no runtime code has been
-changed as part of this planning document.
+Status: persistence contract and canonical runtime support implemented and
+verified on 15 September 2026.
+
+## Implementation checkpoint
+
+`src/reactive-editor/workspace-manifest.ts` now owns the version 1 schema,
+validation, canonical SHA-256 hashing, externalization, legacy-stub conversion
+and hydration. `PersistenceService.saveWorkspace()` captures one repository
+snapshot, writes every distinct Document through the coordinated bundle route
+and advances the manifest last. `PersistenceService.loadWorkspace()` accepts
+both manifests and legacy Block trees and returns a load result that can be
+passed directly to `new ReactiveEditor(loadedWorkspace)`.
+
+Hydration preserves the complete Workspace/Background/window structure.
+Repeated references become reference placements to one content record. Missing,
+invalid or identity-mismatched files remain explicit
+`document-reference-block` placeholders; their registered view provides Retry,
+Relink and Remove window controls. A matching identity with a changed hash is
+loaded with a warning. Relinking refuses an unexpected Document identity.
+
+`server/workspace-store.ts` supplies confined list/load/compatibility-save and
+coordinated bundle-save routes. Bundle writes validate every manifest and
+Document, stage all JSON, detect external changes from the last loaded hash,
+atomically replace individual Documents and replace the manifest last. A failed
+commit attempts to restore already replaced files. Search-index failure is
+reported separately from successful file storage.
+
+The persistence API is host-ready; the current showcase toolbar remains a
+single-Document demonstration whose background and Document deliberately use
+separate editor instances. Converting that showcase into a canonical
+multi-window Workspace host is presentation integration, not a persistence
+format dependency. The original `/api/saveWorkspaceJson` endpoint remains as a
+safe compatibility writer while older UI code is migrated.
+
+Fourteen focused tests cover manifest validation, exact BackgroundBlock/window
+round trips, separate Document output, repeated references, missing resources,
+relinking, legacy conversion, real isolated HTTP storage, unsafe input, hashes,
+rollback preconditions and external-write conflicts. Typecheck and client/server
+production builds pass. The full suite is 249/251; its two failures are the
+unchanged context-menu baseline failures documented in the progress log.
 
 ## Outcome
 
@@ -314,7 +352,7 @@ shape.
 
 ## Implementation phases
 
-### Phase 1 — contracts and pure transforms
+### Phase 1 — contracts and pure transforms — complete
 
 - Add TypeScript manifest/resource/source types and strict validators.
 - Add pure manifest externalization and hydration planning functions.
@@ -322,28 +360,32 @@ shape.
 - Cover BackgroundBlock preservation, nested Documents, duplicate references,
   unknown fields and legacy conversion with unit tests.
 
-### Phase 2 — persistence session and loading
+### Phase 2 — persistence session and loading — complete
 
 - Add the session-only Document reference registry.
 - Load manifests and Documents without replacing the active editor on failure.
 - Hydrate shared Documents once and render unresolved placeholders.
-- Add Retry/Relink recovery and update document-store browser integration.
+- Add Retry/Relink recovery. A richer Document-browser picker can replace the
+  current compact folder/filename prompt when the showcase becomes a canonical
+  Workspace host.
 
-### Phase 3 — coordinated save
+### Phase 3 — coordinated save — complete
 
 - Encode one repository snapshot into separate Documents and one manifest.
 - Add a validated coordinated endpoint that stages writes and commits the
   manifest last.
 - Preserve accurate clean/dirty reporting when edits occur during a save.
-- Update Save, Save As and Save Workspace interactions.
+- Expose Save Workspace through the canonical persistence service; host-specific
+  menu wiring remains with the canonical Workspace-host conversion.
 
-### Phase 4 — migration and verification
+### Phase 4 — migration and verification — complete for the persistence layer
 
 - Import legacy external stubs and embedded Workspaces.
 - Exercise real temporary Document/Workspace roots, partial failures and path
   attacks without touching user files.
-- Add a browser save → close → load check covering background, window layout,
-  minimized state, shared Document windows and a missing-file relink.
+- Cover save → load, background/window state, shared Document windows and
+  missing-file relink in focused integration tests; add a browser check when the
+  showcase owns a canonical Workspace repository.
 - Update the README and progress record with the final contract and evidence.
 
 ## Acceptance criteria

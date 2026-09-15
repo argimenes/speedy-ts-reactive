@@ -9,6 +9,7 @@ import { surrealdbNodeEngines } from "@surrealdb/node";
 import type { IBlockDto, StandoffEditorBlockDto, BlockType, IndexedBlock } from "./types";
 import { createDocumentStoreRouter } from "./document-store.js";
 import { createEntitySearchRouter } from "./entity-search.js";
+import { createWorkspaceStoreRouter } from "./workspace-store.js";
 //import { BlockType } from "./types";
 let db: Surreal | undefined;
 
@@ -254,6 +255,17 @@ app.use("/api", createDocumentStoreRouter({
   },
 }));
 
+app.use("/api", createWorkspaceStoreRouter({
+  documentRoot: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),
+  workspaceRoot: process.env.SPEEDY_WORKSPACE_ROOT || path.join(__dirname, baseWorkspacesPath),
+  indexDocument: async (doc, filepath) => {
+    if (!db) throw new Error("Search database unavailable");
+    doc.metadata = { ...doc.metadata, filepath };
+    doc.lastUpdated = new Date();
+    await saveDocumentIndex(doc as IBlockDto);
+  },
+}));
+
 
 const storage = multer.diskStorage({
   destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
@@ -295,13 +307,6 @@ app.post('/upload', function(req: Request, res: Response) {
 app.get('/api/textJson', function(req: Request, res: Response) {
   const text = req.query.text as string;
   res.send(text);
-});
-
-app.get("/api/listWorkspaces", function (req: Request, res: Response) {
-  const folder = (req.query?.folder as string) || ".";
-  fs.readdir(path.join(__dirname, baseWorkspacesPath), (err, files) => {
-    res.send({ workspaces: files });
-  });
 });
 
 const listJsonFiles = (folder: string = ".") => {
@@ -462,39 +467,6 @@ app.post('/api/getEntitiesJson', async function(req: Request, res: Response) {
       }))
     }
   });
-});
-
-app.post('/api/saveWorkspaceJson', async function(req: Request, res: Response) {
-  try {
-    const json = req.body;
-    const filename = json?.filename + "";
-    const filepath = path.join(__dirname, baseWorkspacesPath, filename);
-    await atomicWriteJson(filepath, json.workspace);
-    res.send({
-      Success: true
-    });
-  } catch (ex) {
-    console.log('/api/saveWorkspaceJson', { ex });
-    res.send({ Success: false });
-  }  
-});
-
-app.get('/api/loadWorkspaceJson', async function(req: Request, res: Response) {
-  try {
-    const filename = req.query.filename + "";
-    const filepath = path.join(__dirname, baseWorkspacesPath, filename);
-    const data = fs.readFileSync(filepath, 'utf8');
-    const ws = JSON.parse(data) as IBlockDto;
-    res.send({
-      Success: true,
-      Data: {
-        workspace: ws
-      }
-    });
-  } catch (ex) {
-    console.log('/api/loadWorkspaceJson', { ex });
-    res.send({ Success: false });
-  }
 });
 
 app.post('/api/saveReactiveRepositoryJson', async function(req: Request, res: Response) {

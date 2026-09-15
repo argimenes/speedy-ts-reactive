@@ -24,6 +24,7 @@ import { PlainTextBlockView } from "./plain-text-block-view";
 import { StandoffEditorView } from "./standoff-editor-view";
 import { UnknownBlockView } from "./unknown-block-view";
 import { TimerBlockView } from "./timer-block";
+import { DocumentReferenceView } from "./document-reference-view";
 
 function many(editor: ReactiveEditor, types: string[], view: any, capabilities: string[]) {
   for (const type of types) editor.registry.register({ type, view, capabilities });
@@ -37,6 +38,7 @@ export function registerCoreViews(editor: ReactiveEditor): void {
   editor.registry.register({ type: "timer-block", view: TimerBlockView, capabilities: ["control", "opaque-widget", "selectable"] });
   editor.registry.register({ type: "code-mirror-block", view: CodeBlockView, capabilities: ["native-text", "container", "opaque-widget"] });
   editor.registry.register({ type: "cyclic-reference", view: UnknownBlockView, capabilities: ["reference-placeholder"] });
+  editor.registry.register({ type: "document-reference-block", view: DocumentReferenceView, capabilities: ["reference-placeholder", "selectable"] });
 
   many(editor, ["universe-block", "workspace-block", "root-block", "container-block", "book-block", "fixed-size-page-block", "side-block", "embed-document-block", "entities-list-block", "context-menu-block", "control-panel-block", "monitor-block", "left-margin-block", "right-margin-block", "error-block", "unknown-block"], GenericContainerView, ["container", "selectable"]);
   many(editor, ["surface-block"], FlippableSurfaceView, ["container", "sides", "selectable"]);

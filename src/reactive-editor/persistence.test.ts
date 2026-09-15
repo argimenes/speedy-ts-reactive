@@ -46,3 +46,80 @@ describe("document persistence", () => {
     await expect(PersistenceService.loadDocument("bad.json", ".")).rejects.toThrow("not a Block document");
   });
 });
+
+describe("Workspace persistence", () => {
+  const workspace = () => ({
+    id: "workspace", type: "workspace-block", children: [{ id: "background", type: "canvas-background-block", children: [{
+      id: "window", type: "document-window-block", metadata: { position: { x: 4, y: 8 } }, children: [{
+        id: "document", type: "document-block", metadata: { documentId: "document-one", folder: "notes", filename: "One.json" }, children: [{ type: "plain-text-block", text: "Saved separately" }],
+      }],
+    }] }],
+  });
+
+  it("posts a coordinated bundle and only marks the captured revision clean", async () => {
+    const editor = new ReactiveEditor(workspace());
+    const fetch = vi.fn().mockResolvedValue(response({ Success: true })); vi.stubGlobal("fetch", fetch);
+    expect(await editor.persistence.saveWorkspace("Desk.json")).toBe(true);
+    const [url, request] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/saveWorkspaceBundle");
+    const body = JSON.parse(request.body as string);
+    expect(body.workspace.root.children[0].type).toBe("canvas-background-block");
+    expect(body.workspace.root.children[0].children[0].children[0]).toEqual({ type: "document-reference-block", metadata: { documentId: "document-one" } });
+    expect(body.documents).toHaveLength(1);
+    expect(body.documents[0].document.children[0].text).toBe("Saved separately");
+    expect(editor.persistence.state.lastSavedRevision).toBe(0);
+    editor.dispose();
+  });
+
+  it("loads valid resources and leaves a recoverable placeholder for a missing Document", async () => {
+    const manifest = {
+      kind: "speedy-workspace", schemaVersion: 1, workspaceId: "workspace",
+      documents: {
+        found: { documentId: "found", source: { kind: "document-store", folder: "notes", filename: "Found.json" } },
+        missing: { documentId: "missing", source: { kind: "document-store", folder: "notes", filename: "Missing.json" } },
+      },
+      root: { type: "workspace-block", children: [{ type: "image-background-block", children: [
+        { type: "document-window-block", id: "found-window", children: [{ type: "document-reference-block", metadata: { documentId: "found" } }] },
+        { type: "document-window-block", id: "missing-window", children: [{ type: "document-reference-block", metadata: { documentId: "missing" } }] },
+      ] }] },
+    };
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(response({ Success: true, Data: { workspace: manifest } }))
+      .mockImplementation((url: string) => url.includes("Found.json")
+        ? Promise.resolve(response({ Success: true, Data: { document: { id: "found", type: "document-block", children: [{ type: "plain-text-block", text: "Loaded" }] } } }))
+        : Promise.resolve(response({ Success: false, Error: "Not found" }, 404)));
+    vi.stubGlobal("fetch", fetch);
+    const loaded = await PersistenceService.loadWorkspace("Desk.json");
+    expect(loaded.issues).toEqual([{ documentId: "missing", kind: "missing", message: "Not found" }]);
+    const editor = new ReactiveEditor(loaded);
+    const view = editor.createView("workspace");
+    const types = Object.values(view.state.nodes).map(node => node.viewType);
+    expect(types).toContain("document-block"); expect(types).toContain("document-reference-block");
+    expect(editor.persistence.workspaceReference("missing")?.source.filename).toBe("Missing.json");
+    editor.dispose();
+  });
+
+  it("retries or relinks unresolved references and shares one resolved Document across its windows", async () => {
+    const manifest = {
+      kind: "speedy-workspace" as const, schemaVersion: 1 as const, workspaceId: "workspace",
+      documents: { missing: { documentId: "missing", source: { kind: "document-store" as const, folder: "old", filename: "Missing.json" } } },
+      root: { type: "workspace-block", children: [{ type: "canvas-background-block", children: [
+        { type: "document-window-block", children: [{ type: "document-reference-block", metadata: { documentId: "missing" } }] },
+        { type: "document-window-block", children: [{ type: "document-reference-block", metadata: { documentId: "missing" } }] },
+      ] }] },
+    };
+    const loaded = (await import("./workspace-manifest")).materializeWorkspace(manifest, new Map(), [{ documentId: "missing", kind: "missing", message: "Not found" }]);
+    const editor = new ReactiveEditor(loaded);
+    const fetch = vi.fn().mockResolvedValue(response({ Success: true, Data: { document: { id: "missing", type: "document-block", children: [{ type: "plain-text-block", text: "Recovered" }] } } }));
+    vi.stubGlobal("fetch", fetch);
+    expect(await editor.persistence.resolveWorkspaceDocument("missing", { kind: "document-store", folder: "new", filename: "Recovered.json" })).toBe(true);
+    expect(fetch.mock.calls[0][0]).toContain("folder=new");
+    const snapshot = editor.repository.snapshot();
+    const placements = Object.values(snapshot.placements).filter(placement => snapshot.contents[placement.contentKey]?.viewType === "document-block");
+    expect(placements).toHaveLength(2);
+    expect(new Set(placements.map(placement => placement.contentKey)).size).toBe(1);
+    expect(editor.persistence.workspaceReference("missing")?.source).toEqual({ kind: "document-store", folder: "new", filename: "Recovered.json" });
+    expect(editor.persistence.workspaceLoadIssues()).toEqual([]);
+    editor.dispose();
+  });
+});

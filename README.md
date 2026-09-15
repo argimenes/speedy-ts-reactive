@@ -71,12 +71,21 @@ native text fields and embedded media keep their native menus. Window headers
 also open the Block/theme menu. Editing commands support undo.
 
 Desktop background choices persist across document opens/resets during the
-current browser session, but not a full reload. Background undo/redo is in its
-own menu; document Save still saves only the document. Whole-workspace save/load
-and independent-window duplicate/extract actions are not yet connected. Disabled
-legacy actions explain their limits in tooltips. See the
+current browser session. Background undo/redo is in its own menu; document Save
+still saves only the document. The canonical persistence API now saves and loads
+versioned Workspace manifests with the BackgroundBlock/window layout and
+external, stable-ID references to separate Document JSON files. Missing files
+open as recoverable Retry/Relink placeholders. The current showcase toolbar
+remains a split background/single-Document host, so its whole-Workspace chooser
+will be connected when that presentation moves onto one canonical Workspace
+repository. Disabled legacy actions explain their limits in tooltips. See the
 [background/context-menu migration notes](BACKGROUND_CONTEXT_MENU_MIGRATION.md)
 for source mapping and verification.
+
+Workspace files default to the sibling `../codex-data/workspaces` directory.
+Set `SPEEDY_WORKSPACE_ROOT=/absolute/path/to/workspaces` to select a different
+existing directory. See [WORKSPACE_PERSISTENCE_PLAN.md](./WORKSPACE_PERSISTENCE_PLAN.md)
+for the manifest, recovery and compatibility contracts.
 
 See [DOCUMENT_STORE_MIGRATION.md](./DOCUMENT_STORE_MIGRATION.md) for the design,
 compatibility boundaries, and verification requirements.
