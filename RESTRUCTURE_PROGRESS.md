@@ -1,5 +1,23 @@
 # Reactive reconstruction progress
 
+## Concertina search presentation — approved, 16 September 2026
+
+Audited the original entity-highlighter/text-reference concertina behavior and
+mapped it to the reactive search, entity range, mount, decoration, minimap, and
+focus systems. The new design is session-only: it hides maximal unmatched Block
+branches, leaves short matching Blocks unchanged, and turns tall matching
+editors into compact real-content scroll viewports centred on the active match.
+It deliberately avoids the original direct style resets and its unfinished
+per-Cell hiding approach. The plan covers tabs, tables, margins, transclusions,
+navigation, stale result cancellation, exact restoration, layout batching, and
+minimap behavior. No runtime code changed. See
+[CONCERTINA_PLAN.md](CONCERTINA_PLAN.md).
+
+The plan was subsequently approved in full. The matching excerpt contract now
+records approximately 48 rendered CSS pixels of context before and after the
+active match as the agreed default; this is visual context rather than a fixed
+character or Cell count.
+
 ## Shared resizing for floating tools and dialogs — implemented, 16 September 2026
 
 Added `createFloatingWindowResize` and `FloatingWindowResizeHandle` as the
