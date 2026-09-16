@@ -16,6 +16,6 @@
 .reactive-timer__finished strong { color:#9b352c; font-size:clamp(1rem,11cqw,1.7rem); }
 .reactive-timer__done { min-width:58px; border-color:#9b352c!important; }
 .reactive-timer--done { background:linear-gradient(150deg,#fffaf3,#f4ded6); }
-.reactive-timer__resize { position:absolute; right:0; bottom:0; width:14px; height:14px; cursor:nwse-resize; touch-action:none; background:repeating-linear-gradient(135deg,transparent 0 3px,#6f8980 3px 4px); clip-path:polygon(100% 0,100% 100%,0 100%); }
+.reactive-timer__resize::after { border-color:#6f8980; }
 @media (prefers-reduced-motion:no-preference) { .reactive-timer--done { animation:timer-complete 180ms ease-out 2 alternate; } }
 @keyframes timer-complete { to { filter:brightness(1.08); transform:scale(1.01); } }

@@ -159,6 +159,7 @@ describe("document browser request and keyboard handling", () => {
     await vi.waitFor(() => expect(document.querySelector('[data-folder="empty"]')?.getAttribute("aria-selected")).toBe("true"));
     finishSlow(response({ files: ["Stale.json"] })); await Promise.resolve();
     expect(dialog().textContent).not.toContain("Stale.json");
+    expect(dialog().querySelector('[aria-label="Resize Open document dialog"]')).not.toBeNull();
     const cancel = button("Cancel", dialog()); cancel.focus();
     const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }); cancel.dispatchEvent(tab);
     expect(tab.defaultPrevented).toBe(true);

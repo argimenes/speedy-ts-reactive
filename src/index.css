@@ -475,30 +475,6 @@ textarea {
 
 .reactive-window__document-body { min-width: 0; min-height: 100%; }
 
-.reactive-window__resize {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  z-index: 50;
-  width: 24px;
-  height: 24px;
-  cursor: nwse-resize;
-  touch-action: none;
-}
-
-.reactive-window__resize::after {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 9px;
-  height: 9px;
-  border-right: 2px solid rgba(43, 70, 62, .72);
-  border-bottom: 2px solid rgba(43, 70, 62, .72);
-  content: "";
-}
-
-.reactive-window__resize:focus-visible { outline: 2px solid #096d76; outline-offset: -3px; }
-
 .reactive-window__margin-drawer {
   position: absolute;
   top: 84px;

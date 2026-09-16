@@ -1,17 +1,21 @@
 .document-dialog__backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 20px; background: #07131d80; font: 14px Arial, sans-serif; color: #27302e; }
 .document-dialog { display: flex; flex-direction: column; width: min(880px, 100%); max-height: calc(100dvh - 40px); overflow: hidden; border: 1px solid #70817d; border-radius: 9px; background: #fff; box-shadow: 0 20px 80px #0006; }
 .document-dialog--compact { width: min(470px, 100%); }
+.document-dialog--resizable { position:fixed; max-width:calc(100vw - 16px); max-height:calc(100dvh - 16px); box-sizing:border-box; }
 .document-dialog button, .document-dialog input { box-sizing: border-box; font: inherit; }
 .document-dialog button { border: 1px solid #bccac6; border-radius: 4px; padding: 7px 12px; color: inherit; background: #f6f8f7; cursor: pointer; }
 .document-dialog button:disabled { opacity: .5; cursor: default; }
 .document-dialog button:focus-visible, .document-dialog [tabindex]:focus-visible, .document-dialog input:focus-visible { outline: 2px solid #087c89; outline-offset: -2px; }
 .document-dialog input { min-width: 0; padding: 8px; border: 1px solid #a5b5af; border-radius: 4px; background: white; color: #27302e; }
 .document-dialog__header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; padding: 10px 16px; background: #b9e4e8; }
+.document-dialog--resizable .document-dialog__header { cursor:grab; touch-action:none; user-select:none; }
 .document-dialog__header h2 { margin: 0; font-size: 17px; font-weight: 600; }
 .document-dialog__header button { padding: 2px 8px; border: 0; background: transparent; font-size: 23px; }
 .document-browser__path { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #dbe3df; }
 .document-browser__path span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .document-browser__panes { display: grid; grid-template-columns: minmax(180px, 30%) 1fr; height: min(440px, 52vh); min-height: 120px; }
+.document-dialog--resizable .document-browser__panes { flex:1; height:auto; min-height:0; }
+.document-dialog--resizable > .document-browser__list { flex:1; min-height:0; }
 .document-browser--busy { opacity: .7; pointer-events: none; }
 .document-browser__tree { overflow: auto; padding: 8px 0; border-right: 1px solid #dbe3df; background: #f6f8f7; }
 .document-browser__tree [role=treeitem] { display: flex; align-items: center; gap: 6px; width: max-content; min-width: 100%; box-sizing: border-box; padding: 8px 12px 8px 8px; cursor: pointer; white-space: nowrap; }

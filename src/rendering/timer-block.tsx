@@ -4,6 +4,7 @@ import { Portal } from "solid-js/web";
 import type { BlockViewProps } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { DEFAULT_TIMER_SIZE, MAX_TIMER_SECONDS, MIN_TIMER_SIZE, readTimerPayload, type TimerPayload } from "../runtime/timer-block";
+import { createFloatingWindowResize, FloatingWindowResizeHandle } from "./floating-window-resize";
 import "./timer-block.css";
 
 const formatDuration = (milliseconds: number) => {
@@ -25,14 +26,12 @@ export function TimerBlockView(props: BlockViewProps) {
   const [now, setNow] = createSignal(Date.now());
   const [draft, setDraft] = createSignal(formatDuration(timer().durationSeconds * 1000));
   const [message, setMessage] = createSignal("");
-  const [previewSize, setPreviewSize] = createSignal<{ width: number; height: number }>();
   const [previewPosition, setPreviewPosition] = createSignal<{ x: number; y: number }>();
   let root!: HTMLDivElement;
   let durationInput!: HTMLInputElement;
   let disposeMount: (() => void) | undefined;
   let interval: ReturnType<typeof setInterval> | undefined;
   let audio: AudioContext | undefined;
-  let resize: { pointerId: number; x: number; y: number; width: number; height: number } | undefined;
   let drag: { pointerId: number; x: number; y: number; left: number; top: number } | undefined;
   const mountedAt = Date.now();
   let deadline: number | undefined, notified: number | undefined;
@@ -99,14 +98,16 @@ export function TimerBlockView(props: BlockViewProps) {
     const properties = unwrap((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []);
     editor.commands.setPayloadField(props.nodeKey, "blockProperties", [...properties.filter(item => item.type !== type || item.isDeleted), { type, metadata }], label);
   };
-  const finishResize = (event: PointerEvent) => {
-    if (!resize || resize.pointerId !== event.pointerId) return;
-    const final = previewSize() ?? size(); resize = undefined; setPreviewSize(undefined);
-    setBlockProperty("block/size", { width: Math.round(final.width), height: Math.round(final.height), "min-width": MIN_TIMER_SIZE }, "Resize Timer");
-  };
+  const timerResize = createFloatingWindowResize({
+    element: () => root,
+    size,
+    minimum: { width: MIN_TIMER_SIZE, height: MIN_TIMER_SIZE },
+    onCommit: final => setBlockProperty("block/size", { width: final.width, height: final.height, "min-width": MIN_TIMER_SIZE }, "Resize Timer"),
+  });
+  const dimensions = timerResize.dimensions;
   const clampPosition = (x: number, y: number) => {
-    const dimensions = previewSize() ?? size();
-    return { x: Math.max(0, Math.min(x, window.innerWidth - dimensions.width)), y: Math.max(0, Math.min(y, window.innerHeight - dimensions.height)) };
+    const current = dimensions();
+    return { x: Math.max(0, Math.min(x, window.innerWidth - current.width)), y: Math.max(0, Math.min(y, window.innerHeight - current.height)) };
   };
   const finishDrag = (event: PointerEvent) => {
     if (!drag || drag.pointerId !== event.pointerId) return;
@@ -134,7 +135,6 @@ export function TimerBlockView(props: BlockViewProps) {
   });
   onCleanup(() => { clearInterval(interval); disposeMount?.(); void audio?.close(); });
 
-  const dimensions = () => previewSize() ?? size();
   const position = () => previewPosition() ?? storedPosition();
   return <Portal><div ref={root} class="abstract-block reactive-timer" classList={{ "reactive-timer--done": done() }} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Timer"
     style={{ width: `${dimensions().width}px`, height: `${dimensions().height}px`, left: `${position().x}px`, top: `${position().y}px` }}
@@ -160,9 +160,6 @@ export function TimerBlockView(props: BlockViewProps) {
       </div>
       <Show when={message()}>{text => <small role="alert">{text()}</small>}</Show>
     </Show>
-    <div class="reactive-timer__resize" title="Drag to resize timer" aria-hidden="true"
-      onPointerDown={event => { if (event.button !== 0) return; const current = dimensions(); resize = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, width: current.width, height: current.height }; event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); event.stopPropagation(); }}
-      onPointerMove={event => { if (!resize || resize.pointerId !== event.pointerId) return; setPreviewSize({ width: Math.max(MIN_TIMER_SIZE, resize.width + event.clientX - resize.x), height: Math.max(MIN_TIMER_SIZE, resize.height + event.clientY - resize.y) }); }}
-      onPointerUp={finishResize} onLostPointerCapture={finishResize} onPointerCancel={() => { resize = undefined; setPreviewSize(undefined); }} />
+    <FloatingWindowResizeHandle controller={timerResize} class="reactive-timer__resize" label="Resize timer" />
   </div></Portal>;
 }

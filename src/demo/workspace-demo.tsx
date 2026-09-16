@@ -18,6 +18,7 @@ import type { LoadedWorkspace } from "../reactive-editor/workspace-manifest";
 import { DocumentMarginContext, type DocumentMarginEntry } from "../rendering/document-margins";
 import { DocumentMarginDrawer } from "../rendering/document-margin-drawer";
 import { ReactiveViewProvider } from "../reactive-editor/context";
+import { createFloatingWindowResize, FloatingWindowResizeHandle } from "../rendering/floating-window-resize";
 
 type DemoWindowState = "normal" | "minimized" | "maximized" | "closed";
 interface DemoWindowSnapshot { state: DemoWindowState; position: { x: number; y: number }; size: { w: number; h: number } }
@@ -50,7 +51,6 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
   const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
   let windowElement!: HTMLElement;
   let drag: { pointerId: number; x: number; y: number; originX: number; originY: number; moved: boolean } | undefined;
-  let resize: { pointerId: number; x: number; y: number; width: number; height: number } | undefined;
   let windowObserver: ResizeObserver | undefined;
   let suppressIconClick = false;
   let suppressTimer: ReturnType<typeof setTimeout> | undefined;
@@ -109,29 +109,17 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
     if (!collapsed) setMarginDrawerOpen(false);
   };
   const resizeMinimum = () => ({ w: windowElement?.querySelector(".reactive-page--minimap-left, .reactive-page--minimap-right") ? 602 : 560, h: 240 });
-  const clampWindowSize = (w: number, h: number) => {
-    const minimum = resizeMinimum(), rect = windowElement.getBoundingClientRect();
-    return {
-      w: Math.max(minimum.w, Math.min(Math.max(minimum.w, window.innerWidth - rect.left - 8), w)),
-      h: Math.max(minimum.h, Math.min(Math.max(minimum.h, window.innerHeight - rect.top - 8), h)),
-    };
-  };
-  const beginWindowResize = (event: PointerEvent & { currentTarget: HTMLElement }) => {
-    if (event.button !== 0 || windowState() !== "normal") return;
-    const rect = windowElement.getBoundingClientRect();
-    resize = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, width: rect.width, height: rect.height };
-    event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); event.stopPropagation();
-  };
-  const moveWindowResize = (event: PointerEvent) => {
-    if (!resize || resize.pointerId !== event.pointerId) return;
-    const next = clampWindowSize(resize.width + event.clientX - resize.x, resize.height + event.clientY - resize.y);
-    setWindowSize(next); updateMarginState(next.w); event.preventDefault(); event.stopPropagation();
-  };
-  const finishWindowResize = (event: PointerEvent, cancelled = false) => {
-    if (!resize || resize.pointerId !== event.pointerId) return;
-    if (cancelled) { setWindowSize({ w: resize.width, h: resize.height }); updateMarginState(resize.width); }
-    resize = undefined; event.stopPropagation();
-  };
+  const windowResize = createFloatingWindowResize({
+    element: () => windowElement,
+    size: () => {
+      const stored = windowSize(), rect = windowElement?.getBoundingClientRect();
+      return { width: stored?.w ?? rect?.width ?? props.window?.size?.w ?? 1200, height: stored?.h ?? rect?.height ?? props.window?.size?.h ?? 760 };
+    },
+    minimum: () => ({ width: resizeMinimum().w, height: resizeMinimum().h }),
+    enabled: () => windowState() === "normal",
+    onCommit: next => { setWindowSize({ w: next.width, h: next.height }); updateMarginState(next.width); },
+  });
+  const displayWindowSize = () => windowResize.preview() ?? (windowSize() ? { width: windowSize()!.w, height: windowSize()!.h } : undefined);
   const toggleMargins = () => {
     if (!marginsCollapsed()) return;
     const opening = !marginDrawerOpen(); setMarginDrawerOpen(opening);
@@ -205,7 +193,7 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
             "workspace-demo__window--glass": glass(),
             "workspace-demo__window--margins-collapsed": marginsCollapsed(),
           }}
-          style={{ transform: windowState() !== "maximized" ? `translate(${position().x}px, ${position().y}px)` : undefined, ...(windowState() === "normal" && windowSize() ? { width: `${windowSize()!.w}px`, height: `${windowSize()!.h}px` } : {}) }}
+          style={{ transform: windowState() !== "maximized" ? `translate(${position().x}px, ${position().y}px)` : undefined, ...(windowState() === "normal" && displayWindowSize() ? { width: `${displayWindowSize()!.width}px`, height: `${displayWindowSize()!.height}px` } : {}) }}
         >
           <Show when={windowState() === "minimized"} fallback={<>
             <header
@@ -237,14 +225,7 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
                 </ReactiveViewProvider>
               </Show>
             </DocumentMarginContext.Provider>
-            <Show when={windowState() === "normal"}><div class="reactive-window__resize" role="button" tabIndex={0} aria-label={`Resize ${title()} window`} title="Drag or use arrow keys to resize"
-              onPointerDown={beginWindowResize} onPointerMove={moveWindowResize} onPointerUp={finishWindowResize} onLostPointerCapture={finishWindowResize} onPointerCancel={event => finishWindowResize(event, true)}
-              onKeyDown={event => {
-                if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
-                const rect = windowElement.getBoundingClientRect(), step = event.shiftKey ? 1 : 10;
-                const next = clampWindowSize(rect.width + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), rect.height + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0));
-                setWindowSize(next); updateMarginState(next.w); event.preventDefault(); event.stopPropagation();
-              }} /></Show>
+            <Show when={windowState() === "normal"}><FloatingWindowResizeHandle controller={windowResize} class="reactive-window__resize" label={`Resize ${title()} window`} /></Show>
           </>}>
             <WindowIcon class="workspace-demo__window-icon" title={title()} kind="document" onRestore={restoreWindow}
               onPointerDown={beginWindowDrag} onPointerMove={moveWindow} onPointerUp={finishWindowDrag}

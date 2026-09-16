@@ -1,11 +1,11 @@
-.document-find { position: fixed; z-index: 10000; display: flex; width: min(760px, calc(100vw - 48px)); max-height: calc(100vh - 16px); flex-direction: column; overflow: hidden; background: #fffef9; color: #24322f; border: 1px solid #8caaa0; border-radius: 8px; box-shadow: 0 6px 24px #0003; font: 14px/1.4 system-ui, sans-serif; }
+.document-find { position: fixed; z-index: 10000; box-sizing:border-box; display: flex; width: min(760px, calc(100vw - 48px)); max-height: calc(100vh - 16px); flex-direction: column; overflow: hidden; background: #fffef9; color: #24322f; border: 1px solid #8caaa0; border-radius: 8px; box-shadow: 0 6px 24px #0003; font: 14px/1.4 system-ui, sans-serif; }
 .document-find__windowbar { display: flex; min-height: 32px; flex: 0 0 auto; align-items: center; justify-content: space-between; color: #eef7f3; background: #385b51; cursor: grab; touch-action: none; user-select: none; }
 .document-find__windowbar:active { cursor: grabbing; }
 .document-find__title { padding: 7px 10px; font-weight: 600; }
 .document-find__controls { display: flex; align-self: stretch; margin-left: auto; }
 .document-find__controls button { width: 34px; height: 100%; padding: 0; border: 0; border-radius: 0; color: #fff; background: transparent; font-size: 1.2rem; cursor: pointer; }
 .document-find__controls button:hover { background: #bc2632; }
-.document-find__content { overflow: auto; padding: 12px; }
+.document-find__content { flex:1; min-height:0; overflow: auto; padding: 12px; }
 .document-find__row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
 .document-find label { display: inline-flex; align-items: center; gap: 5px; margin: 0; }
 .document-find input[type=text] { width: 210px; }

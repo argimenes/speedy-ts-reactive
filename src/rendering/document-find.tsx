@@ -2,6 +2,7 @@ import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { ScopeKind } from "../runtime/text-search";
 import { nodeKeysForPage } from "../runtime/minimap";
+import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "./floating-window-resize";
 import "./document-find.css";
 
 export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: string }) {
@@ -11,6 +12,7 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
   let drag: { pointerId: number; x: number; y: number; originX: number; originY: number } | undefined;
   const initialWidth = () => Math.min(760, Math.max(240, (typeof window === "undefined" ? 808 : window.innerWidth) - 48));
   const [position, setPosition] = createSignal({ x: Math.max(8, (typeof window === "undefined" ? 808 : window.innerWidth) - initialWidth() - 24), y: 90 });
+  const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
   const [mountRevision, setMountRevision] = createSignal(0);
   const unsubscribe = props.editor.mounts.subscribe(() => { if (state.open) setMountRevision(n => n + 1); });
   onCleanup(unsubscribe);
@@ -31,6 +33,13 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
       y: Math.max(8, Math.min(next.y, Math.max(8, window.innerHeight - Math.min(height, window.innerHeight - 16) - 8))),
     };
   };
+  const windowResize = createFloatingWindowResize({
+    element: () => panel,
+    size: () => sessionSize() ?? { width: panel?.getBoundingClientRect().width || initialWidth(), height: panel?.getBoundingClientRect().height || 180 },
+    minimum: { width: 360, height: 150 },
+    onCommit: size => { setSessionSize(size); queueMicrotask(() => setPosition(clampPosition(position()))); },
+  });
+  const displaySize = () => windowResize.preview() ?? sessionSize();
   onMount(() => {
     const keepReachable = () => setPosition(clampPosition(position()));
     window.addEventListener("resize", keepReachable);
@@ -38,7 +47,7 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
   });
   return <Show when={state.open && state.scope?.viewId === props.viewId}>
     <section ref={panel} class="document-find" data-document-find role="dialog" aria-label="Find in document" aria-modal="false"
-      style={{ left: `${position().x}px`, top: `${position().y}px` }} onKeyDown={event => {
+      style={{ left: `${position().x}px`, top: `${position().y}px`, ...(displaySize() ? { width: `${displaySize()!.width}px`, height: `${displaySize()!.height}px` } : {}) }} onKeyDown={event => {
       props.editor.bindings.dispatch(event, ["document-find", "document-find-open"], id => {
         if (id === "find.close") find.close();
         else if (id === "find.next") void find.navigate(1);
@@ -79,6 +88,7 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
         <Show when={state.active >= 0}><p class="document-find__snippet">{state.result?.matches[state.active]?.context}<small>{state.result?.matches[state.active]?.breadcrumb}</small></p></Show>
         <Show when={state.message}><p role="status">{state.message}</p></Show>
       </div>
+      <FloatingWindowResizeHandle controller={windowResize} class="document-find__resize" label="Resize Find window" />
     </section>
   </Show>;
 }

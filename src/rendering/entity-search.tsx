@@ -5,6 +5,7 @@ import type { OverlayDescriptor } from "../runtime/overlays";
 import { chooseEntity } from "../runtime/entity-search";
 import { EntityCandidates } from "../runtime/entity-candidates";
 import { EntityCandidatesPanel } from "./entity-candidates";
+import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "./floating-window-resize";
 import "./entity-search.css";
 interface Entity { id: string; name: string; text?: string; mentions?: number }
 
@@ -16,8 +17,23 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
   const [order, setOrder] = createSignal("ByMentions"), [direction, setDirection] = createSignal("Descending"), [page, setPage] = createSignal(1);
   const [results, setResults] = createSignal<Entity[]>([]), [current, setCurrent] = createSignal(0), [total, setTotal] = createSignal(0), [maxPage, setMaxPage] = createSignal(1);
   const [busy, setBusy] = createSignal(false), [error, setError] = createSignal("");
+  const initialWidth = Math.min(1200, Math.max(1, window.innerWidth - 24));
+  const [position, setPosition] = createSignal({ x: Math.max(8, (window.innerWidth - initialWidth) / 2), y: Math.max(8, window.innerHeight * .06) });
+  const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
   let root!: HTMLDivElement, input!: HTMLInputElement, editing = false;
+  let drag: { id: number; x: number; y: number; left: number; top: number } | undefined;
   const close = () => editor.overlays.close(overlay.key);
+  const clampPosition = (x: number, y: number) => {
+    const width = root?.offsetWidth || initialWidth, height = root?.offsetHeight || window.innerHeight * .76;
+    return { x: Math.max(8, Math.min(x, window.innerWidth - Math.min(width, window.innerWidth - 16) - 8)), y: Math.max(8, Math.min(y, window.innerHeight - Math.min(height, window.innerHeight - 16) - 8)) };
+  };
+  const windowResize = createFloatingWindowResize({
+    element: () => root,
+    size: () => sessionSize() ?? { width: root?.getBoundingClientRect().width || initialWidth, height: root?.getBoundingClientRect().height || window.innerHeight * .76 },
+    minimum: { width: 480, height: 320 },
+    onCommit: size => { setSessionSize(size); queueMicrotask(() => setPosition(current => clampPosition(current.x, current.y))); },
+  });
+  const displaySize = () => windowResize.preview() ?? sessionSize();
   const select = (entity?: Entity) => {
     if (!entity || busy()) return;
     if (candidates.state.enabled) { candidates.nominate(entity); return; }
@@ -56,7 +72,9 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
     const disposeMount = editor.mounts.register(overlay.key, { root, focusElement: input, inputPolicy: "opaque-widget", focus: () => { input.focus(); input.select(); } });
     const unsubscribe = editor.repository.subscribeBeforeChanges(() => { if (!editing) editor.overlays.close(overlay.key, false); });
     input.focus(); input.select();
-    onCleanup(() => { disposeMount(); unsubscribe(); });
+    const keepReachable = () => setPosition(current => clampPosition(current.x, current.y));
+    window.addEventListener("resize", keepReachable);
+    onCleanup(() => { disposeMount(); unsubscribe(); window.removeEventListener("resize", keepReachable); });
   });
   const keys = (event: KeyboardEvent) => {
     event.stopPropagation();
@@ -89,8 +107,14 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
       else if (!event.shiftKey && document.activeElement === fields.at(-1)) { event.preventDefault(); fields[0]?.focus(); }
     }
   };
-  return <div ref={root} class="reactive-entity-search" classList={{ "reactive-entity-search--candidates": candidates.state.enabled }} role="dialog" aria-modal={!candidates.state.enabled} aria-label="Search entities" data-native-context-menu onKeyDown={keys}>
-    <header><strong>Link text to an entity</strong><button type="button" onClick={close}>Cancel</button></header>
+  return <div ref={root} class="reactive-entity-search" classList={{ "reactive-entity-search--candidates": candidates.state.enabled }} role="dialog" aria-modal={!candidates.state.enabled} aria-label="Search entities" data-native-context-menu onKeyDown={keys}
+    style={{ left: `${position().x}px`, top: `${position().y}px`, ...(displaySize() ? { width: `${displaySize()!.width}px`, height: `${displaySize()!.height}px` } : {}) }}>
+    <header class="reactive-entity-search__header"
+      onPointerDown={event => { if (event.button !== 0 || (event.target as Element).closest("button")) return; const current = position(); drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: current.x, top: current.y }; event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); }}
+      onPointerMove={event => { if (drag?.id !== event.pointerId) return; setPosition(clampPosition(drag.left + event.clientX - drag.x, drag.top + event.clientY - drag.y)); }}
+      onPointerUp={event => { if (drag?.id === event.pointerId) drag = undefined; }} onPointerCancel={() => { drag = undefined; }}>
+      <strong>Link text to an entity</strong><button type="button" onClick={close}>Cancel</button>
+    </header>
     <div class="entity-search-columns">
     <section class="entity-search-lookup" aria-label="Entity lookup">
     <blockquote>{overlay.entityQuery}</blockquote>
@@ -112,6 +136,7 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
     </section>
     <EntityCandidatesPanel session={candidates} bind={bind} />
     </div>
+    <FloatingWindowResizeHandle controller={windowResize} class="reactive-entity-search__resize" label="Resize Entity Search window" />
   </div>;
 }
 export function EntitySearchLayer(props: { editor: ReactiveEditor; viewId: string }) {

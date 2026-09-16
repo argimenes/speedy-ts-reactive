@@ -129,7 +129,8 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
       queueMicrotask(() => document.getElementById(id)?.scrollIntoView?.({ block: "nearest" }));
     }
   };
-  return <DocumentDialog title={props.mode === "open" ? "Open document" : "Save document as"} onClose={props.onClose} busy={props.busy}>
+  return <DocumentDialog title={props.mode === "open" ? "Open document" : "Save document as"} onClose={props.onClose} busy={props.busy}
+    resizable={{ initial: { width: 880, height: 600 }, minimum: { width: 560, height: 360 } }}>
     <div class="document-browser__path">
       <button type="button" disabled={folder() === "." || props.busy} onClick={() => selectFolder(parentPath(folder()))} aria-label="Parent folder">↑</button>
       <span>Documents{folder() !== "." ? ` / ${folder().replaceAll("/", " / ")}` : ""}</span>

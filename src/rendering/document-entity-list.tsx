@@ -2,12 +2,14 @@ import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount }
 import { Portal } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { EntityListSort } from "../runtime/document-entity-list";
+import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "./floating-window-resize";
 import "./document-entity-list.css";
 
 function EntityListWindow(props: { editor: ReactiveEditor }) {
   const list = props.editor.entityList, state = list.state;
   const rows = createMemo(() => list.sortedRows());
   const [position, setPosition] = createSignal({ x: Math.max(8, window.innerWidth - 388), y: 64 });
+  const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
   let root!: HTMLElement;
   let disposeMount: (() => void) | undefined;
   let drag: { id: number; x: number; y: number; left: number; top: number } | undefined;
@@ -15,6 +17,13 @@ function EntityListWindow(props: { editor: ReactiveEditor }) {
     const width = root?.offsetWidth || 360, height = root?.offsetHeight || 300;
     return { x: Math.max(8, Math.min(x, window.innerWidth - width - 8)), y: Math.max(8, Math.min(y, window.innerHeight - Math.min(height, window.innerHeight - 16) - 8)) };
   };
+  const windowResize = createFloatingWindowResize({
+    element: () => root,
+    size: () => sessionSize() ?? { width: root?.getBoundingClientRect().width || 360, height: root?.getBoundingClientRect().height || 300 },
+    minimum: { width: 300, height: 200 },
+    onCommit: size => { setSessionSize(size); queueMicrotask(() => setPosition(current => clamp(current.x, current.y))); },
+  });
+  const displaySize = () => windowResize.preview() ?? sessionSize();
   const heading = (column: EntityListSort, label: string, title: string) => (
     <th aria-sort={state.sort === column ? state.direction : "none"}>
       <button type="button" title={title} onClick={() => list.sortBy(column)}>
@@ -30,7 +39,7 @@ function EntityListWindow(props: { editor: ReactiveEditor }) {
     onCleanup(() => { window.removeEventListener("resize", resize); disposeMount?.(); list.clearPreview(); });
   });
   return <section ref={root} class="document-entity-list" role="dialog" aria-modal="false" aria-label="Entities in document" tabIndex={-1}
-    style={{ left: `${position().x}px`, top: `${position().y}px` }} onKeyDown={event => { event.stopPropagation(); if (event.key === "Escape") { event.preventDefault(); list.close(); } }}>
+    style={{ left: `${position().x}px`, top: `${position().y}px`, ...(displaySize() ? { width: `${displaySize()!.width}px`, height: `${displaySize()!.height}px` } : {}) }} onKeyDown={event => { event.stopPropagation(); if (event.key === "Escape") { event.preventDefault(); list.close(); } }}>
     <header class="document-entity-list__header"
       onPointerDown={event => { if (event.button !== 0 || (event.target as Element).closest("button")) return; const current = position(); drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: current.x, top: current.y }; event.currentTarget.setPointerCapture?.(event.pointerId); }}
       onPointerMove={event => { if (drag?.id !== event.pointerId) return; setPosition(clamp(drag.left + event.clientX - drag.x, drag.top + event.clientY - drag.y)); }}
@@ -61,6 +70,7 @@ function EntityListWindow(props: { editor: ReactiveEditor }) {
       </p>
       <small>Graph counts come from the saved index and may differ from live Document counts. Hover or focus a row to preview visible references.</small>
     </div>
+    <FloatingWindowResizeHandle controller={windowResize} class="document-entity-list__resize" label="Resize Entity Listing window" />
   </section>;
 }
 

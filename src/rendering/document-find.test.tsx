@@ -36,6 +36,12 @@ describe("document Find UI", () => {
     titlebar.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientX: 350, clientY: 130, bubbles: true, cancelable: true }));
     expect(Number.parseFloat(findPanel.style.left)).toBe(originalLeft - 50); expect(Number.parseFloat(findPanel.style.top)).toBe(originalTop + 30);
     expect(editor.repository.state.revision).toBe(dragRevision); expect(editor.repository.canUndo()).toBe(false);
+    const resize = findPanel.querySelector<HTMLElement>(".document-find__resize")!; resize.setPointerCapture = vi.fn();
+    resize.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 0, clientY: 0, bubbles: true, cancelable: true }));
+    resize.dispatchEvent(new MouseEvent("pointermove", { button: 0, clientX: -100, clientY: 50, bubbles: true, cancelable: true }));
+    resize.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientX: -100, clientY: 50, bubbles: true, cancelable: true }));
+    expect(findPanel.style.width).toBe("660px"); expect(findPanel.style.height).toBe("230px");
+    expect(editor.repository.state.revision).toBe(dragRevision);
     await editor.find.flush(); expect(editor.find.state.result?.matches).toHaveLength(2);
     expect(editor.find.state.scope?.rootKey).toBe(node("page").key);
     expect(editor.minimap.layersFor(node("page").key)[0].markers).toHaveLength(2);

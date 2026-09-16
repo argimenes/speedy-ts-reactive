@@ -29,6 +29,11 @@ describe("entity search overlay", () => {
     const fetch = vi.fn().mockResolvedValue(reply()); vi.stubGlobal("fetch", fetch);
     const { editor, open, panel, query } = setup(); const before = editor.repository.snapshot(); open();
     expect(query().value).toBe("Vernon"); expect(editor.repository.snapshot()).toEqual(before);
+    const resize = panel()!.querySelector<HTMLElement>(".reactive-entity-search__resize")!; resize.setPointerCapture = vi.fn();
+    resize.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 0, clientY: 0, bubbles: true, cancelable: true }));
+    resize.dispatchEvent(new MouseEvent("pointermove", { button: 0, clientX: -100, clientY: -40, bubbles: true, cancelable: true }));
+    resize.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientX: -100, clientY: -40, bubbles: true, cancelable: true }));
+    expect(panel()!.style.width).toBe("900px"); expect(editor.repository.snapshot()).toEqual(before); expect(query().value).toBe("Vernon");
     await vi.advanceTimersByTimeAsync(310);
     expect(String(fetch.mock.calls[0][0])).toContain("/api/findAgentsByNameJson?search=Vernon");
     panel()!.querySelector<HTMLButtonElement>('[aria-label="Select Vernon Blake"]')!.click();

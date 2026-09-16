@@ -1,4 +1,4 @@
-.reactive-entity-search { position:fixed; z-index:2000; top:12vh; left:50%; transform:translateX(-50%); width:700px; max-width:calc(100vw - 24px); max-height:76vh; overflow:auto; box-sizing:border-box; padding:16px; background:white; color:#263a35; border:1px solid #78958f; border-radius:8px; box-shadow:0 12px 40px #0005; font:14px/1.4 Arial,sans-serif; }
+.reactive-entity-search { position:fixed; z-index:2000; width:700px; max-width:calc(100vw - 24px); max-height:calc(100dvh - 16px); overflow:auto; box-sizing:border-box; padding:16px; background:white; color:#263a35; border:1px solid #78958f; border-radius:8px; box-shadow:0 12px 40px #0005; font:14px/1.4 Arial,sans-serif; }
 .reactive-entity-search header,.reactive-entity-search footer,.entity-search-options { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
 .reactive-entity-search input[type=text],.reactive-entity-search input:not([type]) { width:100%; box-sizing:border-box; padding:8px; margin:5px 0 12px; }
 .reactive-entity-search button,.reactive-entity-search select { padding:5px 8px; }
@@ -9,13 +9,18 @@
 .reactive-entity-search tr.current { background:#dcefe9; }
 .reactive-entity-search [role=alert] { color:#922; }
 .reactive-entity-search { z-index:11000; }
-.reactive-entity-search { width:1200px; top:6vh; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+.reactive-entity-search { container-type:inline-size; width:1200px; display:flex; flex-direction:column; overflow:hidden; }
+.reactive-entity-search__header { cursor:grab; touch-action:none; user-select:none; }
 .entity-search-columns { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); min-height:0; gap:20px; }
 .reactive-entity-search > header { flex-shrink:0; }
 .entity-search-lookup,.entity-search-columns > .entity-candidates { min-width:0; overflow:auto; overscroll-behavior:contain; padding-right:8px; }
 .entity-search-columns > .entity-candidates { border-top:0; border-left:1px solid #9ab8ad; padding:0 8px 0 20px; margin-top:0; }
 @media (max-width:760px) {
   .reactive-entity-search { overflow:auto; }
+  .entity-search-columns { display:block; }
+  .entity-search-columns > .entity-candidates { border-left:0; border-top:1px solid #9ab8ad; margin-top:16px; padding:16px 0 0; }
+}
+@container (max-width:760px) {
   .entity-search-columns { display:block; }
   .entity-search-columns > .entity-candidates { border-left:0; border-top:1px solid #9ab8ad; margin-top:16px; padding:16px 0 0; }
 }

@@ -33,6 +33,12 @@ describe("document entity listing", () => {
     host.querySelector<HTMLButtonElement>("button[title^='Entities in Document']")!.click();
     await vi.waitFor(() => expect(rows().some(row => row.cells[1].textContent === "10")).toBe(true));
     expect(panel()).toBeTruthy(); expect(rows().map(row => row.cells[0].textContent)).toEqual(["Beta", "Alpha"]);
+    const resize = panel().querySelector<HTMLElement>(".document-entity-list__resize")!; resize.setPointerCapture = vi.fn();
+    resize.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 0, clientY: 0, bubbles: true, cancelable: true }));
+    resize.dispatchEvent(new MouseEvent("pointermove", { button: 0, clientX: 80, clientY: 100, bubbles: true, cancelable: true }));
+    resize.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientX: 80, clientY: 100, bubbles: true, cancelable: true }));
+    expect(panel().style.width).toBe("440px"); expect(panel().style.height).toBe("400px");
+    expect(editor.encodeDocument()).toEqual(before); expect(editor.repository.canUndo()).toBe(false);
     expect(rows()[0].cells[1].textContent).toBe("2"); expect(rows()[0].cells[2].textContent).toBe("2");
     panel().querySelector<HTMLButtonElement>("th:first-child button")!.click(); expect(rows().map(row => row.cells[0].textContent)).toEqual(["Alpha", "Beta"]);
     panel().querySelector<HTMLButtonElement>("th:first-child button")!.click(); expect(rows().map(row => row.cells[0].textContent)).toEqual(["Beta", "Alpha"]);

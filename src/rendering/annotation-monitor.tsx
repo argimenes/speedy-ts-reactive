@@ -3,6 +3,7 @@ import { Portal } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { OverlayDescriptor } from "../runtime/overlays";
 import type { AnnotationAction, AnnotationPatch } from "../block-tree/annotation-commands";
+import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "./floating-window-resize";
 import "./annotation-monitor.css";
 
 function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
@@ -30,9 +31,10 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
   const [start, setStart] = createSignal(""); const [end, setEnd] = createSignal("");
   const [value, setValue] = createSignal(""); const [metadata, setMetadata] = createSignal(""); const [attributes, setAttributes] = createSignal("");
   const [error, setError] = createSignal(""); const [position, setPosition] = createSignal(overlay.anchor);
+  const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
   let root!: HTMLDivElement; let editing = false;
   let manualPosition = false;
-  let gesture: { id: number; x: number; y: number; left: number; top: number; width: number; height: number; resize: boolean } | undefined;
+  let gesture: { id: number; x: number; y: number; left: number; top: number } | undefined;
   const close = () => editor.overlays.close(overlay.key);
   const clamp = () => {
     if (!root?.isConnected) return;
@@ -46,20 +48,24 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     const anchor = manualPosition ? position() : fragment ? { x: fragment.left - 100, y: fragment.bottom + 21 } : overlay.anchor;
     setPosition({ x: Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8)), y: Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8)) });
   };
-  const beginGesture = (event: PointerEvent, resize = false) => {
-    if (event.button !== 0 || (!resize && (event.target as Element).closest("button"))) return;
+  const monitorResize = createFloatingWindowResize({
+    element: () => root,
+    size: () => sessionSize() ?? { width: root ? root.getBoundingClientRect().width : 960, height: root ? root.getBoundingClientRect().height : 600 },
+    minimum: { width: 320, height: 180 },
+    onCommit: setSessionSize,
+  });
+  const displaySize = () => monitorResize.preview() ?? sessionSize();
+  const beginGesture = (event: PointerEvent) => {
+    if (event.button !== 0 || (event.target as Element).closest("button")) return;
     event.preventDefault(); manualPosition = true;
     const rect = root.getBoundingClientRect();
-    gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height, resize };
+    gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   };
   const moveGesture = (event: PointerEvent) => {
     if (!gesture || gesture.id !== event.pointerId) return;
     const g = gesture, dx = event.clientX - g.x, dy = event.clientY - g.y;
-    if (g.resize) {
-      root.style.width = `${Math.min(window.innerWidth - g.left - 8, Math.max(320, g.width + dx))}px`;
-      root.style.height = `${Math.min(window.innerHeight - g.top - 8, Math.max(180, g.height + dy))}px`;
-    } else setPosition({ x: g.left + dx, y: g.top + dy });
+    setPosition({ x: g.left + dx, y: g.top + dy });
     clamp();
   };
   const endGesture = () => { gesture = undefined; };
@@ -162,7 +168,8 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     return { id: id ?? "Not assigned", name: name ?? "Entity name not loaded" };
   };
   return <div ref={root} class="reactive-annotation-monitor" role="dialog" aria-label="Annotations at caret" tabIndex={-1}
-    data-session-overlay={overlay.key} data-native-context-menu onKeyDown={keys} onClick={keys} onDblClick={keys} onContextMenu={keys} style={{ left: `${position().x}px`, top: `${position().y}px` }}>
+    data-session-overlay={overlay.key} data-native-context-menu onKeyDown={keys} onClick={keys} onDblClick={keys} onContextMenu={keys}
+    style={{ left: `${position().x}px`, top: `${position().y}px`, ...(displaySize() ? { width: `${displaySize()!.width}px`, height: `${displaySize()!.height}px` } : {}) }}>
     <header onPointerDown={event => beginGesture(event)} onPointerMove={moveGesture} onPointerUp={endGesture} onPointerCancel={endGesture} onLostPointerCapture={endGesture}><strong>Annotations at caret</strong><button type="button" aria-label="Close annotation monitor" onClick={close}>×</button></header>
     <Show when={visible().length} fallback={<p>No active annotations at this caret.</p>}>
       <div class="annotation-layout">
@@ -210,7 +217,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
       </div>
     </Show>
     <Show when={error()}><p role="alert">{error()}</p></Show>
-    <div class="annotation-resize" title="Drag to resize monitor" onPointerDown={event => beginGesture(event, true)} onPointerMove={moveGesture} onPointerUp={endGesture} onPointerCancel={endGesture} onLostPointerCapture={endGesture} />
+    <FloatingWindowResizeHandle controller={monitorResize} class="annotation-resize" label="Resize annotation monitor" />
   </div>;
 }
 

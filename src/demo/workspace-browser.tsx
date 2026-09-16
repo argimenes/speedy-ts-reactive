@@ -37,7 +37,8 @@ export function WorkspaceBrowser(props: {
     if (props.mode === "save" && files().includes(name) && replacement() !== name) { setReplacement(name); return; }
     await props.onChoose(name, replacement() === name);
   };
-  return <DocumentDialog title={props.mode === "open" ? "Open Workspace" : "Save Workspace"} onClose={props.onClose} busy={props.busy}>
+  return <DocumentDialog title={props.mode === "open" ? "Open Workspace" : "Save Workspace"} onClose={props.onClose} busy={props.busy}
+    resizable={{ initial: { width: 620, height: 480 }, minimum: { width: 440, height: 300 } }}>
     <div class="document-browser__path"><span>Workspaces</span><button type="button" disabled={props.busy} onClick={() => void load()}>Refresh</button></div>
     <label class="document-browser__filter">Find Workspace<input data-autofocus type="search" value={filter()} onInput={event => setFilter(event.currentTarget.value)} placeholder="Filter Workspaces…" /></label>
     <div class="document-browser__list" role="listbox" aria-label="Workspaces" aria-busy={loading()}>

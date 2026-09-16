@@ -1,23 +1,24 @@
 # Reactive reconstruction progress
 
-## Shared resizing for floating tools and dialogs — planned, 15 September 2026
+## Shared resizing for floating tools and dialogs — implemented, 16 September 2026
 
-Audited all window-like surfaces in the new reactive system. Find, Entity
-Listing, Timer, Annotation Monitor, Entity Search/candidate review, and the
-Document/Workspace browsers are suitable for a shared opt-in resize primitive.
-The primitive will standardise local preview, pointer capture, cancellation,
-keyboard resizing, viewport fitting and accessible handles while leaving state
-ownership to each surface: only canonical Windows and Timers write persistent
-size; all other geometry remains session-only and creates no Document history.
+Added `createFloatingWindowResize` and `FloatingWindowResizeHandle` as the
+common pointer/keyboard resize contract: local preview, one end-of-gesture
+commit, no-op clicks, pointer cancellation, grouped arrow-key changes, fine
+Shift+Arrow adjustment, and viewport-aware bounds. The canonical Window,
+initial demo Document shell, Timer, and Annotation Monitor now use it instead
+of independent implementations.
 
-Compact save/discard prompts, context menus, anchored panels, the minimap, chord
-hint and selection inspector will deliberately remain non-resizable. Modal
-browser dialogs must opt in without weakening their backdrop, focus trap, Escape
-handling, busy states or return focus. Entity Search needs explicit top-left
-geometry and container-responsive columns before a bottom-right handle can act
-normally. The staged plan includes per-surface minimums, internal scroll
-contracts, regression tests and stop conditions for any harmful integration.
-Planning only; no runtime code has changed. See
+Find, Entity Listing, and Entity Search now have session-only resizing. Entity
+Search uses an explicit movable top-left rectangle and container-responsive
+columns. `DocumentDialog` gained an opt-in policy used by Document and Workspace
+browsers only; their panes/lists flex and scroll within the chosen height.
+Compact confirmations, menus, anchored panels, minimap, chord hint, and the
+selection inspector remain deliberately non-resizable. Only canonical Windows
+and TimerBlocks persist size; all other geometry stays out of Document history
+and saved data. Focused controller tests cover pointer preview/commit, no-move,
+cancellation, lost-capture idempotence, grouped keyboard changes, fine steps,
+and keyboard cancellation. See
 [FLOATING_WINDOW_RESIZE_PLAN.md](FLOATING_WINDOW_RESIZE_PLAN.md).
 
 ## Window resizing and responsive Document margins — implemented, 15 September 2026

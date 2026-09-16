@@ -1,7 +1,11 @@
 # Shared resizing for floating tools and dialogs
 
-**Status:** Planned, 15 September 2026. This document records the audit and
-implementation sequence only; no runtime code is changed by this planning step.
+**Status:** Implemented, 16 September 2026.
+
+The shared controller and accessible handle now back canonical and demo
+Document windows, Timer, Annotation Monitor, Find, Entity Listing, Entity
+Search, and the opted-in Document/Workspace browsers. Compact confirmations
+and the other exclusions below remain intentionally content-sized.
 
 ## Outcome
 
