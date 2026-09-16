@@ -90,6 +90,11 @@ for the manifest, recovery and compatibility contracts.
 See [DOCUMENT_STORE_MIGRATION.md](./DOCUMENT_STORE_MIGRATION.md) for the design,
 compatibility boundaries, and verification requirements.
 
+The proposed sticky-note Block design, including movable notes,
+window behavior, placement modes, and text limits, is in
+[STICKY_NOTE_DOCUMENT_PLAN.md](./STICKY_NOTE_DOCUMENT_PLAN.md). It is not yet
+implemented.
+
 ## Legacy notes
 
 The original project notes follow. Its source remains available in this
