@@ -77,12 +77,75 @@ and [Microsoft Sticky Notes guide](https://support.microsoft.com/en-US/Windows/A
 This is a real product decision, not merely styling. The current reactive
 Window close button removes the Window Block. For a quick note, users may
 interpret `×` as **hide/close this view**, not delete the note.
-My recommendation is that Close parks the note in a retrievable Notes list,
-while Delete is a separate confirmed action. Minimize remains an on-screen
+
+The agreed exception is decisive: **closing an empty Sticky Note destroys it
+immediately, without saving it or showing any save prompt.** An empty note is
+not parked in a Notes list and leaves no orphan Window. Determine emptiness
+from model content after composition has committed—not from `innerText` or a
+stale DOM measurement. Whitespace-only text and generated/default title,
+colour, size, and typography settings do not make a note meaningful. Inline
+media, another meaningful child Block, an explicit user title, or a surviving
+user annotation should prevent accidental discard. Apply the same rule whether
+Close is invoked by the button or a keyboard/window command.
+
+For a **non-empty** note, my recommendation remains that Close parks it in a
+retrievable Notes list, while Delete is separate. Minimize remains an on-screen
 icon. That requires a small Workspace note catalogue or a persisted `closed`
 window state plus a way to reopen it. If that catalogue is deferred, the first
-release should say clearly that Close removes the note and offer Undo. We
-should not pretend these are equivalent.
+release must say clearly that Close removes a non-empty note and offer Undo.
+We should not pretend these are equivalent.
+
+An empty *new* note should be a transient draft: merely opening its Window
+must not create a saved Workspace change, dirty flag, or undo entry that later
+causes a save prompt. Promote the note into canonical Workspace content when
+it first gains meaningful content. Alternatively, a repository-aware draft
+mechanism may hold it in the live tree but must exclude it from serialization
+and dirty/history accounting. In either design, closing an untouched empty
+draft simply disposes it. Creating and then deleting a canonical Window Block
+is **not enough** with the current revision-based dirty check: the repository
+revision has changed even if the visible tree returns to its earlier shape.
+
+A previously saved note that is cleared and then closed also disappears
+immediately and gets no *note-specific* save prompt. Its removal must still be
+recorded in the Workspace's saved state, or it would reappear after reload.
+That is a Workspace persistence change, not saving the empty note. A failed
+Workspace write must be surfaced; other unrelated unsaved Workspace edits must
+retain their normal safeguards. This existing-note case needs an explicit
+product decision about immediate background persistence versus deferring the
+Workspace update to the next normal save.
+
+## Creation controls and binding
+
+- Add a clearly labelled **New Sticky Note** control to the Workspace's main
+  controls, near the existing Open/Save Workspace actions. Add a **New Sticky
+  Note** item to the existing context menu as well: at the top level for a
+  Workspace background, and in a Document Block's context menu when that
+  Document belongs to a Workspace. The background and Block menus are built by
+  different branches of `blockMenuItems()`, so both need coverage. These are
+  creation affordances, not permanent controls on every small note.
+- Register one remappable command, provisionally `sticky.createFloating`, with
+  the default chord **Ctrl+; then N**. This joins the existing Ctrl+; family
+  (Entity Listing, Timer, Workspace Open/Save) without taking the browser's
+  standard Ctrl/Cmd+N new-window shortcut. The second stroke is plain `N`;
+  the binding registry handles the chord hint, cancellation, and remapping.
+  Audit conflicts through that registry when it is added.
+- Invoke the same command from the button, every context-menu entry, and the
+  binding; no parallel creation paths. Create a floating note in the current
+  Workspace,
+  positioned near the focused Block or context-menu point when possible and
+  otherwise in a safe visible viewport position. Focus its text editor
+  immediately. The context-menu item is disabled with a reason when there is
+  no owning Workspace to receive the floating note.
+- Inside a Document's Add Block/menu, **Insert Sticky Note Here** can use the
+  same note factory but insert the card in flow instead of creating a Window.
+  Its label must distinguish it from **New Sticky Note**, which creates a
+  floating Workspace note. Do not overload the chord based on caret location.
+- The canonical loaded Workspace is the straightforward first host. The
+  showcase's split Background and Document editors need an explicit bridge so
+  the same top-level control/shortcut creates the note in the Workspace
+  rather than in an unrelated Document repository. If that bridge is not ready,
+  the control should explain its unavailability instead of creating a note
+  that cannot be saved with the intended Workspace.
 
 ## Moving between floating and embedded forms
 
@@ -121,6 +184,15 @@ handle moves the Window; a separate Block drag/extract affordance starts a
 structural move. A drop should be atomic and undoable, preserve the card Block's
 identity, and reject cycles/unsupported targets.
 
+**Drag-and-drop UX is deliberately deferred for a separate design discussion.**
+The proposed in-flow destination and content/window separation establish model
+semantics, not a final gesture. Before implementing mouse or touch transfer we
+need to agree on the drag affordance, eligible targets, before/after versus
+inside feedback, auto-scroll, cancellation, keyboard equivalent, and how a
+floating note becomes an embedded card without an accidental Window move.
+Until then, programmatic insert/extract commands can validate the structural
+transfer without presenting unfinished drag/drop behavior.
+
 Moving a standalone card into a Document removes or parks its now-empty source
 Window in the same transaction. The card becomes a child of that Document and
 is saved in its Document JSON file. Extracting an embedded card moves the same
@@ -143,6 +215,9 @@ other Workspace Blocks in its manifest, so the standalone shape above fits its
 existing boundary. When the note is embedded, it is saved inside the receiving
 Document's separate file. A transfer therefore changes **which file contains
 the note**; the Workspace and affected Document must be saved consistently.
+Unpromoted empty drafts must be absent from the Workspace manifest even if a
+Workspace save occurs while their Windows are visible; only meaningful notes
+become saved Workspace Blocks.
 The canonical loaded Workspace uses one repository and the existing coordinated
 Workspace save, which is the sensible first host for this transfer. The older
 split demo has separate editor instances and would require extra transfer
@@ -199,20 +274,27 @@ while leaving a clear extension point for the charming physical constraint.
    overflow mode.
 2. Add a sticky presentation variant of the current ordinary Window with
    compact themed handle, normal controls, resizer and no `DocumentStyleBar`.
-3. Create the note as a Workspace-owned Block with a stable Block ID and no
-   filename or separate Document root.
-4. Allow adding/removing the card as a normal in-flow Block, then build an
-   explicit, atomic Workspace-window ↔ Document transfer and drag/drop UI.
-5. Test save/load, undo/redo, focus, annotations, text overflow, resizing,
-   extraction, failed drops, and unsaved transfer/close behavior.
+3. Add one **New Sticky Note** command shared by the Workspace button,
+   background and Document Block context menus, and Ctrl+; then N;
+   create/focus an empty transient Window and promote it only on meaningful
+   input. Give promoted notes stable Block IDs, without filenames or separate
+   Document roots.
+4. Implement empty-close disposal with no save/prompt/dirty residue, then
+   allow adding/removing the card as a normal in-flow Block and define an
+   explicit, atomic Workspace-window ↔ Document transfer. Design its drag/drop
+   UX together later; do not infer a gesture from the current Window handle.
+5. Test button/background-menu/Block-menu/chord creation, remapping and
+   browser-safe binding, empty-close (including whitespace and IME), saved-note
+   deletion semantics, save/load, undo/redo, focus, annotations, text overflow,
+   resizing, extraction, failed drops, and unsaved transfer/close behavior.
 6. Only after those semantics are stable, add optional anchored placement and
    the `fit` editing policy.
 
 ## Decisions to settle together
 
-1. Should `×` close to a retrievable Notes list (my preference), or remove the
-   note with Undo in the first release? A parked list adds modest UI and model
-   work but is safer.
+1. For **non-empty** notes, should `×` park them in a retrievable Notes list
+   (my preference), or remove them with Undo in the first release? Empty notes
+   always disappear without saving or prompting.
 2. Should a drop into a Document default to an **in-flow yellow card** (my
    preference), with Pin to Page/Block added later? This choice governs what
    drag/drop means and where geometry is stored.
@@ -221,3 +303,7 @@ while leaving a clear extension point for the charming physical constraint.
 4. Is Workspace-manifest storage for standalone notes acceptable, with the
    note moving into the receiving Document file when embedded? This is now my
    recommendation and requires no generated note filename.
+5. If a *previously saved* note is emptied and closed, should the Workspace
+   record its deletion immediately in the background, or at the next normal
+   Workspace save? Either way, no empty note or note-specific save prompt
+   should remain.
