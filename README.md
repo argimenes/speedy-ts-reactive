@@ -14,6 +14,11 @@ ToolbarBlock demonstration and refactoring roadmap, are documented in
 [BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md](./BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md).
 This is a planning document; the proposed ToolbarBlock is not yet implemented.
 
+The feasibility review and proposed technical specification for temporal Block
+and subtree history are in [BLOCK_SCOPED_HISTORY_SPEC.md](./BLOCK_SCOPED_HISTORY_SPEC.md).
+It covers identity, revision capture, persistent history, read-only historical
+views, and recovery of earlier material; implementation has not begun.
+
 ## Usage
 
 Use Node 22 (`nvm use` reads the included `.nvmrc`), then:
