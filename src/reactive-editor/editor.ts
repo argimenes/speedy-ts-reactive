@@ -31,6 +31,7 @@ import { DocumentEntityList } from "../runtime/document-entity-list";
 import { createTimerBlock } from "../runtime/timer-block";
 import { MinimapService } from "../runtime/minimap";
 import { ConcertinaService } from "../runtime/concertina";
+import { StickyNoteService } from "../runtime/sticky-notes";
 import type { LoadedWorkspace } from "./workspace-manifest";
 
 export class ReactiveEditor {
@@ -50,6 +51,7 @@ export class ReactiveEditor {
   readonly events = new ModelEventBus();
   readonly mounts = new MountRegistry();
   readonly concertina = new ConcertinaService(this);
+  readonly stickyNotes = new StickyNoteService(this);
   readonly measurements = new MeasurementService(this.mounts);
   readonly focus = new FocusService(this.mounts);
   readonly selections = new SelectionService();
@@ -299,6 +301,7 @@ export class ReactiveEditor {
 
   dispose(): void {
     this.disposeFindInput?.();
+    this.stickyNotes.dispose();
     this.concertina.dispose();
     this.find.dispose();
     this.entityList.dispose();

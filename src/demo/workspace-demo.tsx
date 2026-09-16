@@ -30,8 +30,9 @@ interface DemoEditorBridge {
 interface WorkspaceActionResult { success: boolean; error?: string; status?: number }
 
 
-function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void; onBackground: (event: MouseEvent) => void; onReset: () => void; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; workspaceBusy: boolean; document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean; window?: Partial<DemoWindowSnapshot>; onClose: (document?: ExistingBlockDto, location?: DocumentLocation) => void; onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void }) {
+function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void; stickyHost: ReactiveEditor; onBackground: (event: MouseEvent) => void; onReset: () => void; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; workspaceBusy: boolean; document?: ExistingBlockDto; location?: DocumentLocation; closed?: boolean; window?: Partial<DemoWindowSnapshot>; onClose: (document?: ExistingBlockDto, location?: DocumentLocation) => void; onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void }) {
   const editor = props.document ? createWorkspaceEditor(props.document) : createWorkspaceDemoEditor();
+  editor.stickyNotes.setHost(props.stickyHost);
   const projection = editor.createView("workspace-demo");
   const documents = createWorkspaceDocuments(editor, props);
   const glass = () => ((projection.state.nodes[projection.state.rootKey].payload.blockProperties ?? []) as Array<{ type?: string }>).some(property => property.type === "block/theme/glass");
@@ -175,6 +176,8 @@ function DemoSession(props: { onEditor: (bridge: DemoEditorBridge) => () => void
         <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs")}>Save as…</button>
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace…</button>
+        <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
+        <For each={props.stickyHost.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => props.stickyHost.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
         <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
         <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
         <button type="button" disabled={documents.busy()} onClick={() => documents.guard("reset to the sample document", props.onReset)}>Reset demo</button>
@@ -286,6 +289,8 @@ function CanonicalWorkspaceSession(props: { loaded: LoadedWorkspace; filename: s
     <nav class="workspace-demo__toolbar" aria-label="Workspace controls">
       <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
       <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
+      <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
+      <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
       <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
       <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
       <span>{props.filename} · revision {editor.repository.state.revision}</span>
@@ -331,7 +336,7 @@ export function WorkspaceDemo() {
     document.metadata = { ...documentMetadata, documentId, folder: location.folder, filename: location.filename };
     const backgroundDto = background.encodeDocument();
     const window = activeDemo.window();
-    backgroundDto.children = [{
+    backgroundDto.children = [...(backgroundDto.children ?? []), {
       id: "workspace-document-window", type: "document-window-block",
       metadata: { title: location.filename, position: window.position, size: window.size, state: window.state, zIndex: 1 },
       children: [document],
@@ -380,7 +385,7 @@ export function WorkspaceDemo() {
         <Show when={loadedWorkspace()} fallback={<>
           <div class="workspace-stage__background"><ReactiveTreeView editor={background} projection={backgroundView} /></div>
           <For each={[session()]}>
-            {(initial) => <DemoSession {...initial} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onEditor={bridge => { activeDemo = bridge; activeEditor = bridge.editor; return () => { if (activeDemo === bridge) activeDemo = undefined; if (activeEditor === bridge.editor) activeEditor = undefined; }; }} onBackground={openBackground} onReset={() => setSession({})} onClose={(document, location) => setSession({ document, location, closed: true })} onOpen={(document, location) => setSession({ document, location })} />}
+            {(initial) => <DemoSession {...initial} stickyHost={background} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onEditor={bridge => { activeDemo = bridge; activeEditor = bridge.editor; return () => { if (activeDemo === bridge) activeDemo = undefined; if (activeEditor === bridge.editor) activeEditor = undefined; }; }} onBackground={openBackground} onReset={() => setSession({})} onClose={(document, location) => setSession({ document, location, closed: true })} onOpen={(document, location) => setSession({ document, location })} />}
           </For>
         </>}>
           {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}

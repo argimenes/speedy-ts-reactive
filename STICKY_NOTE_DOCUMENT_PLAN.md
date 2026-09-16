@@ -1,9 +1,21 @@
 # Sticky notes as portable Blocks — design discussion
 
-**Status:** Revised proposal, 16 September 2026. No feature code has been
-implemented. A sticky note need not be a technical `DocumentBlock`. When moved
+**Status:** First implementation slice completed, 16 September 2026. A sticky
+note need not be a technical `DocumentBlock`. When moved
 into a regular Document it ceases to be a standalone note resource and becomes
 one Block among that Document's children.
+
+The implemented slice provides a yellow `sticky-note-block` containing a
+standoff editor, floating in a normal `window-block` or insertable as an
+in-flow Document Block. Floating creation is available from the Workspace
+toolbar, the context menu, and the remappable Ctrl+; then N chord. A blank
+floating draft stays session-only; meaningful input promotes it to a saved
+Workspace Block. Empty close discards the note without a note-specific prompt;
+non-empty close parks it for reopening from the Workspace toolbar. Floating
+and embedded notes are resizable, and the card scrolls when text overflows.
+Drag/drop transfer and extraction are **not yet implemented**; their UX still
+requires the separate discussion requested below. `fit` overflow, colour
+presets, and translucent material themes also remain deferred.
 
 ## Aim and governing principle
 
@@ -305,7 +317,7 @@ CSS clipping alone would give the *appearance* of constraint while hiding
 content and is not acceptable. Starting with `scroll` keeps the note useful
 while leaving a clear extension point for the charming physical constraint.
 
-## Suggested first implementation slice (not authorised by this plan)
+## First implementation slice and follow-up verification
 
 1. Add the portable `StickyNoteBlock` wrapper around a normal standoff editor,
    with yellow card styling, compact padding, per-card text scale and `scroll`
@@ -330,19 +342,19 @@ while leaving a clear extension point for the charming physical constraint.
    material themes as a separate visual increment after the baseline yellow
    paper treatment is verified.
 
-## Decisions to settle together
+## Decisions and open questions
 
-1. For **non-empty** notes, should `×` park them in a retrievable Notes list
-   (my preference), or remove them with Undo in the first release? Empty notes
-   always disappear without saving or prompting.
+1. **Resolved for the first slice:** `×` parks non-empty notes for reopening
+   from the Workspace toolbar. Empty notes disappear without a note-specific
+   save or prompt.
 2. Should a drop into a Document default to an **in-flow yellow card** (my
    preference), with Pin to Page/Block added later? This choice governs what
    drag/drop means and where geometry is stored.
-3. Should the first release expose only `scroll` while reserving `fit` in the
-   schema, or is strict spatial composition essential for version one?
-4. Is Workspace-manifest storage for standalone notes acceptable, with the
-   note moving into the receiving Document file when embedded? This is now my
-   recommendation and requires no generated note filename.
+3. **Resolved for the first slice:** use `scroll`; strict `fit` editing remains
+   a future option.
+4. **Resolved for the first slice:** standalone notes live in the Workspace
+   manifest without generated filenames. Embedded notes live in the receiving
+   Document's content.
 5. If a *previously saved* note is emptied and closed, should the Workspace
    record its deletion immediately in the background, or at the next normal
    Workspace save? Either way, no empty note or note-specific save prompt

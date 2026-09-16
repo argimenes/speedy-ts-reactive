@@ -465,6 +465,10 @@ export class InputGateway {
   };
 
   private runBinding = (id: string, event: Event): boolean | void => {
+    if (id === "sticky.createFloating") {
+      const resolved = this.mounts.resolveEvent(event);
+      return resolved ? this.runCommand(id, resolved.nodeKey) : false;
+    }
     if (id === "timer.create") {
       const resolved = this.mounts.resolveEvent(event);
       if (!resolved) return false;

@@ -4,6 +4,7 @@ import { unwrap as unwrapStore } from "solid-js/store";
 import { createTextTab } from "./text-tabs";
 import { backgroundImages, defaultBackgroundUrls, isBackgroundType, mediaUrl, youtubeId, type BackgroundType } from "../rendering/backgrounds";
 import { timerBlockDto } from "./timer-block";
+import { stickyNoteDto } from "./sticky-notes";
 
 export interface BlockMenuItem {
   label: string;
@@ -107,16 +108,17 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
       backgrounds.push({ label: metadata(node).paused ? "Play background" : "Pause background", run: () => editMetadata(key, { paused: !metadata(node).paused }, "Background playback") });
       backgrounds.push({ label: metadata(node).muted === false ? "Mute background" : "Enable background sound", run: () => editMetadata(key, { muted: metadata(node).muted === false }, "Background sound") });
     }
-    return [{ label: "Background", children: backgrounds }, { label: "Document", children: files }, ...history,
-      unavailable("Save / load workspace", "Whole-workspace persistence and independent document windows are a separate migration; document files are available in the Document menu.")];
+    return [command("sticky.createFloating", "New Sticky Note"), { label: "Background", children: backgrounds }, { label: "Document", children: files }, ...history];
   }
 
   const items: BlockMenuItem[] = [];
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if (doc) {
+    items.push(command("sticky.createFloating", "New Sticky Note"));
     items.push({ label: "Add Block", children: [
       { label: "Text", run: () => add(text()) }, { label: "Code", run: () => add({ ...dto("code-mirror-block"), text: "" }) },
       { label: "Timer", run: () => add(timerBlockDto()) },
+      { label: "Insert Sticky Note Here", run: () => add(stickyNoteDto()) },
       mediaInput("Image URL…", "image-block"), mediaInput("YouTube video URL…", "youtube-video-block"),
       { label: "Canvas", run: () => add(dto("canvas-block")) },
       { label: "Add Grid", children: [1, 2].flatMap(rows => [1, 2, 3].map(columns => ({ label: `${rows} × ${columns}`, run: () => add(grid(rows, columns)) }))) },

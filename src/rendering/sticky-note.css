@@ -1,0 +1,19 @@
+.reactive-sticky-note { position:relative; box-sizing:border-box; display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; padding:7px; color:#332e1f; background:#fff2a8; border:1px solid #d8bd5c; border-radius:4px; }
+.reactive-sticky-note__resize { z-index:1; }
+/* The note scrolls as one document; individual paragraphs keep their natural height. */
+.reactive-sticky-note__content { flex:1; min-height:0; overflow:auto; }
+.reactive-sticky-note__content > .reactive-standoff-block { padding:0; border:0; border-radius:0; }
+.reactive-sticky-note__content > .reactive-standoff-block > .reactive-standoff-surface { box-sizing:border-box; min-height:0; padding:2px; border:0; border-radius:0; background:transparent; }
+/* Portaled windows use viewport coordinates; translate must start at (0, 0),
+   not the portal's static position after the Workspace. */
+.reactive-window.reactive-window--sticky { position:fixed; top:0; left:0; border-color:#c9a83c; border-radius:6px; background:#fff2a8; box-shadow:0 10px 26px #4e421f55; }
+.reactive-window--sticky[hidden] { display:none!important; }
+.reactive-window--sticky > .reactive-window__header { min-height:28px; box-sizing:border-box; padding:2px 5px 2px 9px; color:#40351a; background:#efd46b; }
+.reactive-window--sticky > .reactive-window__content { padding:0; overflow:hidden; }
+.reactive-window--sticky .reactive-window__controls button { width:23px; height:23px; color:#4a3918; background:#fff4b8; }
+.reactive-window--sticky .reactive-window__document-body { height:100%; }
+.reactive-sticky-draft { position:fixed; z-index:10420; box-sizing:border-box; display:flex; flex-direction:column; overflow:hidden; border:1px solid #c9a83c; border-radius:6px; color:#332e1f; background:#fff2a8; box-shadow:0 10px 26px #4e421f55; }
+.reactive-sticky-draft__header { display:flex; min-height:28px; align-items:center; justify-content:space-between; padding:2px 5px 2px 9px; background:#efd46b; cursor:grab; touch-action:none; user-select:none; }
+.reactive-sticky-draft__header button { width:23px; height:23px; margin-left:3px; border:0; border-radius:50%; color:#4a3918; background:#fff4b8; cursor:pointer; }
+.reactive-sticky-draft textarea { box-sizing:border-box; flex:1; width:100%; min-height:0; resize:none; padding:9px; border:0; outline:none; color:inherit; background:transparent; font:inherit; line-height:1.45; }
+.reactive-sticky-draft--minimized { overflow:visible; border:0; background:transparent; box-shadow:none; }

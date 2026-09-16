@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { Portal } from "solid-js/web";
 import { unwrap } from "solid-js/store";
 import type { BlockViewProps, NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
@@ -444,6 +445,8 @@ export function WindowView(props: BlockViewProps) {
   const state = () => resolvedWindowState(metadata().state);
   const minimized = () => state() === "minimized";
   const isDocument = () => node()?.viewType === "document-window-block";
+  const isSticky = () => node()?.viewType === "window-block" && metadata().stickyNote === true;
+  const closedSticky = () => isSticky() && metadata().state === "closed";
   const title = () => String(metadata().title ?? "Untitled");
   const marginDrawerId = `document-margin-drawer-${props.nodeKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   let root!: HTMLDivElement;
@@ -594,15 +597,16 @@ export function WindowView(props: BlockViewProps) {
       if (candidate) editor.focus.request(candidate.key, { reason: "restore-window" }); else root.focus({ preventScroll: true });
     });
   };
-  return (
-    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ "reactive-window--minimized": minimized(), "reactive-window--document": isDocument(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
+  const frame = () => (
+    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ "reactive-window--minimized": minimized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
+      hidden={closedSticky()}
       style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
       <Show when={minimized()} fallback={<>
         <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
           <span>{title()}</span>
           <span class="reactive-window__controls">
             <button type="button" aria-label="Minimize window" onPointerDown={(e) => { rememberReturnFocus(); e.stopPropagation(); }} onClick={minimizeWindow}>−</button>
-            <button type="button" aria-label="Close window" onPointerDown={(e) => e.stopPropagation()} onClick={() => editor.commands.remove(props.nodeKey)}>×</button>
+            <button type="button" aria-label={isSticky() ? "Close sticky note" : "Close window"} onPointerDown={(e) => e.stopPropagation()} onClick={() => isSticky() ? editor.stickyNotes.closeWindow(props.nodeKey) : editor.commands.remove(props.nodeKey)}>×</button>
           </span>
         </header>
         <DocumentMarginContext.Provider value={marginPresentation}>
@@ -619,4 +623,5 @@ export function WindowView(props: BlockViewProps) {
       </Show>
     </div>
   );
+  return isSticky() ? <Portal>{frame()}</Portal> : frame();
 }
