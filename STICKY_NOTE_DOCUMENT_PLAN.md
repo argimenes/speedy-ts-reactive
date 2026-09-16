@@ -49,7 +49,9 @@ ownership, and save behavior unnecessarily ambiguous.
   readable text and usable controls; maximum can be viewport-bounded.
 - Use a warm pale-yellow body, a slightly deeper yellow handle, dark high-
   contrast control glyphs, and a subtle edge/shadow. Do not recolor text
-  selections or annotation highlights indiscriminately.
+  selections or annotation highlights indiscriminately. Other standard note
+  colours and material treatments are planned extensions, not prerequisites
+  for the first yellow-paper version.
 - No persistent formatting toolbar or row of feature icons. Keep the usual
   window controls in the handle. An ordinary `window-block` already avoids the
   `DocumentStyleBar`; the sticky variant only needs compact styling and sizing.
@@ -71,6 +73,42 @@ Sticky Notes shows formatting actions in the note, but its small-screen tradeoff
 is not necessarily right for Codex's Block/annotation system. See the
 [Apple Stickies guide](https://support.apple.com/guide/stickies/welcome/10.3/mac/15.0)
 and [Microsoft Sticky Notes guide](https://support.microsoft.com/en-US/Windows/Apps/StickyNotes/create-a-sticky-note).
+
+### Colour presets and material themes (later)
+
+Offer a small labelled palette of standard sticky-note colours (yellow by
+default; for example blue, pink, and green) rather than a free-form colour
+picker initially. Treat **colour** and **material** as separate choices:
+`yellow + paper` and `yellow + translucent` are the same note colour with
+different surface treatments. Persist both choices on `StickyNoteBlock`, not
+on its temporary Window, so they survive embedding and extraction. The Window
+may derive its matching handle colour from the child note. Accessibility and
+menu labels must name the choice, not rely on swatch colour alone.
+
+The existing context-menu **Themes → Paper / Glass** pattern is a useful UI
+precedent, but its current CSS is not directly reusable for sticky notes:
+`block_theme_glass` sets white text/text-shadow on a largely transparent outer
+Window, while the standoff editor surface has its own opaque white background.
+Applying that class to a yellow note could leave the writing area opaque and
+the text hard to read. Instead, use note-specific surface tokens (background,
+handle, border, foreground, alpha/blur) and expose **Colour** and **Material**
+submenus when the selected Block is a sticky note or its owning Window.
+
+A translucent material is viable if transparency is applied to the note's
+*background layers*, not to the entire element: `opacity` on the root would
+also fade text, annotation marks, focus indicators, and window controls. Keep
+the text/controls opaque and high contrast; bound transparency so a busy image
+or video behind the note cannot defeat readability. `backdrop-filter` may add
+blur where supported, but a readable solid fallback is required for unsupported
+renderers, high-contrast/forced-colour modes, and reduced-transparency
+preferences. Check the result over dark, light, photographic, and animated
+backgrounds, and again when the same note is embedded on a Document Page.
+
+This is a presentation choice, not a different note content type. Material and
+palette must not change text measurements, overflow mode, annotations, Block
+identity, or the meaning of Close. We can defer the translucent treatment
+until the yellow paper baseline is stable, while reserving a small validated
+palette/material property contract on the portable note.
 
 ### What does Close mean?
 
@@ -288,7 +326,9 @@ while leaving a clear extension point for the charming physical constraint.
    deletion semantics, save/load, undo/redo, focus, annotations, text overflow,
    resizing, extraction, failed drops, and unsaved transfer/close behavior.
 6. Only after those semantics are stable, add optional anchored placement and
-   the `fit` editing policy.
+   the `fit` editing policy. Add labelled colour presets and note-specific
+   material themes as a separate visual increment after the baseline yellow
+   paper treatment is verified.
 
 ## Decisions to settle together
 
