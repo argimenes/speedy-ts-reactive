@@ -1,7 +1,28 @@
 # Concertina search presentation
 
-**Status:** Approved, 16 September 2026. No runtime implementation is included
-in this planning change.
+**Status:** Initial current-Page implementation, 16 September 2026. This document
+retains the longer-term design as well as the shipped first-pass boundary.
+
+The current implementation adds a session-only `ConcertinaService`, reusable
+position markers and settings, pure structural derivation, DOM clipping for tall
+standoff editors, and explicit controls in Find and Entity Listing. It acts on
+the **current Page only**, even when Find has a wider result scope or Entity
+Listing displays Document-wide counts. Markers on other Pages are excluded;
+opening another Page through Find navigation ends the current concertina mode.
+The chosen Page is captured from the invoking Block/focus, with a visible-Page
+fallback for Document-level controls. No Document or Workspace field is saved.
+
+The service request already carries an explicit `SearchScope` root, so a later
+Page/Document boundary selector can be added without changing marker producers.
+Document-wide mode is intentionally deferred until cross-Page navigation,
+visibility, and large-Document performance have been checked.
+
+The settings contract is available now. Context, height, nearby-match merge,
+and scroll-margin values affect standoff excerpts. `visibleBlockGapPx` and
+`continuationFadePx` are reserved for renderer-specific spacing/fade adapters;
+they do not yet alter the first-pass layout. Native-text clipping, custom Block
+adapters, and real-browser geometry checks remain follow-up work. Unsupported
+viewports stay at natural height rather than risking obscured editable content.
 
 The proposed behavior and architecture have been accepted. In particular,
 matching excerpts should show approximately **48px of visual context before
@@ -115,7 +136,9 @@ disjoint line excerpts.
 
 - Use the existing `SearchScope` and occurrence `nodeKey`s. Do not infer
   matches from text or query the DOM again.
-- Concertina affects only the owning Document/view and its chosen scope.
+- In the current UI, concertina affects only the current Page in the owning
+  Document/view. Find may search more widely, but only on-Page results drive
+  the layout. The service itself accepts an explicit scope for future modes.
 - Document and Window shells remain visible. Within the scope, maximal
   unmatched Block branches are hidden. Ancestors required to reach a matching
   Block remain present.
@@ -144,33 +167,382 @@ disjoint line excerpts.
 - Escape should continue to close the owning Find/Entity window according to
   its existing contract, which also restores the ordinary document layout.
 
+## Settings object
+
+The operation that applies concertina layout must accept one settings object.
+Callers should not pass a growing list of positional measurements, and Find and
+Entity Listing should use the same defaults unless they have a demonstrated
+reason to override one value.
+
+Provisional public contract:
+
+```ts
+export interface ConcertinaSettings {
+  naturalHeightThresholdPx: number;
+  preferredExcerptHeightPx: number;
+  minimumExcerptHeightPx: number;
+  maximumExcerptHeightPx: number;
+  contextBeforePx: number;
+  contextAfterPx: number;
+  nearbyMatchMergeGapPx: number;
+  visibleBlockGapPx: number;
+  activeMatchScrollMarginPx: number;
+  continuationFadePx: number;
+}
+
+export const DEFAULT_CONCERTINA_SETTINGS: Readonly<ConcertinaSettings> =
+  Object.freeze({
+    naturalHeightThresholdPx: 260,
+    preferredExcerptHeightPx: 200,
+    minimumExcerptHeightPx: 120,
+    maximumExcerptHeightPx: 240,
+    contextBeforePx: 48,
+    contextAfterPx: 48,
+    nearbyMatchMergeGapPx: 24,
+    visibleBlockGapPx: 12,
+    activeMatchScrollMarginPx: 8,
+    continuationFadePx: 18,
+  });
+```
+
+The application entry point accepts a partial override and resolves it once per
+request:
+
+```ts
+function applyConcertina(
+  request: ConcertinaRequest,
+  settings: Partial<ConcertinaSettings> = {},
+): ConcertinaApplication {
+  const resolved = resolveConcertinaSettings(settings);
+  // Derive and apply session-only presentation.
+}
+
+editor.concertina.activate(request, {
+  contextBeforePx: 48,
+  contextAfterPx: 48,
+});
+```
+
+`ConcertinaService.activate()` may be the eventual public entry point rather
+than exporting `applyConcertina` directly, but it should retain this two-input
+shape: a result/scope request and a settings object.
+
+### Setting semantics
+
+| Setting | Meaning |
+| --- | --- |
+| `naturalHeightThresholdPx` | A matching Block at or below this natural rendered height is left unchanged. |
+| `preferredExcerptHeightPx` | Normal target height for a tall matching Block's viewport. |
+| `minimumExcerptHeightPx` | Smallest allowed excerpt when viewport space permits. |
+| `maximumExcerptHeightPx` | Largest concertina excerpt before internal scrolling is preferred. |
+| `contextBeforePx` | Agreed visual context above/before the active match. |
+| `contextAfterPx` | Agreed visual context below/after the active match. |
+| `nearbyMatchMergeGapPx` | If two match/context rectangles are separated by no more than this gap, treat them as one visual cluster. This does not hide Cells between them. |
+| `visibleBlockGapPx` | Desired outer-flow spacing between consecutive visible matching Blocks where the parent adapter supports safe gap control. Tables and custom layouts retain their native spacing. |
+| `activeMatchScrollMarginPx` | Additional clearance preventing the active match/context window from sitting flush against the clipped viewport edge. |
+| `continuationFadePx` | Height of the optional top/bottom visual fade indicating internally scrollable content. Zero disables the fade without changing clipping. |
+
+All measurements are rendered CSS pixels. They are deliberately not Cell,
+character, line, or device-pixel counts.
+
+The resolver must:
+
+- reject or replace non-finite and negative values;
+- enforce `minimumExcerptHeightPx <= preferredExcerptHeightPx <=
+  maximumExcerptHeightPx`;
+- allow zero for the optional gap, scroll-margin, and fade values;
+- return a fresh frozen resolved object without mutating either the caller's
+  object or `DEFAULT_CONCERTINA_SETTINGS`; and
+- fit the effective values to a genuinely smaller available viewport without
+  rewriting the preferred settings.
+
+Changing settings while concertina is active should recompute presentation from
+the existing ranges; it must not rerun text search, reload entity summaries, or
+create repository history. The resolved settings remain session state and are
+not saved with the Document or Workspace. A future application-preferences
+system may supply defaults, but that is separate from Document persistence.
+
+## General marker input
+
+Concertina input should use the same general shape as minimap markers rather
+than accepting an entity-specific object. The caller supplies a collection of
+positioned occurrences; the concertina engine decides which Block branches to
+retain and which matching Block viewports need clipping.
+
+The existing minimap vocabulary is:
+
+```ts
+type MinimapAnchor =
+  | { kind: "text-range"; range: SearchRange }
+  | { kind: "block"; nodeKey: NodeKey }
+  | { kind: "ratio"; top: number; height?: number };
+
+interface MinimapMarker {
+  id: string;
+  group?: string;
+  anchor: MinimapAnchor;
+  colour: string;
+  opacity: number;
+  label?: string;
+}
+```
+
+The first two anchors are also suitable for concertina. A ratio anchor is not:
+it describes a visual proportion but cannot identify the Block that must remain
+visible, the ancestors that must be protected, or the text range around which
+context must be measured.
+
+Extract or mirror a common resolvable anchor and marker base:
+
+```ts
+export type DocumentPositionAnchor =
+  | { kind: "text-range"; range: SearchRange }
+  | { kind: "block"; nodeKey: NodeKey };
+
+export interface DocumentPositionMarker {
+  id: string;
+  group?: string;
+  anchor: DocumentPositionAnchor;
+  label?: string;
+}
+
+export interface ConcertinaMarker extends DocumentPositionMarker {
+  // Reserved for future presentation hints. Layout measurements belong in
+  // ConcertinaSettings rather than being repeated on every marker.
+}
+```
+
+`MinimapMarker` can extend the same base while retaining its colour, opacity,
+minimum thickness, and optional ratio-only variant. Concertina must not depend
+on canvas/minimap rendering classes merely to reuse this data shape; the small
+anchor/marker contract should live in a neutral runtime module.
+
+The concertina request then becomes:
+
+```ts
+export interface ConcertinaRequest {
+  owner: string;
+  viewId: string;
+  scope: SearchScope;
+  markers: readonly ConcertinaMarker[];
+  activeMarkerOrGroup?: string;
+}
+
+editor.concertina.activate({
+  owner: editor.find.owner,
+  viewId: result.scope.viewId,
+  scope: result.scope,
+  markers: result.matches.flatMap(match =>
+    match.ranges.map((range, index) => ({
+      id: `${match.id}:${index}`,
+      group: match.id,
+      anchor: { kind: "text-range", range },
+      label: match.context,
+    })),
+  ),
+  activeMarkerOrGroup: activeMatch?.id,
+}, settings);
+```
+
+This supports several producers without adding type-specific branches to the
+layout engine:
+
+- text Find emits one or more text-range markers per logical match;
+- Entity Listing emits text-range markers from standoff-derived entity ranges,
+  grouped by entity or logical mention as appropriate;
+- annotation/property searches can emit their resolved text ranges;
+- Block searches can emit `block` anchors even when there is no text range; and
+- future tools can reuse the operation if they can resolve their results to an
+  occurrence Block or range.
+
+Markers are occurrence-specific and must carry the `nodeKey` from the relevant
+projection. A canonical content ID alone is insufficient because the same
+content may be transcluded into several visual positions.
+
+### Marker rules
+
+- `id` uniquely identifies a visual marker within the request.
+- `group` joins several range segments into one logical match or entity mention.
+  Active navigation may target either a marker ID or its group.
+- Multiple markers in one Block are measured together for context clustering.
+- Duplicate anchors may be deduplicated for layout while retaining every ID and
+  group for navigation.
+- Deleted, missing, out-of-scope, wrong-view, or unresolvable anchors are
+  ignored and reported diagnostically. They must not cause unrelated Blocks to
+  be hidden.
+- A `block` anchor protects the Block and its ancestors but supplies no text
+  rectangle. The matching Block remains visible at natural height unless its
+  registered adapter provides a meaningful Block-level excerpt target.
+- An empty valid-marker collection deactivates/fails open; it never hides the
+  entire scope.
+
+The API should accept any iterable or readonly array at its boundary, then copy
+and freeze the normalised markers for the active session. This lets callers pass
+cached arrays, generators, or mapped search results without permitting later
+mutation to alter an applied presentation unexpectedly.
+
+## Pipeline and composability
+
+The marker contract is intended to be a reusable pipeline boundary, not merely
+an input DTO for one service. Producers should emit neutral document-position
+markers, small pure functions should transform them, and stateful/DOM consumers
+should sit at the end of the pipeline.
+
+A typical text-search path should be expressible as:
+
+```ts
+const markers = searchMatchesToPositionMarkers(result.matches);
+const scoped = filterPositionMarkersToScope(markers, result.scope, projection);
+const normalised = normalisePositionMarkers(scoped);
+
+editor.decorations.attachMarkers(find.owner, normalised, highlightStyle);
+editor.minimap.attach(find.owner, {
+  pageKey,
+  markers: normalised.map(toMinimapMarker),
+});
+editor.concertina.activate({
+  owner: find.owner,
+  viewId: result.scope.viewId,
+  scope: result.scope,
+  markers: normalised,
+  activeMarkerOrGroup: activeMatchId,
+}, concertinaSettings);
+```
+
+An entity path uses the same middle and end stages:
+
+```ts
+const markers = entityRangesToPositionMarkers(entity.id, entity.ranges);
+const normalised = normalisePositionMarkers(markers);
+
+editor.minimap.attach(entityOwner, {
+  pageKey,
+  markers: normalised.map(marker => toMinimapMarker(marker, entityColour)),
+});
+editor.concertina.activate({
+  owner: entityOwner,
+  viewId,
+  scope,
+  markers: normalised,
+}, concertinaSettings);
+```
+
+This need not eliminate ordinary `.map()`, `.filter()`, or `.flatMap()` calls.
+Those are desirable adapters when the collection type stays clear. Dedicated
+functions are warranted when a transformation carries validation, coordinate,
+scope, grouping, or deduplication semantics that should not be reimplemented by
+each caller.
+
+### Proposed functional layers
+
+1. **Producers** convert a domain result into markers:
+   `searchMatchesToPositionMarkers`, `entityRangesToPositionMarkers`,
+   `annotationRangesToPositionMarkers`, and `blockResultsToPositionMarkers`.
+2. **Pure transformations** filter, group, deduplicate, sort, validate, or map
+   markers without consulting or changing the DOM.
+3. **Projection resolution** verifies occurrence keys, scope, ancestors, and
+   safe structural boundaries. It returns data plus diagnostics rather than
+   performing layout.
+4. **Presentation derivation** computes hidden/protected/matched occurrence
+   sets and desired excerpt targets from resolved markers and settings.
+5. **Measurement** is the first browser-dependent stage. It reads mounted range
+   rectangles and natural Block heights in a batched read phase.
+6. **Application** is the terminal side-effect stage. It writes session-only
+   classes, attributes, CSS variables, scroll positions, and reactive service
+   state in a batched write phase.
+
+Provisional pure signatures:
+
+```ts
+type MarkerIterable = Iterable<DocumentPositionMarker>;
+
+function normalisePositionMarkers(
+  markers: MarkerIterable,
+): ReadonlyArray<DocumentPositionMarker>;
+
+function filterPositionMarkersToScope(
+  markers: MarkerIterable,
+  scope: SearchScope,
+  projection: BlockTreeProjection,
+): ReadonlyArray<DocumentPositionMarker>;
+
+function resolvePositionMarkers(
+  markers: MarkerIterable,
+  scope: SearchScope,
+  projection: BlockTreeProjection,
+): {
+  markers: ReadonlyArray<ResolvedDocumentPositionMarker>;
+  diagnostics: ReadonlyArray<string>;
+};
+
+function deriveConcertinaPresentation(
+  markers: Iterable<ResolvedDocumentPositionMarker>,
+  scope: SearchScope,
+  settings: Readonly<ConcertinaSettings>,
+): ConcertinaDerivation;
+```
+
+The pure derivation result should itself be reusable and inspectable:
+
+```ts
+interface ConcertinaDerivation {
+  protectedKeys: ReadonlySet<NodeKey>;
+  hiddenBranchRoots: ReadonlySet<NodeKey>;
+  matching: ReadonlyMap<NodeKey, ReadonlyArray<ResolvedDocumentPositionMarker>>;
+  activeMarkerOrGroup?: string;
+  diagnostics: ReadonlyArray<string>;
+}
+```
+
+`measureConcertinaPresentation()` may enrich that derivation with viewport
+geometry, and `applyConcertinaPresentation()` consumes the measured result.
+Keeping those stages separate allows pure unit tests, alternate renderers, and
+future non-DOM consumers.
+
+### Shared collection rules
+
+- Inputs are `Iterable<T>` where streaming/generator input is useful; outputs
+  are frozen `ReadonlyArray<T>` when multiple downstream consumers need stable
+  replay.
+- Functions do not mutate input arrays, markers, ranges, settings, Sets, or
+  Maps supplied by callers.
+- Marker IDs, groups, occurrence keys, and coordinate systems survive ordinary
+  transformations unless a function explicitly documents a remapping.
+- Sorting is explicit. Producers preserve source order; a consumer requiring
+  document order calls a named ordering function rather than relying on Map or
+  DOM iteration accidentally.
+- Invalid items produce diagnostics and are filtered before presentation.
+  Low-level pure functions do not silently hide the entire scope or throw after
+  partial DOM application.
+- Domain-only fields such as entity Graph counts do not leak into the neutral
+  marker type. Consumers that need them keep a side table keyed by marker/group
+  ID or compose a richer local type.
+- Presentation fields such as minimap colour/opacity are added by adapters at
+  the relevant consumer boundary, not baked into every producer.
+- Async stages are explicit. Text search may be asynchronous; marker mapping
+  and structural derivation remain synchronous and pure; DOM measurement is
+  scheduled/batched separately.
+
+This separation also avoids a large `ConcertinaService` that searches,
+normalises, measures, mutates the DOM, and controls UI itself. The service
+coordinates a pipeline and owns its lifecycle, while the underlying functions
+remain independently reusable.
+
 ## Session model
 
 Add a small `ConcertinaService` to `ReactiveEditor`, parallel to session
 decorations and minimap state. It owns no repository references beyond stable
 keys and performs no commands.
 
-Provisional public model:
+Provisional request/presentation model:
 
 ```ts
-interface ConcertinaOptions {
-  naturalHeightThreshold: number; // initial default: 260
-  excerptHeight: number;          // initial default: 200
-  minimumExcerptHeight: number;   // initial default: 120
-  maximumExcerptHeight: number;   // initial default: 240
-  contextBefore: number;          // agreed default: 48 CSS px
-  contextAfter: number;           // agreed default: 48 CSS px
-}
-
 interface ConcertinaRequest {
   owner: string;
   viewId: string;
   scope: SearchScope;
-  matches: readonly {
-    id: string;
-    ranges: readonly SearchRange[];
-  }[];
-  activeMatchId?: string;
+  markers: readonly ConcertinaMarker[];
+  activeMarkerOrGroup?: string;
 }
 
 interface ConcertinaNodePresentation {
@@ -185,9 +557,10 @@ interface ConcertinaNodePresentation {
 Expected operations:
 
 ```ts
-activate(request)
-update(request)
-setActiveMatch(matchId)
+activate(request, settings?)
+update(request, settings?)
+configure(settings)
+setActiveMarker(markerOrGroupId)
 presentation(nodeKey)
 deactivate(owner)
 clearAll()
@@ -277,20 +650,26 @@ display values.
 For each mounted matching Block:
 
 1. Measure its natural viewport height after ordinary layout is restored.
-2. If the height is at or below `naturalHeightThreshold` (initially 260px), leave
-   it entirely alone.
+2. If the height is at or below `naturalHeightThresholdPx` (260px by default),
+   leave it entirely alone.
 3. Measure the visual fragments for all current matching ranges in that Block.
 4. Select the active match when present; otherwise use the first match in
    document order.
-5. Compute an excerpt window with the agreed default of approximately 48px of
-   visual context before and after the selected match. Clamp the result to
-   120–240px, with 200px as the normal target. The context measurement is in
-   rendered CSS pixels, not characters or source offsets.
-6. If every match plus its surrounding context fits within 240px, position the
-   viewport so all of them are visible.
-7. If the first-to-last match span is larger, keep a 200–240px internal scroll
-   viewport and centre the active match. Next/Previous and minimap activation
-   scroll this viewport to the newly active match.
+5. Compute an excerpt window using `contextBeforePx` and `contextAfterPx`, both
+   agreed as 48px by default. Include `activeMatchScrollMarginPx` at the
+   viewport edge. Clamp the result to `minimumExcerptHeightPx`–
+   `maximumExcerptHeightPx`, with `preferredExcerptHeightPx` as the normal
+   target. The context measurement is in rendered CSS pixels, not characters
+   or source offsets.
+6. Merge nearby visual match clusters when their separating space is no larger
+   than `nearbyMatchMergeGapPx`; this only affects viewport calculation and
+   never hides or rewrites the real Cells between matches.
+7. If every match plus its surrounding context fits within
+   `maximumExcerptHeightPx`, position the viewport so all of them are visible.
+8. If the first-to-last match span is larger, keep an internal scroll viewport
+   between `preferredExcerptHeightPx` and `maximumExcerptHeightPx` and centre
+   the active match. Next/Previous and minimap activation scroll this viewport
+   to the newly active match.
 
 Use `overflow: auto` on the dedicated editor viewport, not `overflow: hidden`
 on a root that also contains child Blocks or controls. Add subtle top/bottom
@@ -453,6 +832,14 @@ later, guarded by `prefers-reduced-motion`.
 
 ### 1. Pure derivation service
 
+- Add default-resolution tests for missing, partial, zero, invalid, and
+  internally inconsistent settings, including proof that caller/default
+  objects are never mutated.
+- Add contract tests showing that text, entity, annotation, and Block producers
+  feed the same normalisation/resolution functions and can be mapped into both
+  minimap and concertina consumers without source-specific branches.
+- Test every pure pipeline stage without mounting Solid or creating DOM nodes;
+  reserve browser tests for measurement and application stages.
 - Add `ConcertinaService` and tests for protected ancestors, maximal unmatched
   branches, scope exclusions, tables/tabs, transcluded occurrence keys, owner
   replacement, and zero-match cleanup.

@@ -12,6 +12,9 @@ function setup() {
   const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "page", type: "page-block", children: [
     { id: "a", type: "standoff-editor-block", text: "Hello world" },
     { id: "tabs", type: "tab-row-block", children: [{ id: "first", type: "tab-block", metadata: { name: "First" }, children: [] }, { id: "second", type: "tab-block", metadata: { name: "Second" }, children: [{ id: "b", type: "standoff-editor-block", text: "Hello hidden" }] }] },
+    { id: "c", type: "standoff-editor-block", text: "No match" },
+  ] }, { id: "other-page", type: "page-block", children: [
+    { id: "other", type: "standoff-editor-block", text: "Hello elsewhere" },
   ] }] });
   registerCoreViews(editor); const projection = editor.createView("find-ui"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -81,5 +84,17 @@ describe("document Find UI", () => {
     expect(editor.repository.state.revision).toBe(before);
     editor.find.close(); expect(editor.decorations.nodes[node("deep").key]).toHaveLength(1);
     expect(editor.decorations.nodes[node("deep").key][0].owner).toBe("other-tool");
+  });
+  it("limits concertina to the current Page even with Document-wide Find results", async () => {
+    const { editor, node, panel } = setup();
+    editor.find.open(node("a").key);
+    editor.find.setScope("document"); editor.find.setQuery("Hello"); await editor.find.flush();
+    expect(editor.find.state.result?.matches).toHaveLength(3);
+    panel()!.querySelector<HTMLButtonElement>('[aria-label="Concertina matching Blocks on current Page"]')!.click();
+    await vi.waitFor(() => expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(true));
+    expect((editor.mounts.get(node("other").key)!.root as HTMLElement).hidden).toBe(false);
+    await editor.find.navigate(-1);
+    expect(editor.find.state.concertinaRequested).toBe(false);
+    expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(false);
   });
 });

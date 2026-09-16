@@ -1,0 +1,10 @@
+.reactive-standoff-surface.reactive-concertina-viewport {
+  box-sizing: border-box;
+  height: var(--concertina-height);
+  max-height: var(--concertina-height);
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+[data-concertina-hidden="true"] { display: none !important; }

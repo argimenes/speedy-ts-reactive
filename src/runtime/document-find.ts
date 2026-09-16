@@ -3,7 +3,8 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import { resolveSearchScope, TextSearch, type ScopeKind, type SearchMatchSet, type SearchScope, type SearchMatch } from "./text-search";
 import type { SearchOptions } from "./search-matching";
 import { revealMatch } from "./reveal-match";
-import { nodeKeysForPage, pageForNode } from "./minimap";
+import { currentPageForScope, nodeKeysForPage } from "./minimap";
+import { filterPositionMarkersToScope, searchMatchesToPositionMarkers } from "./document-position-markers";
 
 export class DocumentFind {
   readonly state;
@@ -20,7 +21,7 @@ export class DocumentFind {
   readonly owner = "document-find";
   constructor(private editor: ReactiveEditor) {
     this.search = new TextSearch(editor);
-    [this.state, this.setState] = createStore<{ open: boolean; query: string; options: SearchOptions; scope?: SearchScope; pageKey?: string; result?: SearchMatchSet; pending: boolean; active: number; visible: boolean; message: string; focusRequest: number }>({ open: false, query: "", options: {}, pending: false, active: -1, visible: true, message: "", focusRequest: 0 });
+    [this.state, this.setState] = createStore<{ open: boolean; query: string; options: SearchOptions; scope?: SearchScope; pageKey?: string; result?: SearchMatchSet; pending: boolean; active: number; visible: boolean; concertinaRequested: boolean; message: string; focusRequest: number }>({ open: false, query: "", options: {}, pending: false, active: -1, visible: true, concertinaRequested: false, message: "", focusRequest: 0 });
     this.unsubscribe = editor.repository.subscribeChanges(change => {
       // All decoration owners must lose stale ranges, even if Find is closed.
       if (change.inlineOwner) { editor.decorations.invalidateContent(change.inlineOwner); editor.minimap.invalidateContent(change.inlineOwner); }
@@ -41,7 +42,7 @@ export class DocumentFind {
         if (document) key = document;
       }
       const scope = resolveSearchScope(this.editor, key);
-      const pageKey = pageForNode(this.editor, key);
+      const pageKey = currentPageForScope(this.editor, scope, [key, this.editor.focus.state.focusedKey, this.editor.focus.state.lastFocusedKey]);
       this.origin = key; this.selection = this.editor.mounts.get(key)?.captureInlineSelection?.(); this.native = this.editor.mounts.get(key)?.captureSelection?.(); this.navigated = undefined;
       let query = this.state.query;
       if (!this.editor.crossText.range() && this.selection) {
@@ -57,9 +58,27 @@ export class DocumentFind {
     try { this.setState("scope", resolveSearchScope(this.editor, this.origin!, kind)); this.schedule(); }
     catch (error) { this.setState("message", (error as Error).message); }
   }
-  toggleHighlights() { this.setState("visible", v => !v); this.editor.decorations.setHighlightsVisible(this.owner, this.state.visible); this.editor.minimap.setLayerVisible(this.owner, this.state.visible); }
+  toggleHighlights() { this.setState("visible", v => !v); this.editor.decorations.setHighlightsVisible(this.owner, this.state.visible); this.editor.minimap.setLayerVisible(this.owner, this.state.visible && this.editor.concertina.state.owner !== this.owner); }
+  toggleConcertina() {
+    const requested = !this.state.concertinaRequested;
+    if (requested && this.editor.entityList.state.concertinaEntityId) this.editor.entityList.clearConcertina();
+    this.setState("concertinaRequested", requested);
+    if (!requested) { this.editor.concertina.deactivate(this.owner); this.editor.minimap.setLayerVisible(this.owner, this.state.visible); return; }
+    this.applyConcertina();
+  }
+  private applyConcertina() {
+    const result = this.state.result;
+    const pageKey = this.state.pageKey;
+    if (!this.state.concertinaRequested || !result?.matches.length || !pageKey) return;
+    const scope = resolveSearchScope(this.editor, pageKey, "page");
+    const markers = filterPositionMarkersToScope(searchMatchesToPositionMarkers(result.matches), scope, nodeKeysForPage(this.editor, pageKey));
+    const applied = this.editor.concertina.activate({ owner: this.owner, viewId: scope.viewId, scope,
+      markers, activeMarkerOrGroup: result.matches[this.state.active]?.id });
+    if (applied) this.editor.minimap.setLayerVisible(this.owner, false);
+  }
   private schedule(keepUnchangedHighlights = false) {
     clearTimeout(this.timer); this.controller?.abort(); this.generation++;
+    this.editor.concertina.deactivate(this.owner);
     this.setState({ pending: !!this.state.query, result: undefined, active: -1 });
     // Query/structure changes must never leave obsolete current-result navigation.
     if (!keepUnchangedHighlights) { this.editor.decorations.clearHighlights(this.owner); this.editor.minimap.dispose(this.owner); }
@@ -80,6 +99,7 @@ export class DocumentFind {
         .map((range, index) => ({ id: `${match.id}:${index}`, group: match.id, anchor: { kind: "text-range" as const, range }, colour: "#ffd34d", opacity: .55, label: match.context })));
       this.editor.minimap.attach(this.owner, { pageKey: this.state.pageKey, visible: this.state.visible, priority: 10, markers, onActivate: marker => this.navigateTo(marker.group ?? marker.id) });
     } else this.editor.minimap.dispose(this.owner);
+    this.applyConcertina();
   }
   async navigate(direction: -1 | 1) {
     const result = this.state.result; if (!result?.matches.length || this.state.pending) return;
@@ -97,12 +117,18 @@ export class DocumentFind {
     this.editor.minimap.setActive(this.owner, match.id);
     const revealed = await revealMatch(this.editor, match, () => this.state.result === result && this.state.active === index && this.state.open);
     if (this.state.result !== result || this.state.active !== index || !this.state.open) return;
+    if (this.state.concertinaRequested) {
+      const pageNodes = this.state.pageKey ? nodeKeysForPage(this.editor, this.state.pageKey) : undefined;
+      if (!match.ranges.some(range => pageNodes?.has(range.nodeKey))) this.toggleConcertina();
+      else this.editor.concertina.setActiveMarker(match.id);
+    }
     if (!revealed) { this.setState("message", "This result cannot be mounted by the current view adapter."); return; }
     if (!match.capabilities.highlight) this.setState("message", match.capabilities.reason ?? "");
   }
   close(restore = true) {
     clearTimeout(this.timer); this.controller?.abort(); this.generation++;
-    this.editor.decorations.disposeSession(this.owner); this.editor.minimap.dispose(this.owner); this.setState({ open: false, result: undefined, pending: false });
+    this.editor.concertina.deactivate(this.owner);
+    this.editor.decorations.disposeSession(this.owner); this.editor.minimap.dispose(this.owner); this.setState({ open: false, result: undefined, pending: false, concertinaRequested: false });
     if (!restore) return;
     const range = this.navigated?.ranges[0], key = range?.nodeKey ?? this.origin, mount = key && this.editor.mounts.get(key);
     if (mount) {

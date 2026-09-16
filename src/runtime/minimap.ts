@@ -1,7 +1,8 @@
 import { createStore } from "solid-js/store";
 import type { NodeKey } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
-import type { SearchRange } from "./text-search";
+import { ancestorPath, type SearchRange, type SearchScope } from "./text-search";
+import type { DocumentPositionAnchor, DocumentPositionMarker } from "./document-position-markers";
 
 export type MinimapBlendMode = "multiply" | "source-over";
 export type MinimapSide = "right" | "left";
@@ -16,18 +17,14 @@ export interface MinimapOptions {
 }
 
 export type MinimapAnchor =
-  | { kind: "text-range"; range: SearchRange }
-  | { kind: "block"; nodeKey: NodeKey }
+  | DocumentPositionAnchor
   | { kind: "ratio"; top: number; height?: number };
 
-export interface MinimapMarker {
-  id: string;
-  group?: string;
+export interface MinimapMarker extends Omit<DocumentPositionMarker, "anchor"> {
   anchor: MinimapAnchor;
   colour: string;
   opacity: number;
   minimumThickness?: number;
-  label?: string;
 }
 
 export interface MinimapLayer {
@@ -223,4 +220,21 @@ export function nodeKeysForPage(editor: ReactiveEditor, pageKey: NodeKey): Reado
     keys.add(key); node.children.forEach(visit); Object.values(node.ownedRelations).forEach(visit);
   };
   visit(pageKey); return keys;
+}
+
+/** Pick the Page within a Document scope that currently owns focus, then the first visible Page. */
+export function currentPageForScope(editor: ReactiveEditor, scope: SearchScope, preferred: readonly (NodeKey | undefined)[] = []): NodeKey | undefined {
+  const projection = editor.projections.get(scope.viewId);
+  if (!projection) return;
+  const belongs = (pageKey: NodeKey) => ancestorPath(editor, pageKey).some(node => node.key === scope.rootKey);
+  for (const key of preferred) {
+    if (!key) continue;
+    const pageKey = pageForNode(editor, key);
+    if (pageKey && belongs(pageKey)) return pageKey;
+  }
+  const pages = Object.values(projection.state.nodes).filter(node => ["page-block", "fixed-size-page-block"].includes(node.viewType) && belongs(node.key));
+  return pages.find(page => {
+    const root = editor.mounts.get(page.key)?.root;
+    return root?.isConnected && !root.closest('[hidden], [aria-hidden="true"]');
+  })?.key ?? pages[0]?.key;
 }

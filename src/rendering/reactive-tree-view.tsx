@@ -9,6 +9,7 @@ import { BlockSelectionInspector } from "./block-selection";
 import { DocumentFindLayer } from "./document-find";
 import { DocumentEntityListLayer } from "./document-entity-list";
 import { BindingChordHint } from "./binding-chord-hint";
+import "./concertina.css";
 
 export function ReactiveTreeView(props: {
   editor: ReactiveEditor;

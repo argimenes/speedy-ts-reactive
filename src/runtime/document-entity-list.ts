@@ -4,6 +4,10 @@ import type { NativeTextSelection } from "./mounts";
 import type { SearchRange, SearchScope } from "./text-search";
 import { collectDocumentEntities } from "./document-entities";
 import { loadEntitySummaries, type EntitySummary, type EntitySummaryLoader } from "./entity-summary";
+import { entityRangesToPositionMarkers } from "./document-position-markers";
+import { revealPositionMarker } from "./reveal-match";
+import { currentPageForScope, nodeKeysForPage } from "./minimap";
+import { resolveSearchScope } from "./text-search";
 
 export type EntityListSort = "name" | "graph" | "document";
 export interface EntityListRow {
@@ -34,14 +38,17 @@ export class DocumentEntityList {
     [this.state, this.setState] = createStore<{
       open: boolean;
       scope?: SearchScope;
+      pageKey?: string;
       rows: EntityListRow[];
       sort: EntityListSort;
       direction: "ascending" | "descending";
       pending: boolean;
       error: string;
       active?: string;
+      concertinaEntityId?: string;
+      concertinaIndex: number;
       focusRequest: number;
-    }>({ open: false, rows: [], sort: "document", direction: "descending", pending: false, error: "", focusRequest: 0 });
+    }>({ open: false, rows: [], sort: "document", direction: "descending", pending: false, error: "", concertinaIndex: 0, focusRequest: 0 });
     this.unsubscribe = editor.repository.subscribeChanges(() => {
       if (!this.state.open || this.refreshQueued) return;
       this.refreshQueued = true;
@@ -60,16 +67,19 @@ export class DocumentEntityList {
     try {
       const inventory = collectDocumentEntities(this.editor, key);
       if (this.state.open && this.state.scope?.rootKey === inventory.scope.rootKey) {
+        const pageKey = currentPageForScope(this.editor, inventory.scope, [this.editor.focus.state.focusedKey, this.editor.focus.state.lastFocusedKey, key]);
+        if (pageKey && pageKey !== this.state.pageKey) { this.clearConcertina(); this.setState("pageKey", pageKey); }
         this.setState("focusRequest", value => value + 1);
         this.refresh(inventory);
         return;
       }
       this.controller?.abort(); this.generation++; this.summaries.clear(); this.clearPreview();
       this.origin = key;
+      const pageKey = currentPageForScope(this.editor, inventory.scope, [this.editor.focus.state.focusedKey, this.editor.focus.state.lastFocusedKey, key]);
       const mount = this.editor.mounts.get(key);
       this.inlineSelection = mount?.captureInlineSelection?.();
       this.nativeSelection = mount?.captureSelection?.();
-      this.setState({ open: true, scope: inventory.scope, rows: [], pending: false, error: "", active: undefined, focusRequest: this.state.focusRequest + 1 });
+      this.setState({ open: true, scope: inventory.scope, pageKey, rows: [], pending: false, error: "", active: undefined, concertinaEntityId: undefined, concertinaIndex: 0, focusRequest: this.state.focusRequest + 1 });
       this.refresh(inventory);
     } catch (error) {
       if (this.state.open) this.close(false);
@@ -86,6 +96,11 @@ export class DocumentEntityList {
     });
     const active = rows.some(row => row.id === this.state.active) ? this.state.active : undefined;
     this.setState({ scope: prepared.scope, rows, active, error: "" });
+    if (this.state.concertinaEntityId) {
+      const focused = rows.find(row => row.id === this.state.concertinaEntityId);
+      if (focused?.ranges.length) this.applyConcertina(focused);
+      else this.clearConcertina();
+    }
     if (active) this.preview(active); else this.clearPreview();
     const missing = rows.map(row => row.id).filter(id => !this.summaries.has(id));
     if (!missing.length) { this.setState("pending", false); return; }
@@ -131,13 +146,65 @@ export class DocumentEntityList {
     this.editor.decorations.attachRanges(this.owner, row.ranges, { type: "editor/entity-list-preview", fill: "#ffe34d", priority: 20 });
   }
 
+  pageRanges(row: EntityListRow): SearchRange[] {
+    const pageKey = this.state.pageKey;
+    if (!pageKey) return [];
+    const keys = nodeKeysForPage(this.editor, pageKey);
+    return row.ranges.filter(range => keys.has(range.nodeKey));
+  }
+
+  pageOccurrenceCount(id: string): number {
+    const row = this.state.rows.find(item => item.id === id);
+    return row ? this.pageRanges(row).length : 0;
+  }
+
   clearPreview() {
     this.editor.decorations.clearHighlights(this.owner);
     if (this.state.active !== undefined) this.setState("active", undefined);
   }
 
+  private applyConcertina(row: EntityListRow) {
+    const pageKey = this.state.pageKey;
+    if (!pageKey || !row.ranges.length) return;
+    const scope = resolveSearchScope(this.editor, pageKey, "page");
+    const ranges = this.pageRanges(row);
+    const markers = entityRangesToPositionMarkers(row.id, ranges);
+    if (!markers.length) { this.clearConcertina(); return; }
+    const index = Math.min(this.state.concertinaIndex, markers.length - 1);
+    this.setState("concertinaIndex", index);
+    this.editor.concertina.activate({ owner: this.owner, viewId: scope.viewId, scope, markers, activeMarkerOrGroup: markers[index]?.id });
+    this.editor.decorations.attachRanges(`${this.owner}:concertina`, ranges, { type: "editor/entity-concertina", fill: "#ffe34d", priority: 19 });
+  }
+
+  focusOccurrences(id: string) {
+    if (this.state.concertinaEntityId === id) { this.clearConcertina(); return; }
+    const row = this.state.rows.find(row => row.id === id);
+    if (!row || !this.pageRanges(row).length) return;
+    if (this.editor.find.state.concertinaRequested) this.editor.find.toggleConcertina();
+    this.setState({ concertinaEntityId: id, concertinaIndex: 0 });
+    this.applyConcertina(row);
+    void revealPositionMarker(this.editor, entityRangesToPositionMarkers(row.id, this.pageRanges(row))[0], () => this.state.concertinaEntityId === id);
+  }
+
+  navigateConcertina(direction: -1 | 1) {
+    const row = this.state.rows.find(row => row.id === this.state.concertinaEntityId);
+    if (!row) return;
+    const ranges = this.pageRanges(row);
+    if (!ranges.length) { this.clearConcertina(); return; }
+    const index = (this.state.concertinaIndex + direction + ranges.length) % ranges.length;
+    this.setState("concertinaIndex", index);
+    this.editor.concertina.setActiveMarker(`${row.id}:${index}`);
+    void revealPositionMarker(this.editor, entityRangesToPositionMarkers(row.id, ranges)[index], () => this.state.concertinaEntityId === row.id && this.state.concertinaIndex === index);
+  }
+
+  clearConcertina() {
+    this.editor.concertina.deactivate(this.owner);
+    this.editor.decorations.clearHighlights(`${this.owner}:concertina`);
+    this.setState({ concertinaEntityId: undefined, concertinaIndex: 0 });
+  }
+
   close(restore = true) {
-    this.controller?.abort(); this.controller = undefined; this.generation++; this.clearPreview();
+    this.controller?.abort(); this.controller = undefined; this.generation++; this.clearConcertina(); this.clearPreview();
     this.setState({ open: false, rows: [], pending: false, error: "", active: undefined });
     if (!restore || !this.origin) return;
     const mount = this.editor.mounts.get(this.origin);

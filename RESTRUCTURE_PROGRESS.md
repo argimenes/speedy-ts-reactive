@@ -1,22 +1,54 @@
 # Reactive reconstruction progress
 
-## Concertina search presentation — approved, 16 September 2026
+## Concertina search presentation — initial implementation, 16 September 2026
 
 Audited the original entity-highlighter/text-reference concertina behavior and
 mapped it to the reactive search, entity range, mount, decoration, minimap, and
-focus systems. The new design is session-only: it hides maximal unmatched Block
+focus systems. The implementation is session-only: it hides maximal unmatched Block
 branches, leaves short matching Blocks unchanged, and turns tall matching
 editors into compact real-content scroll viewports centred on the active match.
 It deliberately avoids the original direct style resets and its unfinished
 per-Cell hiding approach. The plan covers tabs, tables, margins, transclusions,
 navigation, stale result cancellation, exact restoration, layout batching, and
-minimap behavior. No runtime code changed. See
+minimap behavior. See
 [CONCERTINA_PLAN.md](CONCERTINA_PLAN.md).
+
+The first pass is now wired into Find's Concertina toggle and explicit Entity
+Listing Focus controls. Both operate only on the current Page, with other Page
+markers excluded even when the source result set is Document-wide. A neutral
+position-marker pipeline, pure derivation, validated settings, lifecycle
+restoration, and standoff excerpt clipping are implemented. Navigating Find to
+another Page exits concertina. Native-text clipping and custom Block adapters
+remain conservative fail-open follow-ups; Document-wide concertina is a later
+boundary option, not an implicit effect of Document-wide search.
 
 The plan was subsequently approved in full. The matching excerpt contract now
 records approximately 48 rendered CSS pixels of context before and after the
 active match as the agreed default; this is visual context rather than a fixed
 character or Cell count.
+
+The concertina application contract now takes a dedicated settings object with
+frozen shared defaults. It covers the natural-height threshold, preferred and
+bounded excerpt heights, the agreed before/after context, nearby-match merging,
+safe visible-Block spacing, active-match scroll margin, and continuation-fade
+size. Partial overrides are normalised into session-only resolved settings and
+can be reapplied without rerunning a search or touching Document state.
+
+The input contract is also general-purpose and deliberately parallels minimap
+markers. Producers pass occurrence-specific text-range or Block anchors with
+IDs, optional logical groups, and labels. Text Find, entity mentions,
+annotations, and future Block searches can therefore drive the same concertina
+operation. A neutral shared marker base is preferred over coupling the layout
+engine to minimap rendering; minimap-only ratio anchors are rejected because
+they cannot identify a Block or context range.
+
+The approved design is pipeline-first. Domain producers emit neutral position
+markers; pure reusable functions normalise, filter, order, group, deduplicate,
+resolve, and derive presentation; browser measurement and DOM application are
+separate terminal stages. Stable readonly outputs can feed decorations,
+minimap, concertina, navigation, or ordinary `.map()` adapters without those
+consumers knowing whether the source was text, entities, annotations, or Block
+results.
 
 ## Shared resizing for floating tools and dialogs — implemented, 16 September 2026
 

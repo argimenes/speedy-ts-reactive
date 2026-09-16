@@ -11,13 +11,14 @@ afterEach(() => { cleanup.splice(0).reverse().forEach(dispose => dispose()); doc
 
 function setup(fail = false) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: !fail, json: async () => fail ? { Success: false, Error: "Graph offline" } : { Success: true, Results: [{ id: "alpha", name: "Alpha", mentions: 10 }, { id: "beta", name: "Beta", mentions: 2 }] } }));
-  const editor = new ReactiveEditor({ type: "document-block", children: [
+  const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "page", type: "page-block", children: [
     { id: "a", type: "standoff-editor-block", text: "Alpha Beta", standoffProperties: [
       { id: "alpha-ref", type: "codex/entity-reference", value: "alpha", metadata: { entityName: "Alpha cached" }, start: 0, end: 4 },
       { id: "beta-ref-1", type: "codex/entity-reference", value: "beta", metadata: { entityName: "Beta cached" }, start: 6, end: 9 },
     ] },
     { id: "b", type: "standoff-editor-block", text: "Beta", standoffProperties: [{ id: "beta-ref-2", type: "codex/entity-reference", value: "beta", start: 0, end: 3 }] },
-  ] });
+    { id: "c", type: "standoff-editor-block", text: "No entity" },
+  ] }] });
   registerCoreViews(editor); const projection = editor.createView("entity-list-test"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <><DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} /><ReactiveTreeView editor={editor} projection={projection} /></>, host);
   const uninstall = editor.installGateway(document); cleanup.push(() => { uninstall(); dispose(); editor.dispose(); });
@@ -71,5 +72,21 @@ describe("document entity listing", () => {
     await vi.waitFor(() => expect(rows()).toHaveLength(2));
     editor.commands.setPayloadField(node("b").key, "standoffProperties", []);
     await vi.waitFor(() => expect(rows().find(row => row.cells[0].textContent === "Beta")?.cells[2].textContent).toBe("1"));
+  });
+
+  it("focuses an entity on the current Page and restores the Page on toggle", async () => {
+    const { editor, host, node, panel } = setup();
+    host.querySelector<HTMLButtonElement>("button[title^='Entities in Document']")!.click();
+    await vi.waitFor(() => expect(panel().querySelector('[aria-label="Focus occurrences of Alpha on current Page"]')).toBeTruthy());
+    const button = panel().querySelector<HTMLButtonElement>('[aria-label="Focus occurrences of Alpha on current Page"]')!;
+    expect(button.disabled).toBe(false);
+    const before = editor.repository.state.revision;
+    button.click();
+    await vi.waitFor(() => expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(true));
+    expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(true);
+    expect(editor.entityList.state.concertinaEntityId).toBe("alpha");
+    button.click();
+    expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(false);
+    expect(editor.repository.state.revision).toBe(before);
   });
 });

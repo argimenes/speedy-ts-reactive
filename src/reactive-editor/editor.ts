@@ -30,6 +30,7 @@ import { DocumentFind } from "../runtime/document-find";
 import { DocumentEntityList } from "../runtime/document-entity-list";
 import { createTimerBlock } from "../runtime/timer-block";
 import { MinimapService } from "../runtime/minimap";
+import { ConcertinaService } from "../runtime/concertina";
 import type { LoadedWorkspace } from "./workspace-manifest";
 
 export class ReactiveEditor {
@@ -48,6 +49,7 @@ export class ReactiveEditor {
   readonly commandRegistry = new CommandRegistry();
   readonly events = new ModelEventBus();
   readonly mounts = new MountRegistry();
+  readonly concertina = new ConcertinaService(this);
   readonly measurements = new MeasurementService(this.mounts);
   readonly focus = new FocusService(this.mounts);
   readonly selections = new SelectionService();
@@ -212,7 +214,7 @@ export class ReactiveEditor {
         if (!candidate) return;
         const registration = this.registry.resolve(candidate.viewType);
         const mount = this.mounts.get(candidate.key);
-        const hidden = mount?.root.closest('[aria-hidden="true"]');
+        const hidden = mount?.root.closest('[hidden], [aria-hidden="true"]');
         if (
           mount &&
           !hidden &&
@@ -237,7 +239,12 @@ export class ReactiveEditor {
       for (const parent of Object.values(projection.state.nodes)) {
         const index = parent.children.indexOf(nodeKey);
         if (index >= 0) {
-          return parent.children[index + 1] ?? parent.children[index - 1] ?? parent.key;
+          if (!this.concertina.state.owner) return parent.children[index + 1] ?? parent.children[index - 1] ?? parent.key;
+          const visible = (key: NodeKey) => {
+            const root = this.mounts.get(key)?.root;
+            return root && !root.closest('[hidden], [aria-hidden="true"]');
+          };
+          return [parent.children[index + 1], parent.children[index - 1], parent.key].find(key => key && visible(key));
         }
         if (Object.values(parent.ownedRelations).includes(nodeKey)) return parent.key;
       }
@@ -292,6 +299,7 @@ export class ReactiveEditor {
 
   dispose(): void {
     this.disposeFindInput?.();
+    this.concertina.dispose();
     this.find.dispose();
     this.entityList.dispose();
     this.decorations.clearAll();
