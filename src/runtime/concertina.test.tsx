@@ -94,10 +94,12 @@ describe("concertina session presentation", () => {
     await vi.waitFor(() => expect(b.hidden).toBe(true));
     expect(surface.classList.contains("reactive-concertina-viewport")).toBe(true);
     expect(surface.style.getPropertyValue("--concertina-height")).toBe("200px");
+    expect(surface.style.getPropertyValue("--concertina-fade-height")).toBe("18px");
     expect(surface.scrollTop).toBeGreaterThan(0);
     expect(editor.repository.state.revision).toBe(revision);
     editor.concertina.deactivate("test");
     expect(b.hidden).toBe(false); expect(surface.classList.contains("reactive-concertina-viewport")).toBe(false);
+    expect(surface.style.getPropertyValue("--concertina-fade-height")).toBe("");
     expect(editor.repository.snapshot()).toEqual(before);
   });
 });

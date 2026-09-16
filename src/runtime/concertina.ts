@@ -5,7 +5,7 @@ import { deriveConcertinaPresentation, type ConcertinaDerivation, type Concertin
 import { resolveConcertinaSettings, type ConcertinaSettings } from "./concertina-settings";
 import type { DocumentPositionMarker } from "./document-position-markers";
 
-interface ViewportSnapshot { element: HTMLElement; scrollTop: number; variable: string; }
+interface ViewportSnapshot { element: HTMLElement; scrollTop: number; heightVariable: string; fadeVariable: string; }
 interface MeasuredViewport { element: HTMLElement; height: number; scrollTop: number; }
 
 /** Occurrence-local presentation only. Never writes to the canonical repository. */
@@ -101,8 +101,10 @@ export class ConcertinaService {
     this.hidden.clear();
     for (const snapshot of this.viewports.values()) {
       snapshot.element.classList.remove("reactive-concertina-viewport");
-      if (snapshot.variable) snapshot.element.style.setProperty("--concertina-height", snapshot.variable);
+      if (snapshot.heightVariable) snapshot.element.style.setProperty("--concertina-height", snapshot.heightVariable);
       else snapshot.element.style.removeProperty("--concertina-height");
+      if (snapshot.fadeVariable) snapshot.element.style.setProperty("--concertina-fade-height", snapshot.fadeVariable);
+      else snapshot.element.style.removeProperty("--concertina-fade-height");
       snapshot.element.scrollTop = snapshot.scrollTop;
     }
     this.viewports.clear();
@@ -160,9 +162,15 @@ export class ConcertinaService {
       root.hidden = true; root.dataset.concertinaHidden = "true"; this.hidden.add(root);
     }
     for (const item of measured) {
-      if (!this.viewports.has(item.element)) this.viewports.set(item.element, { element: item.element, scrollTop: item.element.scrollTop, variable: item.element.style.getPropertyValue("--concertina-height") });
+      if (!this.viewports.has(item.element)) this.viewports.set(item.element, {
+        element: item.element,
+        scrollTop: item.element.scrollTop,
+        heightVariable: item.element.style.getPropertyValue("--concertina-height"),
+        fadeVariable: item.element.style.getPropertyValue("--concertina-fade-height"),
+      });
       item.element.classList.add("reactive-concertina-viewport");
       item.element.style.setProperty("--concertina-height", `${item.height}px`);
+      item.element.style.setProperty("--concertina-fade-height", `${this.settings.continuationFadePx}px`);
       item.element.scrollTop = item.scrollTop;
     }
     this.editor.blockSelection.prune();

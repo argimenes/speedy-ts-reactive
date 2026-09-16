@@ -7,4 +7,17 @@
   overscroll-behavior: contain;
 }
 
+/* Sticky inside the excerpt's scrollport, without changing editable layout. */
+.reactive-standoff-surface.reactive-concertina-viewport::before {
+  content: "";
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: block;
+  height: var(--concertina-fade-height, 18px);
+  margin-bottom: calc(-1 * var(--concertina-fade-height, 18px));
+  background: linear-gradient(to bottom, rgba(92, 119, 108, .28), rgba(92, 119, 108, 0));
+  pointer-events: none;
+}
+
 [data-concertina-hidden="true"] { display: none !important; }

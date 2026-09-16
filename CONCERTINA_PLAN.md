@@ -18,9 +18,10 @@ Document-wide mode is intentionally deferred until cross-Page navigation,
 visibility, and large-Document performance have been checked.
 
 The settings contract is available now. Context, height, nearby-match merge,
-and scroll-margin values affect standoff excerpts. `visibleBlockGapPx` and
-`continuationFadePx` are reserved for renderer-specific spacing/fade adapters;
-they do not yet alter the first-pass layout. Native-text clipping, custom Block
+scroll-margin, and `continuationFadePx` values affect standoff excerpts. The
+fade adds a non-interactive gradient at the top of a clipped excerpt and is
+removed with the session. `visibleBlockGapPx` remains reserved for safe
+renderer-specific spacing. Native-text clipping, custom Block
 adapters, and real-browser geometry checks remain follow-up work. Unsupported
 viewports stay at natural height rather than risking obscured editable content.
 
