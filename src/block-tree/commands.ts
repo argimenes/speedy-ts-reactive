@@ -145,7 +145,9 @@ export class TreeCommands {
   }
 
   private subject(state: RepositoryState, placementKey: PlacementKey): BlockCommitSubject {
-    const content = state.contents[state.placements[placementKey].contentKey];
+    const placement = state.placements[placementKey];
+    if (placement.externalReference) return { placementKey, contentKey: placement.contentKey };
+    const content = state.contents[placement.contentKey];
     return { contentKey: content.key, placementKey, blockId: readBlockId(content) };
   }
 
@@ -691,10 +693,12 @@ export class TreeCommands {
     this.publish("Transclude Block", [
       {
         kind: "put-placement",
-        record: { key: placementKey, contentKey: source.contentKey, kind: "reference" },
+        record: { key: placementKey, contentKey: source.contentKey, kind: "reference",
+          ...(source.externalReference ? { externalReference: clone(source.externalReference) } : {}) },
       },
       { kind: "put-content", record: this.updatedChildren(target.owner, children) },
-    ], { commandId: "tree.transclude", subjects: [this.subject(state, source.key), { contentKey: source.contentKey, placementKey, blockId: readBlockId(state.contents[source.contentKey]) }] });
+    ], { commandId: "tree.transclude", subjects: [this.subject(state, source.key), { contentKey: source.contentKey, placementKey,
+      ...(source.externalReference ? {} : { blockId: readBlockId(state.contents[source.contentKey]) }) }] });
     return placementKey;
   }
 
@@ -711,6 +715,7 @@ export class TreeCommands {
     const state = this.state();
     const placementKey = this.placementKey(key, state);
     const placement = state.placements[placementKey];
+    if (placement.externalReference) throw new TreeCommandError("The external target is unavailable for an authored copy");
     if (placement.kind !== "reference") {
       throw new TreeCommandError("Only a reference placement can be detached");
     }
@@ -755,6 +760,7 @@ export class TreeCommands {
         key: copiedKey,
         contentKey,
         kind: source.kind,
+        ...(source.externalReference ? { externalReference: clone(source.externalReference) } : {}),
       };
       return copiedKey;
     };

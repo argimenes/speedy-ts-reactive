@@ -38,6 +38,9 @@ interface ProducerState {
 const bytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).byteLength;
 
 function validateDocument(state: RepositoryState, expectedDocumentId?: unknown, graphAlreadyValidated = false): void {
+  if (Object.values(state.placements).some(p => p.externalReference)) {
+    throw new HistoryError("unsupported", "Stage B requires closed graphs; use the Stage C resource reader for external boundaries");
+  }
   if (!graphAlreadyValidated) { validateRepository(state); new BlockIdentityIndex(state); }
   const root = state.placements[state.rootPlacementKey].contentKey;
   if (state.contents[root].viewType !== "document-block" || expectedDocumentId !== undefined && state.contents[root].payload.id !== expectedDocumentId || Object.values(state.contents).some(c =>

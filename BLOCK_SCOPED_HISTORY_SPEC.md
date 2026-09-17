@@ -10,6 +10,9 @@ deviations, and remaining limitations. Stages C–E are not implemented. The
 [final Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md) fixes the accepted
 ownership/`.memory` contracts and requires early descriptor, storage-lifecycle
 and live-cost proof gates before production integration. The
+[G1 implementation report](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md) records
+an architectural stop concerning retained unplaced definitions and ordinary
+editor lifetime; Stage C is not complete. The
 [Stage A implementation report](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md)
 and its original benchmark remain unchanged evidence.
 Reviewed against the current repository and the supplied discussion,

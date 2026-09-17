@@ -4,6 +4,7 @@ import { isAuthoredBlock, readBlockId } from "./identity";
 import type { BlockCommitSubject } from "./commit-capture";
 import type { JsonObject, RepositoryState } from "./types";
 import { linkedRegistry, type LinkedAnnotationRegistry } from "./linked-annotations";
+import { externalDefinitionLink } from "./external-reference";
 
 export interface BlockFragment {
   state: RepositoryState;
@@ -38,6 +39,7 @@ export function captureBlocks(source: RepositoryState, roots: string[]): BlockFr
     const placement = source.placements[key];
     if (!placement) throw new Error("The selected Block no longer exists.");
     state.placements[key] = clone(placement);
+    if (placement.externalReference) return;
     const content = source.contents[placement.contentKey];
     if (state.contents[content.key]) return;
     state.contents[content.key] = clone(content);
@@ -49,7 +51,7 @@ export function captureBlocks(source: RepositoryState, roots: string[]): BlockFr
     delete content.payload.linkedAnnotations;
     const properties = content.payload.standoffProperties;
     if (Array.isArray(properties)) for (const property of properties) {
-      if (property?.annotationId && linkedRegistry(source)[property.annotationId]) definitions[property.annotationId] = clone(linkedRegistry(source)[property.annotationId]);
+      if (property?.annotationId && !externalDefinitionLink(property) && linkedRegistry(source)[property.annotationId]) definitions[property.annotationId] = clone(linkedRegistry(source)[property.annotationId]);
     }
   }
   return { state, roots: [...roots], linkedAnnotations: definitions };
@@ -103,7 +105,7 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
   state.contents = contents;
   state.placements = Object.fromEntries(Object.values(state.placements).map(placement => {
     placement.key = placementKeys.get(placement.key)!;
-    placement.contentKey = contentKeys.get(placement.contentKey)!;
+    if (!placement.externalReference) placement.contentKey = contentKeys.get(placement.contentKey)!;
     return [placement.key, placement];
   }));
   state.rootPlacementKey = placementKeys.get(state.rootPlacementKey)!;

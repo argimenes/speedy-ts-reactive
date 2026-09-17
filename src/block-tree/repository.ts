@@ -3,6 +3,7 @@ import { createStore, reconcile, unwrap } from "solid-js/store";
 import { inlineOwnerFor } from "./inline-plan";
 import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./split-plan";
 import { clone } from "./clone";
+import { validateTarget } from "./external-reference";
 import { createCommitId } from "./ids";
 import { BlockIdentityIndex } from "./identity";
 import { prepareCommitCapture, finishCommitCapture, freeze, normalizeInputIntent, type CommitMetadata, type DeepReadonly, type PreparedCommitCapture, type RepositoryCommitResult, type RepositoryOptions } from "./commit-capture";
@@ -134,11 +135,20 @@ export function validateRepository(state: RepositoryState): void {
     const placement = state.placements[placementKey];
     if (!placement) throw new ModelInvariantError(`Missing placement ${placementKey}`);
     reachable.add(placementKey);
+    if (placement.externalReference !== undefined) {
+      if (placement.kind !== "reference" || placementKey === state.rootPlacementKey || state.contents[placement.contentKey]) {
+        throw new ModelInvariantError("An external reference must have a distinct unresolved target and cannot be the root");
+      }
+      if (locations.get(placementKey)?.slot.kind === "inline-content") throw new ModelInvariantError("External references cannot impersonate inline Cells");
+      validateTarget(placement.externalReference);
+      return;
+    }
     if (ancestors.has(placement.contentKey) && placement.kind !== "reference") {
       throw new ModelInvariantError(`Ownership cycle through ${placement.contentKey}`);
     }
     if (ancestors.has(placement.contentKey)) return;
     const content = state.contents[placement.contentKey];
+    if (!content) throw new ModelInvariantError(`Missing content ${placement.contentKey}`);
     const next = new Set(ancestors).add(content.key);
     for (const childKey of content.children) visit(childKey, next);
     for (const inlineKey of content.inlineContent) visit(inlineKey, next);

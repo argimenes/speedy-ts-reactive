@@ -6,6 +6,10 @@ The subsequent [final Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_
 carries these settled contracts forward and sequences the still-unproved descriptor,
 storage-lifecycle and live-cost gates before production integration. This report's
 experimental evidence remains unchanged.
+Implementation follow-up: [G1 gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md)
+now demonstrate a separate definition-lifetime/structural-reachability blocker.
+Implementation stopped before storage or production codec integration. This does
+not reopen the settled ownership-boundary or `.memory` decisions below.
 
 ## Outcome and ownership-boundary decision
 

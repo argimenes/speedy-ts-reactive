@@ -3,8 +3,9 @@
 Date: 2026-09-17. Status: experimental proposal with executable fixtures, not a
 production file format, replacement Document codec or Stage C implementation.
 
-The user has accepted this spike's semantic direction for Stage C. Production
-integration remains unauthorized. The follow-up
+The user has accepted this spike's semantic direction and authorized Stage C
+implementation, subject to its early proof gates. Production format integration
+has not begun. The follow-up
 [pre-plan results](BLOCK_SCOPED_HISTORY_STAGE_C_PREPLAN_RESULTS.md) retain the
 explicit canonical load boundary. Subsequent decisions stop exact history at
 authoritative Document ownership and place independent memoirs under the immediate
@@ -14,6 +15,11 @@ results predate those decisions; external provenance and storage integration are
 planning contracts, not newly implemented spike capabilities.
 The [final Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md) places the external
 descriptor/current-Document round-trip proof before production codec integration.
+The [G1 implementation results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md)
+expose a retained-definition lifetime gap beyond this spike's fixtures: a B-owned
+definition with placements only in A cannot retain ordinary standalone editor
+behavior without a resource-lifetime/validation rule. Implementation stopped at
+that architectural gate; these original spike results are not expanded by claim.
 
 ## Finding
 

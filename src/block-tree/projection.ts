@@ -75,6 +75,13 @@ export class BlockTreeProjection {
       const placement = snapshot.placements[placementKey];
       if (!placement) throw new Error(`Missing projected placement ${placementKey}`);
       const content = snapshot.contents[placement.contentKey];
+      if (placement.externalReference) {
+        const key = this.nodeKey(route, placementKey);
+        nodes[key] = { key, contentKey: placement.contentKey, placementKey, viewId: this.viewId,
+          viewType: "external-reference", payload: { reference: clone(placement.externalReference) },
+          children: [], inlineContent: [], ownedRelations: {} };
+        return key;
+      }
       if (!content) throw new Error(`Missing projected content ${placement.contentKey}`);
       const key = this.nodeKey(route, placementKey);
       if (ancestors.has(content.key)) {

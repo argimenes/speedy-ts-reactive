@@ -1,4 +1,5 @@
 import type { Component } from "solid-js";
+import type { ExternalTarget } from "./external-reference";
 
 export type NodeKey = string;
 export type ContentKey = string;
@@ -37,6 +38,9 @@ export interface PlacementRecord {
   key: PlacementKey;
   contentKey: ContentKey;
   kind: "owned" | "reference" | "inline";
+  /** G1 candidate: explicit boundary. contentKey is a private unresolved symbol,
+   * not a required local ContentRecord. Never synthesize a target Block. */
+  externalReference?: ExternalTarget;
 }
 
 export interface RepositoryState {

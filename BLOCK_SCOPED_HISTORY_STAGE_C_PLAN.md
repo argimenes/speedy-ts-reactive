@@ -1,8 +1,14 @@
 # Block-scoped history — Stage C implementation plan
 
-Date: 2026-09-17. Status: final implementation plan, with mandatory early proof
-gates. This document authorizes no code execution by itself; the current task is
-planning. No Stage C or production Document-format implementation is claimed.
+Date: 2026-09-17. Status: implementation authorized by the user's subsequent
+instruction; mandatory early proof gates remain in force. See the
+[gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md) for current evidence.
+No Stage C completion or production Document-format integration is claimed.
+Implementation is currently **stopped at G1**: retained resource-owned definitions
+can lose ordinary editor usability/lifetime when their only remaining placements
+are in another Document. The gate report contains two executable counterexamples.
+The sequence below is retained; its architectural stop rule requires resolving
+that lifetime/validation assumption before proceeding.
 
 Requirements: [history specification](BLOCK_SCOPED_HISTORY_SPEC.md), the accepted
 [portable Document direction](PORTABLE_CODEX_DOCUMENT_FORMAT_SPIKE.md), and the
