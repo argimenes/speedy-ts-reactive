@@ -11,6 +11,9 @@ targets retain references/provenance without dependency-only Document revisions;
 all per-memoir infrastructure lives in the immediate parent's reserved `.memory`.
 These decisions supersede the environmental-closure blocker and visible sidecar
 proposal. The results' §§3 and 5 specify the remaining implementation proof gates.
+The [final Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md) now sequences those
+gates before schema freeze and application write integration; implementation has
+not begun.
 
 The smallest credible architecture is a per-Document archive of exact revisions,
 with a bounded asynchronous outbox, serialized server appends, independent save
@@ -857,7 +860,7 @@ CRDT/multi-writer collaboration, new undo grouping, extra grouping policies,
 semantic/AI history, or asset-byte versioning. Stage C preserves the exact data
 and read contracts these later features may use; it does not implement them.
 
-Recommendation: ready to draft the final Stage C plan with the accepted ownership
-and `.memory` decisions and the explicit early proof gates above. This revision
-updates planning only; no Stage C or production Document-format implementation
-is authorized or claimed here.
+The [final Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md) carries the accepted
+ownership and `.memory` decisions into an implementation sequence with explicit
+early proof and stop gates. This investigation remains supporting evidence; no
+Stage C or production Document-format implementation is claimed here.

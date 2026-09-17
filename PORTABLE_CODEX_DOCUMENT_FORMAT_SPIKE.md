@@ -12,6 +12,8 @@ parent directory's `.memory`. They resolve the environmental-dependency question
 without reopening the accepted Block/placement model. This document's executable
 results predate those decisions; external provenance and storage integration are
 planning contracts, not newly implemented spike capabilities.
+The [final Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md) places the external
+descriptor/current-Document round-trip proof before production codec integration.
 
 ## Finding
 

@@ -7,6 +7,9 @@ remains unchanged. Stage B's explicitly enrolled in-memory proof is implemented;
 see [its plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md) and
 [completion report](BLOCK_SCOPED_HISTORY_STAGE_B_COMPLETION.md) for measurements,
 deviations, and remaining limitations. Stages C–E are not implemented. The
+[final Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md) fixes the accepted
+ownership/`.memory` contracts and requires early descriptor, storage-lifecycle
+and live-cost proof gates before production integration. The
 [Stage A implementation report](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md)
 and its original benchmark remain unchanged evidence.
 Reviewed against the current repository and the supplied discussion,

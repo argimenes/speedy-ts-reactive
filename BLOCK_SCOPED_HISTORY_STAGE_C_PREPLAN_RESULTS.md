@@ -1,8 +1,11 @@
 # Block-scoped history — Stage C pre-plan results
 
 Date: 2026-09-17. Status: bounded investigation and executable experiments.
-No production Document format, history recorder, endpoint or Stage C
-implementation plan has been introduced.
+No production Document format, history recorder or endpoint has been introduced.
+The subsequent [final Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md)
+carries these settled contracts forward and sequences the still-unproved descriptor,
+storage-lifecycle and live-cost gates before production integration. This report's
+experimental evidence remains unchanged.
 
 ## Outcome and ownership-boundary decision
 
@@ -791,8 +794,8 @@ integrated fault injection, background scheduling, other-browser/platform covera
 and checkpoint tuning remain required implementation/release work. They should be
 explicit gates in the eventual plan, not claims already proved by these labs.
 
-**Readiness recommendation:** ready to write the final Stage C implementation
-plan with the ownership-boundary contracts and early proof gates in §3, and the
+**Readiness recommendation:** the [final implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md)
+now includes the ownership-boundary contracts and early proof gates in §3, and the
 directory-local discovery/relocation/safety gates in §5. The
 environmental-dependency blocker is resolved by decision, not by a newly passing
 experiment. No remaining pre-plan architectural blocker is identified; do not
