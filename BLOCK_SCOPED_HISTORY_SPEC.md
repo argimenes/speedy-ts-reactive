@@ -1,6 +1,6 @@
 # Block-scoped temporal history: feasibility and technical specification
 
-Status: proposed specification, 17 September 2026. No implementation has begun.
+Status: revised proposed specification, 17 September 2026. No implementation has begun.
 Reviewed against the current repository and the supplied discussion,
 `/Users/iianneill/Downloads/codex-block-scoped-history.md`.
 
@@ -14,10 +14,11 @@ Block-scoped temporal history is feasible and fits Codex's separation of content
 placement, and view. It is a substantial addition to identity, commit capture,
 persistence, and rendering—not simply a filter on the current undo stack.
 
-The core query is: **what did the subtree rooted at this Block look like at a
-particular historical revision?** Membership, order, properties, and descendant
-content must all be resolved at that revision. Viewing this result never moves
-or edits current Blocks.
+The core query is: **what did this Block and its then-owned subtree look like at
+a particular historical revision?** Membership, order, properties, and
+descendant content must all be resolved at that revision. Viewing this result
+never moves or edits current Blocks. The Block is the logical subject of the
+history; a Document memoir is its physical storage location, not its identity.
 
 The following product decisions were confirmed during this review:
 
@@ -26,10 +27,28 @@ The following product decisions were confirmed during this review:
 | Persistence of intermediate edits | Retain history across sessions, including edits between explicit saves. Archive durability and Document saving are separate states. | Confirmed. |
 | First-release restoration scope | View, compare, and insert a historical copy first; add in-place content/subtree restoration as a subsequent milestone. | Confirmed. |
 | Separation and retention | Keep current Documents independent of history; use a separate memoir sidecar, and allow compaction that expires old history states. | Principle confirmed; storage mechanics specified below. |
+| Storage versus identity | Keep memoirs beside individual Documents; use stable Block identity and, later, provenance/locators to follow a Block across Documents. A Workspace-wide memoir is not the central store for every Block. | Confirmed. |
 
 This specification develops those choices so their consequences are reviewable.
 A session-only prototype remains a development stage, not a claim to satisfy
 persistent history. Save-only history would not satisfy the agreed requirement.
+
+**First pass** means a complete, persistent vertical slice for Blocks owned by
+a Document: stable IDs; durable changes and checkpoints in that Document's
+memoir; historical subtree query; read-only view, contextual scrub, and compare;
+and insert a historical copy into that same Document. It must survive normal
+close/reopen and retain intermediate edits between explicit Document saves.
+Multiple Documents may each have a memoir, but a first-pass recorded transaction
+is scoped to one Document; it is not a coordinated cross-Document transaction.
+The first pass does not promise a continuous biography after a Block moves to a
+different Document or Workspace-owned surface. It records any observed boundary
+honestly rather than inventing missing history.
+
+**After the first pass**: coordinated transfers and cross-memoir biography,
+Workspace-owned history, user-directed expiry/retention compaction, broader
+historical rendering and asset capture, and in-place restoration. Lossless
+journal consolidation/checkpoint maintenance needed to keep first-pass storage
+usable is distinct from deleting old states for retention.
 
 Keep the existing global undo/redo behavior. Separate per-Document repositories,
 dirty tracking, and undo stacks remain deferred as previously agreed. History
@@ -87,9 +106,9 @@ support that UI after the single-root milestone.
 ### References and external dependencies
 
 Owned descendants are the primary subtree. Record reference edges distinctly.
-For in-lineage transclusions, a displayed reference resolves to content at the
+For same-Document transclusions, a displayed reference resolves to content at the
 same historical revision, with a visited-path guard for cycles. References out
-of the captured lineage show their recorded identity/version or an unavailable
+of the captured Document show their recorded identity/version or an unavailable
 placeholder; they must not silently display today's external content as old.
 
 Archive linked-annotation definitions and relevant asset descriptors with the
@@ -105,18 +124,31 @@ repository revision, undo stack, dirty flag, active selections, or content.
 History is not another mutable view of the live repository. Restoring/copying
 material is a separate explicit command against current state.
 
-## 4. Identity contract
+## 4. Block-centred identity contract
+
+A Block's biography is keyed by its stable `blockId`, not a filename, current
+parent, array path, DOM element, or Workspace. A Document's memoir stores the
+portion of that biography observed while the Block belongs to that Document.
+The current Document file remains a snapshot of present content/arrangement;
+the memoir is evidence of earlier states. Neither file has to contain the other.
 
 Use the following identities; do not collapse them into one identifier:
 
 | Identity | Purpose |
 | --- | --- |
-| `blockId` | Persistent authored content identity, using an existing valid public payload ID where possible. |
+| `blockId` | Persistent, globally unique authored content identity. Reuse an existing unambiguous public payload ID where possible. It survives edits and identity-preserving moves. |
 | `historyPlacementId` | Durable identity of an occurrence/edge inside the archive, distinguishing references to shared content. |
-| `lineageId` | A recorded resource editing lineage: a Document, or the Workspace-owned arrangement and standalone content. Several lineages can share one live repository. |
+| `resourceId` / `memoirId` | Stable identities of the Document and its physical archive. They locate history segments; neither is a Block's identity. |
 | `revisionId` | Globally unique identity of one successful captured transaction. |
-| `sequence` | Append order within a lineage journal; not a global ordering across independent editors. |
+| `sequence` | Append order within one memoir; not a global ordering across independent editors. |
 | Runtime keys | ContentKey, PlacementKey, NodeKey, ViewId: mapped to archive identities but not treated as durable public identity. |
+
+The archive should distinguish a Block-content version from a placement event.
+For example, editing B's text does not imply that B moved; moving B from Page 1
+to Page 2 does not imply its text changed. A selected occurrence may need a
+`historyPlacementId` when shared content appears in more than one place. The
+first-pass query is scoped to one Document memoir and one selected occurrence;
+the later cross-memoir coordinator composes history segments by `blockId`.
 
 When history is enabled for legacy material, run an explicit normalization step
 that assigns IDs to authored Blocks lacking them, detects duplicate/ambiguous
@@ -130,12 +162,15 @@ They are retained as graph records in the initial checkpoint implementation.
 Existing nonempty public IDs need not be rewritten merely because they are not
 UUID-shaped; new authored IDs should be UUIDs.
 
-Moves retain Block and placement identity; duplicate and historical-copy actions
-create new identities with `copiedFrom` provenance. Split retains the current
-left identity and assigns a new right identity; join retains the left and records
-`mergedFrom`. A successful identity-preserving cut/paste may reuse public Block
-identity but records its delete/reinsert steps and a correlation ID. A copy or
-collision-remapped paste must not inherit the source's identity.
+Within one Document, moves retain Block identity; placement identity is retained
+when the canonical occurrence survives and otherwise linked explicitly. Duplicate
+and historical-copy actions create new identities with `copiedFrom` provenance.
+Split retains the current left identity and assigns a new right identity; join
+retains the left and records `mergedFrom`. A successful identity-preserving
+cut/paste may reuse public Block identity but records its delete/reinsert steps
+and a correlation ID. A copy or collision-remapped paste must not inherit the
+source's identity. These provenance edges explain genealogy; they do not make
+two different Blocks the same Block or change historical subtree membership.
 
 For reload, record a save receipt containing resource identity, exact saved
 artifact hash, archived revision, and mappings from serialized occurrences to
@@ -145,12 +180,15 @@ of freshly decoded runtime keys. A changed artifact requires identity-based
 reconciliation or a new baseline; never assume yesterday's array positions still
 refer to the same Blocks.
 
-Propose a small versioned history reference in resource-root metadata, containing
-the archive/lineage and saved revision identifiers. Keep the detailed mapping in
-the receipt. This is an additive file-format extension to validate against
-legacy consumers before shipping. History-disabled imports retain current codec
-compatibility. Matching repeated references must be supported by explicit archive
-mapping; the legacy tree codec alone cannot reconstruct shared identity.
+For the first pass, prefer a save receipt in the memoir keyed by stable resource
+identity and the exact Document artifact hash. Add only the minimum resource-root
+metadata actually required for stable rebinding; validate any file-format
+extension against legacy consumers before shipping. A Document lacking its
+memoir must still open normally. Matching repeated references must be supported
+by explicit archive mapping; the legacy tree codec alone cannot reconstruct
+shared identity. A later portable provenance hint on the Block may name prior
+memoirs, but must not become the authoritative history or embed the history
+stream in every Block.
 
 ## 5. Revision and transaction capture
 
@@ -159,17 +197,22 @@ general, inline, split, and empty-paragraph paths. It must run exactly once afte
 a validated state change, capturing the normalized operations actually applied,
 not just the caller's proposed records or the user-facing label.
 
-The event envelope should contain:
+The first-pass event envelope should contain:
 
-- version, lineageId, revisionId, sessionId, sequence, and timestamp;
+- version, resourceId, memoirId, revisionId, sessionId, sequence, and timestamp;
 - previous journal entry ID/hash for append integrity;
 - state-parent revision ID: the state against which this change applies;
-- cause: edit, undo, redo, import, restore, or historical-copy;
+- cause: edit, undo, redo, import, or historical-copy;
 - command ID and structured semantics where available, plus a display label;
-- affected archive content/placement IDs, normalized forward change data, and
-  preimages needed for inverse/recovery/indexing;
-- optional undo/redo source transaction, copy/split/join provenance, transfer
-  correlation, and resource membership information.
+- affected `blockId`s and archive placement IDs, normalized forward change data,
+  and preimages needed for recovery/indexing;
+- optional undo/redo source transaction and copy/split/join provenance.
+
+The exact changes are the replay authority. Block IDs and semantic descriptors
+are for querying and explanation. Parent/ancestor timeline entries are derived
+from historical membership rather than logging a duplicate snapshot of every
+ancestor on each keystroke. Later cross-resource transfer records add a shared
+transaction/correlation ID and former/new resource membership.
 
 Do not infer causality by parsing labels such as `Undo ...`. `recordHistory=false`
 controls the undo stack only; it must not suppress archival capture of an undo or
@@ -188,12 +231,13 @@ from the committed state. Multiple writes to one record in an outer transaction
 may be normalized to its first preimage and final value, preserving atomicity.
 
 Start with lossless touched-record changes, using the existing canonical graph
-shape. Before persistent high-frequency recording ships, add compact patches
-for long inline arrays/payloads and insertion/deletion spans; retaining a full
-long paragraph array for every character has a material storage cost. Patches
-must be versioned, have expected-base checks, and have a full touched-record
-fallback. Semantic move/split descriptions supplement exact replay data; they
-are not an alternative source of truth.
+shape. Measure actual journal growth on long paragraphs before shipping the
+persistent first pass. If touched-record copies make typing unacceptably large,
+add versioned compact insertion/deletion patches with expected-base checks and
+a full touched-record fallback. This optimization is conditional on measurement,
+not a prerequisite for defining a second event model. Semantic move/split
+descriptions supplement exact replay data; they are not an alternative source
+of truth.
 
 Freeze or clone affected records at capture time; queued work must not retain
 mutable Solid store proxies. Do not write files, hash the whole repository, or
@@ -222,18 +266,21 @@ lineage link. Codex cannot recover intermediate edits performed by another tool
 unless that tool supplies history. Filename changes alone do not change identity;
 Save As as a copy/fork must be explicitly distinguished from a resource rename.
 
-One canonical Workspace provides a coherent commit order for moves between its
-Document children. Partition captured changes into the affected resources'
-memoirs, with a shared transaction ID and explicit transfer links. Both former
-and new ownership matter. A departure remains in the source memoir and an
-arrival includes the destination's required historical content/dependencies.
-The archive catalogue can follow that explicit provenance across memoirs; if
-the source memoir is unavailable, show the boundary instead of inventing the
-missing biography. Per-resource sequence numbers are not globally comparable.
+**After the first pass**, a move between Documents should keep the Block's ID,
+record a departure in the source memoir and an arrival in the destination memoir,
+and link both records with a shared transfer ID. If both Documents live in one
+repository, its commit order helps, but a durable two-memoir transaction still
+needs coordination. If they live in separate repositories, the transfer itself
+also needs a coordinated protocol. Do not infer a move from wall-clock time or
+call clipboard cut/paste an atomic transfer. A missing source memoir leaves an
+honest boundary in the Block biography, not fabricated earlier states.
 
-The initial split showcase has separate editors and streams. A cross-repository
-move requires a later coordinated transfer protocol; do not infer causality from
-wall-clock time or call clipboard cut/paste an atomic cross-resource transaction.
+The first-pass recorder must identify the owning Document for a single-resource
+commit, even when several Documents share a live repository. It may observe an
+unsupported cross-resource operation; it must mark the boundary or recording
+gap clearly. It must not silently attribute changes to the wrong Document or
+merge two memoir streams. Per-resource sequence numbers are never globally
+comparable.
 
 Future collaboration should add author/replica identities, causal parents, and
 merge policy while retaining Codex revision semantics. This first implementation
@@ -250,8 +297,8 @@ poe.memoir.json                # consolidated, versioned history sidecar
 poe.memoir.journal.jsonl        # append-only recent revisions awaiting consolidation
 ```
 
-`poe.memoir.json` contains a tagged format/version envelope, resourceId,
-lineageId, checkpoint catalogue and checkpoint data, retained revision records,
+`poe.memoir.json` contains a tagged format/version envelope, `resourceId`,
+`memoirId`, checkpoint catalogue and checkpoint data, retained revision records,
 save receipts/identity maps, and the last consolidated sequence/hash. The
 journal records its base and appends framed revision records. It is an
 implementation companion for active recording, not another authored Document.
@@ -267,28 +314,29 @@ recovery must never depend on that attempt succeeding.
 
 Use stable IDs inside the memoir; the filename is a discoverability convention,
 not identity. Renaming a Document should move/update its memoir association.
-Save As as an independent copy creates a new lineage with optional provenance;
+Save As as an independent copy creates a new resource history with optional provenance;
 it must not silently share the source's mutable journal. If an unrelated file
 already occupies the proposed memoir filename, refuse to overwrite it. Exclude
 recognized memoir envelopes from the Open Document browser; do not assume every
 user file ending in `.memoir.json` can safely be hidden or replaced.
 
-For a Workspace use the corresponding Workspace memoir for Background/window
-arrangement and standalone Blocks such as Sticky Notes. Document content is
-recorded in each Document's memoir. Workspace history refers to the exact
-Document revision needed for a historical boundary, instead of silently loading
-current Document content or duplicating every full Document on each layout edit.
-Before a resource has a filename, use a history staging location keyed by its
-stable resourceId; attach/move the memoir on Save As. Empty transient note drafts
-remain excluded until promotion.
+**First pass:** record each eligible Document's single-resource edits in that
+Document's memoir.
+When an unsaved new Document is eligible for history, stage by stable `resourceId`
+and attach its memoir on first save; do not silently drop pre-save edits. Do not
+record the Workspace arrangement or standalone Sticky Notes in a Document memoir.
+The scope boundary must be explicit in the UI and tests.
 
-The resource partitioner records pre- and post-transaction membership. In a
-multi-resource edit, append prepared participant records with a shared
-transaction ID and acknowledge the history transaction after a durable
-coordinator completion record. Recovery finishes idempotent pending writes or
-reports an incomplete transaction; cross-resource historical queries must not
-present half a transfer as a complete revision. This coordinator is archival
-bookkeeping, not separate runtime repositories or per-Document undo stacks.
+**After the first pass:** a Workspace memoir can record Background/window
+arrangement and Workspace-owned standalone Blocks such as Sticky Notes. It should
+reference exact Document revisions when needed, not duplicate entire Documents
+or replace their memoirs. Cross-Document moves then require a resource partitioner
+and durable coordinator: record pre/post ownership, append linked participants,
+and expose the transfer only when complete. Recovery must not present half a
+transfer as a complete revision. A small rebuildable catalogue may locate the
+memoirs that contain a given `blockId`; it is an index, not the global memory or
+sole copy of history. On a lost source memoir, the catalogue cannot reconstruct
+its past.
 
 Reuse the extended repository codec as a checkpoint starting point, adding
 history schema/version and identity maps. A resource checkpoint must form a
@@ -311,9 +359,9 @@ unacknowledged tail; do not promise zero-loss recording before acknowledgment.
 The outbox's origin dependence matters when switching between ports 3000 and
 3002; server-confirmed history must be common to both.
 
-Proposed store contract: open/read memoir metadata, append a batch with expected head,
-read paginated revisions, read a checkpoint, and associate a save receipt.
-Serialize writers per lineage, reject unexpected heads, and distinguish an
+First-pass store contract: open/read memoir metadata, append a batch with expected
+head, read paginated revisions, read a checkpoint, and associate a save receipt.
+Serialize writers per memoir, reject unexpected heads, and distinguish an
 identical retry from a conflicting duplicate. Concurrent browser writers need
 explicit separate branches or a single-writer policy for the first release;
 silently interleaving incompatible baselines is invalid.
@@ -345,11 +393,14 @@ material as recoverable history; never silently replace that file with the last
 archived working state. In-place recovery, when requested, is a fresh edit/save.
 
 Support two distinct maintenance operations: lossless consolidation/compression,
-and user-directed retention compaction that deletes old states. Initially retain
-all history until the user chooses a cutoff; age/size defaults can be discussed
-after storage measurements. Expose archive size and the earliest retained state.
+and user-directed retention compaction that deletes old states. **First pass:**
+implement lossless consolidation and retain all history. Expose archive size and
+earliest recorded state so growth is visible. **After the first pass:** add a
+user-selected cutoff and deletion of expired states, with age/size defaults only
+after storage measurements. Until that exists, do not advertise the memoir as
+self-limiting.
 
-For expiry, reconstruct a complete checkpoint at each retained branch boundary,
+For later expiry, reconstruct a complete checkpoint at each retained branch boundary,
 retain all required subsequent changes/dependencies, and write a verified new
 memoir before retiring the old data. A surviving saved-file receipt may require
 an additional baseline even if it predates the user's viewing cutoff; retain it
@@ -364,8 +415,9 @@ remain available or acquire an explicit expired-dependency status under the
 selected retention policy. Do not promise unchanged exact cross-resource replay
 after independently discarding one of its required states.
 
-Compaction must not change the current Document or its normal undo stack. The
-maintenance UI should state the cutoff and the history that will be lost.
+Retention compaction must not change the current Document or its normal undo
+stack. Its later maintenance UI should state the cutoff and the history that
+will be lost.
 Deleting current text does not itself erase its historical copies. A future
 “forget history” operation must include the memoir, journal, outbox, and any
 retained backups; it is distinct from ordinary Block deletion.
@@ -376,17 +428,22 @@ Suggested service boundaries (names are provisional):
 
 - `HistoryRecorder`: receives committed change envelopes; maintains the outbox.
 - `HistoryStore`: persistence/read protocol, without editor or DOM dependencies.
-- `HistoryIndex`: temporal content versions, placement/parent membership,
-  dependencies, provenance, and affected-ancestor lookup.
+- `HistoryIndex`: rebuildable lookup for Block revisions and historical
+  membership. An optimized temporal index can follow measured need.
 - `HistoryQuery`: timeline, state-at-revision, location, and comparison queries.
 - `HistorySession`: current selection/root/revision and asynchronous UI lifecycle.
 - `HistoricalCopyPlanner`: validates and prepares insertion into current state.
 
-`getSubtreeAt` takes lineageId, blockId, optional historyPlacementId, revisionId,
-and explicit relation/reference traversal options. It returns an immutable
+First-pass `getSubtreeAt` takes a Document memoir locator, `blockId`, optional
+`historyPlacementId`, `revisionId`, and explicit relation/reference traversal
+options. The locator selects the available history segment; it is not part of
+the Block's identity. The query returns an immutable
 historical graph/fragment, historical location, dependency manifest, and status
 such as available, deleted, not-yet-created, incomplete, or unsupported. A known
 deleted root must be queryable through archive indexes without a live NodeKey.
+Later, `getBlockBiography(blockId)` can find and compose segments across memoirs
+using transfer links and a rebuildable catalogue; missing segments remain visible
+as gaps.
 
 First correctness implementation: locate a checkpoint on the requested state
 ancestry, replay the remaining verified deltas into an isolated graph, validate
@@ -404,7 +461,7 @@ incremental index must maintain the same results.
 Resolve dependency closure for shared annotation definitions and referenced
 content at the same revision. A missing dependency produces an explicit result
 diagnostic, not a fallback to a live registry. Full-history cached results are
-keyed by lineage/revision/root/options, never by the resettable runtime revision
+keyed by memoir/revision/root/options, never by the resettable runtime revision
 counter alone.
 
 Suggested initial tunables: journal batching around 250 ms or 1 MiB, checkpoints
@@ -416,11 +473,15 @@ changing live tree opportunistically on each keystroke.
 
 ## 9. Historical UI and execution isolation
 
-Provide History from a Block's context menu and the command registry. Begin with
-one root and a dedicated history panel showing timestamp, action, location, and
-a keyboard-operable scrubber/list. An in-place historical preview with the rest
-of the Document subdued can follow once isolation and layout are dependable.
-The same HistorySession should support either presentation.
+Provide History from a Block's context menu and the command registry. The
+first-pass demonstration should select one root, show a keyboard-operable
+timeline with timestamp/action/location and comparison, and scrub a read-only
+historical representation in the selected Block's context while the surrounding
+current Document is subdued. This is a preview overlay/session, not a mutation
+or replacement of the live Block. A dedicated panel may house controls and the
+comparison view; an unsupported Block type may fall back to a static panel
+preview. The same `HistorySession` should support either presentation. Multi-root
+scrubbing and richer view modes follow later.
 
 Normal Block views are not automatically safe historical renderers. They can
 register editing mounts, expose context-menu mutations, start timers, make
@@ -428,11 +489,13 @@ network requests, and portal floating windows into the current desktop. Introduc
 an explicit historical/read-only rendering context with denied mutation and
 controlled effects; do not rely solely on `contenteditable=false` or CSS.
 
-Initial renderer support: text and annotations, containers, Pages/tabs, lists,
-and a static Sticky Note representation. Other types use informative static
-previews/placeholders. Timers must not tick/beep, remote embeds must not execute,
-and historical windows must not create live desktop windows. Do not install the
-live InputGateway or active ToolbarBlock targeting on history-only content.
+First-pass renderer support should cover the Block types in the chosen Document
+fixture: text/annotations and their structural containers, including Pages/tabs
+and lists where present. Other types use informative static previews/placeholders.
+Static Sticky Note rendering and richer tool/media support can follow later.
+Timers must not tick/beep, remote embeds must not execute, and historical windows
+must not create live desktop windows. Do not install the live InputGateway or
+active ToolbarBlock targeting on history-only content.
 
 Allow text selection/copy in the historical view. Opening and closing it should
 restore current editing focus. Cancel superseded reconstruction requests during
@@ -448,7 +511,7 @@ runtime keys and derived measurement state.
 Resolve the historical fragment and dependencies, select a supported current
 destination, then generate a copy plan. Allocate fresh Block, placement, and
 annotation identities; remap internal references, retain explicit external
-references, and attach provenance to the source lineage/root/revision.
+references, and attach provenance to the source Block/memoir/revision.
 
 Reuse canonical fragment capture/clone/insertion concepts rather than legacy
 DTO conversion, which can lose inline atoms or shared structure. Treat linked
@@ -459,7 +522,9 @@ copied fragment where valid. It must not accidentally reconnect to live content.
 
 Revalidate the current destination and dependency versions immediately before
 committing. Insert once through TreeCommands as one undoable transaction and
-record a `historical-copy` revision. Copying does not rewind the source lineage.
+record a `historical-copy` revision. The copy's provenance names its source
+`blockId`, memoir, and revision; it has its own new `blockId`. Copying does not
+rewind or mutate the source Block.
 
 ### Later: restore content or subtree in place
 
@@ -486,20 +551,38 @@ restoration remains outside the first release.
 
 ## 11. Implementation roadmap and uplift
 
+### First pass: per-Document, complete durable vertical slice
+
+The implementation plan for Stage A only, including exact code locations,
+proposed interfaces, normalization, tests, and exit criteria, is in
+[BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md](BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md).
+
 | Stage | Deliverable and exit condition | Main uplift |
 | --- | --- | --- |
-| A. Identity and capture spike | Legacy-ID audit; precise commit envelopes for all commit paths; deterministic replay fixture covering edit/move/delete/split/join/undo. | Medium–large. Repository and command boundary work; no history UI yet. |
-| B. Isolated temporal queries | Checkpoint/replay and historical subtree/location/lineage results; original discussion's reordered/moved-child examples pass exactly. | Medium. Reuse canonical graph and projection foundations; define reference/dependency semantics. |
-| C. Durable memoirs | JSON sidecar plus journal, outbox, resource partitioning, idempotent append, recovery, receipts, reload identity mapping, branches, and retention compaction. | Large. Largest first-release risk; ordinary JSON remains independently usable. |
-| D. Read-only history panel | Context-menu command, timeline, comparison, static rendering, cancelled scrub requests, and unchanged live state. | Medium–large. Rendering isolation matters more than drawing a slider. |
-| E. Historical copy | Validated dependency-aware copy plan, new identities, provenance, one undoable insertion, save/reload. | Medium. Reuse fragment infrastructure but audit remapping and transclusions. |
-| F. In-place restoration | Conflict preview, content/subtree policies, optimistic validation, atomic apply and undo. | Large; recommended later release. |
+| A. Identity and capture spike | Audit/normalize missing or duplicate Block IDs; observe all successful repository commit paths; deterministic replay fixtures for text, structure, move, delete, split, join, and undo in one Document. | Medium–large. Repository and command boundary work. |
+| B. Isolated temporal queries | Checkpoint/replay and `getSubtreeAt` for a Block in one Document memoir; historical location and old/new membership; no live-repository mutation. | Medium. Canonical graph reuse and reference/dependency rules. |
+| C. Durable Document memoir | Sidecar plus journal, bounded outbox, idempotent append, recovery, save receipts, reload identity mapping, branch handling, and **lossless** consolidation. The Document remains usable without the memoir. | Large. Principal first-pass persistence risk. No cross-memoir coordinator or retention expiry. |
+| D. Read-only historical experience | Context-menu/command entry, Block-centred timeline, in-context scrub preview with subdued surroundings, compare, static fallbacks, keyboard access, and unchanged live state. | Medium–large. Safe rendering and focus isolation. |
+| E. Historical copy | Dependency-aware copy into the same Document, fresh identities, provenance, one undoable insertion, and save/reload. | Medium. Fragment remapping and transclusion audit. |
 
-First persistent release comprises A–E, reflecting the confirmed scope above.
-An internal A–B prototype is useful for validating feasibility but does
-not substitute for C's durability guarantees. Calendar estimates should follow
-the capture/replay and identity spikes; this is a multi-stage architectural
-feature, not a small toolbar task.
+A–E constitute the first persistent release. A–B alone are useful feasibility
+spikes but do not satisfy the agreed persistence requirement. Treat storage
+volume and typing latency as measured release gates. The first pass does not
+quietly expand to Workspace history or cross-Document continuity merely because
+the current runtime can place several Documents in one repository.
+
+### After the first pass: independent increments
+
+| Increment | Deliverable | Why deferred |
+| --- | --- | --- |
+| Cross-Document Block biography | Linked departure/arrival records, durable transfer coordination, and a rebuildable `blockId`-to-memoir catalogue. | Requires reliable transfer semantics and multi-memoir atomicity. |
+| Workspace-owned history | A separate Workspace memoir for Background/window arrangement and standalone Blocks, referencing exact Document revisions. | Different ownership and save boundaries. |
+| Retention compaction | User-visible cutoff, checkpoint rebasing, dependency protection, verified rewrite, and explicit expired-state markers. | Destructive to old history; must be designed against real storage measurements. |
+| In-place restoration | Preview conflicts, define content/subtree policies, validate current state, then apply as a new undoable edit. | Substantially harder than viewing or copying. |
+| Richer historical rendering | Static or versioned media, more Block types, multi-root selection, and portable archive/export. | Requires type-specific side-effect and dependency handling. |
+
+Calendar estimates should follow the identity/capture and replay spikes; this
+is a multi-stage architectural feature, not a small toolbar task.
 
 Likely implementation locations are `src/block-tree/repository.ts`,
 `commands.ts`, `types.ts`, and codec/clipboard modules; new `src/history/`
@@ -515,6 +598,8 @@ boundary. These are recommendations for future authorized work; none are being
 changed as part of this specification.
 
 ## 12. Acceptance and regression criteria
+
+### First-pass release gates
 
 1. Reproduce the supplied A/B/B1/B2/C examples. Historical order/membership
    comes from the selected revision, including descendants now elsewhere.
@@ -535,10 +620,9 @@ changed as part of this specification.
    resolve dependencies, insert atomically, undo correctly, and survive saving.
 8. Crash tests cover an incomplete journal tail, corrupt interior entry,
    duplicate retry, stale writer, consolidation/journal rotation, offline outbox,
-   multi-memoir transaction completion, resource-save/receipt failure ordering,
-   and externally edited JSON. Deleting/moving a memoir must leave the current
-   Document usable. Retention compaction must preserve retained states across
-   branches, identify expired states, and keep required save-recovery baselines.
+   resource-save/receipt failure ordering, and externally edited JSON. Deleting
+   or moving a memoir must leave the current Document usable. A missing memoir
+   or unsupported cross-resource boundary is reported as a gap, not continuity.
 9. Recording adds no whole-repository snapshots or file/network waits to ordinary
    typing/Enter. Extend existing [performance regressions](TEXT_EDIT_PERFORMANCE.md)
    and benchmark long paragraphs, large subtrees, journal growth, and replay time.
@@ -546,6 +630,19 @@ changed as part of this specification.
 10. Browser verification covers real history invocation, keyboard scrubbing,
     comparison/copy, live-state invariance, and save/reload against both the
     development server and rebuilt production client.
+
+### Later-increment gates
+
+11. Cross-Document transfer tests prove linked departure/arrival, atomic visibility
+    across memoirs, rebuildable catalogue lookup by `blockId`, and honest gaps
+    when a source memoir is unavailable.
+12. Workspace history tests show standalone/arrangement history without embedding
+    Document histories or silently loading a current Document into an old view.
+13. Retention tests preserve every retained branch and required dependency,
+    distinguish expired states from corruption, and leave the Document/undo
+    state untouched.
+14. Restoration tests cover conflict preview and a single undoable new edit;
+    they do not reuse historical inverse operations as if they were current.
 
 ## 13. Relationship to the broader Codex direction
 
