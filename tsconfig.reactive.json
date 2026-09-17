@@ -18,6 +18,7 @@
     "src/App.tsx",
     "src/demo/**/*",
     "src/block-tree/**/*",
+    "src/history/**/*",
     "src/input/**/*",
     "src/reactive-editor/**/*",
     "src/rendering/**/*",

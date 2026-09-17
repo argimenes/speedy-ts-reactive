@@ -3,6 +3,7 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { BlockClipboardService } from "./block-clipboard";
 import type { DeepReadonly, RepositoryCommitResult } from "../block-tree/commit-capture";
 import { applyCapturedCommitForTest } from "../block-tree/test-support/captured-replay";
+import { applyHistoryChanges } from "../history/replay";
 
 function setup(id: string | undefined = "source") {
   const editor = new ReactiveEditor({ id: "doc", type: "document-block", children: [
@@ -15,6 +16,15 @@ function setup(id: string | undefined = "source") {
   const baseline = editor.repository.snapshot();
   const events: DeepReadonly<RepositoryCommitResult>[] = [], errors: unknown[] = [];
   editor.repository.subscribeCommits(event => events.push(event), error => errors.push(error));
+  // Stage B enrolls normalized identities. Prove compact parity on the two
+  // normalized clipboard scenarios; the legacy-ID fixture remains Stage A only.
+  if (id) {
+    let compactState = baseline;
+    editor.repository.subscribeHistoryChanges(event => {
+      compactState = applyHistoryChanges(compactState, event);
+      expect(compactState).toEqual(editor.repository.snapshot());
+    }, error => errors.push(error));
+  }
   const clipboard = new BlockClipboardService(editor);
   const select = (key: string) => editor.blockSelection.replaceKeys([key]);
   return { editor, view, source, target, baseline, children, events, errors, clipboard, select };

@@ -1,6 +1,9 @@
 # Block-scoped history — Stage B technical implementation plan
 
-Status: **revised technical plan; not implemented**, 17 September 2026. Stage B
+Status: **implemented as an explicit in-memory proof**, 17 September 2026. See
+[the completion report](BLOCK_SCOPED_HISTORY_STAGE_B_COMPLETION.md) for verified
+scope, measurements, deviations, and unresolved issues. The contracts and initial
+implementation proposals below record the approved plan. Stage B
 covers compact exact capture and isolated historical services, with playback
 grouping derived from exact revisions. Existing Codex undo/redo behavior and
 undo-stack semantics remain unchanged. Word-oriented undo is a separate editor UX
@@ -76,7 +79,8 @@ alone will not fix paragraph-sized sequence copying.
 
 ## 3. Proposed implementation footprint
 
-These paths are proposed, not existing Stage B files.
+This is the original proposed footprint. The completion report maps the implemented
+organization and explains the smaller set of editor integration changes required.
 
 | Path | Proposed work |
 | --- | --- |

@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "benchmark:typing": "node scripts/benchmark-typing.mjs",
+    "benchmark:history": "node scripts/benchmark-history.mjs",
     "benchmark:typing:browser": "node scripts/benchmark-typing-browser.mjs",
     "start": "node ./dist/server/index.js",
     "dev:server": "nodemon dist/server/index.js"

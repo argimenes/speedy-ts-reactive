@@ -5,7 +5,8 @@ import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./spl
 import { clone } from "./clone";
 import { createCommitId } from "./ids";
 import { BlockIdentityIndex } from "./identity";
-import { prepareCommitCapture, finishCommitCapture, type CommitMetadata, type DeepReadonly, type PreparedCommitCapture, type RepositoryCommitResult, type RepositoryOptions } from "./commit-capture";
+import { prepareCommitCapture, finishCommitCapture, freeze, normalizeInputIntent, type CommitMetadata, type DeepReadonly, type PreparedCommitCapture, type RepositoryCommitResult, type RepositoryOptions } from "./commit-capture";
+import { prepareHistoryChanges, finishHistoryChanges, type PreparedHistoryChanges, type HistoryChanges, type CommitEnvelope } from "./compact-changes";
 import type {
   ContentKey,
   CommitId,
@@ -170,7 +171,12 @@ type CommitSubscriber = {
   listener: (result: DeepReadonly<RepositoryCommitResult>) => void;
   onError: (error: unknown, commitId: CommitId) => void;
 };
-type CaptureAttempt = { capture: PreparedCommitCapture } | { error: unknown };
+type Attempt<T> = { capture: T } | { error: unknown };
+type CaptureAttempt = {
+  full?: Attempt<PreparedCommitCapture>; compact?: Attempt<PreparedHistoryChanges>;
+  envelope: Attempt<Omit<CommitEnvelope, "commitId" | "label" | "timestamp" | "undoRecorded" | "afterRevision">>;
+};
+type HistorySubscriber = { listener: (event: DeepReadonly<HistoryChanges>) => void; onError: CommitSubscriber["onError"] };
 
 export interface RepositoryChange {
   label: string;
@@ -194,6 +200,7 @@ export class CanonicalRepository {
   private redoStack: HistoryEntry[] = [];
   private readonly identity?: BlockIdentityIndex;
   private readonly commitSubscribers = new Set<CommitSubscriber>();
+  private readonly historySubscribers = new Set<HistorySubscriber>();
   private deliveringCommit = false;
 
   constructor(initial: RepositoryState, options: RepositoryOptions = {}) {
@@ -250,27 +257,48 @@ export class CanonicalRepository {
     return () => { this.commitSubscribers.delete(subscriber); };
   }
 
-  private prepareCapture(state: RepositoryState, operations: RepositoryOperation[], metadata: CommitMetadata): CaptureAttempt | undefined {
-    if (!this.commitSubscribers.size) return;
-    try { return { capture: prepareCommitCapture(state, operations, metadata) }; }
-    catch (error) { return { error }; }
+  subscribeHistoryChanges(listener: HistorySubscriber["listener"], onError: HistorySubscriber["onError"]): () => void {
+    const subscriber = { listener, onError };
+    this.historySubscribers.add(subscriber);
+    return () => { this.historySubscribers.delete(subscriber); };
+  }
+
+  private prepareCapture(state: RepositoryState, operations: RepositoryOperation[], metadata: CommitMetadata, final?: RepositoryState): CaptureAttempt | undefined {
+    if (!this.commitSubscribers.size && !this.historySubscribers.size) return;
+    metadata = { ...metadata, inputIntent: normalizeInputIntent(metadata.inputIntent) };
+    const attempt = <T>(fn: () => T): Attempt<T> => { try { return { capture: fn() }; } catch (error) { return { error }; } };
+    return {
+      envelope: attempt(() => ({ beforeRevision: state.revision, root: { before: state.rootPlacementKey, after: final?.rootPlacementKey ?? state.rootPlacementKey },
+        cause: clone(metadata.cause ?? { kind: "edit" }), commands: clone(metadata.commands ?? [{ commandId: "repository.commit", subjects: [] }]),
+        ...(metadata.inputIntent ? { inputIntent: clone(metadata.inputIntent) } : {}) })),
+      full: this.commitSubscribers.size ? attempt(() => prepareCommitCapture(state, operations, metadata)) : undefined,
+      compact: this.historySubscribers.size ? attempt(() => prepareHistoryChanges(state, operations, final)) : undefined,
+    };
   }
 
   private deliverCapture(attempt: CaptureAttempt | undefined, commitId: CommitId, label: string, recordHistory: boolean): void {
     if (!attempt) return;
-    const subscribers = [...this.commitSubscribers];
     this.deliveringCommit = true;
-    const report = (subscriber: CommitSubscriber, error: unknown) => {
+    const report = (subscriber: { onError: CommitSubscriber["onError"] }, error: unknown) => {
       try { subscriber.onError(error, commitId); } catch { /* An observer cannot invalidate the edit. */ }
     };
     try {
-      if ("error" in attempt) { subscribers.forEach(subscriber => report(subscriber, attempt.error)); return; }
-      let event: DeepReadonly<RepositoryCommitResult>;
-      try { event = finishCommitCapture(attempt.capture, this.readState(), commitId, label, recordHistory); }
-      catch (error) { subscribers.forEach(subscriber => report(subscriber, error)); return; }
-      for (const subscriber of subscribers) {
-        try { subscriber.listener(event); } catch (error) { report(subscriber, error); }
+      if ("error" in attempt.envelope) {
+        [...this.commitSubscribers, ...this.historySubscribers].forEach(s => report(s, (attempt.envelope as { error: unknown }).error)); return;
       }
+      const envelope = freeze({ ...attempt.envelope.capture, commitId, label, timestamp: new Date().toISOString(),
+        undoRecorded: recordHistory, afterRevision: this.state.revision });
+      const deliver = <T, E>(prepared: Attempt<T> | undefined, subscribers: Array<{ listener: (event: E) => void; onError: CommitSubscriber["onError"] }>, finish: (value: T) => E) => {
+        if (!prepared) return;
+        if ("error" in prepared) { subscribers.forEach(s => report(s, prepared.error)); return; }
+        let event: E;
+        try { event = finish(prepared.capture); } catch (error) { subscribers.forEach(s => report(s, error)); return; }
+        for (const subscriber of subscribers) { try { subscriber.listener(event); } catch (error) { report(subscriber, error); } }
+      };
+      deliver(attempt.full, [...this.commitSubscribers], value => freeze({
+        ...finishCommitCapture(value, this.readState(), commitId, label, recordHistory, envelope.timestamp), ...envelope,
+      }));
+      deliver(attempt.compact, [...this.historySubscribers], value => finishHistoryChanges(value, envelope));
     } finally { this.deliveringCommit = false; }
   }
 
@@ -311,7 +339,7 @@ export class CanonicalRepository {
     }
     next.revision = current.revision + 1;
     const identityDelta = this.identity?.validateCommit(operations);
-    const capture = this.prepareCapture(current, operations, metadata);
+    const capture = this.prepareCapture(current, operations, metadata, next);
     const commitId = createCommitId();
     const previousContents = new Map<ContentKey, ContentRecord | undefined>();
     for (const operation of operations) {

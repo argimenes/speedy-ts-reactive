@@ -3,10 +3,12 @@
 Status: approved architectural direction, 17 September 2026. Stage A is implemented
 and verified with the approved copy-policy amendment. Compact capture and derived
 sentence-oriented playback are approved design policy; existing undo/redo behavior
-remains unchanged. Stage B is
-planned in [its technical implementation plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md).
-Stages B–E are not implemented. See
-[the Stage A implementation report](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md).
+remains unchanged. Stage B's explicitly enrolled in-memory proof is implemented;
+see [its plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md) and
+[completion report](BLOCK_SCOPED_HISTORY_STAGE_B_COMPLETION.md) for measurements,
+deviations, and remaining limitations. Stages C–E are not implemented. The
+[Stage A implementation report](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md)
+and its original benchmark remain unchanged evidence.
 Reviewed against the current repository and the supplied discussion,
 `/Users/iianneill/Downloads/codex-block-scoped-history.md`.
 

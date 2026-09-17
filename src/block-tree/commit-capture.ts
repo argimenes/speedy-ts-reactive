@@ -22,7 +22,21 @@ export interface CommandDescriptor {
   clipboard?: { token: string; action: "cut" | "paste"; preservedIds?: boolean };
 }
 
-export interface CommitMetadata { cause?: CommitCause; commands?: CommandDescriptor[] }
+export interface InputIntent {
+  kind?: "typing" | "paste" | "selection-replacement" | "composition";
+  boundaryBefore?: "composition" | "paste" | "selection-replacement" | "relocation" | "focus";
+  occurrenceToken?: string;
+}
+/** Descriptive hints are optional; malformed/unknown members never break capture. */
+export function normalizeInputIntent(value: unknown): InputIntent | undefined {
+  if (!value || typeof value !== "object") return;
+  const input = value as Record<string, unknown>, result: InputIntent = {};
+  if (typeof input.kind === "string" && ["typing", "paste", "selection-replacement", "composition"].includes(input.kind)) result.kind = input.kind as InputIntent["kind"];
+  if (typeof input.boundaryBefore === "string" && ["composition", "paste", "selection-replacement", "relocation", "focus"].includes(input.boundaryBefore)) result.boundaryBefore = input.boundaryBefore as InputIntent["boundaryBefore"];
+  if (typeof input.occurrenceToken === "string") result.occurrenceToken = input.occurrenceToken;
+  return Object.keys(result).length ? result : undefined;
+}
+export interface CommitMetadata { cause?: CommitCause; commands?: CommandDescriptor[]; inputIntent?: InputIntent }
 export interface RecordDelta<K, T> { key: K; before: T | null; after: T | null }
 export interface RepositoryCommitResult {
   commitId: CommitId;
@@ -36,6 +50,7 @@ export interface RepositoryCommitResult {
   contents: RecordDelta<ContentKey, ContentRecord>[];
   placements: RecordDelta<PlacementKey, PlacementRecord>[];
   commands: CommandDescriptor[];
+  inputIntent?: InputIntent;
 }
 export interface RepositoryOptions { enforceBlockIdentity?: boolean }
 
@@ -48,7 +63,7 @@ export interface PreparedCommitCapture {
 }
 
 // Records contain JSON-shaped payloads. Compare without serializing on typing.
-function equal(a: unknown, b: unknown): boolean {
+export function equal(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
   if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
   const left = Object.keys(a), right = Object.keys(b);
@@ -56,7 +71,7 @@ function equal(a: unknown, b: unknown): boolean {
     equal((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));
 }
 
-function freeze<T>(value: T): DeepReadonly<T> {
+export function freeze<T>(value: T): DeepReadonly<T> {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
     for (const child of Object.values(value)) freeze(child);
@@ -80,7 +95,7 @@ export function prepareCommitCapture(state: RepositoryState, operations: readonl
 }
 
 export function finishCommitCapture(before: PreparedCommitCapture, state: RepositoryState,
-  commitId: CommitId, label: string, undoRecorded: boolean): DeepReadonly<RepositoryCommitResult> {
+  commitId: CommitId, label: string, undoRecorded: boolean, timestamp = new Date().toISOString()): DeepReadonly<RepositoryCommitResult> {
   const deltas = <T>(previous: Map<string, T | null>, current: Record<string, T>): RecordDelta<string, T>[] => {
     const result: RecordDelta<string, T>[] = [];
     for (const [key, value] of previous) {
@@ -90,11 +105,12 @@ export function finishCommitCapture(before: PreparedCommitCapture, state: Reposi
     return result;
   };
   return freeze({
-    commitId, label, timestamp: new Date().toISOString(), undoRecorded,
+    commitId, label, timestamp, undoRecorded,
     cause: before.metadata.cause ?? { kind: "edit" },
     beforeRevision: before.revision, afterRevision: state.revision,
     root: { before: before.root, after: state.rootPlacementKey },
     contents: deltas(before.contents, state.contents), placements: deltas(before.placements, state.placements),
     commands: before.metadata.commands ?? [{ commandId: "repository.commit", subjects: [] }],
+    ...(before.metadata.inputIntent ? { inputIntent: before.metadata.inputIntent } : {}),
   });
 }
