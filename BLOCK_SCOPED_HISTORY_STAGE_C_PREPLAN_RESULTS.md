@@ -7,8 +7,9 @@ carries these settled contracts forward and sequences the still-unproved descrip
 storage-lifecycle and live-cost gates before production integration. This report's
 experimental evidence remains unchanged.
 Implementation follow-up: [G1 gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md)
-now demonstrate a separate definition-lifetime/structural-reachability blocker.
-Implementation stopped before storage or production codec integration. This does
+document a separate definition-lifetime/structural-reachability counterexample and
+the ownership-aware correction now being tested after authorization to continue.
+Production codec and storage integration remain gated. This does
 not reopen the settled ownership-boundary or `.memory` decisions below.
 
 ## Outcome and ownership-boundary decision

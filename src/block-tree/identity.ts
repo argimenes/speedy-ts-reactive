@@ -129,3 +129,41 @@ export class BlockIdentityIndex {
     }
   }
 }
+
+export type PlacementIdentityDelta = Map<string, string | undefined>;
+/** Current structural identities only. Inverse records carry retired IDs back
+ * through undo; this index never retains a tombstone for each deleted edge. */
+export class PlacementIdentityIndex {
+  private readonly byId = new Map<string, string>();
+  private readonly byKey = new Map<string, string>();
+  constructor(state: RepositoryState) {
+    this.acceptCommit(this.validateCommit(Object.values(state.placements).map(record => ({ kind: "put-placement", record }))));
+  }
+  get enabled(): boolean { return this.byId.size > 0; }
+  validateCommit(operations: readonly RepositoryOperation[]): PlacementIdentityDelta {
+    const final = new Map<string, RepositoryState["placements"][string] | undefined>();
+    for (const op of operations) {
+      if (op.kind === "put-placement") final.set(op.record.key, op.record);
+      if (op.kind === "remove-placement") final.set(op.key, undefined);
+    }
+    const claimed = new Set<string>(), delta: PlacementIdentityDelta = new Map();
+    for (const [key, record] of final) {
+      const id = record?.placementId, previous = this.byKey.get(key);
+      if (id !== undefined && (record?.kind === "inline" || typeof id !== "string" || !id.trim())) throw new Error("Invalid authored Placement identity");
+      if (record && previous !== undefined && id !== previous) throw new Error("An existing Placement identity cannot be changed");
+      if (id !== undefined) {
+        const owner = this.byId.get(id);
+        if (claimed.has(id) || owner !== undefined && owner !== key && (!final.has(owner) || final.get(owner)?.placementId === id)) throw new Error("Duplicate authored Placement identity");
+        claimed.add(id);
+      }
+      delta.set(key, id);
+    }
+    return delta;
+  }
+  acceptCommit(delta: PlacementIdentityDelta): void {
+    for (const key of delta.keys()) {
+      const old = this.byKey.get(key); if (old !== undefined) this.byId.delete(old); this.byKey.delete(key);
+    }
+    for (const [key, id] of delta) if (id !== undefined) { this.byId.set(id, key); this.byKey.set(key, id); }
+  }
+}

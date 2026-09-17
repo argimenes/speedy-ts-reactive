@@ -5,7 +5,7 @@ import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./spl
 import { clone } from "./clone";
 import { validateTarget } from "./external-reference";
 import { createCommitId } from "./ids";
-import { BlockIdentityIndex } from "./identity";
+import { BlockIdentityIndex, PlacementIdentityIndex, type PlacementIdentityDelta } from "./identity";
 import { prepareCommitCapture, finishCommitCapture, freeze, normalizeInputIntent, type CommitMetadata, type DeepReadonly, type PreparedCommitCapture, type RepositoryCommitResult, type RepositoryOptions } from "./commit-capture";
 import { prepareHistoryChanges, finishHistoryChanges, type PreparedHistoryChanges, type HistoryChanges, type CommitEnvelope } from "./compact-changes";
 import type {
@@ -115,6 +115,7 @@ export function deriveLocations(state: RepositoryState): Map<PlacementKey, Locat
 }
 
 export function validateRepository(state: RepositoryState): void {
+  new PlacementIdentityIndex(state);
   if (!state.placements[state.rootPlacementKey]) {
     throw new ModelInvariantError(`Missing root placement ${state.rootPlacementKey}`);
   }
@@ -155,6 +156,19 @@ export function validateRepository(state: RepositoryState): void {
     for (const relationKey of Object.values(content.ownedRelations)) visit(relationKey, next);
   };
   visit(state.rootPlacementKey, new Set());
+  // Definition membership is a liveness root, not a fabricated occurrence.
+  // Validate every retained component even when no placement targets its Block.
+  for (const content of Object.values(state.contents)) {
+    if (content.definitionOwnerKey === undefined) continue;
+    const owner = state.contents[content.definitionOwnerKey];
+    if (owner === content && content.viewType === "document-block") continue;
+    if (!owner || owner.viewType !== "document-block" ||
+      ["text-cell", "image-cell", "document-block", "workspace-block"].includes(content.viewType)) {
+      throw new ModelInvariantError(`Invalid definition owner for ${content.key}`);
+    }
+    const ancestors = new Set([content.key]);
+    for (const key of [...content.children, ...content.inlineContent, ...Object.values(content.ownedRelations)]) visit(key, ancestors);
+  }
   for (const placementKey of Object.keys(state.placements)) {
     if (!reachable.has(placementKey)) {
       throw new ModelInvariantError(`Placement ${placementKey} is unreachable from the root`);
@@ -209,12 +223,14 @@ export class CanonicalRepository {
   private undoStack: HistoryEntry[] = [];
   private redoStack: HistoryEntry[] = [];
   private readonly identity?: BlockIdentityIndex;
+  private readonly placementIdentity: PlacementIdentityIndex;
   private readonly commitSubscribers = new Set<CommitSubscriber>();
   private readonly historySubscribers = new Set<HistorySubscriber>();
   private deliveringCommit = false;
 
   constructor(initial: RepositoryState, options: RepositoryOptions = {}) {
     validateRepository(initial);
+    this.placementIdentity = new PlacementIdentityIndex(initial);
     if (options.enforceBlockIdentity) this.identity = new BlockIdentityIndex(initial);
     const [state, setState] = createStore(clone(initial));
     this.state = state;
@@ -224,6 +240,7 @@ export class CanonicalRepository {
 
   /** Internal read-only access. Never mutate these records; use commit. */
   readState(): RepositoryState { return unwrap(this.state); }
+  hasSemanticPlacements(): boolean { return this.placementIdentity.enabled; }
 
   contentReferenceCount(key: ContentKey): number { return this.references.get(key) ?? 0; }
 
@@ -319,19 +336,20 @@ export class CanonicalRepository {
   commit(label: string, operations: RepositoryOperation[], recordHistory = true, metadata: CommitMetadata = {}): void {
     this.assertNotCaptureCallback();
     if (!operations.length) return;
+    const placementDelta = this.placementIdentity.validateCommit(operations);
     const inlineOwner = inlineOwnerFor(this.readState(), operations, this.references);
     if (inlineOwner) {
-      this.commitInline(label, operations, inlineOwner, recordHistory, metadata);
+      this.commitInline(label, operations, inlineOwner, recordHistory, metadata, undefined, undefined, placementDelta);
       return;
     }
     const split = splitChangeFor(this.readState(), operations, this.references);
     if (split) {
-      this.commitInline(label, operations, undefined, recordHistory, metadata, split);
+      this.commitInline(label, operations, undefined, recordHistory, metadata, split, undefined, placementDelta);
       return;
     }
     const childrenOwner = emptyParagraphParentFor(this.readState(), operations, this.references);
     if (childrenOwner) {
-      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner);
+      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner, placementDelta);
       return;
     }
     const current = this.snapshot();
@@ -362,6 +380,7 @@ export class CanonicalRepository {
       this.setState(reconcile(next));
       this.rebuildReferences();
       if (identityDelta) this.identity!.acceptCommit(identityDelta);
+      this.placementIdentity.acceptCommit(placementDelta);
       if (recordHistory) {
         this.undoStack.push({
           commitId,
@@ -377,7 +396,7 @@ export class CanonicalRepository {
     });
   }
 
-  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey): void {
+  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta): void {
     const current = this.readState();
     // Capture inverse data before changing any reactive records.
     const inverse = operations.map((operation) => inverseFor(current, operation)).reverse();
@@ -433,6 +452,7 @@ export class CanonicalRepository {
       }
       this.setState("revision", current.revision + 1);
       if (identityDelta) this.identity!.acceptCommit(identityDelta);
+      if (placementDelta) this.placementIdentity.acceptCommit(placementDelta);
       if (recordHistory) {
         this.undoStack.push({ commitId, label, forward: clone(operations), inverse });
         this.redoStack = [];

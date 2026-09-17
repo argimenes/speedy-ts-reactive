@@ -81,12 +81,15 @@ export function planCrossTextEdit(source: RepositoryState, segments: CrossTextSe
       content.wireChildren = "omitted"; content.wireRelation = "omitted";
     }
     state.contents[key] = content;
-    state.placements[placementKey] = { key: placementKey, contentKey: key, kind: "owned" };
+    state.placements[placementKey] = { ...(i === 0 ? clone(source.placements[placementKey]) : {}), key: placementKey, contentKey: key, kind: "owned" };
     output.push(placementKey);
   }
   const updatedParent = clone(parent);
   updatedParent.children.splice(firstIndex, segments.length, ...output); updatedParent.revision++;
   state.contents[parent.key] = updatedParent;
+  // Absorbed paragraphs are explicitly consumed by this compound edit. Their
+  // surviving Cells/owned margin placements were transferred to output records.
+  for (const content of records.slice(1)) delete state.contents[content.key];
   return { state, placementKey: output.at(-1)!, caret: (lines.length === 1 ? prefix.length : 0) + [...lines.at(-1)!].length,
     inputs: records.map((record, i) => ({ contentKey: record.key, placementKey: segments[i].placementKey, blockId: readBlockId(record) })),
     outputs: output.map(placementKey => { const record = state.contents[state.placements[placementKey].contentKey]; return { contentKey: record.key, placementKey, blockId: readBlockId(record) }; }),

@@ -34,6 +34,7 @@ export function emptyParagraphParentFor(
   const child = inserting ? put.find(c => c.key === placement.contentKey) : state.contents[placement.contentKey];
   if (!child || child.inlineKind !== "standoff" || child.viewType !== "standoff-editor-block" ||
     child.children.length || child.inlineContent.length || Object.keys(child.ownedRelations).length) return;
+  if (child.definitionOwnerKey !== undefined && state.contents[child.definitionOwnerKey]?.viewType !== "document-block") return;
   if (inserting ? !!state.contents[child.key] : !operations.some(op => op.kind === "remove-content" && op.key === child.key)) return;
   const parent = put.find(c => c.key !== child.key);
   const previous = parent && state.contents[parent.key];
@@ -66,6 +67,7 @@ export function splitChangeFor(
   if (new Set(put.map(record => record.key)).size !== put.length) return;
   const right = splitting ? put.find(record => record.key === placement.contentKey) : state.contents[placement.contentKey];
   if (!right || right.inlineKind !== "standoff" || right.children.length || Object.keys(right.ownedRelations).length) return;
+  if (right.definitionOwnerKey !== undefined && state.contents[right.definitionOwnerKey]?.viewType !== "document-block") return;
   if (splitting ? !!state.contents[right.key] : !operations.some(op => op.kind === "remove-content" && op.key === right.key)) return;
   if (put.length !== (splitting ? 3 : 2)) return;
   const existing = put.filter(record => record.key !== right.key);

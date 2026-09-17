@@ -6,6 +6,7 @@ import { TreeCommands } from "../../block-tree/commands";
 import type { DeepReadonly } from "../../block-tree/commit-capture";
 import type { HistoryChanges } from "../../block-tree/compact-changes";
 import { decodeWire, encodeWire } from "../preplan-spike/wire";
+import { openGateWorkspace } from "./editor";
 import { externalStatus, locations, projectOwned, replayResource, sameOwnedState, transition, validateResource,
   type ExternalTarget, type OwnershipEvidence, type ResourceSnapshot, type ResourceTransition } from "./resource";
 
@@ -34,6 +35,52 @@ function setup() {
 }
 
 describe("Stage C G1 owned resource candidate", () => {
+  it("normalizes a live Workspace boundary, deletes the owning definition and closes/reopens its scope without changing A", () => {
+    const s = setup(), state = s.repository.snapshot();
+    const evidenceA = { ...s.evidence, root: { key: s.key("A"), contentKey: s.contentKey("A"), placementId: s.placementIds.get(s.key("A"))! } };
+    const evidenceB = { ...s.evidence, externalTargets: new Map(), root: { key: s.key("B"), contentKey: s.contentKey("B"), placementId: s.placementIds.get(s.key("B"))! } };
+    const workspace = openGateWorkspace(state, new Map([["resource-A", evidenceA], ["resource-B", evidenceB]]));
+    const before = workspace.snapshot("resource-A");
+    const commands = new TreeCommands(workspace.repository, k => k);
+    const errors: unknown[] = [], events: DeepReadonly<HistoryChanges>[] = [];
+    workspace.repository.subscribeHistoryChanges(e => {
+      events.push(e);
+      expect(transition(before, workspace.snapshot("resource-A"), e)).toBeUndefined();
+    }, e => errors.push(e));
+    commands.remove(s.key("b"));
+    expect(workspace.repository.readState().contents[s.contentKey("b")]).toBeDefined();
+    commands.deleteUnplacedDefinition(s.contentKey("b"));
+    expect(workspace.repository.readState().contents[s.contentKey("b")]).toBeUndefined();
+    expect(workspace.snapshot("resource-A")).toEqual(before);
+    workspace.repository.undo(); workspace.repository.undo();
+    workspace.closeResource("resource-B");
+    expect(workspace.repository.readState().contents[s.contentKey("B")]).toBeUndefined();
+    expect(workspace.snapshot("resource-A")).toEqual(before);
+    workspace.repository.undo(); expect(workspace.repository.readState().contents[s.contentKey("B")]).toBeDefined();
+    expect(events).toHaveLength(6); expect(errors).toEqual([]);
+  });
+
+  it("captures retargeting and explicit pin changes as owned descriptor preimages through undo", () => {
+    const s = setup(), state = s.repository.snapshot();
+    const evidenceA = { ...s.evidence, root: { key: s.key("A"), contentKey: s.contentKey("A"), placementId: s.placementIds.get(s.key("A"))! } };
+    const evidenceB = { ...s.evidence, externalTargets: new Map(), root: { key: s.key("B"), contentKey: s.contentKey("B"), placementId: s.placementIds.get(s.key("B"))! } };
+    const workspace = openGateWorkspace(state, new Map([["resource-A", evidenceA], ["resource-B", evidenceB]]));
+    let mirror = workspace.snapshot("resource-A"); const errors: unknown[] = [];
+    workspace.repository.subscribeHistoryChanges(e => {
+      const expected = workspace.snapshot("resource-A", mirror.revision + 1);
+      const delta = transition(mirror, expected, e)!;
+      mirror = replayResource(mirror, decodeWire(encodeWire(delta)) as typeof delta);
+      expect(mirror).toEqual(expected);
+    }, e => errors.push(e));
+    const placement = clone(workspace.repository.readState().placements[s.external]);
+    placement.externalReference!.targetId = "another-target";
+    placement.externalReference!.version = { kind: "unpinned" };
+    workspace.repository.commit("Retarget", [{ kind: "put-placement", record: placement }]);
+    const pinned = clone(placement); pinned.externalReference!.version = { kind: "revision", memoirId: "other-memory", segmentId: "other-segment", revisionId: "other-revision" };
+    workspace.repository.commit("Pin", [{ kind: "put-placement", record: pinned }]);
+    workspace.repository.undo(); workspace.repository.undo(); workspace.repository.redo(); workspace.repository.redo();
+    expect(mirror.revision).toBe(6); expect(errors).toEqual([]);
+  });
   it("preserves a structural boundary without retaining the foreign definition, and reports a local occurrence", () => {
     const s = setup(), state = s.project();
     expect(Object.values(state.contents).map(c => c.payload.id).sort()).toEqual(["A", "a"]);

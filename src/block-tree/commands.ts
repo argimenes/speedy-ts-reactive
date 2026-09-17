@@ -1,4 +1,5 @@
 import { clone } from "./clone";
+import { ownNewDefinitions } from "./definition-ownership";
 import { planCrossTextEdit, type CrossTextSegment } from "./cross-text-edit";
 import { linkedRegistry } from "./linked-annotations";
 import { captureBlocks, cloneBlocks, remapKnownBlockReferences, type BlockFragment } from "./clipboard";
@@ -153,6 +154,14 @@ export class TreeCommands {
 
   private publish(label: string, operations: RepositoryOperation[], descriptor?: CommandDescriptor): void {
     if (!operations.length) return;
+    operations = ownNewDefinitions(this.pending?.draft ?? this.repository.readState(), operations,
+      key => this.pending ? deriveLocations(this.pending.draft).get(key) : this.repository.locationOf(key));
+    const current = this.pending?.draft ?? this.repository.readState();
+    if (this.repository.hasSemanticPlacements() || operations.some(op => op.kind === "put-placement" && op.record.placementId !== undefined)) {
+      operations = operations.map(op => op.kind === "put-placement" && op.record.kind !== "inline" &&
+        !current.placements[op.record.key] && op.record.placementId === undefined
+        ? { ...op, record: { ...op.record, placementId: createBlockId() } } : op);
+    }
     const description = descriptor ?? { commandId: "tree.command", subjects: [] };
     if (this.pending) {
       const { next } = planOperations(this.pending.draft, operations);
@@ -207,13 +216,40 @@ export class TreeCommands {
       Object.values(content.ownedRelations).forEach(visit);
     };
     visit(state.rootPlacementKey);
+    // Retained definitions outlive their last visible placement. This applies
+    // only to explicitly normalized Documents, leaving legacy pruning intact.
+    const retained = new Set<string>();
+    for (const content of Object.values(state.contents)) {
+      if (content.definitionOwnerKey === undefined) continue;
+      if (content.key === content.definitionOwnerKey) continue;
+      retained.add(content.key);
+      content.children.forEach(visit);
+      content.inlineContent.forEach(visit);
+      Object.values(content.ownedRelations).forEach(visit);
+    }
     for (const placementKey of Object.keys(state.placements)) {
       if (!reachablePlacements.has(placementKey)) delete state.placements[placementKey];
     }
     const usedContent = new Set(Object.values(state.placements).map((p) => p.contentKey));
     for (const contentKey of Object.keys(state.contents)) {
-      if (!usedContent.has(contentKey)) delete state.contents[contentKey];
+      if (!usedContent.has(contentKey) && !retained.has(contentKey)) delete state.contents[contentKey];
     }
+  }
+
+  /** Explicit definition deletion requires removing its local placements first.
+   * Foreign consumers are not scanned and do not decide the owner's lifetime. */
+  deleteUnplacedDefinition(contentKey: string): void {
+    const before = this.state(), content = before.contents[contentKey];
+    if (!content?.definitionOwnerKey) throw new TreeCommandError("Not a retained Document definition");
+    if (Object.values(before.placements).some(p => !p.externalReference && p.contentKey === contentKey)) {
+      throw new TreeCommandError("Remove the definition's local placements before deleting it");
+    }
+    const next = clone(before);
+    delete next.contents[contentKey].definitionOwnerKey;
+    this.pruneUnreachable(next);
+    this.publish("Delete unplaced definition", this.diff(before, next), {
+      commandId: "tree.deleteUnplacedDefinition", subjects: [{ contentKey, blockId: readBlockId(content) }],
+    });
   }
 
   private diff(before: RepositoryState, after: RepositoryState): RepositoryOperation[] {
@@ -477,6 +513,11 @@ export class TreeCommands {
     if (childPolicy === "preserve") {
       decodedRootContent.children = [...previousContent.children];
       decodedRootContent.wireChildren = previousContent.wireChildren;
+      // Replacement transfers these placements; it consumes the old definition
+      // when unshared, rather than leaving a second owner for the same slots.
+      if (Object.values(state.placements).filter(p => p.contentKey === previousContent.key).length === 1) {
+        delete next.contents[previousContent.key];
+      }
     }
     next.contents[decodedRootContent.key] = decodedRootContent;
     this.pruneUnreachable(next);
@@ -767,6 +808,7 @@ export class TreeCommands {
 
     const copiedContentKey = copyContent(placement.contentKey);
     next.placements[placementKey] = {
+      ...clone(placement),
       key: placementKey,
       contentKey: copiedContentKey,
       kind: "owned",
@@ -946,6 +988,9 @@ export class TreeCommands {
       parent,
       parent.children.filter((candidate) => candidate !== rightPlacementKey),
     );
+    // Join explicitly consumes the right definition and transfers its Cells.
+    // Membership retention applies to unlink, not to a recorded merge.
+    delete next.contents[right.key];
     this.pruneUnreachable(next);
     const survivor = this.subject(state, leftPlacementKey), absorbed = this.subject(state, rightPlacementKey);
     this.publish("Join Standoff Blocks", this.diff(state, next), { commandId: "tree.joinStandoff", subjects: [survivor, absorbed], relation: { kind: "join", survivor, absorbed, at: joinIndex } });

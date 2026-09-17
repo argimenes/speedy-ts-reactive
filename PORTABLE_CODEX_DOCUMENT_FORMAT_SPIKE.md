@@ -18,8 +18,10 @@ descriptor/current-Document round-trip proof before production codec integration
 The [G1 implementation results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md)
 expose a retained-definition lifetime gap beyond this spike's fixtures: a B-owned
 definition with placements only in A cannot retain ordinary standalone editor
-behavior without a resource-lifetime/validation rule. Implementation stopped at
-that architectural gate; these original spike results are not expanded by claim.
+behavior without a resource-lifetime/validation rule. Following the user's
+instruction to continue, the Stage C gate candidate now retains definitions through
+explicit canonical Document membership. The original spike results remain unchanged;
+the new lifecycle regressions and remaining obligations are in the gate report.
 
 ## Finding
 

@@ -27,11 +27,22 @@ export function externalDefinitionLink(property: Record<string, unknown>): Exter
   return value.target;
 }
 
+export function externalAssetLink(property: Record<string, unknown>): ExternalTarget | undefined {
+  const value = property.externalAsset as { format?: string; version?: number; target?: unknown } | undefined;
+  if (!value || value.format !== "codex-external-asset-gate") return;
+  if (value.version !== 1) throw new Error("Unsupported external asset link version");
+  validateTarget(value.target);
+  if (value.target.kind !== "asset" || value.target.targetId !== property.assetId) throw new Error("External asset provenance does not match the authored reference");
+  return value.target;
+}
+
 function requireValid(ok: unknown, reason: string): asserts ok {
   if (!ok) throw new Error(`External reference: ${reason}`);
 }
 const id = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
-export function validateTarget(target: ExternalTarget): void {
+export function validateTarget(value: unknown): asserts value is ExternalTarget {
+  requireValid(value !== null && typeof value === "object" && !Array.isArray(value), "invalid target descriptor");
+  const target = value as ExternalTarget;
   requireValid(["block", "definition", "asset"].includes(target.kind) && id(target.targetId), "invalid external identity");
   requireValid(target.source && (target.source.scope === "unknown" ||
     ["document", "workspace"].includes(target.source.scope) && "resourceId" in target.source && id(target.source.resourceId)), "invalid source identity");

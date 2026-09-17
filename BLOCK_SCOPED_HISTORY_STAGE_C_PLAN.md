@@ -4,11 +4,10 @@ Date: 2026-09-17. Status: implementation authorized by the user's subsequent
 instruction; mandatory early proof gates remain in force. See the
 [gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md) for current evidence.
 No Stage C completion or production Document-format integration is claimed.
-Implementation is currently **stopped at G1**: retained resource-owned definitions
-can lose ordinary editor usability/lifetime when their only remaining placements
-are in another Document. The gate report contains two executable counterexamples.
-The sequence below is retained; its architectural stop rule requires resolving
-that lifetime/validation assumption before proceeding.
+Implementation has resumed at **G1** under the user's instruction to continue.
+The retained-definition counterexamples led to an explicit ownership-aware
+lifetime correction, described below and in the gate report. Their regression
+tests now pass; this is not a claim that all G1 or later exit criteria pass.
 
 Requirements: [history specification](BLOCK_SCOPED_HISTORY_SPEC.md), the accepted
 [portable Document direction](PORTABLE_CODEX_DOCUMENT_FORMAT_SPIKE.md), and the
@@ -192,8 +191,28 @@ Maintain before/after ownership at the committed transaction boundary; deletion
 must use retained pre-pruning evidence. A new inline Cell belongs to its known
 owner; an unplaced arbitrary record without attribution is unsupported evidence,
 not Workspace-owned by default. Repeated windows select one resource, not recorders
-per occurrence. Owned definitions survive removal of an owned placement while
-internal references remain; pruning and undo follow existing editor semantics.
+per occurrence. In a normalized Document, definition-table membership persists
+independently of placements, including when no local reference remains. Removing
+a placement does not delete its definition or its retained component. Validation
+and pruning must recognize this membership without fabricating occurrences.
+The canonical candidate uses a private `ContentRecord.definitionOwnerKey` (the
+Document's own self-membership marks normalization); the portable definition table
+expresses the same membership without serializing runtime keys. Cells belong to
+their host and cannot be independent retained definitions.
+
+Explicit deletion of an unplaced definition removes its membership/content and
+unneeded Cells in one ordinary commit. Local incoming placements must be removed
+first; foreign consumers are neither scanned nor made lifetime authorities.
+Merge, unwrap and consuming replacement operations explicitly retire their
+consumed definitions while transferring surviving slots. Their inverse operations
+restore membership and exact records in the existing single undo step. New and
+copied definitions acquire destination ownership in their creating commit;
+identity-preserving moves do not transfer ownership. Whole-Document copies include
+unplaced definitions. Resource close/unload must release the entire owning scope
+and preserve foreign references as descriptors, rather than masquerading as an
+ordinary Block unlink. Prove this lifecycle before production integration.
+Legacy repositories keep their existing pruning semantics until explicit in-memory
+normalization; normalization happens before history enrollment, not as an undo edit.
 
 Bind semantic Placement IDs once when committed edges become part of the admitted
 resource, retain evidence needed for undo/redo and archived history, and allocate

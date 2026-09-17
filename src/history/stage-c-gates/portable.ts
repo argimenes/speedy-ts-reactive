@@ -24,7 +24,7 @@ export interface GateDocument {
 const own = (v: object, k: string) => Object.prototype.hasOwnProperty.call(v, k);
 function requireValue(ok: unknown, reason: string): asserts ok { if (!ok) throw new Error(`G1 portable: ${reason}`); }
 const identifier = (v: unknown) => typeof v === "string" && v.trim().length > 0;
-const canonicalFields = new Set(["key", "viewType", "payload", "children", "inlineContent", "inlineRevision", "inlineKind", "ownedRelations", "opaqueRelations", "wireChildren", "wireRelation", "revision"]);
+const canonicalFields = new Set(["key", "definitionOwnerKey", "viewType", "payload", "children", "inlineContent", "inlineRevision", "inlineKind", "ownedRelations", "opaqueRelations", "wireChildren", "wireRelation", "revision"]);
 
 export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>): GateDocument {
   validateResource(state as ResourceSnapshot);

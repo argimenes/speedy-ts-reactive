@@ -1,9 +1,107 @@
 # Stage C implementation gate results
 
-Status: **stopped at G1 — architectural assumption falsified**. Stage C is not
+Status: **G1 functional candidate passing; G2 storage qualification in progress**. Stage C is not
 complete. No production format dispatch, ordinary Save/Open integration, outbox,
 `.memory` server store or Stage D–E work has been enabled.
 Plan: [Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md).
+
+## Resumed implementation — current evidence
+
+The user's instruction to continue authorized the recommended ownership-aware
+retention correction. The original stop and its evidence are retained below as
+historical findings; they no longer describe the current candidate's behavior.
+
+Canonical `ContentRecord.definitionOwnerKey` records membership in a Document's
+definition table. It is captured by the existing field/record patch machinery and
+restored by existing inverse operations. The Document's self-membership marks a
+normalized table; Cells remain owned through their host. This is private canonical
+metadata: portable Documents express membership by their definition table, without
+runtime keys. Normalization precedes enrollment and is an explicit load projection
+boundary, not an undo edit or an exact continuation of pre-normalization state.
+
+The validator admits retained unplaced components; pruning retains their authored
+definitions and reachable slots/Cells. Placement removal does not delete a retained
+definition. Explicit unplaced-definition deletion, joins, unwrap and consuming
+replacements retire definitions within one ordinary commit. Copies/insertions/splits
+assign ownership in that same commit; whole-Document copies include unplaced
+definitions. Optimized editing validators also check the added metadata. Legacy
+repositories retain their previous pruning behavior until normalization.
+
+The actual Workspace gate bridge converts known cross-resource pointers into
+terminal descriptors during normalization. Removing a foreign target or evicting
+its complete Document scope then leaves the referencing Document's exact projection
+unchanged. No consumer scan, external snapshot or dependency-only revision is used.
+Scope-eviction undo is tested; production enrollment end/reopen boundaries remain P4.
+
+| Current functional verification | Result |
+| --- | --- |
+| G1 plus core membership tests | **31 passed**: 23 gate cases and 8 core lifecycle cases. Covers original counterexamples, rich unplaced content, margins, copy/insert/split/join/replace, existing undo/redo, Workspace scope removal, descriptor retarget/pin preimages, isolated queries, internal cycles and branch-aware existence. |
+| Full regression run after the membership changes | **407 passed / 2 failed**, 409 total, 57 files passed / 1 failed, 51.40 s. Only the two pre-existing context-menu failures. This run preceded the later additional query/Workspace cases. |
+| Typecheck after query/Workspace additions | Client and server passed. Later changes still require final recheck. |
+
+G1's finite query oracle takes only immutable resource snapshots and explicit
+selected-state-ancestry evidence. Foreign definition/asset markers travel with
+their authored values; opaque extensions are not guessed into dependencies.
+The oracle distinguishes an unplaced owned Block from an unavailable external
+reference, avoids local-registry shadowing, and reconstructs historical internal
+definitions after live access has been replaced by a throwing sentinel. It is
+not the bounded production query service: P5 still needs paged readers/indexes.
+
+## G2 — current storage candidate and limits
+
+The isolated [storage harness](scripts/stage-c-gates/storage.test.mjs) uses real
+temporary directories and the actual lossless wire codec/captured revisions.
+It is not imported by production Document/server routes. All created infrastructure
+stays inside the immediate parent's `.memory`; no ancestor fallback or global
+history directory is introduced.
+
+The candidate uses [fs-ext's OS flock binding](https://github.com/baudehlo/node-fs-ext)
+(`fs-ext@2.1.1`, optional dependency) on this macOS/Node host, rather than the
+pre-plan's Python probe. A confined child filesystem process checks its working
+directory's device/inode before each operation, uses single-component names and
+`O_NOFOLLOW`, and holds an inherited writer-lock descriptor during writes. This
+avoids an absolute-path validation followed by an unguarded mutation after directory
+substitution. Child requests serialize changes of working directory. Worker reuse
+removed per-packet process-start costs. This process organization is a candidate
+implementation choice, not a new persistence contract.
+
+Physical directory/lock/file identity is private writable-association evidence,
+separate from semantic resource/memoir IDs. Copying a Document or directory cannot
+grant a writer merely by copying IDs/hashes. Exact-prefix handoff can authorize new
+location evidence; journal activation records allow a verified return to an older
+location. Normal directory rename preserves association without absolute-path IDs.
+An explicitly supplied enrollment grant is required. Discovery never selects an
+archive through the optional index, whose corrupt bytes are preserved in the test.
+
+| G2 evidence so far | Result |
+| --- | --- |
+| Initial storage/association/locking/blob/journal cases | 6 passed, including real process `SIGKILL`, stale epochs, overlapping immutable retries, missing state parents, branches independent of append order, and torn/corrupt journals. |
+| Combined suite before within-record fault extensions | **13 passed**, 10.03 s with worker reuse. Includes all five handoff publication boundaries, folder copy/rename and verified return handoff. |
+| Additional handoff fault run | **10 passed**, 6.40 s: nine intent/publication/torn-write boundaries plus return handoff. Further hardening changes need rerun. |
+| Real largest paragraph checkpoint | 25,000 characters; **13,376,402 wire bytes**; transfer chunks at most **262,144 bytes**. Interrupted uploads remain unreferenced; final bytes hash-verify and decode to the exact baseline. |
+
+Source fencing precedes destination activation. Source bytes are retained. Handoff
+intents bind the prior journal hash/offset and exact planned frame bytes; recovery
+can finish those bytes without guessing from a coincidentally matching torn prefix.
+Ordinary unproved torn tails still reject writes. Competing lock acquisition is
+nonblocking, so handoff cannot deadlock waiting while holding the other lock.
+Document-file publication and memoir relocation remain separate operations.
+
+These are finite gate bounds, **not release capacities**: 32 MiB journal/blob,
+256 KiB transfer packets, 128-record/128 KiB input batches, bounded directory pages
+and a finite administration scan. The candidate still scans whole bounded journals
+and retains checkpoint staging duplicates; production P1/P3/P5 must supply bounded
+archive indexes/consolidation and verified cleanup. No old history is expired.
+Unsupported native locking/sync semantics have no fallback. This host's fsync and
+process-death tests are not a universal power-loss, network-filesystem or cloud-lock
+guarantee; disconnected copies cannot be globally fenced.
+
+**G2 is not yet declared passed.** Remaining qualification includes initialization
+races/partial stores, damaged required checkpoint evidence, conflicting suffixes,
+pending-packet handoff retry, and the legacy/outbox/first-save lifecycle. G3 sustained
+worker/outbox performance, P1 schema hardening, production format dispatch, server
+and browser integration, bounded durable queries and P6 release measurements remain.
+No Stage C completion report or production readiness is claimed.
 
 ## P0 — baseline
 
@@ -41,7 +139,7 @@ terminal external-reference placement, without a fabricated target ContentRecord
 The placeholder is a projected view, not an authored Block with the target's ID.
 The bridge is only invoked by gate fixtures; normal file decoding remains unchanged.
 
-## Architectural stop: definition lifetime still depends on global reachability
+## Original architectural stop: definition lifetime depended on global reachability
 
 Executable reproduction:
 [ownership-lifetime.test.ts](src/history/stage-c-gates/ownership-lifetime.test.ts).
@@ -99,7 +197,7 @@ boundary, and memoir infrastructure belongs in immediate-parent `.memory`.
 Neither capturing foreign snapshots nor introducing a global memoir fixes this
 local resource-lifetime problem.
 
-## Smallest corrective direction to decide before resuming
+## Corrective direction recorded at the original stop
 
 Represent a Document's authoritative retained definition set independently of
 its visible structural root. Validate retained unplaced components and make
@@ -123,10 +221,9 @@ and standalone use, with external references remaining unresolved thereafter.
 It is not assumed here, and it differs from the currently observed shared-content
 lifetime. Do not silently obtain that behavior by changing pointer representation.
 
-The recommended direction is ownership-aware retained definitions. **It has not
-been implemented.** As required by the plan's architectural stop rule, no further
-dependent Stage C work proceeds until this lifetime/validation assumption is
-resolved. G2/G3/P1–P6 have not been attempted.
+The recommended direction was ownership-aware retained definitions. At the original
+stop it had not been implemented, and G2/G3/P1–P6 had not been attempted. The resumed
+implementation and current evidence above supersede that status.
 
 ## Changes made before the stop and remaining limits
 
@@ -160,8 +257,8 @@ equality contract. Existing undo advances canonical content counters; tests must
 check the actual fresh transitions, not claim canonical equality with an earlier
 snapshot merely because authored effects were undone.
 
-No new storage/throughput benchmark or production capacity claim is made. The
-earlier Stage C experiment artifacts remain unchanged; G2/G3 were not reached.
+At the original stop no new storage/throughput benchmark or production capacity
+claim was made. The earlier Stage C experiment artifacts remain unchanged.
 
 ## Verification at the architectural stop
 
@@ -173,12 +270,11 @@ earlier Stage C experiment artifacts remain unchanged; G2/G3 were not reached.
 | `git diff --check` | Passed. |
 | Production persistence/storage/performance exit gates | Not attempted; no completion or new benchmark claim. |
 
-To reproduce just the architectural finding:
+To run the regression cases for the original architectural finding:
 
 ```sh
 npm test -- src/history/stage-c-gates/ownership-lifetime.test.ts
 ```
 
-Those tests intentionally assert the observed rejection/pruning; they will need
-to become successful-lifecycle regression tests when the ownership-lifetime
-decision is implemented. Their passing status is **not** permission to pass G1.
+At the original stop those tests asserted the observed rejection/pruning. They now
+assert successful retained-definition lifecycle behavior after the correction.

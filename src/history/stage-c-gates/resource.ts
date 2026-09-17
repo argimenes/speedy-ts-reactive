@@ -5,7 +5,7 @@ import type { ContentRecord, PlacementRecord, RepositoryState } from "../../bloc
 import { diffContent, type ContentChange, type HistoryChanges } from "../../block-tree/compact-changes";
 import { applyExactRecords } from "../apply-records";
 
-import { externalDefinitionLink, validateTarget, type ExternalTarget } from "../../block-tree/external-reference";
+import { externalDefinitionLink, externalAssetLink, validateTarget, type ExternalTarget } from "../../block-tree/external-reference";
 export type { ExternalTarget } from "../../block-tree/external-reference";
 export type ResourcePlacement =
   | { key: string; placementId: string; target: { kind: "local"; contentKey: string }; kind: PlacementRecord["kind"] }
@@ -42,6 +42,8 @@ export function validateResource(state: ResourceSnapshot): void {
   const assigned = new Set<string>(), authored = new Set<string>(), slots = new Set<string>();
   for (const [key, c] of Object.entries(state.contents)) {
     requireValid(c.key === key, "content key mismatch");
+    if (c.definitionOwnerKey !== undefined) requireValid(root.target.kind === "local" &&
+      c.definitionOwnerKey === root.target.contentKey && !["text-cell", "image-cell"].includes(c.viewType), "invalid definition membership");
     if (!["text-cell", "image-cell"].includes(c.viewType)) {
       requireValid(id(c.payload.id) && !authored.has(c.payload.id), "missing/duplicate Block identity");
       authored.add(c.payload.id);
@@ -50,6 +52,7 @@ export function validateResource(state: ResourceSnapshot): void {
     for (const value of [c.payload, ...Array.isArray(c.payload.standoffProperties) ? c.payload.standoffProperties : [], ...Array.isArray(c.payload.blockProperties) ? c.payload.blockProperties : []]) {
       if (value && typeof value === "object") {
         const link = externalDefinitionLink(value as Record<string, unknown>);
+        externalAssetLink(value as Record<string, unknown>);
         requireValid(!link || link.source.scope !== "document" || link.source.resourceId !== state.resourceId, "owned definition disguised as external");
       }
     }

@@ -13,8 +13,9 @@ These decisions supersede the environmental-closure blocker and visible sidecar
 proposal. The results' §§3 and 5 specify the remaining implementation proof gates.
 The [final Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md) now sequences those
 gates before schema freeze and application write integration; implementation has
-now begun but is stopped at G1. See the [gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md)
-for the retained-definition lifetime counterexamples and baseline/regression evidence.
+resumed at G1 with an ownership-aware definition-lifetime correction. See the
+[gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md) for the original
+counterexamples, new lifecycle regressions and remaining proof obligations.
 
 The smallest credible architecture is a per-Document archive of exact revisions,
 with a bounded asynchronous outbox, serialized server appends, independent save

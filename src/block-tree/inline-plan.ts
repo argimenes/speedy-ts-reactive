@@ -2,7 +2,7 @@ import type { ContentRecord, RepositoryOperation, RepositoryState } from "./type
 
 export function isTextLeaf(content: ContentRecord | undefined): content is ContentRecord {
   return !!content && content.viewType === "text-cell" && !content.children.length &&
-    !content.inlineContent.length && !Object.keys(content.ownedRelations).length;
+    !content.inlineContent.length && !Object.keys(content.ownedRelations).length && content.definitionOwnerKey === undefined;
 }
 
 /** Prove that a batch only replaces leaf Cells in one existing inline owner.

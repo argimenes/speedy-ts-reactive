@@ -34,18 +34,25 @@ export function remapKnownBlockReferences(payload: JsonObject, ids: ReadonlyMap<
 /** Canonical capture avoids the legacy DTO format's lossy inline-image export. */
 export function captureBlocks(source: RepositoryState, roots: string[]): BlockFragment {
   const state: RepositoryState = { rootPlacementKey: roots[0], contents: {}, placements: {}, revision: 0 };
+  const visitContent = (contentKey: string) => {
+    if (state.contents[contentKey]) return;
+    const content = source.contents[contentKey];
+    state.contents[content.key] = clone(content);
+    [...content.children, ...content.inlineContent, ...Object.values(content.ownedRelations)].forEach(visit);
+  };
   const visit = (key: string) => {
     if (state.placements[key]) return;
     const placement = source.placements[key];
     if (!placement) throw new Error("The selected Block no longer exists.");
     state.placements[key] = clone(placement);
     if (placement.externalReference) return;
-    const content = source.contents[placement.contentKey];
-    if (state.contents[content.key]) return;
-    state.contents[content.key] = clone(content);
-    [...content.children, ...content.inlineContent, ...Object.values(content.ownedRelations)].forEach(visit);
+    visitContent(placement.contentKey);
   };
   roots.forEach(visit);
+  const documents = new Set(roots.map(pk => source.placements[pk]?.contentKey).filter(ck => source.contents[ck]?.viewType === "document-block"));
+  for (const content of Object.values(source.contents)) {
+    if (content.definitionOwnerKey && documents.has(content.definitionOwnerKey)) visitContent(content.key);
+  }
   const definitions: LinkedAnnotationRegistry = {};
   for (const content of Object.values(state.contents)) {
     delete content.payload.linkedAnnotations;
@@ -83,6 +90,11 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
   const contents: RepositoryState["contents"] = {};
   for (const content of Object.values(state.contents)) {
     if (authoredIds.has(content.key)) content.payload.id = authoredIds.get(content.key)!;
+    if (content.definitionOwnerKey !== undefined) {
+      const owner = contentKeys.get(content.definitionOwnerKey);
+      if (owner) content.definitionOwnerKey = owner;
+      else delete content.definitionOwnerKey; // destination assigns copy ownership
+    }
     content.key = contentKeys.get(content.key)!;
     content.children = content.children.map(key => placementKeys.get(key)!);
     content.inlineContent = content.inlineContent.map(key => placementKeys.get(key)!);
@@ -104,6 +116,7 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
   }
   state.contents = contents;
   state.placements = Object.fromEntries(Object.values(state.placements).map(placement => {
+    if (placement.placementId !== undefined) placement.placementId = createBlockId();
     placement.key = placementKeys.get(placement.key)!;
     if (!placement.externalReference) placement.contentKey = contentKeys.get(placement.contentKey)!;
     return [placement.key, placement];

@@ -21,6 +21,9 @@ export type WireCollectionState = "omitted" | "null" | "present";
 
 export interface ContentRecord {
   key: ContentKey;
+  /** Private canonical membership in a Document definition table. Independent
+   * of placements; portable files express this by definition-table membership. */
+  definitionOwnerKey?: ContentKey;
   viewType: string;
   payload: JsonObject;
   children: PlacementKey[];
@@ -36,6 +39,8 @@ export interface ContentRecord {
 
 export interface PlacementRecord {
   key: PlacementKey;
+  /** Persistent authored identity in normalized Documents; absent for Cells. */
+  placementId?: string;
   contentKey: ContentKey;
   kind: "owned" | "reference" | "inline";
   /** G1 candidate: explicit boundary. contentKey is a private unresolved symbol,

@@ -22,7 +22,7 @@ export interface HistoryChanges extends CommitEnvelope {
   placements: RecordDelta<string, PlacementRecord>[];
 }
 
-export const recordFields = new Set(["viewType", "inlineRevision", "inlineKind", "ownedRelations", "opaqueRelations", "wireChildren", "wireRelation", "revision"]);
+export const recordFields = new Set(["definitionOwnerKey", "viewType", "inlineRevision", "inlineKind", "ownedRelations", "opaqueRelations", "wireChildren", "wireRelation", "revision"]);
 const knownFields = new Set(["key", "payload", "children", "inlineContent", ...recordFields]);
 const has = (value: object, key: string) => Object.prototype.hasOwnProperty.call(value, key);
 export function present(value: object, key: string): PresentValue {
