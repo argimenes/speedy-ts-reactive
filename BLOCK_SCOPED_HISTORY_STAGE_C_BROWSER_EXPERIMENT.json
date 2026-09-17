@@ -1,0 +1,64 @@
+{
+  "browser": "Chrome/153.0.8010.48",
+  "node": "v22.12.0",
+  "measurement": {
+    "samples": [
+      {
+        "requested": "strict",
+        "actual": "strict",
+        "samples": 30,
+        "medianMs": 3.199999999254942,
+        "p95Ms": 12.700000001117587
+      },
+      {
+        "requested": "relaxed",
+        "actual": "relaxed",
+        "samples": 30,
+        "medianMs": 0.599999999627471,
+        "p95Ms": 1.200000001117587
+      },
+      {
+        "requested": "default",
+        "actual": "default",
+        "samples": 30,
+        "medianMs": 0.6000000014901161,
+        "p95Ms": 1
+      }
+    ],
+    "baselineBytes": 13376402,
+    "baselineStrictTransactionMs": 89.19999999925494,
+    "beforeCapacity": {
+      "count": 91,
+      "bytes": 13553342
+    },
+    "afterCapacity": {
+      "count": 91,
+      "bytes": 13553342
+    },
+    "capacityRejected": true,
+    "conflictRejected": true,
+    "expectedAfterRestart": {
+      "count": 89,
+      "bytes": 13549410
+    }
+  },
+  "recovered": {
+    "count": 89,
+    "bytes": 13549410
+  },
+  "checks": [
+    "transactional byte cap leaves packet and ledger unchanged on rejection",
+    "identical local retry does not duplicate bytes",
+    "conflicting local retry rejected",
+    "aborted transaction absent after restart",
+    "ack deletion and ledger update are atomic/idempotent",
+    "different origin has independent outbox",
+    "committed outbox survives whole isolated browser process-group SIGKILL/restart"
+  ],
+  "limits": [
+    "Local headless Chromium only; no Safari/Firefox or OS power-loss test",
+    "Server acknowledgement input to local deletion is modeled, not an integrated network protocol",
+    "Cap counts payload bytes; actual IndexedDB overhead/quota and eviction not measured",
+    "Serial transaction latency, not sustained foreground typing or worker responsiveness"
+  ]
+}

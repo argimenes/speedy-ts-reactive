@@ -34,8 +34,9 @@ The following product decisions were confirmed during this review:
 | --- | --- | --- |
 | Persistence of intermediate edits | Retain history across sessions, including edits between explicit saves. Archive durability and Document saving are separate states. | Confirmed. |
 | First-release restoration scope | View, compare, and insert a historical copy first; add in-place content/subtree restoration as a subsequent milestone. | Confirmed. |
-| Separation and retention | Keep current Documents independent of history; use a separate memoir sidecar, and allow compaction that expires old history states. | Principle confirmed; storage mechanics specified below. |
-| Storage versus identity | Keep memoirs beside individual Documents; use stable Block identity and, later, provenance/locators to follow a Block across Documents. A Workspace-wide memoir is not the central store for every Block. | Confirmed. |
+| Separation and retention | Keep current Documents independent of history; place independent memoirs beneath directory-local `.memory`. Stage C consolidation is lossless; destructive retention is later work. | Updated by the accepted Stage C storage decision. |
+| Storage versus identity | Use immediate-parent `.memory` for physical locality and stable resource/memoir IDs for association. Colocation and external references do not merge memoirs. | Confirmed; paths are locators, not identity. |
+| Historical ownership | Exact closure stops at authoritative Document ownership. Preserve external references/provenance without requiring foreign historical state or generating revisions for foreign-only changes. | Accepted Stage C boundary; external adapter proof remains required. |
 | Capture cost | Use compact exact changes at the repository boundary; retain full-record fallback for unsupported changes. Avoid copying a long paragraph's complete before/after sequence on every typed character. | Confirmed after Stage A measurements. |
 | Undo and playback granularity | Existing undo/redo behavior remains unchanged. Historical playback groups derive from exact revisions, reference their members, and normally present their endpoints. Every exact revision remains addressable and replayable. | Confirmed in the Stage B scope revision. |
 
@@ -127,11 +128,25 @@ same historical revision, with a visited-path guard for cycles. References out
 of the captured Document show their recorded identity/version or an unavailable
 placeholder; they must not silently display today's external content as old.
 
-Archive linked-annotation definitions and relevant asset descriptors with the
-state that uses them. A URL is evidence of a historical reference, not a snapshot
-of remote bytes. Initial history can guarantee text/structure/metadata while
-showing an unavailable or externally changing media notice; exact historical
-media requires retained, versioned asset bytes and belongs to a later increment.
+The Document boundary is stronger than internal Block-tree boundaries. Exactly
+archive definitions, descriptors and other state authoritatively owned by that
+Document. Resource ownership is not inferred from placement kind `owned`, shared
+reachability or focus. A foreign-owned Block/definition/asset remains external:
+retain the local reference, target identity, source resource/scope and source
+revision/commit/version or occurrence provenance where recorded, without copying
+the target state. Unknown source or unpinned version remains explicitly unknown.
+Do not infer a historical pin from today's target head or the nearest timestamp.
+
+A Workspace-owned definition changing without a Document-owned change creates
+no Document revision, local-counter increment or timeline event. A change to the
+Document-owned reference itself does. Missing foreign history does not make exact
+owned history incomplete: report the external target as historically unresolved/
+unavailable and never substitute its current state. Later resolution may use
+proven source evidence independently, without becoming a local replay parent.
+A URL is a historical reference, not remote bytes; historical asset-byte storage
+and cross-resource resolution services remain later work. The planning contracts
+in [Stage C pre-plan results §3](BLOCK_SCOPED_HISTORY_STAGE_C_PREPLAN_RESULTS.md#3-exact-resource-projection-within-authoritative-ownership)
+qualify Stage C; they do not claim Stage B already implements external projection.
 
 ### Current state and historical state
 
@@ -364,42 +379,86 @@ does not choose or introduce a CRDT or promise collaborative selective undo.
 ## 7. Persistent archive and save integration
 
 Keep current Document JSON files and the Workspace manifest as the normal
-inspection/editing format. Adopt the user's suggested memoir convention:
+inspection/editing format. History infrastructure belongs under the reserved
+`.memory` of each Document's immediate filesystem parent:
 
 ```text
-poe.json                       # complete current saved Document
-poe.memoir.json                # consolidated, versioned history sidecar
-poe.memoir.journal.jsonl        # append-only recent revisions awaiting consolidation
+My Notes/
+    poe.json
+    keats.json
+    .memory/
+        resources/<resource-id>/<memoir-id>/
+            manifest.json
+            journal.jsonl
+            checkpoints/
+            segments/
+    Poetry/
+        ode.json
+        .memory/                  # history for ode.json, not its parent's files
 ```
 
-`poe.memoir.json` contains a tagged format/version envelope, `resourceId`,
-`memoirId`, checkpoint catalogue and checkpoint data, retained revision records,
-save receipts/identity maps, and the last consolidated sequence/hash. The
-journal records its base and appends framed revision records. It is an
-implementation companion for active recording, not another authored Document.
-At a completed consolidation boundary the JSON memoir contains all acknowledged
-history through that boundary; an active journal may contain newer history.
+Internal names are illustrative, not a fixed schema. Do not place visible
+per-Document memoir manifests, journals or data directories alongside authored
+files. Never inherit an ancestor `.memory`. Create the directory lazily when
+historical state needs preservation and the reserved location can be safely
+claimed. `.memory` is physical locality, not a historical ownership domain:
+independent per-Document memoirs may be colocated or referenced without merging.
 
-This keeps the settled memoir valid, inspectable JSON while avoiding rewriting
-an increasingly large JSON array on every edit. A self-contained memoir export
-must merge a consistent journal prefix into its output. Copying a live archive
-by hand requires both files; copying the Document alone deliberately carries
-only current content. Clean shutdown should attempt consolidation but crash
-recovery must never depend on that attempt succeeding.
+Use small versioned per-memoir manifests plus immutable, independently loadable
+checkpoints/segments and a framed active journal. Retain resource/memoir identity,
+state ancestry, save receipts and verified publication evidence. Bound reads and
+consolidation; publish blobs before a manifest and retire only its incorporated
+journal prefix after recoverability is established. No database or opaque project
+container is required. A directory-level discovery index may be used, but rebuilds
+from per-memoir authority; it cannot authorize a writer or replace missing history.
 
-Use stable IDs inside the memoir; the filename is a discoverability convention,
-not identity. Renaming a Document should move/update its memoir association.
-Save As as an independent copy creates a new resource history with optional provenance;
-it must not silently share the source's mutable journal. If an unrelated file
-already occupies the proposed memoir filename, refuse to overwrite it. Exclude
-recognized memoir envelopes from the Open Document browser; do not assume every
-user file ending in `.memoir.json` can safely be hidden or replaced.
+Copying a Document alone yields a usable portable Document without transported
+history. Copying a directory with its `.memory` carries its archives; excluding
+`.memory` deliberately omits history without invalidating Documents. Apply this
+rule recursively. A live/partial filesystem copy is not an atomic archive snapshot:
+validate generations, blobs and journal coverage, and report missing history.
+The normal Document file remains authoritative regardless of memoir availability.
+
+Discover by stable resource/memoir IDs and verified association evidence within
+the immediate-parent store; filename, index entry or matching IDs/hash alone does
+not establish writable continuation. Same-directory rename preserves history.
+Whole-directory moves with `.memory` preserve locality. A Codex-controlled move
+between directories uses a fenced, verified memoir handoff retaining source data
+until destination durability/recovery is established. File publication and history
+relocation are separate outcomes. External moves/deletion retain orphan archives;
+no implicit ancestor/global search or deletion is allowed.
+
+Independent Save As copies get new resource/memoir identities and deliberate
+Block/Placement copy remapping. Ordinary filesystem copies retain IDs in their
+bytes and must not be rewritten on Open or silently share the source writer.
+Report duplicate/ambiguous association; preserve conflicting copies. Local fencing
+cannot serialize disconnected replicas; distributed history merging is outside
+Stage C. Neither a missing Document nor age proves its memoir is disposable.
+Limit cleanup to proven redundant physical files after verified replacement and
+reachability checks; destructive retention/orphan expiry remains later work.
+
+Missing, excluded, read-only, offline or partially synced `.memory` affects history
+status, not ordinary open/edit/save. Keep bounded pending evidence and truthful
+acknowledgements; no hidden fallback store. Recognize compatible versioned store
+markers before writing. Never overwrite/adopt an unrelated pre-existing `.memory`
+directory/file, or follow unsafe links. Protect initialization races and confined
+paths. Backup/sync must explicitly include `.memory` for history transport; unknown
+or conflicting files remain preserved. The directory index remains rebuildable.
+
+See [Stage C pre-plan results §5](BLOCK_SCOPED_HISTORY_STAGE_C_PREPLAN_RESULTS.md#5-checkpoints-and-physical-archive-layout)
+for the discovery, copy/move, safe cleanup, collision, sync and legacy test matrix.
+These are planning requirements, not completed production storage capabilities.
 
 **First pass:** record each eligible Document's single-resource edits in that
 Document's memoir.
-When an unsaved new Document is eligible for history, stage by stable `resourceId`
-and attach its memoir on first save; do not silently drop pre-save edits. Do not
-record the Workspace arrangement or standalone Sticky Notes in a Document memoir.
+When a normalized legacy Document has a known source path, persist its new IDs
+and baseline/association evidence in that parent's `.memory` without rewriting the
+legacy file. First deliberate Save writes modern identity. An untitled Document
+without a filesystem parent stages by stable `resourceId` in the bounded browser
+outbox until its first destination is known; no global/ancestor server memoir is
+invented. Do not silently drop pre-save edits or acknowledge them without their
+baseline/identity evidence. First Save elsewhere follows the relocation protocol.
+Do not record Workspace arrangement or standalone Sticky Notes in a Document memoir.
 The scope boundary must be explicit in the UI and tests.
 
 **After the first pass:** a Workspace memoir can record Background/window
@@ -415,12 +474,14 @@ its past.
 
 Reuse the extended repository codec as a checkpoint starting point, adding
 history schema/version and identity maps. A resource checkpoint must form a
-valid graph rooted at that resource, with explicit captured reference/dependency
-closure; do not pass disconnected record fragments to the current repository
-validator. Checkpoints and replay must retain
+validated owned graph rooted at that resource plus explicit external reference/
+provenance records. Preserve internal reference closure; stop at foreign ownership.
+Prove the minimal projection/read adapter before relying on the current repository
+validator: do not pass dangling placements or disconnected fragments, or fabricate
+owned target snapshots to satisfy it. Checkpoints and replay must retain
 unknown payload fields, omitted/null collection distinctions, references, inline
-atoms, and linked-annotation definitions. Archive schema migration is separate
-from ordinary Document schema migration; unsupported versions open with an
+atoms, Document-owned linked definitions and external reference provenance.
+Archive schema migration is separate from ordinary Document schema migration; unsupported versions open with an
 explanation rather than speculative conversion.
 
 SurrealDB can later index memoir metadata and resource locations. It is not the
@@ -522,7 +583,8 @@ as gaps.
 
 First correctness implementation: locate a checkpoint on the requested state
 ancestry, replay the remaining verified deltas into an isolated graph, validate
-it, then extract the historical root and dependency closure. Never apply these
+it, then extract the historical root, internal dependency closure and external
+boundary descriptors. Never apply these
 deltas to the live editor. Optimize later using indexed content versions and
 membership intervals without changing query semantics.
 Historical content existence and occurrence availability are separate: a Block
@@ -535,20 +597,27 @@ callers cannot mutate replay caches or another query's result.
 
 Timeline indexing must consider old and new ancestry. A child moved out of B
 contributes a departure event to B; later unrelated edits to that child outside
-B do not become B-subtree revisions. Edits to shared referenced content should
+B do not become B-subtree revisions. Edits to shared content owned by the same Document should
 be discoverable for each containing historical occurrence under the chosen
 reference policy. Initial implementation may derive this during replay; the
 incremental index must maintain the same results.
 
-Resolve dependency closure for shared annotation definitions and referenced
-content at the same revision. A missing dependency produces an explicit result
-diagnostic, not a fallback to a live registry. Full-history cached results are
+Resolve owned/internal shared definitions and referenced content at the same local
+revision. Stop at external edges: `getStateAt`/`getSubtreeAt` preserve descriptors,
+and `getLocationAt` reports the local reference occurrence, not a fabricated foreign
+location. External targets are not deleted/not-yet-created local Blocks. Timeline
+and comparison consider owned/reference changes, excluding foreign-only changes.
+Unchanged unpinned references prove reference equality, not target-state equality.
+Missing external history gets an independent target diagnostic, not a fallback
+to a live registry or an incomplete-owned-state result. Full-history cached results are
 keyed by memoir/revision/root/options, never by the resettable runtime revision
 counter alone.
 Distinguish a gap in exact graph/replay evidence from an unavailable display
 dependency. An external asset or unresolved definition can leave an exact
-historical graph available with a warning; a missing parent revision or graph
-record makes exact reconstruction incomplete. Follow known reference forms only,
+historical graph available with a warning; a missing parent revision or required
+owned graph record makes exact reconstruction incomplete. External availability
+does not gate local append acknowledgement, replay verification or consolidation.
+Follow known reference forms only,
 not arbitrary opaque IDs. Measure full-graph validation across replay length
 before fixing checkpoint intervals for durable storage.
 

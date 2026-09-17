@@ -1,0 +1,30 @@
+{
+  "node": "v22.12.0",
+  "report": [
+    {
+      "charactersPerDocument": 100,
+      "documents": 3,
+      "sourceContents": 307,
+      "samples": 3,
+      "medianMs": 11.735,
+      "maxMs": 13.258
+    },
+    {
+      "charactersPerDocument": 5600,
+      "documents": 3,
+      "sourceContents": 16807,
+      "samples": 3,
+      "medianMs": 464.822,
+      "maxMs": 507.913
+    },
+    {
+      "charactersPerDocument": 25000,
+      "documents": 3,
+      "sourceContents": 75007,
+      "samples": 3,
+      "medianMs": 2649.276,
+      "maxMs": 2717.372
+    }
+  ],
+  "limitation": "Whole-state structural projection oracle; no incremental ownership index or Workspace-root dependency capture"
+}

@@ -1,0 +1,221 @@
+{
+  "node": "v22.12.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "workloads": [
+    {
+      "characters": 100,
+      "edits": 12,
+      "baselineJsonBytes": 54793,
+      "baselineWireBytes": 54902,
+      "gzipBytes": 8892,
+      "gzipMs": 1.684,
+      "gunzipAndDecodeMs": 2.535,
+      "checkpointEncode": {
+        "samples": 5,
+        "medianMs": 1.759,
+        "p95Ms": 1.948
+      },
+      "checkpointDecode": {
+        "samples": 5,
+        "medianMs": 2.321,
+        "p95Ms": 2.939
+      },
+      "sha256": {
+        "samples": 5,
+        "medianMs": 0.08,
+        "p95Ms": 0.439
+      },
+      "checkpointWriteAndSync": {
+        "samples": 5,
+        "medianMs": 4.687,
+        "p95Ms": 6.567
+      },
+      "eventBytes": {
+        "min": 1960,
+        "max": 1973
+      },
+      "eventEncode": {
+        "samples": 12,
+        "medianMs": 0.102,
+        "p95Ms": 0.296
+      },
+      "eventDecode": {
+        "samples": 12,
+        "medianMs": 0.136,
+        "p95Ms": 0.441
+      },
+      "applyAndValidate": {
+        "samples": 12,
+        "medianMs": 0.706,
+        "p95Ms": 1.082
+      },
+      "coldByDistance": [
+        {
+          "distance": 0,
+          "ms": 2.929
+        },
+        {
+          "distance": 4,
+          "ms": 7.111
+        },
+        {
+          "distance": 12,
+          "ms": 13.364
+        }
+      ]
+    },
+    {
+      "characters": 5600,
+      "edits": 12,
+      "baselineJsonBytes": 2997293,
+      "baselineWireBytes": 2997402,
+      "gzipBytes": 542234,
+      "gzipMs": 40.997,
+      "gunzipAndDecodeMs": 132.038,
+      "checkpointEncode": {
+        "samples": 5,
+        "medianMs": 87.29,
+        "p95Ms": 114.764
+      },
+      "checkpointDecode": {
+        "samples": 5,
+        "medianMs": 130.334,
+        "p95Ms": 158.525
+      },
+      "sha256": {
+        "samples": 5,
+        "medianMs": 2.529,
+        "p95Ms": 3.787
+      },
+      "checkpointWriteAndSync": {
+        "samples": 5,
+        "medianMs": 9.255,
+        "p95Ms": 15.738
+      },
+      "eventBytes": {
+        "min": 1962,
+        "max": 1975
+      },
+      "eventEncode": {
+        "samples": 12,
+        "medianMs": 0.155,
+        "p95Ms": 0.228
+      },
+      "eventDecode": {
+        "samples": 12,
+        "medianMs": 0.15,
+        "p95Ms": 0.216
+      },
+      "applyAndValidate": {
+        "samples": 12,
+        "medianMs": 44.608,
+        "p95Ms": 58.655
+      },
+      "coldByDistance": [
+        {
+          "distance": 0,
+          "ms": 134.608
+        },
+        {
+          "distance": 4,
+          "ms": 312.587
+        },
+        {
+          "distance": 12,
+          "ms": 675.797
+        }
+      ]
+    },
+    {
+      "characters": 25000,
+      "edits": 12,
+      "baselineJsonBytes": 13376293,
+      "baselineWireBytes": 13376402,
+      "gzipBytes": 2415602,
+      "gzipMs": 186.744,
+      "gunzipAndDecodeMs": 766.848,
+      "checkpointEncode": {
+        "samples": 5,
+        "medianMs": 389.008,
+        "p95Ms": 400.743
+      },
+      "checkpointDecode": {
+        "samples": 5,
+        "medianMs": 614.257,
+        "p95Ms": 735.949
+      },
+      "sha256": {
+        "samples": 5,
+        "medianMs": 12.083,
+        "p95Ms": 13.121
+      },
+      "checkpointWriteAndSync": {
+        "samples": 5,
+        "medianMs": 28.048,
+        "p95Ms": 37.175
+      },
+      "eventBytes": {
+        "min": 1964,
+        "max": 1977
+      },
+      "eventEncode": {
+        "samples": 12,
+        "medianMs": 0.173,
+        "p95Ms": 0.258
+      },
+      "eventDecode": {
+        "samples": 12,
+        "medianMs": 0.149,
+        "p95Ms": 0.248
+      },
+      "applyAndValidate": {
+        "samples": 12,
+        "medianMs": 239.695,
+        "p95Ms": 262.341
+      },
+      "coldByDistance": [
+        {
+          "distance": 0,
+          "ms": 645.881
+        },
+        {
+          "distance": 4,
+          "ms": 1557.24
+        },
+        {
+          "distance": 12,
+          "ms": 3572.439
+        }
+      ]
+    }
+  ],
+  "layout": {
+    "kind": "synthetic repeated checkpoint payloads, not a long exact timeline",
+    "targetBytes": 134217728,
+    "copies": 11,
+    "monolithicBytes": 147140446,
+    "streamBuildAndSyncMs": 423.765,
+    "eagerReadParseMs": 966.812,
+    "gcAvailable": true,
+    "observedRssIncreaseBytes": -58687488,
+    "retainedParsedHeapDeltaBytes": 208434728,
+    "compressedMonolithicBytes": 26572028,
+    "compressedMonolithicBuildAndSyncMs": 2174.773,
+    "compressedMonolithicReadInflateParseMs": 1378.274,
+    "compressedChunkBytes": 2415602,
+    "totalChunkBytes": 26571622,
+    "chunkPublicationMs": 92.845,
+    "manifestBytes": 522,
+    "manifestOpenMs": 0.246,
+    "oneCheckpointLoadAndDecodeMs": 712.823,
+    "manifestReplacementAndSyncMs": 10.651
+  },
+  "limits": [
+    "Five checkpoint samples and twelve edits per fixture; no p99 or sustained editor throughput claim",
+    "Filesystem cache not evicted; cold replay means cold reconstructed state, not cold OS page cache",
+    "RSS delta is observational, not isolated retained-heap accounting",
+    "128 MiB layout experiment uses repeated checkpoint-shaped records; compression is fixture-dependent",
+    "No multi-GB test, power-loss test or production archive format implemented"
+  ]
+}

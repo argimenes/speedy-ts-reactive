@@ -1,0 +1,30 @@
+{
+  "node": "v22.12.0",
+  "platform": "darwin",
+  "checks": [
+    "overlapping retry accepts only fresh suffix",
+    "acknowledgement loss retries identically after head changes",
+    "conflicting duplicate rejected",
+    "journal order independent of state ancestry",
+    "missing baseline/parent not acknowledged",
+    "serialized competing expected-head appends",
+    "restart epoch fences previous writer",
+    "save preparation is a distinct non-revision record",
+    "record bytes, batch bytes and count limits reject before publication",
+    "lossless consolidation recovery: before-publish",
+    "lossless consolidation recovery: after-publish",
+    "lossless consolidation recovery: before-rotate",
+    "lossless consolidation recovery: after-rotate",
+    "lossless consolidation recovery: complete",
+    "concurrent append survives prefix rotation",
+    "incomplete tail detected; append requires explicit repair",
+    "complete corrupted tail is not treated as incomplete",
+    "actual SIGKILL after synchronized write preserves bytes",
+    "OS advisory ownership excludes another process and releases after SIGKILL",
+    "immutable generation recovery: chunk-durable",
+    "immutable generation recovery: manifest-prepared",
+    "immutable generation recovery: manifest-published",
+    "immutable generation recovery: journal-rotated"
+  ],
+  "scope": "temporary-file and finite protocol model; not production endpoints; fsync/SIGKILL is not power-loss proof"
+}
