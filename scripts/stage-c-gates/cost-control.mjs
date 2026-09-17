@@ -43,6 +43,6 @@ try {
 } catch (e) { error = String(e.stack ?? e); }
 finally {
   const output = { mode, hostResources, date: new Date().toISOString(), node: process.version, browser: version, requestedSeconds: seconds, completed: !!samples.at(-1)?.completed, error, samples, diagnostics: browser.diagnostics };
-  await writeFile(`BLOCK_SCOPED_HISTORY_STAGE_C_G3_${mode.toUpperCase()}_CONTROL.json`, JSON.stringify(output, null, 2) + '\n');
+  await writeFile(process.env.G3_OUTPUT ?? `BLOCK_SCOPED_HISTORY_STAGE_C_G3_${mode.toUpperCase()}_CONTROL.json`, JSON.stringify(output, null, 2) + '\n');
   await browser.close(); await new Promise(resolve => server.close(resolve));
 }

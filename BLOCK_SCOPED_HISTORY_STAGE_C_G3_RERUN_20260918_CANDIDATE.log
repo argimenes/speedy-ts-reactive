@@ -1,0 +1,12 @@
+{"gate":"G3 running","completed":false,"errors":[]}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":265,"total":3000,"inFlight":1,"elapsedMs":52832.40000000014}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":565,"total":3000,"inFlight":1,"elapsedMs":112835.6000000001}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":883,"total":3000,"inFlight":1,"elapsedMs":176436.1000000001}}
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: {"completed":true,"errors":["Error: Gate worker queue cap","Error: Error: Gate worker queue cap\n    at window.run (http://127.0.0.1:50145/browser.js:3858:15)"],"progress":{"edits":962,"total":3000,"inFlight":64,"elapsedMs":197323.40000000014}}
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/cost.mjs:58:37
+
+Node.js v22.12.0

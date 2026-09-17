@@ -1,9 +1,39 @@
 # Stage C implementation gate results
 
-Status: **G3 sustained qualification blocked; Stage C implementation incomplete**. Stage C is not
+Status: **G3 sustained qualification failed on the 2026-09-18 rerun; Stage C implementation incomplete**. Stage C is not
 complete. No production format dispatch, ordinary Save/Open integration, outbox,
 `.memory` server store or Stage D–E work has been enabled.
 Plan: [Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md).
+
+## G3 qualification rerun — 2026-09-18
+
+The user freed disk space and authorized rerunning the unchanged sustained trace.
+All three modes were requested sequentially for 600 seconds / 3,000 ordinary edits
+on the existing 25,000-character fixture, with fresh isolated browser profiles.
+Workload, undo, browser flags, queue caps and gate criteria were unchanged. Only
+artifact-path selection and failure-report host metadata were added to the harness.
+The original artifacts below remain unchanged.
+
+| Mode | Last observed progress | Result |
+| --- | --- | --- |
+| History off | 1,276 edits / 379.707 s; zero callbacks; 1,276 undo entries; 3.89 GiB used JS heap | CDP timeout; incomplete. |
+| Compact capture only | 1,251 edits / 293.523 s; 1,251 callbacks and undo entries; 3.83 GiB used JS heap | CDP timeout; incomplete. |
+| Candidate durable capture | 962 edits / 197.323 s; 64 messages in flight; 895 server-acknowledged revisions | Explicit `Gate worker queue cap` failure during the outage; reconnect/drain and final exactness not reached. |
+
+The host has 8 GiB physical RAM. All launches passed the unchanged 8 GiB free-disk
+guard; sampled free space stayed above 21.6 GiB across the runs. The controls show
+substantial existing undo/heap growth without durable capture, but neither emitted
+an explicit OOM diagnostic. The candidate's queue failure is an additional concrete
+failure; it cannot be dismissed as proven baseline-only overhead. No completed
+latency comparison, lossless drain, long-run exactness or resource plateau is claimed.
+
+**Decision:** G3 remains unmet and P1–P6 remain stopped. The next prerequisite is
+investigation of existing undo retention and the worker stall/cap, preserving every
+undo entry, operation, cause and replay guarantee. A behavior-preserving storage
+optimization is proposed separately, not implemented or used to alter this result.
+Do not simply raise caps, shorten the trace, prune/group undo or waive exactness.
+
+See the [full assessment, commands, artifacts and regression results](BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md).
 
 ## Resumed implementation — current evidence
 
@@ -177,7 +207,7 @@ Evidence artifacts:
 - [History-off control](BLOCK_SCOPED_HISTORY_STAGE_C_G3_OFF_CONTROL.json).
 - [Deliberately stopped compact-only diagnostic](BLOCK_SCOPED_HISTORY_STAGE_C_G3_COMPACT_CONTROL.json).
 
-Before continuing: provide adequate disk/memory headroom (or another reference
+At the earlier resource-pressure stop, the required next step was to provide adequate disk/memory headroom (or another reference
 host), rerun the unchanged sustained trace in all modes, and separate original
 undo growth from added worker/outbox state. If original undo storage still makes
 the required trace infeasible, report that prerequisite explicitly and propose a
@@ -185,6 +215,7 @@ behavior-preserving undo-storage optimization separately; do not introduce word
 undo, grouping, pruning or a changed stack policy. The larger G3 matrix and P6's
 100k-revision / >1 GiB archive / discovery measurements remain unproved.
 
+That rerun is now recorded above and in the [2026-09-18 assessment](BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md).
 No Stage C completion or production readiness is claimed. P1–P6 remain gated.
 
 ## P0 — baseline

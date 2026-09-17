@@ -92,7 +92,7 @@ try {
   console.log(JSON.stringify({ output: path, ...output, matrices: undefined, sustained: { ...output.sustained, heap: undefined } }, null, 2));
 } catch (error) {
   const path = process.env.G3_OUTPUT ?? '/tmp/codex-stage-c-g3-cost.json';
-  await writeFile(path, JSON.stringify({ gate: 'G3 command/worker/outbox/server feasibility', passed: false, date: new Date().toISOString(), node: process.version,
+  await writeFile(path, JSON.stringify({ gate: 'G3 command/worker/outbox/server feasibility', hostResources, passed: false, date: new Date().toISOString(), node: process.version,
     browser: browserVersion, requestedSeconds: duration, acceptedRevisions: accepted, lastStatus, error: String(error.stack ?? error), diagnostics: browser.diagnostics }, null, 2) + '\n');
   throw error;
 } finally { await writer.close(); await closeFilesystemWorkers(); await browser.close(); await new Promise(resolve => server.close(resolve)); await rm(directory, { recursive: true, force: true }); }

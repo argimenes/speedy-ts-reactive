@@ -1,0 +1,791 @@
+{
+  "mode": "compact",
+  "hostResources": {
+    "availableBytes": 26810773504,
+    "minimumFreeBytes": 8589934592,
+    "physicalMemoryBytes": 8589934592
+  },
+  "date": "2026-09-17T22:54:49.067Z",
+  "node": "v22.12.0",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/153.0.8010.48",
+    "revision": "@199a3a541d76237379e353b348e64045584db057",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "jsVersion": "15.3.76.12"
+  },
+  "requestedSeconds": 600,
+  "completed": false,
+  "error": "Error: CDP timeout: Runtime.evaluate\n    at Timeout._onTimeout (file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/browser.mjs:31:84)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)",
+  "samples": [
+    {
+      "edits": 1,
+      "callbacks": 1,
+      "errors": [],
+      "elapsedMs": 51.29999999993015,
+      "lastEditMs": 51.29999999993015,
+      "heap": {
+        "usedJSHeapSize": 85471323,
+        "totalJSHeapSize": 131341715,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1,
+      "lastUndoEntryEncodedBytes": 2452198,
+      "completed": false
+    },
+    {
+      "edits": 26,
+      "callbacks": 26,
+      "errors": [],
+      "elapsedMs": 5049.900000000023,
+      "lastEditMs": 49.300000000046566,
+      "heap": {
+        "usedJSHeapSize": 201526480,
+        "totalJSHeapSize": 280815676,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 26,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 51,
+      "callbacks": 51,
+      "errors": [],
+      "elapsedMs": 10050.29999999993,
+      "lastEditMs": 49.29999999993015,
+      "heap": {
+        "usedJSHeapSize": 279722941,
+        "totalJSHeapSize": 348760865,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 51,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 76,
+      "callbacks": 76,
+      "errors": [],
+      "elapsedMs": 15046.29999999993,
+      "lastEditMs": 45.59999999997672,
+      "heap": {
+        "usedJSHeapSize": 330825313,
+        "totalJSHeapSize": 397995253,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 76,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 101,
+      "callbacks": 101,
+      "errors": [],
+      "elapsedMs": 20046.699999999953,
+      "lastEditMs": 46.699999999953434,
+      "heap": {
+        "usedJSHeapSize": 473421956,
+        "totalJSHeapSize": 563083152,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 101,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 126,
+      "callbacks": 126,
+      "errors": [],
+      "elapsedMs": 25032,
+      "lastEditMs": 30.300000000046566,
+      "heap": {
+        "usedJSHeapSize": 476293817,
+        "totalJSHeapSize": 539963981,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 126,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 151,
+      "callbacks": 151,
+      "errors": [],
+      "elapsedMs": 30049.199999999953,
+      "lastEditMs": 48.699999999953434,
+      "heap": {
+        "usedJSHeapSize": 629230548,
+        "totalJSHeapSize": 705969384,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 151,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 176,
+      "callbacks": 176,
+      "errors": [],
+      "elapsedMs": 35049.90000000002,
+      "lastEditMs": 49.40000000002328,
+      "heap": {
+        "usedJSHeapSize": 765095220,
+        "totalJSHeapSize": 877299572,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 176,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 201,
+      "callbacks": 201,
+      "errors": [],
+      "elapsedMs": 40052.40000000002,
+      "lastEditMs": 50.70000000006985,
+      "heap": {
+        "usedJSHeapSize": 893814864,
+        "totalJSHeapSize": 1037324800,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 201,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 226,
+      "callbacks": 226,
+      "errors": [],
+      "elapsedMs": 45050.79999999993,
+      "lastEditMs": 49.59999999997672,
+      "heap": {
+        "usedJSHeapSize": 797098345,
+        "totalJSHeapSize": 867467357,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 226,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 251,
+      "callbacks": 251,
+      "errors": [],
+      "elapsedMs": 50049.40000000002,
+      "lastEditMs": 49,
+      "heap": {
+        "usedJSHeapSize": 954446068,
+        "totalJSHeapSize": 1024248568,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 251,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 276,
+      "callbacks": 276,
+      "errors": [],
+      "elapsedMs": 55049.90000000002,
+      "lastEditMs": 49.300000000046566,
+      "heap": {
+        "usedJSHeapSize": 1097229688,
+        "totalJSHeapSize": 1197675908,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 276,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 301,
+      "callbacks": 301,
+      "errors": [],
+      "elapsedMs": 60049.59999999998,
+      "lastEditMs": 48.300000000046566,
+      "heap": {
+        "usedJSHeapSize": 1236600316,
+        "totalJSHeapSize": 1366876176,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 301,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 326,
+      "callbacks": 326,
+      "errors": [],
+      "elapsedMs": 65052.40000000002,
+      "lastEditMs": 51.40000000002328,
+      "heap": {
+        "usedJSHeapSize": 1379873800,
+        "totalJSHeapSize": 1531325084,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 326,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 351,
+      "callbacks": 351,
+      "errors": [],
+      "elapsedMs": 70048.59999999998,
+      "lastEditMs": 47.90000000002328,
+      "heap": {
+        "usedJSHeapSize": 1542577120,
+        "totalJSHeapSize": 1703146792,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 351,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 376,
+      "callbacks": 376,
+      "errors": [],
+      "elapsedMs": 75048.69999999995,
+      "lastEditMs": 47.59999999997672,
+      "heap": {
+        "usedJSHeapSize": 1686222116,
+        "totalJSHeapSize": 1872330676,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 376,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 401,
+      "callbacks": 401,
+      "errors": [],
+      "elapsedMs": 80050.79999999993,
+      "lastEditMs": 49.59999999997672,
+      "heap": {
+        "usedJSHeapSize": 1366358737,
+        "totalJSHeapSize": 1469520049,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 401,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 426,
+      "callbacks": 426,
+      "errors": [],
+      "elapsedMs": 85050.09999999998,
+      "lastEditMs": 48.699999999953434,
+      "heap": {
+        "usedJSHeapSize": 1502477752,
+        "totalJSHeapSize": 1581327180,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 426,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 451,
+      "callbacks": 451,
+      "errors": [],
+      "elapsedMs": 90050.29999999993,
+      "lastEditMs": 48.79999999993015,
+      "heap": {
+        "usedJSHeapSize": 1645578448,
+        "totalJSHeapSize": 1753607640,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 451,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 476,
+      "callbacks": 476,
+      "errors": [],
+      "elapsedMs": 95049.5,
+      "lastEditMs": 49,
+      "heap": {
+        "usedJSHeapSize": 1808767860,
+        "totalJSHeapSize": 1923119204,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 476,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 501,
+      "callbacks": 501,
+      "errors": [],
+      "elapsedMs": 100049.29999999993,
+      "lastEditMs": 48.09999999997672,
+      "heap": {
+        "usedJSHeapSize": 1951308924,
+        "totalJSHeapSize": 2092778224,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 501,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 526,
+      "callbacks": 526,
+      "errors": [],
+      "elapsedMs": 105050.59999999998,
+      "lastEditMs": 49.199999999953434,
+      "heap": {
+        "usedJSHeapSize": 2090952080,
+        "totalJSHeapSize": 2261192060,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 526,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 551,
+      "callbacks": 551,
+      "errors": [],
+      "elapsedMs": 110057,
+      "lastEditMs": 55.90000000002328,
+      "heap": {
+        "usedJSHeapSize": 2233802640,
+        "totalJSHeapSize": 2429687816,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 551,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 576,
+      "callbacks": 576,
+      "errors": [],
+      "elapsedMs": 115089,
+      "lastEditMs": 87.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 2397008988,
+        "totalJSHeapSize": 2602558100,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 576,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 601,
+      "callbacks": 601,
+      "errors": [],
+      "elapsedMs": 120081.90000000002,
+      "lastEditMs": 80.5,
+      "heap": {
+        "usedJSHeapSize": 2540443216,
+        "totalJSHeapSize": 2773839136,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 601,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 626,
+      "callbacks": 626,
+      "errors": [],
+      "elapsedMs": 125041.29999999993,
+      "lastEditMs": 41,
+      "heap": {
+        "usedJSHeapSize": 2682873748,
+        "totalJSHeapSize": 2942891948,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 626,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 651,
+      "callbacks": 651,
+      "errors": [],
+      "elapsedMs": 140574.40000000002,
+      "lastEditMs": 40.20000000006985,
+      "heap": {
+        "usedJSHeapSize": 2158368437,
+        "totalJSHeapSize": 2325920585,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 651,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 676,
+      "callbacks": 676,
+      "errors": [],
+      "elapsedMs": 142892.69999999995,
+      "lastEditMs": 136.59999999997672,
+      "heap": {
+        "usedJSHeapSize": 2296528444,
+        "totalJSHeapSize": 2374993380,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 676,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 701,
+      "callbacks": 701,
+      "errors": [],
+      "elapsedMs": 144163.79999999993,
+      "lastEditMs": 47.5,
+      "heap": {
+        "usedJSHeapSize": 2435975772,
+        "totalJSHeapSize": 2530938992,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 701,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 726,
+      "callbacks": 726,
+      "errors": [],
+      "elapsedMs": 145299,
+      "lastEditMs": 47.40000000002328,
+      "heap": {
+        "usedJSHeapSize": 2575473500,
+        "totalJSHeapSize": 2686360316,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 726,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 751,
+      "callbacks": 751,
+      "errors": [],
+      "elapsedMs": 150053.09999999998,
+      "lastEditMs": 52.199999999953434,
+      "heap": {
+        "usedJSHeapSize": 2736064796,
+        "totalJSHeapSize": 2854348168,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 751,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 776,
+      "callbacks": 776,
+      "errors": [],
+      "elapsedMs": 155042.69999999995,
+      "lastEditMs": 42.09999999997672,
+      "heap": {
+        "usedJSHeapSize": 2879600904,
+        "totalJSHeapSize": 3024842772,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 776,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 801,
+      "callbacks": 801,
+      "errors": [],
+      "elapsedMs": 160034.90000000002,
+      "lastEditMs": 33,
+      "heap": {
+        "usedJSHeapSize": 3021813972,
+        "totalJSHeapSize": 3197385376,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 801,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 826,
+      "callbacks": 826,
+      "errors": [],
+      "elapsedMs": 165047.40000000002,
+      "lastEditMs": 46.300000000046566,
+      "heap": {
+        "usedJSHeapSize": 3185385768,
+        "totalJSHeapSize": 3367191852,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 826,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 851,
+      "callbacks": 851,
+      "errors": [],
+      "elapsedMs": 172532.90000000002,
+      "lastEditMs": 40.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 2873918749,
+        "totalJSHeapSize": 3023362905,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 851,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 876,
+      "callbacks": 876,
+      "errors": [],
+      "elapsedMs": 175049.90000000002,
+      "lastEditMs": 49.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 3018931096,
+        "totalJSHeapSize": 3106956788,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 876,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 901,
+      "callbacks": 901,
+      "errors": [],
+      "elapsedMs": 180040.59999999998,
+      "lastEditMs": 40.09999999997672,
+      "heap": {
+        "usedJSHeapSize": 3162568520,
+        "totalJSHeapSize": 3277713536,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 901,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 926,
+      "callbacks": 926,
+      "errors": [],
+      "elapsedMs": 185038.29999999993,
+      "lastEditMs": 37.29999999993015,
+      "heap": {
+        "usedJSHeapSize": 3305146576,
+        "totalJSHeapSize": 3448683276,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 926,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 951,
+      "callbacks": 951,
+      "errors": [],
+      "elapsedMs": 190049.29999999993,
+      "lastEditMs": 48.79999999993015,
+      "heap": {
+        "usedJSHeapSize": 3468636232,
+        "totalJSHeapSize": 3616621976,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 951,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 976,
+      "callbacks": 976,
+      "errors": [],
+      "elapsedMs": 198046.90000000002,
+      "lastEditMs": 31.800000000046566,
+      "heap": {
+        "usedJSHeapSize": 3211017773,
+        "totalJSHeapSize": 3343133213,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 976,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 1001,
+      "callbacks": 1001,
+      "errors": [],
+      "elapsedMs": 200077.09999999998,
+      "lastEditMs": 76.19999999995343,
+      "heap": {
+        "usedJSHeapSize": 3351315600,
+        "totalJSHeapSize": 3436311736,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1001,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1026,
+      "callbacks": 1026,
+      "errors": [],
+      "elapsedMs": 205087.59999999998,
+      "lastEditMs": 87.69999999995343,
+      "heap": {
+        "usedJSHeapSize": 3514358448,
+        "totalJSHeapSize": 3609182020,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1026,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1051,
+      "callbacks": 1051,
+      "errors": [],
+      "elapsedMs": 210046.40000000002,
+      "lastEditMs": 45.90000000002328,
+      "heap": {
+        "usedJSHeapSize": 3655444824,
+        "totalJSHeapSize": 3776891344,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1051,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1076,
+      "callbacks": 1076,
+      "errors": [],
+      "elapsedMs": 216554.5,
+      "lastEditMs": 51.800000000046566,
+      "heap": {
+        "usedJSHeapSize": 3532947681,
+        "totalJSHeapSize": 3614914893,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1076,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1101,
+      "callbacks": 1101,
+      "errors": [],
+      "elapsedMs": 220060.69999999995,
+      "lastEditMs": 60.90000000002328,
+      "heap": {
+        "usedJSHeapSize": 3698859368,
+        "totalJSHeapSize": 3768173544,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1101,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1126,
+      "callbacks": 1126,
+      "errors": [],
+      "elapsedMs": 225032.5,
+      "lastEditMs": 32.20000000006985,
+      "heap": {
+        "usedJSHeapSize": 3841854568,
+        "totalJSHeapSize": 3940814452,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1126,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1151,
+      "callbacks": 1151,
+      "errors": [],
+      "elapsedMs": 237874.5,
+      "lastEditMs": 57.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 3807243733,
+        "totalJSHeapSize": 3871589841,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1151,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1176,
+      "callbacks": 1176,
+      "errors": [],
+      "elapsedMs": 239520.09999999998,
+      "lastEditMs": 42.40000000002328,
+      "heap": {
+        "usedJSHeapSize": 3946642796,
+        "totalJSHeapSize": 4027371628,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1176,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1201,
+      "callbacks": 1201,
+      "errors": [],
+      "elapsedMs": 257161.09999999998,
+      "lastEditMs": 87.30000000004657,
+      "heap": {
+        "usedJSHeapSize": 3962100053,
+        "totalJSHeapSize": 4026010769,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1201,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1226,
+      "callbacks": 1226,
+      "errors": [],
+      "elapsedMs": 275044.4,
+      "lastEditMs": 38.800000000046566,
+      "heap": {
+        "usedJSHeapSize": 4050966525,
+        "totalJSHeapSize": 4111421605,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1226,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    },
+    {
+      "edits": 1251,
+      "callbacks": 1251,
+      "errors": [],
+      "elapsedMs": 293522.6,
+      "lastEditMs": 69.80000000004657,
+      "heap": {
+        "usedJSHeapSize": 4112192133,
+        "totalJSHeapSize": 4180447937,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1251,
+      "lastUndoEntryEncodedBytes": 2452210,
+      "completed": false
+    }
+  ],
+  "diagnostics": {
+    "stderr": "\nDevTools listening on ws://127.0.0.1:49974/devtools/browser/9d6ebf0e-34f9-4297-babb-d8c8af32d091\nTrying to load the allocator multiple times. This is *not* supported.\n[5514:32413:0918/084919.249371:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084919.250266:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084919.253587:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084919.253665:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084919.258993:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084919.259077:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084919.259281:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084919.259343:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084919.259488:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084919.259541:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084919.277951:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084919.278017:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.151589:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.151673:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.275209:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.275297:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.325825:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.325895:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.386423:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.386499:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.443486:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.443563:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.524514:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.524599:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.576768:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.576874:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32413:0918/084921.612327:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5514:32454:0918/084921.612399:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[5506:32395:0918/084921.710609:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\nCreated TensorFlow Lite XNNPACK delegate for CPU.\n[5621:33348:0918/084937.636389:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake-all --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[5621:33348:0918/084937.636958:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 695, parent pid: 5506\n[5621:33348:0918/084937.639147:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5621:33348:0918/084937.639167:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5621:33348:0918/084937.639258:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[5623:33352:0918/084937.649902:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[5623:33352:0918/084937.650449:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 696, parent pid: 1\n[5623:33352:0918/084937.652648:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5623:33352:0918/084937.652669:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5623:33352:0918/084937.652771:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[5621:33348:0918/084937.653316:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[5621:33348:0918/084937.654116:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[5621:33348:0918/084937.654206:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[5621:33348:0918/084937.654295:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[5621:33348:0918/084937.654492:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[5621:33360:0918/084937.654813:VERBOSE1:chrome/updater/app/app_wakeall.cc:58] Launching `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake`\n[5624:33364:0918/084937.664440:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[5624:33364:0918/084937.665005:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 696, parent pid: 5621\n[5624:33364:0918/084937.667190:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5624:33364:0918/084937.667211:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5624:33364:0918/084937.667306:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[5626:33368:0918/084937.677336:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[5626:33368:0918/084937.677857:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 696, parent pid: 1\n[5626:33368:0918/084937.680097:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5626:33368:0918/084937.680118:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26752552960B (24.915GiB) / 245107195904B (228.274GiB)\n[5626:33368:0918/084937.680231:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[5624:33364:0918/084937.680842:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[5624:33364:0918/084937.681649:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[5624:33364:0918/084937.681730:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[5624:33364:0918/084937.681833:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[5624:33364:0918/084937.682034:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[5624:33364:0918/084937.682231:VERBOSE1:chrome/updater/ipc/update_service_internal_proxy_mojo.cc:61] Run\n[5506:32395:0918/084945.010954:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[5624:33364:0918/084955.166559:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[5624:33364:0918/084955.167552:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[5624:33364:0918/084955.167628:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake) returned 0.\n[5621:33360:0918/084955.295896:VERBOSE1:chrome/updater/app/app_wakeall.cc:68] `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake` exited 0\n[5621:33348:0918/084955.296355:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[5621:33348:0918/084955.296962:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[5621:33348:0918/084955.297003:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake-all) returned 0.\n[5626:33368:0918/085005.176845:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[5626:33368:0918/085005.176920:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[5623:33352:0918/085005.178705:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[5623:33352:0918/085005.178791:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[5506:32395:0918/085034.813789:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[5506:32395:0918/085214.772261:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\nTrying to load the allocator multiple times. This is *not* supported.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1789685539.097104   37342 environment.cc:525] Selected adapter: Apple M1, arch=metal-3, vendor=apple, backend=Metal, adapterType=Integrated GPU\nI0000 00:00:1789685539.113078   37356 environment.cc:525] Selected adapter: Apple M1, arch=metal-3, vendor=apple, backend=Metal, adapterType=Integrated GPU\n",
+    "crashes": []
+  }
+}

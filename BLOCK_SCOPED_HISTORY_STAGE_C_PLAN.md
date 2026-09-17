@@ -6,10 +6,13 @@ instruction; mandatory early proof gates remain in force. See the
 No Stage C completion or production Document-format integration is claimed.
 Implementation has progressed through the G1/G2 candidates into **G3**. The
 retained-definition correction and incremental ownership/Placement-ID regressions
-pass. Sustained qualification is currently blocked: the long run and history-off
-control became unresponsive on a host with very little free disk and heavy swap
-use. See the gate report for evidence and limits; no throughput gate or completion
-is claimed, and P1–P6 must not proceed on the short smoke test alone.
+pass. The 2026-09-18 qualification rerun, after freeing disk space, still **fails
+G3**: history-off and compact-only controls timed out near the browser heap limit;
+candidate durable capture hit its 64-message worker queue cap at 962 of 3,000
+edits, during the scheduled outage. Sampled free disk stayed above 21.6 GiB.
+See the [rerun assessment](BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md)
+for evidence and attribution limits. The workload, undo behavior and gate targets
+are unchanged. No throughput pass or completion is claimed; P1–P6 remain gated.
 
 Requirements: [history specification](BLOCK_SCOPED_HISTORY_SPEC.md), the accepted
 [portable Document direction](PORTABLE_CODEX_DOCUMENT_FORMAT_SPIKE.md), and the
