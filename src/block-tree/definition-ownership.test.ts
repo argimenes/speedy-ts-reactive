@@ -11,6 +11,7 @@ function fixture(children: ExistingBlockDto[], normalized = true) {
   const raw = decodeDocument({ id: "doc", type: "document-block", children }).state;
   const root = raw.placements[raw.rootPlacementKey].contentKey;
   const initial = normalized ? normalizeDefinitionOwnership(raw, new Map(Object.keys(raw.contents).map(k => [k, root]))) : raw;
+  if (normalized) for (const p of Object.values(initial.placements)) if (p.kind !== "inline") p.placementId = `semantic:${p.key}`;
   const repository = new CanonicalRepository(initial, { enforceBlockIdentity: true });
   const commands = new TreeCommands(repository, k => k);
   const key = (id: string) => Object.values(repository.readState().placements).find(p => repository.readState().contents[p.contentKey]?.payload.id === id)!.key;
@@ -69,6 +70,20 @@ describe("Document definition membership", () => {
     validateRepository(s.repository.snapshot());
     s.repository.undo(); expect(s.repository.canUndo()).toBe(false);
     s.repository.redo(); expect(s.errors).toEqual([]);
+  });
+
+  it("rejects changed/duplicate structural IDs and authored IDs on Cells before committing", () => {
+    const s = fixture([paragraph("p"), paragraph("q")]);
+    const state = s.repository.readState(), p = state.placements[s.key("p")], q = state.placements[s.key("q")];
+    for (const record of [{ ...p, placementId: "changed" }, { ...p, placementId: undefined }, { ...q, placementId: p.placementId }]) {
+      expect(() => s.repository.commit("invalid identity", [{ kind: "put-placement", record }])).toThrow("identity cannot be changed");
+    }
+    const cell = state.placements[state.contents[p.contentKey].inlineContent[0]];
+    expect(() => s.repository.commit("invalid Cell ID", [{ kind: "put-placement", record: { ...cell, placementId: "cell-id" } }])).toThrow("Invalid authored Placement");
+    expect(s.repository.canUndo()).toBe(false); expect(s.errors).toEqual([]);
+    s.commands.remove(s.key("q")); s.repository.undo();
+    expect(s.repository.readState().placements[q.key].placementId).toBe(q.placementId);
+    expect(s.errors).toEqual([]);
   });
 
   it("leaves non-normalized legacy pruning unchanged", () => {

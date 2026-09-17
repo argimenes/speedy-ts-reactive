@@ -4,10 +4,12 @@ Date: 2026-09-17. Status: implementation authorized by the user's subsequent
 instruction; mandatory early proof gates remain in force. See the
 [gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md) for current evidence.
 No Stage C completion or production Document-format integration is claimed.
-Implementation has resumed at **G1** under the user's instruction to continue.
-The retained-definition counterexamples led to an explicit ownership-aware
-lifetime correction, described below and in the gate report. Their regression
-tests now pass; this is not a claim that all G1 or later exit criteria pass.
+Implementation has progressed through the G1/G2 candidates into **G3**. The
+retained-definition correction and incremental ownership/Placement-ID regressions
+pass. Sustained qualification is currently blocked: the long run and history-off
+control became unresponsive on a host with very little free disk and heavy swap
+use. See the gate report for evidence and limits; no throughput gate or completion
+is claimed, and P1–P6 must not proceed on the short smoke test alone.
 
 Requirements: [history specification](BLOCK_SCOPED_HISTORY_SPEC.md), the accepted
 [portable Document direction](PORTABLE_CODEX_DOCUMENT_FORMAT_SPIKE.md), and the
@@ -214,14 +216,22 @@ ordinary Block unlink. Prove this lifecycle before production integration.
 Legacy repositories keep their existing pruning semantics until explicit in-memory
 normalization; normalization happens before history enrollment, not as an undo edit.
 
-Bind semantic Placement IDs once when committed edges become part of the admitted
-resource, retain evidence needed for undo/redo and archived history, and allocate
-fresh IDs for copies/new edges. Rejected transactions cannot consume published
-bindings. A metadata/enrollment table may supply historical identity; it must not
-change undo step counts or generate a user edit solely for historical bookkeeping.
-Bound runtime binding caches and retain durable retired-ID evidence without an
-unbounded live map. Resource ownership transfers remain explicit unsupported
-boundaries in Stage C; independent unaffected resources continue recording.
+Bind semantic Placement IDs once before enrollment and in the original creating
+commit for new structural edges. The current candidate carries `placementId` on
+canonical structural `PlacementRecord`s. Existing inverse records then restore
+identities through ordinary undo/redo; copies allocate fresh IDs and moves retain
+them. Inline Cell placements have no authored Placement ID: resource history may
+use private segment-local symbols for those slots. The current identity index
+contains only live edges, with no retired-ID catalogue. Removed identities remain
+in exact revision records and existing undo records, not a second mutable authority.
+
+This replaces the initially proposed auxiliary historical binding table where the
+canonical edge can carry its own semantic identity more simply. Normalization
+precedes enrollment; assigning an ID never introduces a separate undo step or
+changes undo causes, stack semantics or granularity. Rejected transactions cannot
+publish identities. Archived identity lookup must use bounded durable indexes.
+Resource ownership transfers remain explicit unsupported boundaries in Stage C;
+independent unaffected resources continue recording.
 
 ### G1 required fixtures and equality oracles
 

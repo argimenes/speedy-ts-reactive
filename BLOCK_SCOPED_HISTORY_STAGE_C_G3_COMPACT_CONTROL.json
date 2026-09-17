@@ -1,0 +1,115 @@
+{
+  "mode": "compact",
+  "date": "2026-09-17T21:15:38.163Z",
+  "node": "v22.12.0",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/153.0.8010.48",
+    "revision": "@199a3a541d76237379e353b348e64045584db057",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "jsVersion": "15.3.76.12"
+  },
+  "requestedSeconds": 180,
+  "completed": false,
+  "error": "Error: CDP timeout: Runtime.evaluate\n    at Timeout._onTimeout (file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/browser.mjs:31:84)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)",
+  "samples": [
+    {
+      "edits": 1,
+      "callbacks": 1,
+      "errors": [],
+      "elapsedMs": 42.099999997764826,
+      "lastEditMs": 42.099999997764826,
+      "heap": {
+        "usedJSHeapSize": 72662585,
+        "totalJSHeapSize": 120610193,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1,
+      "lastUndoEntryEncodedBytes": 2452198,
+      "completed": false
+    },
+    {
+      "edits": 26,
+      "callbacks": 26,
+      "errors": [],
+      "elapsedMs": 5042.099999997765,
+      "lastEditMs": 40.69999999925494,
+      "heap": {
+        "usedJSHeapSize": 212912702,
+        "totalJSHeapSize": 278145082,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 26,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 51,
+      "callbacks": 51,
+      "errors": [],
+      "elapsedMs": 10043.89999999851,
+      "lastEditMs": 41.5,
+      "heap": {
+        "usedJSHeapSize": 271068195,
+        "totalJSHeapSize": 352955167,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 51,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 76,
+      "callbacks": 76,
+      "errors": [],
+      "elapsedMs": 15044.29999999702,
+      "lastEditMs": 42.19999999925494,
+      "heap": {
+        "usedJSHeapSize": 330818547,
+        "totalJSHeapSize": 397470963,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 76,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 101,
+      "callbacks": 101,
+      "errors": [],
+      "elapsedMs": 20032.29999999702,
+      "lastEditMs": 30.900000002235174,
+      "heap": {
+        "usedJSHeapSize": 473321890,
+        "totalJSHeapSize": 562558862,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 101,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 126,
+      "callbacks": 126,
+      "errors": [],
+      "elapsedMs": 25036.79999999702,
+      "lastEditMs": 34.399999998509884,
+      "heap": {
+        "usedJSHeapSize": 476292411,
+        "totalJSHeapSize": 539439691,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 126,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    }
+  ],
+  "diagnostics": {
+    "crashes": [],
+    "fatalMemoryMessages": [],
+    "omitted": "Unrelated Chrome display/network/updater stderr omitted."
+  },
+  "interpretation": "Run did not complete. A CDP timeout is not proof of a specific OOM cause.",
+  "stoppedByAssistant": true,
+  "stopReason": "Stopped the isolated browser process group after observing about 220 MiB free disk and 6400 MiB used swap on an 8 GiB host. The following CDP timeout was induced by that stop, not a spontaneous compact-capture failure."
+}

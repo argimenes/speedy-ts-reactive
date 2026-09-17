@@ -7,6 +7,7 @@ import {openLegacyInMemory} from './src/block-tree/portable-spike/codec';
 import {projectOwned} from './src/history/stage-c-gates/resource';
 import {encodeGateDocument,decodeGateDocument} from './src/history/stage-c-gates/portable';
 import {openGateEditor} from './src/history/stage-c-gates/editor';
+import {captureBlocks,cloneBlocks} from './src/block-tree/clipboard';
 import {encodeWire,decodeWire} from './src/history/preplan-spike/wire';
 function normalize(legacy,resourceId) {
  const session=openLegacyInMemory(legacy,resourceId); if(session.status!=='ready') return session;
@@ -18,7 +19,14 @@ function normalize(legacy,resourceId) {
  return {status:'ready',document:encodeGateDocument(baseline),baselineWire:encodeWire(baseline)};
 }
 function reopen(document) {const editor=openGateEditor(decodeGateDocument(document)); const baseline=editor.snapshot();editor.stop();return {document:encodeGateDocument(baseline),baselineWire:encodeWire(baseline)};}
-module.exports={normalize,reopen,encodeWire,decodeWire};`;
+function duplicate(document,resourceId) {
+ const editor=openGateEditor(decodeGateDocument(document));
+ const fragment=cloneBlocks(captureBlocks(editor.repository.snapshot(),[editor.repository.readState().rootPlacementKey])); editor.stop();
+ const state=fragment.state, root=state.placements[state.rootPlacementKey];
+ const snapshot=projectOwned(state,resourceId,{contents:new Map(Object.keys(state.contents).map(k=>[k,resourceId])),placementIds:new Map(),externalTargets:new Map(),root:{key:root.key,contentKey:root.contentKey,placementId:root.placementId}},0);
+ return {document:encodeGateDocument(snapshot),baselineWire:encodeWire(snapshot)};
+}
+module.exports={normalize,reopen,duplicate,encodeWire,decodeWire};`;
   const compiled = await build({ stdin: { contents: source, resolveDir: fileURLToPath(new URL('../../', import.meta.url)), loader: 'ts' }, bundle: true,
     platform: 'node', format: 'cjs', conditions: ['browser'], write: false, logLevel: 'silent' });
   const module = { exports: {} }; new Function('require', 'module', 'exports', compiled.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);

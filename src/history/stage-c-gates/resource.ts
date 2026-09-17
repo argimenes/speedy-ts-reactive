@@ -91,7 +91,9 @@ export function validateResource(state: ResourceSnapshot): void {
 export function projectOwned(state: RepositoryState, resourceId: string, evidence: OwnershipEvidence, revision: number): DeepReadonly<ResourceSnapshot> {
   const contents: ResourceSnapshot["contents"] = Object.create(null), placements: ResourceSnapshot["placements"] = Object.create(null);
   const edge = (key: string) => {
-    const p = state.placements[key], placementId = evidence.placementIds.get(key);
+    const p = state.placements[key], binding = evidence.placementIds.get(key);
+    const placementId = p?.kind === "inline" ? binding ?? `private-cell:${key}` : p?.placementId ?? binding;
+    requireValid(!p?.placementId || !binding || binding === p.placementId, "conflicting placement evidence");
     requireValid(p && placementId, "missing committed placement evidence");
     if (p.externalReference) {
       placements[key] = { key, placementId, kind: "reference", target: { kind: "external", reference: clone(p.externalReference) } };

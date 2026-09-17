@@ -22,15 +22,20 @@ export function openGateEditor(snapshot: DeepReadonly<ResourceSnapshot>) {
   const placementIds = new Map<string, string>();
   for (const [key, p] of Object.entries(snapshot.placements)) {
     placementIds.set(key, p.placementId);
-    state.placements[key] = p.target.kind === "local" ? { key, kind: p.kind, contentKey: p.target.contentKey }
-      : { key, kind: "reference", contentKey: createContentKey(), externalReference: clone(p.target.reference) };
+    const semantic = p.kind === "inline" ? {} : { placementId: p.placementId };
+    state.placements[key] = p.target.kind === "local" ? { key, ...semantic, kind: p.kind, contentKey: p.target.contentKey }
+      : { key, ...semantic, kind: "reference", contentKey: createContentKey(), externalReference: clone(p.target.reference) };
   }
   const repository = new CanonicalRepository(state, { enforceBlockIdentity: true });
   const errors: unknown[] = [];
   const stop = repository.subscribeHistoryChanges(event => {
-    for (const c of event.contents) owners.set(c.key, snapshot.resourceId);
-    for (const p of event.placements) if (p.after && !placementIds.has(p.key)) {
-      placementIds.set(p.key, p.after.kind === "inline" ? `private-cell:${p.key}` : crypto.randomUUID());
+    for (const c of event.contents) {
+      if (c.kind === "record-content" && !c.after) owners.delete(c.key);
+      else owners.set(c.key, snapshot.resourceId);
+    }
+    for (const p of event.placements) {
+      if (!p.after) placementIds.delete(p.key);
+      else placementIds.set(p.key, p.after.kind === "inline" ? `private-cell:${p.key}` : p.after.placementId!);
     }
   }, error => errors.push(error));
   const root = state.placements[state.rootPlacementKey];
@@ -53,6 +58,13 @@ export function openGateWorkspace(initial: RepositoryState, resources: ReadonlyM
     resourceFor.set(key, resourceId); owners.set(key, evidence.root.contentKey);
   }
   const state = normalizeDefinitionOwnership(initial, owners);
+  for (const evidence of resources.values()) for (const [key, id] of evidence.placementIds) {
+    const p = state.placements[key];
+    if (p && p.kind !== "inline") {
+      if (p.placementId !== undefined && p.placementId !== id) throw new Error("Conflicting Placement identity evidence");
+      p.placementId = id;
+    }
+  }
   for (const [key, sourceId] of resourceFor) {
     const c = state.contents[key], evidence = resources.get(sourceId)!;
     for (const pk of [...c.children, ...c.inlineContent, ...Object.values(c.ownedRelations)]) {

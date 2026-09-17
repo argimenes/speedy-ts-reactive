@@ -1,6 +1,6 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rename, cp, rm, symlink, readdir, appendFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rename, cp, rm, symlink, readdir, appendFile, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
@@ -213,7 +213,9 @@ for (const phase of ['source-intent', 'source-torn', 'source-fenced', 'destinati
       else await assert.rejects(openWriter(staged, grant), /staged|fenced|incomplete tail/);
     }
     const sourceBytes = await readFile(join(memoir.directory.path, 'journal.jsonl'));
-    const target = await handoffMemoir(memoir, destinationStore, 'doc.json', 'handoff');
+    const reopenedSource = await readMemoir(await openStore(from), 'resource', 'memoir');
+    const reopenedDestination = await openStore(to);
+    const target = await handoffMemoir(reopenedSource, reopenedDestination, 'doc.json', 'handoff');
     const active = await openWriter(target, grant);
     await active.append(active.token, active.head, [{ kind: 'save-prepared', id: 'destination-save' }]); await active.close();
     await assert.rejects(openWriter(memoir, grant), /fenced/);
@@ -266,4 +268,57 @@ test('G2 immutable pending retries survive relocation and conflicting destinatio
   const conflictingBytes = await readFile(join(other.memoir.directory.path, 'journal.jsonl'));
   await assert.rejects(handoffMemoir(target, other.store, 'doc.json', 'collision'), /prefix conflict/);
   assert.deepEqual(await readFile(join(other.memoir.directory.path, 'journal.jsonl')), conflictingBytes);
+}));
+
+
+test('G2 read-only history cannot redirect writes and ordinary Document saving remains independent', () => sandbox(async directory => {
+  const { memoir } = await admitted(directory), path = join(memoir.directory.path, 'journal.jsonl');
+  const before = await readFile(path);
+  await chmod(path, 0o444);
+  try {
+    await assert.rejects(openWriter(memoir, grant), error => ['EACCES', 'EPERM'].includes(error.code));
+    await writeFile(join(directory, 'doc.json'), '{"ordinarySave":"still works"}');
+    assert.deepEqual(await readFile(path), before);
+    assert.deepEqual((await readdir(directory)).sort(), ['.memory', 'doc.json']);
+  } finally { await chmod(path, 0o644); }
+}));
+
+test('G2 independent Save As uses actual authored-copy identities and an independent memoir', () => sandbox(async directory => {
+  const { semanticCore } = await import('./semantic-core.mjs'), semantic = await semanticCore();
+  const document = { format: 'codex-portable-resource-gate', version: 1, resourceId: 'source',
+    root: { placementId: 'root', kind: 'owned', target: { kind: 'local', blockId: 'doc' } },
+    blocks: [
+      { id: 'doc', type: 'document-block', properties: {}, children: [
+        { placementId: 'first', kind: 'owned', target: { kind: 'local', blockId: 'container' } },
+        { placementId: 'shared', kind: 'reference', target: { kind: 'local', blockId: 'container' } },
+        { placementId: 'external', kind: 'reference', target: { kind: 'external', reference: { kind: 'block', targetId: 'foreign', source: { scope: 'document', resourceId: 'elsewhere' }, version: { kind: 'unpinned' } } } },
+      ] },
+      { id: 'container', type: 'container-block', properties: {}, children: [{ placementId: 'child', kind: 'owned', target: { kind: 'local', blockId: 'text' } }] },
+      { id: 'text', type: 'standoff-editor-block', properties: {}, inline: [{ kind: 'text', text: 'shared😀' }] },
+    ] };
+  const copied = semantic.duplicate(document, 'copy');
+  assert.equal(copied.document.resourceId, 'copy');
+  assert(copied.document.blocks.every(b => !document.blocks.some(old => old.id === b.id)));
+  const children = copied.document.blocks.find(b => b.type === 'document-block').children;
+  assert.equal(children[0].target.blockId, children[1].target.blockId);
+  assert.deepEqual(children[2].target, document.blocks[0].children[2].target);
+  assert(children.every(p => !['first', 'shared', 'external'].includes(p.placementId)));
+  const store = await openStore(directory, true);
+  await writeFile(join(directory, 'source.json'), JSON.stringify(document));
+  const source = await admitMemoir(store, { resourceId: 'source', memoirId: 'source-memory', enrollmentId: 'source-enrollment' }, 'source.json');
+  const writer = await openWriter(source, { enrollmentId: 'source-enrollment' });
+  try {
+    const sourceBytes = await readFile(join(source.directory.path, 'journal.jsonl'));
+    await writeFile(join(directory, 'copy.json'), JSON.stringify(copied.document));
+    const target = await admitMemoir(store, { resourceId: 'copy', memoirId: 'copy-memory', enrollmentId: 'copy-enrollment' }, 'copy.json');
+    const independent = await openWriter(target, { enrollmentId: 'copy-enrollment' });
+    try {
+      const checkpoint = await independent.publishCheckpoint(Buffer.from(copied.baselineWire));
+      await independent.append(independent.token, independent.head, [{ kind: 'baseline', id: 'copy-base', checkpoint }]);
+      assert.deepEqual(semantic.reopen(JSON.parse(await readFile(join(directory, 'copy.json'), 'utf8'))).document, copied.document);
+      assert.deepEqual(semantic.decodeWire((await readCheckpoint(target, checkpoint)).toString()), semantic.decodeWire(copied.baselineWire));
+    } finally { await independent.close(); }
+    assert.deepEqual(await readFile(join(source.directory.path, 'journal.jsonl')), sourceBytes);
+    await writer.append(writer.token, writer.head, [{ kind: 'save-prepared', id: 'source-still-writable' }]);
+  } finally { await writer.close(); }
 }));

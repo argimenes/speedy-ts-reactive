@@ -1,0 +1,195 @@
+{
+  "gate": "G3 command/worker/outbox/server feasibility",
+  "date": "2026-09-17T21:06:51.266Z",
+  "node": "v22.12.0",
+  "browser": "Chrome/153.0.8010.48",
+  "durationSeconds": 10,
+  "revisions": 50,
+  "baselineBytes": 15926745,
+  "matrices": [
+    {
+      "length": 100,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.6,
+        "p95Ms": 1.2
+      },
+      "callback": null
+    },
+    {
+      "length": 100,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.7,
+        "p95Ms": 1.6
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 100,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.5,
+        "p95Ms": 1
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 6.6,
+        "p95Ms": 10.2
+      },
+      "callback": null
+    },
+    {
+      "length": 5600,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 6.5,
+        "p95Ms": 9.2
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 7.4,
+        "p95Ms": 12.1
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 32.8,
+        "p95Ms": 37.8
+      },
+      "callback": null
+    },
+    {
+      "length": 25000,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 34.2,
+        "p95Ms": 37.9
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 32.9,
+        "p95Ms": 36.7
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    }
+  ],
+  "sustained": {
+    "callback": {
+      "samples": 50,
+      "medianMs": 0.1,
+      "p95Ms": 0.2
+    },
+    "edit": {
+      "samples": 50,
+      "medianMs": 34.6,
+      "p95Ms": 39.1
+    },
+    "historyAddedOver50ms": 0,
+    "maxInFlight": 4,
+    "verify": {
+      "samples": 50,
+      "medianMs": 49.6,
+      "p95Ms": 56.7
+    },
+    "encode": {
+      "samples": 50,
+      "medianMs": 0.1,
+      "p95Ms": 0.2
+    },
+    "idb": {
+      "samples": 50,
+      "medianMs": 2.3,
+      "p95Ms": 7.1
+    },
+    "append": {
+      "samples": 44,
+      "medianMs": 9.9,
+      "p95Ms": 34.4
+    },
+    "packetBytes": {
+      "min": 2634,
+      "max": 2648
+    },
+    "maxOutboxBytes": 13232,
+    "maxOutboxCount": 5,
+    "oldestPendingMs": 974,
+    "drainMs": 405.19999999925494,
+    "maxAppendRequestBytes": 15398,
+    "heap": [
+      {
+        "edit": 0,
+        "used": 307831660
+      }
+    ]
+  },
+  "exactness": {
+    "allWirePacketsDecoded": 50,
+    "allStateParentsAndPreimagesChecked": true,
+    "sampledIndependentReplays": 1,
+    "finalOracleEquality": true,
+    "finalOutboxCount": 0
+  },
+  "gateCaps": {
+    "workerMessages": 64,
+    "packetWireBytes": 102400,
+    "outboxBytes": 16777216,
+    "outboxRecords": 4096,
+    "batchRecords": 32
+  },
+  "limits": [
+    "Gate-only format/endpoints; actual editor commands without rendering/input-device latency",
+    "Native store has finite whole-journal scans; no production archive scalability claim",
+    "Existing unbounded undo allocations retained in every mode; heap includes editor and browser overhead",
+    "Single local Chrome/macOS host; process/fsync evidence is not power-loss certification",
+    "Short smoke only: does not satisfy the ten-minute gate"
+  ]
+}

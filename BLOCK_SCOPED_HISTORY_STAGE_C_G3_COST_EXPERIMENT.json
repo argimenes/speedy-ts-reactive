@@ -1,0 +1,44 @@
+{
+  "gate": "G3 command/worker/outbox/server feasibility",
+  "passed": false,
+  "requestedSeconds": 600,
+  "requestedEdits": 3000,
+  "observedProgress": [
+    {
+      "gate": "G3 running",
+      "completed": false,
+      "errors": []
+    },
+    {
+      "gate": "G3 running",
+      "completed": false,
+      "errors": [],
+      "progress": {
+        "edits": 266,
+        "total": 3000,
+        "inFlight": 1,
+        "elapsedMs": 53035.699999999255
+      }
+    },
+    {
+      "gate": "G3 running",
+      "completed": false,
+      "errors": [],
+      "progress": {
+        "edits": 566,
+        "total": 3000,
+        "inFlight": 1,
+        "elapsedMs": 113033.80000000075
+      }
+    }
+  ],
+  "failure": "CDP Runtime.evaluate timeout during sustained workload. No completed exactness result or final drain measurement.",
+  "source": "Preserved from the first sustained-run log; automatic failure artifact publication was added afterward.",
+  "cause": "Unproven. History-off control also became unresponsive; host disk/swap pressure and large existing undo retention prevent clean attribution.",
+  "environmentObservedAfterRuns": {
+    "physicalMemoryBytes": 8589934592,
+    "freeDiskApproxMiB": 220,
+    "usedSwapMiB": 6400
+  },
+  "log": "{\"gate\":\"G3 running\",\"completed\":false,\"errors\":[]}\n{\"gate\":\"G3 running\",\"completed\":false,\"errors\":[],\"progress\":{\"edits\":266,\"total\":3000,\"inFlight\":1,\"elapsedMs\":53035.699999999255}}\n{\"gate\":\"G3 running\",\"completed\":false,\"errors\":[],\"progress\":{\"edits\":566,\"total\":3000,\"inFlight\":1,\"elapsedMs\":113033.80000000075}}\nfile:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/browser.mjs:28\n      const id = ++sequence, timer = setTimeout(() => { pending.delete(id); reject(new Error(`CDP timeout: ${method}`)); }, 30000);\n                                                                                   ^\n\nError: CDP timeout: Runtime.evaluate\n    at Timeout._onTimeout (file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/browser.mjs:28:84)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)\n\nNode.js v22.12.0\n"
+}

@@ -1,0 +1,310 @@
+{
+  "mode": "off",
+  "date": "2026-09-17T21:14:20.703Z",
+  "node": "v22.12.0",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/153.0.8010.48",
+    "revision": "@199a3a541d76237379e353b348e64045584db057",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "jsVersion": "15.3.76.12"
+  },
+  "requestedSeconds": 180,
+  "completed": false,
+  "error": "Error: CDP timeout: Runtime.evaluate\n    at Timeout._onTimeout (file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/browser.mjs:31:84)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)",
+  "samples": [
+    {
+      "edits": 1,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 39.69999999925494,
+      "lastEditMs": 39.69999999925494,
+      "heap": {},
+      "undoEntries": 1,
+      "lastUndoEntryEncodedBytes": 2452198,
+      "completed": false
+    },
+    {
+      "edits": 26,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 5048.29999999702,
+      "lastEditMs": 45.19999999925494,
+      "heap": {},
+      "undoEntries": 26,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 51,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 10046.599999997765,
+      "lastEditMs": 46.20000000298023,
+      "heap": {},
+      "undoEntries": 51,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 76,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 15058.199999999255,
+      "lastEditMs": 57.80000000074506,
+      "heap": {},
+      "undoEntries": 76,
+      "lastUndoEntryEncodedBytes": 2452202,
+      "completed": false
+    },
+    {
+      "edits": 101,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 20036.79999999702,
+      "lastEditMs": 35.599999997764826,
+      "heap": {},
+      "undoEntries": 101,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 126,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 25041.29999999702,
+      "lastEditMs": 40.5,
+      "heap": {},
+      "undoEntries": 126,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 151,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 30043.599999997765,
+      "lastEditMs": 42.5,
+      "heap": {},
+      "undoEntries": 151,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 176,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 35046.099999997765,
+      "lastEditMs": 44.69999999925494,
+      "heap": {},
+      "undoEntries": 176,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 201,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 40049.599999997765,
+      "lastEditMs": 47.899999998509884,
+      "heap": {},
+      "undoEntries": 201,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 226,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 45048,
+      "lastEditMs": 46.5,
+      "heap": {},
+      "undoEntries": 226,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 251,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 50043.79999999702,
+      "lastEditMs": 42.19999999925494,
+      "heap": {},
+      "undoEntries": 251,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 276,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 55049.39999999851,
+      "lastEditMs": 46.600000001490116,
+      "heap": {},
+      "undoEntries": 276,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 301,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 60032.599999997765,
+      "lastEditMs": 30.599999997764826,
+      "heap": {},
+      "undoEntries": 301,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 326,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 65033.39999999851,
+      "lastEditMs": 31.100000001490116,
+      "heap": {},
+      "undoEntries": 326,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 351,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 70056.69999999925,
+      "lastEditMs": 55.900000002235174,
+      "heap": {},
+      "undoEntries": 351,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 376,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 75033.09999999776,
+      "lastEditMs": 31.5,
+      "heap": {},
+      "undoEntries": 376,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 401,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 80048.29999999702,
+      "lastEditMs": 46.100000001490116,
+      "heap": {},
+      "undoEntries": 401,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 426,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 85049.19999999925,
+      "lastEditMs": 47.80000000074506,
+      "heap": {},
+      "undoEntries": 426,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 451,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 90036.69999999925,
+      "lastEditMs": 34.900000002235174,
+      "heap": {},
+      "undoEntries": 451,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 476,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 95032.09999999776,
+      "lastEditMs": 30.300000000745058,
+      "heap": {},
+      "undoEntries": 476,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 501,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 100046.89999999851,
+      "lastEditMs": 45.399999998509884,
+      "heap": {},
+      "undoEntries": 501,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 526,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 105038.29999999702,
+      "lastEditMs": 37,
+      "heap": {},
+      "undoEntries": 526,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 551,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 110032.89999999851,
+      "lastEditMs": 31,
+      "heap": {},
+      "undoEntries": 551,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 576,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 115042.89999999851,
+      "lastEditMs": 41.69999999925494,
+      "heap": {},
+      "undoEntries": 576,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 601,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 120038.69999999925,
+      "lastEditMs": 36.600000001490116,
+      "heap": {},
+      "undoEntries": 601,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    },
+    {
+      "edits": 626,
+      "callbacks": 0,
+      "errors": [],
+      "elapsedMs": 135579.09999999776,
+      "lastEditMs": 46.5,
+      "heap": {},
+      "undoEntries": 626,
+      "lastUndoEntryEncodedBytes": 2452206,
+      "completed": false
+    }
+  ],
+  "diagnostics": {
+    "crashes": [],
+    "fatalMemoryMessages": [],
+    "omitted": "Unrelated Chrome display/network/updater stderr omitted."
+  },
+  "interpretation": "Run did not complete. A CDP timeout is not proof of a specific OOM cause.",
+  "measurementLimit": "The heap object had no enumerable JSON fields; heap samples in this first control are unavailable. Explicit property reads were added for the compact control."
+}

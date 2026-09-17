@@ -12,7 +12,7 @@ function validPresent(value: DeepReadonly<PresentValue>): boolean {
 
 /** Apply existing exact record/field/splice rules to a private draft only.
  * The caller validates its declared graph model before publishing the draft. */
-export function applyExactRecords<P extends { key: string }>(
+export function applyExactRecords<P extends { key: string; placementId?: string }>(
   next: { contents: Record<string, ContentRecord>; placements: Record<string, P> },
   changes: { contents: DeepReadonly<ContentChange[]>; placements: DeepReadonly<RecordDelta<string, P>[]> },
 ): void {
@@ -57,6 +57,8 @@ export function applyExactRecords<P extends { key: string }>(
     requireExact(!seen.has(delta.key), "Duplicate placement delta"); seen.add(delta.key);
     requireExact(equal(next.placements[delta.key] ?? null, delta.before), "Placement preimage mismatch");
     requireExact(delta.after === null || delta.after.key === delta.key, "Placement key mismatch");
+    requireExact(!delta.before?.placementId || !delta.after || delta.after.placementId === delta.before.placementId,
+      "An existing Placement identity cannot be changed");
     if (delta.after === null) delete next.placements[delta.key];
     else Object.defineProperty(next.placements, delta.key, { value: clone(delta.after) as P, enumerable: true, writable: true, configurable: true });
   }

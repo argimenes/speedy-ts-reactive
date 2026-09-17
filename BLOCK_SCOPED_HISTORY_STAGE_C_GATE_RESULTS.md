@@ -1,6 +1,6 @@
 # Stage C implementation gate results
 
-Status: **G1 functional candidate passing; G2 storage qualification in progress**. Stage C is not
+Status: **G3 sustained qualification blocked; Stage C implementation incomplete**. Stage C is not
 complete. No production format dispatch, ordinary Save/Open integration, outbox,
 `.memory` server store or Stage D–E work has been enabled.
 Plan: [Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md).
@@ -35,9 +35,11 @@ Scope-eviction undo is tested; production enrollment end/reopen boundaries remai
 
 | Current functional verification | Result |
 | --- | --- |
-| G1 plus core membership tests | **31 passed**: 23 gate cases and 8 core lifecycle cases. Covers original counterexamples, rich unplaced content, margins, copy/insert/split/join/replace, existing undo/redo, Workspace scope removal, descriptor retarget/pin preimages, isolated queries, internal cycles and branch-aware existence. |
+| G1 plus core membership tests | **36 passed**: 27 gate cases and 9 core lifecycle cases (9.20 s in the resumed run). Covers original counterexamples, rich unplaced content, margins, copy/insert/split/join/replace, existing undo/redo, Workspace scope removal, descriptor retarget/pin preimages, isolated queries, internal cycles and branch-aware existence. |
 | Full regression run after the membership changes | **407 passed / 2 failed**, 409 total, 57 files passed / 1 failed, 51.40 s. Only the two pre-existing context-menu failures. This run preceded the later additional query/Workspace cases. |
-| Typecheck after query/Workspace additions | Client and server passed. Later changes still require final recheck. |
+| Current typecheck | Client and server passed after the incremental adapter and native-ID bridge changes. |
+| Existing Stage B history regression | **20 passed**, 2 files, 1.96 s, one worker. Exact replay and edge-case regressions pass with the new Placement identity check. |
+| Full current regression/build | Not rerun during the resource-pressure stop. The earlier full run above is historical evidence, not current full qualification. |
 
 G1's finite query oracle takes only immutable resource snapshots and explicit
 selected-state-ancestry evidence. Foreign definition/asset markers travel with
@@ -77,7 +79,9 @@ archive through the optional index, whose corrupt bytes are preserved in the tes
 | --- | --- |
 | Initial storage/association/locking/blob/journal cases | 6 passed, including real process `SIGKILL`, stale epochs, overlapping immutable retries, missing state parents, branches independent of append order, and torn/corrupt journals. |
 | Combined suite before within-record fault extensions | **13 passed**, 10.03 s with worker reuse. Includes all five handoff publication boundaries, folder copy/rename and verified return handoff. |
-| Additional handoff fault run | **10 passed**, 6.40 s: nine intent/publication/torn-write boundaries plus return handoff. Further hardening changes need rerun. |
+| Latest complete storage suite | **21 passed**, 16.69 s while the browser lifecycle test ran concurrently. Includes initialization races/partial stores, missing acknowledged checkpoints, replaced lock inode, conflicting suffixes, pending-packet retry and all nine handoff fault boundaries. |
+| Additional G2 cases | **2 passed**, 0.85 s: read-only history fails without redirecting writes or preventing an ordinary Document save; independent Save As preserves sharing/foreign descriptors, uses fresh authored/placement/resource/memoir identities and leaves the source writer/archive untouched. These plus the latest 21-case suite cover 23 cases; no claim of a single complete 23-case rerun. |
+| Browser legacy/outbox/first-save | **7 checks passed**, Chrome 153.0.8010.48 / Node v22.12.0. Real browser process kill/restart preserves normalization identities and strict-IDB baseline packets; first deliberate Save fsyncs modern file/parent and creates infrastructure only in the chosen parent. Both exact baselines and the actual save hash verify; acknowledgement and packet deletion share an IDB transaction. |
 | Real largest paragraph checkpoint | 25,000 characters; **13,376,402 wire bytes**; transfer chunks at most **262,144 bytes**. Interrupted uploads remain unreferenced; final bytes hash-verify and decode to the exact baseline. |
 
 Source fencing precedes destination activation. Source bytes are retained. Handoff
@@ -96,12 +100,92 @@ Unsupported native locking/sync semantics have no fallback. This host's fsync an
 process-death tests are not a universal power-loss, network-filesystem or cloud-lock
 guarantee; disconnected copies cannot be globally fenced.
 
-**G2 is not yet declared passed.** Remaining qualification includes initialization
-races/partial stores, damaged required checkpoint evidence, conflicting suffixes,
-pending-packet handoff retry, and the legacy/outbox/first-save lifecycle. G3 sustained
-worker/outbox performance, P1 schema hardening, production format dispatch, server
-and browser integration, bounded durable queries and P6 release measurements remain.
-No Stage C completion report or production readiness is claimed.
+**G2 is not yet declared fully qualified.** The formerly listed initialization,
+checkpoint, conflicting-suffix, pending-retry and legacy lifecycle cases now pass.
+The broader platform/copy/read-only/discovery matrix, production recovery and
+bounded-reader integration remain explicit obligations. The native gate prototype
+must not be promoted unchanged as the production archive service.
+
+## G3 — incremental candidate and current experiment
+
+`PlacementRecord.placementId` now carries normalized structural semantic identity.
+The gate editor seeds it before enrollment. New edges/copies receive fresh IDs in
+the original command; moves/detach retain the existing edge ID. Ordinary inverse
+records restore deleted IDs. Gate binding maps delete removed entries and recover
+IDs from inverse records, rather than retaining tombstones indefinitely. Cells keep
+private history symbols, never authored portable IDs. Replay rejects an attempted
+change of an existing semantic edge ID. This simpler internal representation is
+recorded in the plan; it does not change undo steps or execution.
+
+The [incremental adapter](src/history/stage-c-gates/incremental.ts) retains only
+current owned content/placement key sets. It accepts immutable compact commit events,
+uses explicit definition membership and exact host-slot changes for new Cells, and
+never holds a repository or a paragraph sequence. Foreign-only events advance only
+the source counter. Ownership transfers, lost source events and unproved incoming
+slots end this candidate projection with an explicit boundary; they are not guessed.
+Every accepted local event preserves source UUID/cause and uses a separate local
+counter. Existing full-state extraction remains an independent test oracle.
+
+Tests cover mixed structural/rich edits and all intermediate undo/redo states,
+200 seeded randomized edits/branches, current-key retention counts, foreign-only
+edits and 100/5,600/25,000-character packet growth. The tests replay after lossless
+wire round trips; unsupported transfer/missing-event cases cannot resume silently.
+
+The [Chromium cost harness](scripts/stage-c-gates/cost.mjs) exercises actual editor
+commands, an isolated worker's checked private mirror, strict transactional IDB
+outbox, native-fenced/fsynced server append and acknowledgement-driven deletion.
+It includes an actual server outage and reconnect/drain interval. Ordinary editor
+undo allocations stay enabled in all modes. Full oracle extraction happens only
+at the end. This is a feasibility harness without rendering/device-input timing;
+it does not enable any production route or freeze a schema.
+
+The initial 10-second smoke passed 50 revisions and final exact oracle equality.
+Its normalized resource baseline was **15,926,745 wire bytes** (the earlier
+13,376,402-byte measurement is the raw repository baseline, a different envelope).
+Smoke packet size was 2,634–2,648 bytes; capture/transfer callback p95 0.2 ms,
+worker apply/full-validation p95 56.7 ms, strict-IDB p95 7.1 ms. These small-sample
+numbers are not the sustained gate result. The attempted full ten-minute, five-edits/second run did **not** pass: Chromium
+stopped responding to CDP during the run, after the last reported 566 completed
+edits at 113 seconds. This is not being treated as a passing throughput result.
+The history-off control also stopped responding, after its last telemetry at
+626 edits / 135.6 seconds, with **zero history callbacks**. Its existing undo stack
+contained 626 entries; each sampled one-character entry encoded approximately
+**2,452,206 bytes**. This is the same full forward/inverse paragraph retention
+already identified in the Stage B completion report, not added durable packets.
+
+The compact-only diagnostic was deliberately stopped after its last sample at
+126 edits, once host resource pressure was identified. It had 126 exact callbacks,
+no reported capture errors, and approximately 476 MB used JS heap at that sample.
+It did **not** independently fail: its subsequent CDP timeout resulted from stopping
+its isolated browser. The host had 8 GiB physical memory, approximately 6,400 MiB
+swap in use and only about 220 MiB free on the data/temp volume (later readings
+were lower). The temporary profiles were cleaned up; no user files were removed.
+
+**Interpretation and stop:** the ten-minute gate is unmet. Existing undo retention
+is a concrete large allocation, but a CDP timeout on this resource-starved host does
+not prove a specific OOM cause, a history-pipeline regression, or a false ownership/
+replay architecture. Dependent P1–P6 work stops here pending a valid qualification
+run. No undo granularity, stack policy, benchmark workload or exit target was
+changed to manufacture a pass. The harness now refuses to launch sustained runs
+with less than 8 GiB free on the temp volume; that is a laboratory protection,
+not a production resource limit or a promise that 8 GiB is sufficient.
+
+Evidence artifacts:
+
+- [Short end-to-end smoke](BLOCK_SCOPED_HISTORY_STAGE_C_G3_SMOKE.json).
+- [Uncompleted ten-minute attempt](BLOCK_SCOPED_HISTORY_STAGE_C_G3_COST_EXPERIMENT.json).
+- [History-off control](BLOCK_SCOPED_HISTORY_STAGE_C_G3_OFF_CONTROL.json).
+- [Deliberately stopped compact-only diagnostic](BLOCK_SCOPED_HISTORY_STAGE_C_G3_COMPACT_CONTROL.json).
+
+Before continuing: provide adequate disk/memory headroom (or another reference
+host), rerun the unchanged sustained trace in all modes, and separate original
+undo growth from added worker/outbox state. If original undo storage still makes
+the required trace infeasible, report that prerequisite explicitly and propose a
+behavior-preserving undo-storage optimization separately; do not introduce word
+undo, grouping, pruning or a changed stack policy. The larger G3 matrix and P6's
+100k-revision / >1 GiB archive / discovery measurements remain unproved.
+
+No Stage C completion or production readiness is claimed. P1–P6 remain gated.
 
 ## P0 — baseline
 
