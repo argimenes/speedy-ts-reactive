@@ -4,6 +4,8 @@ export type NodeKey = string;
 export type ContentKey = string;
 export type PlacementKey = string;
 export type ViewId = string;
+export type BlockId = string;
+export type CommitId = string;
 
 export type JsonObject = Record<string, unknown>;
 
@@ -86,6 +88,7 @@ export type RepositoryOperation =
   | { kind: "set-root"; key: PlacementKey };
 
 export interface HistoryEntry {
+  commitId: CommitId;
   label: string;
   forward: RepositoryOperation[];
   inverse: RepositoryOperation[];

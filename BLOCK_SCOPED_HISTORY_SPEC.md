@@ -1,6 +1,8 @@
 # Block-scoped temporal history: feasibility and technical specification
 
-Status: revised proposed specification, 17 September 2026. No implementation has begun.
+Status: approved architectural direction, 17 September 2026. Stage A is implemented
+and verified with the approved copy-policy amendment. Stages B–E remain proposed. See
+[the Stage A implementation report](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md).
 Reviewed against the current repository and the supplied discussion,
 `/Users/iianneill/Downloads/codex-block-scoped-history.md`.
 

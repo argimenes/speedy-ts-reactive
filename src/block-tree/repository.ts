@@ -3,8 +3,12 @@ import { createStore, reconcile, unwrap } from "solid-js/store";
 import { inlineOwnerFor } from "./inline-plan";
 import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./split-plan";
 import { clone } from "./clone";
+import { createCommitId } from "./ids";
+import { BlockIdentityIndex } from "./identity";
+import { prepareCommitCapture, finishCommitCapture, type CommitMetadata, type DeepReadonly, type PreparedCommitCapture, type RepositoryCommitResult, type RepositoryOptions } from "./commit-capture";
 import type {
   ContentKey,
+  CommitId,
   ContentRecord,
   HistoryEntry,
   Location,
@@ -162,6 +166,11 @@ export function planOperations(
 }
 
 type RepositorySubscriber = (state: RepositoryState, label: string) => void;
+type CommitSubscriber = {
+  listener: (result: DeepReadonly<RepositoryCommitResult>) => void;
+  onError: (error: unknown, commitId: CommitId) => void;
+};
+type CaptureAttempt = { capture: PreparedCommitCapture } | { error: unknown };
 
 export interface RepositoryChange {
   label: string;
@@ -183,9 +192,13 @@ export class CanonicalRepository {
   private locations = new Map<PlacementKey, Location>();
   private undoStack: HistoryEntry[] = [];
   private redoStack: HistoryEntry[] = [];
+  private readonly identity?: BlockIdentityIndex;
+  private readonly commitSubscribers = new Set<CommitSubscriber>();
+  private deliveringCommit = false;
 
-  constructor(initial: RepositoryState) {
+  constructor(initial: RepositoryState, options: RepositoryOptions = {}) {
     validateRepository(initial);
+    if (options.enforceBlockIdentity) this.identity = new BlockIdentityIndex(initial);
     const [state, setState] = createStore(clone(initial));
     this.state = state;
     this.setState = setState;
@@ -231,21 +244,56 @@ export class CanonicalRepository {
     return () => this.beforeSubscribers.delete(subscriber);
   }
 
-  commit(label: string, operations: RepositoryOperation[], recordHistory = true): void {
+  subscribeCommits(listener: CommitSubscriber["listener"], onError: CommitSubscriber["onError"]): () => void {
+    const subscriber = { listener, onError };
+    this.commitSubscribers.add(subscriber);
+    return () => { this.commitSubscribers.delete(subscriber); };
+  }
+
+  private prepareCapture(state: RepositoryState, operations: RepositoryOperation[], metadata: CommitMetadata): CaptureAttempt | undefined {
+    if (!this.commitSubscribers.size) return;
+    try { return { capture: prepareCommitCapture(state, operations, metadata) }; }
+    catch (error) { return { error }; }
+  }
+
+  private deliverCapture(attempt: CaptureAttempt | undefined, commitId: CommitId, label: string, recordHistory: boolean): void {
+    if (!attempt) return;
+    const subscribers = [...this.commitSubscribers];
+    this.deliveringCommit = true;
+    const report = (subscriber: CommitSubscriber, error: unknown) => {
+      try { subscriber.onError(error, commitId); } catch { /* An observer cannot invalidate the edit. */ }
+    };
+    try {
+      if ("error" in attempt) { subscribers.forEach(subscriber => report(subscriber, attempt.error)); return; }
+      let event: DeepReadonly<RepositoryCommitResult>;
+      try { event = finishCommitCapture(attempt.capture, this.readState(), commitId, label, recordHistory); }
+      catch (error) { subscribers.forEach(subscriber => report(subscriber, error)); return; }
+      for (const subscriber of subscribers) {
+        try { subscriber.listener(event); } catch (error) { report(subscriber, error); }
+      }
+    } finally { this.deliveringCommit = false; }
+  }
+
+  private assertNotCaptureCallback(): void {
+    if (this.deliveringCommit) throw new ModelInvariantError("Commit observers cannot mutate the repository synchronously");
+  }
+
+  commit(label: string, operations: RepositoryOperation[], recordHistory = true, metadata: CommitMetadata = {}): void {
+    this.assertNotCaptureCallback();
     if (!operations.length) return;
     const inlineOwner = inlineOwnerFor(this.readState(), operations, this.references);
     if (inlineOwner) {
-      this.commitInline(label, operations, inlineOwner, recordHistory);
+      this.commitInline(label, operations, inlineOwner, recordHistory, metadata);
       return;
     }
     const split = splitChangeFor(this.readState(), operations, this.references);
     if (split) {
-      this.commitInline(label, operations, undefined, recordHistory, split);
+      this.commitInline(label, operations, undefined, recordHistory, metadata, split);
       return;
     }
     const childrenOwner = emptyParagraphParentFor(this.readState(), operations, this.references);
     if (childrenOwner) {
-      this.commitInline(label, operations, undefined, recordHistory, undefined, childrenOwner);
+      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner);
       return;
     }
     const current = this.snapshot();
@@ -262,6 +310,9 @@ export class CanonicalRepository {
       }
     }
     next.revision = current.revision + 1;
+    const identityDelta = this.identity?.validateCommit(operations);
+    const capture = this.prepareCapture(current, operations, metadata);
+    const commitId = createCommitId();
     const previousContents = new Map<ContentKey, ContentRecord | undefined>();
     for (const operation of operations) {
       if (operation.kind === "put-content" || operation.kind === "remove-content") {
@@ -272,20 +323,23 @@ export class CanonicalRepository {
     batch(() => {
       this.setState(reconcile(next));
       this.rebuildReferences();
+      if (identityDelta) this.identity!.acceptCommit(identityDelta);
       if (recordHistory) {
         this.undoStack.push({
+          commitId,
           label,
           forward: clone(operations),
           inverse,
         });
         this.redoStack = [];
       }
+      this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
       for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents });
     });
   }
 
-  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, split?: SplitChange, childrenOwner?: ContentKey): void {
+  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey): void {
     const current = this.readState();
     // Capture inverse data before changing any reactive records.
     const inverse = operations.map((operation) => inverseFor(current, operation)).reverse();
@@ -303,6 +357,9 @@ export class CanonicalRepository {
     }
     for (const subscriber of this.beforeChangeSubscribers) subscriber(label);
     for (const subscriber of this.beforeSubscribers) subscriber(this.snapshot(), label);
+    const identityDelta = this.identity?.validateCommit(prepared);
+    const capture = this.prepareCapture(current, prepared, metadata);
+    const commitId = createCommitId();
     batch(() => {
       // Remove old locations before installing new ones: a split transfers Cells
       // between two owners, and operation ordering must not erase their new home.
@@ -337,10 +394,12 @@ export class CanonicalRepository {
         for (const [name, key] of Object.entries(content.ownedRelations)) this.locations.set(key, { ownerContentKey: content.key, slot: { kind: "relation", name } });
       }
       this.setState("revision", current.revision + 1);
+      if (identityDelta) this.identity!.acceptCommit(identityDelta);
       if (recordHistory) {
-        this.undoStack.push({ label, forward: clone(operations), inverse });
+        this.undoStack.push({ commitId, label, forward: clone(operations), inverse });
         this.redoStack = [];
       }
+      this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
       for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner });
     });
@@ -355,19 +414,31 @@ export class CanonicalRepository {
   }
 
   undo(): void {
+    this.assertNotCaptureCallback();
     const entry = this.undoStack.pop();
     if (!entry) return;
     batch(() => {
-      this.commit(`Undo ${entry.label}`, entry.inverse, false);
+      const before = this.state.revision;
+      try { this.commit(`Undo ${entry.label}`, entry.inverse, false, { cause: { kind: "undo", sourceCommitId: entry.commitId } }); }
+      catch (error) {
+        (this.state.revision === before ? this.undoStack : this.redoStack).push(entry);
+        throw error;
+      }
       this.redoStack.push(entry);
     });
   }
 
   redo(): void {
+    this.assertNotCaptureCallback();
     const entry = this.redoStack.pop();
     if (!entry) return;
     batch(() => {
-      this.commit(`Redo ${entry.label}`, entry.forward, false);
+      const before = this.state.revision;
+      try { this.commit(`Redo ${entry.label}`, entry.forward, false, { cause: { kind: "redo", sourceCommitId: entry.commitId } }); }
+      catch (error) {
+        (this.state.revision === before ? this.redoStack : this.undoStack).push(entry);
+        throw error;
+      }
       this.undoStack.push(entry);
     });
   }

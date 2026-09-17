@@ -1,11 +1,13 @@
 import { clone } from "./clone";
 import { planCrossTextEdit, type CrossTextSegment } from "./cross-text-edit";
 import { linkedRegistry } from "./linked-annotations";
-import type { BlockFragment } from "./clipboard";
+import { captureBlocks, cloneBlocks, remapKnownBlockReferences, type BlockFragment } from "./clipboard";
+import type { BlockCommitSubject, CommandDescriptor } from "./commit-capture";
+import { isAuthoredBlock, prepareNewBlockIdentities, readBlockId } from "./identity";
 import { editAnnotation, type AnnotationAction, type AnnotationPatch } from "./annotation-commands";
 import { isTextLeaf } from "./inline-plan";
 import { decodeDetachedSubtree, encodeDocument } from "./codecs";
-import { createContentKey, createPlacementKey } from "./ids";
+import { createBlockId, createContentKey, createPlacementKey } from "./ids";
 import { deriveLocations, planOperations, type CanonicalRepository } from "./repository";
 import type {
   ContentRecord,
@@ -22,6 +24,7 @@ interface PendingTransaction {
   label: string;
   operations: RepositoryOperation[];
   draft: RepositoryState;
+  commands: CommandDescriptor[];
 }
 
 export class TreeCommandError extends Error {
@@ -96,7 +99,10 @@ export class TreeCommands {
     const resolved = segments.map(segment => ({ ...segment, placementKey: this.placementKey(segment.placementKey, state) }));
     const result = planCrossTextEdit(state, resolved, text);
     this.pruneUnreachable(result.state);
-    this.publish("Replace selected text", this.diff(state, result.state));
+    this.publish("Replace selected text", this.diff(state, result.state), {
+      commandId: "tree.replaceAcrossBlocks", subjects: [...result.inputs, ...result.outputs],
+      relation: { kind: "cross-text-replace", inputs: result.inputs, outputs: result.outputs },
+    });
     return { placementKey: result.placementKey, caret: result.caret };
   }
 
@@ -111,7 +117,7 @@ export class TreeCommands {
     const updated = clone(properties); updated[index] = next;
     this.publish("Edit Standoff annotation", [{ kind: "put-content", record: {
       ...clone(content), payload: { ...clone(content.payload), standoffProperties: updated }, revision: content.revision + 1,
-    } }]);
+    } }], { commandId: "tree.editStandoffProperty", subjects: [this.subject(state, this.placementKey(key, state))] });
     return clone(next);
   }
 
@@ -138,27 +144,38 @@ export class TreeCommands {
     return resolved;
   }
 
-  private publish(label: string, operations: RepositoryOperation[]): void {
+  private subject(state: RepositoryState, placementKey: PlacementKey): BlockCommitSubject {
+    const content = state.contents[state.placements[placementKey].contentKey];
+    return { contentKey: content.key, placementKey, blockId: readBlockId(content) };
+  }
+
+  private publish(label: string, operations: RepositoryOperation[], descriptor?: CommandDescriptor): void {
+    if (!operations.length) return;
+    const description = descriptor ?? { commandId: "tree.command", subjects: [] };
     if (this.pending) {
       const { next } = planOperations(this.pending.draft, operations);
       this.pending.draft = next;
       this.pending.operations.push(...operations);
+      this.pending.commands.push(clone(description));
       return;
     }
-    this.repository.commit(label, operations);
+    this.repository.commit(label, operations, true, { commands: [description] });
   }
 
-  transaction(label: string, operation: () => void): void {
+  transaction(label: string, operation: () => void, descriptor?: CommandDescriptor): void {
     if (this.pending) {
+      const index = this.pending.commands.length;
       operation();
+      if (descriptor) this.pending.commands.splice(index, 0, clone(descriptor));
       return;
     }
-    this.pending = { label, operations: [], draft: this.repository.snapshot() };
+    this.pending = { label, operations: [], draft: this.repository.snapshot(), commands: descriptor ? [clone(descriptor)] : [] };
     try {
       operation();
       const operations = this.pending.operations;
+      const commands = this.pending.commands;
       this.pending = undefined;
-      this.repository.commit(label, operations);
+      this.repository.commit(label, operations, true, { commands });
     } catch (error) {
       this.pending = undefined;
       throw error;
@@ -267,7 +284,9 @@ export class TreeCommands {
     };
   }
 
-  insertFragment(fragment: BlockFragment, destination: Destination): PlacementKey[] {
+  insertFragment(fragment: BlockFragment, destination: Destination, descriptor?: CommandDescriptor): PlacementKey[] {
+    fragment = clone(fragment);
+    prepareNewBlockIdentities(Object.values(fragment.state.contents));
     const state = this.state();
     const target = this.resolveInsertion(destination, undefined, state);
     if (Object.keys(fragment.state.contents).some(key => state.contents[key]) || Object.keys(fragment.state.placements).some(key => state.placements[key])) throw new TreeCommandError("Clipboard keys collide with existing Blocks");
@@ -293,13 +312,15 @@ export class TreeCommands {
       ...Object.values(fragment.state.placements).map(record => ({ kind: "put-placement" as const, record: clone(record) })),
       { kind: "put-content", record: owner },
       ...extra,
-    ]);
+    ], { commandId: "tree.insertFragment", subjects: fragment.roots.map(key => this.subject(fragment.state, key)),
+      ...(fragment.copyIdentities?.length ? { relation: { kind: "copy" as const, pairs: fragment.copyIdentities } } : {}), ...descriptor });
     return [...fragment.roots];
   }
 
   insert(dto: ExistingBlockDto, destination: Destination): PlacementKey {
     const state = this.state();
     const decoded = decodeDetachedSubtree(dto);
+    prepareNewBlockIdentities(Object.values(decoded.state.contents));
     const target = this.resolveInsertion(destination, undefined, state);
     const children = [...target.children];
     children.splice(target.index, 0, decoded.rootPlacementKey);
@@ -312,7 +333,7 @@ export class TreeCommands {
       ),
       { kind: "put-content", record: this.updatedChildren(target.owner, children) },
     ];
-    this.publish("Insert Block", operations);
+    this.publish("Insert Block", operations, { commandId: "tree.insert", subjects: [this.subject(decoded.state, decoded.rootPlacementKey)] });
     return decoded.rootPlacementKey;
   }
 
@@ -357,7 +378,7 @@ export class TreeCommands {
         record: this.updatedChildren(target.owner, destinationChildren),
       });
     }
-    this.publish("Move Block", operations);
+    this.publish("Move Block", operations, { commandId: "tree.move", subjects: [this.subject(state, sourceKey)] });
   }
 
   remove(key: NodeKey | PlacementKey): void {
@@ -391,7 +412,7 @@ export class TreeCommands {
     const projected = clone(state);
     projected.contents[owner.key] = clone(updatedOwner);
     this.pruneUnreachable(projected);
-    this.publish("Remove Block", this.diff(state, projected));
+    this.publish("Remove Block", this.diff(state, projected), { commandId: "tree.remove", subjects: [this.subject(state, resolved)] });
   }
 
   unwrap(key: NodeKey | PlacementKey): void {
@@ -423,7 +444,7 @@ export class TreeCommands {
       { kind: "put-content", record: this.updatedChildren(owner, children) },
       { kind: "remove-placement", key: placementKey },
       { kind: "remove-content", key: content.key },
-    ]);
+    ], { commandId: "tree.unwrap", subjects: [this.subject(state, placementKey)] });
   }
 
   replace(
@@ -439,6 +460,7 @@ export class TreeCommands {
     const previousPlacement = state.placements[placementKey];
     const previousContent = state.contents[previousPlacement.contentKey];
     const decoded = decodeDetachedSubtree(dto);
+    prepareNewBlockIdentities(Object.values(decoded.state.contents));
     const decodedRootPlacement = decoded.state.placements[decoded.rootPlacementKey];
     const decodedRootContent = clone(decoded.state.contents[decodedRootPlacement.contentKey]);
     const next = clone(state);
@@ -456,7 +478,11 @@ export class TreeCommands {
     }
     next.contents[decodedRootContent.key] = decodedRootContent;
     this.pruneUnreachable(next);
-    this.publish("Replace Block", this.diff(state, next));
+    const previousSubject = this.subject(state, placementKey), nextSubject = this.subject(next, placementKey);
+    this.publish("Replace Block", this.diff(state, next), {
+      commandId: "tree.replace", subjects: [previousSubject, nextSubject],
+      relation: { kind: "replace", previous: previousSubject, next: nextSubject },
+    });
     return placementKey;
   }
 
@@ -518,6 +544,7 @@ export class TreeCommands {
       throw new TreeCommandError(`Relation ${name} is preserved as opaque wire data`);
     }
     const decoded = decodeDetachedSubtree(dto);
+    prepareNewBlockIdentities(Object.values(decoded.state.contents));
     const updatedOwner: ContentRecord = {
       ...clone(owner),
       ownedRelations: { ...owner.ownedRelations, [name]: decoded.rootPlacementKey },
@@ -532,7 +559,7 @@ export class TreeCommands {
         (record): RepositoryOperation => ({ kind: "put-placement", record }),
       ),
       { kind: "put-content", record: updatedOwner },
-    ]);
+    ], { commandId: "tree.setRelation", subjects: [this.subject(state, ownerPlacement.key), this.subject(decoded.state, decoded.rootPlacementKey)] });
     return decoded.rootPlacementKey;
   }
 
@@ -565,7 +592,7 @@ export class TreeCommands {
           revision: content.revision + 1,
         },
       },
-    ]);
+    ], { commandId: "tree.setPayloadField", subjects: [this.subject(state, placement.key)] });
   }
 
   replaceInlineRange(
@@ -638,7 +665,7 @@ export class TreeCommands {
       for (const [key, count] of removedReferences) {
         if (this.repository.contentReferenceCount(key) === count) operations.push({ kind: "remove-content", key });
       }
-      this.publish(label, operations);
+      this.publish(label, operations, { commandId: "tree.replaceInlineRange", subjects: [this.subject(state, placement.key)] });
       return;
     }
     // Structural inline atoms and transaction drafts retain full graph planning.
@@ -648,7 +675,7 @@ export class TreeCommands {
       if (operation.kind === "put-placement") next.placements[operation.record.key] = operation.record;
     }
     this.pruneUnreachable(next);
-    this.publish(label, this.diff(state, next));
+    this.publish(label, this.diff(state, next), { commandId: "tree.replaceInlineRange", subjects: [this.subject(state, placement.key)] });
   }
 
   transclude(
@@ -667,7 +694,7 @@ export class TreeCommands {
         record: { key: placementKey, contentKey: source.contentKey, kind: "reference" },
       },
       { kind: "put-content", record: this.updatedChildren(target.owner, children) },
-    ]);
+    ], { commandId: "tree.transclude", subjects: [this.subject(state, source.key), { contentKey: source.contentKey, placementKey, blockId: readBlockId(state.contents[source.contentKey]) }] });
     return placementKey;
   }
 
@@ -697,7 +724,7 @@ export class TreeCommands {
       const copiedKey = createContentKey();
       contentMap.set(sourceContentKey, copiedKey);
       const payload = clone(source.payload);
-      if (typeof payload.id === "string") payload.id = globalThis.crypto.randomUUID();
+      if (isAuthoredBlock(source)) payload.id = createBlockId();
       const copied = {
         ...clone(source),
         key: copiedKey,
@@ -739,26 +766,25 @@ export class TreeCommands {
       kind: "owned",
     };
     this.pruneUnreachable(next);
-    this.publish("Detach transclusion", this.diff(state, next));
+    const pairs = [...contentMap].filter(([key]) => isAuthoredBlock(state.contents[key])).map(([source, copy]) => ({
+      source: { contentKey: source, blockId: readBlockId(state.contents[source]) },
+      copy: { contentKey: copy, blockId: readBlockId(next.contents[copy]) },
+    }));
+    const ids = new Map(pairs.filter(pair => pair.source.blockId).map(pair => [pair.source.blockId!, pair.copy.blockId!]));
+    for (const pair of pairs) remapKnownBlockReferences(next.contents[pair.copy.contentKey].payload, ids);
+    this.publish("Detach transclusion", this.diff(state, next), { commandId: "tree.detach", subjects: [this.subject(state, placementKey), this.subject(next, placementKey)], relation: { kind: "copy", pairs } });
   }
 
   copy(key: NodeKey | PlacementKey, destination: Destination): PlacementKey {
     const state = this.state();
     const placementKey = this.placementKey(key, state);
-    const dto = encodeDocument(state, placementKey);
-    const remap = (block: ExistingBlockDto) => {
-      if (typeof block.id === "string") block.id = globalThis.crypto.randomUUID();
-      block.children?.forEach(remap);
-      if (block.relation && typeof block.relation === "object") {
-        for (const value of Object.values(block.relation)) {
-          if (value && typeof value === "object" && !Array.isArray(value)) {
-            remap(value as ExistingBlockDto);
-          }
-        }
-      }
-    };
-    remap(dto);
-    return this.insert(dto, destination);
+    // Stage A retains the old command's explicit legacy-export limitations.
+    // Copy the canonical graph itself so internal shared identity is preserved.
+    encodeDocument(state, placementKey);
+    const fragment = cloneBlocks(captureBlocks(state, [placementKey]));
+    return this.insertFragment(fragment, destination, { commandId: "tree.copy",
+      subjects: [this.subject(state, placementKey), this.subject(fragment.state, fragment.roots[0])],
+    })[0];
   }
 
   insertEmptyStandoffSibling(key: NodeKey | PlacementKey, side: "before" | "after"): PlacementKey {
@@ -770,7 +796,7 @@ export class TreeCommands {
     if (!location || location.slot.kind !== "children") throw new TreeCommandError("A Standoff relation/root needs an explicit insertion policy");
     const parent = state.contents[location.ownerContentKey];
     const decoded = decodeDetachedSubtree({
-      ...clone(content.payload), id: globalThis.crypto.randomUUID(), type: "standoff-editor-block",
+      ...clone(content.payload), id: createBlockId(), type: "standoff-editor-block",
       text: "", standoffProperties: [], children: [],
     });
     const children = [...parent.children];
@@ -779,7 +805,7 @@ export class TreeCommands {
       ...Object.values(decoded.state.contents).map(record => ({ kind: "put-content" as const, record })),
       ...Object.values(decoded.state.placements).map(record => ({ kind: "put-placement" as const, record })),
       { kind: "put-content", record: this.updatedChildren(parent, children) },
-    ]);
+    ], { commandId: "tree.insertEmptyStandoffSibling", subjects: [this.subject(decoded.state, decoded.rootPlacementKey)] });
     return decoded.rootPlacementKey;
   }
 
@@ -826,7 +852,7 @@ export class TreeCommands {
     }
     const leftPayload: Record<string, unknown> = { ...clone(content.payload), standoffProperties: leftAnnotations };
     const rightPayload: Record<string, unknown> = { ...clone(content.payload), standoffProperties: rightAnnotations };
-    if (typeof rightPayload.id === "string") rightPayload.id = globalThis.crypto.randomUUID();
+    rightPayload.id = createBlockId();
     operations.push({ kind: "put-content", record: {
       ...clone(content),
       payload: leftPayload,
@@ -855,7 +881,9 @@ export class TreeCommands {
     const parentChildren = [...parent.children];
     parentChildren.splice((location.index ?? 0) + 1, 0, rightPlacementKey);
     operations.push({ kind: "put-content", record: this.updatedChildren(parent, parentChildren) });
-    this.publish("Split Standoff Block", operations);
+    const source = this.subject(state, placementKey);
+    const created = { contentKey: rightContentKey, placementKey: rightPlacementKey, blockId: String(rightPayload.id) };
+    this.publish("Split Standoff Block", operations, { commandId: "tree.splitStandoff", subjects: [source, created], relation: { kind: "split", source, created, at: index } });
     return rightPlacementKey;
   }
 
@@ -913,7 +941,8 @@ export class TreeCommands {
       parent.children.filter((candidate) => candidate !== rightPlacementKey),
     );
     this.pruneUnreachable(next);
-    this.publish("Join Standoff Blocks", this.diff(state, next));
+    const survivor = this.subject(state, leftPlacementKey), absorbed = this.subject(state, rightPlacementKey);
+    this.publish("Join Standoff Blocks", this.diff(state, next), { commandId: "tree.joinStandoff", subjects: [survivor, absorbed], relation: { kind: "join", survivor, absorbed, at: joinIndex } });
     return joinIndex;
   }
 
@@ -965,7 +994,7 @@ export class TreeCommands {
           revision: host.revision + 1,
         },
       },
-    ]);
+    ], { commandId: "tree.insertInlineImage", subjects: [this.subject(state, hostPlacement.key), { contentKey: imageContentKey, placementKey: imagePlacementKey }] });
     return imagePlacementKey;
   }
 
@@ -992,7 +1021,7 @@ export class TreeCommands {
           revision: host.revision + 1,
         },
       },
-    ]);
+    ], { commandId: "tree.moveInline", subjects: [this.subject(state, hostPlacement.key)] });
   }
 
   updateInlineImage(
@@ -1012,7 +1041,7 @@ export class TreeCommands {
           revision: content.revision + 1,
         },
       },
-    ]);
+    ], { commandId: "tree.updateInlineImage", subjects: [this.subject(state, placement.key)] });
   }
 
   setBackground(
@@ -1031,13 +1060,14 @@ export class TreeCommands {
     // A background is a descriptor of a stable surface, including when it is
     // the root. Never replace the content identity or discard owned relations.
     const { children: _children, relation: _relation, ...payload } = clone(descriptor);
+    if (payload.id !== undefined && payload.id !== current.payload.id) throw new TreeCommandError("A background descriptor cannot change the surface identity");
     if (payload.metadata && typeof payload.metadata === "object" && !Array.isArray(payload.metadata)) {
       payload.metadata = { ...(current.payload.metadata as Record<string, unknown> ?? {}), ...payload.metadata };
     }
     this.publish("Change Background", [{ kind: "put-content", record: {
       ...clone(current), viewType: nextType,
       payload: { ...clone(current.payload), ...payload }, revision: current.revision + 1,
-    } }]);
+    } }], { commandId: "tree.setBackground", subjects: [this.subject(state, currentPlacement.key)] });
     return currentPlacement.key;
   }
 }

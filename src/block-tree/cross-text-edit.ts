@@ -1,10 +1,12 @@
 import { clone } from "./clone";
-import { createContentKey, createPlacementKey } from "./ids";
+import { createBlockId, createContentKey, createPlacementKey } from "./ids";
+import { readBlockId } from "./identity";
+import type { BlockCommitSubject } from "./commit-capture";
 import { deriveLocations } from "./repository";
 import type { ContentRecord, JsonObject, RepositoryState } from "./types";
 
 export interface CrossTextSegment { placementKey: string; start: number; end: number }
-export interface CrossTextEditResult { placementKey: string; caret: number; state: RepositoryState }
+export interface CrossTextEditResult { placementKey: string; caret: number; state: RepositoryState; inputs: BlockCommitSubject[]; outputs: BlockCommitSubject[] }
 
 function fragment(content: ContentRecord, from: number, to: number, offset: number): JsonObject[] {
   const properties = content.payload.standoffProperties;
@@ -75,7 +77,7 @@ export function planCrossTextEdit(source: RepositoryState, segments: CrossTextSe
     content.inlineRevision++; content.revision++;
     if (i === 0) { content.ownedRelations = relations; if (Object.keys(relations).length) content.wireRelation = "present"; }
     else {
-      content.payload.id = crypto.randomUUID(); content.children = []; content.ownedRelations = {}; content.opaqueRelations = {};
+      content.payload.id = createBlockId(); content.children = []; content.ownedRelations = {}; content.opaqueRelations = {};
       content.wireChildren = "omitted"; content.wireRelation = "omitted";
     }
     state.contents[key] = content;
@@ -85,5 +87,8 @@ export function planCrossTextEdit(source: RepositoryState, segments: CrossTextSe
   const updatedParent = clone(parent);
   updatedParent.children.splice(firstIndex, segments.length, ...output); updatedParent.revision++;
   state.contents[parent.key] = updatedParent;
-  return { state, placementKey: output.at(-1)!, caret: (lines.length === 1 ? prefix.length : 0) + [...lines.at(-1)!].length };
+  return { state, placementKey: output.at(-1)!, caret: (lines.length === 1 ? prefix.length : 0) + [...lines.at(-1)!].length,
+    inputs: records.map((record, i) => ({ contentKey: record.key, placementKey: segments[i].placementKey, blockId: readBlockId(record) })),
+    outputs: output.map(placementKey => { const record = state.contents[state.placements[placementKey].contentKey]; return { contentKey: record.key, placementKey, blockId: readBlockId(record) }; }),
+  };
 }

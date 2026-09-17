@@ -1,9 +1,34 @@
 import { clone } from "./clone";
-import { createContentKey, createPlacementKey } from "./ids";
+import { createBlockId, createContentKey, createPlacementKey } from "./ids";
+import { isAuthoredBlock, readBlockId } from "./identity";
+import type { BlockCommitSubject } from "./commit-capture";
 import type { JsonObject, RepositoryState } from "./types";
 import { linkedRegistry, type LinkedAnnotationRegistry } from "./linked-annotations";
 
-export interface BlockFragment { state: RepositoryState; roots: string[]; linkedAnnotations?: LinkedAnnotationRegistry }
+export interface BlockFragment {
+  state: RepositoryState;
+  roots: string[];
+  linkedAnnotations?: LinkedAnnotationRegistry;
+  copyIdentities?: Array<{ source: BlockCommitSubject; copy: BlockCommitSubject }>;
+}
+
+/** Remap only known Block references; opaque relations and entity IDs are data. */
+export function remapKnownBlockReferences(payload: JsonObject, ids: ReadonlyMap<string, string>): void {
+  const remap = (value: unknown) => {
+    if (!value || typeof value !== "object") return;
+    const property = value as JsonObject;
+    if (property.type === "codex/block-reference" && typeof property.value === "string" && ids.has(property.value)) {
+      property.value = ids.get(property.value);
+    }
+  };
+  remap(payload);
+  for (const field of ["standoffProperties", "blockProperties"]) {
+    if (Array.isArray(payload[field])) payload[field].forEach(remap);
+  }
+  if (payload.linkedAnnotations && typeof payload.linkedAnnotations === "object") {
+    Object.values(payload.linkedAnnotations).forEach(remap);
+  }
+}
 
 /** Canonical capture avoids the legacy DTO format's lossy inline-image export. */
 export function captureBlocks(source: RepositoryState, roots: string[]): BlockFragment {
@@ -35,12 +60,27 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
   const contentKeys = new Map(Object.keys(state.contents).map(key => [key, createContentKey()]));
   const placementKeys = new Map(Object.keys(state.placements).map(key => [key, createPlacementKey()]));
   const ids = new Map<string, string>();
+  const authoredIds = new Map<string, string>();
+  const seenIds = new Set<string>();
+  const copyIdentities: NonNullable<BlockFragment["copyIdentities"]> = [];
   const annotationIds = new Map(Object.keys(fragment.linkedAnnotations ?? {}).map(id => [id, preserveIds ? id : crypto.randomUUID()]));
-  if (!preserveIds) for (const content of Object.values(state.contents)) {
-    if (typeof content.payload.id === "string") ids.set(content.payload.id, crypto.randomUUID());
+  for (const content of Object.values(state.contents)) {
+    if (!isAuthoredBlock(content)) continue;
+    const oldId = readBlockId(content);
+    if (oldId && seenIds.has(oldId)) throw new Error("Ambiguous source Block identities; normalize before copying");
+    if (content.payload.id != null && typeof content.payload.id !== "string") throw new Error("Invalid source Block identity");
+    if (oldId) seenIds.add(oldId);
+    const newId = preserveIds && oldId ? oldId : createBlockId();
+    authoredIds.set(content.key, newId);
+    if (oldId) ids.set(oldId, newId);
+    if (!preserveIds) copyIdentities.push({
+      source: { contentKey: content.key, blockId: oldId },
+      copy: { contentKey: contentKeys.get(content.key)!, blockId: newId },
+    });
   }
   const contents: RepositoryState["contents"] = {};
   for (const content of Object.values(state.contents)) {
+    if (authoredIds.has(content.key)) content.payload.id = authoredIds.get(content.key)!;
     content.key = contentKeys.get(content.key)!;
     content.children = content.children.map(key => placementKeys.get(key)!);
     content.inlineContent = content.inlineContent.map(key => placementKeys.get(key)!);
@@ -49,15 +89,14 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
       if (property && annotationIds.has(property.annotationId)) property.annotationId = annotationIds.get(property.annotationId);
     }
     if (!preserveIds) {
-      if (typeof content.payload.id === "string") content.payload.id = ids.get(content.payload.id)!;
       for (const field of ["standoffProperties", "blockProperties"]) {
         const properties = content.payload[field];
         if (Array.isArray(properties)) for (const property of properties) {
           if (!property || typeof property !== "object") continue;
           if (typeof property.id === "string") property.id = crypto.randomUUID();
-          if (property.type === "codex/block-reference" && ids.has(property.value)) property.value = ids.get(property.value);
         }
       }
+      remapKnownBlockReferences(content.payload, ids);
     }
     contents[content.key] = content;
   }
@@ -70,8 +109,10 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
   state.rootPlacementKey = placementKeys.get(state.rootPlacementKey)!;
   const definitions = Object.fromEntries(Object.entries(fragment.linkedAnnotations ?? {}).map(([id, record]) => {
     const copied: JsonObject = { ...clone(record), id: annotationIds.get(id)! };
-    if (!preserveIds && copied.type === "codex/block-reference" && typeof copied.value === "string" && ids.has(copied.value)) copied.value = ids.get(copied.value);
+    if (!preserveIds) remapKnownBlockReferences(copied, ids);
     return [annotationIds.get(id)!, copied];
   }));
-  return { state, roots: fragment.roots.map(key => placementKeys.get(key)!), linkedAnnotations: definitions };
+  return { state, roots: fragment.roots.map(key => placementKeys.get(key)!), linkedAnnotations: definitions,
+    ...(!preserveIds ? { copyIdentities } : {}),
+  };
 }

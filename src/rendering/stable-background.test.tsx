@@ -52,8 +52,11 @@ describe("stable surface background", () => {
     const root = projection.state.nodes[projection.state.rootKey];
     const background = projection.state.nodes[root.children[0]];
 
+    expect(() => editor.commands.setBackground(background.key, {
+      id: "video-background", type: "video-background-block",
+    })).toThrow(/identity/);
+    expect(host.querySelector("textarea")).toBe(textarea);
     editor.commands.setBackground(background.key, {
-      id: "video-background",
       type: "video-background-block",
       metadata: { url: "/second.mp4" },
       children: [],
@@ -63,6 +66,7 @@ describe("stable surface background", () => {
     expect(host.querySelector("textarea")).toBe(textarea);
     const encoded = editor.encodeWorkspace();
     expect((encoded.children as any[])[0].type).toBe("video-background-block");
+    expect((encoded.children as any[])[0].id).toBe("background");
     expect((encoded.children as any[])[0].children[0].id).toBe("window");
   });
 });

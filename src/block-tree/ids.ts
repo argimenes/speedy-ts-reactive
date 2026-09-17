@@ -1,4 +1,8 @@
-import type { ContentKey, NodeKey, PlacementKey, ViewId } from "./types";
+import { v4 as uuid } from "uuid";
+import type { BlockId, CommitId, ContentKey, NodeKey, PlacementKey, ViewId } from "./types";
+
+export const createBlockId = (): BlockId => uuid();
+export const createCommitId = (): CommitId => uuid();
 
 let fallbackId = 0;
 

@@ -17,9 +17,13 @@ This is a planning document; the proposed ToolbarBlock is not yet implemented.
 The feasibility review and proposed technical specification for temporal Block
 and subtree history are in [BLOCK_SCOPED_HISTORY_SPEC.md](./BLOCK_SCOPED_HISTORY_SPEC.md).
 It covers identity, revision capture, persistent history, read-only historical
-views, and recovery of earlier material; implementation has not begun.
+views, and recovery of earlier material.
 The bounded identity and commit-capture spike is planned in
 [BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md](./BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md).
+Stage A implements authored identity and optional immutable commit capture;
+[the implementation report](./BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md) records
+the approved copy policy, replay proof, regression results, and performance costs.
+Durable history, historical queries, and history controls remain later stages.
 
 ## Usage
 

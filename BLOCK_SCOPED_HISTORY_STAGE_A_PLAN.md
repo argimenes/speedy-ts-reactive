@@ -1,6 +1,8 @@
 # Block-scoped history — Stage A implementation plan
 
-Status: implementation plan, 17 September 2026. No feature code implemented.
+Status: Stage A implemented and verified with the user-approved copy-policy
+amendment, 17 September 2026. The discrepancy and verification are documented in
+[BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md).
 Architectural authority: [BLOCK_SCOPED_HISTORY_SPEC.md](BLOCK_SCOPED_HISTORY_SPEC.md),
 especially sections 4–6 and roadmap Stage A.
 
@@ -52,7 +54,8 @@ behavior and capture provenance.
 
 ## 3. Exact implementation footprint
 
-Paths below describe proposed changes. They are not files implemented by this plan.
+The implementation footprint below is verified by the linked completion report.
+The recorded benchmark output is in `BLOCK_SCOPED_HISTORY_STAGE_A_BENCHMARK.json`.
 
 | File | Functions/classes to add or change | Bounded purpose |
 | --- | --- | --- |
@@ -196,12 +199,16 @@ map from unambiguous source identities and record source-to-copy pairs by
 ContentKey as well. Do not recursively rewrite every object containing an `id`:
 opaque relations and remote/entity IDs have different meanings.
 
-`TreeCommands.copy()` currently uses legacy DTO export and traverses relation
-objects broadly. Restrict its identity work to decoded authored content/owned
-relations and reuse the small known-reference remapper. Retain its existing
-explicit failure for unsupported legacy export rather than building a new
-general-purpose copy planner. Existing supported annotation semantics must
-remain intact; Stage A adds no new annotation-ID migration scheme.
+Approved amendment: `TreeCommands.copy()` uses the existing canonical
+`captureBlocks()` / `cloneBlocks()` / `insertFragment()` helpers so one copied
+ContentRecord receives one new authored ID and its internal placements remain
+shared. Known internal Block references point to that unique copied identity.
+Keep `encodeDocument()` as a compatibility check that preserves the existing
+explicit failures for unsupported legacy export (inline-image loss and cycles).
+Do not introduce a new general-purpose copy planner. This explicitly replaces
+the original proposal to copy via decoded legacy DTOs, which expands shared
+content and makes reference remapping ambiguous. Existing supported annotation
+semantics remain intact; use the existing clone helper's annotation remapping.
 
 `replace()` may replace Block A with a new Block B at A's placement. Capture the
 old/new content identities and retained placement; test the existing behavior

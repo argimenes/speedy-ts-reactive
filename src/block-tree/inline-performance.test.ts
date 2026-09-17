@@ -1,23 +1,28 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { clone } from "./clone";
 import { inlineOwnerFor } from "./inline-plan";
 import { validateRepository } from "./repository";
 import type { RepositoryOperation } from "./types";
 
-function setup(paragraphs = 2) {
+function createSetup(paragraphs = 2, capture = false, errors: unknown[] = []) {
   const editor = new ReactiveEditor({ type: "document-block", children: Array.from({ length: paragraphs }, (_, i) => ({
     id: `p${i}`, type: "standoff-editor-block", text: "x".repeat(100),
     standoffProperties: [{ type: "style/bold", start: 40, end: 60 }],
   })) });
   const view = editor.createView("primary");
+  if (capture) editor.repository.subscribeCommits(() => {}, error => { errors.push(error); });
   const key = view.node(view.state.rootKey)!.children[0];
   const contentKey = view.node(key)!.contentKey;
   const text = () => view.node(key)!.inlineContent.map(cell => view.node(cell)!.payload.text).join("");
   return { editor, view, key, contentKey, text };
 }
 
-describe("incremental inline editing", () => {
+describe.each([false, true])("incremental inline editing (capture=%s)", capture => {
+  const errors: unknown[] = [];
+  beforeEach(() => { errors.length = 0; });
+  afterEach(() => { expect(errors).toEqual([]); });
+  const setup = (paragraphs = 2) => createSetup(paragraphs, capture, errors);
   it("matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence", () => {
     const fast = setup(), planned = setup();
     let seed = 7129;

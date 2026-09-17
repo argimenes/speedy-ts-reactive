@@ -1,10 +1,11 @@
 import { createSignal } from "solid-js";
 import { captureBlocks, cloneBlocks, type BlockFragment } from "../block-tree/clipboard";
 import { deriveLocations } from "../block-tree/repository";
+import { isAuthoredBlock, readBlockId } from "../block-tree/identity";
 import type { Destination } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 
-const [clipboard, setClipboard] = createSignal<{ fragment: BlockFragment; cut: boolean }>();
+const [clipboard, setClipboard] = createSignal<{ fragment: BlockFragment; cut: boolean; token: string }>();
 
 export class BlockClipboardService {
   readonly owner = crypto.randomUUID();
@@ -26,7 +27,7 @@ export class BlockClipboardService {
   }
   copy() {
     const items = this.editor.blockSelection.actionTargets(); if (!items.length) return;
-    setClipboard({ fragment: captureBlocks(this.editor.repository.readState(), items.map(item => item.placementKey)), cut: false });
+    setClipboard({ fragment: captureBlocks(this.editor.repository.readState(), items.map(item => item.placementKey)), cut: false, token: crypto.randomUUID() });
     this.editor.blockSelection.setMessage(`Copied ${items.length} Block(s). Select a destination Block and paste after it.`);
   }
   remove(cut: boolean) {
@@ -35,10 +36,14 @@ export class BlockClipboardService {
     if (!location || location.slot.kind !== "children") throw new Error("Select Blocks in a child list.");
     const parent = Object.values(state.placements).find(p => p.contentKey === location.ownerContentKey)!;
     const fragment = cut ? captureBlocks(state, items.map(item => item.placementKey)) : undefined;
+    const token = crypto.randomUUID();
     this.editor.commands.transaction(cut ? "Cut selected Blocks" : "Delete selected Blocks", () => {
       for (const item of items) this.editor.commands.remove(item.placementKey);
+    }, { commandId: cut ? "selection.cut" : "selection.delete",
+      subjects: items.map(item => { const content = state.contents[state.placements[item.placementKey].contentKey]; return { contentKey: content.key, placementKey: item.placementKey, blockId: readBlockId(content) }; }),
+      ...(cut ? { clipboard: { token, action: "cut" as const } } : {}),
     });
-    if (fragment) setClipboard({ fragment, cut: true });
+    if (fragment) setClipboard({ fragment, cut: true, token });
     this.gap = { parentKey: parent.key, index: location.index ?? 0, viewId: items[0].viewId };
     this.open[1](items[0].viewId);
     selection.clear(); selection.setMessage(`${cut ? "Cut" : "Deleted"} ${items.length} Block(s). Undo restores them.`);
@@ -54,9 +59,13 @@ export class BlockClipboardService {
       viewId = this.gap.viewId;
     } else throw new Error("Select a destination Block first.");
     const existingIds = new Set(Object.values(this.editor.repository.readState().contents).map(c => c.payload.id).filter(Boolean));
-    const preserve = saved.cut && !Object.values(saved.fragment.state.contents).some(c => existingIds.has(c.payload.id));
+    const preserve = saved.cut && Object.values(saved.fragment.state.contents).filter(isAuthoredBlock).every(c => !!readBlockId(c) && !existingIds.has(c.payload.id));
     const fragment = cloneBlocks(saved.fragment, preserve);
-    const keys = this.editor.commands.insertFragment(fragment, destination);
+    const keys = this.editor.commands.insertFragment(fragment, destination, {
+      commandId: "selection.paste",
+      subjects: fragment.roots.map(placementKey => { const content = fragment.state.contents[fragment.state.placements[placementKey].contentKey]; return { contentKey: content.key, placementKey, blockId: readBlockId(content) }; }),
+      clipboard: { token: saved.token, action: "paste", preservedIds: preserve },
+    });
     setClipboard({ ...saved, cut: false });
     this.editor.blockSelection.replaceKeys(keys.map(key => this.editor.nodeForPlacementInView(key, viewId)!.key));
     this.dismiss();

@@ -179,13 +179,15 @@ describe("Block selection and reordering", () => {
     click("a"); host.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click(); await tick(); expect(editor.blockSelection.ids).toEqual([]);
   });
   it("isolates views and provides a placement-key fallback for legacy Blocks without IDs", () => {
-    const { editor, click, key } = setup(); click("a");
+    // Loading legacy data remains lossless; newly authored Blocks now get IDs.
+    const { editor, click, key } = setup([...["a", "b", "c", "d"].map(paragraph), { type: "standoff-editor-block", text: "Legacy without ID" }]); click("a");
     const second = editor.createView("second"); const host = document.body.appendChild(document.createElement("div"));
     const dispose = render(() => <ReactiveTreeView editor={editor} projection={second} />, host); disposers.push(dispose);
     const other = Object.values(second.state.nodes).find(node => node.payload.id === "b")!;
     editor.blockSelection.select(other.key, "toggle"); expect(editor.blockSelection.ids).toEqual(["b"]); expect(editor.blockSelection.state.viewId).toBe("second");
     expect(editor.blockSelection.isSelected(key("a"))).toBe(false);
-    editor.commands.insert({ type: "standoff-editor-block", text: "No ID" }, { kind: "after", anchorKey: key("d") });
+    const inserted = editor.commands.insert({ type: "standoff-editor-block", text: "New Block" }, { kind: "after", anchorKey: key("d") });
+    expect(second.nodeForPlacement(inserted)!.payload.id).toBeTruthy();
     const missing = Object.values(second.state.nodes).find(node => node.viewType === "standoff-editor-block" && !node.payload.id)!;
     editor.blockSelection.select(missing.key); expect(editor.blockSelection.ids).toEqual([missing.placementKey]);
   });

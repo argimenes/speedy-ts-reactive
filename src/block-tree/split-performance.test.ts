@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { clone } from "./clone";
 import { deriveLocations, validateRepository } from "./repository";
 import { emptyParagraphParentFor, splitChangeFor } from "./split-plan";
 import type { RepositoryOperation } from "./types";
 
-function setup() {
+function createSetup(capture: boolean, errors: unknown[]) {
   const editor = new ReactiveEditor({ type: "document-block", children: [
     { id: "long", type: "standoff-editor-block", text: "x".repeat(5600), standoffProperties: [
       { id: "cross", type: "style/bold", start: 2790, end: 2810 },
@@ -15,6 +15,7 @@ function setup() {
     { id: "other", type: "standoff-editor-block", text: "y".repeat(100) },
   ] });
   const view = editor.createView("primary");
+  if (capture) editor.repository.subscribeCommits(() => {}, error => { errors.push(error); });
   const key = view.node(view.state.rootKey)!.children[0];
   return { editor, view, key };
 }
@@ -24,7 +25,11 @@ function checkLocations(editor: ReactiveEditor) {
   for (const [key, location] of deriveLocations(editor.repository.readState())) expect(editor.repository.locationOf(key)).toEqual(location);
 }
 
-describe("incremental paragraph splitting", () => {
+describe.each([false, true])("incremental paragraph splitting (capture=%s)", capture => {
+  const errors: unknown[] = [];
+  beforeEach(() => { errors.length = 0; });
+  afterEach(() => { expect(errors).toEqual([]); });
+  const setup = () => createSetup(capture, errors);
   it("inserts empty siblings across shared parent views without touching existing paragraphs", () => {
     const { editor, view, key } = setup();
     const second = editor.createView("secondary");
