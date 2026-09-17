@@ -23,7 +23,10 @@ The bounded identity and commit-capture spike is planned in
 Stage A implements authored identity and optional immutable commit capture;
 [the implementation report](./BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md) records
 the approved copy policy, replay proof, regression results, and performance costs.
-Durable history, historical queries, and history controls remain later stages.
+The next [Stage B technical plan](./BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md) covers
+compact exact capture, word-oriented undo, sentence-oriented playback grouping,
+and isolated in-memory historical queries. These are planned, not implemented;
+durable recording and history controls remain later stages.
 
 ## Usage
 

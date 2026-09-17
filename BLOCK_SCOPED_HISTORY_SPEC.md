@@ -1,7 +1,10 @@
 # Block-scoped temporal history: feasibility and technical specification
 
 Status: approved architectural direction, 17 September 2026. Stage A is implemented
-and verified with the approved copy-policy amendment. Stages B–E remain proposed. See
+and verified with the approved copy-policy amendment. Compact capture, word-oriented
+undo, and sentence-oriented playback are now approved design policy; Stage B is
+planned in [its technical implementation plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md).
+Stages B–E are not implemented. See
 [the Stage A implementation report](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md).
 Reviewed against the current repository and the supplied discussion,
 `/Users/iianneill/Downloads/codex-block-scoped-history.md`.
@@ -30,6 +33,8 @@ The following product decisions were confirmed during this review:
 | First-release restoration scope | View, compare, and insert a historical copy first; add in-place content/subtree restoration as a subsequent milestone. | Confirmed. |
 | Separation and retention | Keep current Documents independent of history; use a separate memoir sidecar, and allow compaction that expires old history states. | Principle confirmed; storage mechanics specified below. |
 | Storage versus identity | Keep memoirs beside individual Documents; use stable Block identity and, later, provenance/locators to follow a Block across Documents. A Workspace-wide memoir is not the central store for every Block. | Confirmed. |
+| Capture cost | Use compact exact changes at the repository boundary; retain full-record fallback for unsupported changes. Avoid copying a long paragraph's complete before/after sequence on every typed character. | Confirmed after Stage A measurements. |
+| Undo and playback granularity | Word-oriented undo and sentence/session-oriented history presentation are separate grouping policies over exact commits. Keep individual revisions addressable; grouping does not discard intermediate states. | Confirmed after Stage A. |
 
 This specification develops those choices so their consequences are reviewable.
 A session-only prototype remains a development stage, not a claim to satisfy
@@ -52,23 +57,25 @@ historical rendering and asset capture, and in-place restoration. Lossless
 journal consolidation/checkpoint maintenance needed to keep first-pass storage
 usable is distinct from deleting old states for retention.
 
-Keep the existing global undo/redo behavior. Separate per-Document repositories,
-dirty tracking, and undo stacks remain deferred as previously agreed. History
-must coexist with that decision, not require a redesign of it.
+Keep the existing global ownership and ordering of undo/redo. The newly approved
+word-oriented grouping changes step granularity, not repository ownership.
+Separate per-Document repositories, dirty tracking, and undo stacks remain
+deferred. Grouped undo must retain explicit source commit identities.
 
 ## 2. Audit of the current implementation
 
 | Question | Current behavior and evidence | Consequence |
 | --- | --- | --- |
-| Persistent identity | `ExistingBlockDto.id` is optional. [codecs.ts](src/block-tree/codecs.ts) preserves supplied payload IDs but generates fresh ContentKeys, PlacementKeys, and text Cells on normal JSON load. | Authored Block IDs need an explicit guarantee. Ordinary reload does not preserve runtime graph keys. |
+| Persistent identity | `ExistingBlockDto.id` remains optional for legacy decoding. Stage A adds explicit normalization, authored-ID factories, creation-path IDs, and an opt-in identity index. Ordinary JSON load still regenerates runtime graph keys. | Enroll a normalized baseline explicitly. Cross-session archive rebinding remains Stage C. |
 | Identity versus location | [types.ts](src/block-tree/types.ts) separates ContentRecord, PlacementRecord, and projected BlockNode; [ids.ts](src/block-tree/ids.ts) generates runtime keys. | Content identity is not an array index or DOM path. Projected occurrences may acquire different NodeKeys after reparenting; never use those as archive identity. |
 | Move/reparent | `TreeCommands.move` updates parent child lists and preserves the placement/content records. It currently supports ordinary child placements within one repository. | This is a sound basis for location history. Cross-repository moves and relation/inline extraction are not equivalent supported operations. |
 | Deletion | `remove` prunes unreachable records. Referenced content can remain reachable elsewhere. | Capture deleted records and former edges before pruning; there are no durable tombstones today. |
 | Cut/paste | [block-clipboard.ts](src/runtime/block-clipboard.ts) removes on cut and inserts a captured fragment on paste; `cloneBlocks` can preserve public IDs for an eligible cut, while regenerating runtime keys. | It is not one atomic move, and ID collision handling can turn a paste into a copy. History must record the actual result and correlation, not infer a move from labels. |
-| Split | `splitStandoff` keeps the left content/placement; creates a new right content/placement; generates a new right payload ID only if the original had one. | Add explicit split lineage and ensure the new authored Block always has an ID. |
+| Split | Stage A keeps the left content/placement, always assigns a fresh authored ID to the right Block, and captures split provenance. | Queries must distinguish genealogy from subtree membership. |
 | Join | `joinStandoff` retains the left identity, incorporates right text/annotations, and prunes the right placement/content where unreachable. | Preserve the right Block's biography and record its contribution to the survivor. |
-| Duplicate/detach | Commands and [clipboard.ts](src/block-tree/clipboard.ts) create new graph keys and generally new public IDs where present; annotation/reference remapping varies by operation. | Audit these paths before assigning provenance. A historical copy needs deliberate Block, annotation, and internal-reference remapping. |
-| Undo/redo | [repository.ts](src/block-tree/repository.ts) holds private in-memory stacks of labels plus forward/inverse operations; a new edit clears redo. Undo and redo commit inverse/forward operations with `recordHistory=false`. | Useful reversible data exists, but stacks have no durable revision identity, timestamps, or retained abandoned redo history. |
+| Duplicate/detach | Stage A creates new authored IDs including for id-less inputs and records source/copy identities. Ordinary copy preserves internal canonical sharing and remaps supported references through the existing clone helper. | Historical copy still needs its own dependency and destination validation in Stage E. |
+| Undo/redo | Stage A adds UUID commit IDs to stack entries and explicit captured undo/redo causes. Stacks still contain forward/inverse operations; a new edit clears redo. | Add opt-in word grouping without losing source IDs. Archive retention and durability remain separate from stack ownership. |
+| Capture volume | Stage A captures full before/after touched records only when subscribed. A one-character typing event is 550,852 bytes for a 5,600-character paragraph and 2,452,054 bytes for a 25,000-character paragraph. | Compact capture is now a measured Stage B prerequisite; grouping after copying does not remove this cost. |
 | Transaction boundaries | `TreeCommands.transaction` batches operations into one repository commit. Operations are record upserts/deletions, not a complete semantic event vocabulary. | Capture one history revision per successful outer commit. Add semantic descriptors for biography and display. |
 | Revision counters | Repository revision increases on commits, including undo/redo, but resets on ordinary JSON load. Content counters can repeat after undo or a new editing branch. | Neither is a durable timeline ID or reliable cross-session cache key. |
 | Full graph snapshots | [extended-codec.ts](src/block-tree/extended-codec.ts) preserves a full RepositoryState, including runtime graph keys, and validates it. Normal Document/Workspace saves use other codecs. | Reuse it as a basis for versioned archive checkpoints; do not confuse extended export with an existing durable history service. |
@@ -125,6 +132,28 @@ Opening, scrubbing, comparing, or closing history does not change the current
 repository revision, undo stack, dirty flag, active selections, or content.
 History is not another mutable view of the live repository. Restoring/copying
 material is a separate explicit command against current state.
+
+### Meaningful history steps
+
+Record exact committed changes, but do not require people to scrub or watch one
+character at a time. Undo should normally remove a word or short typing burst;
+history playback should normally show a sentence-sized change or editing session.
+Both refer to the same exact revision stream and may have different boundaries.
+
+Group adjacent typing in the same Block and editing occurrence. Start with a
+500 ms undo idle threshold (tunable within 500–1,000 ms), word boundaries, and
+explicit boundaries for cursor relocation, focus/Block changes, insertion versus
+deletion, paste, formatting, split/join, and other structural commands. Keep an
+input-method composition atomic. Sentence punctuation is a playback hint, not a
+requirement to delay capture or a reliable universal sentence detector. Account
+for abbreviations, unfinished sentences, corrections, and languages without spaces.
+
+For playback, begin with a 1-second idle break and 10-second maximum group span,
+plus sentence-boundary hints and structural boundaries. These timing values are
+initial tuning choices. Groups contain exact revision IDs; changing display
+grouping does not alter replay or archive retention. Disk batching and durability
+acknowledgment are independent: never wait for a sentence to finish before
+capturing a change or deciding when it must be persisted.
 
 ## 4. Block-centred identity contract
 
@@ -194,9 +223,10 @@ stream in every Block.
 
 ## 5. Revision and transaction capture
 
-Add a commit-result observation point to CanonicalRepository, shared by its
-general, inline, split, and empty-paragraph paths. It must run exactly once after
-a validated state change, capturing the normalized operations actually applied,
+Stage A provides a commit-result observation point in CanonicalRepository,
+shared by its general, inline, split, and empty-paragraph paths. Extend it with
+compact capture while preserving exactly one event per subscribed representation
+after a validated state change. Capture the normalized changes actually applied,
 not just the caller's proposed records or the user-facing label.
 
 The first-pass event envelope should contain:
@@ -208,7 +238,7 @@ The first-pass event envelope should contain:
 - command ID and structured semantics where available, plus a display label;
 - affected `blockId`s and archive placement IDs, normalized forward change data,
   and preimages needed for recovery/indexing;
-- optional undo/redo source transaction and copy/split/join provenance.
+- optional undo/redo source transaction(s), group identity, and copy/split/join provenance.
 
 The exact changes are the replay authority. Block IDs and semantic descriptors
 are for querying and explanation. Parent/ancestor timeline entries are derived
@@ -232,14 +262,20 @@ unadjusted input operations could otherwise reconstruct counters differently
 from the committed state. Multiple writes to one record in an outer transaction
 may be normalized to its first preimage and final value, preserving atomicity.
 
-Start with lossless touched-record changes, using the existing canonical graph
-shape. Measure actual journal growth on long paragraphs before shipping the
-persistent first pass. If touched-record copies make typing unacceptably large,
-add versioned compact insertion/deletion patches with expected-base checks and
-a full touched-record fallback. This optimization is conditional on measurement,
-not a prerequisite for defining a second event model. Semantic move/split
-descriptions supplement exact replay data; they are not an alternative source
-of truth.
+Stage A proved exactness with lossless touched-record changes. Its measured long
+paragraph cost now makes versioned compact changes a prerequisite in Stage B.
+Capture sequence splices, inserted/deleted Cell records, changed fields and
+annotations, and final revision values directly at the validated repository
+boundary. Avoid constructing full before/after paragraph copies merely to diff
+or group them later. Include expected-base checks and a full touched-record
+fallback for unsupported operations. Preserve the Stage A full-record observer
+as a compatibility/debugging option; compact-only capture must not build it.
+
+Semantic command descriptions supplement exact change data. They cannot authorize
+an unverified patch, and replay must not rerun text-edit commands or annotation
+mapping algorithms. Exact compact changes retain graph identity and intermediate
+revisions. Grouping, journal batching, and lossless compression may reduce physical
+overhead; deleting intermediate states requires a separate retention decision.
 
 Freeze or clone affected records at capture time; queued work must not retain
 mutable Solid store proxies. Do not write files, hash the whole repository, or
@@ -254,6 +290,14 @@ History is append-only with respect to ordinary editing. Undo appends a revision
 whose change reverses the referenced transaction; redo appends another. An edit
 after undo can clear the UI redo stack without deleting the archived abandoned
 states. Timeline grouping is independent of undo grouping.
+
+A grouped undo reverses its member commits in one atomic repository transaction;
+grouped redo reapplies them in order. Each execution receives a fresh commit ID
+and records every source commit ID. Keep the existing single-source cause for
+one-commit groups. Do not fake a source by selecting only the last member, invoke
+multiple separately observable undos, or merge across a structural/selection
+boundary. Preserve the whole group on pre-mutation failure. Normal edits still
+commit immediately; an undo group is not a pending editor transaction.
 
 A journal sequence is chronological recording order. It is not necessarily a
 single replay chain: reopening the last explicitly saved revision while an
@@ -466,10 +510,11 @@ diagnostic, not a fallback to a live registry. Full-history cached results are
 keyed by memoir/revision/root/options, never by the resettable runtime revision
 counter alone.
 
-Suggested initial tunables: journal batching around 250 ms or 1 MiB, checkpoints
-after 500 transactions or 8 MiB of replay data, and visual typing groups with a
-1-second idle break and a 10-second maximum span. These are starting values for
-measurement. Exact transactions remain addressable even when grouped visually.
+Suggested initial tunables: journal batching around 250 ms or 1 MiB and checkpoints
+after 500 transactions or 8 MiB of replay data. These are starting values for
+measurement, separate from the grouping policies in section 3. Exact transactions
+remain addressable even when grouped visually. Stage B measures in-memory replay;
+Stage C defines durable batching, capacity handling, and acknowledgment.
 Checkpoint an immutable revision in a worker/archive mirror; do not clone a
 changing live tree opportunistically on each keystroke.
 
@@ -558,11 +603,15 @@ restoration remains outside the first release.
 The implementation plan for Stage A only, including exact code locations,
 proposed interfaces, normalization, tests, and exit criteria, is in
 [BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md](BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md).
+The next technical plan is
+[BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md),
+including the approved compact-capture and grouping prerequisites. It is a plan,
+not evidence that those changes or query services already exist.
 
 | Stage | Deliverable and exit condition | Main uplift |
 | --- | --- | --- |
 | A. Identity and capture spike | Audit/normalize missing or duplicate Block IDs; observe all successful repository commit paths; deterministic replay fixtures for text, structure, move, delete, split, join, and undo in one Document. | Medium–large. Repository and command boundary work. |
-| B. Isolated temporal queries | Checkpoint/replay and `getSubtreeAt` for a Block in one Document memoir; historical location and old/new membership; no live-repository mutation. | Medium. Canonical graph reuse and reference/dependency rules. |
+| B. Compact capture, grouping, and isolated temporal queries | Compact exact capture; opt-in word undo and sentence playback grouping; in-memory checkpoint/replay, historical location, membership, and `getSubtreeAt` in one Document history segment. Queries never mutate the live repository. | Medium–large. Measured capture optimization precedes query/index work; grouping preserves exact commit identity. |
 | C. Durable Document memoir | Sidecar plus journal, bounded outbox, idempotent append, recovery, save receipts, reload identity mapping, branch handling, and **lossless** consolidation. The Document remains usable without the memoir. | Large. Principal first-pass persistence risk. No cross-memoir coordinator or retention expiry. |
 | D. Read-only historical experience | Context-menu/command entry, Block-centred timeline, in-context scrub preview with subdued surroundings, compare, static fallbacks, keyboard access, and unchanged live state. | Medium–large. Safe rendering and focus isolation. |
 | E. Historical copy | Dependency-aware copy into the same Document, fresh identities, provenance, one undoable insertion, and save/reload. | Medium. Fragment remapping and transclusion audit. |
@@ -593,11 +642,9 @@ model/query/store modules; runtime and rendering history-session components;
 Index schemas, data validation, and archive version migrations belong beside
 the history store. No SurrealDB schema change is required for the first release.
 
-Before implementing the full feature, preserve these inexpensive design paths:
-consistent authored IDs for newly created Blocks, explicit move/copy distinctions,
-structured command/cause metadata, a commit envelope seam, and a rendering-mode
-boundary. These are recommendations for future authorized work; none are being
-changed as part of this specification.
+Stage A establishes authored IDs, explicit move/copy distinctions, structured
+command/cause metadata, and the commit envelope seam. Stage B builds on those
+contracts; the historical rendering-mode boundary remains Stage D work.
 
 ## 12. Acceptance and regression criteria
 
@@ -628,7 +675,10 @@ changed as part of this specification.
 9. Recording adds no whole-repository snapshots or file/network waits to ordinary
    typing/Enter. Extend existing [performance regressions](TEXT_EDIT_PERFORMANCE.md)
    and benchmark long paragraphs, large subtrees, journal growth, and replay time.
-   Establish measured overhead budgets in the spike rather than guessing them.
+   Compact-only typing capture must not copy unchanged paragraph sequence arrays.
+   Verify word undo and sentence playback groups independently, including IME,
+   selection boundaries, and access to every intermediate revision. Establish
+   measured overhead budgets rather than guessing them.
 10. Browser verification covers real history invocation, keyboard scrubbing,
     comparison/copy, live-state invariance, and save/reload against both the
     development server and rebuilt production client.

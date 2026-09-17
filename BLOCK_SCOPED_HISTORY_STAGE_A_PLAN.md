@@ -6,6 +6,12 @@ amendment, 17 September 2026. The discrepancy and verification are documented in
 Architectural authority: [BLOCK_SCOPED_HISTORY_SPEC.md](BLOCK_SCOPED_HISTORY_SPEC.md),
 especially sections 4–6 and roadmap Stage A.
 
+Follow-up decision: the user approved compact exact capture, word-oriented undo,
+and sentence-oriented playback after reviewing Stage A measurements. Their next
+implementation steps are in [the Stage B plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md).
+This document remains the record of Stage A's full-record capture proof; it does
+not claim those optimizations or grouping policies are already implemented.
+
 ## 1. Deliverable and scope
 
 Stage A establishes authored Block identity and proves that every successful
@@ -426,6 +432,10 @@ overhead rather than inventing a millisecond budget before the baseline exists.
 Long paragraph before/after arrays may still be large: report that cost and a
 recommended follow-up threshold. Compact text patches belong to a later measured
 optimization unless the spike cannot preserve its existing editing invariants.
+
+The completed measurements now justify that follow-up. Stage B plans compact
+capture at the repository boundary before query/index work; grouping already
+constructed full-record events would not remove Stage A's per-edit copying cost.
 
 ## 10. Implementation order
 

@@ -158,6 +158,22 @@ already slow with capture disabled. Measure compact text/sequence patches and
 projection costs before selecting a product latency budget or durable outbox
 limits. No patch format, size cap, or new hot-path serializer is added in Stage A.
 
+## Approved follow-up after completion
+
+The user accepted the proposal to make individual captures compact, group undo
+by words/typing bursts, and present historical playback by sentences or editing
+sessions. These are approved design policies, not additional completed Stage A
+features. The [Stage B technical plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md)
+defines their implementation alongside isolated historical queries.
+
+The priority is exact sequence/field changes at the repository boundary, with
+full-record fallback for unsupported operations. Word/sentence grouping follows
+that optimization; grouping after full paragraph copying would leave the original
+capture cost in place. Every original revision remains addressable, and grouped
+undo retains all source commit identities. Playback grouping, disk batching,
+and retention remain separate decisions. No intermediate states are deleted by
+this amendment, and the original benchmark above remains unchanged evidence.
+
 ## Exit gates and scope limits
 
 | Gate | Evidence / outcome |
