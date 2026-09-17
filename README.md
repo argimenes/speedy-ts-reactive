@@ -24,9 +24,10 @@ Stage A implements authored identity and optional immutable commit capture;
 [the implementation report](./BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md) records
 the approved copy policy, replay proof, regression results, and performance costs.
 The next [Stage B technical plan](./BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md) covers
-compact exact capture, word-oriented undo, sentence-oriented playback grouping,
-and isolated in-memory historical queries. These are planned, not implemented;
-durable recording and history controls remain later stages.
+compact exact capture, derived sentence-oriented playback grouping, and isolated
+in-memory historical queries. Existing undo/redo behavior remains unchanged.
+These are planned, not implemented; durable recording and history controls
+remain later stages.
 
 ## Usage
 

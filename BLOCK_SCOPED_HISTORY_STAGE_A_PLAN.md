@@ -6,11 +6,11 @@ amendment, 17 September 2026. The discrepancy and verification are documented in
 Architectural authority: [BLOCK_SCOPED_HISTORY_SPEC.md](BLOCK_SCOPED_HISTORY_SPEC.md),
 especially sections 4–6 and roadmap Stage A.
 
-Follow-up decision: the user approved compact exact capture, word-oriented undo,
-and sentence-oriented playback after reviewing Stage A measurements. Their next
-implementation steps are in [the Stage B plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md).
-This document remains the record of Stage A's full-record capture proof; it does
-not claim those optimizations or grouping policies are already implemented.
+Follow-up decision: compact exact capture and derived sentence-oriented playback
+are planned in [Stage B](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md). Its revised scope
+preserves existing undo/redo behavior; word-oriented undo is a separate editor UX
+feature. This document remains the record of Stage A's full-record capture proof;
+it does not claim the optimization or playback grouping is already implemented.
 
 ## 1. Deliverable and scope
 

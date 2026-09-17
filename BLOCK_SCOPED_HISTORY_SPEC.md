@@ -1,8 +1,9 @@
 # Block-scoped temporal history: feasibility and technical specification
 
 Status: approved architectural direction, 17 September 2026. Stage A is implemented
-and verified with the approved copy-policy amendment. Compact capture, word-oriented
-undo, and sentence-oriented playback are now approved design policy; Stage B is
+and verified with the approved copy-policy amendment. Compact capture and derived
+sentence-oriented playback are approved design policy; existing undo/redo behavior
+remains unchanged. Stage B is
 planned in [its technical implementation plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md).
 Stages B–E are not implemented. See
 [the Stage A implementation report](BLOCK_SCOPED_HISTORY_STAGE_A_COMPLETION.md).
@@ -34,7 +35,7 @@ The following product decisions were confirmed during this review:
 | Separation and retention | Keep current Documents independent of history; use a separate memoir sidecar, and allow compaction that expires old history states. | Principle confirmed; storage mechanics specified below. |
 | Storage versus identity | Keep memoirs beside individual Documents; use stable Block identity and, later, provenance/locators to follow a Block across Documents. A Workspace-wide memoir is not the central store for every Block. | Confirmed. |
 | Capture cost | Use compact exact changes at the repository boundary; retain full-record fallback for unsupported changes. Avoid copying a long paragraph's complete before/after sequence on every typed character. | Confirmed after Stage A measurements. |
-| Undo and playback granularity | Word-oriented undo and sentence/session-oriented history presentation are separate grouping policies over exact commits. Keep individual revisions addressable; grouping does not discard intermediate states. | Confirmed after Stage A. |
+| Undo and playback granularity | Existing undo/redo behavior remains unchanged. Historical playback groups derive from exact revisions, reference their members, and normally present their endpoints. Every exact revision remains addressable and replayable. | Confirmed in the Stage B scope revision. |
 
 This specification develops those choices so their consequences are reviewable.
 A session-only prototype remains a development stage, not a claim to satisfy
@@ -57,10 +58,11 @@ historical rendering and asset capture, and in-place restoration. Lossless
 journal consolidation/checkpoint maintenance needed to keep first-pass storage
 usable is distinct from deleting old states for retention.
 
-Keep the existing global ownership and ordering of undo/redo. The newly approved
-word-oriented grouping changes step granularity, not repository ownership.
-Separate per-Document repositories, dirty tracking, and undo stacks remain
-deferred. Grouped undo must retain explicit source commit identities.
+Keep existing Codex undo/redo behavior, step granularity, global ownership,
+ordering, and source commit causes unchanged. Historical grouping has no dependency
+on changing undo-stack semantics. Word-oriented undo is a separate editor UX
+feature outside Stage B. Separate per-Document repositories, dirty tracking,
+and undo stacks remain deferred.
 
 ## 2. Audit of the current implementation
 
@@ -74,7 +76,7 @@ deferred. Grouped undo must retain explicit source commit identities.
 | Split | Stage A keeps the left content/placement, always assigns a fresh authored ID to the right Block, and captures split provenance. | Queries must distinguish genealogy from subtree membership. |
 | Join | `joinStandoff` retains the left identity, incorporates right text/annotations, and prunes the right placement/content where unreachable. | Preserve the right Block's biography and record its contribution to the survivor. |
 | Duplicate/detach | Stage A creates new authored IDs including for id-less inputs and records source/copy identities. Ordinary copy preserves internal canonical sharing and remaps supported references through the existing clone helper. | Historical copy still needs its own dependency and destination validation in Stage E. |
-| Undo/redo | Stage A adds UUID commit IDs to stack entries and explicit captured undo/redo causes. Stacks still contain forward/inverse operations; a new edit clears redo. | Add opt-in word grouping without losing source IDs. Archive retention and durability remain separate from stack ownership. |
+| Undo/redo | Stage A adds UUID commit IDs to stack entries and explicit captured undo/redo causes. Stacks still contain forward/inverse operations; a new edit clears redo. | Preserve existing behavior and single-source causes with regression coverage. Historical grouping and archive retention remain independent of the undo stacks. |
 | Capture volume | Stage A captures full before/after touched records only when subscribed. A one-character typing event is 550,852 bytes for a 5,600-character paragraph and 2,452,054 bytes for a 25,000-character paragraph. | Compact capture is now a measured Stage B prerequisite; grouping after copying does not remove this cost. |
 | Transaction boundaries | `TreeCommands.transaction` batches operations into one repository commit. Operations are record upserts/deletions, not a complete semantic event vocabulary. | Capture one history revision per successful outer commit. Add semantic descriptors for biography and display. |
 | Revision counters | Repository revision increases on commits, including undo/redo, but resets on ordinary JSON load. Content counters can repeat after undo or a new editing branch. | Neither is a durable timeline ID or reliable cross-session cache key. |
@@ -136,24 +138,35 @@ material is a separate explicit command against current state.
 ### Meaningful history steps
 
 Record exact committed changes, but do not require people to scrub or watch one
-character at a time. Undo should normally remove a word or short typing burst;
-history playback should normally show a sentence-sized change or editing session.
-Both refer to the same exact revision stream and may have different boundaries.
+character at a time. Historical grouping is a derived layer over revisions,
+timestamps, command descriptors, and reconstructed state. Each playback group
+references its constituent revision IDs and normally presents its endpoint;
+every exact revision stays independently addressable and replayable. Grouping
+never supplies replay data or changes the existing undo system.
 
-Group adjacent typing in the same Block and editing occurrence. Start with a
-500 ms undo idle threshold (tunable within 500–1,000 ms), word boundaries, and
-explicit boundaries for cursor relocation, focus/Block changes, insertion versus
-deletion, paste, formatting, split/join, and other structural commands. Keep an
-input-method composition atomic. Sentence punctuation is a playback hint, not a
-requirement to delay capture or a reliable universal sentence detector. Account
-for abbreviations, unfinished sentences, corrections, and languages without spaces.
+Use a policy-neutral abstraction so different historical views could coexist.
+Stage B implements only an initial sentence-oriented policy. Typing bursts,
+paragraphs, sessions, and semantic/AI-derived groups are possible later policies,
+not additional Stage B deliverables. Namespace derived groups by policy/version
+and query scope; changing a policy cannot change exact revision identity.
 
-For playback, begin with a 1-second idle break and 10-second maximum group span,
-plus sentence-boundary hints and structural boundaries. These timing values are
-initial tuning choices. Groups contain exact revision IDs; changing display
-grouping does not alter replay or archive retention. Disk batching and durability
-acknowledgment are independent: never wait for a sentence to finish before
-capturing a change or deciding when it must be persisted.
+For sentence playback, begin with a 1-second idle break and 10-second maximum
+span, sentence-boundary evidence, and command/Block/branch boundaries. These are
+initial playback tuning values, not undo settings. Punctuation alone is not a
+universal sentence detector: account for abbreviations, unfinished sentences,
+corrections, and languages without spaces using isolated reconstructed text.
+
+Where inexpensive, optional descriptive input hints can identify composition,
+paste, selection replacement, intentional cursor/focus relocation, or other
+editing boundaries. Collecting them must preserve existing input/IME behavior
+and transaction boundaries. They neither direct undo nor authorize exact patches.
+Grouping must work without them from captured revisions, timestamps, and state;
+missing hints limit certainty about intent, not replay correctness.
+
+Disk batching and durability acknowledgment are independent: never wait for a
+sentence to finish before capturing a change or deciding when it must be
+persisted. Regrouping is not retention compaction and cannot discard intermediate
+states. Word-oriented undo remains a separate editor UX feature outside Stage B.
 
 ## 4. Block-centred identity contract
 
@@ -238,7 +251,10 @@ The first-pass event envelope should contain:
 - command ID and structured semantics where available, plus a display label;
 - affected `blockId`s and archive placement IDs, normalized forward change data,
   and preimages needed for recovery/indexing;
-- optional undo/redo source transaction(s), group identity, and copy/split/join provenance.
+- optional existing undo/redo source transaction and copy/split/join provenance.
+
+Playback group IDs and member revision lists are derived presentation metadata,
+not changes to this exact envelope or to undo/redo causes.
 
 The exact changes are the replay authority. Block IDs and semantic descriptors
 are for querying and explanation. Parent/ancestor timeline entries are derived
@@ -291,13 +307,11 @@ whose change reverses the referenced transaction; redo appends another. An edit
 after undo can clear the UI redo stack without deleting the archived abandoned
 states. Timeline grouping is independent of undo grouping.
 
-A grouped undo reverses its member commits in one atomic repository transaction;
-grouped redo reapplies them in order. Each execution receives a fresh commit ID
-and records every source commit ID. Keep the existing single-source cause for
-one-commit groups. Do not fake a source by selecting only the last member, invoke
-multiple separately observable undos, or merge across a structural/selection
-boundary. Preserve the whole group on pre-mutation failure. Normal edits still
-commit immediately; an undo group is not a pending editor transaction.
+Playback groups never define an undo unit. Existing undo/redo execution, stack
+entries, single-source causes, failure handling, and redo invalidation stay
+unchanged. Capture those operations exactly as Stage A does and give them normal
+historical revisions. A playback group may contain changes that are undone in
+separate existing steps; each resulting state remains independently queryable.
 
 A journal sequence is chronological recording order. It is not necessarily a
 single replay chain: reopening the last explicitly saved revision while an
@@ -605,13 +619,13 @@ proposed interfaces, normalization, tests, and exit criteria, is in
 [BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md](BLOCK_SCOPED_HISTORY_STAGE_A_PLAN.md).
 The next technical plan is
 [BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md),
-including the approved compact-capture and grouping prerequisites. It is a plan,
+including the compact-capture prerequisite and derived playback grouping. It is a plan,
 not evidence that those changes or query services already exist.
 
 | Stage | Deliverable and exit condition | Main uplift |
 | --- | --- | --- |
 | A. Identity and capture spike | Audit/normalize missing or duplicate Block IDs; observe all successful repository commit paths; deterministic replay fixtures for text, structure, move, delete, split, join, and undo in one Document. | Medium–large. Repository and command boundary work. |
-| B. Compact capture, grouping, and isolated temporal queries | Compact exact capture; opt-in word undo and sentence playback grouping; in-memory checkpoint/replay, historical location, membership, and `getSubtreeAt` in one Document history segment. Queries never mutate the live repository. | Medium–large. Measured capture optimization precedes query/index work; grouping preserves exact commit identity. |
+| B. Compact capture, grouping, and isolated temporal queries | Compact exact capture; policy-neutral derived playback grouping with an initial sentence policy; in-memory checkpoint/replay, historical location, membership, and `getSubtreeAt` in one Document history segment. Queries and grouping never mutate the live repository or undo system. | Medium–large. Capture optimization and exact queries remain separate from presentation grouping; existing undo/redo receives regression coverage. |
 | C. Durable Document memoir | Sidecar plus journal, bounded outbox, idempotent append, recovery, save receipts, reload identity mapping, branch handling, and **lossless** consolidation. The Document remains usable without the memoir. | Large. Principal first-pass persistence risk. No cross-memoir coordinator or retention expiry. |
 | D. Read-only historical experience | Context-menu/command entry, Block-centred timeline, in-context scrub preview with subdued surroundings, compare, static fallbacks, keyboard access, and unchanged live state. | Medium–large. Safe rendering and focus isolation. |
 | E. Historical copy | Dependency-aware copy into the same Document, fresh identities, provenance, one undoable insertion, and save/reload. | Medium. Fragment remapping and transclusion audit. |
@@ -676,9 +690,10 @@ contracts; the historical rendering-mode boundary remains Stage D work.
    typing/Enter. Extend existing [performance regressions](TEXT_EDIT_PERFORMANCE.md)
    and benchmark long paragraphs, large subtrees, journal growth, and replay time.
    Compact-only typing capture must not copy unchanged paragraph sequence arrays.
-   Verify word undo and sentence playback groups independently, including IME,
-   selection boundaries, and access to every intermediate revision. Establish
-   measured overhead budgets rather than guessing them.
+   Verify derived sentence playback both with and without optional input hints,
+   endpoint/member access, and independent replay of every exact revision. Retain
+   regression coverage for unchanged undo/redo and any affected input/IME paths.
+   Establish measured overhead budgets rather than guessing them.
 10. Browser verification covers real history invocation, keyboard scrubbing,
     comparison/copy, live-state invariance, and save/reload against both the
     development server and rebuilt production client.

@@ -160,19 +160,21 @@ limits. No patch format, size cap, or new hot-path serializer is added in Stage 
 
 ## Approved follow-up after completion
 
-The user accepted the proposal to make individual captures compact, group undo
-by words/typing bursts, and present historical playback by sentences or editing
-sessions. These are approved design policies, not additional completed Stage A
-features. The [Stage B technical plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md)
-defines their implementation alongside isolated historical queries.
+The revised [Stage B technical plan](BLOCK_SCOPED_HISTORY_STAGE_B_PLAN.md) covers
+compact exact capture and historical/playback grouping alongside isolated queries.
+Word-oriented undo was removed from its scope as a separate editor UX feature;
+existing Codex undo/redo behavior and source causes remain unchanged and receive
+regression coverage. None of these planned features changes Stage A's results.
 
 The priority is exact sequence/field changes at the repository boundary, with
-full-record fallback for unsupported operations. Word/sentence grouping follows
-that optimization; grouping after full paragraph copying would leave the original
-capture cost in place. Every original revision remains addressable, and grouped
-undo retains all source commit identities. Playback grouping, disk batching,
-and retention remain separate decisions. No intermediate states are deleted by
-this amendment, and the original benchmark above remains unchanged evidence.
+full-record fallback for unsupported operations. Grouping after full paragraph
+copying would leave the original capture cost in place. Playback groups are a
+separate derived layer referencing exact revision IDs and normally presenting
+their endpoints. Every original revision remains addressable and replayable,
+including without input-intent hints or undo integration. The initial sentence
+policy uses an abstraction that permits later policies without implementing them
+in Stage B. Playback grouping, disk batching, and retention remain separate;
+no intermediate states are deleted, and the benchmark remains unchanged evidence.
 
 ## Exit gates and scope limits
 

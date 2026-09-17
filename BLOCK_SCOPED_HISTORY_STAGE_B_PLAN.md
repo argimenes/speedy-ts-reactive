@@ -1,10 +1,11 @@
 # Block-scoped history — Stage B technical implementation plan
 
-Status: **technical plan; not implemented**, 17 September 2026. The user approved
-compact capture, word-oriented undo, and sentence-oriented history presentation
-after reviewing Stage A's long-paragraph costs. This document makes those
-prerequisites and the next query milestone concrete; proposed interfaces and
-initial tuning values remain implementation design choices.
+Status: **revised technical plan; not implemented**, 17 September 2026. Stage B
+covers compact exact capture and isolated historical services, with playback
+grouping derived from exact revisions. Existing Codex undo/redo behavior and
+undo-stack semantics remain unchanged. Word-oriented undo is a separate editor UX
+feature and is outside this plan. Proposed interfaces and initial playback tuning
+values remain implementation design choices.
 
 Architectural authority: [the specification](BLOCK_SCOPED_HISTORY_SPEC.md),
 particularly sections 3, 5, 6, and 8. Baseline evidence:
@@ -23,26 +24,29 @@ Implementation order is deliberate:
 
 1. Reduce the cost of capturing each committed edit at the repository boundary.
 2. Add exact in-memory replay/checkpoints and revision lookup.
-3. Add opt-in word undo groups and independently derived sentence playback groups.
+3. Add a policy-neutral historical grouping layer with an initial sentence playback policy.
 4. Add historical subtree, location, timeline, and comparison queries.
 5. Verify exactness, grouping behavior, isolation, and measured costs together.
 
-Normal editor commits remain immediate. Word/sentence completion never gates
-capture. Grouping references exact revisions; it does not discard them. This
-expands the original Stage B query spike with the approved capture/grouping
-prerequisites; it does not retroactively change Stage A's completed contract.
+Normal editor commits remain immediate. Sentence completion never gates capture.
+Playback groups reference exact revisions and normally present their endpoints;
+every constituent revision remains independently addressable and replayable.
+Grouping is a derived presentation layer, never replay authority. Compact capture
+is the measured prerequisite for economical recording; grouping is not a
+prerequisite for capture, reconstruction, or the existing undo system.
 
 Stage B does not implement memoir files, journals, browser outboxes, save receipts,
 reload rebinding, server endpoints, a resource partitioner, or multi-writer
 coordination. Those are Stage C. History controls, playback rendering, production
-history enablement, and historical copy remain Stages D–E. Word grouping is
-implemented behind explicit enrollment and tested through existing input seams;
-no default application-wide behavior change is required to prove this stage.
+history enablement, and historical copy remain Stages D–E. Optional inexpensive
+input-intent hints may improve historical grouping; they do not change editing
+transactions, composition handling, selection behavior, or undo steps.
 
-Global undo ownership remains intact. Per-Document undo stacks, cross-Document
-biography, CRDT/selective undo, retention expiry, asset-byte archival, and a new
-text-buffer data structure are excluded. Existing command/projection costs are
-measured separately from capture overhead.
+Existing undo/redo behavior, step granularity, source causes, and global stack
+ownership remain intact and receive regression coverage. Per-Document undo stacks,
+cross-Document biography, CRDT/selective undo, retention expiry, asset-byte archival,
+and a new text-buffer data structure are excluded. Existing command/projection
+costs are measured separately from capture overhead.
 
 ## 2. Findings in the current code
 
@@ -52,10 +56,10 @@ measured separately from capture overhead.
 | `repository.ts` | General, inline, split, and empty-paragraph routes share event delivery; only subscribed capture creates event data. | Keep route validation, observer isolation, and opt-in behavior. Support full and compact observers independently. |
 | `inline-plan.ts`, `split-plan.ts` | Validators already examine old/new sequences and enforce freshness, ownership, and conservation. | Derive verified splice information during this work; do not trust command labels or arbitrary metadata as a patch proof. |
 | `commands.ts` | Inline replacement already knows the edit range and inserted Cell keys, but publishes full-record operations. | Thread candidate edit facts to the validator or expose verified plans; keep raw direct commits and fallback exact. |
-| `types.ts`, `repository.ts` | `HistoryEntry` represents one commit; causes name one `sourceCommitId`. | Grouped undo needs ordered member identities and one atomic reversal, not a loop of observable `undo()` calls. |
-| `input/gateway.ts` | Central beforeinput, focus, selection, paste, and composition handling already exists. | Capture editing intent and explicit group boundaries here; preserve existing IME reconciliation. |
-| `input/multi-selection-editor.ts`, `cross-block-input.ts` | Multi-selection and cross-Block edits have their own transaction/input paths. | Keep each operation atomic; do not accidentally merge it into adjacent single-caret typing. |
-| `input/graphemes.ts` | Canonical text coordinates count code points; grapheme segmentation avoids splitting composed text. | Word/sentence segmentation must map any UTF-16 offsets back to canonical Cell coordinates. |
+| `types.ts`, `repository.ts` | `HistoryEntry` represents one commit; causes name one `sourceCommitId`. | Preserve these contracts and existing undo/redo behavior. Playback groups reference revisions without reading or changing the undo stacks. |
+| `input/gateway.ts` | Central beforeinput, focus, selection, paste, and composition handling already exists. | Optionally attach inexpensive descriptive hints at existing seams; preserve current IME reconciliation and editing behavior. Grouping must also work without these hints. |
+| `input/multi-selection-editor.ts`, `cross-block-input.ts` | Multi-selection and cross-Block edits have their own transaction/input paths. | Preserve their transaction boundaries; existing command descriptors and optional hints can identify separate playback actions. |
+| `input/graphemes.ts` | Canonical text coordinates count code points; grapheme segmentation avoids splitting composed text. | Historical sentence segmentation must map any UTF-16 offsets back to canonical Cell coordinates. |
 | `test-support/captured-replay.ts` | A finite test oracle already proves exact every-revision replay. | Reuse its scenarios; production replay must not import Vitest or call repository commits. |
 | `extended-codec.ts` | Full canonical graph encoding preserves keys and validates state. | Reuse for checkpoint payloads inside a separate versioned history envelope. |
 | `projection.ts` | One PlacementKey may occur through several ancestor reference routes. | Historical occurrence selection may need a route as well as a placement; never choose an arbitrary first match. |
@@ -73,18 +77,17 @@ These paths are proposed, not existing Stage B files.
 | Path | Proposed work |
 | --- | --- |
 | `src/block-tree/compact-changes.ts` | Versioned exact field/sequence/record change types, preparation, immutable finalization, and compact patch validation. |
-| `src/block-tree/commit-capture.ts` | Reuse the commit envelope; retain the Stage A full-record observer and isolate representation-specific payloads. |
-| `src/block-tree/repository.ts` | Compact subscription, shared capture delivery, verified plan consumption, opt-in grouped undo/redo. |
+| `src/block-tree/commit-capture.ts` | Reuse the commit envelope and existing causes; retain the Stage A full-record observer, isolate representation-specific payloads, and allow optional descriptive input hints. |
+| `src/block-tree/repository.ts` | Compact subscription, shared capture delivery, and verified plan consumption; preserve existing undo/redo execution and stack semantics. |
 | `src/block-tree/inline-plan.ts`, `split-plan.ts` | Return optional verified edit details alongside route eligibility without weakening rejection rules. |
-| `src/block-tree/commands.ts`, `types.ts` | Candidate edit facts, input/group metadata, grouped history entries, multi-source undo/redo causes. |
+| `src/block-tree/commands.ts` | Candidate edit facts for compact validation and optional descriptive input metadata; preserve command transaction boundaries. |
 | `src/history/types.ts` | Segment/revision/checkpoint/query/group contracts; no server or DOM dependencies. |
 | `src/history/replay.ts` | Pure exact application, precondition checks, isolated reconstruction, explicit version/gap errors. |
 | `src/history/memory-store.ts` | Explicit finite in-memory enrollment, revision DAG, checkpoints, bounded ingest queue/cache, disposal. |
-| `src/history/grouping.ts` | Pure word-undo and sentence-playback policies with injected clock/segmentation and explicit boundaries. |
+| `src/history/grouping.ts` | Policy-neutral derived grouping contracts and the initial sentence policy, with captured timestamps, injected segmentation, optional hints, and no undo dependencies. |
 | `src/history/index.ts` | Rebuildable Block/placement lifetimes, historical locations, dependency and timeline relevance. |
 | `src/history/query.ts`, `compare.ts` | State/subtree/location/timeline queries and authored-state comparison. |
-| `src/input/gateway.ts`, `multi-selection-editor.ts`, `cross-block-input.ts` | Intent, composition, occurrence, and selection-boundary metadata under enrollment. |
-| `src/reactive-editor/editor.ts` | Narrow opt-in grouping configuration for input integration; no automatic history recorder. |
+| `src/input/gateway.ts`, `multi-selection-editor.ts`, `cross-block-input.ts` — only where inexpensive | Optional intent, composition, occurrence, and selection/focus-boundary hints at existing seams. No new undo configuration or required editor integration. |
 | Corresponding `*.test.ts` files | Compact/full parity, grouping, failure/branch/dependency queries, and live-state invariance. |
 | `scripts/benchmark-typing.mjs` | Capture off/full/compact cases; preserve the original Stage A artifact. |
 | `scripts/benchmark-history.mjs`, `package.json` | New in-memory history/replay benchmark entry after the query implementation exists. |
@@ -199,7 +202,10 @@ Each stored revision records:
 
 - `segmentId`, `revisionId`, append `sequence`, and `stateParentRevisionId`;
 - `previousJournalRevisionId` as ordering metadata, even in memory;
-- the exact immutable change envelope and optional grouping metadata.
+- the exact immutable change envelope and optional descriptive input hints.
+
+Computed playback groups live in a separate rebuildable index/cache; they are not
+part of the exact change payload, state ancestry, or checkpoint validity.
 
 Ordinary undo/redo append new state revisions. Editing after undo keeps earlier
 states queryable; it does not change the replay parent to the original historical
@@ -233,78 +239,111 @@ a failed commit and append its descendants as valid. Disposing unsubscribes,
 cancels pending work, and releases memory. Stage C supplies durable draining and
 recovery; Stage B must not masquerade as an outbox.
 
-## 6. Word undo and sentence playback
+## 6. Historical/playback grouping over exact revisions
 
-### 6.1 Input facts and boundaries
+### 6.1 Derived data and policy-neutral interface
 
-Proposed optional intent metadata includes input kind, content/placement key,
-editing occurrence token, edit range, selection before/after, composition ID,
-and an explicit group-boundary generation. Input coordinates are canonical Cell
-coordinates. An occurrence token is session metadata, not a durable Block ID.
-Unknown/programmatic commands default to a separate group.
+Grouping consumes captured revisions, their timestamps/command descriptors, and
+isolated reconstructed state. It has no access to live editor mutation methods,
+`HistoryEntry`, or undo stacks. Grouping can be disabled, rebuilt, or recomputed
+under a different policy without changing a commit, state parent, checkpoint,
+source cause, or the result of replay. A grouping failure cannot invalidate
+otherwise verified history; callers can fall back to the exact revision timeline.
 
-Use actual beforeinput/reconciled edits; do not infer text from `keydown`.
-The gateway already suppresses composing input and reconciles on composition end;
-keep that behavior and attach a composition boundary rather than adding a second
-commit. Cursor/focus changes close a group without creating a content revision.
-Distinguish an intentional selection relocation from the caret update caused by
-typing itself. Moving away and back still closes the old group.
+Proposed interfaces (supporting source/request types belong in `history/types.ts`):
 
-### 6.2 Undo policy and atomic execution
+```ts
+interface PlaybackGroup {
+  groupId: string;
+  policyId: string;
+  policyVersion: string;
+  memberRevisionIds: readonly CommitId[];
+  endpointRevisionId: CommitId;
+  label: string;
+  boundaryReason: string;
+}
 
-Start with 500 ms idle (configurable in the agreed 500–1,000 ms range). Join only
-adjacent compatible single-caret edits in the same content, occurrence, and
-boundary generation. Use locale-aware word boundaries where available; fallback
-to documented whitespace/punctuation and idle rules. Convert segmentation offsets
-explicitly; never split graphemes or one composition transaction.
+interface HistoricalGroupingPolicy {
+  id: string;
+  version: string;
+  group(context: HistoricalGroupingContext): Promise<readonly PlaybackGroup[]>;
+}
 
-For a first deterministic whitespace policy, attach typed separator characters
-to the preceding word and start a new group when the next word begins. Break on
-insertion/deletion direction changes; adjacent backward or forward deletion can
-form its own word/burst group. A replacement selection, paste, annotation edit,
-split/join, multi-selection operation, or cross-Block replacement is one isolated
-command group. A single paste/composition containing multiple words stays atomic.
+groupTimeline(
+  source: HistoricalGroupingSource,
+  request: GroupingRequest,
+): Promise<readonly PlaybackGroup[]>;
+```
 
-Propose `UndoGroup { groupId, members: HistoryEntry[] }` with members ordered by
-original commit sequence. Preserve member UUIDs; never overwrite them with the
-group ID. On undo, concatenate inverse operations in reverse member order and
-commit once; on redo, concatenate forward operations in original order and commit
-once. All preconditions/identity checks run before mutation. Move the complete
-group between stacks only after success; retain Stage A's handling of failures
-from legacy observers after a successful state change.
+The source exposes immutable exact revisions and isolated state lookup only.
+The request selects policy ID/version, segment, branch/head, timeline scope,
+traversal options, locale, and tuning options. Context provides the ordered
+revision facts, reconstructed state access, optional descriptive hints, and
+segmentation services. Grouping uses captured timestamps and an explicit as-of
+boundary for an open tail, not whichever wall-clock time a rebuild happens to run.
 
-Extend the cause union with a grouped undo/redo form carrying `sourceGroupId` and
-ordered `sourceCommitIds`; retain the current single-source form for one member.
-Capture one new exact event for each grouped execution. Do not synthesize multiple
-visible intermediate undo revisions. Each original typing commit remains separately
-queryable. Initial grouping can retain member operation arrays; it is not claimed
-to optimize the existing undo stack's paragraph-copy costs.
+Each group contains a nonempty ordered list of exact revision IDs from the
+selected timeline/branch. Its endpoint is its last member. Normal playback
+requests that endpoint's exact state; fine inspection can request any member.
+Groups neither replace revisions nor supply patches. Validate member order,
+ancestry, scope, and endpoint; never bridge missing history or an explicit branch
+boundary. Page handling must preserve the member list and boundary information.
 
-### 6.3 Playback policy
+Namespace derived group IDs and cache keys by policy/version, segment, branch,
+timeline scope, and relevant options. Different policies can later provide
+coexisting views over the same exact history. Policy changes may change group
+IDs and membership but never exact revision IDs. Implement only the initial
+sentence-oriented policy in Stage B. Typing-burst, paragraph, session, and
+semantic/AI-derived policies are future possibilities, not Stage B work; no AI
+service, plugin registry, or generic policy framework is required now.
 
-`groupTimeline(revisions, options)` returns group IDs, ordered member revision
-IDs, first/last revisions, label data, and boundary reason. Groups are derived
-metadata, never the replay authority. Default playback advances to group endpoints;
-callers can still request any contained revision.
+### 6.2 Optional descriptive input hints
 
-Use sentence-boundary hints, a 1-second idle break, and a 10-second maximum span,
-alongside explicit command/Block/selection/branch boundaries. Use contextual
-segmentation on reconstructed text off the typing callback. Avoid treating every
-period as a sentence boundary; test abbreviations, decimals, unfinished sentences,
-and languages without spaces. Persist explicit input boundaries, and version
-any derived grouping policy/locale so regrouping does not change revision IDs.
+Keep hints only where inexpensive and useful: input kind, content/placement key,
+editing occurrence token, edit range or selection replacement, composition
+boundary, paste, and intentional cursor/focus relocation. Any coordinates use
+canonical Cell units; an occurrence token is session metadata, not Block identity.
+These facts describe an edit or boundary; they do not direct undo execution,
+authorize a compact patch, or become required replay data.
 
-Only the open group may grow. A later correction becomes a new revision/group;
-it does not rewrite a previously finalized sentence state. A group may contain
-multiple word undo groups, and undo may reverse part of a displayed sentence.
-The UI can explain that through source IDs rather than forcing both granularities
-to match. Stage D owns controls and animation.
+Use existing beforeinput/reconciled-edit seams; do not infer text from `keydown`.
+Preserve the gateway's current suppression of composing input and reconciliation
+at composition end. Do not introduce another commit, hold open a transaction,
+or change selection/focus/IME behavior to collect grouping hints. A relocation
+with no content change may be carried as a boundary-before hint on the next
+captured edit; it must not create a synthetic repository revision. Distinguish
+intentional relocation from a caret update caused by typing itself.
 
-These choices follow established proximity/explicit-boundary practices rather
-than a universal sentence-undo rule: [CodeMirror history](https://codemirror.net/docs/ref/#commands.history)
-groups adjacent edits with a default 500 ms delay; [Yjs UndoManager](https://docs.yjs.dev/api/undo-manager)
-also defaults to 500 ms and offers an explicit stop-capturing boundary. The word
-and sentence policies above are this product's approved direction and proposed tuning.
+Historical grouping must also work with every optional hint omitted, including
+headless/direct repository callers. Derive sentence candidates from reconstructed
+text, edit continuity from exact changes, and pauses from revision timestamps.
+Without an explicit hint, acknowledge uncertainty about intent rather than invent
+an unobserved composition or cursor movement. Unsupported/malformed optional
+hints are ignored for grouping; they never change exact history validity.
+
+### 6.3 Initial sentence-oriented policy
+
+Use sentence-boundary evidence, a 1-second idle break, and a 10-second maximum
+span, alongside command/Block/branch boundaries and optional descriptive editing
+boundaries. These are starting values for playback tuning, not undo settings.
+Use contextual segmentation on reconstructed text off the typing callback;
+convert UTF-16 offsets to canonical Cell coordinates. Do not treat every period
+as a sentence boundary: cover abbreviations, decimals, unfinished sentences,
+corrections, and languages without spaces. Do not split one exact transaction
+into separately replayable invented states, including a multi-sentence paste.
+
+For a fixed policy/version/options, only the open group may grow as new revisions
+arrive. A later correction forms a new revision/group instead of rewriting a
+finalized sentence state. Boundary calculations must be causal or use a specified
+bounded lookahead before finalization so rebuilding the same recorded prefix
+reproduces its finalized groups. Explicit regrouping under other options can
+produce another derived view without modifying original revisions.
+
+Existing undo/redo events are ordinary captured facts with their existing causes;
+the initial playback policy treats them as separate display actions. A current
+Undo may reverse only part of a displayed sentence, which is valid: playback
+membership neither determines nor constrains undo steps. Source commit links
+remain single-source as in Stage A. Stage D owns playback controls and animation.
 
 ## 7. Isolated query contract
 
@@ -411,19 +450,23 @@ word-diff renderer belongs to Stage D.
 | Compact parity | Off/full/compact subscriptions; dual observers share commit identity; compact replay equals full replay and live graph at every revision of all Stage A scenarios. |
 | Patch correctness | Unicode/IME coordinates, annotation offsets, absent/null fields, inline images, repeated writes, roots, deletion, transient records, undo/redo, strict IDs, malformed hints, stale preconditions, unknown versions. |
 | Capture overhead | Compact-only supported typing never constructs full events or copies unchanged sequence arrays; no added whole-Document scan/snapshot/hash/serialization. Unsupported cases use explicit exact fallback. |
-| Grouping | Fake-clock pause thresholds; word separators, corrections, deletion direction, move-away-and-back, shared views, paste, composition, multi-selection, structural boundaries, grouped undo failure, source IDs. |
-| Playback | Sentence hints/abbreviations/decimals/CJK, idle/max span, branch boundaries, finalized-group stability, constituent revision access, independence from undo groups. |
+| Grouping abstraction | Policy/version/scope-specific group identity and caches; valid ordered member IDs and endpoint; regrouping never alters exact revisions, checkpoints, ancestry, or replay. No undo-stack access. |
+| Playback | Sentence hints/abbreviations/decimals/CJK, captured-time idle/max span, branch boundaries, finalized-group stability, endpoint presentation, and independent replay of every constituent revision. |
+| Optional hints | Grouping succeeds with hints absent; captured changes/timestamps/reconstructed state provide the baseline. Where hints exist, test paste, selection replacement, composition, cursor/focus relocation, shared views, and structural boundaries without changing commits or undo behavior. |
+| Undo/redo regression | Same step count, state after each undo/redo, single-source causes, failure/stack preservation, redo invalidation, and immediate commit behavior with grouping absent, enabled, or recomputed. |
 | Replay/checkpoints | Baseline and every checkpoint yield identical states; out-of-order delivery, duplicate IDs, missing parents, capture gaps, sibling-branch checkpoints, repeated counters, fork-from-old-revision. |
 | Query semantics | A/B/B1/B2/C movement scenarios; deleted roots without live keys; not-yet-created versus unknown; cut/reinsert; shared parent routes; cycles, margins, annotations, assets, missing dependencies. |
 | Isolation/lifecycle | Query/scrub simulations leave current snapshot/revision, undo/redo availability, dirty state, selection/focus, and occurrence indexes unchanged; disposal and queue/capacity errors do not mutate the editor. |
-| Regression | Stage A command/codec/persistence tests, fast-route rejection/performance guards, and input/rendering tests affected by grouping integration. |
+| Regression | Stage A command/codec/persistence and undo/redo tests, fast-route rejection/performance guards, and input/rendering tests only where optional hint plumbing changes existing code. |
 
 Extend typing measurements to off/full/compact using the same normalized fixtures,
 warm-ups, sample counts, and off-callback serialization. Add dense annotations,
 large sibling lists, and mixed structural edits. Report capture-specific copying,
-median/p95 total latency, encoded bytes, fallback rate, retained undo bytes, and
-queue high-water marks separately. Keep the Stage A JSON artifact unchanged and
-write a separate Stage B measurement artifact when implementation is verified.
+median/p95 total latency, encoded bytes, fallback rate, retained history/group
+cache bytes, and queue high-water marks separately. Existing undo memory costs
+may be reported as context; optimizing the undo stack is outside Stage B. Keep
+the Stage A JSON artifact unchanged and write a separate Stage B measurement
+artifact when implementation is verified.
 
 A structural gate is required: for a single-character edit with fixed annotation
 count, compact payload and capture-owned sequence copying scale with the edit,
@@ -446,9 +489,10 @@ npm run benchmark:typing
 npm run benchmark:history
 ```
 
-Add affected existing input/rendering tests and a real browser word-undo/IME check
-when the gateway integration lands. No Stage D history-panel browser test is
-required before that UI exists.
+Add affected existing input/rendering and browser IME/undo-regression checks
+only if optional gateway hint plumbing lands. Verify that input commits and undo
+steps remain unchanged. No Stage D history-panel browser test is required before
+that UI exists.
 
 ## 10. Implementation sequence and exit criteria
 
@@ -458,19 +502,22 @@ required before that UI exists.
    compatibility. Run Stage A exactness and fast-path guards; measure long typing.
 3. Implement explicit in-memory enrollment, ordered bounded ingest, ancestry,
    isolated replay, checkpoints, capacity/gap reporting, and disposal.
-4. Implement pure grouping policies, then opt-in input metadata and atomic grouped
-   undo/redo. Recheck source causes and every-revision capture after integration.
+4. Implement the policy-neutral derived grouping layer and initial sentence policy
+   using captured revisions, timestamps, and reconstructed state first. Add only
+   inexpensive optional intent hints, then verify unchanged undo/redo behavior.
 5. Implement historical identity/location resolution, dependency closure, timeline
    relevance, grouped timeline output, and before/after comparison.
 6. Run branch/checkpoint, query isolation, grouping, and performance evidence;
    write `BLOCK_SCOPED_HISTORY_STAGE_B_COMPLETION.md` only when verified.
 
 Stage B is complete when compact replay equals every exact committed state;
-supported long-paragraph typing avoids full sequence capture; word undo and
-sentence playback have independent tested boundaries; all member revisions remain
-addressable; historical subtree/location/dependency queries are correct on each
-branch and leave current state untouched; observer/store failures and capacities
-are explicit; regressions/type checks pass; and measured costs are recorded.
+supported long-paragraph typing avoids full sequence capture; sentence playback
+groups derive from a policy-neutral layer that works without input hints or undo
+integration; every exact revision remains independently addressable and replayable;
+existing undo/redo behavior, stack semantics, and source causes are unchanged;
+historical subtree/location/dependency queries are correct on each branch and
+leave current state untouched; observer/store failures and capacities are explicit;
+regressions/type checks pass; and measured costs are recorded.
 
 The completion report must distinguish implemented in-memory behavior from the
 remaining durable Stage C protocol and Stage D–E product integration. Planning
