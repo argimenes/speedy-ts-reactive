@@ -108,9 +108,12 @@ P's subtree therefore does not include Q after the split. A `splitInto` lineage
 event links to Q so the biography can explain where the text went. Joins,
 copies, and transfers require analogous provenance links.
 
-Before creation, return `not-yet-created`; after deletion of an owned occurrence,
-return `deleted` with the last available state link. Removing one reference is
-not necessarily deleting the shared content. A group selection is an ordered
+Before creation on an explicitly selected descendant branch, return
+`not-yet-created`; without that evidence, do not infer creation time from a
+sibling branch. After deletion of an owned occurrence, return `deleted` with the
+last available state link. A moved placement's former route is absent, not proof
+that its Block content was deleted. Removing one reference is not necessarily
+deleting the shared content. A group selection is an ordered
 set of selected roots at a common revision, not a fabricated historical parent;
 support that UI after the single-root milestone.
 
@@ -283,9 +286,15 @@ paragraph cost now makes versioned compact changes a prerequisite in Stage B.
 Capture sequence splices, inserted/deleted Cell records, changed fields and
 annotations, and final revision values directly at the validated repository
 boundary. Avoid constructing full before/after paragraph copies merely to diff
-or group them later. Include expected-base checks and a full touched-record
-fallback for unsupported operations. Preserve the Stage A full-record observer
-as a compatibility/debugging option; compact-only capture must not build it.
+or group them later. Inline fast-path eligibility alone does not prove payload
+fields or counters unchanged. Verify that each changed canonical field is
+represented, including inline revision and field-presence distinctions; fall
+back to a full touched-record change when that proof fails. Include expected-base
+checks. Preserve the Stage A full-record observer as a compatibility/debugging
+option; compact-only capture must not build it. When both formats are observed,
+derive them from one immutable commit envelope so their ID, timestamp, cause,
+commands, root, and revision counters agree. A failure in one format must not
+suppress successful delivery of the other.
 
 Semantic command descriptions supplement exact change data. They cannot authorize
 an unverified patch, and replay must not rerun text-edit commands or annotation
@@ -319,6 +328,10 @@ unsaved archived head exists starts a new state branch from the saved revision.
 Therefore distinguish `previousJournalRevisionId` from `stateParentRevisionId`.
 Replay follows state-parent ancestry; the UI can show branch origins and the
 previous unsaved material without applying its changes to the reopened file.
+In an in-memory fork spike, each enrolled producer has its own current state
+parent. A segment's latest append must never become another producer's replay
+parent merely because its record was appended last. Interleaved commits from an
+original producer and a fork must reconstruct each branch independently.
 
 An external file edit is an import revision only if it can be reconciled against
 a known baseline. Otherwise establish a new checkpoint with an explicit gap or
@@ -510,6 +523,13 @@ ancestry, replay the remaining verified deltas into an isolated graph, validate
 it, then extract the historical root and dependency closure. Never apply these
 deltas to the live editor. Optimize later using indexed content versions and
 membership intervals without changing query semantics.
+Historical content existence and occurrence availability are separate: a Block
+can move, retain other references, or have a ContentRecord with no reachable
+placement. `not-yet-created` depends on the selected branch head, not on a
+creation observed on a sibling branch. Location queries must resolve every
+historical root-to-placement route when shared ancestors yield more than one
+occurrence. All public state and fragment results must be immutable at runtime;
+callers cannot mutate replay caches or another query's result.
 
 Timeline indexing must consider old and new ancestry. A child moved out of B
 contributes a departure event to B; later unrelated edits to that child outside
@@ -523,6 +543,12 @@ content at the same revision. A missing dependency produces an explicit result
 diagnostic, not a fallback to a live registry. Full-history cached results are
 keyed by memoir/revision/root/options, never by the resettable runtime revision
 counter alone.
+Distinguish a gap in exact graph/replay evidence from an unavailable display
+dependency. An external asset or unresolved definition can leave an exact
+historical graph available with a warning; a missing parent revision or graph
+record makes exact reconstruction incomplete. Follow known reference forms only,
+not arbitrary opaque IDs. Measure full-graph validation across replay length
+before fixing checkpoint intervals for durable storage.
 
 Suggested initial tunables: journal batching around 250 ms or 1 MiB and checkpoints
 after 500 transactions or 8 MiB of replay data. These are starting values for
