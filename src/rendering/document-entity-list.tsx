@@ -8,6 +8,7 @@ import "./document-entity-list.css";
 function EntityListWindow(props: { editor: ReactiveEditor }) {
   const list = props.editor.entityList, state = list.state;
   const rows = createMemo(() => list.sortedRows());
+  const focusScope = () => state.pageKey ? "Page" : "Document";
   const [position, setPosition] = createSignal({ x: Math.max(8, window.innerWidth - 388), y: 64 });
   const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
   let root!: HTMLElement;
@@ -58,7 +59,7 @@ function EntityListWindow(props: { editor: ReactiveEditor }) {
           <For each={rows()}>{row => <tr tabIndex={0} classList={{ active: state.active === row.id }}
             onPointerEnter={() => list.preview(row.id)} onPointerLeave={event => { if (state.active === row.id && document.activeElement !== event.currentTarget) list.clearPreview(); }}
             onFocus={() => list.preview(row.id)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null) && !event.currentTarget.matches(":hover")) list.clearPreview(); }}>
-            <td title={`${row.name} (${row.id})`}>{row.name}<button type="button" class="document-entity-list__focus" aria-label={`Focus occurrences of ${row.name} on current Page`} title={`Focus occurrences of ${row.name} on current Page`} disabled={!list.pageOccurrenceCount(row.id)} aria-pressed={state.concertinaEntityId === row.id} onClick={() => list.focusOccurrences(row.id)} /></td>
+            <td title={`${row.name} (${row.id})`}>{row.name}<button type="button" class="document-entity-list__focus" aria-label={`Focus occurrences of ${row.name} on current ${focusScope()}`} title={`Focus occurrences of ${row.name} on current ${focusScope()}`} disabled={!list.pageOccurrenceCount(row.id)} aria-pressed={state.concertinaEntityId === row.id} onClick={() => list.focusOccurrences(row.id)} /></td>
             <td>{row.graphMentions ?? "—"}</td>
             <td>{row.documentMentions}</td>
           </tr>}</For>

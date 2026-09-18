@@ -68,10 +68,10 @@ export class DocumentFind {
   }
   private applyConcertina() {
     const result = this.state.result;
-    const pageKey = this.state.pageKey;
-    if (!this.state.concertinaRequested || !result?.matches.length || !pageKey) return;
-    const scope = resolveSearchScope(this.editor, pageKey, "page");
-    const markers = filterPositionMarkersToScope(searchMatchesToPositionMarkers(result.matches), scope, nodeKeysForPage(this.editor, pageKey));
+    const rootKey = this.state.pageKey ?? this.state.scope?.rootKey;
+    if (!this.state.concertinaRequested || !result?.matches.length || !rootKey) return;
+    const scope = resolveSearchScope(this.editor, rootKey, "page");
+    const markers = filterPositionMarkersToScope(searchMatchesToPositionMarkers(result.matches), scope, nodeKeysForPage(this.editor, scope.rootKey));
     const applied = this.editor.concertina.activate({ owner: this.owner, viewId: scope.viewId, scope,
       markers, activeMarkerOrGroup: result.matches[this.state.active]?.id });
     if (applied) this.editor.minimap.setLayerVisible(this.owner, false);
@@ -118,7 +118,8 @@ export class DocumentFind {
     const revealed = await revealMatch(this.editor, match, () => this.state.result === result && this.state.active === index && this.state.open);
     if (this.state.result !== result || this.state.active !== index || !this.state.open) return;
     if (this.state.concertinaRequested) {
-      const pageNodes = this.state.pageKey ? nodeKeysForPage(this.editor, this.state.pageKey) : undefined;
+      const rootKey = this.state.pageKey ?? this.state.scope?.rootKey;
+      const pageNodes = rootKey ? nodeKeysForPage(this.editor, resolveSearchScope(this.editor, rootKey, "page").rootKey) : undefined;
       if (!match.ranges.some(range => pageNodes?.has(range.nodeKey))) this.toggleConcertina();
       else this.editor.concertina.setActiveMarker(match.id);
     }

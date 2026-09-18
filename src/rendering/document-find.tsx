@@ -82,7 +82,7 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
           <label><input type="checkbox" checked={!!state.options.regex} onChange={e => find.setOption("regex", e.currentTarget.checked)} />Regex</label>
           <Show when={state.options.regex}><label><input type="checkbox" checked={!!state.options.multiline} onChange={e => find.setOption("multiline", e.currentTarget.checked)} />Multiline ^/$</label><label><input type="checkbox" checked={!!state.options.dotAll} onChange={e => find.setOption("dotAll", e.currentTarget.checked)} />Dot matches newline</label></Show>
           <label><input type="checkbox" checked={state.visible} onChange={() => find.toggleHighlights()} />Highlights</label>
-          <button type="button" aria-label="Concertina matching Blocks on current Page" aria-pressed={state.concertinaRequested} disabled={!state.pageKey} title="Show matching Blocks on the current Page in context" onClick={() => find.toggleConcertina()}>Concertina</button>
+          <button type="button" aria-label={`Concertina matching Blocks on current ${state.pageKey ? "Page" : "Document"}`} aria-pressed={state.concertinaRequested} disabled={!state.scope} title={`Show matching Blocks on the current ${state.pageKey ? "Page" : "Document"} in context`} onClick={() => find.toggleConcertina()}>Concertina</button>
           <output aria-live="polite">{state.pending ? "Searching…" : `${Math.max(0, state.active + 1)} of ${state.result?.matches.length ?? 0}${state.result && !state.result.exact ? " (partial)" : ""}`}</output>
         </div>
         <small>{state.scope?.label}. {state.scope?.fallback} {hidden() ? `${hidden()} matches in hidden content; Next/Previous reveals them.` : ""}</small>

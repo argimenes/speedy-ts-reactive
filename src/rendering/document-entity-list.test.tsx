@@ -9,16 +9,17 @@ import { registerCoreViews } from "./register-core-views";
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(dispose => dispose()); document.body.replaceChildren(); vi.unstubAllGlobals(); localStorage.clear(); });
 
-function setup(fail = false) {
+function setup(fail = false, pageless = false) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: !fail, json: async () => fail ? { Success: false, Error: "Graph offline" } : { Success: true, Results: [{ id: "alpha", name: "Alpha", mentions: 10 }, { id: "beta", name: "Beta", mentions: 2 }] } }));
-  const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "page", type: "page-block", children: [
+  const page = { id: "page", type: "page-block", children: [
     { id: "a", type: "standoff-editor-block", text: "Alpha Beta", standoffProperties: [
       { id: "alpha-ref", type: "codex/entity-reference", value: "alpha", metadata: { entityName: "Alpha cached" }, start: 0, end: 4 },
       { id: "beta-ref-1", type: "codex/entity-reference", value: "beta", metadata: { entityName: "Beta cached" }, start: 6, end: 9 },
     ] },
     { id: "b", type: "standoff-editor-block", text: "Beta", standoffProperties: [{ id: "beta-ref-2", type: "codex/entity-reference", value: "beta", start: 0, end: 3 }] },
     { id: "c", type: "standoff-editor-block", text: "No entity" },
-  ] }] });
+  ] };
+  const editor = new ReactiveEditor({ type: pageless ? "main-list-block" : "document-block", children: pageless ? page.children : [page] });
   registerCoreViews(editor); const projection = editor.createView("entity-list-test"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <><DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} /><ReactiveTreeView editor={editor} projection={projection} /></>, host);
   const uninstall = editor.installGateway(document); cleanup.push(() => { uninstall(); dispose(); editor.dispose(); });
@@ -88,5 +89,21 @@ describe("document entity listing", () => {
     button.click();
     expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(false);
     expect(editor.repository.state.revision).toBe(before);
+  });
+  it("focuses and navigates a legacy letter without a Page, without changing authored content or undo", async () => {
+    const { editor, node, panel } = setup(false, true);
+    editor.entityList.open(node("a").key);
+    await vi.waitFor(() => expect(panel().querySelector('[aria-label="Focus occurrences of Beta on current Document"]')).toBeTruthy());
+    expect(editor.entityList.state.pageKey).toBeUndefined();
+    const before = editor.repository.snapshot();
+    const button = panel().querySelector<HTMLButtonElement>('[aria-label="Focus occurrences of Beta on current Document"]')!;
+    expect(button.disabled).toBe(false); button.click();
+    await vi.waitFor(() => expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(true));
+    expect((editor.mounts.get(node("a").key)!.root as HTMLElement).hidden).toBe(false);
+    expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(false);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    editor.entityList.navigateConcertina(1); expect(editor.entityList.state.concertinaIndex).toBe(1);
+    button.click(); expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(false);
+    expect(editor.repository.snapshot()).toEqual(before); expect(editor.repository.canUndo()).toBe(false);
   });
 });

@@ -8,14 +8,15 @@ import { keyboard } from "../input/bindings";
 vi.mock("../runtime/search-worker", () => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0], query: string, options: Parameters<typeof matchSources>[2]) => matchSources(sources, query, options) }));
 const cleanup: (() => void)[] = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); localStorage.clear(); });
-function setup() {
-  const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "page", type: "page-block", children: [
+function setup(pageless = false) {
+  const pages = [{ id: "page", type: "page-block", children: [
     { id: "a", type: "standoff-editor-block", text: "Hello world" },
     { id: "tabs", type: "tab-row-block", children: [{ id: "first", type: "tab-block", metadata: { name: "First" }, children: [] }, { id: "second", type: "tab-block", metadata: { name: "Second" }, children: [{ id: "b", type: "standoff-editor-block", text: "Hello hidden" }] }] },
     { id: "c", type: "standoff-editor-block", text: "No match" },
   ] }, { id: "other-page", type: "page-block", children: [
     { id: "other", type: "standoff-editor-block", text: "Hello elsewhere" },
-  ] }] });
+  ] }];
+  const editor = new ReactiveEditor({ type: pageless ? "main-list-block" : "document-block", children: pageless ? pages[0].children : pages });
   registerCoreViews(editor); const projection = editor.createView("find-ui"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
   cleanup.push(() => { dispose(); editor.dispose(); });
@@ -96,5 +97,21 @@ describe("document Find UI", () => {
     await editor.find.navigate(-1);
     expect(editor.find.state.concertinaRequested).toBe(false);
     expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(false);
+  });
+  it("uses the existing Document fallback for Concertina and navigation in letters without Pages", async () => {
+    const { editor, node, panel } = setup(true);
+    editor.find.open(node("a").key); editor.find.setQuery("Hello"); await editor.find.flush();
+    expect(editor.find.state.pageKey).toBeUndefined();
+    expect(editor.find.state.scope?.fallback).toContain("No enclosing Page");
+    const before = editor.repository.snapshot();
+    const button = panel()!.querySelector<HTMLButtonElement>('[aria-label="Concertina matching Blocks on current Document"]')!;
+    expect(button.disabled).toBe(false); button.click();
+    await vi.waitFor(() => expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(true));
+    await editor.find.navigate(-1);
+    expect(editor.mounts.get(node("b").key)).toBeDefined();
+    expect(editor.find.state.concertinaRequested).toBe(true);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    editor.find.close(false); expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(false);
+    expect(editor.repository.snapshot()).toEqual(before); expect(editor.repository.canUndo()).toBe(false);
   });
 });

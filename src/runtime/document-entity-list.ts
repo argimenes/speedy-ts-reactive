@@ -147,9 +147,9 @@ export class DocumentEntityList {
   }
 
   pageRanges(row: EntityListRow): SearchRange[] {
-    const pageKey = this.state.pageKey;
-    if (!pageKey) return [];
-    const keys = nodeKeysForPage(this.editor, pageKey);
+    const rootKey = this.state.pageKey ?? this.state.scope?.rootKey;
+    if (!rootKey) return [];
+    const keys = nodeKeysForPage(this.editor, rootKey);
     return row.ranges.filter(range => keys.has(range.nodeKey));
   }
 
@@ -164,9 +164,11 @@ export class DocumentEntityList {
   }
 
   private applyConcertina(row: EntityListRow) {
-    const pageKey = this.state.pageKey;
-    if (!pageKey || !row.ranges.length) return;
-    const scope = resolveSearchScope(this.editor, pageKey, "page");
+    const rootKey = this.state.pageKey ?? this.state.scope?.rootKey;
+    if (!rootKey || !row.ranges.length) return;
+    // Legacy flowing Documents have no Page wrapper. Use the same Document
+    // fallback as Find's Page scope; never widen a real Page to its Document.
+    const scope = resolveSearchScope(this.editor, rootKey, "page");
     const ranges = this.pageRanges(row);
     const markers = entityRangesToPositionMarkers(row.id, ranges);
     if (!markers.length) { this.clearConcertina(); return; }

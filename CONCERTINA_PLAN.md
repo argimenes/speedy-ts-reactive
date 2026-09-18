@@ -12,6 +12,31 @@ opening another Page through Find navigation ends the current concertina mode.
 The chosen Page is captured from the invoking Block/focus, with a visible-Page
 fallback for Document-level controls. No Document or Workspace field is saved.
 
+**18 September correction — Documents without Pages:** Legacy Michelangelo
+letters use a `main-list-block` (decoded as a Document) with direct Standoff
+children and no Page wrapper. Entity Focus previously returned zero eligible
+ranges and Find disabled Concertina when `pageKey` was absent. Both now use the
+existing Page-search fallback to the current Document for that layout. Labels
+say “current Document”; Documents with Pages still use only the captured current
+Page. Navigation retains the fallback instead of turning the mode off. This is
+temporary presentation only: no inserted Page wrappers, authored changes, undo
+entries or saved preference changes.
+
+Focused coverage: pageless legacy-letter Entity Focus/Find controls, navigation,
+layout restoration and unchanged repository/undo; existing Page-scope tests.
+`scripts/check-concertina.mjs` measures real browser clipping and inter-Block
+spacing with Workspace CSS (`CONCERTINA_PAGELESS=1` exercises direct Document
+children). Its optional `CONCERTINA_DOCUMENT` input loads a saved Document into
+an isolated in-memory editor, stubs read-only entity summaries, and never saves it.
+The 15 July 1559 Michelangelo letter reproduces the reported layout: both controls
+now hide ten unmatched Blocks and clip one tall matching Block.
+Browser measurements: the letter's 1,319px natural layout becomes 691px with
+Entity Focus / 694px with Find, then returns to 1,319px; the repository snapshot
+and undo state remain unchanged. The synthetic pageless fixture clips a 1,642px
+paragraph to 200px and reduces inter-match-Block separation from 564px to 12px,
+with next-occurrence scrolling and full layout restoration verified. All 15
+focused tests, typecheck and client/server build pass.
+
 The service request already carries an explicit `SearchScope` root, so a later
 Page/Document boundary selector can be added without changing marker producers.
 Document-wide mode is intentionally deferred until cross-Page navigation,
