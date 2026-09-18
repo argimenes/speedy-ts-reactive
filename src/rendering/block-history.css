@@ -39,3 +39,9 @@
 
 .block-history-session { display: flex; gap: .75rem; align-items: center; padding: 0 1rem .75rem; }
 .block-history-session select { max-width: 100%; padding: .35rem; }
+
+.block-history-restore { margin: .75rem 0; }
+.block-history-restore-confirmation { margin-top: .75rem; padding: .75rem; border: 1px solid #829c9e; border-radius: 4px; }
+.block-history-restore-confirmation code { overflow-wrap: anywhere; }
+.block-history-restore-confirmation button + button { margin-left: .5rem; }
+.block-history-restore-notice { padding: .5rem 1rem; }

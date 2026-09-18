@@ -1,3 +1,5 @@
+import type { HistoryChanges } from "../block-tree/compact-changes";
+import type { DeepReadonly } from "../block-tree/commit-capture";
 /** Main-thread bridge: immutable compact capture only; durable work and reads live
  * in the worker. A 64-message ceiling is a visible stopped enrollment, never loss. */
 import { freeze } from "../block-tree/commit-capture";
@@ -20,6 +22,7 @@ export interface DurableHistorySource extends SessionHistoryRecorder {
   open(selection: HistorySelection, signal?: AbortSignal, segmentId?: string): Promise<ReadonlyHistorySession>;
   sessions(): Promise<DurableSegment[]>;
   save(filename: string, folder: string, createOnly?: boolean, captured?: RepositoryState): Promise<{ document: HistoryDocumentEnvelope; revision: number; warning?: string }>;
+  preflightRestore?(proposal: DeepReadonly<HistoryChanges>, signal?: AbortSignal): Promise<void>;
   status(): Readonly<DurableRecorderStatus>;
   subscribeStatus(listener: (status: Readonly<DurableRecorderStatus>) => void): () => void;
 }
@@ -101,6 +104,7 @@ export async function createDurableHistorySource(repository: CanonicalRepository
   catch (error) { unsubscribe(); window.removeEventListener("pagehide", pageHide); worker.terminate(); throw error; }
   return Object.freeze({
     status: () => status,
+    preflightRestore: (proposal: DeepReadonly<HistoryChanges>, signal?: AbortSignal) => rpc("preflightRestore", { proposal }, signal),
     subscribeStatus(listener: (status: Readonly<DurableRecorderStatus>) => void) { listeners.add(listener); listener(status); return () => listeners.delete(listener); },
     sessions: () => rpc("sessions"),
     async save(filename: string, folder: string, createOnly = false, captured?: RepositoryState) {
@@ -116,6 +120,7 @@ export async function createDurableHistorySource(repository: CanonicalRepository
         get status() { return failure ? "incomplete" as const : "available" as const; },
         get message() { return `Persistent Document history. This view has a fixed, server-verified head. ${failure ?? ""}`; },
         async timeline(options: { cursor?: string; limit?: number; signal?: AbortSignal } = {}) { return freeze(await rpc("timeline", { readerId: opened.readerId, cursor: options.cursor, limit: options.limit }, options.signal)); },
+        readAuthoredBlock: (revisionId: string, options: { signal?: AbortSignal } = {}) => rpc("readAuthoredBlock", { readerId: opened.readerId, revisionId }, options.signal).then(freeze),
         async select(revisionId: string, options: { signal?: AbortSignal } = {}) {
           const start = performance.now(), result = await rpc("select", { readerId: opened.readerId, revisionId }, options.signal);
           const received = performance.now(); if (result.timing) result.timing.roundTripMs = received - start;

@@ -35,7 +35,7 @@ function HistoryPanel(props: { editor: ReactiveEditor }) {
     <div ref={root} class="block-history-panel" role="dialog" aria-modal="true" aria-label="Block history" tabIndex={-1} data-native-context-menu onKeyDown={keys}>
       <header class="block-history-header"><div><span class="block-history-eyebrow">BLOCK HISTORY <span class="block-history-badge">{state.storage === "persistent" ? "Persistent" : "Session-only"}</span></span><h2>{state.title}</h2></div><button type="button" aria-label="Close Block history" onClick={() => history.close()}>×</button></header>
       <p class="block-history-notice">{state.storage === "persistent"
-        ? "History is recorded separately from Save. Earlier recording sessions remain available after reopening; unsaved historical edits are never applied to your current Document."
+        ? "History is recorded separately from Save. Earlier recording sessions remain available after reopening. Browsing never changes your Document; restoring requires confirmation."
         : "Recording starts when History is first opened. Close this panel, make edits, then reopen History to see them. This history is lost when the Document session closes or the page reloads. Save the Document to use persistent history."}</p>
       <Show when={state.storage === "persistent" && state.sessions.length}>
         <label class="block-history-session">Recording session <select aria-label="Recording session" value={state.segmentId} disabled={state.loading} onChange={event => void history.chooseSession(event.currentTarget.value)}>
@@ -67,11 +67,23 @@ function HistoryPanel(props: { editor: ReactiveEditor }) {
                 </Show>
               </Show>
             </div>
+            <div class="block-history-restore">
+              <button type="button" disabled={!!history.restoreReason() || state.restoring || state.selecting || state.loading} onClick={() => void history.prepareRestore()}>Restore this Block…</button>
+              <Show when={history.restoreReason()}>{reason => <p class="block-history-muted">{reason()}</p>}</Show>
+              <Show when={state.restoring}><p role="status">Checking the historical source and current Block…</p></Show>
+              <Show when={state.restoreConfirmation}>{confirmation => <div role="group" aria-label="Confirm Block restore" class="block-history-restore-confirmation">
+                <p>Restore <strong>{confirmation().label}</strong> to this Block?</p>
+                <p>Historical revision <code>{confirmation().revisionId}</code> will become a new current change after Document revision {confirmation().currentRevision}. Your current version remains available in History and Undo. This does not rewind or truncate History.</p>
+                <button type="button" onClick={() => history.confirmRestore()}>Confirm Restore this Block</button>
+                <button type="button" onClick={() => history.cancelRestore()}>Cancel restore</button>
+              </div>}</Show>
+            </div>
             <div class="block-history-compare"><section aria-label="Selected historical state"><h4>Selected revision</h4><CompactPreviewView value={result().selected} /></section><section aria-label="Latest recorded state"><h4>Latest recorded state · fixed on opening</h4><CompactPreviewView value={result().comparison.after} /></section></div>
           </>}</Show>
         </section>
       </div>
-      <footer><span>Read-only preview · Your current Document is unchanged.</span><details><summary>Recording status</summary><p>{state.message}</p><Show when={state.recording}>{status => <p>{status().message} Browser committed: {status().browserCommitted}; server durable: {status().serverDurable}; verified: {status().verified}; pending: {status().pendingCount + status().pendingCapture}.</p>}</Show></details></footer>
+      <Show when={state.restoreNotice}><p role="status" class="block-history-restore-notice">{state.restoreNotice} <button type="button" disabled={history.hasPendingCapture() || state.loading || state.selecting} onClick={() => void history.latest()}>Show latest revisions</button></p></Show>
+      <footer><span>Immutable historical preview · Restore creates a new current change.</span><details><summary>Recording status</summary><p>{state.message}</p><Show when={state.recording}>{status => <p>{status().message} Browser committed: {status().browserCommitted}; server durable: {status().serverDurable}; verified: {status().verified}; pending: {status().pendingCount + status().pendingCapture}.</p>}</Show></details></footer>
     </div>
   </div>;
 }

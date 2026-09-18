@@ -1,3 +1,4 @@
+import { historicalBlockSource, type HistoricalBlockSource } from "./block-restore";
 /** Temporary, finite, session-only bridge from the live editor to the existing
  * read-only query contracts. This is NOT a durable resource reader: the bounded
  * source log may contain Workspace commits, but queries expose one closed
@@ -34,6 +35,7 @@ export interface ReadonlyHistorySession {
   timeline(options?: { cursor?: string; limit?: number; signal?: AbortSignal }): Promise<{
     entries: readonly DeepReadonly<SessionTimelineEntry>[]; nextCursor?: string; headRevisionId: string;
   }>;
+  readAuthoredBlock?(revisionId: string, options?: { signal?: AbortSignal }): Promise<DeepReadonly<HistoricalBlockSource>>;
   select(revisionId: string, options?: { signal?: AbortSignal }): Promise<HistoryDisplayResult>;
 }
 export interface SessionHistoryRecorder {
@@ -183,7 +185,7 @@ export function createSessionHistorySource(repository: CanonicalRepository, docu
         return new HistoryQueries(source);
       };
       return Object.freeze({
-        storage: "session-only" as const, headRevisionId,
+        storage: "session-only" as const, headRevisionId, segmentId,
         get status() { return gap ? "incomplete" as const : "available" as const; },
         get message() { return `Session-only history starts when History is first opened. Earlier edits and history after a reload are unavailable. Temporary occurrence identities apply only to this session. ${gap ?? `Finite limit: ${limits.maxEvents} source commits; no pruning.`}`; },
         async timeline(options: { cursor?: string; limit?: number; signal?: AbortSignal } = {}) {
@@ -213,6 +215,11 @@ export function createSessionHistorySource(repository: CanonicalRepository, docu
           }
           aborted(options.signal);
           return freeze({ entries, ...(next <= headIndex ? { nextCursor: ids[next - 1] } : {}), headRevisionId });
+        },
+        async readAuthoredBlock(revisionId: string, options: { signal?: AbortSignal } = {}) {
+          assertActive(); await yieldTask(options.signal);
+          const result = await queriesFor(options.signal).getSubtreeAt(request(revisionId));
+          aborted(options.signal); return historicalBlockSource(result, segmentId);
         },
         async select(revisionId: string, options: { signal?: AbortSignal } = {}): Promise<HistoryDisplayResult> {
           assertActive(); await yieldTask(options.signal);

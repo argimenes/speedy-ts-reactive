@@ -1,3 +1,5 @@
+import { planBlockRestore, type BlockRestorePlan, type LeafAuthoredState } from "./block-restore";
+import { type DeepReadonly } from "./commit-capture";
 import { clone } from "./clone";
 import { ownNewDefinitions } from "./definition-ownership";
 import { planCrossTextEdit, type CrossTextSegment } from "./cross-text-edit";
@@ -94,6 +96,18 @@ function mapStandoffPropertiesForReplacement(
 
 export class TreeCommands {
   private pending?: PendingTransaction;
+  private restorePlans = new WeakSet<object>();
+  prepareBlockRestore(placementKey: string, blockId: string, source: DeepReadonly<LeafAuthoredState>): DeepReadonly<BlockRestorePlan> {
+    if (this.pending) throw new TreeCommandError("Finish the current transaction before preparing a restore");
+    const plan = planBlockRestore(this.repository.readState(), placementKey, blockId, source);
+    this.restorePlans.add(plan); return plan;
+  }
+  restoreBlock(plan: DeepReadonly<BlockRestorePlan>): void {
+    if (!this.restorePlans.has(plan) || this.pending || this.repository.state.revision !== plan.expectedRevision) throw new TreeCommandError("The Document changed. Prepare and confirm the restore again.");
+    this.restorePlans.delete(plan);
+    this.publish("Restore this Block", clone(plan.operations) as RepositoryOperation[], clone(plan.descriptor) as CommandDescriptor);
+  }
+
 
   replaceAcrossBlocks(segments: CrossTextSegment[], text: string) {
     const state = this.pending?.draft ?? this.repository.readState();

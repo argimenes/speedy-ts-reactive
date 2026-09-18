@@ -1,3 +1,6 @@
+import type { BlockRestorePlan } from "../block-tree/block-restore";
+import type { DeepReadonly } from "../block-tree/commit-capture";
+import { restoreCaptureProposal } from "../history/restore-preflight";
 import type { HistoryDisplayResult } from "../history/preview";
 import { createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
@@ -11,6 +14,7 @@ import { blockAncestors } from "./block-menu-actions";
 import { createSessionHistorySource, type SessionHistoryRecorder, type ReadonlyHistorySession, type SessionTimelineEntry } from "../history/ui-session-source";
 
 type HistoryPanelState = {
+  restoring?: boolean; restoreNotice?: string; restoreConfirmation?: { revisionId: string; label: string; currentRevision: number };
   open: boolean; viewId?: string; title: string; message: string; error: string;
   loading: boolean; selecting: boolean; incomplete: boolean; entries: readonly SessionTimelineEntry[];
   nextCursor?: string; selectedRevisionId?: string; result?: HistoryDisplayResult;
@@ -34,6 +38,54 @@ export class BlockHistorySession {
   private statusDisposer?: () => void;
   private disposed = false;
   private selection?: HistorySelection;
+  private target?: { placementKey: string; contentKey: string; blockId: string };
+  private pendingRestore?: { plan: DeepReadonly<BlockRestorePlan>; generation: number; revisionId: string };
+  restoreReason(): string | undefined {
+    if (this.state.storage !== "persistent" || !this.durable?.preflightRestore || !this.session?.readAuthoredBlock) return "Save and enroll this Document in persistent History before restoring.";
+    if (!this.state.result?.restore?.supported) return this.state.result?.restore?.reason ?? "Select an available historical Block.";
+    const status = this.state.recording;
+    if (this.state.incomplete || this.state.recordingError || !status || status.phase !== "recording" || status.pendingCount || status.pendingCapture || status.verified !== status.browserCommitted) return "Wait for healthy, durably verified current History before restoring.";
+  }
+  cancelRestore(): void {
+    if (this.state.restoring) { this.request?.abort(); this.generation++; }
+    this.pendingRestore = undefined; this.setState({ restoreConfirmation: undefined, restoring: false });
+  }
+  async prepareRestore(): Promise<void> {
+    if (this.state.restoring || this.state.selecting || this.state.loading) return;
+    this.cancelRestore();
+    const revisionId = this.state.selectedRevisionId, session = this.session, target = this.target;
+    const reason = this.restoreReason();
+    if (reason || !revisionId || !session?.readAuthoredBlock || !target) { this.setState("error", reason ?? "Reopen History for the current Block."); return; }
+    const currentRevision = this.editor.repository.state.revision;
+    this.request?.abort(); const request = this.request = new AbortController(), generation = ++this.generation;
+    this.setState({ restoring: true, error: "", restoreNotice: undefined });
+    try {
+      const source = await session.readAuthoredBlock(revisionId, { signal: request.signal });
+      if (generation !== this.generation || request.signal.aborted) return;
+      if (source.blockId !== target.blockId || source.revisionId !== revisionId || source.segmentId !== session.segmentId) throw Error("Historical source identity changed. Select the revision again.");
+      const live = this.editor.repository.readState();
+      if (live.revision !== currentRevision || live.placements[target.placementKey]?.contentKey !== target.contentKey) throw Error("The Document changed while preparing the restore. Prepare it again.");
+      const plan = this.editor.commands.prepareBlockRestore(target.placementKey, target.blockId, source.authored);
+      if (!plan.operations.length) { this.setState({ restoring: false, restoreNotice: "The current Block already matches this historical authored state. No change was made." }); return; }
+      await this.durable!.preflightRestore!(restoreCaptureProposal(live, plan), request.signal);
+      if (generation !== this.generation || request.signal.aborted) return;
+      if (this.editor.repository.state.revision !== currentRevision) throw Error("The Document changed while preparing the restore. Prepare it again.");
+      this.pendingRestore = { plan, generation, revisionId };
+      this.setState({ restoring: false, restoreConfirmation: { revisionId, currentRevision, label: this.state.entries.find(e => e.revisionId === revisionId)?.label ?? "Selected revision" } });
+    } catch (error) { if (generation === this.generation && !request.signal.aborted) { this.cancelRestore(); this.setState("error", (error as Error).message); } }
+  }
+  confirmRestore(): void {
+    const pending = this.pendingRestore;
+    try {
+      if (!pending || pending.generation !== this.generation || pending.revisionId !== this.state.selectedRevisionId || !this.state.open) throw Error("The selected revision changed. Prepare the restore again.");
+      const reason = this.restoreReason(); if (reason) throw Error(reason);
+      this.editor.commands.restoreBlock(pending.plan);
+      this.cancelRestore();
+      this.setState({ error: "", restoreNotice: `Restored revision ${pending.revisionId} as a new current change. The previous version remains in History and ordinary Undo. History itself was not changed.` });
+    } catch (error) { this.cancelRestore(); this.setState("error", (error as Error).message); }
+  }
+  async latest(): Promise<void> { if (this.state.recording?.segmentId && !this.hasPendingCapture()) await this.chooseSession(this.state.recording.segmentId); }
+
   private request?: AbortController;
   private generation = 0;
   private origin?: string;
@@ -100,6 +152,7 @@ export class BlockHistorySession {
   }
   async chooseSession(segmentId: string): Promise<void> {
     if (!this.durable || !this.selection) return;
+    this.cancelRestore();
     this.request?.abort();
     const request = this.request = new AbortController(), generation = ++this.generation;
     this.resultSignal[1](undefined);
@@ -121,6 +174,8 @@ export class BlockHistorySession {
     const node = this.editor.node(key);
     if (!node) return;
     this.close(false);
+    this.target = { placementKey: node.placementKey, contentKey: node.contentKey, blockId: String(node.payload.id) };
+    this.setState("restoreNotice", undefined);
     const menu = this.editor.overlays.overlays.find(o => o.viewType === "context-menu" && o.ownerKey === key);
     this.origin = menu?.returnFocusKey ?? (this.editor.node(this.editor.focus.state.focusedKey ?? "") ? this.editor.focus.state.focusedKey : key);
     const handle = this.editor.mounts.get(this.origin!);
@@ -161,6 +216,7 @@ export class BlockHistorySession {
   }
   async more(): Promise<void> {
     if (!this.session || !this.state.nextCursor || this.state.loading || this.state.selecting) return;
+    this.cancelRestore();
     const request = this.request = new AbortController(), generation = ++this.generation;
     this.setState({ loading: true, error: "" });
     try {
@@ -171,6 +227,7 @@ export class BlockHistorySession {
   }
   async select(revisionId: string): Promise<void> {
     if (!this.session) return;
+    this.cancelRestore();
     const start = performance.now();
     this.request?.abort();
     const request = this.request = new AbortController(), generation = ++this.generation;
@@ -190,6 +247,7 @@ export class BlockHistorySession {
   }
   close(restore = true): void {
     const wasOpen = this.state.open;
+    this.cancelRestore(); this.target = undefined;
     this.request?.abort(); this.generation++; this.session?.dispose?.(); this.session = undefined;
     this.resultSignal[1](undefined);
     this.setState({ open: false, loading: false, selecting: false, entries: [] });

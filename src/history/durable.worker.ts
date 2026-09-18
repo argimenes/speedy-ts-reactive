@@ -1,3 +1,6 @@
+import { historicalBlockSource } from "./block-restore";
+import { validateRestoreCapture } from "./restore-preflight";
+import { HISTORY_OUTBOX_DEFAULTS } from "./persistent-outbox";
 import { displaySelection } from "./preview";
 import { PersistentHistoryReader } from "./persistent-reader";
 /** One admitted Document. No editor/view capabilities; strict outbox, bounded
@@ -224,11 +227,19 @@ async function handle(data: any): Promise<any> {
     return { entries, ...(last < reader.segment.headSequence ? { nextCursor: String(last) } : {}), headRevisionId: reader.segment.headRevisionId };
   }
   if (data.kind === "closeReader") { readers.get(data.readerId)?.reader.clear(); readers.delete(data.readerId); return; }
-  if (data.kind === "select") {
+  if (data.kind === "preflightRestore") {
+    check(!stopped && !transportRejected, "History recording is stopped; cannot restore with guaranteed capture.");
+    const status = await outbox.status();
+    check(!status.pendingCount && status.verified === capture.localRevision && status.browserCommitted + 3 <= HISTORY_OUTBOX_DEFAULTS.maxRecords,
+      "Wait for current history to be durably verified; restore also needs room for its immediate Undo and Redo.");
+    validateRestoreCapture(state, sourceRevision, data.proposal, stateByteLength); return;
+  }
+  if (data.kind === "select" || data.kind === "readAuthoredBlock") {
     const reader = readers.get(data.readerId); check(reader, "History view expired; reopen History");
     const sequence = reader.ids.get(data.revisionId); check(sequence !== undefined, "Revision is outside this bounded timeline view");
     const start = performance.now();
     const result = await reader.reader.select(sequence, data.revisionId, activeRead?.controller.signal);
+    if (data.kind === "readAuthoredBlock") return historicalBlockSource(result.selected, reader.segment.segmentId);
     result.timing!.queueMs = start - data.receivedAt;
     const projectionStart = performance.now();
     const display = displaySelection(result, { resourceId: location.resourceId, memoirId, segmentId: reader.segment.segmentId, headRevisionId: reader.segment.headRevisionId });
@@ -256,7 +267,7 @@ self.onmessage = ({ data }) => {
   queue = queue.then(async () => {
     try {
       if (cancelledRequests.has(data.id)) throw new DOMException("History request cancelled", "AbortError");
-      if (["openReader", "sessions", "timeline", "select"].includes(data.kind)) activeRead = { id: data.id, controller: new AbortController() };
+      if (["openReader", "sessions", "timeline", "select", "readAuthoredBlock", "preflightRestore"].includes(data.kind)) activeRead = { id: data.id, controller: new AbortController() };
       const result = await handle(data); activeRead?.controller.signal.throwIfAborted();
       if (data.id) postMessage({ id: data.id, result });
     }

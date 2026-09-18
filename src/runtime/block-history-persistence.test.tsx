@@ -11,7 +11,10 @@ import type { ExistingBlockDto } from "../block-tree/types";
 
 const cleanup: (() => void)[] = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
-const dto: ExistingBlockDto = { id: "doc", type: "document-block", children: [{ id: "p", type: "standoff-editor-block", text: "Saved" }] };
+const dto: ExistingBlockDto = { id: "doc", type: "document-block", children: [{ id: "p", type: "standoff-editor-block", text: "Saved",
+  blockProperties: [{ type: "block/alignment/left " }, { type: "block/font/size", value: "h3", metadata: {}, isDeleted: false }],
+  standoffProperties: [{ type: "text/colour", start: 0, end: 4, value: "#ff0000", metadata: {}, text: "Save", plugin: null, isDeleted: false }],
+}] };
 function fixture() {
   const editor = new ReactiveEditor(dto), view = editor.createView("history-persistence");
   cleanup.push(() => editor.dispose());
@@ -92,5 +95,66 @@ describe("persistent history application seams", () => {
     expect(editor.persistence.savedDocument?.saved).toBeUndefined();
     const request = fetch.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(request[1].body as string).historyProof).toBeUndefined();
+  });
+});
+
+async function restoreFixture() {
+  const f = fixture();
+  const recorder = createSessionHistorySource(f.editor.repository, f.editor.repository.state.rootPlacementKey);
+  cleanup.push(() => recorder.dispose());
+  f.source.open = async selection => {
+    const session = await recorder.open(selection);
+    return { ...session, storage: "persistent" as const };
+  };
+  f.source.preflightRestore = vi.fn(async () => {});
+  f.controller.attachLocation({ folder: "notes", filename: "Real.json" });
+  f.controller.open(f.key); await vi.waitFor(() => expect(f.controller.state.result).toBeDefined());
+  const baseline = f.controller.state.entries[0].revisionId;
+  f.editor.commands.replaceInlineRange(f.key, 0, 5, "Current");
+  f.controller.close(false); f.controller.open(f.key);
+  await vi.waitFor(() => expect(f.controller.state.entries).toHaveLength(2));
+  await f.controller.select(baseline);
+  return { ...f, baseline };
+}
+describe("History restore confirmation seam", () => {
+  it("requires confirmation, commits once, and exposes Undo/Redo as normal present changes", async () => {
+    const f = await restoreFixture(), before = f.editor.repository.state.revision;
+    const host = document.body.appendChild(document.createElement("div"));
+    cleanup.push(render(() => <BlockHistoryLayer editor={f.editor} viewId={f.view.viewId} />, host));
+    const button = [...document.querySelectorAll("button")].find(b => b.textContent === "Restore this Block…")!;
+    expect(button.disabled).toBe(false); button.click();
+    await vi.waitFor(() => expect(f.controller.state.restoreConfirmation?.revisionId).toBe(f.baseline));
+    expect(f.editor.repository.state.revision).toBe(before);
+    expect(document.querySelector('[aria-label="Confirm Block restore"]')?.textContent).toContain("does not rewind or truncate");
+    [...document.querySelectorAll("button")].find(b => b.textContent === "Confirm Restore this Block")!.click();
+    expect(f.editor.repository.state.revision).toBe(before + 1);
+    expect(f.editor.encodeDocument().children![0].text).toBe("Saved");
+    expect(f.editor.encodeDocument().children![0]).toMatchObject({ blockProperties: dto.children![0].blockProperties, standoffProperties: dto.children![0].standoffProperties });
+    expect(f.controller.state.restoreNotice).toContain("new current change");
+    f.editor.repository.undo(); expect(f.editor.encodeDocument().children![0].text).toBe("Current");
+    f.editor.repository.redo(); expect(f.editor.encodeDocument().children![0].text).toBe("Saved");
+  });
+  it("refuses a stale confirmation or changed selection without mutating the live Document", async () => {
+    const f = await restoreFixture(); await f.controller.prepareRestore();
+    expect(f.controller.state.restoreConfirmation).toBeDefined();
+    f.editor.commands.replaceInlineRange(f.key, 0, 1, "X"); const before = f.editor.repository.snapshot();
+    f.controller.confirmRestore(); expect(f.controller.state.error).toContain("Document changed");
+    expect(f.editor.repository.snapshot()).toEqual(before);
+    await f.controller.prepareRestore(); expect(f.controller.state.restoreConfirmation).toBeDefined();
+    await f.controller.select(f.controller.state.entries[1].revisionId);
+    expect(f.controller.state.restoreConfirmation).toBeUndefined();
+    f.controller.confirmRestore(); expect(f.editor.repository.snapshot()).toEqual(before);
+  });
+  it("cancels an in-flight export and leaves a failed preflight atomic", async () => {
+    const f = await restoreFixture();
+    f.source.preflightRestore = vi.fn(async () => { throw Error("Injected admission failure"); });
+    const before = f.editor.repository.snapshot(); await f.controller.prepareRestore();
+    expect(f.controller.state.error).toBe("Injected admission failure");
+    expect(f.controller.state.restoreConfirmation).toBeUndefined(); expect(f.editor.repository.snapshot()).toEqual(before);
+    let release!: () => void;
+    f.source.preflightRestore = vi.fn(async () => new Promise<void>(resolve => { release = resolve; }));
+    const preparing = f.controller.prepareRestore();
+    await vi.waitFor(() => expect(release).toBeDefined()); f.controller.cancelRestore(); release(); await preparing;
+    expect(f.controller.state.restoreConfirmation).toBeUndefined(); expect(f.editor.repository.snapshot()).toEqual(before);
   });
 });

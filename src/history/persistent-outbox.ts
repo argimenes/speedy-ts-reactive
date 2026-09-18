@@ -61,7 +61,8 @@ interface StoredRecord {
   wire?: string;
 }
 
-const defaults: HistoryOutboxBounds = { maxRecordBytes: 100 * 1024, maxPendingBytes: 16 * 1024 * 1024, maxRecords: 4096 };
+export const HISTORY_OUTBOX_DEFAULTS: HistoryOutboxBounds = Object.freeze({ maxRecordBytes: 100 * 1024, maxPendingBytes: 16 * 1024 * 1024, maxRecords: 4096 });
+const defaults = HISTORY_OUTBOX_DEFAULTS;
 const identityKeys = ["resourceId", "memoirId", "segmentId", "enrollmentId", "writerEpoch"] as const;
 const boundsKeys = ["maxRecordBytes", "maxPendingBytes", "maxRecords"] as const;
 function requireCondition(value: unknown, message: string): asserts value {

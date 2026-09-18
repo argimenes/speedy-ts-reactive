@@ -9,6 +9,28 @@ a Block's earlier revisions in Codex, restart, and inspect the same persistent
 history. Keep ordinary undo, Save and current Document state independent of the
 history preview. No new G3 qualification programme is part of this scope.
 
+## Restore this Block — follow-up increment
+
+Ordinary Standoff follow-up: corrected the restore allowlist's `block/font-size`
+versus actual `block/font/size` mismatch and its rejection of standard serialized
+metadata/deletion fields. Ordinary local toolbar annotations and explicit local
+layout fields now have lossless authored-value semantics; unresolved fields name
+their specific reason and remain refused. See the diagnosis, semantics and focused
+verification in [Restore this Block](BLOCK_HISTORY_RESTORE_THIS_BLOCK.md#ordinary-standoff-follow-up-2026-09-18).
+The subsequent screenshot exposed the legacy template's trailing-space
+`"block/alignment/left "` spelling. Restore now preserves this exact known value
+without normalization; distinct-revision/Undo/Redo regressions cover it. Unknown
+and reference-bearing properties remain gated.
+
+The production History UI review was accepted. The next explicitly authorized
+increment adds **Restore this Block** as one ordinary present-day edit while
+keeping history immutable. Its narrow authored-value boundary, supported text
+Blocks, confirmation, capture-limit preflight and deferred subtree/copy semantics
+are documented in [Restore this Block](BLOCK_HISTORY_RESTORE_THIS_BLOCK.md).
+The actual 25,000-character Document restore/Undo/Redo and restart check passed;
+all five recorded revisions remain exact. This increment is stopped for review.
+No P6 programme or general subtree restoration is part of this follow-up.
+
 ## Production read integration — review checkpoint
 
 The accepted spike direction now runs behind the existing panel. See the

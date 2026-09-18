@@ -1,3 +1,4 @@
+import { restoreAvailability } from "./block-restore";
 /** Display-only projection. Exact graphs/comparison remain in the read worker. */
 import { freeze, type DeepReadonly } from "../block-tree/commit-capture";
 import type { OccurrenceTree, SubtreeResult } from "./types";
@@ -21,6 +22,7 @@ export function compactPreview(result: DeepReadonly<SubtreeResult>): DeepReadonl
 
 export interface HistoryDisplayResult {
   selected: DeepReadonly<CompactPreview>;
+  restore?: { supported: boolean; reason?: string };
   comparison: { before: DeepReadonly<CompactPreview>; after: DeepReadonly<CompactPreview>; comparable: boolean; changes: DeepReadonly<import("./types").SubtreeComparison["changes"]> };
   provenance?: { resourceId: string; memoirId?: string; segmentId: string; headRevisionId: string };
   timing?: import("./read-timing").ReadTiming;
@@ -29,5 +31,5 @@ export interface HistoryDisplayResult {
  * computed BEFORE projection. Preview data never authorizes a history read. */
 export function displaySelection(value: import("./ui-session-source").HistorySelectionResult, provenance?: HistoryDisplayResult["provenance"]): HistoryDisplayResult {
   const selected = compactPreview(value.selected), after = value.comparison.after === value.selected ? selected : compactPreview(value.comparison.after);
-  return { selected, comparison: { before: selected, after, comparable: value.comparison.comparable, changes: value.comparison.changes }, ...(provenance ? { provenance } : {}), ...(value.timing ? { timing: value.timing } : {}) };
+  return { selected, restore: restoreAvailability(value.selected), comparison: { before: selected, after, comparable: value.comparison.comparable, changes: value.comparison.changes }, ...(provenance ? { provenance } : {}), ...(value.timing ? { timing: value.timing } : {}) };
 }
