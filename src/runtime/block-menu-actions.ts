@@ -90,7 +90,8 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     if (type === "youtube-video-block" ? !youtubeId(url) : !mediaUrl(url)) throw new Error("Enter a valid media URL (YouTube videos also accept a video ID).");
     add(dto(type, [], { url }));
   });
-  const history = [command("history.open", "History…"), command("history.undo", "Undo"), command("history.redo", "Redo")];
+  const historyEntry = command("history.open", "History…");
+  const history = [command("history.undo", "Undo"), command("history.redo", "Redo")];
   const files = [command("document.open", "Open…"), command("document.save", "Save"), command("document.saveAs", "Save as…")];
 
   if (isBackgroundType(node.viewType)) {
@@ -108,10 +109,10 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
       backgrounds.push({ label: metadata(node).paused ? "Play background" : "Pause background", run: () => editMetadata(key, { paused: !metadata(node).paused }, "Background playback") });
       backgrounds.push({ label: metadata(node).muted === false ? "Mute background" : "Enable background sound", run: () => editMetadata(key, { muted: metadata(node).muted === false }, "Background sound") });
     }
-    return [command("sticky.createFloating", "New Sticky Note"), { label: "Background", children: backgrounds }, { label: "Document", children: files }, ...history];
+    return [historyEntry, command("sticky.createFloating", "New Sticky Note"), { label: "Background", children: backgrounds }, { label: "Document", children: files }, ...history];
   }
 
-  const items: BlockMenuItem[] = [];
+  const items: BlockMenuItem[] = [historyEntry];
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if (doc) {
     items.push(command("sticky.createFloating", "New Sticky Note"));

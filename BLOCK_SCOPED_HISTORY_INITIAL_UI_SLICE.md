@@ -18,6 +18,14 @@ or Close restores editing focus/selection. Superseded and closed asynchronous
 requests cannot publish stale results. Previewing never changes the live Document
 or ordinary undo/redo.
 
+Discoverability follow-up: **History** is now visible beside **Find** in the
+Document toolbar, and **History…** is the first Block-menu action. The locally
+served production client on port 3002 was still the pre-History build; the client
+and server were rebuilt together. The served workspace was checked directly for
+both controls and successful toolbar-to-panel opening. Save unsaved edits before
+refreshing an already-open old client. Four focused panel tests now pass, including
+the toolbar route; the production build and project TypeScript checks pass.
+
 To try it, run the normal development client (`npm run dev:client`) and open the
 workspace or `/pilot`. Right-click a text Block (or use Shift+F10 / Control-click)
 and choose **History…**. The first opening records the baseline. Close the panel,
@@ -59,7 +67,7 @@ Validation completed:
 
 - Six adapter tests: live edit/undo/redo and structural insertion, immutable reads,
   fixed head, one-Document isolation, continuation, capture boundaries and aborts.
-- Three panel tests: actual context-menu/command entry, historical selection and
+- Four panel tests: actual context-menu/command and visible toolbar entry, historical selection and
   comparison, ordinary undo unchanged, keyboard/focus return, stale-result
   suppression and inert tool/media previews.
 - Real Chrome UI check: baseline → ordinary editor input → reopen → select past

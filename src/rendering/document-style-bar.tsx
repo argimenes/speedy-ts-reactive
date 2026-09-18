@@ -112,6 +112,12 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       </button>
     </Show>
     <button type="button" title={editor.bindings.label("find.open")} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.find.open(key); if (!editor.find.state.open) setNotice(editor.find.state.message); } else setNotice("Focus text in a document first."); }}>Find</button>
+    <button type="button" title="View history of the focused Block" onClick={() => {
+      const key = [editor.focus.state.focusedKey, targetKey(), props.scopeKey, editor.focus.state.lastFocusedKey]
+        .find(key => key && inScope(key) && editor.blockHistory.canOpen(key));
+      if (key) { setNotice(""); editor.commandRegistry.execute("history.open", { targetKey: key, args: undefined }); }
+      else setNotice("Focus a Block in this Document to view its history.");
+    }}>History</button>
     <button type="button" title={`Entities in Document (${editor.bindings.label("entity.list.open")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.entityList.open(key); if (!editor.entityList.state.open) setNotice(editor.entityList.state.error); } else setNotice("Focus a document first."); }}>Entities</button>
     <button type="button" title={`Add timer (${editor.bindings.label("timer.create")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (!key || !createTimerBlock(editor, key)) setNotice("Focus a Block in this document first."); else setNotice(""); }}>Timer</button>
     <label title="Select, edit and annotate text across adjacent Blocks. This preference is remembered in this browser."><input type="checkbox" aria-label="Experimental cross-Block text selection" checked={editor.crossText.enabled()} onChange={event => editor.crossText.enable(event.currentTarget.checked)} />Cross-Block selection (experimental)</label>

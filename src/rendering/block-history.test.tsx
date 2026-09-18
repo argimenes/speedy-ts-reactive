@@ -5,6 +5,7 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { HistoricalPreview } from "./block-history";
+import { DocumentStyleBar } from "./document-style-bar";
 import { BlockHistorySession } from "../runtime/block-history";
 import { createSessionHistorySource, type HistorySelectionResult, type ReadonlyHistorySession } from "../history/ui-session-source";
 
@@ -29,6 +30,7 @@ describe("initial Block history panel", () => {
     host.querySelector<HTMLElement>('[data-block-id="p"]')!.dispatchEvent(new MouseEvent("contextmenu", { button: 2, bubbles: true, cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector(".reactive-block-menu")).not.toBeNull());
     const history = [...document.querySelectorAll<HTMLButtonElement>('.reactive-block-menu button')].find(b => b.textContent === "History…")!;
+    expect(document.querySelector('.reactive-block-menu [role=menuitem]')).toBe(history);
     expect(history.disabled).toBe(false); history.click(); await ready(editor);
     expect(document.querySelector(".reactive-block-menu")).toBeNull();
     expect(document.querySelector('[role="dialog"][aria-label="Block history"]')).not.toBeNull();
@@ -59,6 +61,19 @@ describe("initial Block history panel", () => {
     const summary = document.querySelector<HTMLElement>('.block-history-panel summary')!; summary.focus();
     summary.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
     expect(document.activeElement?.getAttribute("aria-label")).toBe("Close Block history");
+  });
+
+  it("opens history from the visible formatting toolbar for the focused Block", async () => {
+    const { editor, view, key } = setup();
+    const toolbar = document.body.appendChild(document.createElement("div"));
+    cleanup.push(render(() => <DocumentStyleBar editor={editor} scopeKey={view.state.rootKey} />, toolbar));
+    editor.focus.request(key);
+    const button = [...toolbar.querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent === "History")!;
+    expect(button).toBeDefined();
+    const initial = editor.repository.snapshot();
+    button.click(); await ready(editor);
+    expect(editor.blockHistory.state.result?.selected.blockId).toBe("p");
+    expect(editor.repository.snapshot()).toEqual(initial);
   });
 
   it("ignores superseded and closed asynchronous results even if a source resolves after cancellation", async () => {
