@@ -1,8 +1,12 @@
 # Bounded selective Block History reader spike
 
-2026-09-18. **Complete; stopped for review.** The experiment demonstrates that a
+2026-09-18. **Spike complete.** Production follow-up is now documented in
+[bounded production integration](BLOCK_HISTORY_PRODUCTION_INTEGRATION.md). The
+measurements below describe the preserved isolated spike.
+
+**Original review checkpoint:** The experiment demonstrates that a
 modest historical Block can be loaded independently of most surrounding Document
-content. This remains an isolated spike; the production History panel still uses
+content. At that checkpoint this was an isolated spike; the production History panel used
 the existing persistent full reader. No production archive format, enrollment,
 capture, undo, queue, admission limit or P6 qualification changed.
 

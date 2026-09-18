@@ -2,6 +2,7 @@
  * read-only query contracts. This is NOT a durable resource reader: the bounded
  * source log may contain Workspace commits, but queries expose one closed
  * Document. It never creates an editable producer or snapshots in a callback. */
+import { displaySelection, type HistoryDisplayResult } from "./preview";
 import { clone } from "../block-tree/clone";
 import { equal, freeze, type DeepReadonly } from "../block-tree/commit-capture";
 import type { HistoryChanges } from "../block-tree/compact-changes";
@@ -33,7 +34,7 @@ export interface ReadonlyHistorySession {
   timeline(options?: { cursor?: string; limit?: number; signal?: AbortSignal }): Promise<{
     entries: readonly DeepReadonly<SessionTimelineEntry>[]; nextCursor?: string; headRevisionId: string;
   }>;
-  select(revisionId: string, options?: { signal?: AbortSignal }): Promise<HistorySelectionResult>;
+  select(revisionId: string, options?: { signal?: AbortSignal }): Promise<HistoryDisplayResult>;
 }
 export interface SessionHistoryRecorder {
   open(selection: HistorySelection, signal?: AbortSignal): Promise<ReadonlyHistorySession>;
@@ -213,12 +214,12 @@ export function createSessionHistorySource(repository: CanonicalRepository, docu
           aborted(options.signal);
           return freeze({ entries, ...(next <= headIndex ? { nextCursor: ids[next - 1] } : {}), headRevisionId });
         },
-        async select(revisionId: string, options: { signal?: AbortSignal } = {}): Promise<HistorySelectionResult> {
+        async select(revisionId: string, options: { signal?: AbortSignal } = {}): Promise<HistoryDisplayResult> {
           assertActive(); await yieldTask(options.signal);
           const queries = queriesFor(options.signal);
           const comparison = await queries.compareSubtree({ before: request(revisionId), after: request(headRevisionId) });
           aborted(options.signal);
-          return freeze({ selected: comparison.before, comparison });
+          return freeze(displaySelection({ selected: comparison.before, comparison }, { resourceId: String(documentId), segmentId, headRevisionId }));
         },
       });
     },

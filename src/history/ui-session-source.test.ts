@@ -20,11 +20,7 @@ function setup(options: SessionHistoryOptions = {}, workspace = false) {
   const selection = { blockId: "p", placementId: `session:${placement("p")}` };
   return { repository, commands, placement, recorder, selection };
 }
-function textOf(result: { fragment?: { contents: any; placements: any } }) {
-  const fragment = result.fragment!;
-  const paragraph = Object.values(fragment.contents).find((content: any) => content.payload.id === "p") as any;
-  return paragraph.inlineContent.map((key: string) => fragment.contents[fragment.placements[key].contentKey].payload.text).join("");
-}
+function textOf(result: { root?: { runs: readonly { text: string }[] } }) { return result.root!.runs.map(run => run.text).join(""); }
 
 describe("temporary asynchronous read-only session history", () => {
   it("starts at a real baseline and captures live edit/undo/redo without altering ordinary history", async () => {
@@ -55,8 +51,9 @@ describe("temporary asynchronous read-only session history", () => {
     const session = await s.recorder.open(s.selection), page = await session.timeline();
     const result = await session.select(page.entries[0].revisionId);
     expect(() => { (result.selected as SubtreeResult).status = "unsupported"; }).toThrow();
-    expect(() => { (result.selected.fragment!.contents as any).injected = {}; }).toThrow();
-    expect(Object.isFrozen(result.selected.fragment!.contents[Object.keys(result.selected.fragment!.contents)[0]].payload)).toBe(true);
+    expect(() => { (result.selected.root!.runs as any).push({ text: "forged" }); }).toThrow();
+    expect(Object.isFrozen(result.selected.root!.runs)).toBe(true);
+    expect(result.selected).not.toHaveProperty("fragment");
     expect(snapshot).not.toHaveBeenCalled(); expect(live).not.toHaveBeenCalled();
     snapshot.mockRestore(); live.mockRestore(); expect(s.repository.snapshot()).toEqual(before);
     expect(Object.keys(s.recorder).sort()).toEqual(["dispose", "open"]);

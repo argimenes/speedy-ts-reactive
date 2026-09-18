@@ -18,7 +18,7 @@ function fixture() {
   const key = Object.values(view.state.nodes).find(node => node.payload.id === "p")!.key;
   const status: DurableRecorderStatus = { phase: "recording", message: "Verified", pendingCapture: 0, pendingCount: 0, pendingBytes: 0, browserCommitted: 1, serverDurable: 1, verified: 1 };
   const select = vi.fn(async (revisionId: string) => {
-    const selected = { blockId: "p", revisionId, status: "unknown-block" as const };
+    const selected = { blockId: "p", revisionId, status: "unknown-block" as const, missingDependencies: false };
     return { selected, comparison: { before: selected, after: selected, comparable: false, changes: [] } };
   });
   const source: DurableHistorySource = {

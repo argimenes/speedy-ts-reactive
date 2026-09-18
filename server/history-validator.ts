@@ -3,6 +3,7 @@ import { Worker } from 'node:worker_threads';
 export interface ValidationPath { checkpointWire: string; records: string[] }
 export interface AppendValidation extends ValidationPath { wire: string; resourceId: string; expectedSourceRevision: number }
 export interface ValidatedAppend {
+  stateBytes: number;
   revisionId: string;
   metadata: { timestamp: string; label: string; cause: string; affectedBlockIds: string[]; sourceRevision: number };
   checkpointWire?: string;

@@ -81,6 +81,12 @@ export function createHistoryStore(options: { root: string }) {
     };
     const head = (segmentId: string) => lastIndex(`record-${id(segmentId)}-`, LIMIT.records);
     const reader = Object.freeze({
+      async revisionEvidence(segmentId: string, sequence: number) {
+        integer(sequence, LIMIT.records); const binding = await verifyBinding(), segment = await segmentData(segmentId);
+        const envelope = sequence ? await envelopeAt(segmentId, sequence) : undefined;
+        return { resourceId: location.resourceId, memoirId: binding.memoirId as string, segmentId, sequence,
+          revisionId: envelope?.record.revisionId ?? segment.revisionId, pathHash: envelope?.hash ?? digest(json(segment)) };
+      },
       async describe() {
         try { await verifyBinding(); }
         catch (e) { if (missing(e) && !location.memoirId) return { available: false, limits: LIMIT }; throw e; }

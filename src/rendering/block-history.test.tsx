@@ -4,10 +4,11 @@ import { render } from "solid-js/web";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
-import { HistoricalPreview } from "./block-history";
+import { CompactPreviewView } from "./history-preview";
+import type { HistoryDisplayResult } from "../history/preview";
 import { DocumentStyleBar } from "./document-style-bar";
 import { BlockHistorySession } from "../runtime/block-history";
-import { createSessionHistorySource, type HistorySelectionResult, type ReadonlyHistorySession } from "../history/ui-session-source";
+import { createSessionHistorySource, type ReadonlyHistorySession } from "../history/ui-session-source";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); });
@@ -36,7 +37,7 @@ describe("initial Block history panel", () => {
     expect(document.querySelector('[role="dialog"][aria-label="Block history"]')).not.toBeNull();
     expect(document.querySelector(".block-history-badge")?.textContent).toBe("Session-only");
     expect(editor.blockHistory.state.entries).toHaveLength(1);
-    expect(Object.isFrozen(editor.blockHistory.state.result!.selected.fragment!.contents)).toBe(true);
+    expect(Object.isFrozen(editor.blockHistory.state.result!.selected.root!.runs)).toBe(true);
     expect(editor.repository.snapshot()).toEqual(initial); expect(editor.repository.canUndo()).toBe(false);
     document.querySelector<HTMLElement>(".block-history-panel")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     await vi.waitFor(() => expect(editor.focus.state.focusedKey).toBe(key));
@@ -79,8 +80,8 @@ describe("initial Block history panel", () => {
 
   it("ignores superseded and closed asynchronous results even if a source resolves after cancellation", async () => {
     const { editor, key } = setup();
-    const pending = new Map<string, (value: HistorySelectionResult) => void>();
-    const result = (id: string): HistorySelectionResult => { const selected = { status: "unknown-block" as const, revisionId: id, blockId: "p" }; return { selected, comparison: { before: selected, after: selected, comparable: false, changes: [] } }; };
+    const pending = new Map<string, (value: HistoryDisplayResult) => void>();
+    const result = (id: string): HistoryDisplayResult => { const selected = { status: "unknown-block" as const, revisionId: id, blockId: "p", missingDependencies: false }; return { selected, comparison: { before: selected, after: selected, comparable: false, changes: [] } }; };
     const session: ReadonlyHistorySession = { storage: "session-only", headRevisionId: "latest", status: "available", message: "Session-only", timeline: async () => ({ headRevisionId: "latest", entries: [] }), select: id => new Promise(resolve => pending.set(id, resolve)) };
     const dispose = vi.fn();
     const controller = new BlockHistorySession(editor, () => ({ open: async () => session, dispose })); cleanup.push(() => controller.dispose());
@@ -107,7 +108,7 @@ describe("initial Block history panel", () => {
     const source = createSessionHistorySource(editor.repository, editor.repository.state.rootPlacementKey); cleanup.push(() => source.dispose());
     const session = await source.open({ blockId: "doc" }), selection = await session.select(session.headRevisionId);
     const host = document.body.appendChild(document.createElement("div"));
-    cleanup.push(render(() => <HistoricalPreview result={selection.selected} />, host));
+    cleanup.push(render(() => <CompactPreviewView value={selection.selected} />, host));
     expect(host.textContent).toContain("<img src=x onerror=alert(1)>");
     expect(host.querySelectorAll('.block-history-placeholder')).toHaveLength(2);
     expect(host.querySelector('iframe,img,audio,video,input,textarea,[contenteditable]')).toBeNull();

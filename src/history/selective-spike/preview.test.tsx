@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "solid-js/web";
 import { queryDurableSubtree } from "../durable-core";
-import { HistoricalPreview } from "../../rendering/block-history";
+import { HistoricalPreview } from "./full-preview-oracle";
 import { captureFixture } from "./fixture";
 import { compactPreview } from "./preview";
 import { CompactPreviewView } from "./preview-view";

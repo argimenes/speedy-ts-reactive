@@ -2,6 +2,7 @@
 export type ReadMeasure = <T>(name: string, action: () => T) => T;
 export interface ReadTiming {
   stages: Record<string, number>;
+  route?: "full" | "selective"; fallback?: string;
   chunks: number; fetchedBytes: number; replayRecords: number;
   checkpointHits: number; headHits: number;
   workerMs?: number; queueMs?: number; roundTripMs?: number; resultFreezeMs?: number;

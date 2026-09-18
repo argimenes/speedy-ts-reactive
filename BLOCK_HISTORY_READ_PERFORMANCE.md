@@ -7,6 +7,10 @@ final run. This is not a claim that large-Document interaction is comfortably
 responsive. No additional G3/P6 qualification, UI expansion or selective history
 architecture has been implemented.
 
+The subsequent accepted selective-reader direction is now integrated; see
+[production read integration and measurements](BLOCK_HISTORY_PRODUCTION_INTEGRATION.md).
+The results below remain the original full-reader optimization evidence.
+
 ## Measurements and method
 
 Apple M1, 8 GiB RAM, Chrome 153.0.8010.48. Isolated browser profiles, native servers,

@@ -1,0 +1,682 @@
+{
+  "passed": true,
+  "started": "2026-09-18T10:42:11.961Z",
+  "assertions": [
+    {
+      "sequence": 0,
+      "revisionId": "9bd2e400-d780-4a80-a70a-c6cfa22648c0",
+      "exactFullAuthoredDocument": true,
+      "immutablePreviewText": true,
+      "liveSavedContentUnchanged": true,
+      "pathLength": 0,
+      "checkpointSequence": 0
+    },
+    {
+      "sequence": 1,
+      "revisionId": "8f6d8e12-5325-40ca-9b89-cfc56f90084f",
+      "exactFullAuthoredDocument": true,
+      "immutablePreviewText": true,
+      "liveSavedContentUnchanged": true,
+      "pathLength": 1,
+      "checkpointSequence": 0
+    },
+    {
+      "sequence": 2,
+      "revisionId": "20e8dc49-c169-4ba5-8b69-9875cc8b6cfa",
+      "exactFullAuthoredDocument": true,
+      "immutablePreviewText": true,
+      "liveSavedContentUnchanged": true,
+      "pathLength": 2,
+      "checkpointSequence": 0
+    },
+    {
+      "sequence": 3,
+      "revisionId": "0851c8de-8ee4-47f3-801a-6f349969725d",
+      "exactFullAuthoredDocument": true,
+      "immutablePreviewText": true,
+      "liveSavedContentUnchanged": true,
+      "pathLength": 3,
+      "checkpointSequence": 0
+    },
+    {
+      "sequence": 4,
+      "revisionId": "bdeddf46-df4f-45a8-9da9-16c8d3961a98",
+      "exactFullAuthoredDocument": true,
+      "immutablePreviewText": true,
+      "liveSavedContentUnchanged": true,
+      "pathLength": 4,
+      "checkpointSequence": 0
+    },
+    {
+      "sequence": 5,
+      "revisionId": "5164813c-d345-4b15-ac42-64cb4fd7219e",
+      "exactFullAuthoredDocument": true,
+      "immutablePreviewText": true,
+      "liveSavedContentUnchanged": true,
+      "pathLength": 5,
+      "checkpointSequence": 0
+    }
+  ],
+  "phases": [
+    {
+      "at": "2026-09-18T10:42:22.763Z",
+      "value": "25,000-character Document exceeds temporary adapter budget; opening real History context menu."
+    },
+    {
+      "at": "2026-09-18T10:42:50.774Z",
+      "value": "InputGateway edit, ordinary undo/redo and portable save verified."
+    },
+    {
+      "at": "2026-09-18T10:42:52.981Z",
+      "value": "One offline edit is strict-IDB committed; browser and server killed."
+    },
+    {
+      "at": "2026-09-18T10:43:51.593Z",
+      "value": "All six exact revisions recovered across browser/server restart, including unsaved and offline history; live Document remains the saved revision."
+    }
+  ],
+  "errors": [],
+  "baselineBytes": 15926771,
+  "beforeCrash": {
+    "phase": "offline",
+    "message": "SyntaxError: Failed to execute 'json' on 'Response': Unexpected end of JSON input Browser-committed history is pending upload.",
+    "pendingCapture": 0,
+    "browserCommitted": 5,
+    "serverDurable": 4,
+    "verified": 4,
+    "pendingCount": 1,
+    "pendingBytes": 6968,
+    "memoirId": "c1fe2198-5793-46cf-b1c9-2bfb6e5dfbe3",
+    "segmentId": "95cd9480-3cf6-4bd8-99a8-7cf1f1ddb99c"
+  },
+  "reopened": {
+    "entries": [
+      {
+        "revisionId": "9bd2e400-d780-4a80-a70a-c6cfa22648c0",
+        "cause": "baseline"
+      },
+      {
+        "revisionId": "8f6d8e12-5325-40ca-9b89-cfc56f90084f",
+        "cause": "edit"
+      },
+      {
+        "revisionId": "20e8dc49-c169-4ba5-8b69-9875cc8b6cfa",
+        "cause": "undo"
+      },
+      {
+        "revisionId": "0851c8de-8ee4-47f3-801a-6f349969725d",
+        "cause": "redo"
+      },
+      {
+        "revisionId": "bdeddf46-df4f-45a8-9da9-16c8d3961a98",
+        "cause": "edit"
+      },
+      {
+        "revisionId": "5164813c-d345-4b15-ac42-64cb4fd7219e",
+        "cause": "edit"
+      }
+    ],
+    "sessions": [
+      {
+        "segmentId": "95cd9480-3cf6-4bd8-99a8-7cf1f1ddb99c",
+        "revisionId": "9bd2e400-d780-4a80-a70a-c6cfa22648c0",
+        "baseline": {
+          "hash": "8736ea5b836bd42885a654efb7da1ea687020e9b74aa47c25d7b04ae82db34e1",
+          "byteLength": 15926771,
+          "chunks": [
+            {
+              "hash": "15a5bbc7a5bce0e6901a1442a892fbc86a869dea058f7b534ae88c27ba3470b8",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "5597dc87fad74891334edc3598357821ca49c16ceaba238b8ad291d998b11a9f",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "ad8159b5cc351585fd031527004d80098f7f6a89895e5b043dd53df42d314299",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "5ed694d10168dbdf7c36fa24c2f4d041e4354aad778df0c7d15bebf411e0f72c",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "369e1f3dfe918bc9f5dd7cdd628cab4827a917264759a589c7e5c9174f2cf385",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "5072ec5dcc9008ab4d94ab88026a0867eb816909f72193f3aca91dbf2241e2dd",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "dabf3627f5b47c38a6f598da6963126e0dbeb90e08eaac4d99556781df090bdc",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "8ba62ed0151d0e62f475db60de86e715c3866c783644b710c163bdd11a09c44a",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "1ff374c0abb4eeaa41ce9e8acd4793ba30e912a4a2e363440dc0ee2c4b746fc1",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "d47c32a1ebfed64bbfc634f0671222fe702d183107fee9a186393d9a8a3f3d61",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "0f7e557a3f70a2b69dc207b6fd3158675152c9b0d5bc4eb4ea9a4e9214ef2c9b",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "836fad743722fa800ff7e5990ff5946cf7c2f234b0f6c233e4a44888af4dddf0",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "1851970db02786d14b2bb975ae7446f0bfab333e459b0468eccc76f32da62447",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "db92b5077aa69f155b26b08c8757fdeaee6d3a3ec9f5603a31239d9e6303a3f4",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "996e4b51fdce3a7692c643d65010562cda8d25dedcef9bd784ed684775f13a37",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "c5c3b664bbd6fb6da2411f0067a25f8727dca7ad5d7ad9387cea66d0ed577fab",
+              "byteLength": 198131
+            }
+          ]
+        },
+        "metadata": {
+          "enrollment": {
+            "resourceId": "document-large",
+            "memoirId": "c1fe2198-5793-46cf-b1c9-2bfb6e5dfbe3",
+            "segmentId": "95cd9480-3cf6-4bd8-99a8-7cf1f1ddb99c",
+            "enrollmentId": "75af10af-869f-439b-a1f3-fc1a7f5a983c",
+            "writerEpoch": "e20e1b00-bd66-4f95-8e58-d4bfe864f577"
+          },
+          "sourceRevision": 0,
+          "timestamp": "2026-09-18T10:42:27.524Z",
+          "label": "Document opened"
+        },
+        "headSequence": 5,
+        "headRevisionId": "5164813c-d345-4b15-ac42-64cb4fd7219e"
+      },
+      {
+        "segmentId": "b4f1431b-3492-4be6-ad1b-d9e551080572",
+        "revisionId": "7933d979-577f-43d5-b3dc-ee17a4e24f2e",
+        "baseline": {
+          "hash": "14bc1aebf8a2a8bbb456f880d8ffa96d739009a17cf53a3eb81fc51b5049ab67",
+          "byteLength": 15931180,
+          "chunks": [
+            {
+              "hash": "7236d965d05b5339cca2ec3afb712515cd3e4dee85d019c3a058dc7951c0b293",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "7972d2c791893722875eb669380f4ff4a68ab1476484288d050bea4376240f98",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "da2121b59ef88a83367225c61841283bbb4e4f05490a948de3440f3bb70db58c",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "f6122e3c3c9bab67a65cc9aee9709fe3e00548de8a2829b202adbd334ec7b1b4",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "e881c4af351fce75307c5e8639168e80fc02b1d402edd938e226ba1c40bba43c",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "758d941e887d0b724b03adea5198b91a5ef73acc13accee44adb10a4d07011e7",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "3765649447fa52cac3f737a1b68d2ca1bb440c574d841a930991b9fe6a0fd376",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "33a0061329d95f3836a4c36e30441b278fc1c88678a3d76beb1bfa69ad1f6c14",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "a141e21764fbd39c1d2631779d104ae32b921d8ebbd95ba64cefbc5513c16c11",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "eaf52d6c13c23d72097a228aa6b7fa2c9eedbe5de435607536ae7e7398740478",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "a3f3b63ab186e578b44996ea6b5e4065fad78e445e2b9daca748df11685ed970",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "b102e4dc31fcfcb55a0d1585a1e09da46f22cad3a101718ec5519e0cc70c19d3",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "c00d18b71e714376c49a78cebcb8abf73d1f1d039857ac8ed7abef4ffff14b89",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "f9106d2b4f82ee594d8d167344ce01b3e0fc95cf596208a6fac8d3d9d88de3e9",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "f253b19169f62c061f8aa7c14f81d27490ba4068ff14c75e92b2059623761965",
+              "byteLength": 1048576
+            },
+            {
+              "hash": "c101250b73f98847427de1dc509e8660798f0e40d6511625a948c07082f57701",
+              "byteLength": 202540
+            }
+          ]
+        },
+        "metadata": {
+          "enrollment": {
+            "resourceId": "document-large",
+            "memoirId": "c1fe2198-5793-46cf-b1c9-2bfb6e5dfbe3",
+            "segmentId": "b4f1431b-3492-4be6-ad1b-d9e551080572",
+            "enrollmentId": "8a1512a8-a0df-4677-8a68-09aeb8d9b1b0",
+            "writerEpoch": "15a6465a-eb5b-433f-b22c-ed2b123ed596"
+          },
+          "sourceRevision": 0,
+          "timestamp": "2026-09-18T10:43:03.020Z",
+          "label": "Document opened"
+        },
+        "originReceipt": "03ec711f641505c54934ed5fc74768a1cc1363b2bd92b2e2003c2c0d79b91b1a",
+        "headSequence": 0,
+        "headRevisionId": "7933d979-577f-43d5-b3dc-ee17a4e24f2e"
+      }
+    ],
+    "status": {
+      "phase": "recording",
+      "message": "History captured to the durable outbox.",
+      "pendingCapture": 0,
+      "browserCommitted": 0,
+      "serverDurable": 0,
+      "verified": 0,
+      "pendingCount": 0,
+      "pendingBytes": 0,
+      "memoirId": "c1fe2198-5793-46cf-b1c9-2bfb6e5dfbe3",
+      "segmentId": "b4f1431b-3492-4be6-ad1b-d9e551080572"
+    }
+  },
+  "browser": "Chrome/153.0.8010.48",
+  "finished": "2026-09-18T10:43:51.607Z",
+  "browserDiagnostics": {
+    "stderr": "\nDevTools listening on ws://127.0.0.1:62735/devtools/browser/e129ac14-4fc8-499d-b802-0632c1452531\nTrying to load the allocator multiple times. This is *not* supported.\n[41018:477990:0918/204213.910713:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204213.911134:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204213.920509:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204213.920585:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204213.922885:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204213.922967:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204213.923262:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204213.923303:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204213.926486:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204213.926559:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204213.946996:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204213.947048:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204215.928937:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204215.929100:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204216.394668:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204216.394819:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41009:477954:0918/204216.512938:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[41018:477990:0918/204216.545803:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204216.545974:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204216.702222:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204216.702340:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204216.843867:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204216.843981:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204217.013294:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204217.013408:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204217.371096:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204217.371216:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:477990:0918/204218.882365:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41018:478028:0918/204218.882530:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\nCreated TensorFlow Lite XNNPACK delegate for CPU.\n[41133:479474:0918/204231.910811:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake-all --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41133:479474:0918/204231.911485:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25665, parent pid: 41009\n[41133:479474:0918/204231.914361:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22125277184B (20.606GiB) / 245107195904B (228.274GiB)\n[41133:479474:0918/204231.914386:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22125277184B (20.606GiB) / 245107195904B (228.274GiB)\n[41133:479474:0918/204231.914504:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41135:479478:0918/204231.927781:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41135:479478:0918/204231.928533:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25665, parent pid: 1\n[41135:479478:0918/204231.931317:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22125101056B (20.606GiB) / 245107195904B (228.274GiB)\n[41135:479478:0918/204231.931342:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22125101056B (20.606GiB) / 245107195904B (228.274GiB)\n[41135:479478:0918/204231.931494:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41133:479474:0918/204231.932304:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[41133:479474:0918/204231.934511:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[41133:479474:0918/204231.934679:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[41133:479474:0918/204231.934895:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[41133:479474:0918/204231.935345:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[41133:479486:0918/204231.935813:VERBOSE1:chrome/updater/app/app_wakeall.cc:58] Launching `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake`\n[41136:479490:0918/204231.948642:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41136:479490:0918/204231.949783:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25665, parent pid: 41133\n[41136:479490:0918/204231.953218:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22124978176B (20.605GiB) / 245107195904B (228.274GiB)\n[41136:479490:0918/204231.953247:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22124978176B (20.605GiB) / 245107195904B (228.274GiB)\n[41136:479490:0918/204231.953372:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41138:479494:0918/204231.967061:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41138:479494:0918/204231.967880:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25665, parent pid: 1\n[41138:479494:0918/204231.971200:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22124978176B (20.605GiB) / 245107195904B (228.274GiB)\n[41138:479494:0918/204231.971227:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22124978176B (20.605GiB) / 245107195904B (228.274GiB)\n[41138:479494:0918/204231.971434:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41136:479490:0918/204231.972293:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[41136:479490:0918/204231.973525:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[41136:479490:0918/204231.973657:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[41136:479490:0918/204231.973822:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[41136:479490:0918/204231.974116:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[41136:479490:0918/204231.974459:VERBOSE1:chrome/updater/ipc/update_service_internal_proxy_mojo.cc:61] Run\n[41009:477954:0918/204242.651711:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[41136:479490:0918/204249.045390:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[41136:479490:0918/204249.046138:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41136:479490:0918/204249.046169:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake) returned 0.\n[41133:479486:0918/204249.091714:VERBOSE1:chrome/updater/app/app_wakeall.cc:68] `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake` exited 0\n[41133:479474:0918/204249.092155:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[41133:479474:0918/204249.092646:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41133:479474:0918/204249.092673:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake-all) returned 0.\n\nDevTools listening on ws://127.0.0.1:62958/devtools/browser/d3f5f2e6-5ef6-454e-9306-8f9defdffde2\nTrying to load the allocator multiple times. This is *not* supported.\n[41207:480283:0918/204254.141897:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480325:0918/204254.142451:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480283:0918/204254.144468:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480325:0918/204254.144563:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480283:0918/204254.146117:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480325:0918/204254.146212:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480283:0918/204254.146370:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480325:0918/204254.146429:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480283:0918/204254.146560:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480325:0918/204254.146638:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480283:0918/204254.193120:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[41207:480325:0918/204254.193182:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\nCreated TensorFlow Lite XNNPACK delegate for CPU.\n[41202:480269:0918/204256.615422:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[41138:479494:0918/204259.052862:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41138:479494:0918/204259.052902:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[41135:479478:0918/204259.053889:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41135:479478:0918/204259.053936:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[41277:480945:0918/204312.808535:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake-all --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41277:480945:0918/204312.809289:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25706, parent pid: 41202\n[41277:480945:0918/204312.812801:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 20994379776B (19.553GiB) / 245107195904B (228.274GiB)\n[41277:480945:0918/204312.812829:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 20994379776B (19.553GiB) / 245107195904B (228.274GiB)\n[41277:480945:0918/204312.813672:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41279:480949:0918/204312.828695:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41279:480949:0918/204312.829486:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25706, parent pid: 1\n[41279:480949:0918/204312.833145:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 20994195456B (19.552GiB) / 245107195904B (228.274GiB)\n[41279:480949:0918/204312.833175:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 20994195456B (19.552GiB) / 245107195904B (228.274GiB)\n[41279:480949:0918/204312.833324:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41277:480945:0918/204312.834212:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[41277:480945:0918/204312.835389:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[41277:480945:0918/204312.835514:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[41277:480945:0918/204312.835675:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[41277:480945:0918/204312.835975:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[41277:480957:0918/204312.836489:VERBOSE1:chrome/updater/app/app_wakeall.cc:58] Launching `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake`\n[41280:480961:0918/204312.850848:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41280:480961:0918/204312.851606:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25706, parent pid: 41277\n[41280:480961:0918/204312.854741:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 20994007040B (19.552GiB) / 245107195904B (228.274GiB)\n[41280:480961:0918/204312.854768:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 20994007040B (19.552GiB) / 245107195904B (228.274GiB)\n[41280:480961:0918/204312.854893:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41282:480965:0918/204312.869783:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[41282:480965:0918/204312.870537:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25706, parent pid: 1\n[41282:480965:0918/204312.873657:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 20993818624B (19.552GiB) / 245107195904B (228.274GiB)\n[41282:480965:0918/204312.873685:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 20993818624B (19.552GiB) / 245107195904B (228.274GiB)\n[41282:480965:0918/204312.873820:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[41280:480961:0918/204312.874705:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[41280:480961:0918/204312.875895:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[41280:480961:0918/204312.876020:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[41280:480961:0918/204312.876154:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[41280:480961:0918/204312.876445:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[41280:480961:0918/204312.876796:VERBOSE1:chrome/updater/ipc/update_service_internal_proxy_mojo.cc:61] Run\n[41202:480269:0918/204326.468163:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: QUOTA_EXCEEDED\n[41280:480961:0918/204329.375768:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[41280:480961:0918/204329.384605:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41280:480961:0918/204329.384905:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake) returned 0.\n[41277:480957:0918/204329.442905:VERBOSE1:chrome/updater/app/app_wakeall.cc:68] `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake` exited 0\n[41277:480945:0918/204329.444053:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[41277:480945:0918/204329.445941:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41277:480945:0918/204329.446125:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake-all) returned 0.\n[41282:480965:0918/204339.394156:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41282:480965:0918/204339.394251:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[41279:480949:0918/204339.411253:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[41279:480949:0918/204339.411457:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n",
+    "crashes": [],
+    "lifecycle": [
+      {
+        "at": 1789728134154,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "3E71C14991541F8A252B325FE4ACAC0C",
+          "name": "commit",
+          "timestamp": 25647.394781
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728134154,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "3E71C14991541F8A252B325FE4ACAC0C",
+          "name": "DOMContentLoaded",
+          "timestamp": 25647.395038
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728134155,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "3E71C14991541F8A252B325FE4ACAC0C",
+          "name": "load",
+          "timestamp": 25647.395999
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728134159,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "3E71C14991541F8A252B325FE4ACAC0C",
+          "name": "networkAlmostIdle",
+          "timestamp": 25647.395852
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728134161,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "3E71C14991541F8A252B325FE4ACAC0C",
+          "name": "networkIdle",
+          "timestamp": 25647.395852
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728134192,
+        "method": "Page.frameStartedLoading",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84"
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728134274,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "init",
+          "timestamp": 25647.598585
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728139344,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "DOMContentLoaded",
+          "timestamp": 25652.653224
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728139346,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "load",
+          "timestamp": 25652.655355
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728139347,
+        "method": "Page.frameStoppedLoading",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84"
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728143405,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "firstMeaningfulPaintCandidate",
+          "timestamp": 25656.161966
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728143405,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "firstContentfulPaint",
+          "timestamp": 25656.161966
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728143405,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "firstPaint",
+          "timestamp": 25656.161966
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728144504,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "networkAlmostIdle",
+          "timestamp": 25652.653862
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728144504,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "firstMeaningfulPaint",
+          "timestamp": 25656.161966
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728144604,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "networkIdle",
+          "timestamp": 25652.761547
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728149030,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "823F9B8F992F2EFB7A3D37C14E1C2C84",
+          "loaderId": "660C6055395B08B928510247FBD44318",
+          "name": "InteractiveTime",
+          "timestamp": 25657.394307
+        },
+        "sessionId": "8A5DBBFC87C9479DD7D40E78E10FB525"
+      },
+      {
+        "at": 1789728174288,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2BC882C871085F51AA20B2581EF40F95",
+          "name": "commit",
+          "timestamp": 25687.590543
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174289,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2BC882C871085F51AA20B2581EF40F95",
+          "name": "DOMContentLoaded",
+          "timestamp": 25687.590612
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174289,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2BC882C871085F51AA20B2581EF40F95",
+          "name": "load",
+          "timestamp": 25687.591418
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174289,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2BC882C871085F51AA20B2581EF40F95",
+          "name": "networkAlmostIdle",
+          "timestamp": 25687.591261
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174289,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2BC882C871085F51AA20B2581EF40F95",
+          "name": "networkIdle",
+          "timestamp": 25687.591261
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174305,
+        "method": "Page.frameStartedLoading",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523"
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174317,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "init",
+          "timestamp": 25687.68008
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174473,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "DOMContentLoaded",
+          "timestamp": 25687.839923
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174475,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "load",
+          "timestamp": 25687.840988
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728174479,
+        "method": "Page.frameStoppedLoading",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523"
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728177387,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "firstMeaningfulPaintCandidate",
+          "timestamp": 25690.523072
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728177393,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "firstContentfulPaint",
+          "timestamp": 25690.523072
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728177394,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "firstPaint",
+          "timestamp": 25690.523072
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728177394,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "networkAlmostIdle",
+          "timestamp": 25687.84039
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728177395,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "firstMeaningfulPaint",
+          "timestamp": 25690.523072
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728177900,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "networkIdle",
+          "timestamp": 25688.338799
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      },
+      {
+        "at": 1789728182226,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "458D09AD697423B518956DAFEFD59523",
+          "loaderId": "2020BF1CC632B2281CDFCBF4DCE4F436",
+          "name": "InteractiveTime",
+          "timestamp": 25690.5931
+        },
+        "sessionId": "346B301BB1DA779F90BC033A169AC372"
+      }
+    ],
+    "probes": []
+  }
+}

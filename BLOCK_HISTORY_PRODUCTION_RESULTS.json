@@ -1,0 +1,76 @@
+{
+  "passed": false,
+  "started": "2026-09-18T10:32:13.478Z",
+  "assertions": [],
+  "phases": [],
+  "errors": [
+    "ReferenceError: Cannot access 'path' before initialization\n    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/measure-history-production.mjs:70:21"
+  ],
+  "browser": "Chrome/153.0.8010.48",
+  "failurePage": {
+    "body": ""
+  },
+  "finished": "2026-09-18T10:32:16.337Z",
+  "browserDiagnostics": {
+    "stderr": "\nDevTools listening on ws://127.0.0.1:61567/devtools/browser/f7fea4fb-1df8-46a5-bf69-948b4ea37bc9\nTrying to load the allocator multiple times. This is *not* supported.\n[39633:463141:0918/203215.898006:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463176:0918/203215.898931:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463141:0918/203215.911343:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463176:0918/203215.911459:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463141:0918/203215.915692:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463176:0918/203215.918770:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463141:0918/203215.919166:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463176:0918/203215.919239:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463141:0918/203215.919432:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463176:0918/203215.919515:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463141:0918/203215.960435:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[39633:463176:0918/203215.960552:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n",
+    "crashes": [],
+    "lifecycle": [
+      {
+        "at": 1789727536277,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "0806544EA5C8978D273F3193EE5E5CFE",
+          "loaderId": "FAE17A23D0830A3A58FB1A87526B859F",
+          "name": "commit",
+          "timestamp": 25049.272669
+        },
+        "sessionId": "A4075A6B34CEC9FD5B091566DBD43A6B"
+      },
+      {
+        "at": 1789727536280,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "0806544EA5C8978D273F3193EE5E5CFE",
+          "loaderId": "FAE17A23D0830A3A58FB1A87526B859F",
+          "name": "DOMContentLoaded",
+          "timestamp": 25049.272852
+        },
+        "sessionId": "A4075A6B34CEC9FD5B091566DBD43A6B"
+      },
+      {
+        "at": 1789727536282,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "0806544EA5C8978D273F3193EE5E5CFE",
+          "loaderId": "FAE17A23D0830A3A58FB1A87526B859F",
+          "name": "load",
+          "timestamp": 25049.274557
+        },
+        "sessionId": "A4075A6B34CEC9FD5B091566DBD43A6B"
+      },
+      {
+        "at": 1789727536284,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "0806544EA5C8978D273F3193EE5E5CFE",
+          "loaderId": "FAE17A23D0830A3A58FB1A87526B859F",
+          "name": "networkAlmostIdle",
+          "timestamp": 25049.274262
+        },
+        "sessionId": "A4075A6B34CEC9FD5B091566DBD43A6B"
+      },
+      {
+        "at": 1789727536286,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "0806544EA5C8978D273F3193EE5E5CFE",
+          "loaderId": "FAE17A23D0830A3A58FB1A87526B859F",
+          "name": "networkIdle",
+          "timestamp": 25049.274262
+        },
+        "sessionId": "A4075A6B34CEC9FD5B091566DBD43A6B"
+      }
+    ],
+    "probes": []
+  }
+}

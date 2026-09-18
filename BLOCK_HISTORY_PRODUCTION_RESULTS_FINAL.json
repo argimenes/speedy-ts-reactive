@@ -1,0 +1,1283 @@
+{
+  "passed": true,
+  "started": "2026-09-18T10:32:38.987Z",
+  "assertions": [],
+  "phases": [
+    {
+      "at": "2026-09-18T10:32:47.291Z",
+      "value": "{\"name\":\"surround-500\",\"times\":[65,64,67,38,30,30]}"
+    },
+    {
+      "at": "2026-09-18T10:32:56.535Z",
+      "value": "{\"name\":\"surround-5000\",\"times\":[37,56,67,58,31,23]}"
+    },
+    {
+      "at": "2026-09-18T10:33:19.565Z",
+      "value": "{\"name\":\"surround-25000\",\"times\":[59,67,55,64,21,32]}"
+    },
+    {
+      "at": "2026-09-18T10:33:54.898Z",
+      "value": "{\"name\":\"single-25000\",\"times\":[2230,645,909,880,567,726]}"
+    }
+  ],
+  "errors": [],
+  "browser": "Chrome/153.0.8010.48",
+  "fixtures": [
+    {
+      "name": "surround-500",
+      "length": 200,
+      "surround": 500,
+      "baselineBytes": 451268,
+      "compactRevisionBytes": [
+        1915,
+        1817,
+        1817
+      ],
+      "initialFallback": {
+        "stages": {
+          "pathFetch": 21.399999998509884,
+          "checkpointFetch": 15.899999998509884,
+          "decode": 8,
+          "verification": 3.7999999970197678,
+          "checkpointLoad": 20.5,
+          "serialization": 7.5,
+          "freezing": 1.300000000745058,
+          "selectedReconstruction": 59,
+          "subtree": 3,
+          "comparison": 0.6999999992549419,
+          "previewProjection": 0.5
+        },
+        "chunks": 1,
+        "fetchedBytes": 451268,
+        "replayRecords": 0,
+        "checkpointHits": 0,
+        "headHits": 0,
+        "workerMs": 74.80000000074506,
+        "route": "full",
+        "fallback": "Error: Selective history: no certified acceleration",
+        "queueMs": 0.09999999776482582,
+        "roundTripMs": 75.09999999776483,
+        "resultFreezeMs": 0,
+        "uiMs": 18.400000002235174,
+        "totalMs": 93.80000000074506
+      },
+      "maintenance": {
+        "ready": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "pending": 0,
+        "maintenance": [
+          {
+            "sequence": 0,
+            "mode": "baseline",
+            "ms": 70.35229200000049,
+            "updatedRows": 1414,
+            "changedBundles": 7,
+            "bytesWritten": 479761,
+            "totalBytes": 479761,
+            "rebuildVerificationMs": 42.08470799999941,
+            "workerMs": 113.03345799999988
+          },
+          {
+            "sequence": 1,
+            "mode": "incremental",
+            "ms": 16.29199999999946,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 138660,
+            "totalBytes": 618421,
+            "workerMs": 16.646208000000115
+          },
+          {
+            "sequence": 2,
+            "mode": "incremental",
+            "ms": 13.143624999999702,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 136540,
+            "totalBytes": 754961,
+            "workerMs": 13.161833999999544
+          },
+          {
+            "sequence": 3,
+            "mode": "incremental",
+            "ms": 11.989042000000154,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 137203,
+            "totalBytes": 892164,
+            "workerMs": 11.998958999999559
+          }
+        ]
+      },
+      "samples": [
+        {
+          "kind": "cold",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "selectivedecode": 3.300000000745058,
+              "selectiveverify": 0.5,
+              "selectivefetch": 20.699999999254942,
+              "comparison": 0.3999999985098839,
+              "previewProjection": 0.10000000149011612
+            },
+            "chunks": 6,
+            "fetchedBytes": 138018,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 0,
+            "route": "selective",
+            "workerMs": 34.19999999925494,
+            "queueMs": 0,
+            "roundTripMs": 34.19999999925494,
+            "resultFreezeMs": 0,
+            "uiMs": 30.899999998509884,
+            "totalMs": 65.19999999925494
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 0,
+          "timing": {
+            "stages": {
+              "selectivedecode": 3.100000001490116,
+              "selectiveverify": 0.30000000074505806,
+              "selectivefetch": 17.699999999254942,
+              "comparison": 0.30000000074505806,
+              "previewProjection": 0.19999999925494194
+            },
+            "chunks": 6,
+            "fetchedBytes": 137355,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 38.399999998509884,
+            "queueMs": 0,
+            "roundTripMs": 38.600000001490116,
+            "resultFreezeMs": 0.09999999776482582,
+            "uiMs": 24.5,
+            "totalMs": 63.5
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "selectivedecode": 3,
+              "selectiveverify": 0.30000000074505806,
+              "selectivefetch": 16.00000000372529,
+              "comparison": 0.5,
+              "previewProjection": 0.09999999776482582
+            },
+            "chunks": 6,
+            "fetchedBytes": 137203,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 38.69999999925494,
+            "queueMs": 0,
+            "roundTripMs": 39,
+            "resultFreezeMs": 0,
+            "uiMs": 27.800000000745058,
+            "totalMs": 67.10000000149012
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 2,
+          "timing": {
+            "stages": {
+              "selectivedecode": 3.099999997764826,
+              "selectiveverify": 0.30000000074505806,
+              "selectivefetch": 13,
+              "comparison": 0.30000000074505806,
+              "previewProjection": 0.19999999925494194
+            },
+            "chunks": 6,
+            "fetchedBytes": 136540,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 33.099999997764826,
+            "queueMs": 0,
+            "roundTripMs": 33.30000000074506,
+            "resultFreezeMs": 0,
+            "uiMs": 4.199999999254942,
+            "totalMs": 37.80000000074506
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "selectivedecode": 0,
+              "selectiveverify": 0,
+              "selectivefetch": 0,
+              "comparison": 0.4000000022351742,
+              "previewProjection": 0.09999999776482582
+            },
+            "chunks": 6,
+            "fetchedBytes": 0,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 21.299999997019768,
+            "queueMs": 0,
+            "roundTripMs": 21.700000002980232,
+            "resultFreezeMs": 0,
+            "uiMs": 7.399999998509884,
+            "totalMs": 29.5
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "selectivedecode": 0,
+              "selectiveverify": 0,
+              "selectivefetch": 0,
+              "comparison": 0.19999999925494194,
+              "previewProjection": 0
+            },
+            "chunks": 6,
+            "fetchedBytes": 0,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 0,
+            "route": "selective",
+            "workerMs": 13.299999997019768,
+            "queueMs": 0,
+            "roundTripMs": 13.600000001490116,
+            "resultFreezeMs": 0.10000000149011612,
+            "uiMs": 15.799999997019768,
+            "totalMs": 29.899999998509884
+          }
+        }
+      ],
+      "exactPreviewAndLiveInvariance": true,
+      "compactBoundary": true
+    },
+    {
+      "name": "surround-5000",
+      "length": 200,
+      "surround": 5000,
+      "baselineBytes": 3350119,
+      "compactRevisionBytes": [
+        1915,
+        1817,
+        1817
+      ],
+      "initialFallback": {
+        "stages": {
+          "pathFetch": 86.69999999925494,
+          "checkpointFetch": 613.5,
+          "decode": 71.10000000149012,
+          "verification": 38.599999997764826,
+          "checkpointLoad": 217.70000000298023,
+          "serialization": 122.19999999925494,
+          "freezing": 14.300000000745058,
+          "selectedReconstruction": 511.69999999925494,
+          "subtree": 5.699999999254942,
+          "comparison": 0.6999999992549419,
+          "previewProjection": 0.3999999985098839
+        },
+        "chunks": 4,
+        "fetchedBytes": 3350119,
+        "replayRecords": 0,
+        "checkpointHits": 0,
+        "headHits": 0,
+        "workerMs": 531.1000000014901,
+        "route": "full",
+        "fallback": "Error: Selective history: no certified acceleration",
+        "queueMs": 0,
+        "roundTripMs": 531.5,
+        "resultFreezeMs": 0,
+        "uiMs": 12.5,
+        "totalMs": 544.1999999992549
+      },
+      "maintenance": {
+        "ready": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "pending": 0,
+        "maintenance": [
+          {
+            "sequence": 0,
+            "mode": "baseline",
+            "ms": 644.0475420000002,
+            "updatedRows": 10504,
+            "changedBundles": 52,
+            "bytesWritten": 3562524,
+            "totalBytes": 3562524,
+            "rebuildVerificationMs": 305.96620900000016,
+            "workerMs": 959.2609590000011
+          },
+          {
+            "sequence": 1,
+            "mode": "incremental",
+            "ms": 28.034374999999272,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 155265,
+            "totalBytes": 3717789,
+            "workerMs": 28.048791999999594
+          },
+          {
+            "sequence": 2,
+            "mode": "incremental",
+            "ms": 18.257708000001003,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 153143,
+            "totalBytes": 3870932,
+            "workerMs": 18.27020900000025
+          },
+          {
+            "sequence": 3,
+            "mode": "incremental",
+            "ms": 14.996833000001061,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 153806,
+            "totalBytes": 4024738,
+            "workerMs": 15.011124999999083
+          }
+        ]
+      },
+      "samples": [
+        {
+          "kind": "cold",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "selectivedecode": 3.900000002235174,
+              "selectiveverify": 0.4999999962747097,
+              "selectivefetch": 20.400000005960464,
+              "comparison": 0.6000000014901161,
+              "previewProjection": 0.30000000074505806
+            },
+            "chunks": 6,
+            "fetchedBytes": 154621,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 0,
+            "route": "selective",
+            "workerMs": 34.20000000298023,
+            "queueMs": 0,
+            "roundTripMs": 34.399999998509884,
+            "resultFreezeMs": 0.10000000149011612,
+            "uiMs": 2.699999999254942,
+            "totalMs": 37.30000000074506
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 0,
+          "timing": {
+            "stages": {
+              "selectivedecode": 5.899999998509884,
+              "selectiveverify": 0.20000000298023224,
+              "selectivefetch": 16.699999999254942,
+              "comparison": 0.4000000022351742,
+              "previewProjection": 0.19999999925494194
+            },
+            "chunks": 6,
+            "fetchedBytes": 153958,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 39.30000000074506,
+            "queueMs": 0,
+            "roundTripMs": 39.5,
+            "resultFreezeMs": 0.09999999776482582,
+            "uiMs": 16,
+            "totalMs": 56
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "selectivedecode": 5.00000000372529,
+              "selectiveverify": 0.3999999985098839,
+              "selectivefetch": 19.599999997764826,
+              "comparison": 0.30000000074505806,
+              "previewProjection": 0.19999999925494194
+            },
+            "chunks": 6,
+            "fetchedBytes": 153806,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 43.80000000074506,
+            "queueMs": 0,
+            "roundTripMs": 44.099999997764826,
+            "resultFreezeMs": 0,
+            "uiMs": 22.200000002980232,
+            "totalMs": 66.60000000149012
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 2,
+          "timing": {
+            "stages": {
+              "selectivedecode": 4.899999998509884,
+              "selectiveverify": 0.3999999985098839,
+              "selectivefetch": 17.900000002235174,
+              "comparison": 1.0999999977648258,
+              "previewProjection": 0.19999999925494194
+            },
+            "chunks": 6,
+            "fetchedBytes": 153143,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 46.100000001490116,
+            "queueMs": 0,
+            "roundTripMs": 46.400000002235174,
+            "resultFreezeMs": 0,
+            "uiMs": 11,
+            "totalMs": 57.900000002235174
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "selectivedecode": 0,
+              "selectiveverify": 0,
+              "selectivefetch": 0,
+              "comparison": 0.3999999985098839,
+              "previewProjection": 0.30000000074505806
+            },
+            "chunks": 6,
+            "fetchedBytes": 0,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 25.199999999254942,
+            "queueMs": 0,
+            "roundTripMs": 25.400000002235174,
+            "resultFreezeMs": 0,
+            "uiMs": 4.599999997764826,
+            "totalMs": 30.5
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "selectivedecode": 0,
+              "selectiveverify": 0,
+              "selectivefetch": 0,
+              "comparison": 0.19999999925494194,
+              "previewProjection": 0.10000000149011612
+            },
+            "chunks": 6,
+            "fetchedBytes": 0,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 0,
+            "route": "selective",
+            "workerMs": 12.600000001490116,
+            "queueMs": 0,
+            "roundTripMs": 13,
+            "resultFreezeMs": 0,
+            "uiMs": 9.5,
+            "totalMs": 22.800000000745058
+          }
+        }
+      ],
+      "exactPreviewAndLiveInvariance": true,
+      "compactBoundary": true
+    },
+    {
+      "name": "surround-25000",
+      "length": 200,
+      "surround": 25000,
+      "baselineBytes": 16234070,
+      "compactRevisionBytes": [
+        1915,
+        1817,
+        1817
+      ],
+      "initialFallback": {
+        "stages": {
+          "pathFetch": 16.800000000745058,
+          "checkpointFetch": 962.7999999932945,
+          "decode": 177.30000001192093,
+          "verification": 182.09999999403954,
+          "checkpointLoad": 277.19999999925494,
+          "serialization": 366.69999999925494,
+          "freezing": 60.19999999925494,
+          "selectedReconstruction": 1010,
+          "subtree": 14.199999999254942,
+          "comparison": 0.6000000014901161,
+          "previewProjection": 0.5
+        },
+        "chunks": 16,
+        "fetchedBytes": 16234070,
+        "replayRecords": 0,
+        "checkpointHits": 0,
+        "headHits": 0,
+        "workerMs": 1037.6000000014901,
+        "route": "full",
+        "fallback": "Error: Selective history: no certified acceleration",
+        "queueMs": 0,
+        "roundTripMs": 1038,
+        "resultFreezeMs": 0,
+        "uiMs": 13.300000000745058,
+        "totalMs": 1051.7000000029802
+      },
+      "maintenance": {
+        "ready": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "pending": 0,
+        "maintenance": [
+          {
+            "sequence": 0,
+            "mode": "baseline",
+            "ms": 1517.7679580000004,
+            "updatedRows": 50904,
+            "changedBundles": 252,
+            "bytesWritten": 17266981,
+            "totalBytes": 17266981,
+            "rebuildVerificationMs": 947.7023339999978,
+            "workerMs": 2486.4164170000004
+          },
+          {
+            "sequence": 1,
+            "mode": "incremental",
+            "ms": 31.458167000000685,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 155855,
+            "totalBytes": 17422836,
+            "workerMs": 31.47791700000016
+          },
+          {
+            "sequence": 2,
+            "mode": "incremental",
+            "ms": 40.02708300000086,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 141028,
+            "totalBytes": 17563864,
+            "workerMs": 40.046291999999085
+          },
+          {
+            "sequence": 3,
+            "mode": "incremental",
+            "ms": 44.0247920000038,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 141691,
+            "totalBytes": 17705555,
+            "workerMs": 44.03558399999747
+          }
+        ]
+      },
+      "samples": [
+        {
+          "kind": "cold",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "selectivedecode": 3.8000000044703484,
+              "selectiveverify": 0.8999999947845936,
+              "selectivefetch": 23.800000000745058,
+              "comparison": 0.5,
+              "previewProjection": 0
+            },
+            "chunks": 8,
+            "fetchedBytes": 149773,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 0,
+            "route": "selective",
+            "workerMs": 38.69999999925494,
+            "queueMs": 0,
+            "roundTripMs": 38.899999998509884,
+            "resultFreezeMs": 0,
+            "uiMs": 19.800000000745058,
+            "totalMs": 58.80000000074506
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 0,
+          "timing": {
+            "stages": {
+              "selectivedecode": 4.100000001490116,
+              "selectiveverify": 0.09999999776482582,
+              "selectivefetch": 23.30000000447035,
+              "comparison": 0.30000000074505806,
+              "previewProjection": 0.19999999925494194
+            },
+            "chunks": 8,
+            "fetchedBytes": 149110,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 42.19999999925494,
+            "queueMs": 0,
+            "roundTripMs": 42.30000000074506,
+            "resultFreezeMs": 0,
+            "uiMs": 24.099999997764826,
+            "totalMs": 66.69999999925494
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "selectivedecode": 3.399999998509884,
+              "selectiveverify": 0.4000000022351742,
+              "selectivefetch": 17.80000000447035,
+              "comparison": 0.4000000022351742,
+              "previewProjection": 0.19999999925494194
+            },
+            "chunks": 8,
+            "fetchedBytes": 141691,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 40.69999999925494,
+            "queueMs": 0.10000000149011612,
+            "roundTripMs": 41,
+            "resultFreezeMs": 0,
+            "uiMs": 13.800000000745058,
+            "totalMs": 55.099999997764826
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 2,
+          "timing": {
+            "stages": {
+              "selectivedecode": 4.600000005215406,
+              "selectiveverify": 0.5999999977648258,
+              "selectivefetch": 20.69999999552965,
+              "comparison": 0.3999999985098839,
+              "previewProjection": 0.20000000298023224
+            },
+            "chunks": 8,
+            "fetchedBytes": 141028,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 42.80000000074506,
+            "queueMs": 0,
+            "roundTripMs": 43,
+            "resultFreezeMs": 0,
+            "uiMs": 20.600000001490116,
+            "totalMs": 63.80000000074506
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "selectivedecode": 0,
+              "selectiveverify": 0,
+              "selectivefetch": 0,
+              "comparison": 0.4000000022351742,
+              "previewProjection": 0.09999999776482582
+            },
+            "chunks": 8,
+            "fetchedBytes": 0,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 1,
+            "route": "selective",
+            "workerMs": 16.300000000745058,
+            "queueMs": 0,
+            "roundTripMs": 16.5,
+            "resultFreezeMs": 0,
+            "uiMs": 4.5,
+            "totalMs": 21.300000000745058
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "selectivedecode": 0,
+              "selectiveverify": 0,
+              "selectivefetch": 0,
+              "comparison": 0.30000000074505806,
+              "previewProjection": 0
+            },
+            "chunks": 8,
+            "fetchedBytes": 0,
+            "replayRecords": 0,
+            "checkpointHits": 0,
+            "headHits": 0,
+            "route": "selective",
+            "workerMs": 12.300000000745058,
+            "queueMs": 0.09999999776482582,
+            "roundTripMs": 12.699999999254942,
+            "resultFreezeMs": 0,
+            "uiMs": 18.800000000745058,
+            "totalMs": 31.800000000745058
+          }
+        }
+      ],
+      "exactPreviewAndLiveInvariance": true,
+      "compactBoundary": true
+    },
+    {
+      "name": "single-25000",
+      "length": 25000,
+      "surround": 0,
+      "baselineBytes": 15926778,
+      "compactRevisionBytes": [
+        1921,
+        1823,
+        1823
+      ],
+      "initialFallback": {
+        "stages": {
+          "pathFetch": 30,
+          "checkpointFetch": 1903.3000000044703,
+          "decode": 236.60000000149012,
+          "verification": 207.10000000149012,
+          "checkpointLoad": 547.2999999970198,
+          "serialization": 520.4000000022352,
+          "freezing": 80.30000000074506,
+          "selectedReconstruction": 1509.199999999255,
+          "subtree": 247.90000000223517,
+          "comparison": 50.899999998509884,
+          "previewProjection": 6.899999998509884
+        },
+        "chunks": 16,
+        "fetchedBytes": 15926778,
+        "replayRecords": 0,
+        "checkpointHits": 0,
+        "headHits": 0,
+        "workerMs": 1822.5,
+        "route": "full",
+        "fallback": "Error: Selective history: no certified acceleration",
+        "queueMs": 0,
+        "roundTripMs": 1823.0999999977648,
+        "resultFreezeMs": 0,
+        "uiMs": 14.800000000745058,
+        "totalMs": 1838.199999999255
+      },
+      "maintenance": {
+        "ready": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "pending": 0,
+        "maintenance": [
+          {
+            "sequence": 0,
+            "mode": "baseline",
+            "ms": 3653.5162920000002,
+            "updatedRows": 50004,
+            "changedBundles": 2,
+            "bytesWritten": 16626210,
+            "totalBytes": 16626210,
+            "rebuildVerificationMs": 1576.1982910000006,
+            "workerMs": 5293.2749170000025
+          },
+          {
+            "sequence": 1,
+            "mode": "incremental",
+            "ms": 33.04116699999577,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 237394,
+            "totalBytes": 16863604,
+            "workerMs": 33.078708000000915
+          },
+          {
+            "sequence": 2,
+            "mode": "incremental",
+            "ms": 43.28616599999805,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 89750,
+            "totalBytes": 16953354,
+            "workerMs": 43.30483300000196
+          },
+          {
+            "sequence": 3,
+            "mode": "incremental",
+            "ms": 316.2441670000044,
+            "updatedRows": 3,
+            "changedBundles": 1,
+            "bytesWritten": 89750,
+            "totalBytes": 17043104,
+            "workerMs": 316.2719169999982
+          }
+        ]
+      },
+      "samples": [
+        {
+          "kind": "cold",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "pathFetch": 32.30000000074506,
+              "checkpointFetch": 1348.0999999977648,
+              "decode": 209.6000000089407,
+              "verification": 649.7999999970198,
+              "checkpointLoad": 388,
+              "serialization": 526.5,
+              "freezing": 53.100000001490116,
+              "cloning": 136.19999999925494,
+              "replayApply": 0.5,
+              "selectedReconstruction": 1937.300000000745,
+              "subtree": 206.30000000074506,
+              "comparison": 39.399999998509884,
+              "previewProjection": 4.699999999254942
+            },
+            "chunks": 16,
+            "fetchedBytes": 15926778,
+            "replayRecords": 3,
+            "checkpointHits": 0,
+            "headHits": 0,
+            "workerMs": 2209.099999997765,
+            "route": "full",
+            "fallback": "Error: Selective history: full route: closure byte/page cost",
+            "queueMs": 0.10000000149011612,
+            "roundTripMs": 2209.89999999851,
+            "resultFreezeMs": 0,
+            "uiMs": 19.699999999254942,
+            "totalMs": 2229.800000000745
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 0,
+          "timing": {
+            "stages": {
+              "pathFetch": 15.199999999254942,
+              "selectedReconstruction": 15.199999999254942,
+              "subtree": 467.30000000074506,
+              "headAuthorityFetch": 39.899999998509884,
+              "comparison": 57.19999999925494,
+              "previewProjection": 16
+            },
+            "chunks": 0,
+            "fetchedBytes": 0,
+            "replayRecords": 0,
+            "checkpointHits": 1,
+            "headHits": 1,
+            "workerMs": 625.8999999985099,
+            "route": "full",
+            "fallback": "Error: Selective history: full route: closure byte/page cost",
+            "queueMs": 0,
+            "roundTripMs": 626.3000000007451,
+            "resultFreezeMs": 0.10000000149011612,
+            "uiMs": 18.199999999254942,
+            "totalMs": 645.1999999992549
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "pathFetch": 23.199999999254942,
+              "cloning": 125.80000000074506,
+              "decode": 0,
+              "serialization": 36.099999997764826,
+              "replayApply": 0.19999999925494194,
+              "verification": 116.70000000298023,
+              "selectedReconstruction": 314.5,
+              "subtree": 268.3999999985099,
+              "headAuthorityFetch": 127.89999999850988,
+              "comparison": 104,
+              "previewProjection": 36
+            },
+            "chunks": 0,
+            "fetchedBytes": 0,
+            "replayRecords": 1,
+            "checkpointHits": 1,
+            "headHits": 1,
+            "workerMs": 875,
+            "route": "full",
+            "fallback": "Error: Selective history: full route: closure byte/page cost",
+            "queueMs": 0,
+            "roundTripMs": 875.5999999977648,
+            "resultFreezeMs": 0.5,
+            "uiMs": 32.19999999925494,
+            "totalMs": 909.1000000014901
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 2,
+          "timing": {
+            "stages": {
+              "pathFetch": 28.200000002980232,
+              "cloning": 210.30000000074506,
+              "decode": 0.20000000298023224,
+              "serialization": 75.99999999627471,
+              "replayApply": 0.30000000074505806,
+              "verification": 221.10000000149012,
+              "selectedReconstruction": 552.2000000029802,
+              "subtree": 209.39999999850988,
+              "headAuthorityFetch": 27.699999999254942,
+              "comparison": 42.20000000298023,
+              "previewProjection": 11.199999999254942
+            },
+            "chunks": 0,
+            "fetchedBytes": 0,
+            "replayRecords": 2,
+            "checkpointHits": 1,
+            "headHits": 1,
+            "workerMs": 864.3000000007451,
+            "route": "full",
+            "fallback": "Error: Selective history: full route: closure byte/page cost",
+            "queueMs": 0.10000000149011612,
+            "roundTripMs": 864.8000000007451,
+            "resultFreezeMs": 0,
+            "uiMs": 14.300000000745058,
+            "totalMs": 880
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 1,
+          "timing": {
+            "stages": {
+              "pathFetch": 20.600000001490116,
+              "cloning": 139.89999999850988,
+              "decode": 0,
+              "serialization": 33.600000001490116,
+              "replayApply": 0.19999999925494194,
+              "verification": 74.40000000223517,
+              "selectedReconstruction": 276.30000000074506,
+              "subtree": 176.39999999850988,
+              "headAuthorityFetch": 26.5,
+              "comparison": 43.5,
+              "previewProjection": 10.799999997019768
+            },
+            "chunks": 0,
+            "fetchedBytes": 0,
+            "replayRecords": 1,
+            "checkpointHits": 1,
+            "headHits": 1,
+            "workerMs": 549.8999999985099,
+            "route": "full",
+            "fallback": "Error: Selective history: full route: closure byte/page cost",
+            "queueMs": 0,
+            "roundTripMs": 550.1000000014901,
+            "resultFreezeMs": 0,
+            "uiMs": 16.800000000745058,
+            "totalMs": 567.1999999992549
+          }
+        },
+        {
+          "kind": "warm",
+          "sequence": 3,
+          "timing": {
+            "stages": {
+              "pathFetch": 22.199999999254942,
+              "cloning": 123.90000000223517,
+              "decode": 0.19999999925494194,
+              "serialization": 105.6000000052154,
+              "replayApply": 0.4000000022351742,
+              "verification": 179.30000000074506,
+              "selectedReconstruction": 455.9000000022352,
+              "subtree": 174.5,
+              "comparison": 33.900000002235174,
+              "previewProjection": 3.2000000029802322
+            },
+            "chunks": 0,
+            "fetchedBytes": 0,
+            "replayRecords": 3,
+            "checkpointHits": 1,
+            "headHits": 0,
+            "workerMs": 691.2000000029802,
+            "route": "full",
+            "fallback": "Error: Selective history: full route: closure byte/page cost",
+            "queueMs": 0,
+            "roundTripMs": 691.5,
+            "resultFreezeMs": 0.09999999776482582,
+            "uiMs": 33.70000000298023,
+            "totalMs": 725.9000000022352
+          }
+        }
+      ],
+      "exactPreviewAndLiveInvariance": true,
+      "compactBoundary": true
+    }
+  ],
+  "finished": "2026-09-18T10:33:55.138Z",
+  "browserDiagnostics": {
+    "stderr": "\nDevTools listening on ws://127.0.0.1:62265/devtools/browser/6bd66f6b-ad72-4f6e-9727-5ff7a139a69c\nTrying to load the allocator multiple times. This is *not* supported.\n[40009:467413:0918/203320.529030:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203320.529655:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203320.536909:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203320.537002:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203320.541141:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203320.541239:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203320.541581:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203320.541677:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203320.541951:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203320.542016:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203320.571926:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203320.572034:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203322.498309:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203322.498389:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203322.636584:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203322.636688:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203322.703988:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203322.704064:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203322.798663:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203322.798747:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203322.921353:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203322.921456:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203323.078425:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203323.078550:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40005:467401:0918/203323.108666:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[40009:467413:0918/203323.185641:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203323.185770:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467413:0918/203323.218572:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[40009:467473:0918/203323.218700:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\nCreated TensorFlow Lite XNNPACK delegate for CPU.\n[40104:468463:0918/203339.383272:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake-all --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[40104:468463:0918/203339.386581:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25132, parent pid: 40005\n[40104:468463:0918/203339.389589:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40104:468463:0918/203339.389611:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40104:468463:0918/203339.389863:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[40106:468467:0918/203339.404398:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[40106:468467:0918/203339.405029:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25132, parent pid: 1\n[40106:468467:0918/203339.407722:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40106:468467:0918/203339.407772:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40106:468467:0918/203339.408036:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[40104:468463:0918/203339.409547:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[40104:468463:0918/203339.411118:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[40104:468463:0918/203339.411264:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[40104:468463:0918/203339.411845:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[40104:468463:0918/203339.412590:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[40104:468475:0918/203339.413092:VERBOSE1:chrome/updater/app/app_wakeall.cc:58] Launching `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake`\n[40107:468479:0918/203339.425095:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[40107:468479:0918/203339.426076:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25132, parent pid: 40104\n[40107:468479:0918/203339.430413:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40107:468479:0918/203339.430439:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40107:468479:0918/203339.430631:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[40109:468483:0918/203339.443468:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[40109:468483:0918/203339.444192:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 25132, parent pid: 1\n[40109:468483:0918/203339.447009:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40109:468483:0918/203339.447033:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 22694395904B (21.136GiB) / 245107195904B (228.274GiB)\n[40109:468483:0918/203339.447152:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[40107:468479:0918/203339.447852:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[40107:468479:0918/203339.449173:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[40107:468479:0918/203339.449320:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[40107:468479:0918/203339.449469:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[40107:468479:0918/203339.449708:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[40107:468479:0918/203339.449981:VERBOSE1:chrome/updater/ipc/update_service_internal_proxy_mojo.cc:61] Run\n[40107:468479:0918/203343.440401:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[40107:468479:0918/203343.443051:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[40107:468479:0918/203343.443113:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake) returned 0.\n[40109:468483:0918/203343.445154:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[40109:468483:0918/203343.445222:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[40104:468475:0918/203343.584722:VERBOSE1:chrome/updater/app/app_wakeall.cc:68] `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake` exited 0\n[40104:468463:0918/203343.585146:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[40104:468463:0918/203343.585792:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[40104:468463:0918/203343.585824:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake-all) returned 0.\n[40106:468467:0918/203343.587460:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[40106:468467:0918/203343.587525:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[40005:467401:0918/203351.382197:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n",
+    "crashes": [],
+    "lifecycle": [
+      {
+        "at": 1789727600882,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C2E34C72D6D9328256DF0D3826DA9F18",
+          "name": "commit",
+          "timestamp": 25113.821559
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727600883,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C2E34C72D6D9328256DF0D3826DA9F18",
+          "name": "DOMContentLoaded",
+          "timestamp": 25113.821673
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727600883,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C2E34C72D6D9328256DF0D3826DA9F18",
+          "name": "load",
+          "timestamp": 25113.822979
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727600883,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C2E34C72D6D9328256DF0D3826DA9F18",
+          "name": "networkAlmostIdle",
+          "timestamp": 25113.822757
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727600884,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C2E34C72D6D9328256DF0D3826DA9F18",
+          "name": "networkIdle",
+          "timestamp": 25113.822757
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727600903,
+        "method": "Page.frameStartedLoading",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA"
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727600923,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "init",
+          "timestamp": 25114.084197
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727601173,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "DOMContentLoaded",
+          "timestamp": 25114.32991
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727601179,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "load",
+          "timestamp": 25114.330845
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727601184,
+        "method": "Page.frameStoppedLoading",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA"
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727604043,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "firstMeaningfulPaintCandidate",
+          "timestamp": 25115.894551
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727604057,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "firstContentfulPaint",
+          "timestamp": 25115.894551
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727604066,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "firstPaint",
+          "timestamp": 25115.894551
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727605385,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "networkAlmostIdle",
+          "timestamp": 25114.330351
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727605385,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "firstMeaningfulPaint",
+          "timestamp": 25115.894551
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727605487,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "networkIdle",
+          "timestamp": 25114.359844
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727610121,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "5F03EF8AA61DD59DF0F4EEB04A90B920",
+          "name": "InteractiveTime",
+          "timestamp": 25118.286196
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727634932,
+        "method": "Page.frameStartedLoading",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA"
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727634998,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C4608B45D913F8FE749E0402BFBC15AB",
+          "name": "init",
+          "timestamp": 25148.167479
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727635028,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C4608B45D913F8FE749E0402BFBC15AB",
+          "name": "DOMContentLoaded",
+          "timestamp": 25148.169405
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727635028,
+        "method": "Page.lifecycleEvent",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA",
+          "loaderId": "C4608B45D913F8FE749E0402BFBC15AB",
+          "name": "load",
+          "timestamp": 25148.17025
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      },
+      {
+        "at": 1789727635029,
+        "method": "Page.frameStoppedLoading",
+        "params": {
+          "frameId": "28C2D870487626711A4837A094C98DBA"
+        },
+        "sessionId": "BCD856E2B2A762F04B44E4DF8A1CF040"
+      }
+    ],
+    "probes": []
+  }
+}

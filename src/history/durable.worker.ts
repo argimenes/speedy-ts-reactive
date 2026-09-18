@@ -1,4 +1,5 @@
-import { DurableHistoryReader } from "./durable-reader";
+import { displaySelection } from "./preview";
+import { PersistentHistoryReader } from "./persistent-reader";
 /** One admitted Document. No editor/view capabilities; strict outbox, bounded
  * checkpoint reads and exact replay. Archive bodies never accumulate in a UI. */
 import { clone } from "../block-tree/clone";
@@ -12,7 +13,7 @@ import type { HistorySelection, SessionTimelineEntry } from "./ui-session-source
 
 type Checkpoint = { hash: string; byteLength: number; chunks: { hash: string; byteLength: number }[] };
 type Registration = { key: string; location: DurableLocation; enrollment: HistoryEnrollment; databaseName: string };
-type Reader = { segment: DurableSegment; selection: HistorySelection; ids: Map<string, number>; reader: DurableHistoryReader };
+type Reader = { segment: DurableSegment; selection: HistorySelection; ids: Map<string, number>; reader: PersistentHistoryReader };
 let location: DurableLocation, epoch: string, memoirId: string, segmentId: string, revisionId: string;
 let state: ResourceSnapshot, capture: WholeDocumentCapture, outbox: PersistentHistoryOutbox;
 let sourceRevision: number, stateByteLength: number, initialized = false, stopped: string | undefined, closing = false;
@@ -179,10 +180,23 @@ async function handle(data: any): Promise<any> {
     if (selection.placementId?.startsWith("session:")) { delete selection.placementId; delete selection.route; }
     if (selection.route?.some(value => value.startsWith("session:"))) delete selection.route;
     for (const prior of readers.values()) prior.reader.clear(); readers.clear();
-    const readerId = id(), reader = new DurableHistoryReader({ resourceId: location.resourceId, memoirId, segmentId: segment.segmentId, headSequence: segment.headSequence, headRevisionId: segment.headRevisionId }, selection, {
+    let derivedToken: string;
+    const readerId = id(), reader = new PersistentHistoryReader({ resourceId: location.resourceId, memoirId, segmentId: segment.segmentId, headSequence: segment.headSequence, headRevisionId: segment.headRevisionId }, selection, {
       path: (sequence, signal) => request("path", { segmentId: segment.segmentId, sequence }, false, signal),
       chunk: async (hash, signal) => (await request("chunk", { hash }, false, signal)).dataBase64,
       digest,
+    }, {
+      digest,
+      certificate: async (sequence, revisionId, signal) => {
+        const value = await request("selectiveCertificate", { segmentId: segment.segmentId, sequence, revisionId }, false, signal);
+        derivedToken = value.token; return value.certificate ?? undefined;
+      },
+      get: async (hash, signal) => {
+        const value = await request("selectiveBlob", { segmentId: segment.segmentId, token: derivedToken, hash }, false, signal);
+        const binary = atob(value.dataBase64), bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes;
+      },
     });
     readers.set(readerId, { segment, selection, reader, ids: new Map([[segment.revisionId, 0], [segment.headRevisionId, segment.headSequence]]) });
     return { readerId, segmentId: segment.segmentId, headRevisionId: segment.headRevisionId };
@@ -216,7 +230,11 @@ async function handle(data: any): Promise<any> {
     const start = performance.now();
     const result = await reader.reader.select(sequence, data.revisionId, activeRead?.controller.signal);
     result.timing!.queueMs = start - data.receivedAt;
-    return result;
+    const projectionStart = performance.now();
+    const display = displaySelection(result, { resourceId: location.resourceId, memoirId, segmentId: reader.segment.segmentId, headRevisionId: reader.segment.headRevisionId });
+    result.timing!.stages.previewProjection = performance.now() - projectionStart;
+    result.timing!.workerMs = performance.now() - start;
+    return display;
   }
   if (data.kind === "close") {
     for (const reader of readers.values()) reader.reader.clear(); readers.clear();

@@ -2,6 +2,7 @@ import { Router, json as jsonBody } from 'express';
 import { createHash } from 'node:crypto';
 import { createHistoryStore, type HistoryLocation, type HistoryCheckpoint } from './history-store.js';
 import { createHistoryValidator } from './history-validator.js';
+import { createDerivedHistory } from './history-derived.js';
 import type { PendingHistoryRecord, HistoryDurableAcknowledgement } from '../src/history/persistent-outbox.js';
 
 const sha = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
@@ -11,8 +12,11 @@ type Writer = Awaited<ReturnType<DocumentHandle['acquireWriter']>>;
 type Grant = { location: HistoryLocation; ownerId: string; writer: Writer; handle: DocumentHandle; touched: number; queue: Promise<unknown>; pending: number; closed: boolean };
 export type HistorySaveProof = { location: HistoryLocation; epoch: string; segmentId: string; revisionId: string; sequence: number };
 
-export function createHistoryService(options: { root: string; validatorWorkerUrl?: URL }) {
+export function createHistoryService(options: { root: string; validatorWorkerUrl?: URL; derivedWorkerUrl?: URL }) {
   const router = Router(), store = createHistoryStore(options), validator = createHistoryValidator({ workerUrl: options.validatorWorkerUrl }), grants = new Map<string, Grant>();
+  const derived = createDerivedHistory({ workerUrl: options.derivedWorkerUrl });
+  const derivedKey = (location: HistoryLocation, segmentId: string) => JSON.stringify([location.folder || '.', location.filename, location.resourceId, segmentId]);
+  let warming = false;
   router.use(jsonBody({ limit: '2mb' }));
   const key = (location: HistoryLocation) => JSON.stringify([location?.folder || '.', location?.filename]);
   const release = async (grant: Grant) => {
@@ -50,6 +54,20 @@ export function createHistoryService(options: { root: string; validatorWorkerUrl
     const page = distance ? await reader.records(segmentId, { afterSequence: checkpoint.sequence, limit: distance }) : { records: [] };
     ensure(page.records.length === distance, 'Incomplete history replay path.');
     return { checkpoint: checkpoint.descriptor as HistoryCheckpoint, checkpointSequence: checkpoint.sequence, records: page.records.map(record => record.record.wire as string) };
+  };
+  const warm = async (handle: DocumentHandle, location: HistoryLocation, binding: Awaited<ReturnType<DocumentHandle['reader']['revisionEvidence']>>) => {
+    const key = derivedKey(location, binding.segmentId);
+    if (warming || derived.busy(key)) return;
+    warming = true;
+    try {
+      const path = await readPath(handle.reader, binding.segmentId, binding.sequence);
+      const checkpointWire = await assemble(handle.reader, path.checkpoint);
+      // Rebuild runs in its OWN verifier/maintenance worker, never in the append queue.
+      const bindings = [];
+      for (let sequence = path.checkpointSequence; sequence <= binding.sequence; sequence++) bindings.push(await handle.reader.revisionEvidence(binding.segmentId, sequence));
+      await derived.initialize(key, { checkpointWire, records: path.records }, binding, bindings);
+    } catch { /* Optional acceleration failure does not change authoritative reads. */ }
+    finally { warming = false; }
   };
   const describe = async (handle: DocumentHandle) => {
     const details = await handle.reader.describe(); if (!details.available) return { available: false, segments: [], receipt: null };
@@ -89,9 +107,15 @@ export function createHistoryService(options: { root: string; validatorWorkerUrl
       ensure(enrollment && enrollment.resourceId === grant.location.resourceId && enrollment.memoirId === grant.location.memoirId && enrollment.segmentId === body.segmentId &&
         typeof enrollment.enrollmentId === 'string' && enrollment.enrollmentId.length > 0 && typeof enrollment.writerEpoch === 'string' && enrollment.writerEpoch.length > 0, 'Invalid immutable history enrollment.');
       ensure(Number.isSafeInteger(body.metadata.sourceRevision) && body.metadata.sourceRevision >= 0, 'Invalid enrollment source revision.');
-      await validator.validateBaseline(await assemble(grant.handle.reader, body.baseline), grant.location.resourceId);
+      const checkpointWire = await assemble(grant.handle.reader, body.baseline);
+      await validator.validateBaseline(checkpointWire, grant.location.resourceId);
       const segment = { segmentId: body.segmentId, revisionId: body.revisionId, baseline: body.baseline, metadata: body.metadata, ...(body.originReceipt ? { originReceipt: body.originReceipt } : {}) };
-      return grant.writer.beginSegment(segment);
+      const receipt = await grant.writer.beginSegment(segment);
+      try {
+        const binding = await grant.handle.reader.revisionEvidence(segment.segmentId, 0);
+        await derived.initialize(derivedKey(grant.location, segment.segmentId), { checkpointWire, records: [] }, binding);
+      } catch { /* A committed baseline never depends on optional acceleration. */ }
+      return receipt;
     }); },
     async append(body) { const grant = granted(body); return serial(grant, async () => {
       const packet = body.packet as PendingHistoryRecord;
@@ -112,8 +136,11 @@ export function createHistoryService(options: { root: string; validatorWorkerUrl
         resourceId: grant.location.resourceId, expectedSourceRevision });
       ensure(validated.revisionId === packet.recordId, 'History commit identity mismatch.');
       const checkpoint = validated.checkpointWire ? await publishCheckpoint(grant.writer, validated.checkpointWire) : undefined;
-      await grant.writer.append({ segmentId: segment.segmentId, sequence: packet.sequence, recordId: packet.recordId, revisionId: packet.recordId, stateParent: segment.headRevisionId,
+      const receipt = await grant.writer.append({ segmentId: segment.segmentId, sequence: packet.sequence, recordId: packet.recordId, revisionId: packet.recordId, stateParent: segment.headRevisionId,
         wire: packet.wire, metadata: validated.metadata, ...(checkpoint ? { checkpoint } : {}) });
+      // The archive commit and full verification precede this disposable hint.
+      // Derived maintenance is never awaited by the durable acknowledgement.
+      try { derived.append(derivedKey(grant.location, segment.segmentId), packet.wire, { resourceId: grant.location.resourceId, memoirId: grant.location.memoirId!, segmentId: segment.segmentId, sequence: packet.sequence, revisionId: packet.recordId, pathHash: receipt.hash }, validated.stateBytes); } catch {}
       return ack(packet);
     }); },
     async timeline(body) {
@@ -122,6 +149,21 @@ export function createHistoryService(options: { root: string; validatorWorkerUrl
     },
     async path(body) { return readPath((await locate(body.location)).reader, body.segmentId, body.sequence); },
     async chunk(body) { const bytes = await (await locate(body.location)).reader.chunk(body.hash); return { dataBase64: bytes.toString('base64') }; },
+    async selectiveCertificate(body) {
+      const handle = await locate(body.location), binding = await handle.reader.revisionEvidence(body.segmentId, body.sequence);
+      ensure(binding.revisionId === body.revisionId, 'Selective revision identity differs from the archive.');
+      const key = derivedKey(body.location, body.segmentId), value = derived.certificate(key, binding);
+      if (!value) void warm(handle, body.location, binding);
+      return value ?? { certificate: null };
+    },
+    async selectiveBlob(body) {
+      const bytes = await derived.blob(derivedKey(body.location, body.segmentId), body.token, body.hash);
+      return { dataBase64: bytes.toString('base64') };
+    },
+    async selectiveStatus(body) {
+      await (await locate(body.location)).reader.revisionEvidence(body.segmentId, 0);
+      return derived.status(derivedKey(body.location, body.segmentId));
+    },
   };
   for (const [name, action] of Object.entries(actions)) router.post(`/${name}`, async (req, res) => {
     try { res.json({ Success: true, Data: await action(req.body) }); }
@@ -149,6 +191,6 @@ export function createHistoryService(options: { root: string; validatorWorkerUrl
         }
       });
     },
-    async dispose() { clearInterval(timer); await Promise.all([...grants.values()].map(release)); await validator.dispose(); },
+    async dispose() { clearInterval(timer); await Promise.all([...grants.values()].map(release)); await validator.dispose(); await derived.dispose(); },
   };
 }

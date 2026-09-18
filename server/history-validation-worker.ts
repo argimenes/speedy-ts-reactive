@@ -7,39 +7,7 @@ import { DURABLE_LIMITS, affectedBlockIds, applyDurableTransitionSized, decodeDu
   decodeHistoryDocument, encodeDurableWire, encodeHistoryDocument } from '../src/history/durable-core';
 import { validateResource, type ResourceSnapshot, type ResourceTransition } from '../src/history/stage-c-gates/resource';
 
-function check(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(`History verification: ${message}`); }
-const bytes = (text: string) => Buffer.byteLength(text, 'utf8');
-function checkedBaseline(wire: string, resourceId?: string): { state: ResourceSnapshot; byteLength: number } {
-  check(typeof wire === 'string' && bytes(wire) <= DURABLE_LIMITS.supportedStateBytes, 'checkpoint byte limit');
-  const state = decodeDurableWire(wire) as ResourceSnapshot;
-  validateResource(state);
-  check(!resourceId || state.resourceId === resourceId, 'resource identity mismatch');
-  check(Object.keys(state.contents).length + Object.keys(state.placements).length <= DURABLE_LIMITS.maxGraphRecords, 'checkpoint graph limit');
-  return { state, byteLength: bytes(wire) };
-}
-function checkedEvent(wire: string, resourceId: string): ResourceTransition {
-  check(typeof wire === 'string' && bytes(wire) <= DURABLE_LIMITS.recordBytes, 'record byte limit');
-  const event = decodeDurableWire(wire) as ResourceTransition;
-  check(event && event.format === 'codex-resource-transition-gate' && event.resourceId === resourceId &&
-    typeof event.commitId === 'string' && !!event.commitId && typeof event.timestamp === 'string' &&
-    typeof event.label === 'string' && event.cause && ['edit', 'undo', 'redo'].includes(event.cause.kind) &&
-    Array.isArray(event.contents) && Array.isArray(event.placements) && Array.isArray(event.commands), 'invalid transition envelope');
-  return event;
-}
-function applySized(working: { state: ResourceSnapshot; byteLength: number }, event: ResourceTransition): void {
-  working.byteLength = applyDurableTransitionSized(working.state, event, working.byteLength);
-}
-function reconstruct(request: { checkpointWire: string; records: string[]; resourceId?: string }) {
-  check(Array.isArray(request.records) && request.records.length <= DURABLE_LIMITS.maxReadPath, 'checkpoint path distance');
-  const working = checkedBaseline(request.checkpointWire, request.resourceId);
-  let last: ResourceTransition | undefined;
-  for (const wire of request.records) {
-    const event = checkedEvent(wire, working.state.resourceId);
-    if (last) check(event.sourceCounters.before === last.sourceCounters.after, 'noncontiguous source counter');
-    applySized(working, event); last = event;
-  }
-  return { ...working, last };
-}
+import { check, bytes, checkedBaseline, checkedEvent, applySized, reconstruct } from "./history-verification";
 function verify(method: string, request: any): unknown {
   if (method === 'baseline') {
     const baseline = checkedBaseline(request.wire, request.resourceId);
@@ -57,7 +25,7 @@ function verify(method: string, request: any): unknown {
     const before: ResourceSnapshot = { ...working.state, contents: { ...working.state.contents }, placements: { ...working.state.placements } };
     for (const change of event.contents) if (before.contents[change.key]) before.contents[change.key] = clone(before.contents[change.key]);
     applySized(working, event);
-    const result: any = { revisionId: event.commitId, metadata: { timestamp: event.timestamp, label: event.label,
+    const result: any = { stateBytes: working.byteLength, revisionId: event.commitId, metadata: { timestamp: event.timestamp, label: event.label,
       cause: event.cause.kind, affectedBlockIds: affectedBlockIds(before, working.state, event), sourceRevision: event.sourceCounters.after } };
     if (working.state.revision % DURABLE_LIMITS.checkpointDistance === 0) {
       result.checkpointWire = encodeDurableWire(working.state);

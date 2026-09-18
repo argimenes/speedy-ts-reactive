@@ -62,8 +62,8 @@ describe("persistent worker bridge", () => {
     const s = setup(); s.worker.answer("init", {}); const source = await s.opening;
     const opening = source.open({ blockId: "p" }); s.worker.answer("openReader", { readerId: "reader", headRevisionId: "head", segmentId: "segment" });
     const reader = await opening; expect(reader.storage).toBe("persistent");
-    const selecting = reader.select("old"); s.worker.answer("select", { selected: { status: "available", fragment: { contents: { p: { payload: { text: "original" } } } } }, comparison: { changes: [] } });
-    const result = await selecting; expect(Object.isFrozen(result.selected.fragment!.contents.p.payload)).toBe(true);
+    const selecting = reader.select("old"); s.worker.answer("select", { selected: { status: "available", missingDependencies: false, root: { runs: [{ text: "original", classes: "" }] } }, comparison: { changes: [] } });
+    const result = await selecting; expect(Object.isFrozen(result.selected.root!.runs)).toBe(true);
     const controller = new AbortController(), cancelled = reader.select("old", { signal: controller.signal });
     controller.abort(); await expect(cancelled).rejects.toMatchObject({ name: "AbortError" });
     expect(s.worker.messages.at(-1).kind).toBe("cancel"); expect(reader.headRevisionId).toBe("head");

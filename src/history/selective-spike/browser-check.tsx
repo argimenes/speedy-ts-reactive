@@ -1,6 +1,6 @@
 import { render } from "solid-js/web";
 import { freeze } from "../../block-tree/commit-capture";
-import { HistoricalPreview } from "../../rendering/block-history";
+import { HistoricalPreview } from "./full-preview-oracle";
 import { CompactPreviewView } from "./preview-view";
 const worker = new Worker(new URL("./browser.worker.ts", import.meta.url), { type: "module" });
 let next = 0, dispose: (() => void) | undefined;

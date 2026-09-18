@@ -1,15 +1,37 @@
 # Block history — minimum path to an initial UI slice
 
 Date: 2026-09-18. **Status: initial UI review accepted; persistent restart slice
-passed; read acceleration and a bounded selective-reader spike completed for
-review. Production still uses the full reader.** The user authorized this increment and the minimum parallel
+passed; bounded production selective reads and compact UI previews integrated
+for review, with the full reader retained as authority/fallback.** The user authorized this increment and the minimum parallel
 persistent-path slices below, not the full P1–P6 programme. Stage C is not complete.
 The immediate target is one explicitly enrolled local Document: edit it, inspect
 a Block's earlier revisions in Codex, restart, and inspect the same persistent
 history. Keep ordinary undo, Save and current Document state independent of the
 history preview. No new G3 qualification programme is part of this scope.
 
-## Selective-reader spike — review checkpoint
+## Production read integration — review checkpoint
+
+The accepted spike direction now runs behind the existing panel. See the
+[production design, limits and measurements](BLOCK_HISTORY_PRODUCTION_INTEGRATION.md).
+The UI receives compact immutable preview/status/comparison data; exact graphs
+remain in the history subsystem. Native durable publication feeds a separate
+bounded incremental derived worker. Ordinary text edits update affected record
+buckets and semantic inline pages; structural changes and missing certificates
+use background rebuilding with the exact full reader available throughout.
+
+The 200-character Block selects in **37–65 ms cold and 21–67 ms subsequently**
+across 500, 5,000 and 25,000 surrounding characters. The 25,000-character single
+Block correctly takes the full route (**2.23 s cold, 0.57–0.91 s warm**), with only
+14–34 ms in main-thread UI publication. Background initialization still costs
+up to 5.3 s in these fixtures; normal edit/undo/redo updates three rows in one
+bundle rather than materializing the whole Document revision. Storage amplification,
+the 128 MiB disposable cache cap, restart rebuilding and fallback are explicit in
+the report. Existing archive/capture/undo/admission semantics are unchanged.
+
+This is the requested bounded integration, not completion of P6 or the wider
+Stage C production-hardening programme. Stop for review after the focused checks.
+
+## Selective-reader spike — earlier review checkpoint
 
 The authorized bounded spike now has exact parity evidence and browser timings.
 A fixed 200-character Block selects in **47–48 ms cold** across Documents with
@@ -33,10 +55,10 @@ in the worker.
 
 **Stopped for review.** The [spike report](BLOCK_HISTORY_SELECTIVE_READER_SPIKE.md)
 contains parity coverage, all timings and preparation costs, preserved unsuccessful
-and successful artifacts, and explicit integration limits. The production panel,
-archive format and capture path are unchanged. Certificate persistence, incremental
-materialization/update policy and production routing are not implemented by this
-spike; P6, richer UI and restoration remain deferred.
+and successful artifacts, and explicit integration limits. At that checkpoint the production panel,
+archive format and capture path were unchanged. Certificate persistence, incremental
+materialization/update policy and production routing were not implemented by the
+isolated spike; P6, richer UI and restoration remain deferred.
 
 ## Read-path performance follow-up — 2026-09-18
 
@@ -355,14 +377,13 @@ history in this first read-only slice.
 
 ## Recommended next increment
 
-The small panel and the admitted persistent path have reached the requested
-review milestones. The subsequent focused read acceleration is implemented;
-review the [completed selective-reader spike](BLOCK_HISTORY_SELECTIVE_READER_SPIKE.md)
-before integrating selective reads/compact transport into production or expanding
-the UI. Extend supported
-cases or begin P6's large qualification matrix only as a separately scoped next
-increment. The labelled temporary adapter remains available for unsaved samples;
-saved admitted Documents use the persistent path proved above.
+The small panel, admitted persistent path and bounded production read integration
+have reached their review milestones. Review the
+[production integration results](BLOCK_HISTORY_PRODUCTION_INTEGRATION.md) before
+expanding the UI or qualifying broader cases. No additional G3/P6 campaign is
+required for this review. Unsaved samples retain the labelled temporary adapter;
+admitted saved Documents use persistent history with selective acceleration where
+its authenticated closure cost is advantageous.
 
 References: [Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md),
 [gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md),

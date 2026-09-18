@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "started": "2026-09-18T10:41:38.467Z",
+  "assertions": [],
+  "phases": [],
+  "errors": [
+    "Error: Native startup exit 1: node:internal/modules/esm/resolve:275\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/history-router.js' imported from /private/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/codex-persistent-ui-p9U4UI/native-server.mjs\n    at finalizeResolution (node:internal/modules/esm/resolve:275:11)\n    at moduleResolve (node:internal/modules/esm/resolve:932:10)\n    at defaultResolve (node:internal/modules/esm/resolve:1056:11)\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/history-router.js'\n}\n\nNode.js v22.12.0\n\n    at ChildProcess.<anonymous> (file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/check-persistent-block-history.mjs:38:145)\n    at Object.onceWrapper (node:events:639:26)\n    at ChildProcess.emit (node:events:524:28)\n    at ChildProcess._handle.onexit (node:internal/child_process:293:12)"
+  ],
+  "nativeLog": "node:internal/modules/esm/resolve:275\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/history-router.js' imported from /private/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/codex-persistent-ui-p9U4UI/native-server.mjs\n    at finalizeResolution (node:internal/modules/esm/resolve:275:11)\n    at moduleResolve (node:internal/modules/esm/resolve:932:10)\n    at defaultResolve (node:internal/modules/esm/resolve:1056:11)\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/history-router.js'\n}\n\nNode.js v22.12.0\n",
+  "finished": "2026-09-18T10:41:38.547Z",
+  "browserDiagnostics": {
+    "stderr": "",
+    "crashes": [],
+    "lifecycle": [],
+    "probes": []
+  }
+}

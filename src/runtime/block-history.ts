@@ -1,3 +1,4 @@
+import type { HistoryDisplayResult } from "../history/preview";
 import { createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
 import { encodeDocument } from "../block-tree/codecs";
@@ -7,12 +8,12 @@ import type { DocumentLocation } from "../reactive-editor/persistence";
 import type { HistorySelection } from "../history/ui-session-source";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { blockAncestors } from "./block-menu-actions";
-import { createSessionHistorySource, type SessionHistoryRecorder, type ReadonlyHistorySession, type HistorySelectionResult, type SessionTimelineEntry } from "../history/ui-session-source";
+import { createSessionHistorySource, type SessionHistoryRecorder, type ReadonlyHistorySession, type SessionTimelineEntry } from "../history/ui-session-source";
 
 type HistoryPanelState = {
   open: boolean; viewId?: string; title: string; message: string; error: string;
   loading: boolean; selecting: boolean; incomplete: boolean; entries: readonly SessionTimelineEntry[];
-  nextCursor?: string; selectedRevisionId?: string; result?: HistorySelectionResult;
+  nextCursor?: string; selectedRevisionId?: string; result?: HistoryDisplayResult;
   storage: "session-only" | "persistent"; sessions: readonly DurableSegment[]; segmentId?: string;
   recording?: Readonly<DurableRecorderStatus>; recordingError?: string;
   selectionTiming?: import("../history/read-timing").ReadTiming;
@@ -23,7 +24,7 @@ export class BlockHistorySession {
   readonly owner = "block-history-panel";
   readonly state: HistoryPanelState;
   private setState;
-  private readonly resultSignal = createSignal<HistorySelectionResult>();
+  private readonly resultSignal = createSignal<HistoryDisplayResult>();
   private recorder?: { root: string; source: SessionHistoryRecorder };
   private session?: ReadonlyHistorySession;
   private location?: DocumentLocation;
