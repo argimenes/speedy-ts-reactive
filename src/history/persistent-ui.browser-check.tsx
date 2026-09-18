@@ -9,7 +9,7 @@ import { decodeDurableWire, replayDurablePath, resourceToRepository } from "./du
 import { createSessionHistorySource } from "./ui-session-source";
 import type { ResourceSnapshot, ResourceTransition } from "./stage-c-gates/resource";
 
-const filename = "large-document.json", folder = ".";
+const filename = new URLSearchParams(location.search).get("file") ?? "large-document.json", folder = ".";
 const loaded = await PersistenceService.loadDocument(filename, folder);
 const editor = new ReactiveEditor(loaded);
 registerCoreViews(editor);

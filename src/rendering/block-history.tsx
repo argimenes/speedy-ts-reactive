@@ -2,7 +2,7 @@ import { For, Show, createMemo, onCleanup, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { DeepReadonly } from "../block-tree/commit-capture";
-import type { ContentRecord } from "../block-tree/types";
+import { textRuns } from "../history/preview-text";
 import type { HistoricalFragment, OccurrenceTree, SubtreeResult } from "../history/types";
 import "./block-history.css";
 
@@ -11,19 +11,6 @@ const textTypes = new Set(["standoff-editor-block", "plain-text-block", "code-mi
 const labels: Record<string, string> = { authored: "Content or properties changed", children: "Child Blocks changed", location: "Location changed", dependency: "References or annotations changed", created: "Block created", deleted: "Block deleted" };
 const typeLabel = (type: string) => type.replace(/-block$/, "").replaceAll("-", " ");
 
-/** Only inert text and a fixed annotation style allowlist; no live view registry. */
-function textRuns(content: DeepReadonly<ContentRecord>, fragment: DeepReadonly<HistoricalFragment>) {
-  const value = content.inlineContent.length ? content.inlineContent.map(key => {
-    const cell = fragment.contents[fragment.placements[key]?.contentKey];
-    return cell?.viewType === "image-cell" ? "[Image]" : String(cell?.payload.text ?? "");
-  }).join("") : String(content.payload.text ?? "");
-  const points = [...value];
-  const annotations = (Array.isArray(content.payload.standoffProperties) ? content.payload.standoffProperties : []) as readonly { type?: string; start?: number; end?: number; isDeleted?: boolean }[];
-  const active = annotations.filter(a => !a.isDeleted && Number.isSafeInteger(a.start) && Number.isSafeInteger(a.end) && a.start! >= 0 && a.end! >= a.start!);
-  const boundaries = [...new Set([0, points.length, ...active.flatMap(a => [Math.min(points.length, a.start!), Math.min(points.length, a.end! + 1)])])].sort((a, b) => a - b);
-  const styles: Record<string, string> = { "style/bold": "history-bold", "style/italics": "history-italic", "style/underline": "history-underline", "style/highlight": "history-highlight", "style/highlighter": "history-highlight", "style/strikethrough": "history-strike" };
-  return boundaries.slice(0, -1).map((start, index) => ({ text: points.slice(start, boundaries[index + 1]).join(""), classes: active.filter(a => a.start! <= start && a.end! >= start).map(a => styles[a.type ?? ""] ?? "").join(" ") }));
-}
 
 function HistoricalBlock(props: { fragment: DeepReadonly<HistoricalFragment>; contentKey: string; tree?: DeepReadonly<OccurrenceTree> }) {
   const content = () => props.fragment.contents[props.contentKey];

@@ -1,17 +1,18 @@
+import { DurableHistoryReader } from "./durable-reader";
 /** One admitted Document. No editor/view capabilities; strict outbox, bounded
  * checkpoint reads and exact replay. Archive bodies never accumulate in a UI. */
 import { clone } from "../block-tree/clone";
-import { WholeDocumentCapture, projectWholeDocument, encodeDurableWire, decodeDurableWire,
-  encodeHistoryDocument, queryDurableSubtree, compareDurableSubtrees, replayDurablePath,
+import { WholeDocumentCapture, projectWholeDocument, encodeDurableWire,
+  encodeHistoryDocument,
   applyDurableTransitionSized, assertBoundedSnapshot, DURABLE_LIMITS } from "./durable-core";
 import { PersistentHistoryOutbox, type HistoryEnrollment, type HistoryOutboxStatus } from "./persistent-outbox";
-import type { ResourceSnapshot, ResourceTransition } from "./stage-c-gates/resource";
+import type { ResourceSnapshot } from "./stage-c-gates/resource";
 import type { DurableLocation, DurableSegment } from "./durable-browser";
 import type { HistorySelection, SessionTimelineEntry } from "./ui-session-source";
 
 type Checkpoint = { hash: string; byteLength: number; chunks: { hash: string; byteLength: number }[] };
 type Registration = { key: string; location: DurableLocation; enrollment: HistoryEnrollment; databaseName: string };
-type Reader = { segment: DurableSegment; selection: HistorySelection; ids: Map<string, number> };
+type Reader = { segment: DurableSegment; selection: HistorySelection; ids: Map<string, number>; reader: DurableHistoryReader };
 let location: DurableLocation, epoch: string, memoirId: string, segmentId: string, revisionId: string;
 let state: ResourceSnapshot, capture: WholeDocumentCapture, outbox: PersistentHistoryOutbox;
 let sourceRevision: number, stateByteLength: number, initialized = false, stopped: string | undefined, closing = false;
@@ -26,11 +27,10 @@ function check(condition: unknown, message: string): asserts condition { if (!co
 const id = () => crypto.randomUUID();
 const digest = async (bytes: Uint8Array) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes as BufferSource)), b => b.toString(16).padStart(2, "0")).join("");
 const toBase64 = (bytes: Uint8Array) => { let text = ""; for (let start = 0; start < bytes.length; start += 8192) text += String.fromCharCode(...bytes.subarray(start, start + 8192)); return btoa(text); };
-const fromBase64 = (value: string) => Uint8Array.from(atob(value), c => c.charCodeAt(0));
-async function request(action: string, data: Record<string, unknown> = {}, keepalive = false) {
+async function request(action: string, data: Record<string, unknown> = {}, keepalive = false, signal?: AbortSignal) {
   const response = await fetch(`/api/history/${action}`, { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ location, epoch, ...data }), keepalive, signal: keepalive ? undefined :
-      activeRead && ["describe", "timeline", "path", "chunk"].includes(action) ? AbortSignal.any([activeRead.controller.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000) });
+      signal || activeRead && ["describe", "timeline", "path", "chunk"].includes(action) ? AbortSignal.any([signal ?? activeRead!.controller.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000) });
   const body = await response.json();
   if (!response.ok || !body.Success) throw Object.assign(new Error(body.Error ?? `History ${action} failed (${response.status})`), { permanent: response.status >= 400 && response.status < 500 });
   return body.Data;
@@ -94,28 +94,6 @@ async function uploadCheckpoint(snapshot: ResourceSnapshot): Promise<Checkpoint>
     await request("chunkPut", { hash, dataBase64: toBase64(chunk) }); chunks.push({ hash, byteLength: chunk.length });
   }
   return { hash: await digest(bytes), byteLength: bytes.length, chunks };
-}
-async function readCheckpoint(descriptor: Checkpoint): Promise<ResourceSnapshot> {
-  check(descriptor && Number.isSafeInteger(descriptor.byteLength) && descriptor.byteLength > 0 && descriptor.byteLength <= DURABLE_LIMITS.supportedStateBytes &&
-    Array.isArray(descriptor.chunks) && descriptor.chunks.length <= Math.ceil(DURABLE_LIMITS.supportedStateBytes / DURABLE_LIMITS.chunkBytes), "Invalid checkpoint descriptor");
-  const bytes = new Uint8Array(descriptor.byteLength); let at = 0;
-  for (const chunk of descriptor.chunks) {
-    activeRead?.controller.signal.throwIfAborted();
-    check(Number.isSafeInteger(chunk.byteLength) && chunk.byteLength > 0 && chunk.byteLength <= DURABLE_LIMITS.chunkBytes && at + chunk.byteLength <= bytes.length, "Invalid checkpoint chunk length");
-    const response = await request("chunk", { hash: chunk.hash }), part = fromBase64(response.dataBase64);
-    check(part.length === chunk.byteLength && await digest(part) === chunk.hash, "Checkpoint chunk hash mismatch"); bytes.set(part, at); at += part.length;
-  }
-  check(at === bytes.length && await digest(bytes) === descriptor.hash, "Checkpoint identity mismatch");
-  return decodeDurableWire(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as ResourceSnapshot;
-}
-async function stateAt(segment: DurableSegment, sequence: number) {
-  check(Number.isSafeInteger(sequence) && sequence >= 0 && sequence <= segment.headSequence, "Revision outside fixed history head");
-  const path = await request("path", { segmentId: segment.segmentId, sequence });
-  check(path.records.length <= DURABLE_LIMITS.maxReadPath && path.checkpointSequence <= sequence && sequence - path.checkpointSequence === path.records.length, "Invalid bounded replay path");
-  const base = await readCheckpoint(path.checkpoint);
-  check(base.resourceId === location.resourceId && base.revision === path.checkpointSequence, "Checkpoint resource/counter mismatch");
-  const events = path.records.map((record: any) => decodeDurableWire(typeof record === "string" ? record : record.wire) as ResourceTransition);
-  const result = replayDurablePath(base, events); check(result.revision === sequence, "Replay target mismatch"); return result;
 }
 async function segments(): Promise<DurableSegment[]> { return (await request("describe")).segments; }
 async function initialize(data: any) {
@@ -200,7 +178,13 @@ async function handle(data: any): Promise<any> {
     const selection: HistorySelection = { ...data.selection };
     if (selection.placementId?.startsWith("session:")) { delete selection.placementId; delete selection.route; }
     if (selection.route?.some(value => value.startsWith("session:"))) delete selection.route;
-    readers.clear(); const readerId = id(); readers.set(readerId, { segment, selection, ids: new Map([[segment.revisionId, 0], [segment.headRevisionId, segment.headSequence]]) });
+    for (const prior of readers.values()) prior.reader.clear(); readers.clear();
+    const readerId = id(), reader = new DurableHistoryReader({ resourceId: location.resourceId, memoirId, segmentId: segment.segmentId, headSequence: segment.headSequence, headRevisionId: segment.headRevisionId }, selection, {
+      path: (sequence, signal) => request("path", { segmentId: segment.segmentId, sequence }, false, signal),
+      chunk: async (hash, signal) => (await request("chunk", { hash }, false, signal)).dataBase64,
+      digest,
+    });
+    readers.set(readerId, { segment, selection, reader, ids: new Map([[segment.revisionId, 0], [segment.headRevisionId, segment.headSequence]]) });
     return { readerId, segmentId: segment.segmentId, headRevisionId: segment.headRevisionId };
   }
   if (data.kind === "timeline") {
@@ -225,15 +209,17 @@ async function handle(data: any): Promise<any> {
     check(last > afterSequence || last === reader.segment.headSequence, "Timeline reader made no progress");
     return { entries, ...(last < reader.segment.headSequence ? { nextCursor: String(last) } : {}), headRevisionId: reader.segment.headRevisionId };
   }
+  if (data.kind === "closeReader") { readers.get(data.readerId)?.reader.clear(); readers.delete(data.readerId); return; }
   if (data.kind === "select") {
     const reader = readers.get(data.readerId); check(reader, "History view expired; reopen History");
     const sequence = reader.ids.get(data.revisionId); check(sequence !== undefined, "Revision is outside this bounded timeline view");
-    const selectedState = await stateAt(reader.segment, sequence);
-    const selected = queryDurableSubtree(selectedState, { ...reader.selection, revisionId: data.revisionId });
-    const head = sequence === reader.segment.headSequence ? selected : queryDurableSubtree(await stateAt(reader.segment, reader.segment.headSequence), { ...reader.selection, revisionId: reader.segment.headRevisionId });
-    return { selected, comparison: compareDurableSubtrees(selected, head) };
+    const start = performance.now();
+    const result = await reader.reader.select(sequence, data.revisionId, activeRead?.controller.signal);
+    result.timing!.queueMs = start - data.receivedAt;
+    return result;
   }
   if (data.kind === "close") {
+    for (const reader of readers.values()) reader.reader.clear(); readers.clear();
     closing = true; clearInterval(timer); clearInterval(heartbeat); await pumping?.catch(() => {}); outbox.close();
     try { await request("release"); } finally { postMessage({ closed: true }); }
     return;
@@ -241,6 +227,7 @@ async function handle(data: any): Promise<any> {
   throw new Error(`Unknown history worker command: ${data.kind}`);
 }
 self.onmessage = ({ data }) => {
+  data.receivedAt = performance.now();
   if (data.kind === "cancel") {
     if (!Number.isSafeInteger(data.requestId) || data.requestId <= lastCompletedRequest) return;
     cancelledRequests.add(data.requestId);

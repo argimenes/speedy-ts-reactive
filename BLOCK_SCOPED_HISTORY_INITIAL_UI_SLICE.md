@@ -1,12 +1,72 @@
 # Block history — minimum path to an initial UI slice
 
-Date: 2026-09-18. **Status: initial UI review accepted; minimum persistent-path
-integration implemented and the larger-Document restart demonstration passed.** The user authorized this increment and the minimum parallel
+Date: 2026-09-18. **Status: initial UI review accepted; persistent restart slice
+passed; read acceleration and a bounded selective-reader spike completed for
+review. Production still uses the full reader.** The user authorized this increment and the minimum parallel
 persistent-path slices below, not the full P1–P6 programme. Stage C is not complete.
 The immediate target is one explicitly enrolled local Document: edit it, inspect
 a Block's earlier revisions in Codex, restart, and inspect the same persistent
 history. Keep ordinary undo, Save and current Document state independent of the
 history preview. No new G3 qualification programme is part of this scope.
+
+## Selective-reader spike — review checkpoint
+
+The authorized bounded spike now has exact parity evidence and browser timings.
+A fixed 200-character Block selects in **47–48 ms cold** across Documents with
+500, 5,000 and 25,000 surrounding characters; the full reader takes **88, 322 and
+1,049 ms**, respectively. Selective cold reads fetch only 138–155 KB of certified
+record/index pages. The full reader remains the oracle and fallback.
+
+Record-addressable immutable shards, semantic array paging and a hash-bound
+Block/Placement/dependency index are derived only after complete archive replay
+and validation. A separate trusted certificate binds each manifest to its exact
+resource/segment/revision and current archive path. Losing, corrupting or changing
+acceleration data cannot manufacture absence or history. This experiment is limited
+to 16 materialized revisions and explicit storage/read/cache bounds.
+
+The separate 25,000-character single-Block case confirms that selective reads
+cannot avoid the selected Block's own size and can be slower than the full reader.
+With identical exact graphs already retained in the worker, a compact immutable
+preview reduces transfer/freeze/render time from **503–547 ms to 19–34 ms** with
+matching markup. It is a display projection; exact graph/comparison authority stays
+in the worker.
+
+**Stopped for review.** The [spike report](BLOCK_HISTORY_SELECTIVE_READER_SPIKE.md)
+contains parity coverage, all timings and preparation costs, preserved unsuccessful
+and successful artifacts, and explicit integration limits. The production panel,
+archive format and capture path are unchanged. Certificate persistence, incremental
+materialization/update policy and production routing are not implemented by this
+spike; P6, richer UI and restoration remain deferred.
+
+## Read-path performance follow-up — 2026-09-18
+
+The requested focused investigation reproduced the multi-second snapshot delay.
+The persistent reader now retains one verified decoded checkpoint and one fixed
+comparison-head subtree, fetches up to four chunks concurrently, and replays into
+one private draft with the existing exact size accounting and full validation.
+Redundant whole-state copies/encodings are removed. The panel publishes immutable
+results through a signal, avoiding Solid deep-store copies. Existing UI controls,
+admission limits, exact replay, cancellation and branch semantics are unchanged.
+
+Final browser measurements, cold / subsequent same-session selections:
+
+| Fixture | Before | After |
+| --- | --- | --- |
+| 500 characters | 111 ms / 139–221 ms | 103 ms / 69–107 ms |
+| 5,000 characters | 839 ms / 837–1,464 ms | 413 ms / 241–402 ms |
+| 25,000 characters, 15.2 MiB | 4,653 ms / 4,426–7,809 ms | 2,084 ms / 1,166–1,439 ms |
+
+**Stopped for review:** the large case remains perceptibly slow. Reconstruction
+and full graph validation remain expensive; this single large paragraph also
+exposes substantial Cell extraction and worker-transfer cost even without replay.
+The [performance report](BLOCK_HISTORY_READ_PERFORMANCE.md) contains separate
+stage timings, preserved before/intermediate/final artifacts, cache/resource
+bounds, focused parity/cancellation coverage and the proposed smallest selective
+read architecture. It explicitly distinguishes derived exact record indexes from
+history authority and notes that a compact preview transport is also needed for
+the one-large-Block case. No selective reconstruction or richer UI was implemented.
+47 focused tests, TypeScript checks and client/server builds pass. Existing
+persistent restart and G3 evidence remains intact; P6 work is still deferred.
 
 ## Persistent vertical slice — 2026-09-18
 
@@ -295,8 +355,11 @@ history in this first read-only slice.
 
 ## Recommended next increment
 
-The small panel and the admitted persistent path have now reached the requested
-review milestones. Stop at this vertical slice for user review. Extend supported
+The small panel and the admitted persistent path have reached the requested
+review milestones. The subsequent focused read acceleration is implemented;
+review the [completed selective-reader spike](BLOCK_HISTORY_SELECTIVE_READER_SPIKE.md)
+before integrating selective reads/compact transport into production or expanding
+the UI. Extend supported
 cases or begin P6's large qualification matrix only as a separately scoped next
 increment. The labelled temporary adapter remains available for unsaved samples;
 saved admitted Documents use the persistent path proved above.

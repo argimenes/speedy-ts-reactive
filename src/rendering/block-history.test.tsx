@@ -36,6 +36,7 @@ describe("initial Block history panel", () => {
     expect(document.querySelector('[role="dialog"][aria-label="Block history"]')).not.toBeNull();
     expect(document.querySelector(".block-history-badge")?.textContent).toBe("Session-only");
     expect(editor.blockHistory.state.entries).toHaveLength(1);
+    expect(Object.isFrozen(editor.blockHistory.state.result!.selected.fragment!.contents)).toBe(true);
     expect(editor.repository.snapshot()).toEqual(initial); expect(editor.repository.canUndo()).toBe(false);
     document.querySelector<HTMLElement>(".block-history-panel")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     await vi.waitFor(() => expect(editor.focus.state.focusedKey).toBe(key));
@@ -85,7 +86,9 @@ describe("initial Block history panel", () => {
     const controller = new BlockHistorySession(editor, () => ({ open: async () => session, dispose })); cleanup.push(() => controller.dispose());
     controller.open(key); await vi.waitFor(() => expect(pending.has("latest")).toBe(true));
     const old = controller.select("old"), newer = controller.select("new");
-    pending.get("new")!(result("new")); await newer;
+    const immutable = Object.freeze(result("new"));
+    pending.get("new")!(immutable); await newer;
+    expect(controller.state.result).toBe(immutable); // No deep-store cloning/proxying.
     pending.get("old")!(result("old")); await old;
     expect(controller.state.result?.selected.revisionId).toBe("new");
     const closing = controller.select("closed"); controller.close(false); pending.get("closed")!(result("closed")); await closing;

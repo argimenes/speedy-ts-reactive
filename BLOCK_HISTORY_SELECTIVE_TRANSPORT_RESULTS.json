@@ -1,0 +1,353 @@
+{
+  "passed": true,
+  "transportOnly": true,
+  "started": "2026-09-18T08:17:35.624Z",
+  "fixtures": [
+    {
+      "name": "large-single",
+      "selectedLength": 25000,
+      "surrounding": 0,
+      "baselineBytes": 15926681,
+      "archiveBytes": 15926681,
+      "derivedBytes": 0,
+      "build": [],
+      "samples": [
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": false,
+          "totalMs": 503,
+          "roundTripMs": 354.19999999925494,
+          "freezeMs": 108.30000000074506,
+          "renderMs": 40.5,
+          "workerMs": 0,
+          "projectionMs": 0,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 49483173
+        },
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": true,
+          "totalMs": 30.099999997764826,
+          "roundTripMs": 15,
+          "freezeMs": 0,
+          "renderMs": 15.099999997764826,
+          "workerMs": 12.400000002235174,
+          "projectionMs": 12.400000002235174,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 50685
+        },
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": false,
+          "totalMs": 514,
+          "roundTripMs": 350.20000000298023,
+          "freezeMs": 114.39999999850988,
+          "renderMs": 49.399999998509884,
+          "workerMs": 0,
+          "projectionMs": 0,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 49483173
+        },
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": true,
+          "totalMs": 33.600000001490116,
+          "roundTripMs": 11.300000000745058,
+          "freezeMs": 0,
+          "renderMs": 22.300000000745058,
+          "workerMs": 10.800000000745058,
+          "projectionMs": 10.800000000745058,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 50685
+        },
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": false,
+          "totalMs": 546.8000000007451,
+          "roundTripMs": 388,
+          "freezeMs": 106,
+          "renderMs": 52.80000000074506,
+          "workerMs": 0,
+          "projectionMs": 0,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 49483173
+        },
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": true,
+          "totalMs": 18.5,
+          "roundTripMs": 10.699999999254942,
+          "freezeMs": 0,
+          "renderMs": 7.800000000745058,
+          "workerMs": 10.300000000745058,
+          "projectionMs": 10.199999999254942,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 50685
+        },
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": false,
+          "totalMs": 514.3000000007451,
+          "roundTripMs": 356.1000000014901,
+          "freezeMs": 117.39999999850988,
+          "renderMs": 40.80000000074506,
+          "workerMs": 0,
+          "projectionMs": 0,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 49483173
+        },
+        {
+          "reader": "full",
+          "sequence": 1,
+          "cold": false,
+          "compact": true,
+          "totalMs": 28,
+          "roundTripMs": 10.700000002980232,
+          "freezeMs": 0,
+          "renderMs": 17.299999997019768,
+          "workerMs": 10.399999998509884,
+          "projectionMs": 10.399999998509884,
+          "diagnostics": {
+            "retainedGraph": true
+          },
+          "jsonBytes": 50685
+        }
+      ],
+      "parity": [],
+      "preparation": {
+        "reader": "full",
+        "sequence": 1,
+        "cold": true,
+        "compact": false,
+        "totalMs": 2818.199999999255,
+        "roundTripMs": 2647.099999997765,
+        "freezeMs": 124.30000000074506,
+        "renderMs": 46.80000000074506,
+        "workerMs": 2274,
+        "projectionMs": 0,
+        "diagnostics": {
+          "stages": {
+            "pathFetch": 8.5,
+            "checkpointFetch": 422.5,
+            "verification": 533.2000000029802,
+            "checkpointLoad": 115.5,
+            "decode": 106.09999999403954,
+            "serialization": 504.80000000074506,
+            "freezing": 44,
+            "cloning": 286.5000000037253,
+            "replayApply": 4.700000002980232,
+            "selectedReconstruction": 951.3000000007451,
+            "subtree": 569.5999999977648,
+            "headReconstruction": 694.4000000022352,
+            "comparison": 55
+          },
+          "chunks": 16,
+          "fetchedBytes": 15926681,
+          "replayRecords": 4,
+          "checkpointHits": 1,
+          "headHits": 0,
+          "workerMs": 2273.800000000745
+        },
+        "jsonBytes": 49483173
+      },
+      "previewParity": true,
+      "browserDiagnostics": {
+        "stderr": "\nDevTools listening on ws://127.0.0.1:59944/devtools/browser/96be44f6-2385-471a-b7e4-cb7c42bb06bc\nTrying to load the allocator multiple times. This is *not* supported.\n[35944:420413:0918/181739.439026:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181739.439385:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181739.444407:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181739.448936:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181739.451543:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181739.451605:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181739.451790:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181739.451828:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181739.451960:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181739.452000:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181739.469932:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181739.469994:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181741.448310:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181741.448394:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181741.581991:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181741.582073:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181741.651198:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181741.651271:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181741.726291:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181741.726368:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181741.825383:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181741.825488:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181741.965651:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181741.965786:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420413:0918/181742.022784:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181742.022919:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35938:420398:0918/181742.048097:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: QUOTA_EXCEEDED\n[35944:420413:0918/181742.088396:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[35944:420469:0918/181742.088504:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n",
+        "crashes": [],
+        "lifecycle": [
+          {
+            "at": 1789719459625,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "36C8F832391F77B5D26915BB6301D639",
+              "name": "commit",
+              "timestamp": 22006.772333
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459625,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "36C8F832391F77B5D26915BB6301D639",
+              "name": "DOMContentLoaded",
+              "timestamp": 22006.772411
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459626,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "36C8F832391F77B5D26915BB6301D639",
+              "name": "load",
+              "timestamp": 22006.773206
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459627,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "36C8F832391F77B5D26915BB6301D639",
+              "name": "networkAlmostIdle",
+              "timestamp": 22006.773076
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459627,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "36C8F832391F77B5D26915BB6301D639",
+              "name": "networkIdle",
+              "timestamp": 22006.773076
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459648,
+            "method": "Page.frameStartedLoading",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46"
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459672,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "init",
+              "timestamp": 22006.881081
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459993,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "DOMContentLoaded",
+              "timestamp": 22007.210367
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459993,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "load",
+              "timestamp": 22007.210886
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719459993,
+            "method": "Page.frameStoppedLoading",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46"
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719460523,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "networkAlmostIdle",
+              "timestamp": 22007.210531
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719460523,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "networkIdle",
+              "timestamp": 22007.215527
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719463120,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "firstMeaningfulPaintCandidate",
+              "timestamp": 22010.118266
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719463120,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "firstContentfulPaint",
+              "timestamp": 22010.118266
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          },
+          {
+            "at": 1789719463120,
+            "method": "Page.lifecycleEvent",
+            "params": {
+              "frameId": "528F5C62F0FC4C1B8EA1C53C88FFDD46",
+              "loaderId": "EED239216C22E340F38044A4B6140CB8",
+              "name": "firstPaint",
+              "timestamp": 22010.118266
+            },
+            "sessionId": "B3B7F71BBBBAF402622A326E8ED9C3B3"
+          }
+        ],
+        "probes": []
+      }
+    }
+  ],
+  "errors": [],
+  "browser": "Chrome/153.0.8010.48",
+  "finished": "2026-09-18T08:17:46.337Z"
+}

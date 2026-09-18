@@ -66,6 +66,7 @@ describe("persistent worker bridge", () => {
     const result = await selecting; expect(Object.isFrozen(result.selected.fragment!.contents.p.payload)).toBe(true);
     const controller = new AbortController(), cancelled = reader.select("old", { signal: controller.signal });
     controller.abort(); await expect(cancelled).rejects.toMatchObject({ name: "AbortError" });
-    expect(s.worker.messages.at(-1).kind).toBe("cancel"); expect(reader.headRevisionId).toBe("head"); source.dispose();
+    expect(s.worker.messages.at(-1).kind).toBe("cancel"); expect(reader.headRevisionId).toBe("head");
+    reader.dispose?.(); expect(s.worker.messages.at(-1)).toEqual({ kind: "closeReader", readerId: "reader" }); source.dispose();
   });
 });

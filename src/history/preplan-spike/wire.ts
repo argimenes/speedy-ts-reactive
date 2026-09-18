@@ -1,3 +1,4 @@
+import type { ReadMeasure } from "../read-timing";
 /** Experimental lossless value envelope. Not a released history format. */
 const tag = "$codexHistoryValue";
 const own = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
@@ -30,8 +31,16 @@ function pack(value: unknown, ancestors: Set<object>): unknown {
 }
 function unpack(value: any): unknown {
   if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map(unpack);
-  if (!own(value, tag)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, unpack(v)]));
+  // JSON.parse owns this private graph. Decode into it instead of allocating a
+  // second whole checkpoint. The canonical re-encoding check below is unchanged.
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) value[i] = unpack(value[i]);
+    return value;
+  }
+  if (!own(value, tag)) {
+    for (const key of Object.keys(value)) value[key] = unpack(value[key]);
+    return value;
+  }
   check(Object.keys(value).length === 1 && Array.isArray(value[tag]), "malformed value tag");
   const item = value[tag];
   if (item[0] === "undefined") { check(item.length === 1, "malformed undefined"); return undefined; }
@@ -49,11 +58,11 @@ function unpack(value: any): unknown {
 export function encodeWire(value: unknown): string {
   return JSON.stringify({ format: "codex-history-value-spike", version: 1, value: pack(value, new Set()) });
 }
-export function decodeWire(text: string): unknown {
-  const envelope = JSON.parse(text);
+export function decodeWire(text: string, measure: ReadMeasure = (_name, action) => action()): unknown {
+  const envelope = measure("decode", () => JSON.parse(text));
   check(envelope?.format === "codex-history-value-spike" && envelope.version === 1 && Object.keys(envelope).length === 3 && own(envelope, "value"), "unsupported envelope");
-  const result = unpack(envelope.value);
+  const result = measure("decode", () => unpack(envelope.value));
   // Enforces this spike's canonical byte grammar, including duplicate-key rejection.
-  check(encodeWire(result) === text, "noncanonical or corrupt encoding");
+  check(measure("serialization", () => encodeWire(result)) === text, "noncanonical or corrupt encoding");
   return result;
 }

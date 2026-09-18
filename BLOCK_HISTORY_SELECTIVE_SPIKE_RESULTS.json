@@ -1,0 +1,118 @@
+{
+  "passed": false,
+  "started": "2026-09-18T08:12:58.744Z",
+  "fixtures": [
+    {
+      "name": "modest-small",
+      "selectedLength": 200,
+      "surrounding": 500,
+      "baselineBytes": 451151,
+      "archiveBytes": 451151,
+      "derivedBytes": 739070,
+      "build": [
+        {
+          "sequence": 0,
+          "buildMs": 171.53883300000007,
+          "records": 1414,
+          "addedBytes": 480207
+        },
+        {
+          "sequence": 1,
+          "buildMs": 143.52220899999998,
+          "records": 1416,
+          "addedBytes": 137356
+        },
+        {
+          "sequence": 2,
+          "buildMs": 135.63024999999993,
+          "records": 1414,
+          "addedBytes": 60729
+        },
+        {
+          "sequence": 3,
+          "buildMs": 165.9995839999999,
+          "records": 1416,
+          "addedBytes": 60778
+        }
+      ],
+      "samples": [],
+      "parity": []
+    },
+    {
+      "name": "modest-medium",
+      "selectedLength": 200,
+      "surrounding": 5000,
+      "baselineBytes": 3349821,
+      "archiveBytes": 3349821,
+      "derivedBytes": 3875325,
+      "build": [
+        {
+          "sequence": 0,
+          "buildMs": 981.8944999999999,
+          "records": 10504,
+          "addedBytes": 3567196
+        },
+        {
+          "sequence": 1,
+          "buildMs": 967.665125,
+          "records": 10506,
+          "addedBytes": 153778
+        },
+        {
+          "sequence": 2,
+          "buildMs": 1569.5946670000003,
+          "records": 10504,
+          "addedBytes": 77151
+        },
+        {
+          "sequence": 3,
+          "buildMs": 1306.7358750000003,
+          "records": 10506,
+          "addedBytes": 77200
+        }
+      ],
+      "samples": [],
+      "parity": []
+    },
+    {
+      "name": "modest-large",
+      "selectedLength": 200,
+      "surrounding": 25000,
+      "baselineBytes": 16232971,
+      "archiveBytes": 16232971,
+      "derivedBytes": 17562759,
+      "build": [
+        {
+          "sequence": 0,
+          "buildMs": 2586.919,
+          "records": 50904,
+          "addedBytes": 17290603
+        },
+        {
+          "sequence": 1,
+          "buildMs": 3640.8070829999997,
+          "records": 50906,
+          "addedBytes": 141787
+        },
+        {
+          "sequence": 2,
+          "buildMs": 4761.551083000002,
+          "records": 50904,
+          "addedBytes": 65160
+        },
+        {
+          "sequence": 3,
+          "buildMs": 5675.825000000001,
+          "records": 50906,
+          "addedBytes": 65209
+        }
+      ],
+      "samples": [],
+      "parity": []
+    }
+  ],
+  "errors": [
+    "Error: Selective history: shard exceeds bound\n    at requireRead (file:///private/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/codex-selective-spike-3pBoL1/prepare.mjs:3442:11)\n    at putValue (file:///private/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/codex-selective-spike-3pBoL1/prepare.mjs:3447:3)\n    at SelectiveMaterializer.build (file:///private/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/codex-selective-spike-3pBoL1/prepare.mjs:3595:28)\n    at async prepare (file:///private/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/codex-selective-spike-3pBoL1/prepare.mjs:3701:41)\n    at async file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/measure-selective-history.mjs:23:21"
+  ],
+  "finished": "2026-09-18T08:13:29.536Z"
+}

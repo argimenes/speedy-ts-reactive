@@ -1,3 +1,4 @@
+import { createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
 import { encodeDocument } from "../block-tree/codecs";
 import { createDurableHistorySource, type DurableHistorySource, type DurableSegment, type DurableRecorderStatus } from "../history/durable-browser";
@@ -8,11 +9,21 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import { blockAncestors } from "./block-menu-actions";
 import { createSessionHistorySource, type SessionHistoryRecorder, type ReadonlyHistorySession, type HistorySelectionResult, type SessionTimelineEntry } from "../history/ui-session-source";
 
+type HistoryPanelState = {
+  open: boolean; viewId?: string; title: string; message: string; error: string;
+  loading: boolean; selecting: boolean; incomplete: boolean; entries: readonly SessionTimelineEntry[];
+  nextCursor?: string; selectedRevisionId?: string; result?: HistorySelectionResult;
+  storage: "session-only" | "persistent"; sessions: readonly DurableSegment[]; segmentId?: string;
+  recording?: Readonly<DurableRecorderStatus>; recordingError?: string;
+  selectionTiming?: import("../history/read-timing").ReadTiming;
+};
+
 /** UI state only. Historical readers never receive the editor's command capability. */
 export class BlockHistorySession {
   readonly owner = "block-history-panel";
-  readonly state;
+  readonly state: HistoryPanelState;
   private setState;
+  private readonly resultSignal = createSignal<HistorySelectionResult>();
   private recorder?: { root: string; source: SessionHistoryRecorder };
   private session?: ReadonlyHistorySession;
   private location?: DocumentLocation;
@@ -28,13 +39,10 @@ export class BlockHistorySession {
   private inlineSelection?: { anchor: number; head: number };
   private nativeSelection?: { start: number; end: number; direction: "forward" | "backward" | "none" };
   constructor(private editor: ReactiveEditor, private createSource = createSessionHistorySource, private createPersistent = createDurableHistorySource) {
-    [this.state, this.setState] = createStore<{
-      open: boolean; viewId?: string; title: string; message: string; error: string;
-      loading: boolean; selecting: boolean; incomplete: boolean; entries: readonly SessionTimelineEntry[];
-      nextCursor?: string; selectedRevisionId?: string; result?: HistorySelectionResult;
-      storage: "session-only" | "persistent"; sessions: readonly DurableSegment[]; segmentId?: string;
-      recording?: Readonly<DurableRecorderStatus>; recordingError?: string;
-    }>({ open: false, title: "Block history", message: "", error: "", loading: false, selecting: false, incomplete: false, entries: [], storage: "session-only", sessions: [] });
+    [this.state, this.setState] = createStore<HistoryPanelState>({ open: false, title: "Block history", message: "", error: "", loading: false, selecting: false, incomplete: false, entries: [], storage: "session-only", sessions: [] });
+    // Historical bodies are already immutable. A signal preserves their identity
+    // instead of asking Solid's deep store to clone/unwrap tens of thousands of Cells.
+    this.state = new Proxy(this.state, { get: (target, key, receiver) => key === "result" ? this.resultSignal[0]() : Reflect.get(target, key, receiver) });
   }
   attachIdentity(identity: { resourceId: string; memoirId?: string }): void { this.identity = identity; }
   attachLocation(location: DocumentLocation): void {
@@ -93,7 +101,8 @@ export class BlockHistorySession {
     if (!this.durable || !this.selection) return;
     this.request?.abort();
     const request = this.request = new AbortController(), generation = ++this.generation;
-    this.setState({ loading: true, selecting: false, error: "", result: undefined, entries: [], segmentId });
+    this.resultSignal[1](undefined);
+    this.setState({ loading: true, selecting: false, error: "", entries: [], segmentId });
     try {
       const session = await this.durable.open(this.selection, request.signal, segmentId);
       const page = await session.timeline({ limit: 25, signal: request.signal });
@@ -120,7 +129,7 @@ export class BlockHistorySession {
     const metadata = node.payload.metadata as { name?: string; title?: string } | undefined;
     const inlineTitle = node.inlineContent.slice(0, 60).map(key => String(this.editor.node(key)?.payload.text ?? "")).join("");
     const title = metadata?.name ?? metadata?.title ?? (inlineTitle || String(node.payload.text ?? node.payload.id)).slice(0, 60);
-    this.setState({ open: true, viewId: node.viewId, title, message: "Preparing Block history…", loading: true, incomplete: false, error: "", entries: [], result: undefined, nextCursor: undefined, selectedRevisionId: undefined });
+    this.setState({ open: true, viewId: node.viewId, title, message: "Preparing Block history…", loading: true, incomplete: false, error: "", entries: [], nextCursor: undefined, selectedRevisionId: undefined });
     this.editor.focus.request(this.owner, { reason: "block-history" });
     const request = this.request = new AbortController(), generation = ++this.generation;
     void (async () => {
@@ -161,19 +170,28 @@ export class BlockHistorySession {
   }
   async select(revisionId: string): Promise<void> {
     if (!this.session) return;
+    const start = performance.now();
     this.request?.abort();
     const request = this.request = new AbortController(), generation = ++this.generation;
-    this.setState({ selecting: true, loading: false, error: "", selectedRevisionId: revisionId, result: undefined });
+    this.resultSignal[1](undefined);
+    this.setState({ selecting: true, loading: false, error: "", selectedRevisionId: revisionId, selectionTiming: undefined });
     try {
       const result = await this.session.select(revisionId, { signal: request.signal });
       if (generation !== this.generation || request.signal.aborted) return;
-      this.setState({ result, selecting: false, message: this.session.message, incomplete: this.session.status === "incomplete" });
+      const received = performance.now();
+      this.resultSignal[1](() => result);
+      this.setState({ selecting: false, message: this.session.message, incomplete: this.session.status === "incomplete" });
+      if (result.timing) requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (generation !== this.generation || request.signal.aborted) return;
+        this.setState("selectionTiming", { ...result.timing!, uiMs: performance.now() - received, totalMs: performance.now() - start });
+      }));
     } catch (error) { this.failed(error, generation); }
   }
   close(restore = true): void {
     const wasOpen = this.state.open;
-    this.request?.abort(); this.generation++; this.session = undefined;
-    this.setState({ open: false, loading: false, selecting: false, result: undefined, entries: [] });
+    this.request?.abort(); this.generation++; this.session?.dispose?.(); this.session = undefined;
+    this.resultSignal[1](undefined);
+    this.setState({ open: false, loading: false, selecting: false, entries: [] });
     if (wasOpen) this.editor.focus.clearRemoved(this.owner);
     if (restore && wasOpen && this.origin) {
       const origin = this.origin, inline = this.inlineSelection, native = this.nativeSelection;

@@ -19,12 +19,14 @@ export interface SessionTimelineEntry extends Omit<TimelineEntry, "kinds"> {
   cause: string; location?: string; baseline?: boolean;
 }
 export interface HistorySelectionResult {
+  timing?: import("./read-timing").ReadTiming;
   selected: DeepReadonly<SubtreeResult>;
   comparison: DeepReadonly<SubtreeComparison>;
 }
 export interface ReadonlyHistorySession {
   readonly storage: "session-only" | "persistent";
   readonly segmentId?: string;
+  dispose?(): void;
   readonly headRevisionId: string;
   readonly status: "available" | "incomplete";
   readonly message: string;

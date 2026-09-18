@@ -1,3 +1,4 @@
+import type { ReadMeasure } from "./read-timing";
 /** Shared, versioned boundary for the first persistent single-Document path.
  * Exact records and checked replay remain the established resource model. */
 import { clone } from "../block-tree/clone";
@@ -74,9 +75,9 @@ export class WholeDocumentCapture {
 const oldPrefix = '{"format":"codex-history-value-spike","version":1,';
 const prefix = '{"format":"codex-history-value","version":1,';
 export function encodeDurableWire(value: unknown): string { return prefix + encodeWire(value).slice(oldPrefix.length); }
-export function decodeDurableWire(text: string): unknown {
+export function decodeDurableWire(text: string, measure?: ReadMeasure): unknown {
   check(text.startsWith(prefix), "unsupported wire envelope");
-  return decodeWire(oldPrefix + text.slice(prefix.length));
+  return decodeWire(oldPrefix + text.slice(prefix.length), measure);
 }
 export function assertBoundedSnapshot(state: DeepReadonly<ResourceSnapshot>): number {
   check(Object.keys(state.contents).length + Object.keys(state.placements).length <= DURABLE_LIMITS.maxGraphRecords, "Document graph exceeds admitted bounded reader size");
@@ -84,30 +85,30 @@ export function assertBoundedSnapshot(state: DeepReadonly<ResourceSnapshot>): nu
   check(bytes <= DURABLE_LIMITS.supportedStateBytes, "Document exceeds admitted 20 MiB checkpoint/read bound");
   return bytes;
 }
-export function replayDurablePath(baseline: DeepReadonly<ResourceSnapshot>, events: readonly DeepReadonly<ResourceTransition>[]): DeepReadonly<ResourceSnapshot> {
+export function replayDurablePath(baseline: DeepReadonly<ResourceSnapshot>, events: readonly DeepReadonly<ResourceTransition>[], measure: ReadMeasure = (_name, action) => action()): DeepReadonly<ResourceSnapshot> {
   check(events.length <= DURABLE_LIMITS.maxReadPath, "checkpoint path exceeds bounded reader distance");
-  validateResource(baseline as ResourceSnapshot); assertBoundedSnapshot(baseline);
+  measure("verification", () => validateResource(baseline as ResourceSnapshot)); measure("serialization", () => assertBoundedSnapshot(baseline));
   let state = baseline;
-  for (const event of events) { state = replayResource(state, event); assertBoundedSnapshot(state); }
+  for (const event of events) { state = replayResource(state, event, measure); measure("serialization", () => assertBoundedSnapshot(state)); }
   return state;
 }
 /** Caller discards this private working state on any error. Never a live editor. */
-export function applyDurableTransitionInPlace(state: ResourceSnapshot, event: DeepReadonly<ResourceTransition>): void {
+export function applyDurableTransitionInPlace(state: ResourceSnapshot, event: DeepReadonly<ResourceTransition>, measure: ReadMeasure = (_name, action) => action()): void {
   check(event.format === "codex-resource-transition-gate" && event.version === 1 && event.resourceId === state.resourceId &&
     event.root.before === state.rootPlacementKey && event.beforeRevision === state.revision &&
     Number.isSafeInteger(event.afterRevision) && event.afterRevision === event.beforeRevision + 1 &&
     Number.isSafeInteger(event.sourceCounters.before) && event.sourceCounters.before >= 0 &&
     event.sourceCounters.after === event.sourceCounters.before + 1, "invalid exact transition parent/counters");
-  applyExactRecords(state, event);
+  measure("replayApply", () => applyExactRecords(state, event));
   state.rootPlacementKey = event.root.after; state.revision = event.afterRevision;
-  validateResource(state);
+  measure("verification", () => validateResource(state));
   check(Object.keys(state.contents).length + Object.keys(state.placements).length <= DURABLE_LIMITS.maxGraphRecords, "Document graph exceeds admitted bounded reader size");
 }
 
 /** Shared browser/native admission: exact serialized byte accounting over only
  * changed records, with the SAME full preimage and graph verification. A failed
  * application invalidates this private working state; never enqueue its packet. */
-export function applyDurableTransitionSized(state: ResourceSnapshot, event: DeepReadonly<ResourceTransition>, previousBytes: number): number {
+export function applyDurableTransitionSized(state: ResourceSnapshot, event: DeepReadonly<ResourceTransition>, previousBytes: number, measure: ReadMeasure = (_name, action) => action()): number {
   check(Number.isSafeInteger(previousBytes) && previousBytes >= 0 && previousBytes <= DURABLE_LIMITS.supportedStateBytes, "invalid prior admitted state size");
   const bytes = (text: string) => new TextEncoder().encode(text).byteLength;
   const valueBytes = (value: unknown) => bytes(encodeDurableWire(value));
@@ -119,23 +120,25 @@ export function applyDurableTransitionSized(state: ResourceSnapshot, event: Deep
   const contentKeys = [...new Set(event.contents.map(c => c.key))], placementKeys = [...new Set(event.placements.map(p => p.key))];
   const tag = "$codexHistoryValue";
   const escapedMap = own(state.contents, tag) || own(state.placements, tag) || contentKeys.includes(tag) || placementKeys.includes(tag);
-  const before = { contents: mapPart(state.contents, contentKeys), placements: mapPart(state.placements, placementKeys),
-    scalar: valueBytes(state.revision) + valueBytes(state.rootPlacementKey) };
-  applyDurableTransitionInPlace(state, event);
-  let result: number;
-  if (escapedMap) result = valueBytes(state);
-  else {
-    const after = { contents: mapPart(state.contents, contentKeys), placements: mapPart(state.placements, placementKeys),
-      scalar: valueBytes(state.revision) + valueBytes(state.rootPlacementKey) };
-    // Value wrappers cancel for retained records. Added/removed members and
-    // whole-map comma counts are accounted for explicitly.
-    const wrapper = bytes(encodeDurableWire(null)) - 4;
-    const difference = (a: { total: number; count: number }, b: { total: number; count: number }) =>
-      b.total - a.total - wrapper * (b.count - a.count) + Math.max(0, b.count - 1) - Math.max(0, a.count - 1);
-    result = previousBytes + difference(before.contents, after.contents) + difference(before.placements, after.placements) + after.scalar - before.scalar;
-  }
-  check(result <= DURABLE_LIMITS.supportedStateBytes, "state exceeds admitted 20 MiB bound");
-  return result;
+  const before = measure("serialization", () => ({ contents: mapPart(state.contents, contentKeys), placements: mapPart(state.placements, placementKeys),
+    scalar: valueBytes(state.revision) + valueBytes(state.rootPlacementKey) }));
+  applyDurableTransitionInPlace(state, event, measure);
+  return measure("serialization", () => {
+    let result: number;
+    if (escapedMap) result = valueBytes(state);
+    else {
+      const after = { contents: mapPart(state.contents, contentKeys), placements: mapPart(state.placements, placementKeys),
+        scalar: valueBytes(state.revision) + valueBytes(state.rootPlacementKey) };
+      // Value wrappers cancel for retained records. Added/removed members and
+      // whole-map comma counts are accounted for explicitly.
+      const wrapper = bytes(encodeDurableWire(null)) - 4;
+      const difference = (a: { total: number; count: number }, b: { total: number; count: number }) =>
+        b.total - a.total - wrapper * (b.count - a.count) + Math.max(0, b.count - 1) - Math.max(0, a.count - 1);
+      result = previousBytes + difference(before.contents, after.contents) + difference(before.placements, after.placements) + after.scalar - before.scalar;
+    }
+    check(result <= DURABLE_LIMITS.supportedStateBytes, "state exceeds admitted 20 MiB bound");
+    return result;
+  });
 }
 
 export interface SavedHistoryRevision { segmentId: string; revisionId: string }
@@ -221,6 +224,28 @@ export function queryDurableSubtree(state: DeepReadonly<ResourceSnapshot>, reque
   };
   try {
     locate(state.rootPlacementKey, [], new Set());
+    const root = state.placements[state.rootPlacementKey];
+    const registry = root.target.kind === "local" ? state.contents[root.target.contentKey].payload.linkedAnnotations as Record<string, unknown> | undefined : undefined;
+    return queryDurableClosure(state, request, content, occurrences, registry, work);
+  } catch (error) { return freeze({ ...base, status: "incomplete", message: String(error) }); }
+}
+
+/** Shared result construction, NOT a verifier. Callers must supply either a fully
+ * verified state or an authenticated complete closure and occurrence evidence. */
+export function queryDurableClosure(
+  state: Pick<DeepReadonly<ResourceSnapshot>, "contents" | "placements">,
+  request: { blockId: string; revisionId: string; placementId?: string; route?: readonly string[] },
+  content: DeepReadonly<ContentRecord>, occurrences: HistoricalOccurrence[],
+  registry: Record<string, unknown> | undefined, locationWork: number,
+): DeepReadonly<SubtreeResult> {
+  const base = { blockId: request.blockId, revisionId: request.revisionId };
+  let work = locationWork;
+  const budget = () => check(++work <= DURABLE_LIMITS.maxGraphRecords * 2, "subtree traversal exceeded bounded work");
+  const edges = (c: DeepReadonly<ContentRecord>): Array<{ key: string; slot: Slot; index?: number }> => [
+    ...c.children.map((key, index) => ({ key, slot: { kind: "children" as const }, index })),
+    ...c.inlineContent.map((key, index) => ({ key, slot: { kind: "inline-content" as const }, index })),
+    ...Object.entries(c.ownedRelations).map(([name, key]) => ({ key, slot: { kind: "relation" as const, name } }))];
+  try {
     const candidates = occurrences.filter(o => (!request.placementId || state.placements[o.placementKey].placementId === request.placementId) && (!request.route || equal(request.route, o.route)));
     if (candidates.length > 1) return freeze({ ...base, status: "ambiguous-occurrence", candidates });
     if (occurrences.length && !candidates.length) return freeze({ ...base, status: "absent-occurrence", candidates: occurrences });
@@ -248,8 +273,6 @@ export function queryDurableSubtree(state: DeepReadonly<ResourceSnapshot>, reque
         if (p.target.kind === "local" && !fragment.contents[p.target.contentKey]) { const next = state.contents[p.target.contentKey]; fragment.contents[next.key] = clone(next) as ContentRecord; copy(next); }
       } }; copy(content);
     }
-    const root = state.placements[state.rootPlacementKey];
-    const registry = root.target.kind === "local" ? state.contents[root.target.contentKey].payload.linkedAnnotations as Record<string, unknown> | undefined : undefined;
     for (const c of Object.values(fragment.contents)) for (const value of [c.payload, ...(Array.isArray(c.payload.standoffProperties) ? c.payload.standoffProperties : []), ...(Array.isArray(c.payload.blockProperties) ? c.payload.blockProperties : [])]) {
       if (value && typeof value === "object" && typeof (value as Record<string, unknown>).annotationId === "string") {
         const id = (value as Record<string, unknown>).annotationId as string;

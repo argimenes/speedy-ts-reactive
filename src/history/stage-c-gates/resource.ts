@@ -1,3 +1,4 @@
+import type { ReadMeasure } from "../read-timing";
 /** G1 candidate only. Not a shipped schema or an editor repository. */
 import { clone } from "../../block-tree/clone";
 import { equal, freeze, type DeepReadonly } from "../../block-tree/commit-capture";
@@ -176,13 +177,13 @@ export function transition(before: DeepReadonly<ResourceSnapshot>, after: DeepRe
     root: { before: before.rootPlacementKey, after: after.rootPlacementKey }, contents, placements });
 }
 
-export function replayResource(before: DeepReadonly<ResourceSnapshot>, event: DeepReadonly<ResourceTransition>): DeepReadonly<ResourceSnapshot> {
+export function replayResource(before: DeepReadonly<ResourceSnapshot>, event: DeepReadonly<ResourceTransition>, measure: ReadMeasure = (_name, action) => action()): DeepReadonly<ResourceSnapshot> {
   requireValid(event.format === "codex-resource-transition-gate" && event.version === 1, "unsupported transition");
   requireValid(before.resourceId === event.resourceId && before.rootPlacementKey === event.root.before &&
     before.revision === event.beforeRevision && Number.isSafeInteger(event.afterRevision) && event.afterRevision === event.beforeRevision + 1, "wrong exact parent");
-  const next = clone(before) as ResourceSnapshot;
-  applyExactRecords(next, event);
+  const next = measure("cloning", () => clone(before)) as ResourceSnapshot;
+  measure("replayApply", () => applyExactRecords(next, event));
   next.rootPlacementKey = event.root.after; next.revision = event.afterRevision;
-  validateResource(next);
-  return freeze(next);
+  measure("verification", () => validateResource(next));
+  return measure("freezing", () => freeze(next));
 }

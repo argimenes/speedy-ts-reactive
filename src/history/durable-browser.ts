@@ -112,10 +112,17 @@ export async function createDurableHistorySource(repository: CanonicalRepository
     async open(selection: HistorySelection, signal?: AbortSignal, segmentId?: string): Promise<ReadonlyHistorySession> {
       const opened = await rpc("openReader", { selection, segmentId }, signal);
       return Object.freeze({ storage: "persistent" as const, headRevisionId: opened.headRevisionId, segmentId: opened.segmentId,
+        dispose() { if (!disposed) worker.postMessage({ kind: "closeReader", readerId: opened.readerId }); },
         get status() { return failure ? "incomplete" as const : "available" as const; },
         get message() { return `Persistent Document history. This view has a fixed, server-verified head. ${failure ?? ""}`; },
         async timeline(options: { cursor?: string; limit?: number; signal?: AbortSignal } = {}) { return freeze(await rpc("timeline", { readerId: opened.readerId, cursor: options.cursor, limit: options.limit }, options.signal)); },
-        async select(revisionId: string, options: { signal?: AbortSignal } = {}) { return freeze(await rpc("select", { readerId: opened.readerId, revisionId }, options.signal)); },
+        async select(revisionId: string, options: { signal?: AbortSignal } = {}) {
+          const start = performance.now(), result = await rpc("select", { readerId: opened.readerId, revisionId }, options.signal);
+          const received = performance.now(); if (result.timing) result.timing.roundTripMs = received - start;
+          const timing = result.timing; delete result.timing;
+          const frozen = freeze(result); if (timing) timing.resultFreezeMs = performance.now() - received;
+          return freeze({ ...frozen, timing });
+        },
       });
     },
     dispose: close,
