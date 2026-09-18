@@ -1,11 +1,95 @@
 # Block history — minimum path to an initial UI slice
 
-Date: 2026-09-18. This is the proposed next development scope for review, not a
-claim that Stage C is complete or authorization to start the full P1–P6 programme.
+Date: 2026-09-18. **Status: first interactive UI implemented; stopped for UI
+review as requested.** The user authorized this increment and the minimum parallel
+persistent-path slices below, not the full P1–P6 programme. Stage C is not complete.
 The immediate target is one explicitly enrolled local Document: edit it, inspect
 a Block's earlier revisions in Codex, restart, and inspect the same persistent
 history. Keep ordinary undo, Save and current Document state independent of the
 history preview. No new G3 qualification programme is part of this scope.
+
+## Initial UI review checkpoint — 2026-09-18
+
+The ordinary Block context menu now includes **History…**, backed by the command
+registry's `history.open`. The panel has a keyboard-operable revision timeline,
+revision selection, immutable historical subtree preview, and side-by-side
+comparison against the latest recorded state fixed when the panel opens. Escape
+or Close restores editing focus/selection. Superseded and closed asynchronous
+requests cannot publish stale results. Previewing never changes the live Document
+or ordinary undo/redo.
+
+To try it, run the normal development client (`npm run dev:client`) and open the
+workspace or `/pilot`. Right-click a text Block (or use Shift+F10 / Control-click)
+and choose **History…**. The first opening records the baseline. Close the panel,
+make edits, then reopen History and select **Recording started** or another
+revision. History does not reconstruct edits made before enrollment. The client
+is running at `http://127.0.0.1:3000/` at this review checkpoint.
+
+The panel is deliberately **session-only** and says so prominently. Its recording
+survives panel closes, but not Document-session disposal or page reload. Text,
+basic annotation styles and structural containers use a separate static renderer;
+unsupported tools/media use placeholders. No live editor views, InputGateway,
+timers, embeds or desktop windows are mounted in historical content. More complete
+annotation styling and contextual overlay rendering are outside this checkpoint.
+
+The temporary adapter reuses compact commit events, exact replay and established
+read-only subtree/comparison contracts. It captures no whole snapshot in ordinary
+commit callbacks and creates no second editable producer. It admits one closed
+Document, including one selected from a finite Workspace source log, but refuses
+reference placements, nested Documents and foreign definitions. Its temporary
+occurrence identities are explicitly session-local; they are not a durable
+identity format. Capture limits (500 source commits, 128 KiB per event, 8 MiB
+retained events and baseline/state budgets, 60,000 graph records) produce explicit
+incomplete/unsupported status, never pruning or changed undo. Timeline scans have
+continuations and replay budgets. This finite adapter is not the production lazy
+archive reader or a newly qualified recorder.
+
+Parallel persistent work stopped at the **strict IndexedDB outbox foundation**:
+immutable hashed wire bytes, enrollment/epoch identity, separate browser-committed,
+server-durable and verified watermarks, atomic acknowledgement byte release,
+exact retries, recovery and explicit finite bounds. Its transport is injected;
+it is **not connected to an editor or native server** and does not claim native
+durability. Versioned shared resource/core promotion, portable Save/Open identity,
+server publication/fencing integration, real enrollment/receipts, bounded durable
+queries and the real-Document restart demonstration remain §1 work. The adapter
+has not been replaced. Pausing those connections at this point implements the
+user's instruction to review the first UI before substantial elaboration.
+
+Validation completed:
+
+- Six adapter tests: live edit/undo/redo and structural insertion, immutable reads,
+  fixed head, one-Document isolation, continuation, capture boundaries and aborts.
+- Three panel tests: actual context-menu/command entry, historical selection and
+  comparison, ordinary undo unchanged, keyboard/focus return, stale-result
+  suppression and inert tool/media previews.
+- Real Chrome UI check: baseline → ordinary editor input → reopen → select past
+  revision → compare, with the live Document unchanged. The ordinary workspace
+  sample also opens its first historical preview successfully.
+- Real Chrome strict-IDB checks: fresh-page pending recovery, lost-ack exact retry,
+  rejected identity/order/epoch/hash mismatches, delayed verification, atomic
+  capacity failures and empty-outbox byte accounting. This is an outbox seam
+  check, not the pending full Document restart/reopen demonstration.
+- Project TypeScript checks pass. No broad regression or G3/P6 campaign was run.
+
+Review artifacts: [panel screenshot](BLOCK_HISTORY_UI_PREVIEW.png),
+[browser check result](BLOCK_HISTORY_UI_CHECK.json). Reproduce the focused checks:
+
+```sh
+npx vitest run src/history/ui-session-source.test.ts src/rendering/block-history.test.tsx
+node scripts/check-block-history-ui.mjs # requires the Vite client on port 3000
+node scripts/check-history-outbox.mjs
+npm run typecheck
+```
+
+Implementation: [panel](src/rendering/block-history.tsx),
+[session controller](src/runtime/block-history.ts),
+[temporary read-only adapter](src/history/ui-session-source.ts),
+[persistent outbox foundation](src/history/persistent-outbox.ts).
+
+**Stop:** review this UI before adding persistent-path integration or richer UI.
+No restoration/insertion, sentence grouping, broad Workspace support, P6-scale
+qualification or additional G3 investigation was added. Prior G3 evidence and its
+unestablished foreground-budget status remain unchanged.
 
 ## 1. Required before the UI consumes real persistent history
 

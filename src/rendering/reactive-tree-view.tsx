@@ -10,6 +10,7 @@ import { DocumentFindLayer } from "./document-find";
 import { DocumentEntityListLayer } from "./document-entity-list";
 import { BindingChordHint } from "./binding-chord-hint";
 import { StickyDraftLayer } from "./sticky-note";
+import { BlockHistoryLayer } from "./block-history";
 import "./concertina.css";
 
 export function ReactiveTreeView(props: {
@@ -20,6 +21,7 @@ export function ReactiveTreeView(props: {
     <ReactiveViewProvider editor={props.editor} projection={props.projection}>
       <BlockOutlet nodeKey={props.projection.state.rootKey} />
       <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
+      <BlockHistoryLayer editor={props.editor} viewId={props.projection.viewId} />
       <AnnotationMonitorLayer editor={props.editor} viewId={props.projection.viewId} />
       <EntitySearchLayer editor={props.editor} viewId={props.projection.viewId} />
       <DocumentFindLayer editor={props.editor} viewId={props.projection.viewId} />

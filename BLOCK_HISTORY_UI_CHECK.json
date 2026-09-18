@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "browser": "Chrome/153.0.8010.48",
+  "baselineRevisions": 1,
+  "afterEditRevisions": 2,
+  "original": "Solid-rendered CellBlocks with overlapping annotations.",
+  "latest": "Solid-rendered CellBlocks with overlapping annotations. A recorded edit.",
+  "historicalSelectionLeavesLiveDocumentUnchanged": true,
+  "screenshot": "BLOCK_HISTORY_UI_PREVIEW.png"
+}

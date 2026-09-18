@@ -90,7 +90,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     if (type === "youtube-video-block" ? !youtubeId(url) : !mediaUrl(url)) throw new Error("Enter a valid media URL (YouTube videos also accept a video ID).");
     add(dto(type, [], { url }));
   });
-  const history = [command("history.undo", "Undo"), command("history.redo", "Redo")];
+  const history = [command("history.open", "History…"), command("history.undo", "Undo"), command("history.redo", "Redo")];
   const files = [command("document.open", "Open…"), command("document.save", "Save"), command("document.saveAs", "Save as…")];
 
   if (isBackgroundType(node.viewType)) {

@@ -61,6 +61,8 @@ export function registerCoreViews(editor: ReactiveEditor): void {
 
   editor.commandRegistry.register({ id: "sticky.createFloating", label: "New Sticky Note", canExecute: () => editor.stickyNotes.canCreate(), execute: () => { editor.stickyNotes.create(); } });
 
+  editor.commandRegistry.register({ id: "history.open", label: "Block history", canExecute: ({ targetKey }) => editor.blockHistory.canOpen(targetKey), execute: ({ targetKey }) => editor.blockHistory.open(targetKey) });
+
   editor.commandRegistry.register({
     id: "history.undo",
     label: "Undo",

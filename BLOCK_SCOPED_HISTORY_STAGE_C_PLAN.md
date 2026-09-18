@@ -4,6 +4,10 @@ Date: 2026-09-17. Status: implementation authorized by the user's subsequent
 instruction; mandatory early proof gates remain in force. See the
 [gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md) for current evidence.
 No Stage C completion or production Document-format integration is claimed.
+The subsequent [initial UI increment](BLOCK_SCOPED_HISTORY_INITIAL_UI_SLICE.md)
+has reached its requested review stop: an interactive session-only Block History
+panel and an unconnected strict-IDB outbox foundation are implemented. Its narrow
+authorization does not claim G3 passed or complete the production P1–P6 roadmap.
 Implementation has progressed through the G1/G2 candidates into **G3**. The
 retained-definition correction and incremental ownership/Placement-ID regressions
 pass. A private, behavior-preserving undo-storage optimization now passes legacy

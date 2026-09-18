@@ -33,12 +33,14 @@ import { MinimapService } from "../runtime/minimap";
 import { ConcertinaService } from "../runtime/concertina";
 import { StickyNoteService } from "../runtime/sticky-notes";
 import type { LoadedWorkspace } from "./workspace-manifest";
+import { BlockHistorySession } from "../runtime/block-history";
 
 export class ReactiveEditor {
   readonly decorations = new SessionDecorations();
   readonly minimap = new MinimapService();
   readonly find: DocumentFind;
   readonly entityList: DocumentEntityList;
+  readonly blockHistory: BlockHistorySession;
   readonly viewChildren: Record<string, string | undefined>;
   readonly setViewChild: (key: string, child?: string) => void;
   private disposeFindInput?: () => void;
@@ -79,6 +81,7 @@ export class ReactiveEditor {
     this.setViewChild = (key, child) => setViewChildren(key, child);
     this.find = new DocumentFind(this);
     this.entityList = new DocumentEntityList(this);
+    this.blockHistory = new BlockHistorySession(this);
     this.multiSelections = new MultiSelectionEditor(
       this.commands,
       this.selections,
@@ -305,6 +308,7 @@ export class ReactiveEditor {
     this.concertina.dispose();
     this.find.dispose();
     this.entityList.dispose();
+    this.blockHistory.dispose();
     this.decorations.clearAll();
     this.minimap.clearAll();
     this.crossInput?.dispose();

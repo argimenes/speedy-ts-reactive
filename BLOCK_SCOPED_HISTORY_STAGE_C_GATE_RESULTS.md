@@ -1,8 +1,11 @@
 # Stage C implementation gate results
 
-Status: **final bounded matched comparison did not pass; G3 foreground-budget qualification remains unestablished**. P1–P6 remain gated for review. Stage C is not
-complete. No production format dispatch, ordinary Save/Open integration, outbox,
-`.memory` server store or Stage D–E work has been enabled.
+Status: **final bounded matched comparison did not pass; G3 foreground-budget qualification remains unestablished**. Stage C is not complete. The user's later
+[initial UI increment](BLOCK_SCOPED_HISTORY_INITIAL_UI_SLICE.md) is now implemented
+through its review checkpoint: session-only read-only panel plus a tested,
+unconnected persistent outbox foundation. Production format dispatch, ordinary
+Save/Open history integration and the `.memory` server connection remain pending.
+No G3 result was reclassified and no further qualification programme was added.
 Plan: [Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md).
 
 ## G3 final bounded matched comparison — latest, 2026-09-18
