@@ -1,0 +1,801 @@
+{
+  "sourceUnchangedFromHiddenPageFailure": true,
+  "sourceUnchangedDuringRun": true,
+  "preservedArtifactsUnchanged": true,
+  "preservedArtifactCount": 40,
+  "declaredReferenceHost": {
+    "cpu": "Apple M1",
+    "condition": "Display awake and no idle system sleep via caffeinate -di, fresh isolated headless Chrome target observed visible/focused; actual lifecycle and power evidence required, not assumed.",
+    "browserFlagsChanged": false,
+    "workloadChanged": false,
+    "validationChanged": false,
+    "queueCapsChanged": false
+  },
+  "bothPowerAssertionsPresentInEveryInteriorHostSample": true,
+  "interiorHostSampleCount": 63,
+  "hostMaximumSampleGapSeconds": 10.143862962722778,
+  "powerTransitions": [],
+  "mainTelemetrySamples": 121,
+  "workerTelemetrySamples": 605,
+  "observedVisibilityStates": [
+    "visible"
+  ],
+  "lifecycleEvents": [
+    {
+      "kind": "installed",
+      "at": 1789700738299,
+      "monotonicEpoch": 1789700738299.7998,
+      "boundary": 0,
+      "visibility": "visible",
+      "focus": true,
+      "discarded": false
+    },
+    {
+      "kind": "pageshow",
+      "at": 1789700738300,
+      "monotonicEpoch": 1789700738300.4,
+      "boundary": 0,
+      "visibility": "visible",
+      "focus": true,
+      "discarded": false,
+      "persisted": false
+    }
+  ],
+  "finalProgress": {
+    "edits": 3000,
+    "total": 3000,
+    "inFlight": 1,
+    "elapsedMs": 599841
+  },
+  "exitCode": 0,
+  "traceAssertionsPassed": true,
+  "qualificationTrace": true,
+  "diagnostic": {
+    "busyMs": 0,
+    "freezeMs": 0
+  },
+  "exactness": {
+    "physicalFramesChecksumVerified": 3002,
+    "allWirePacketsDecoded": 3000,
+    "allStateParentsAndPreimagesChecked": true,
+    "sampledIndependentReplays": 12,
+    "finalOracleEquality": true,
+    "allCaptureAcknowledgementsDelivered": true,
+    "undoEntries": 3000,
+    "finalOutboxCount": 0,
+    "finalOutboxBytes": 0
+  },
+  "sustained": {
+    "callback": {
+      "samples": 3000,
+      "medianMs": 0.1,
+      "p95Ms": 0.2
+    },
+    "edit": {
+      "samples": 3000,
+      "medianMs": 40.1,
+      "p95Ms": 42
+    },
+    "historyAddedOver50ms": 0,
+    "maxInFlight": 1,
+    "verify": {
+      "samples": 3000,
+      "medianMs": 47.9,
+      "p95Ms": 53.8
+    },
+    "encode": {
+      "samples": 3000,
+      "medianMs": 0.1,
+      "p95Ms": 0.2
+    },
+    "idb": {
+      "samples": 3000,
+      "medianMs": 1.7,
+      "p95Ms": 2.3
+    },
+    "append": {
+      "samples": 2705,
+      "medianMs": 32.8,
+      "p95Ms": 54.4
+    },
+    "packetBytes": {
+      "min": 2634,
+      "max": 2668
+    },
+    "maxOutboxBytes": 801669,
+    "maxOutboxCount": 301,
+    "oldestPendingMs": 59988,
+    "drainMs": 506,
+    "maxAppendRequestBytes": 99193
+  },
+  "sampledMainHeapPeakMiB": 114.55380153656006,
+  "finalPipeline": {
+    "at": 1789701354482,
+    "phase": "reconnected",
+    "captured": 3000,
+    "allocatedSequence": 3000,
+    "acknowledged": 3000,
+    "serverAcknowledged": 3000,
+    "rejected": 895,
+    "queueDepth": 1,
+    "maxQueueDepth": 2,
+    "oldestQueueAgeMs": 0.5,
+    "active": {
+      "kind": "finish",
+      "stage": "start",
+      "started": 1789701354517.9,
+      "stageStarted": 1789701354517.9,
+      "messageAgeMs": 0.5,
+      "stageAgeMs": 0.5
+    },
+    "uploading": false,
+    "outbox": {
+      "bytes": 0,
+      "count": 0
+    },
+    "oldestOutboxAgeMs": 0,
+    "maxOutboxBytes": 801669,
+    "maxOutboxCount": 301,
+    "oldestPendingMs": 59988,
+    "reconnectAt": 1789700994463,
+    "reconnectBacklog": {
+      "bytes": 799005,
+      "count": 300,
+      "workerQueueDepth": 0
+    },
+    "reconnectDrainMs": 963,
+    "lastCaptureAck": {
+      "commitId": "2ec20145-1713-482d-ba3f-8d12c86f9a64",
+      "postedAt": 1789701354364.2998,
+      "sequence": 3000
+    },
+    "heartbeat": 602,
+    "heartbeatAt": 1789701354403.0999
+  },
+  "pipelineMeanStageMs": {
+    "worker.queueWait": 0.005826297358730027,
+    "idb.init.handoff": 0.09999999962747097,
+    "idb.init.waitAndFirstRequest": 0.19999999925494194,
+    "idb.init.total": 2.099999999627471,
+    "idb.init.afterFirstRequestThroughCommit": 1.900000000372529,
+    "idb.readBatch.handoff": 0.032041447990614175,
+    "idb.readBatch.waitAndFirstRequest": 0.4093527116183236,
+    "idb.readBatch.total": 0.6871349751120132,
+    "idb.readBatch.afterFirstRequestThroughCommit": 0.2790606916988502,
+    "worker.heartbeatLateness": 0.008305647837437466,
+    "mainToWorker.delivery": -0.889968994140625,
+    "worker.apply": 0.13686666666405897,
+    "worker.validate": 48.68530000001689,
+    "worker.encode": 0.09556666666145126,
+    "idb.capture.handoff": 0.04863333332849046,
+    "idb.capture.waitAndFirstRequest": 0.3035999999909351,
+    "idb.capture.total": 1.8580666666583467,
+    "idb.capture.afterFirstRequestThroughCommit": 1.5559666666692744,
+    "worker.eventTotal": 50.8195999999959,
+    "transport.bodyEncode": 0.06455555556238525,
+    "transport.responseHeaders": 24.273611111097658,
+    "server.append": 30.272778523474805,
+    "transport.acknowledgement": 31.92436229207324,
+    "captureToDurableServerAck": 3131.1976666666665,
+    "idb.acknowledge.handoff": 0.029611829951983942,
+    "idb.acknowledge.waitAndFirstRequest": 0.17645101662856044,
+    "idb.acknowledge.total": 1.2486876155313469,
+    "idb.acknowledge.afterFirstRequestThroughCommit": 1.0740110905830664,
+    "captureToLocalAckCommit": 3132.772,
+    "transport.rejected": 1.506256983200265,
+    "idb.ledger.handoff": 0.0,
+    "idb.ledger.waitAndFirstRequest": 0.13333333345750967,
+    "idb.ledger.total": 0.19999999987582365,
+    "idb.ledger.afterFirstRequestThroughCommit": 0.06666666641831398
+  },
+  "mainStages": {
+    "main.scheduleLateness": {
+      "count": 3000,
+      "totalMs": 4834.699997767806,
+      "maxMs": 3.899999998509884,
+      "lastMs": 1.199999999254942
+    },
+    "main.capture": {
+      "count": 3000,
+      "totalMs": 92.99999999254942,
+      "maxMs": 0.2000000011175871,
+      "lastMs": 0
+    },
+    "main.postMessage": {
+      "count": 3000,
+      "totalMs": 111.197265625,
+      "maxMs": 0.2001953125,
+      "lastMs": 0
+    },
+    "main.callback": {
+      "count": 3000,
+      "totalMs": 221.79999999143183,
+      "maxMs": 0.30000000074505806,
+      "lastMs": 0
+    },
+    "main.edit": {
+      "count": 3000,
+      "totalMs": 121034.9000000637,
+      "maxMs": 89.5,
+      "lastMs": 39.69999999925494
+    },
+    "main.captureToWorkerAck": {
+      "count": 3000,
+      "totalMs": 153000.49926757812,
+      "maxMs": 148.5,
+      "lastMs": 49.099853515625
+    },
+    "workerToMain.ackDelivery": {
+      "count": 3000,
+      "totalMs": 3192.898193359375,
+      "maxMs": 2.800048828125,
+      "lastMs": 1
+    }
+  },
+  "scheduling": {
+    "visibility": "visible",
+    "focus": true,
+    "discarded": false,
+    "longTaskSupported": true,
+    "boundary": 3617,
+    "active": null,
+    "pendingTimers": [
+      {
+        "id": 3617,
+        "label": "heartbeat",
+        "requestedAt": 1789701354771.2,
+        "wallAt": 1789701354734,
+        "delayMs": 1000,
+        "deadline": 1789701355771.2
+      }
+    ],
+    "stats": {
+      "longTask": {
+        "count": 42,
+        "totalMs": 14581,
+        "maxMs": 1290,
+        "maximum": {
+          "at": 1789700752392,
+          "startTime": 12852.199999999255,
+          "name": "self"
+        }
+      },
+      "timer.heartbeat": {
+        "count": 612,
+        "totalMs": 5453.597900390625,
+        "maxMs": 1067.2001953125,
+        "maximum": {
+          "at": 1789700748803,
+          "id": 7,
+          "label": "heartbeat",
+          "requestedAt": 1789700746736.7998,
+          "wallAt": 1789700746736,
+          "delayMs": 1000,
+          "deadline": 1789700747736.7998,
+          "firedAt": 1789700748804,
+          "wallFiredAt": 1789700748803,
+          "lateMs": 1067.2001953125,
+          "boundary": 7
+        }
+      },
+      "timer.edit": {
+        "count": 3000,
+        "totalMs": 4758.408249750733,
+        "maxMs": 3.10009765625,
+        "maximum": {
+          "at": 1789701214649,
+          "id": 2774,
+          "label": "edit",
+          "requestedAt": 1789701214516.2998,
+          "wallAt": 1789701214487,
+          "delayMs": 159,
+          "deadline": 1789701214675.2998,
+          "index": 2301,
+          "target": 476424.4000000004,
+          "firedAt": 1789701214678.4,
+          "wallFiredAt": 1789701214649,
+          "lateMs": 3.10009765625,
+          "boundary": 2773
+        }
+      },
+      "span.edit": {
+        "count": 3000,
+        "totalMs": 121021.99829101562,
+        "maxMs": 89.5,
+        "maximum": {
+          "at": 1789701169739,
+          "label": "edit",
+          "startedAt": 1789701169676.5,
+          "boundary": 2503
+        }
+      },
+      "timer.drain": {
+        "count": 5,
+        "totalMs": 5.800048828125,
+        "maxMs": 2,
+        "maximum": {
+          "at": 1789701354481,
+          "id": 3613,
+          "label": "drain",
+          "requestedAt": 1789701354416.7998,
+          "wallAt": 1789701354379,
+          "delayMs": 100,
+          "deadline": 1789701354516.7998,
+          "firedAt": 1789701354518.7998,
+          "wallFiredAt": 1789701354481,
+          "lateMs": 2,
+          "boundary": 3612
+        }
+      },
+      "span.independentOracle": {
+        "count": 1,
+        "totalMs": 661.599853515625,
+        "maxMs": 661.599853515625,
+        "maximum": {
+          "at": 1789701355473,
+          "label": "independentOracle",
+          "startedAt": 1789701354848.7,
+          "boundary": 3616
+        }
+      },
+      "timer.finalObservation": {
+        "count": 1,
+        "totalMs": 2.900146484375,
+        "maxMs": 2.900146484375,
+        "maximum": {
+          "at": 1789701355477,
+          "id": 3618,
+          "label": "finalObservation",
+          "requestedAt": 1789701355512.0999,
+          "wallAt": 1789701355474,
+          "delayMs": 0,
+          "deadline": 1789701355512.0999,
+          "firedAt": 1789701355515,
+          "wallFiredAt": 1789701355477,
+          "lateMs": 2.900146484375,
+          "boundary": 3617
+        }
+      }
+    },
+    "recent": [
+      {
+        "kind": "heartbeat",
+        "at": 1789701324698,
+        "monotonicEpoch": 1789701324733.7,
+        "boundary": 3433,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701325698,
+        "monotonicEpoch": 1789701325734.0999,
+        "boundary": 3439,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701326699,
+        "monotonicEpoch": 1789701326734.7998,
+        "boundary": 3445,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701327700,
+        "monotonicEpoch": 1789701327735.9,
+        "boundary": 3451,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701328700,
+        "monotonicEpoch": 1789701328736.2,
+        "boundary": 3457,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701329701,
+        "monotonicEpoch": 1789701329737.2998,
+        "boundary": 3463,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701330702,
+        "monotonicEpoch": 1789701330737.7998,
+        "boundary": 3469,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701331702,
+        "monotonicEpoch": 1789701331738.2,
+        "boundary": 3475,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701332703,
+        "monotonicEpoch": 1789701332738.9,
+        "boundary": 3481,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701333703,
+        "monotonicEpoch": 1789701333739.5,
+        "boundary": 3487,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701334704,
+        "monotonicEpoch": 1789701334740.4,
+        "boundary": 3493,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701335705,
+        "monotonicEpoch": 1789701335741.2,
+        "boundary": 3499,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701336706,
+        "monotonicEpoch": 1789701336743,
+        "boundary": 3505,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701337707,
+        "monotonicEpoch": 1789701337743.5999,
+        "boundary": 3511,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701338708,
+        "monotonicEpoch": 1789701338744.7,
+        "boundary": 3517,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701339709,
+        "monotonicEpoch": 1789701339745.7,
+        "boundary": 3523,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701340710,
+        "monotonicEpoch": 1789701340747.0999,
+        "boundary": 3529,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701341711,
+        "monotonicEpoch": 1789701341747.7998,
+        "boundary": 3535,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701342711,
+        "monotonicEpoch": 1789701342748.2998,
+        "boundary": 3541,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701343713,
+        "monotonicEpoch": 1789701343749.9,
+        "boundary": 3547,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701344714,
+        "monotonicEpoch": 1789701344751,
+        "boundary": 3553,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701345715,
+        "monotonicEpoch": 1789701345751.7,
+        "boundary": 3559,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701346715,
+        "monotonicEpoch": 1789701346752.2998,
+        "boundary": 3565,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701347717,
+        "monotonicEpoch": 1789701347753.9,
+        "boundary": 3571,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701348717,
+        "monotonicEpoch": 1789701348754.5999,
+        "boundary": 3577,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701349718,
+        "monotonicEpoch": 1789701349755.5,
+        "boundary": 3583,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701350719,
+        "monotonicEpoch": 1789701350756.5,
+        "boundary": 3589,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701351721,
+        "monotonicEpoch": 1789701351758,
+        "boundary": 3595,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701352731,
+        "monotonicEpoch": 1789701352768.7998,
+        "boundary": 3601,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701353732,
+        "monotonicEpoch": 1789701353769.7,
+        "boundary": 3607,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701354734,
+        "monotonicEpoch": 1789701354771.2,
+        "boundary": 3615,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      },
+      {
+        "kind": "heartbeat",
+        "at": 1789701355735,
+        "monotonicEpoch": 1789701355772.9,
+        "boundary": 3618,
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false
+      }
+    ]
+  },
+  "nodeScheduling": {
+    "heartbeats": 625,
+    "maxTimerLatenessMs": 1036.5183750001015,
+    "maximum": {
+      "at": 1789701362765,
+      "lateness": 1036.5183750001015
+    },
+    "milestones": [
+      {
+        "at": 1789701361215,
+        "phase": "independentOracleEquality"
+      },
+      {
+        "at": 1789701362764,
+        "phase": "checkpointAndAllFrameReplay"
+      },
+      {
+        "at": 1789701372113,
+        "phase": "allVerificationComplete"
+      }
+    ]
+  },
+  "matrices": [
+    {
+      "length": 100,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.3,
+        "p95Ms": 0.7
+      },
+      "callback": null
+    },
+    {
+      "length": 100,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.4,
+        "p95Ms": 0.6
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 100,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.3,
+        "p95Ms": 0.6
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 8.4,
+        "p95Ms": 10.3
+      },
+      "callback": null
+    },
+    {
+      "length": 5600,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 8.9,
+        "p95Ms": 11.1
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 13.5,
+        "p95Ms": 19.4
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 39.5,
+        "p95Ms": 42.8
+      },
+      "callback": null
+    },
+    {
+      "length": 25000,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 40.9,
+        "p95Ms": 48
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 41.5,
+        "p95Ms": 60
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    }
+  ],
+  "finiteUnpairedEditP95DifferencesMs": {
+    "100": 0.0,
+    "5600": 8.299999999999999,
+    "25000": 12
+  },
+  "qualificationAssessment": {
+    "sustainedExactnessLosslessnessThroughput": "pass under the observed declared foreground condition",
+    "completeG3": "not established: finite foreground comparisons exceed the 4 ms target as unpaired differences; broader obligations also remain",
+    "foregroundComparisonAttribution": "Not worker backlog: worker is created after finite matrix. Direct callback timing alone and unpaired command percentiles do not isolate added synchronous work.",
+    "hiddenPageStress": "prior failed result retained unchanged; not qualified by this foreground result",
+    "nextStep": "stop for review; P1\u2013P6 gated; no new producer contract or validation optimization"
+  }
+}

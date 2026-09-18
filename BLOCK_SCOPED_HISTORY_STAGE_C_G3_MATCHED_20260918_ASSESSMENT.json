@@ -1,0 +1,1266 @@
+{
+  "status": "Foreground qualification not established; no genuine history-path regression isolated",
+  "rawResultPassed": false,
+  "missingCase": 25000,
+  "stoppedAfterFirstFailedStatistic": true,
+  "noReruns": true,
+  "cases": [
+    {
+      "length": 100,
+      "statistics": {
+        "pairedAdded": {
+          "count": 120,
+          "medianMs": 0.10000000149011612,
+          "p95Ms": 0.6999999992549419,
+          "maxMs": 1
+        },
+        "byOrder": {
+          "compactFirst": {
+            "count": 60,
+            "medianMs": 0,
+            "p95Ms": 0.30000000074505806,
+            "maxMs": 1
+          },
+          "candidateFirst": {
+            "count": 60,
+            "medianMs": 0.30000000074505806,
+            "p95Ms": 0.7999999988824129,
+            "maxMs": 1
+          }
+        },
+        "byPosition": {
+          "0": {
+            "count": 40,
+            "medianMs": 0.19999999925494194,
+            "p95Ms": 1,
+            "maxMs": 1
+          },
+          "1": {
+            "count": 40,
+            "medianMs": 0.09999999962747097,
+            "p95Ms": 0.5,
+            "maxMs": 0.599999999627471
+          },
+          "2": {
+            "count": 40,
+            "medianMs": 0.09999999962747097,
+            "p95Ms": 0.7000000011175871,
+            "maxMs": 0.8999999985098839
+          }
+        },
+        "stages": {
+          "edit": {
+            "compact": {
+              "count": 120,
+              "medianMs": 1.099999999627471,
+              "p95Ms": 1.599999999627471,
+              "maxMs": 2
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 1.300000000745058,
+              "p95Ms": 1.800000000745058,
+              "maxMs": 2.299999998882413
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0.10000000149011612,
+              "p95Ms": 0.6999999992549419,
+              "maxMs": 1
+            }
+          },
+          "prepareCapture": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.2000000011175871
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.19999999925494194,
+              "maxMs": 0.2000000011175871
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.10000000149011612,
+              "maxMs": 0.19999999925494194
+            }
+          },
+          "deliverCapture": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.10000000149011612,
+              "maxMs": 0.2000000011175871
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.19999999925494194,
+              "p95Ms": 0.30000000074505806,
+              "maxMs": 0.40000000037252903
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.2999999988824129,
+              "maxMs": 0.30000000074505806
+            }
+          },
+          "callback": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0,
+              "maxMs": 0
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.30000000074505806
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.30000000074505806
+            }
+          },
+          "capture": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0,
+              "maxMs": 0
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.10000000149011612,
+              "maxMs": 0.2000000011175871
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.10000000149011612,
+              "maxMs": 0.2000000011175871
+            }
+          },
+          "transfer": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0,
+              "maxMs": 0
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.099853515625,
+              "p95Ms": 0.199951171875,
+              "maxMs": 0.2001953125
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0.099853515625,
+              "p95Ms": 0.199951171875,
+              "maxMs": 0.2001953125
+            }
+          },
+          "otherCommandWork": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0.900000000372529,
+              "p95Ms": 1.400000000372529,
+              "maxMs": 1.700000001117587
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 1.099999999627471,
+              "p95Ms": 1.5,
+              "maxMs": 1.799999998882413
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.5000000018626451,
+              "maxMs": 0.6999999992549419
+            }
+          }
+        },
+        "passed": true
+      },
+      "pairedCapturePreparationAndDelivery": {
+        "p95Ms": 0.30000000074505806,
+        "maxMs": 0.40000000037252903
+      },
+      "pairsOver4Ms": 0,
+      "events": 150,
+      "acknowledgements": 150,
+      "physicalFrames": 152,
+      "finalOracleEquality": true,
+      "maxInFlight": 1,
+      "pipeline": {
+        "captured": 150,
+        "acknowledged": 150,
+        "serverAcknowledged": 150,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "maxQueueDepth": 1
+      },
+      "scheduling": {
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false,
+        "longTaskSupported": true,
+        "boundary": 482,
+        "active": null,
+        "pendingTimers": [
+          {
+            "id": 482,
+            "label": "heartbeat",
+            "requestedAt": 1789703111764.3,
+            "wallAt": 1789703111764,
+            "delayMs": 1000,
+            "deadline": 1789703112764.3
+          }
+        ],
+        "stats": {
+          "timer.pair": {
+            "count": 150,
+            "totalMs": 169.197753963992,
+            "maxMs": 2.099853515625,
+            "maximum": {
+              "at": 1789703090108,
+              "id": 133,
+              "label": "pair",
+              "requestedAt": 1789703089918.9001,
+              "wallAt": 1789703089918,
+              "delayMs": 187,
+              "deadline": 1789703090105.9001,
+              "index": 41,
+              "firedAt": 1789703090108,
+              "wallFiredAt": 1789703090107,
+              "lateMs": 2.099853515625,
+              "boundary": 132
+            }
+          },
+          "timer.arm": {
+            "count": 300,
+            "totalMs": 1371.801513671875,
+            "maxMs": 5.5,
+            "maximum": {
+              "at": 1789703103119,
+              "id": 343,
+              "label": "arm",
+              "requestedAt": 1789703103113.5,
+              "wallAt": 1789703103113,
+              "delayMs": 0,
+              "deadline": 1789703103113.5,
+              "firedAt": 1789703103119,
+              "wallFiredAt": 1789703103119,
+              "lateMs": 5.5,
+              "boundary": 342
+            }
+          },
+          "timer.heartbeat": {
+            "count": 30,
+            "totalMs": 36.199462890625,
+            "maxMs": 1.699951171875,
+            "maximum": {
+              "at": 1789703110763,
+              "id": 450,
+              "label": "heartbeat",
+              "requestedAt": 1789703109761.1,
+              "wallAt": 1789703109761,
+              "delayMs": 1000,
+              "deadline": 1789703110761.1,
+              "firedAt": 1789703110762.8,
+              "wallFiredAt": 1789703110763,
+              "lateMs": 1.699951171875,
+              "boundary": 464
+            }
+          },
+          "timer.drain": {
+            "count": 2,
+            "totalMs": 2.300048828125,
+            "maxMs": 1.5,
+            "maximum": {
+              "at": 1789703111923,
+              "id": 483,
+              "label": "drain",
+              "requestedAt": 1789703111821.4001,
+              "wallAt": 1789703111821,
+              "delayMs": 100,
+              "deadline": 1789703111921.4001,
+              "firedAt": 1789703111922.9001,
+              "wallFiredAt": 1789703111923,
+              "lateMs": 1.5,
+              "boundary": 482
+            }
+          }
+        },
+        "recent": [
+          {
+            "kind": "installed",
+            "at": 1789703081725,
+            "monotonicEpoch": 1789703081726.1,
+            "boundary": 0,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "pageshow",
+            "at": 1789703081726,
+            "monotonicEpoch": 1789703081726.4001,
+            "boundary": 0,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false,
+            "persisted": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703082727,
+            "monotonicEpoch": 1789703082727.4001,
+            "boundary": 16,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703083728,
+            "monotonicEpoch": 1789703083728.5,
+            "boundary": 32,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703084729,
+            "monotonicEpoch": 1789703084729.7,
+            "boundary": 48,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703085730,
+            "monotonicEpoch": 1789703085730.2,
+            "boundary": 64,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703086731,
+            "monotonicEpoch": 1789703086731.4001,
+            "boundary": 80,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703087732,
+            "monotonicEpoch": 1789703087732.8,
+            "boundary": 96,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703088733,
+            "monotonicEpoch": 1789703088733.7,
+            "boundary": 112,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703089734,
+            "monotonicEpoch": 1789703089734.6,
+            "boundary": 128,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703090735,
+            "monotonicEpoch": 1789703090735.9001,
+            "boundary": 144,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703091737,
+            "monotonicEpoch": 1789703091737.1,
+            "boundary": 160,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703092738,
+            "monotonicEpoch": 1789703092738.2,
+            "boundary": 176,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703093739,
+            "monotonicEpoch": 1789703093739.3,
+            "boundary": 192,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703094739,
+            "monotonicEpoch": 1789703094739.8,
+            "boundary": 208,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703095741,
+            "monotonicEpoch": 1789703095741.1,
+            "boundary": 224,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703096742,
+            "monotonicEpoch": 1789703096742.8,
+            "boundary": 240,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703097744,
+            "monotonicEpoch": 1789703097744.4001,
+            "boundary": 256,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703098746,
+            "monotonicEpoch": 1789703098745.8,
+            "boundary": 272,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703099747,
+            "monotonicEpoch": 1789703099747,
+            "boundary": 288,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703100748,
+            "monotonicEpoch": 1789703100748.2,
+            "boundary": 304,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703101749,
+            "monotonicEpoch": 1789703101749.7,
+            "boundary": 320,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703102751,
+            "monotonicEpoch": 1789703102751,
+            "boundary": 336,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703103752,
+            "monotonicEpoch": 1789703103752.4001,
+            "boundary": 352,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703104754,
+            "monotonicEpoch": 1789703104753.9001,
+            "boundary": 368,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703105755,
+            "monotonicEpoch": 1789703105755.4001,
+            "boundary": 384,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703106756,
+            "monotonicEpoch": 1789703106756.6,
+            "boundary": 400,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703107758,
+            "monotonicEpoch": 1789703107758.2,
+            "boundary": 416,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703108759,
+            "monotonicEpoch": 1789703108759.4001,
+            "boundary": 432,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703109761,
+            "monotonicEpoch": 1789703109761.1,
+            "boundary": 448,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703110763,
+            "monotonicEpoch": 1789703110762.9001,
+            "boundary": 464,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703111764,
+            "monotonicEpoch": 1789703111764.3,
+            "boundary": 480,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          }
+        ]
+      }
+    },
+    {
+      "length": 5600,
+      "statistics": {
+        "pairedAdded": {
+          "count": 120,
+          "medianMs": -0.09999999962747097,
+          "p95Ms": 6.400000000372529,
+          "maxMs": 9.900000000372529
+        },
+        "byOrder": {
+          "compactFirst": {
+            "count": 60,
+            "medianMs": -3.200000001117587,
+            "p95Ms": -0.2999999988824129,
+            "maxMs": 1.200000001117587
+          },
+          "candidateFirst": {
+            "count": 60,
+            "medianMs": 4.599999999627471,
+            "p95Ms": 7.699999999254942,
+            "maxMs": 9.900000000372529
+          }
+        },
+        "byPosition": {
+          "0": {
+            "count": 40,
+            "medianMs": -0.599999999627471,
+            "p95Ms": 6.099999999627471,
+            "maxMs": 7.800000000745058
+          },
+          "1": {
+            "count": 40,
+            "medianMs": -0.09999999962747097,
+            "p95Ms": 7,
+            "maxMs": 9.900000000372529
+          },
+          "2": {
+            "count": 40,
+            "medianMs": 1.862645149230957e-09,
+            "p95Ms": 5.599999999627471,
+            "maxMs": 7.700000001117587
+          }
+        },
+        "stages": {
+          "edit": {
+            "compact": {
+              "count": 120,
+              "medianMs": 11.699999999254942,
+              "p95Ms": 17.40000000037253,
+              "maxMs": 19
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 13.299999998882413,
+              "p95Ms": 17.699999999254942,
+              "maxMs": 21.699999999254942
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": -0.09999999962747097,
+              "p95Ms": 6.400000000372529,
+              "maxMs": 9.900000000372529
+            }
+          },
+          "prepareCapture": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0.19999999925494194,
+              "p95Ms": 0.30000000074505806,
+              "maxMs": 0.5
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.2000000011175871,
+              "p95Ms": 0.40000000037252903,
+              "maxMs": 0.5
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.40000000037252903
+            }
+          },
+          "deliverCapture": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.09999999962747097,
+              "maxMs": 0.19999999925494194
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.10000000149011612,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.30000000074505806
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.30000000074505806
+            }
+          },
+          "callback": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0,
+              "maxMs": 0.09999999962747097
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.2999999988824129
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0.09999999962747097,
+              "p95Ms": 0.2000000011175871,
+              "maxMs": 0.2999999988824129
+            }
+          },
+          "capture": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0,
+              "maxMs": 0
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.10000000149011612,
+              "maxMs": 0.2000000011175871
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.10000000149011612,
+              "maxMs": 0.2000000011175871
+            }
+          },
+          "transfer": {
+            "compact": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0,
+              "maxMs": 0
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.10009765625,
+              "maxMs": 0.2001953125
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": 0,
+              "p95Ms": 0.10009765625,
+              "maxMs": 0.2001953125
+            }
+          },
+          "otherCommandWork": {
+            "compact": {
+              "count": 120,
+              "medianMs": 11.499999998137355,
+              "p95Ms": 17.099999997764826,
+              "maxMs": 18.699999999254942
+            },
+            "candidate": {
+              "count": 120,
+              "medianMs": 12.900000000372529,
+              "p95Ms": 17.399999998509884,
+              "maxMs": 21.199999999254942
+            },
+            "pairedAdded": {
+              "count": 120,
+              "medianMs": -0.1999999973922968,
+              "p95Ms": 6.200000001117587,
+              "maxMs": 9.5
+            }
+          }
+        },
+        "passed": false
+      },
+      "pairedCapturePreparationAndDelivery": {
+        "p95Ms": 0.3999999985098839,
+        "maxMs": 0.6000000014901161
+      },
+      "pairsOver4Ms": 40,
+      "events": 150,
+      "acknowledgements": 150,
+      "physicalFrames": 152,
+      "finalOracleEquality": true,
+      "maxInFlight": 1,
+      "pipeline": {
+        "captured": 150,
+        "acknowledged": 150,
+        "serverAcknowledged": 150,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "maxQueueDepth": 1
+      },
+      "scheduling": {
+        "visibility": "visible",
+        "focus": true,
+        "discarded": false,
+        "longTaskSupported": true,
+        "boundary": 481,
+        "active": null,
+        "pendingTimers": [
+          {
+            "id": 470,
+            "label": "heartbeat",
+            "requestedAt": 1789703143188.4,
+            "wallAt": 1789703143188,
+            "delayMs": 1000,
+            "deadline": 1789703144188.4
+          }
+        ],
+        "stats": {
+          "timer.heartbeat": {
+            "count": 31,
+            "totalMs": 186.901123046875,
+            "maxMs": 109.300048828125,
+            "maximum": {
+              "at": 1789703144298,
+              "id": 470,
+              "label": "heartbeat",
+              "requestedAt": 1789703143188.4,
+              "wallAt": 1789703143188,
+              "delayMs": 1000,
+              "deadline": 1789703144188.4,
+              "firedAt": 1789703144297.7,
+              "wallFiredAt": 1789703144298,
+              "lateMs": 109.300048828125,
+              "boundary": 482
+            }
+          },
+          "timer.pair": {
+            "count": 150,
+            "totalMs": 149.89985351637006,
+            "maxMs": 2,
+            "maximum": {
+              "at": 1789703142748,
+              "id": 460,
+              "label": "pair",
+              "requestedAt": 1789703142588.0999,
+              "wallAt": 1789703142588,
+              "delayMs": 158,
+              "deadline": 1789703142746.0999,
+              "index": 143,
+              "firedAt": 1789703142748.0999,
+              "wallFiredAt": 1789703142748,
+              "lateMs": 2,
+              "boundary": 459
+            }
+          },
+          "timer.arm": {
+            "count": 300,
+            "totalMs": 1380.69970703125,
+            "maxMs": 9.300048828125,
+            "maximum": {
+              "at": 1789703136978,
+              "id": 369,
+              "label": "arm",
+              "requestedAt": 1789703136969.2,
+              "wallAt": 1789703136969,
+              "delayMs": 0,
+              "deadline": 1789703136969.2,
+              "firedAt": 1789703136978.5,
+              "wallFiredAt": 1789703136978,
+              "lateMs": 9.300048828125,
+              "boundary": 368
+            }
+          },
+          "longTask": {
+            "count": 2,
+            "totalMs": 222,
+            "maxMs": 154,
+            "maximum": {
+              "at": 1789703144298,
+              "startTime": 31063.900000000373,
+              "name": "self"
+            }
+          },
+          "timer.drain": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "maximum": {
+              "at": 1789703144144,
+              "id": 482,
+              "label": "drain",
+              "requestedAt": 1789703144042.5999,
+              "wallAt": 1789703144043,
+              "delayMs": 100,
+              "deadline": 1789703144142.5999,
+              "firedAt": 1789703144143.5999,
+              "wallFiredAt": 1789703144144,
+              "lateMs": 1,
+              "boundary": 481
+            }
+          }
+        },
+        "recent": [
+          {
+            "kind": "focus",
+            "at": 1789703113109,
+            "monotonicEpoch": 1789703113109.2,
+            "boundary": 0,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703114110,
+            "monotonicEpoch": 1789703114110.2,
+            "boundary": 1,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703115112,
+            "monotonicEpoch": 1789703115112.0999,
+            "boundary": 17,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703116114,
+            "monotonicEpoch": 1789703116113.9,
+            "boundary": 33,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703117115,
+            "monotonicEpoch": 1789703117115.2,
+            "boundary": 49,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703118117,
+            "monotonicEpoch": 1789703118117.4,
+            "boundary": 65,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703119118,
+            "monotonicEpoch": 1789703119118,
+            "boundary": 81,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703120119,
+            "monotonicEpoch": 1789703120119.8,
+            "boundary": 97,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703121121,
+            "monotonicEpoch": 1789703121121.2,
+            "boundary": 113,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703122123,
+            "monotonicEpoch": 1789703122123.5,
+            "boundary": 129,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703123125,
+            "monotonicEpoch": 1789703123125.2,
+            "boundary": 145,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703124127,
+            "monotonicEpoch": 1789703124127.0999,
+            "boundary": 161,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703125128,
+            "monotonicEpoch": 1789703125128.0999,
+            "boundary": 177,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703126130,
+            "monotonicEpoch": 1789703126129.7,
+            "boundary": 193,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703127131,
+            "monotonicEpoch": 1789703127131.3,
+            "boundary": 209,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703128133,
+            "monotonicEpoch": 1789703128133.4,
+            "boundary": 225,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703129135,
+            "monotonicEpoch": 1789703129135.2,
+            "boundary": 241,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703130137,
+            "monotonicEpoch": 1789703130137,
+            "boundary": 257,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703131138,
+            "monotonicEpoch": 1789703131138.5999,
+            "boundary": 273,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703132140,
+            "monotonicEpoch": 1789703132139.9,
+            "boundary": 289,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703133141,
+            "monotonicEpoch": 1789703133141.0999,
+            "boundary": 305,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703134143,
+            "monotonicEpoch": 1789703134142.8,
+            "boundary": 321,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703135144,
+            "monotonicEpoch": 1789703135144.2,
+            "boundary": 337,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703136146,
+            "monotonicEpoch": 1789703136146.2,
+            "boundary": 353,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703137148,
+            "monotonicEpoch": 1789703137147.5999,
+            "boundary": 370,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703138160,
+            "monotonicEpoch": 1789703138159.9,
+            "boundary": 387,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703139168,
+            "monotonicEpoch": 1789703139167.7,
+            "boundary": 403,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703140185,
+            "monotonicEpoch": 1789703140184.5999,
+            "boundary": 420,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703141186,
+            "monotonicEpoch": 1789703141185.5999,
+            "boundary": 436,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703142187,
+            "monotonicEpoch": 1789703142187.3,
+            "boundary": 452,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703143188,
+            "monotonicEpoch": 1789703143188.4,
+            "boundary": 468,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          },
+          {
+            "kind": "heartbeat",
+            "at": 1789703144298,
+            "monotonicEpoch": 1789703144297.7,
+            "boundary": 482,
+            "visibility": "visible",
+            "focus": true,
+            "discarded": false
+          }
+        ]
+      }
+    }
+  ],
+  "preservation": {
+    "count": 49,
+    "changed": [],
+    "sha256": {
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_COMPACT_CONTROL.json": "bcf41f0553786a68c56f9a4faafc26a0259ca8ab585f75ec7921d3f36ee614d3",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_COST_EXPERIMENT.json": "c678573ec01e767dafbb4fe0da6e0a08938e9626749705dda1bd3c46cc048337",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918.md": "362e2c002eadc19f63472b28f781b5d6baa9799278fddbdf6c6eaec2616d69dc",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_ASSESSMENT.json": "5cfb5cec3864996e2a5fdfeaf7840c5d3ff3af85f8d66ada626df68cdaff71a1",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_CANDIDATE.json": "9ad39aac96783499daded5a0103356f698b87005f48f5b2240880c08e0ca0302",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_CANDIDATE.log": "71313ccdb7393c22e90ead4e07384d36b8e99a226e485a05b93b3d0bd5f720f3",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_CHECKS.json": "c80a9910cda3f2a1f9148ce4d1a3a9c0f09a385921f7af3df4c5998d35aaf68b",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_HOST.json": "715551225f71c45f27ccfd439eaf438635b2bdee03b7bded1485c70f16109718",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_OFF_CONTROL.json": "82cb560051874be01a5874ee4cc12131af4ff13b2261b4bf81e10eb8af111db0",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md": "92f1c8157d857ad8c768995b5df3febe170d674d541f37c242d6b6e90cea9bfc",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_CANDIDATE.json": "eb00ca20dbb763ca1d87a2e0dff7c3e716d947c9a3e86a82729bfe2c0dca3f7e",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_CANDIDATE.log": "89e89f892dde794b28790a2849c7e2caffa46da17afaf1c69d9062d203566762",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_CHECKS.json": "c40f270e98a7d85ea181a4cc7d07bca1b6101b66580c56bf26770e55a19d8cd7",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_COMPACT.json": "d7c27ba2384ad927d6c371b02bb0ca922c79bc35d31308766497ae97dec1a5c0",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_COMPACT.log": "a16de84d026c982595188c429ed1c8541b3ad1740b32f02b46bcdfcaa35d5228",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_HOST.json": "fabfcb538a0b5082ab02e99d6108784377f60976cd5b5599c6abd314446288d3",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_OFF.json": "83107762613ecd24ace3da27c508db3c841d135b148961c498283bb0887db0a8",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_OFF.log": "792f2235865db5bb311237574b47c6bde67baea9b7e56e3260b3d87d48151e4c",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918.md": "a5f7fe9e61ca97cdbde9267dee1267d8aed446d672c008504b6ce20e92c01619",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_ASSESSMENT.json": "9f23ccbcfe5c0781163e7626a6fca2e91de8e58fbb2e5a55f2569409b5c60146",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_BUSY.json": "cdbfd876812a944d08896d3f54e9eeaa0f5fa31cabcb2b5d43830da29a4dde19",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_BUSY.log": "cee670b3a39d67b842c5778eba9550ee96dd9851ac1c3ee2edf825ea74fb5243",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_CANDIDATE.json": "7dc2165760d0d430d641162aca2cc343061540c2e9a199a0fb7d271b675b4605",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_CANDIDATE.log": "cfc72c04a5a3bc1814552b7aa434ba6e9020c71372f6f2a4f31d4e5a40cb4e40",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_CHECKS.json": "5086a662e99100e8e6e8414d4f43269fdc1385dddb5ae25204d86adb0d343cc5",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_FREEZE.json": "f761cce9451959e0b04959673c6086b82b4814a6ce56adea542b8213f3c1049c",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_FREEZE.log": "bf8cad162d76100175a52b9fac232912a3963cb4fd2e65501e345092718015e0",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_FREEZE_PEEK.json": "3428617a870118979801010bedd49909e697c08e466916a9bcf5ab99b73ebfd6",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_FREEZE_RESTORE.json": "8bfa4a912d5c91867623b1a67690c6c1a76ffb5030ca69bbeb38a6ba0ab7489e",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_HOST.json": "1877e8addb8b746d495209e2d8c8e79238d5d69e7610564d5c812dffef9a128b",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_POWER.json": "956e39eedbf160d12e247b1fea5c286a1fed0379b98059d9cd08b47c8c9ff93d",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_PRIOR_POWER.json": "8bd86d1bc5e62525d28911b6f8cf81f833259ae35ef680a77c91eb93ab4003cb",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SMOKE.json": "6a5d0245f37756676888bcf7598663501b31222e052980a24a0be7260e819077",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918.md": "1355545669f55e0067c7f494e7fda8d2056176d234d5a5819e2df09b39cb6c3c",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_ASSESSMENT.json": "7967e4a8fbe9609c3b51000677a136f02d0e4c6f4b99764d1f92e3253bb32e29",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_AWAKE_CANDIDATE.json": "57e1c6dc56dc97e09f96883a6751f0e9257910f4cdb48552d0028e87e94fc42f",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_AWAKE_CANDIDATE.log": "d848a1e21384216589533258a5986da6655de58e1c1984546f0feb9d75db3143",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_AWAKE_HOST.json": "7b3a5aa6e22dbc3542e5368f0b51598a045a7ffe16feb92f931cde68b24d25e9",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_CANDIDATE.json": "fed788e584c578ea3a1753499bece6ecd07a751d7640b020017637dc2128e9c8",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_CANDIDATE.log": "7707dd8e34f0f0cfabbeebfdf4f9a46860cc0e53176119065c0b4d6ad38a9f5a",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_CHECKS.json": "3360e25171d4b5d6d1b2ae9a6301f38ca38073f411f3ccf8d9a091edbc2aad31",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_COMPACT.json": "bc53c0d91decd040c0483757588a3ddce165ae1976c7009cb91025faabf68444",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_COMPACT.log": "3e601da6e9458704def5c8816cb7a4626c165e9d3576f889b8fd889db930d435",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_HOST.json": "caa7c262b2b7d2709848dee13d7d85589aa86d2ef12f6087ab32681dfced4b23",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_OFF.json": "46cc4b992d4118f6485e4fcff1c97cff68371319d79e875cacac53484d59fa9e",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_OFF.log": "b84cf2872f03b66b93449ae9db22f8ca50f983572eecdf9ab204e0696541b4b2",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_SLEEP_EVIDENCE.json": "243106139a75a07e99a9afc38a7f229600c34991bc9445e759f0feee63cd4adb",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_SMOKE.json": "0b120d79e361e1577085b6b08ef11330e015aae37946b32d0192a06c51b93242",
+      "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_SMOKE.log": "fb89ddbe0b8bb8099d3209ab02fdc7aa8c35f7561ff3e6b3226e58823a65c217"
+    }
+  },
+  "checks": {
+    "matchedStatisticsNodeTests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "matchedBrowserTypeScript": "passed",
+    "matchedRunnerSyntax": "passed",
+    "runSourceHashesUnchanged": true
+  }
+}

@@ -1,0 +1,2524 @@
+{"gate":"G3 running","completed":false,"errors":[],"phase":"matrices"}
+{"gate":"G3 verification","phase":"independentOracleEquality"}
+{"gate":"G3 verification","phase":"checkpointAndAllFrameReplay"}
+{"gate":"G3 verification","phase":"allVerificationComplete"}
+{
+  "output": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918_BUSY.json",
+  "gate": "G3 command/worker/outbox/server feasibility",
+  "qualificationTrace": false,
+  "diagnostic": {
+    "busyMs": 15000,
+    "freezeMs": 0
+  },
+  "hostResources": {
+    "availableBytes": 25869373440,
+    "minimumFreeBytes": 8589934592,
+    "physicalMemoryBytes": 8589934592
+  },
+  "date": "2026-09-18T02:33:50.230Z",
+  "node": "v22.12.0",
+  "browser": "Chrome/153.0.8010.48",
+  "durationSeconds": 30,
+  "revisions": 150,
+  "instrumentation": {
+    "main": {
+      "main.scheduleLateness": {
+        "count": 150,
+        "totalMs": 854943.5000000605,
+        "maxMs": 15003.5,
+        "lastMs": 0.30000000074505806
+      },
+      "main.capture": {
+        "count": 150,
+        "totalMs": 5.599999999627471,
+        "maxMs": 0.10000000055879354,
+        "lastMs": 0.10000000055879354
+      },
+      "main.postMessage": {
+        "count": 150,
+        "totalMs": 6.099365234375,
+        "maxMs": 0.2001953125,
+        "lastMs": 0
+      },
+      "main.callback": {
+        "count": 150,
+        "totalMs": 12.200000000186265,
+        "maxMs": 0.20000000018626451,
+        "lastMs": 0.10000000055879354
+      },
+      "main.edit": {
+        "count": 150,
+        "totalMs": 7683.699999997392,
+        "maxMs": 132.5,
+        "lastMs": 40.299999999813735
+      },
+      "main.captureToWorkerAck": {
+        "count": 150,
+        "totalMs": 139870.3984375,
+        "maxMs": 1547.10009765625,
+        "lastMs": 49.10009765625
+      },
+      "workerToMain.ackDelivery": {
+        "count": 150,
+        "totalMs": 2168.86767578125,
+        "maxMs": 85.599853515625,
+        "lastMs": 0.89990234375
+      }
+    },
+    "scheduling": {
+      "visibility": "visible",
+      "focus": true,
+      "discarded": false,
+      "longTaskSupported": true,
+      "boundary": 181,
+      "active": null,
+      "pendingTimers": [
+        {
+          "id": 175,
+          "label": "heartbeat",
+          "requestedAt": 1789698821315.2998,
+          "wallAt": 1789698821312,
+          "delayMs": 1000,
+          "deadline": 1789698822315.2998
+        }
+      ],
+      "stats": {
+        "longTask": {
+          "count": 83,
+          "totalMs": 32094,
+          "maxMs": 15064,
+          "maximum": {
+            "at": 1789698809065,
+            "startTime": 17739.400000000373,
+            "name": "self"
+          }
+        },
+        "timer.heartbeat": {
+          "count": 27,
+          "totalMs": 19656.699951171875,
+          "maxMs": 14195.900146484375,
+          "maximum": {
+            "at": 1789698809065,
+            "id": 25,
+            "label": "heartbeat",
+            "requestedAt": 1789698793871.2998,
+            "wallAt": 1789698793870,
+            "delayMs": 1000,
+            "deadline": 1789698794871.2998,
+            "firedAt": 1789698809067.2,
+            "wallFiredAt": 1789698809065,
+            "lateMs": 14195.900146484375,
+            "boundary": 25
+          }
+        },
+        "timer.edit": {
+          "count": 150,
+          "totalMs": 551.7993164239451,
+          "maxMs": 21.699951171875,
+          "maximum": {
+            "at": 1789698811573,
+            "id": 62,
+            "label": "edit",
+            "requestedAt": 1789698811554,
+            "wallAt": 1789698811552,
+            "delayMs": 0,
+            "deadline": 1789698811554,
+            "index": 44,
+            "target": 24538.099999999627,
+            "firedAt": 1789698811575.7,
+            "wallFiredAt": 1789698811573,
+            "lateMs": 21.699951171875,
+            "boundary": 61
+          }
+        },
+        "span.edit": {
+          "count": 150,
+          "totalMs": 7682.801025390625,
+          "maxMs": 132.5,
+          "maximum": {
+            "at": 1789698809543,
+            "label": "edit",
+            "startedAt": 1789698809413.0999,
+            "boundary": 30
+          }
+        },
+        "span.diagnosticBusyTask": {
+          "count": 1,
+          "totalMs": 15000.10009765625,
+          "maxMs": 15000.10009765625,
+          "maximum": {
+            "at": 1789698809002,
+            "label": "diagnosticBusyTask",
+            "startedAt": 1789698794001.7998,
+            "boundary": 24
+          }
+        },
+        "timer.drain": {
+          "count": 4,
+          "totalMs": 5.500244140625,
+          "maxMs": 1.900146484375,
+          "maximum": {
+            "at": 1789698821940,
+            "id": 178,
+            "label": "drain",
+            "requestedAt": 1789698821841.0999,
+            "wallAt": 1789698821838,
+            "delayMs": 100,
+            "deadline": 1789698821941.0999,
+            "firedAt": 1789698821943,
+            "wallFiredAt": 1789698821940,
+            "lateMs": 1.900146484375,
+            "boundary": 177
+          }
+        },
+        "span.independentOracle": {
+          "count": 1,
+          "totalMs": 780.5,
+          "maxMs": 780.5,
+          "maximum": {
+            "at": 1789698823028,
+            "label": "independentOracle",
+            "startedAt": 1789698822250.7998,
+            "boundary": 180
+          }
+        },
+        "timer.finalObservation": {
+          "count": 1,
+          "totalMs": 1.300048828125,
+          "maxMs": 1.300048828125,
+          "maximum": {
+            "at": 1789698823035,
+            "id": 182,
+            "label": "finalObservation",
+            "requestedAt": 1789698823036.5999,
+            "wallAt": 1789698823034,
+            "delayMs": 0,
+            "deadline": 1789698823036.5999,
+            "firedAt": 1789698823037.9,
+            "wallFiredAt": 1789698823035,
+            "lateMs": 1.300048828125,
+            "boundary": 181
+          }
+        }
+      },
+      "recent": [
+        {
+          "kind": "heartbeat",
+          "at": 1789698781244,
+          "monotonicEpoch": 1789698781244.7,
+          "boundary": 4,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "longTask",
+          "at": 1789698783343,
+          "monotonicEpoch": 1789698783344.0999,
+          "boundary": 4,
+          "startTime": 5823.799999999814,
+          "duration": 1257,
+          "name": "self"
+        },
+        {
+          "kind": "lateTimer",
+          "at": 1789698783343,
+          "monotonicEpoch": 1789698783344.2998,
+          "boundary": 5,
+          "id": 5,
+          "label": "heartbeat",
+          "requestedAt": 1789698781244.7,
+          "wallAt": 1789698781244,
+          "delayMs": 1000,
+          "deadline": 1789698782244.7,
+          "firedAt": 1789698783344.2998,
+          "wallFiredAt": 1789698783343,
+          "lateMs": 1099.599853515625
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698783343,
+          "monotonicEpoch": 1789698783344.2998,
+          "boundary": 5,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698784566,
+          "monotonicEpoch": 1789698784566.5,
+          "boundary": 6,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "longTask",
+          "at": 1789698786574,
+          "monotonicEpoch": 1789698786574.7,
+          "boundary": 6,
+          "startTime": 9109.900000000373,
+          "duration": 1202,
+          "name": "self"
+        },
+        {
+          "kind": "lateTimer",
+          "at": 1789698786574,
+          "monotonicEpoch": 1789698786574.9,
+          "boundary": 7,
+          "id": 7,
+          "label": "heartbeat",
+          "requestedAt": 1789698784566.5,
+          "wallAt": 1789698784566,
+          "delayMs": 1000,
+          "deadline": 1789698785566.5,
+          "firedAt": 1789698786574.9,
+          "wallFiredAt": 1789698786574,
+          "lateMs": 1008.39990234375
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698786574,
+          "monotonicEpoch": 1789698786574.9,
+          "boundary": 7,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698787812,
+          "monotonicEpoch": 1789698787812.7998,
+          "boundary": 8,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "longTask",
+          "at": 1789698789865,
+          "monotonicEpoch": 1789698789866,
+          "boundary": 8,
+          "startTime": 12379.5,
+          "duration": 1223,
+          "name": "self"
+        },
+        {
+          "kind": "lateTimer",
+          "at": 1789698789865,
+          "monotonicEpoch": 1789698789866.0999,
+          "boundary": 9,
+          "id": 9,
+          "label": "heartbeat",
+          "requestedAt": 1789698787812.7998,
+          "wallAt": 1789698787812,
+          "delayMs": 1000,
+          "deadline": 1789698788812.7998,
+          "firedAt": 1789698789866.0999,
+          "wallFiredAt": 1789698789865,
+          "lateMs": 1053.300048828125
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698789865,
+          "monotonicEpoch": 1789698789866.0999,
+          "boundary": 9,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698790867,
+          "monotonicEpoch": 1789698790868,
+          "boundary": 10,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698791868,
+          "monotonicEpoch": 1789698791869.2998,
+          "boundary": 11,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698792869,
+          "monotonicEpoch": 1789698792870.5999,
+          "boundary": 17,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698793870,
+          "monotonicEpoch": 1789698793871.2998,
+          "boundary": 23,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "longTask",
+          "at": 1789698809065,
+          "monotonicEpoch": 1789698809067.2,
+          "boundary": 24,
+          "startTime": 17739.400000000373,
+          "duration": 15064,
+          "name": "self"
+        },
+        {
+          "kind": "lateTimer",
+          "at": 1789698809065,
+          "monotonicEpoch": 1789698809067.2,
+          "boundary": 25,
+          "id": 25,
+          "label": "heartbeat",
+          "requestedAt": 1789698793871.2998,
+          "wallAt": 1789698793870,
+          "delayMs": 1000,
+          "deadline": 1789698794871.2998,
+          "firedAt": 1789698809067.2,
+          "wallFiredAt": 1789698809065,
+          "lateMs": 14195.900146484375
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698809065,
+          "monotonicEpoch": 1789698809067.2,
+          "boundary": 25,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698810076,
+          "monotonicEpoch": 1789698810078,
+          "boundary": 40,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698811117,
+          "monotonicEpoch": 1789698811118.9,
+          "boundary": 55,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698812241,
+          "monotonicEpoch": 1789698812243.7998,
+          "boundary": 69,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698813251,
+          "monotonicEpoch": 1789698813253.7,
+          "boundary": 88,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698814261,
+          "monotonicEpoch": 1789698814263.7998,
+          "boundary": 110,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698815307,
+          "monotonicEpoch": 1789698815309.7998,
+          "boundary": 133,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698816308,
+          "monotonicEpoch": 1789698816310.2,
+          "boundary": 143,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698817308,
+          "monotonicEpoch": 1789698817310.5,
+          "boundary": 149,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698818309,
+          "monotonicEpoch": 1789698818311.7,
+          "boundary": 155,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698819310,
+          "monotonicEpoch": 1789698819313,
+          "boundary": 161,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698820311,
+          "monotonicEpoch": 1789698820314.2,
+          "boundary": 167,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698821312,
+          "monotonicEpoch": 1789698821315.2998,
+          "boundary": 173,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        },
+        {
+          "kind": "heartbeat",
+          "at": 1789698823035,
+          "monotonicEpoch": 1789698823038,
+          "boundary": 182,
+          "visibility": "visible",
+          "focus": true,
+          "discarded": false
+        }
+      ]
+    },
+    "acknowledgements": {
+      "posted": 150,
+      "delivered": 150,
+      "lastPosted": {
+        "commitId": "f3baeec9-6487-40fc-b8fd-c030c1b3f0de",
+        "postedAt": 1789698821841.0999,
+        "boundary": 176
+      },
+      "lastDelivered": {
+        "commitId": "f3baeec9-6487-40fc-b8fd-c030c1b3f0de",
+        "workerPostedAt": 1789698821889.3,
+        "sequence": 150,
+        "mainReceivedAt": 1789698821890.2,
+        "boundary": 176
+      }
+    },
+    "nodeScheduling": {
+      "heartbeats": 53,
+      "maxTimerLatenessMs": 848.838708999996,
+      "maximum": {
+        "at": 1789698828164,
+        "lateness": 848.838708999996
+      },
+      "milestones": [
+        {
+          "at": 1789698826534,
+          "phase": "independentOracleEquality"
+        },
+        {
+          "at": 1789698828163,
+          "phase": "checkpointAndAllFrameReplay"
+        },
+        {
+          "at": 1789698830229,
+          "phase": "allVerificationComplete"
+        }
+      ]
+    },
+    "browser": {
+      "stderr": "\nDevTools listening on ws://127.0.0.1:54262/devtools/browser/047c0d61-b792-4d29-97d0-9fda1f438754\nTrying to load the allocator multiple times. This is *not* supported.\n[18268:187184:0918/123255.839804:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123255.840159:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123255.848558:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123255.848801:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123255.850451:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123255.850532:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123255.850768:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123255.850832:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123255.851025:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123255.851175:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123255.872758:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123255.872838:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123257.834257:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123257.834355:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123257.988649:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123257.988747:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123258.058260:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123258.058350:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123258.149614:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123258.149745:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123258.299659:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123258.299794:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123258.449360:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123258.449519:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18253:187143:0918/123258.501189:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[18268:187184:0918/123258.551329:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123258.551442:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187184:0918/123258.575439:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[18268:187236:0918/123258.575565:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\nCreated TensorFlow Lite XNNPACK delegate for CPU.\n[18317:188067:0918/123314.280423:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake-all --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[18317:188067:0918/123314.280951:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 8203, parent pid: 18253\n[18317:188067:0918/123314.283132:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18317:188067:0918/123314.283150:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18317:188067:0918/123314.283240:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[18319:188071:0918/123314.293939:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[18319:188071:0918/123314.294458:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 8203, parent pid: 1\n[18319:188071:0918/123314.296523:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18319:188071:0918/123314.296541:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18319:188071:0918/123314.296632:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[18317:188067:0918/123314.297114:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[18317:188067:0918/123314.297899:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[18317:188067:0918/123314.297990:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[18317:188067:0918/123314.298082:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[18317:188067:0918/123314.298297:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[18317:188079:0918/123314.298616:VERBOSE1:chrome/updater/app/app_wakeall.cc:58] Launching `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake`\n[18320:188083:0918/123314.308458:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[18320:188083:0918/123314.309031:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 8203, parent pid: 18317\n[18320:188083:0918/123314.311236:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18320:188083:0918/123314.311254:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18320:188083:0918/123314.311334:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[18322:188087:0918/123314.321364:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[18322:188087:0918/123314.321916:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 8203, parent pid: 1\n[18322:188087:0918/123314.324097:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18322:188087:0918/123314.324115:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 25818525696B (24.045GiB) / 245107195904B (228.274GiB)\n[18322:188087:0918/123314.324209:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[18320:188083:0918/123314.324704:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[18320:188083:0918/123314.325508:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[18320:188083:0918/123314.325593:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[18320:188083:0918/123314.325688:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[18320:188083:0918/123314.325909:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[18320:188083:0918/123314.326158:VERBOSE1:chrome/updater/ipc/update_service_internal_proxy_mojo.cc:61] Run\n[18253:187143:0918/123320.685618:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[18320:188083:0918/123328.771438:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[18320:188083:0918/123328.772608:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[18320:188083:0918/123328.772657:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake) returned 0.\n[18317:188079:0918/123329.018816:VERBOSE1:chrome/updater/app/app_wakeall.cc:68] `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake` exited 0\n[18317:188067:0918/123329.019189:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[18317:188067:0918/123329.019891:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[18317:188067:0918/123329.019932:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake-all) returned 0.\n[18322:188087:0918/123338.776695:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[18322:188087:0918/123338.776742:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[18319:188071:0918/123338.777737:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[18319:188071:0918/123338.777999:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n",
+      "crashes": [],
+      "lifecycle": [
+        {
+          "at": 1789698776178,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "49E4486F25C3C67D830280FCD276D861",
+            "name": "commit",
+            "timestamp": 8184.692151
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776179,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "49E4486F25C3C67D830280FCD276D861",
+            "name": "DOMContentLoaded",
+            "timestamp": 8184.692247
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776179,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "49E4486F25C3C67D830280FCD276D861",
+            "name": "load",
+            "timestamp": 8184.693359
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776180,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "49E4486F25C3C67D830280FCD276D861",
+            "name": "networkAlmostIdle",
+            "timestamp": 8184.69316
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776181,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "49E4486F25C3C67D830280FCD276D861",
+            "name": "networkIdle",
+            "timestamp": 8184.69316
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776263,
+          "method": "Page.frameStartedLoading",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913"
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776374,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "D67EF257D459C6D14E6B4576F8BF5885",
+            "name": "init",
+            "timestamp": 8185.087481
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776408,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "D67EF257D459C6D14E6B4576F8BF5885",
+            "name": "DOMContentLoaded",
+            "timestamp": 8185.118593
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776409,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "D67EF257D459C6D14E6B4576F8BF5885",
+            "name": "load",
+            "timestamp": 8185.118838
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698776418,
+          "method": "Page.frameStoppedLoading",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913"
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698790177,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "D67EF257D459C6D14E6B4576F8BF5885",
+            "name": "networkAlmostIdle",
+            "timestamp": 8185.118706
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        },
+        {
+          "at": 1789698790282,
+          "method": "Page.lifecycleEvent",
+          "params": {
+            "frameId": "CCD1851910EF77F90D167148ACABF913",
+            "loaderId": "D67EF257D459C6D14E6B4576F8BF5885",
+            "name": "networkIdle",
+            "timestamp": 8185.169438
+          },
+          "sessionId": "2A11CA54B80B145F30A89EF8BF8CE96A"
+        }
+      ],
+      "probes": [
+        {
+          "requestedAt": 1789698776693,
+          "receivedAt": 1789698776694,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8185.431432
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.002223
+            },
+            {
+              "name": "TaskDuration",
+              "value": 0.215498
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 10464708
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698777694,
+          "receivedAt": 1789698777696,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8186.433087
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.002716
+            },
+            {
+              "name": "TaskDuration",
+              "value": 1.193316
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 53519916
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698778697,
+          "receivedAt": 1789698778703,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8187.436788
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.002888
+            },
+            {
+              "name": "TaskDuration",
+              "value": 2.17698
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 90136736
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698779698,
+          "receivedAt": 1789698779712,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8188.448933
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.002948
+            },
+            {
+              "name": "TaskDuration",
+              "value": 3.171013
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 85944580
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698780699,
+          "receivedAt": 1789698780703,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8189.440606
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003037
+            },
+            {
+              "name": "TaskDuration",
+              "value": 4.156945
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 179256540
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698781700,
+          "receivedAt": 1789698781701,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8190.438495
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.00316
+            },
+            {
+              "name": "TaskDuration",
+              "value": 5.147996
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 85784196
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698782701,
+          "receivedAt": 1789698782702,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8191.440207
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003175
+            },
+            {
+              "name": "TaskDuration",
+              "value": 6.149687
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 164771696
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698783702,
+          "receivedAt": 1789698783706,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8192.443695
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003236
+            },
+            {
+              "name": "TaskDuration",
+              "value": 7.148632
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81495684
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698784704,
+          "receivedAt": 1789698784706,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8193.444006
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003289
+            },
+            {
+              "name": "TaskDuration",
+              "value": 8.140952
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 146826436
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698785705,
+          "receivedAt": 1789698785707,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8194.444492
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003323
+            },
+            {
+              "name": "TaskDuration",
+              "value": 9.141339
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 103298496
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698786707,
+          "receivedAt": 1789698786708,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8195.446165
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003375
+            },
+            {
+              "name": "TaskDuration",
+              "value": 10.142963
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 49683404
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698787708,
+          "receivedAt": 1789698787711,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8196.449249
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003394
+            },
+            {
+              "name": "TaskDuration",
+              "value": 11.144869
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 144653496
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698788708,
+          "receivedAt": 1789698788712,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8197.450556
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003453
+            },
+            {
+              "name": "TaskDuration",
+              "value": 12.141576
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 129216888
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698789709,
+          "receivedAt": 1789698789714,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8198.452267
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003453
+            },
+            {
+              "name": "TaskDuration",
+              "value": 13.143288
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 207342428
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698791282,
+          "receivedAt": 1789698791283,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8200.02083
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.003951
+            },
+            {
+              "name": "TaskDuration",
+              "value": 13.296336
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 213913192
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698792282,
+          "receivedAt": 1789698792284,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8201.021448
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.004279
+            },
+            {
+              "name": "TaskDuration",
+              "value": 13.445025
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 54919868
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698793283,
+          "receivedAt": 1789698793284,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8202.022512
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.004729
+            },
+            {
+              "name": "TaskDuration",
+              "value": 13.653663
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 54071828
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698794283,
+          "receivedAt": 1789698794284,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8203.022144
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 14.056574
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698795284,
+          "receivedAt": 1789698795285,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8204.023935
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 15.058363
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698796285,
+          "receivedAt": 1789698796286,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8205.024249
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 16.058678
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698797287,
+          "receivedAt": 1789698797288,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8206.026284
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 17.060713
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698798288,
+          "receivedAt": 1789698798289,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8207.027328
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 18.061762
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698799289,
+          "receivedAt": 1789698799290,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8208.028463
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 19.062893
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698800290,
+          "receivedAt": 1789698800291,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8209.030001
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 20.06443
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698801291,
+          "receivedAt": 1789698801292,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8210.030331
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 21.064759
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698802292,
+          "receivedAt": 1789698802293,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8211.032074
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 22.066503
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698803293,
+          "receivedAt": 1789698803294,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8212.032461
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 23.06689
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698804294,
+          "receivedAt": 1789698804295,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8213.034101
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 24.06853
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698805295,
+          "receivedAt": 1789698805296,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8214.035173
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 25.069601
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698806296,
+          "receivedAt": 1789698806297,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8215.036483
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 26.070919
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698807297,
+          "receivedAt": 1789698807298,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8216.03721
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 27.071643
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698808298,
+          "receivedAt": 1789698808300,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8217.038563
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.005015
+            },
+            {
+              "name": "TaskDuration",
+              "value": 28.072993
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81463624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698809300,
+          "receivedAt": 1789698809314,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8218.052902
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.006812
+            },
+            {
+              "name": "TaskDuration",
+              "value": 29.082548
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 57455900
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698810301,
+          "receivedAt": 1789698810307,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8219.045726
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.007516
+            },
+            {
+              "name": "TaskDuration",
+              "value": 30.015738
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 136235252
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698811303,
+          "receivedAt": 1789698811318,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8220.054653
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.008312
+            },
+            {
+              "name": "TaskDuration",
+              "value": 30.990311
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 107178560
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698812303,
+          "receivedAt": 1789698812305,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8221.044085
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.009625
+            },
+            {
+              "name": "TaskDuration",
+              "value": 31.968347
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 81452624
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698813304,
+          "receivedAt": 1789698813309,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8222.048389
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.010432
+            },
+            {
+              "name": "TaskDuration",
+              "value": 32.937169
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 61597252
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698814304,
+          "receivedAt": 1789698814307,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8223.044634
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.011268
+            },
+            {
+              "name": "TaskDuration",
+              "value": 33.863972
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 95843344
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698815305,
+          "receivedAt": 1789698815306,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8224.045654
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.012033
+            },
+            {
+              "name": "TaskDuration",
+              "value": 34.79625
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 103521108
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698816306,
+          "receivedAt": 1789698816307,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8225.04655
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.012768
+            },
+            {
+              "name": "TaskDuration",
+              "value": 35.186882
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 55484964
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698817307,
+          "receivedAt": 1789698817308,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8226.048017
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.013655
+            },
+            {
+              "name": "TaskDuration",
+              "value": 35.388032
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 54607968
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698818308,
+          "receivedAt": 1789698818309,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8227.049202
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.014067
+            },
+            {
+              "name": "TaskDuration",
+              "value": 35.604868
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 55516608
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698819310,
+          "receivedAt": 1789698819311,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8228.050519
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.014363
+            },
+            {
+              "name": "TaskDuration",
+              "value": 35.810149
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 54629372
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698820311,
+          "receivedAt": 1789698820312,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8229.051619
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.014655
+            },
+            {
+              "name": "TaskDuration",
+              "value": 36.02868
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 55443628
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698821312,
+          "receivedAt": 1789698821313,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8230.052729
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.014962
+            },
+            {
+              "name": "TaskDuration",
+              "value": 36.23445
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 54649464
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698822313,
+          "receivedAt": 1789698822371,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8231.110009
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.019224
+            },
+            {
+              "name": "TaskDuration",
+              "value": 36.505495
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 80243028
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698823314,
+          "receivedAt": 1789698823316,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8232.055127
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.019298
+            },
+            {
+              "name": "TaskDuration",
+              "value": 37.184315
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 33703572
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698824314,
+          "receivedAt": 1789698828164,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8233.507886
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.019298
+            },
+            {
+              "name": "TaskDuration",
+              "value": 37.856254
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 33755632
+            }
+          ]
+        },
+        {
+          "requestedAt": 1789698829351,
+          "receivedAt": 1789698829354,
+          "metrics": [
+            {
+              "name": "Timestamp",
+              "value": 8238.09371
+            },
+            {
+              "name": "LayoutDuration",
+              "value": 0.000079
+            },
+            {
+              "name": "RecalcStyleDuration",
+              "value": 0.000233
+            },
+            {
+              "name": "ScriptDuration",
+              "value": 0.019375
+            },
+            {
+              "name": "TaskDuration",
+              "value": 37.857252
+            },
+            {
+              "name": "JSHeapUsedSize",
+              "value": 33755632
+            }
+          ]
+        }
+      ]
+    },
+    "undoStorage": {
+      "sequenceReferences": 1200,
+      "sequenceVersions": 152,
+      "chunkReferences": 29596,
+      "uniqueChunks": 346,
+      "uniqueSlots": 39800,
+      "cacheEntries": 1
+    },
+    "worker": {
+      "at": 1789698821941,
+      "phase": "reconnected",
+      "captured": 150,
+      "allocatedSequence": 150,
+      "acknowledged": 150,
+      "serverAcknowledged": 150,
+      "rejected": 7,
+      "queueDepth": 1,
+      "maxQueueDepth": 31,
+      "oldestQueueAgeMs": 0.5,
+      "active": {
+        "kind": "finish",
+        "stage": "start",
+        "started": 1789698821942.3,
+        "stageStarted": 1789698821942.3,
+        "messageAgeMs": 0.5,
+        "stageAgeMs": 0.5
+      },
+      "uploading": false,
+      "outbox": {
+        "bytes": 0,
+        "count": 0
+      },
+      "oldestOutboxAgeMs": 0,
+      "maxOutboxBytes": 37052,
+      "maxOutboxCount": 14,
+      "oldestPendingMs": 2427,
+      "reconnectAt": 1789698812768,
+      "reconnectBacklog": {
+        "bytes": 31760,
+        "count": 12,
+        "workerQueueDepth": 19
+      },
+      "reconnectDrainMs": 4817,
+      "stages": {
+        "worker.queueWait": {
+          "count": 153,
+          "totalMs": 122701.30078125,
+          "maxMs": 1476.5,
+          "lastMs": 0
+        },
+        "idb.init.handoff": {
+          "count": 1,
+          "totalMs": 0,
+          "maxMs": 0,
+          "lastMs": 0
+        },
+        "idb.init.waitAndFirstRequest": {
+          "count": 1,
+          "totalMs": 0.20000000018626451,
+          "maxMs": 0.20000000018626451,
+          "lastMs": 0.20000000018626451
+        },
+        "idb.init.total": {
+          "count": 1,
+          "totalMs": 0.900000000372529,
+          "maxMs": 0.900000000372529,
+          "lastMs": 0.900000000372529
+        },
+        "idb.init.afterFirstRequestThroughCommit": {
+          "count": 1,
+          "totalMs": 0.7000000001862645,
+          "maxMs": 0.7000000001862645,
+          "lastMs": 0.7000000001862645
+        },
+        "idb.readBatch.handoff": {
+          "count": 276,
+          "totalMs": 10.699999992735684,
+          "maxMs": 0.2999999998137355,
+          "lastMs": 0.09999999962747097
+        },
+        "idb.readBatch.waitAndFirstRequest": {
+          "count": 276,
+          "totalMs": 3282.100000000559,
+          "maxMs": 262,
+          "lastMs": 0.20000000018626451
+        },
+        "idb.readBatch.total": {
+          "count": 276,
+          "totalMs": 3350.299999994226,
+          "maxMs": 266.79999999981374,
+          "lastMs": 0.2999999998137355
+        },
+        "idb.readBatch.afterFirstRequestThroughCommit": {
+          "count": 276,
+          "totalMs": 68.59999999497086,
+          "maxMs": 4.7999999998137355,
+          "lastMs": 0.09999999962747097
+        },
+        "worker.heartbeatLateness": {
+          "count": 32,
+          "totalMs": 19.299999999813735,
+          "maxMs": 54.30000000074506,
+          "lastMs": -0.20000000018626451
+        },
+        "mainToWorker.delivery": {
+          "count": 150,
+          "totalMs": 4793.129638671875,
+          "maxMs": 221.500244140625,
+          "lastMs": -0.7998046875
+        },
+        "worker.apply": {
+          "count": 150,
+          "totalMs": 40.40000000689179,
+          "maxMs": 2.7999999998137355,
+          "lastMs": 0.20000000018626451
+        },
+        "worker.validate": {
+          "count": 150,
+          "totalMs": 9735.999999998137,
+          "maxMs": 279.8999999994412,
+          "lastMs": 46.89999999944121
+        },
+        "worker.encode": {
+          "count": 150,
+          "totalMs": 16.899999999441206,
+          "maxMs": 0.5,
+          "lastMs": 0.20000000018626451
+        },
+        "idb.capture.handoff": {
+          "count": 150,
+          "totalMs": 8.399999999441206,
+          "maxMs": 0.20000000018626451,
+          "lastMs": 0.09999999962747097
+        },
+        "idb.capture.waitAndFirstRequest": {
+          "count": 150,
+          "totalMs": 183.90000001434237,
+          "maxMs": 16.5,
+          "lastMs": 0.5
+        },
+        "idb.capture.total": {
+          "count": 150,
+          "totalMs": 407.80000000074506,
+          "maxMs": 28.200000000186265,
+          "lastMs": 1.7000000001862645
+        },
+        "idb.capture.afterFirstRequestThroughCommit": {
+          "count": 150,
+          "totalMs": 224.19999998714775,
+          "maxMs": 11.700000000186265,
+          "lastMs": 1.2000000001862645
+        },
+        "worker.eventTotal": {
+          "count": 150,
+          "totalMs": 10208.800000000745,
+          "maxMs": 284.79999999981374,
+          "lastMs": 49
+        },
+        "transport.bodyEncode": {
+          "count": 76,
+          "totalMs": 1.7999999942258,
+          "maxMs": 0.10000000055879354,
+          "lastMs": 0
+        },
+        "transport.responseHeaders": {
+          "count": 76,
+          "totalMs": 3018.199999996461,
+          "maxMs": 287.30000000074506,
+          "lastMs": 8.399999999441206
+        },
+        "server.append": {
+          "count": 69,
+          "totalMs": 516.8212489999642,
+          "maxMs": 17.611958000001323,
+          "lastMs": 7.204624999998487
+        },
+        "transport.acknowledgement": {
+          "count": 69,
+          "totalMs": 2832.599999998696,
+          "maxMs": 287.70000000018626,
+          "lastMs": 8.5
+        },
+        "captureToDurableServerAck": {
+          "count": 150,
+          "totalMs": 167220,
+          "maxMs": 2488,
+          "lastMs": 58
+        },
+        "idb.acknowledge.handoff": {
+          "count": 69,
+          "totalMs": 0.5000000018626451,
+          "maxMs": 0.10000000055879354,
+          "lastMs": 0
+        },
+        "idb.acknowledge.waitAndFirstRequest": {
+          "count": 69,
+          "totalMs": 2312.5000000037253,
+          "maxMs": 168.70000000018626,
+          "lastMs": 0.09999999962747097
+        },
+        "idb.acknowledge.total": {
+          "count": 69,
+          "totalMs": 2415.3000000016764,
+          "maxMs": 176.90000000037253,
+          "lastMs": 1.099999999627471
+        },
+        "idb.acknowledge.afterFirstRequestThroughCommit": {
+          "count": 69,
+          "totalMs": 102.89999999757856,
+          "maxMs": 8.200000000186265,
+          "lastMs": 1
+        },
+        "captureToLocalAckCommit": {
+          "count": 150,
+          "totalMs": 174753,
+          "maxMs": 2551,
+          "lastMs": 59
+        },
+        "transport.rejected": {
+          "count": 7,
+          "totalMs": 203.40000000037253,
+          "maxMs": 102.6000000005588,
+          "lastMs": 89.59999999962747
+        },
+        "idb.ledger.handoff": {
+          "count": 2,
+          "totalMs": 0,
+          "maxMs": 0,
+          "lastMs": 0
+        },
+        "idb.ledger.waitAndFirstRequest": {
+          "count": 2,
+          "totalMs": 0.39999999944120646,
+          "maxMs": 0.2999999998137355,
+          "lastMs": 0.09999999962747097
+        },
+        "idb.ledger.total": {
+          "count": 2,
+          "totalMs": 0.39999999944120646,
+          "maxMs": 0.2999999998137355,
+          "lastMs": 0.09999999962747097
+        },
+        "idb.ledger.afterFirstRequestThroughCommit": {
+          "count": 2,
+          "totalMs": 0,
+          "maxMs": 0,
+          "lastMs": 0
+        }
+      },
+      "lastCaptureAck": {
+        "commitId": "f3baeec9-6487-40fc-b8fd-c030c1b3f0de",
+        "postedAt": 1789698821889.3,
+        "sequence": 150
+      },
+      "heartbeat": 32,
+      "heartbeatAt": 1789698821887.8
+    },
+    "server": {
+      "stages": {
+        "requestBodyRead": {
+          "count": 69,
+          "totalMs": 13.31170700000439,
+          "maxMs": 0.7858330000017304,
+          "lastMs": 0.1113340000010794
+        },
+        "append": {
+          "count": 69,
+          "totalMs": 516.8212489999642,
+          "maxMs": 17.611958000001323,
+          "lastMs": 7.204624999998487
+        },
+        "requestThroughAppend": {
+          "count": 69,
+          "totalMs": 530.4813330000143,
+          "maxMs": 18.105208000000857,
+          "lastMs": 7.318375000002561
+        }
+      },
+      "rejectedAppends": 7,
+      "networkTransitions": [
+        {
+          "at": 1789698811674,
+          "offline": true,
+          "accepted": 29
+        },
+        {
+          "at": 1789698812768,
+          "offline": false,
+          "accepted": 29
+        }
+      ]
+    }
+  },
+  "baselineBytes": 15926745,
+  "sustained": {
+    "callback": {
+      "samples": 150,
+      "medianMs": 0.1,
+      "p95Ms": 0.2
+    },
+    "edit": {
+      "samples": 150,
+      "medianMs": 43.2,
+      "p95Ms": 89
+    },
+    "historyAddedOver50ms": 0,
+    "maxInFlight": 32,
+    "verify": {
+      "samples": 150,
+      "medianMs": 52.5,
+      "p95Ms": 147.8
+    },
+    "encode": {
+      "samples": 150,
+      "medianMs": 0.1,
+      "p95Ms": 0.2
+    },
+    "idb": {
+      "samples": 150,
+      "medianMs": 2,
+      "p95Ms": 6.8
+    },
+    "append": {
+      "samples": 69,
+      "medianMs": 48.6,
+      "p95Ms": 104.5
+    },
+    "packetBytes": {
+      "min": 2634,
+      "max": 2658
+    },
+    "maxOutboxBytes": 37052,
+    "maxOutboxCount": 14,
+    "oldestPendingMs": 2427,
+    "drainMs": 405.59999999962747,
+    "maxAppendRequestBytes": 36957
+  },
+  "exactness": {
+    "physicalFramesChecksumVerified": 152,
+    "allWirePacketsDecoded": 150,
+    "allStateParentsAndPreimagesChecked": true,
+    "sampledIndependentReplays": 1,
+    "finalOracleEquality": true,
+    "allCaptureAcknowledgementsDelivered": true,
+    "undoEntries": 150,
+    "finalOutboxCount": 0,
+    "finalOutboxBytes": 0
+  },
+  "gateCaps": {
+    "workerMessages": 64,
+    "packetWireBytes": 102400,
+    "outboxBytes": 16777216,
+    "outboxRecords": 4096,
+    "batchRecords": 32
+  },
+  "limits": [
+    "Gate-only format/endpoints; actual editor commands without rendering/input-device latency",
+    "Native store has finite whole-journal scans; no production archive scalability claim",
+    "Existing ordinary undo semantics and depth retained in every mode; heap includes editor and browser overhead",
+    "IDB waitAndFirstRequest includes lock waiting and first-request execution; afterFirstRequestThroughCommit includes remaining request work and commit, not isolated fsync timing",
+    "Single local Chrome/macOS host; process/fsync evidence is not power-loss certification",
+    "Short smoke only: does not satisfy the ten-minute gate"
+  ]
+}

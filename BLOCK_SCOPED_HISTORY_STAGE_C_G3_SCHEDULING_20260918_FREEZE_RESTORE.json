@@ -1,0 +1,29 @@
+{
+  "diagnosticOnly": true,
+  "reason": "Page.setWebLifecycleState active left target hidden; explicitly restore visibility to finish calibration. Never applied to qualification.",
+  "requestedAt": 1789699043157,
+  "result": {
+    "id": 3,
+    "result": {},
+    "sessionId": "86805CC9578227FB40EEA38DE9327F48"
+  },
+  "state": {
+    "id": 4,
+    "result": {
+      "result": {
+        "type": "object",
+        "value": {
+          "at": 1789699043166,
+          "visibility": "hidden",
+          "progress": {
+            "edits": 43,
+            "total": 150,
+            "inFlight": 1,
+            "elapsedMs": 178332.59999999963
+          }
+        }
+      }
+    },
+    "sessionId": "86805CC9578227FB40EEA38DE9327F48"
+  }
+}

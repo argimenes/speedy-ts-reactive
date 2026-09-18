@@ -1,0 +1,389 @@
+{
+  "verdict": "G3 unmet; stop for review, P1\u2013P6 gated",
+  "candidate": {
+    "scheduled": 3000,
+    "committed": 2819,
+    "posted": 2818,
+    "acknowledgementsDeliveredAtReport": 2799,
+    "serverAcceptedAtExit": 2795,
+    "failure": {
+      "at": 1789699678539,
+      "inFlight": 64,
+      "oldestInFlightMs": 3401.900146484375,
+      "rejectedCommitId": "736fa9e0-dfbf-4877-85b0-5b9d3c0f7609"
+    },
+    "elapsedMs": 568838.6999999993,
+    "maxInFlight": 64,
+    "workerMaxQueueDepth": 64,
+    "mainCallback": {
+      "count": 2818,
+      "p50": 0.09999999962747097,
+      "p95": 0.19999999925494194,
+      "max": 1.800000000745058
+    },
+    "mainEdit": {
+      "count": 2819,
+      "p50": 39.20000000111759,
+      "p95": 49.59999999962747,
+      "max": 229.09999999962747
+    },
+    "mainAckDelivery": {
+      "count": 2799,
+      "totalMs": 8122.023681640625,
+      "maxMs": 80.7001953125,
+      "lastMs": 0.7001953125
+    },
+    "reconnectBacklog": {
+      "bytes": 799005,
+      "count": 300,
+      "workerQueueDepth": 0
+    },
+    "reconnectDrainMs": 969,
+    "outboxPeakRecords": 301,
+    "outboxPeakBytes": 801669,
+    "oldestPendingMs": 60048,
+    "peakSampledMainHeapMiB": 144.08629894256592,
+    "finalOracleAndReplay": "not reached"
+  },
+  "lifecycle": {
+    "hidden": {
+      "kind": "visibilitychange",
+      "at": 1789699602950,
+      "monotonicEpoch": 1789699602977.3,
+      "boundary": 2970,
+      "visibility": "hidden",
+      "focus": true,
+      "discarded": false
+    },
+    "visible": {
+      "kind": "visibilitychange",
+      "at": 1789699659814,
+      "monotonicEpoch": 1789699659843.8,
+      "boundary": 2997,
+      "visibility": "visible",
+      "focus": true,
+      "discarded": false
+    },
+    "hiddenDurationMs": 56864,
+    "timerEditMaximum": {
+      "count": 2820,
+      "totalMs": 58011.60248923302,
+      "maxMs": 19966.39990234375,
+      "maximum": {
+        "at": 1789699651388,
+        "id": 2998,
+        "label": "edit",
+        "requestedAt": 1789699631450.8,
+        "wallAt": 1789699631422,
+        "delayMs": 0,
+        "deadline": 1789699631450.8,
+        "index": 2484,
+        "target": 512028.30000000075,
+        "firedAt": 1789699651417.2,
+        "wallFiredAt": 1789699651388,
+        "lateMs": 19966.39990234375,
+        "boundary": 2997
+      }
+    },
+    "timerHeartbeatMaximum": {
+      "count": 532,
+      "totalMs": 52754.199951171875,
+      "maxMs": 27595.699951171875,
+      "maximum": {
+        "at": 1789699659814,
+        "id": 2997,
+        "label": "heartbeat",
+        "requestedAt": 1789699631248.2,
+        "wallAt": 1789699631220,
+        "delayMs": 1000,
+        "deadline": 1789699632248.2,
+        "firedAt": 1789699659843.9,
+        "wallFiredAt": 1789699659814,
+        "lateMs": 27595.699951171875,
+        "boundary": 2998
+      }
+    },
+    "longTaskMaximum": {
+      "count": 134,
+      "totalMs": 18672,
+      "maxMs": 1359,
+      "maximum": {
+        "at": 1789699107662,
+        "startTime": 11800.800000000745,
+        "name": "self"
+      }
+    },
+    "cdpHiddenInterval": {
+      "from": 1789699602647,
+      "to": 1789699659844,
+      "wallSeconds": 57.197,
+      "taskDurationDeltaSeconds": 6.329739000000004,
+      "scriptDurationDeltaSeconds": 0.014694999999999986
+    },
+    "displayNotifications": [
+      "2026-09-18 12:46:41 +1000 Notification        \tDisplay is turned off                                                      \t          ",
+      "2026-09-18 12:47:39 +1000 Notification        \tDisplay is turned on                                                       \t          "
+    ],
+    "actualSystemSleepWakeEvents": [],
+    "nodeMaxTimerLatenessMs": 57.54287500004284,
+    "hostMaxSampleGapSeconds": 10.034027099609375,
+    "note": "Raw HOST hostSleepWakeTransitionsDuringRun also matches power assertions, not just Sleep/Wake categories; use the category-filtered field here."
+  },
+  "catchUpWorkerWindow": {
+    "startAt": 1789699659640,
+    "endAt": 1789699677671,
+    "seconds": 18.031,
+    "capturesBefore": 2485,
+    "capturesAfter": 2741,
+    "capturesPerSecond": 14.197770506350176,
+    "queueDepthBefore": 0,
+    "queueDepthAfter": 61,
+    "outboxBefore": {
+      "bytes": 0,
+      "count": 0
+    },
+    "outboxAfter": {
+      "bytes": 16000,
+      "count": 6
+    },
+    "stageDeltas": {
+      "worker.queueWait": {
+        "count": 257,
+        "meanMs": 1702.5642013846668
+      },
+      "idb.readBatch.handoff": {
+        "count": 84,
+        "meanMs": 0.026190476137257758
+      },
+      "idb.readBatch.waitAndFirstRequest": {
+        "count": 85,
+        "meanMs": 61.60117647064959
+      },
+      "idb.readBatch.total": {
+        "count": 85,
+        "meanMs": 62.61999999999124
+      },
+      "idb.readBatch.afterFirstRequestThroughCommit": {
+        "count": 85,
+        "meanMs": 1.0188235293416417
+      },
+      "worker.heartbeatLateness": {
+        "count": 18,
+        "meanMs": 1.7777777777777777
+      },
+      "mainToWorker.delivery": {
+        "count": 317,
+        "meanMs": 31.947903317231862
+      },
+      "worker.apply": {
+        "count": 257,
+        "meanMs": 0.22217898829640814
+      },
+      "worker.validate": {
+        "count": 257,
+        "meanMs": 65.84435797667544
+      },
+      "worker.encode": {
+        "count": 257,
+        "meanMs": 0.12490272371221608
+      },
+      "idb.capture.handoff": {
+        "count": 257,
+        "meanMs": 0.052140077815213556
+      },
+      "idb.capture.waitAndFirstRequest": {
+        "count": 256,
+        "meanMs": 1.5593750000189175
+      },
+      "idb.capture.total": {
+        "count": 256,
+        "meanMs": 2.971093749998545
+      },
+      "idb.capture.afterFirstRequestThroughCommit": {
+        "count": 256,
+        "meanMs": 1.4136718749723514
+      },
+      "worker.eventTotal": {
+        "count": 256,
+        "meanMs": 69.25781249999272
+      },
+      "transport.bodyEncode": {
+        "count": 82,
+        "meanMs": 0.03658536583094335
+      },
+      "transport.responseHeaders": {
+        "count": 82,
+        "meanMs": 77.44268292686107
+      },
+      "server.append": {
+        "count": 82,
+        "meanMs": 65.93427239023944
+      },
+      "transport.acknowledgement": {
+        "count": 82,
+        "meanMs": 79.27804878051961
+      },
+      "captureToDurableServerAck": {
+        "count": 254,
+        "meanMs": 2004.8346456692914
+      },
+      "idb.acknowledge.handoff": {
+        "count": 82,
+        "meanMs": 0.00853658537948277
+      },
+      "idb.acknowledge.waitAndFirstRequest": {
+        "count": 82,
+        "meanMs": 65.9353658537176
+      },
+      "idb.acknowledge.total": {
+        "count": 81,
+        "meanMs": 67.8703703702324
+      },
+      "idb.acknowledge.afterFirstRequestThroughCommit": {
+        "count": 81,
+        "meanMs": 1.824691357826929
+      },
+      "captureToLocalAckCommit": {
+        "count": 250,
+        "meanMs": 2049.456
+      }
+    }
+  },
+  "sourceAndArtifacts": {
+    "sourceRevision": "fe7ca228f63939c357cc4965b317870c1d5d736a",
+    "sourceUnchangedDuringRun": true,
+    "preservedArtifactCount": 33,
+    "preservedArtifactsUnchanged": true
+  },
+  "matrices": [
+    {
+      "length": 100,
+      "mode": "off",
+      "edit": {
+        "count": 60,
+        "p50": 0.7000000011175871,
+        "p95": 1.5,
+        "max": 6.900000000372529
+      },
+      "callback": null
+    },
+    {
+      "length": 100,
+      "mode": "compact",
+      "edit": {
+        "count": 60,
+        "p50": 0.8000000007450581,
+        "p95": 1.5,
+        "max": 3
+      },
+      "callback": {
+        "count": 60,
+        "p50": 0,
+        "p95": 0,
+        "max": 0.09999999962747097
+      }
+    },
+    {
+      "length": 100,
+      "mode": "candidate",
+      "edit": {
+        "count": 60,
+        "p50": 0.5,
+        "p95": 1.199999999254942,
+        "max": 3.199999999254942
+      },
+      "callback": {
+        "count": 60,
+        "p50": 0,
+        "p95": 0.10000000149011612,
+        "max": 1
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "off",
+      "edit": {
+        "count": 60,
+        "p50": 7.900000000372529,
+        "p95": 9.300000000745058,
+        "max": 13.200000001117587
+      },
+      "callback": null
+    },
+    {
+      "length": 5600,
+      "mode": "compact",
+      "edit": {
+        "count": 60,
+        "p50": 7.699999999254942,
+        "p95": 9.600000001490116,
+        "max": 10
+      },
+      "callback": {
+        "count": 60,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "candidate",
+      "edit": {
+        "count": 60,
+        "p50": 8.099999999627471,
+        "p95": 11,
+        "max": 12.599999999627471
+      },
+      "callback": {
+        "count": 60,
+        "p50": 0,
+        "p95": 0.09999999962747097,
+        "max": 0.10000000149011612
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "off",
+      "edit": {
+        "count": 60,
+        "p50": 38.59999999962747,
+        "p95": 41.29999999888241,
+        "max": 53.80000000074506
+      },
+      "callback": null
+    },
+    {
+      "length": 25000,
+      "mode": "compact",
+      "edit": {
+        "count": 60,
+        "p50": 39.5,
+        "p95": 43.19999999925494,
+        "max": 58.600000001490116
+      },
+      "callback": {
+        "count": 60,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "candidate",
+      "edit": {
+        "count": 60,
+        "p50": 40.5,
+        "p95": 43.80000000074506,
+        "max": 52.19999999925494
+      },
+      "callback": {
+        "count": 60,
+        "p50": 0,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "start": "2026-09-18T02:38:12.618327+00:00",
+  "end": "2026-09-18T02:48:01.088043+00:00",
+  "command": "pmset -g log; interval filtered for display/sleep/wake/clamshell",
+  "rows": [
+    "2026-09-18 12:38:19 +1000 Assertions          \tPID 351(powerd) TimedOut InternalPreventDisplaySleep \"com.apple.powermanagement.delayDisplayOff\" 00:01:59  id:0x0x10000081ce [System: PrevIdle IntPrevDisp kDisp]          ",
+    "2026-09-18 12:39:07 +1000 Assertions          \tPID 18706(storagekitd) ClientDied PreventUserIdleSystemSleep \"com.apple.diskmanagementd\" 00:02:12  id:0x0x100008c67 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleDisplaySleep \"com.apple.audio.context404.preventuseridledisplaysleep\" 00:04:28  id:0x0x500008c2e [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleSystemSleep \"com.apple.audio.context404.preventuseridlesleep\" 00:04:28  id:0x0x100008c2d [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleDisplaySleep \"com.apple.audio.context405.preventuseridledisplaysleep\" 00:04:28  id:0x0x500008c31 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleSystemSleep \"com.apple.audio.context405.preventuseridlesleep\" 00:04:28  id:0x0x100008c30 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleDisplaySleep \"com.apple.audio.context406.preventuseridledisplaysleep\" 00:04:28  id:0x0x500008c33 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleSystemSleep \"com.apple.audio.context406.preventuseridlesleep\" 00:04:28  id:0x0x100008c32 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleDisplaySleep \"com.apple.audio.context407.preventuseridledisplaysleep\" 00:04:28  id:0x0x500008c35 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleSystemSleep \"com.apple.audio.context407.preventuseridlesleep\" 00:04:28  id:0x0x100008c34 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleDisplaySleep \"com.apple.audio.context408.preventuseridledisplaysleep\" 00:04:28  id:0x0x500008c37 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleSystemSleep \"com.apple.audio.context408.preventuseridlesleep\" 00:04:28  id:0x0x100008c36 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleDisplaySleep \"com.apple.audio.context409.preventuseridledisplaysleep\" 00:04:28  id:0x0x500008c39 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleSystemSleep \"com.apple.audio.context409.preventuseridlesleep\" 00:04:28  id:0x0x100008c38 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleDisplaySleep \"com.apple.audio.context410.preventuseridledisplaysleep\" 00:04:28  id:0x0x500008c3b [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:39:26 +1000 Assertions          \tPID 431(coreaudiod) Released PreventUserIdleSystemSleep \"com.apple.audio.context410.preventuseridlesleep\" 00:04:28  id:0x0x100008c3a [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:42:18 +1000 Assertions          \tPID 18749(caffeinate) Summary PreventUserIdleSystemSleep \"caffeinate command-line tool\" 00:04:05  id:0x0x100008c6a [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:42:18 +1000 Assertions          \tPID 351(powerd) Summary PreventUserIdleSystemSleep \"Powerd - Prevent sleep while display is on\" 00:44:57  id:0x0x100008b39 [System: PrevIdle DeclUser kDisp]          ",
+    "2026-09-18 12:46:41 +1000 Notification        \tDisplay is turned off                                                      \t          ",
+    "2026-09-18 12:46:41 +1000 Assertions          \tPID 351(powerd) Released PreventUserIdleSystemSleep \"Powerd - Prevent sleep while display is on\" 00:49:20  id:0x0x100008b39 [System: PrevIdle]          ",
+    "2026-09-18 12:46:41 +1000 Assertions          \tPID 18749(caffeinate) Summary PreventUserIdleSystemSleep \"caffeinate command-line tool\" 00:08:29  id:0x0x100008c6a [System: PrevIdle]          ",
+    "2026-09-18 12:47:39 +1000 Notification        \tDisplay is turned on                                                       \t          ",
+    "2026-09-18 12:48:01 +1000 Assertions          \tPID 18749(caffeinate) ClientDied PreventUserIdleSystemSleep \"caffeinate command-line tool\" 00:09:48  id:0x0x100008c6a [System: PrevIdle DeclUser kDisp]          "
+  ]
+}

@@ -1,0 +1,18 @@
+{"gate":"G3 running","completed":false,"errors":[],"phase":"matrices"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":252,"total":3000,"inFlight":1,"elapsedMs":50239.59999999963},"phase":"sustained"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":552,"total":3000,"inFlight":1,"elapsedMs":110239.79999999888},"phase":"sustained"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":852,"total":3000,"inFlight":1,"elapsedMs":170239.5},"phase":"sustained"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1153,"total":3000,"inFlight":1,"elapsedMs":230441.29999999888},"phase":"offline"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1453,"total":3000,"inFlight":1,"elapsedMs":290439.9000000004},"phase":"reconnected"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1753,"total":3000,"inFlight":1,"elapsedMs":350439},"phase":"reconnected"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":2053,"total":3000,"inFlight":1,"elapsedMs":410440},"phase":"reconnected"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":2353,"total":3000,"inFlight":1,"elapsedMs":470439.4000000004},"phase":"reconnected"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":2484,"total":3000,"inFlight":1,"elapsedMs":521719.5},"phase":"reconnected"}
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: {"completed":true,"errors":["Error: Gate worker queue cap","Error: Error: Gate worker queue cap\n    at Object.edit (http://127.0.0.1:54466/browser.js:4169:17)\n    at runSchedule (http://127.0.0.1:54466/browser.js:3955:17)\n    at async window.run (http://127.0.0.1:54466/browser.js:4164:5)"],"progress":{"edits":2819,"total":3000,"inFlight":64,"elapsedMs":568838.6999999993},"phase":"reconnected"}
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/cost.mjs:84:86
+
+Node.js v22.12.0

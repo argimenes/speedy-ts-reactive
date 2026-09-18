@@ -9,6 +9,7 @@ const pending = new Map<number, number>(), outboxCreated = new Map<number, numbe
 let committedCaptures = 0, serverAcknowledged = 0, telemetryInFlight = false;
 let nextMessage = 0, active: any = null, currentOutbox = { bytes: 0, count: 0 }, acknowledged = 0, rejected = 0, maxQueueDepth = 0;
 let phase = "online", reconnectAt = 0, reconnectDrainedAt = 0, reconnectBacklog: any, lastError: string | undefined;
+let lastCaptureAck: any = null, heartbeat = 0, heartbeatAt = 0;
 const epoch = () => performance.timeOrigin + performance.now();
 function record(name: string, ms: number) {
   const s = stages[name] ??= { count: 0, totalMs: 0, maxMs: 0, lastMs: 0 };
@@ -19,7 +20,7 @@ function snapshot() {
   return { at: Date.now(), phase, captured: committedCaptures, allocatedSequence: count, acknowledged, serverAcknowledged, rejected, queueDepth: pending.size, maxQueueDepth,
     oldestQueueAgeMs: oldest === undefined ? 0 : epoch() - oldest, active: active && { ...active, messageAgeMs: epoch() - active.started, stageAgeMs: epoch() - active.stageStarted },
     uploading, outbox: currentOutbox, oldestOutboxAgeMs: oldestPacket === undefined ? 0 : Date.now() - oldestPacket, maxOutboxBytes: metrics.maxBytes, maxOutboxCount: metrics.maxCount, oldestPendingMs: metrics.maxAge,
-    reconnectAt, reconnectBacklog, reconnectDrainMs: reconnectDrainedAt ? reconnectDrainedAt - reconnectAt : null, stages, lastError };
+    reconnectAt, reconnectBacklog, reconnectDrainMs: reconnectDrainedAt ? reconnectDrainedAt - reconnectAt : null, stages, lastError, lastCaptureAck, heartbeat, heartbeatAt };
 }
 function publish() {
   const telemetry = snapshot(); postMessage({ telemetry });
@@ -79,7 +80,8 @@ async function pump() {
   } finally { uploading = false; }
 }
 setInterval(() => pump().catch(fail), 100);
-setInterval(publish, 1000);
+let heartbeatDeadline = performance.now() + 1000;
+setInterval(() => { heartbeat++; heartbeatAt = epoch(); record("worker.heartbeatLateness", performance.now() - heartbeatDeadline); heartbeatDeadline = performance.now() + 1000; publish(); }, 1000);
 function fail(error: any) { lastError = String(error?.stack ?? error); postMessage({ error: lastError, telemetry: snapshot() }); publish(); }
 onmessage = ({ data }) => {
   if (data.kind === "network") { phase = data.phase; if (phase === "reconnected") { reconnectAt = Date.now(); reconnectBacklog = { ...currentOutbox, workerQueueDepth: pending.size }; } publish(); return; }
@@ -122,7 +124,8 @@ onmessage = ({ data }) => {
     committedCaptures++; currentOutbox = committedLedger; outboxCreated.set(allocatedSequence, data.created);
     metrics.maxBytes = Math.max(metrics.maxBytes, currentOutbox.bytes); metrics.maxCount = Math.max(metrics.maxCount, currentOutbox.count);
     metrics.idb.push(performance.now() - idbStart); record("worker.eventTotal", performance.now() - start); parent = revision.id;
-    postMessage({ captured: event.commitId, capturedAt: epoch() });
+    lastCaptureAck = { commitId: event.commitId, postedAt: epoch(), sequence: committedCaptures };
+    postMessage({ captured: event.commitId, capturedAt: lastCaptureAck.postedAt, captureSequence: committedCaptures });
     void pump().catch(fail);
   }).catch(fail).finally(() => { pending.delete(message); active = null; });
 };

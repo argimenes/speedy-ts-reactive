@@ -1,0 +1,33 @@
+{
+  "date": "2026-09-18T03:20:49.756980+00:00",
+  "qualificationCommand": "G3_SECONDS=600 G3_MODE=candidate G3_OUTPUT=BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_CANDIDATE.json caffeinate -di node scripts/stage-c-gates/cost.mjs",
+  "exitCode": 0,
+  "sourceUnchangedFromHiddenPageFailure": true,
+  "sourceUnchangedDuringAndAfterRun": true,
+  "sleepPreventionAndVisiblePageConditionVerified": true,
+  "allSustainedExactnessCountersAndDrainAssertionsVerified": true,
+  "preservedArtifactCount": 40,
+  "preservedArtifactsUnchanged": true,
+  "acceptanceCriteriaUnchanged": true,
+  "foregroundUnpairedP95DifferencesMs": {
+    "100": 0.0,
+    "5600": 8.299999999999999,
+    "25000": 12
+  },
+  "fullG3PassClaimed": false,
+  "gateDecision": "Sustained foreground trace passes losslessness, exactness and throughput; complete foreground-budget comparison remains unestablished. Stop for review; P1\u2013P6 gated.",
+  "validationOptimizationOrProducerContractIntroduced": false,
+  "tests": "No source changes or repeated code tests in this turn. Previous passing targeted checks apply to identical source hashes. Existing unrelated full-suite failures are not claimed fixed.",
+  "gitDiffCheck": {
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "allG3JsonParses": true,
+  "newArtifactSha256": {
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_CANDIDATE.log": "71313ccdb7393c22e90ead4e07384d36b8e99a226e485a05b93b3d0bd5f720f3",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_HOST.json": "715551225f71c45f27ccfd439eaf438635b2bdee03b7bded1485c70f16109718",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_ASSESSMENT.json": "5cfb5cec3864996e2a5fdfeaf7840c5d3ff3af85f8d66ada626df68cdaff71a1",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918_CANDIDATE.json": "9ad39aac96783499daded5a0103356f698b87005f48f5b2240880c08e0ca0302"
+  }
+}

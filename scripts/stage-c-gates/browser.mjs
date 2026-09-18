@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 /** Dedicated temporary Chromium profile; never connects to the user's browser. */
 export async function isolatedBrowser() {
-  const diagnostics = { stderr: "", crashes: [] };
+  const diagnostics = { stderr: "", crashes: [], lifecycle: [], probes: [] };
   const profile = await mkdtemp(join(tmpdir(), 'codex-stage-c-browser-')); let active;
   async function launch() {
     const child = spawn(process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
@@ -23,6 +23,10 @@ export async function isolatedBrowser() {
     socket.addEventListener('message', event => {
       const message = JSON.parse(event.data);
       if (/crashed/i.test(message.method ?? '')) diagnostics.crashes.push(message);
+      if (/^Page\.(lifecycleEvent|frameStartedLoading|frameStoppedLoading)|^Inspector\./.test(message.method ?? '')) {
+        diagnostics.lifecycle.push({ at: Date.now(), ...message });
+        if (diagnostics.lifecycle.length > 128) diagnostics.lifecycle.shift();
+      }
       const task = pending.get(message.id); if (!task) return;
       pending.delete(message.id); clearTimeout(task.timer);
       if (message.error) task.reject(new Error(JSON.stringify(message.error))); else task.resolve(message.result);
@@ -33,11 +37,20 @@ export async function isolatedBrowser() {
     });
     const version = await send('Browser.getVersion'), { targetId } = await send('Target.createTarget', { url: 'about:blank' });
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+    await send('Page.enable', {}, sessionId);
+    await send('Page.setLifecycleEventsEnabled', { enabled: true }, sessionId);
+    await send('Performance.enable', {}, sessionId);
     const evaluate = async expression => {
       const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
       if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails)); return result.result.value;
     };
-    return { version, evaluate, async navigate(url) {
+    return { version, evaluate,
+      lifecycle: state => send('Page.setWebLifecycleState', { state }, sessionId),
+      async probe() {
+        const requestedAt = Date.now(), metrics = await send('Performance.getMetrics', {}, sessionId);
+        diagnostics.probes.push({ requestedAt, receivedAt: Date.now(), metrics: metrics.metrics.filter(m => ['Timestamp', 'TaskDuration', 'ScriptDuration', 'LayoutDuration', 'RecalcStyleDuration', 'JSHeapUsedSize'].includes(m.name)) });
+        if (diagnostics.probes.length > 256) diagnostics.probes.shift();
+      }, async navigate(url) {
       await send('Page.navigate', { url }, sessionId);
       for (let i = 0; i < 100; i++) { if (await evaluate('location.origin') === new URL(url).origin) return; await new Promise(resolve => setTimeout(resolve, 20)); }
       throw new Error('Navigation timeout');

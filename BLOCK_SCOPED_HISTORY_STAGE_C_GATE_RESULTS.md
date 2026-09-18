@@ -1,11 +1,109 @@
 # Stage C implementation gate results
 
-Status: **undo parity and sustained controls pass; G3 durable qualification remains unmet**. Stage C is not
+Status: **final bounded matched comparison did not pass; G3 foreground-budget qualification remains unestablished**. P1–P6 remain gated for review. Stage C is not
 complete. No production format dispatch, ordinary Save/Open integration, outbox,
 `.memory` server store or Stage D–E work has been enabled.
 Plan: [Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md).
 
-## G3 undo-storage optimization and instrumented runs — latest, 2026-09-18
+## G3 final bounded matched comparison — latest, 2026-09-18
+
+The fixed comparison ran under `caffeinate -di`, with unchanged worker validation,
+strict IDB/native append, 64-message cap and ordinary undo. Identical starting
+states and alternating arm order were used with 30 warm-up and 120 measured
+pairs per case. All samples, including outliers, are retained.
+
+The 100-character case passes (paired added-time p95 **0.7 ms**). The 5,600-character
+case fails the predeclared statistic (**6.4 ms** against **4 ms**), so the runner
+stopped before 25,000 characters. It was not retried. Both completed cases capture
+and acknowledge all 150 revisions, reach independent oracle equality and empty
+outboxes, and have maximum worker/event queue depth one.
+
+The measurement has a strong order effect: at 5,600 characters the paired median
+is **−3.2 ms compact-first** versus **+4.6 ms candidate-first**. Both modes are
+slower first; capture preparation plus delivery has a paired p95 difference of
+only **0.4 ms**. Thus this is a failed qualification statistic, **not an isolated
+genuine history-path regression**. The data justify neither a G3 pass nor a new
+production optimization programme. No alternative passing statistic is substituted.
+
+Per the latest user direction, **no further G3 qualification work is scheduled**.
+A passing matched comparison would have closed G3; the broader production matrix
+is not added as another G3 prerequisite. Existing successful sustained/control
+evidence and failed/interrupted/stress classifications are preserved. All 49 prior
+G3 JSON/log/report files are unchanged; three focused statistics tests and harness
+TypeScript/syntax checks pass. See the [matched report and raw evidence](BLOCK_SCOPED_HISTORY_STAGE_C_G3_MATCHED_20260918.md).
+
+The [minimum path to an initial Block-history UI](BLOCK_SCOPED_HISTORY_INITIAL_UI_SLICE.md)
+separates essential persistent integration from later hardening and immediate UI
+work through a read-only adapter. No P1–P6 or UI implementation was started here.
+
+## G3 declared foreground qualification — preceding, 2026-09-18
+
+The user authorized an unchanged qualification run with both display and idle
+system sleep prevented. `caffeinate -di` assertions were recorded throughout;
+the page stayed visible and there were no display/sleep transitions. Source
+hashes match the preceding failed hidden-page run. Browser flags, 3,000 edits at
+200 ms targets, full validation, undo semantics, caps and criteria are unchanged.
+
+**The uninterrupted sustained trace passes:** all 3,000 edits are captured and
+acknowledged, with all undo entries retained. Final independent oracle equality,
+3,002 physical frame checksum/sequence checks, replay/preimage/ancestry checks
+for every revision and 12 independent replay comparisons pass. Maximum event
+messages in flight is one; reconnect drains 300 records in 963 ms, final drain
+takes 506 ms, and the final outbox has zero records/bytes. Maximum schedule
+lateness is 3.9 ms. Full validation keeps up with the original five-edits/second
+rate; no steady-state validator throughput failure is observed.
+
+**Do not declare an unrestricted G3 pass.** Sustained capture callback p95 is
+0.2 ms (maximum 0.3 ms, none over 50 ms), but the finite 60-edit comparisons have
+compact/candidate whole-edit p95 of 11.1/19.4 ms at 5,600 characters and 48.0/60.0 ms
+at 25,000. Their unpaired differences exceed 4 ms and do not establish the added
+work criterion. The worker does not run during those finite matrices, so the gap
+cannot be attributed to worker validation. The smallest next qualification work
+is a matched foreground comparison with preparation/allocation/callback costs
+separated, retaining the thresholds. No additional run or code optimization was
+performed after this result.
+
+The hidden-page catch-up failure remains failed stress evidence. All 40 prior
+JSON/log artifacts, including successful controls, remain unchanged. No production
+producer/backpressure contract was introduced. **Stop for review; P1–P6 remain
+gated.** Full results, measurements, scope and evidence are in the
+[foreground qualification report](BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918.md).
+
+## G3 scheduling attribution and catch-up rerun — earlier, 2026-09-18
+
+**G3 still fails; stop for review, keeping P1–P6 gated.** The new harness preserves
+all edit indices, original deadlines, order and undo steps while yielding a timer
+task between overdue commands. Five scheduler tests and the twelve existing
+storage/legacy-undo parity tests pass. A 150-edit calibration with an explicit
+15-second busy task completes physical frame/replay, independent oracle and
+empty-outbox checks. A separate freeze calibration is retained as interrupted.
+
+The unchanged 600-second/3,000-edit qualification then fails at **committed edit
+2,819**, with 2,818 events posted and 2,795 server-accepted at exit. The new
+observations identify a 56.864-second hidden-page interval: macOS display-off/on
+notifications align with the page visibility changes, main timers are delayed,
+and worker/Node observations continue without system sleep or a matching long
+editor task. The earlier repeat also occurred after display-off, supporting the
+same explanation without inventing missing historical lifecycle evidence.
+
+After visibility returns, acknowledgement delivery is prompt (maximum 80.7 ms),
+but the **actual worker queue reaches 64**. During the measured catch-up window,
+arrival is 17.58 events/s versus 14.20 captures/s; full validation averages
+65.84 ms/event. Task yielding resolves acknowledgement starvation but exposes a
+separate verifier throughput limit. The scheduled outage had already drained in
+969 ms; the failure is not an undrained outage or recurrence of undo retention.
+Final sustained oracle/all-frame replay/empty-outbox checks are not reached.
+
+No cap, workload, undo policy or validation was weakened. Both successful controls
+and all earlier failed/interrupted artifacts remain unchanged. No current
+ordinary input path was found emitting the equivalent 65 independent synchronous
+commits; arbitrary programmatic producers are not qualified by this harness.
+Further options are a declared display-awake condition for foreground measurement,
+parity-proven exact-verifier optimization for catch-up, or explicit bounded
+admission before bulk-producer commits. No further implementation or rerun follows
+this failure. See the [full investigation and artifacts](BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918.md).
+
+## G3 undo-storage optimization and instrumented runs — earlier, 2026-09-18
 
 The user authorized a storage-only undo optimization, parallel pipeline
 instrumentation and unchanged sustained reruns, with P1–P6 explicitly gated.

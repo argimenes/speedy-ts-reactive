@@ -8,14 +8,34 @@ Implementation has progressed through the G1/G2 candidates into **G3**. The
 retained-definition correction and incremental ownership/Placement-ID regressions
 pass. A private, behavior-preserving undo-storage optimization now passes legacy
 representation parity tests; both unchanged 25,000-character sustained controls
-complete 3,000 edits with all undo steps retained. **G3 remains unmet:** the first
-instrumented durable run captured/acknowledged all 3,000 edits but host sleep
-interrupted final qualification; its identical-code repeat hit the unchanged
-64-message cap after a main-page scheduling pause and synchronous catch-up.
-See the [undo/instrumented assessment](BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918.md)
-for attribution, remaining proof gaps and smallest corrective options. Earlier
-[failed-run evidence](BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md) is preserved.
-Workload, undo behavior and gate targets are unchanged. P1–P6 remain gated.
+complete 3,000 edits with all undo steps retained. The subsequent **foreground
+sustained qualification passes its losslessness, exactness and throughput checks**
+under `caffeinate -di`: all 3,000 revisions, final independent oracle equality,
+physical all-frame/replay verification, reconnect drain and empty outbox are proved.
+The page stayed visible; maximum event messages in flight was one.
+**G3 foreground qualification remains unestablished after the final bounded
+matched comparison:** paired p95 added time is 0.7 ms at 100 characters but 6.4 ms
+at 5,600, against the unchanged 4 ms criterion. The runner stopped before the
+25,000-character case and was not retried. A strong first-arm timing penalty
+confounds attribution; capture preparation plus delivery has a paired p95
+difference of 0.4 ms. This does not isolate a genuine history-path regression.
+See the [matched comparison](BLOCK_SCOPED_HISTORY_STAGE_C_G3_MATCHED_20260918.md) and
+the preserved [foreground sustained qualification](BLOCK_SCOPED_HISTORY_STAGE_C_G3_FOREGROUND_20260918.md).
+The [hidden-page scheduling investigation](BLOCK_SCOPED_HISTORY_STAGE_C_G3_SCHEDULING_20260918.md)
+remains a separate failed stress result: resumed catch-up reached worker queue
+depth 64 at committed edit 2,819. The new foreground result does not qualify that
+burst. The
+[earlier undo/instrumented assessment](BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918.md) and
+[failed-run evidence](BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md) are preserved.
+Workload, undo behavior and gate targets are unchanged; overdue task yielding is
+an explicit harness correction, not a reinterpretation of earlier failures.
+Work stops for review after the matched comparison. P1–P6 remain gated; no further
+G3 qualification, optimization or architecture work is scheduled. Under the
+user's latest scope, a passing matched comparison would close G3 without adding
+the broader P6 matrix as a new prerequisite. The next-development proposal is the
+[minimum initial UI slice](BLOCK_SCOPED_HISTORY_INITIAL_UI_SLICE.md): immediate
+read-only UI/adapter work, narrowly scoped persistent integration, and later
+production hardening. No large implementation/testing programme has begun.
 
 Requirements: [history specification](BLOCK_SCOPED_HISTORY_SPEC.md), the accepted
 [portable Document direction](PORTABLE_CODEX_DOCUMENT_FORMAT_SPIKE.md), and the
@@ -116,6 +136,14 @@ Complete P0, then G1 and G2, then G3 before production schema freeze or ordinary
 Document write integration. G1 and G2 are independent bounded development gates;
 either can expose a reason to stop. Do not build the remaining production pipeline
 around a failed assumption while continuing to label the gate pending.
+
+The 2026-09-18 UI-priority scope permits read-only Stage D prototype work against
+the established contracts or a temporary adapter before completing all P1–P6.
+This does not enable a production recorder or claim persistent-history support.
+See the [minimum slice](BLOCK_SCOPED_HISTORY_INITIAL_UI_SLICE.md) for the essential
+subsets of P1–P5 needed before connecting real persistent history. The full phases
+below remain the production roadmap, not a mandatory monolithic programme before
+the first interactive UI.
 
 | Step | Work and reviewable output | Gate to proceed |
 | --- | --- | --- |
@@ -620,7 +648,9 @@ serialization/worker transfer, IDB/server append, verification/index work, query
 latency, queue age/bytes and retained/transient memory separately. Preserve existing
 undo allocation in the baseline so it is not misreported as history overhead.
 
-Minimum workload matrix:
+Production/release workload matrix (the latest user scope leaves outstanding
+breadth for P6/expanded support; it is not additional work for the final bounded
+G3 comparison):
 
 - 100, 5,600 and 25,000-character paragraphs; start/middle/end insertion/deletion,
   replacement, paste, split/join, inline images, undo/redo and structural moves.

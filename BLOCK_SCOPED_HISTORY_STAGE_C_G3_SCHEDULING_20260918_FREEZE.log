@@ -1,0 +1,14 @@
+{"gate":"G3 running","completed":false,"errors":[],"phase":"matrices"}
+{"gate":"G3 verification","phase":"diagnosticFreezeRequested"}
+{"gate":"G3 verification","phase":"diagnosticResumeRequested"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":36,"total":150,"inFlight":1,"elapsedMs":45280.5},"phase":"sustained"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":40,"total":150,"inFlight":1,"elapsedMs":112926.90000000037},"phase":"sustained"}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":42,"total":150,"inFlight":1,"elapsedMs":159329.90000000037},"phase":"sustained"}
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: {"completed":false,"errors":["Diagnostic operator stop: controlled freeze/resume left page hidden with delayed timers; preserve interrupted calibration, not a qualification failure or pass"],"progress":{"edits":44,"total":150,"inFlight":1,"elapsedMs":196330.40000000037},"phase":"sustained"}
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/cost.mjs:84:86
+
+Node.js v22.12.0
