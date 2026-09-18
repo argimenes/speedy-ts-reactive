@@ -3,6 +3,7 @@ import { createStore, reconcile, unwrap } from "solid-js/store";
 import { inlineOwnerFor } from "./inline-plan";
 import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./split-plan";
 import { clone } from "./clone";
+import { UndoStorage, type StoredHistoryEntry } from "./undo-storage";
 import { validateTarget } from "./external-reference";
 import { createCommitId } from "./ids";
 import { BlockIdentityIndex, PlacementIdentityIndex, type PlacementIdentityDelta } from "./identity";
@@ -12,7 +13,6 @@ import type {
   ContentKey,
   CommitId,
   ContentRecord,
-  HistoryEntry,
   Location,
   PlacementKey,
   RepositoryOperation,
@@ -220,8 +220,9 @@ export class CanonicalRepository {
   private beforeChangeSubscribers = new Set<(label: string) => void>();
   private references = new Map<ContentKey, number>();
   private locations = new Map<PlacementKey, Location>();
-  private undoStack: HistoryEntry[] = [];
-  private redoStack: HistoryEntry[] = [];
+  private undoStack: StoredHistoryEntry[] = [];
+  private redoStack: StoredHistoryEntry[] = [];
+  private readonly historyStorage = new UndoStorage();
   private readonly identity?: BlockIdentityIndex;
   private readonly placementIdentity: PlacementIdentityIndex;
   private readonly commitSubscribers = new Set<CommitSubscriber>();
@@ -382,12 +383,7 @@ export class CanonicalRepository {
       if (identityDelta) this.identity!.acceptCommit(identityDelta);
       this.placementIdentity.acceptCommit(placementDelta);
       if (recordHistory) {
-        this.undoStack.push({
-          commitId,
-          label,
-          forward: clone(operations),
-          inverse,
-        });
+        this.undoStack.push(this.historyStorage.store(commitId, label, operations, inverse));
         this.redoStack = [];
       }
       this.deliverCapture(capture, commitId, label, recordHistory);
@@ -454,7 +450,7 @@ export class CanonicalRepository {
       if (identityDelta) this.identity!.acceptCommit(identityDelta);
       if (placementDelta) this.placementIdentity.acceptCommit(placementDelta);
       if (recordHistory) {
-        this.undoStack.push({ commitId, label, forward: clone(operations), inverse });
+        this.undoStack.push(this.historyStorage.store(commitId, label, operations, inverse));
         this.redoStack = [];
       }
       this.deliverCapture(capture, commitId, label, recordHistory);
@@ -477,7 +473,7 @@ export class CanonicalRepository {
     if (!entry) return;
     batch(() => {
       const before = this.state.revision;
-      try { this.commit(`Undo ${entry.label}`, entry.inverse, false, { cause: { kind: "undo", sourceCommitId: entry.commitId } }); }
+      try { this.commit(`Undo ${entry.label}`, this.historyStorage.materialize(entry.inverse), false, { cause: { kind: "undo", sourceCommitId: entry.commitId } }); }
       catch (error) {
         (this.state.revision === before ? this.undoStack : this.redoStack).push(entry);
         throw error;
@@ -492,7 +488,7 @@ export class CanonicalRepository {
     if (!entry) return;
     batch(() => {
       const before = this.state.revision;
-      try { this.commit(`Redo ${entry.label}`, entry.forward, false, { cause: { kind: "redo", sourceCommitId: entry.commitId } }); }
+      try { this.commit(`Redo ${entry.label}`, this.historyStorage.materialize(entry.forward), false, { cause: { kind: "redo", sourceCommitId: entry.commitId } }); }
       catch (error) {
         (this.state.revision === before ? this.redoStack : this.undoStack).push(entry);
         throw error;

@@ -1,0 +1,21 @@
+{"gate":"G3 running","completed":false,"errors":[]}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":253,"total":3000,"inFlight":1,"elapsedMs":50440.299999999814}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":553,"total":3000,"inFlight":1,"elapsedMs":110440.5}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":853,"total":3000,"inFlight":1,"elapsedMs":170440.2999999998}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1154,"total":3000,"inFlight":1,"elapsedMs":230641.2999999998}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1454,"total":3000,"inFlight":1,"elapsedMs":290639.3999999999}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1754,"total":3000,"inFlight":1,"elapsedMs":350640.1999999997}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":2054,"total":3000,"inFlight":1,"elapsedMs":410639.6999999997}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":2355,"total":3000,"inFlight":1,"elapsedMs":470840.6000000001}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":2655,"total":3000,"inFlight":1,"elapsedMs":530840}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":2955,"total":3000,"inFlight":1,"elapsedMs":590840.1999999997}}
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: CDP timeout: Runtime.evaluate
+    at Timeout._onTimeout (file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/browser.mjs:31:84)
+    at listOnTimeout (node:internal/timers:594:17)
+    at process.processTimers (node:internal/timers:529:7)
+
+Node.js v22.12.0

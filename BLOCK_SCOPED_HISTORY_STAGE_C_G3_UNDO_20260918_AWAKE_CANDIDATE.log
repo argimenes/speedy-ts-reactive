@@ -1,0 +1,15 @@
+{"gate":"G3 running","completed":false,"errors":[]}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":276,"total":3000,"inFlight":1,"elapsedMs":55032.09999999963}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":576,"total":3000,"inFlight":1,"elapsedMs":115042.39999999944}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":876,"total":3000,"inFlight":1,"elapsedMs":175039.59999999963}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1176,"total":3000,"inFlight":1,"elapsedMs":235039.7999999998}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1477,"total":3000,"inFlight":1,"elapsedMs":295238.5}}
+{"gate":"G3 running","completed":false,"errors":[],"progress":{"edits":1616,"total":3000,"inFlight":6,"elapsedMs":323099.5}}
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: {"completed":true,"errors":["Error: Gate worker queue cap","Error: Error: Gate worker queue cap\n    at window.run (http://127.0.0.1:52571/browser.js:4066:15)"],"progress":{"edits":1681,"total":3000,"inFlight":64,"elapsedMs":399401.2999999998}}
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/stage-c-gates/cost.mjs:66:86
+
+Node.js v22.12.0

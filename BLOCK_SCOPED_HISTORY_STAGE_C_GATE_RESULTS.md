@@ -1,11 +1,56 @@
 # Stage C implementation gate results
 
-Status: **G3 sustained qualification failed on the 2026-09-18 rerun; Stage C implementation incomplete**. Stage C is not
+Status: **undo parity and sustained controls pass; G3 durable qualification remains unmet**. Stage C is not
 complete. No production format dispatch, ordinary Save/Open integration, outbox,
 `.memory` server store or Stage D–E work has been enabled.
 Plan: [Stage C implementation plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md).
 
-## G3 qualification rerun — 2026-09-18
+## G3 undo-storage optimization and instrumented runs — latest, 2026-09-18
+
+The user authorized a storage-only undo optimization, parallel pipeline
+instrumentation and unchanged sustained reruns, with P1–P6 explicitly gated.
+[Private shared sequence chunks](src/block-tree/undo-storage.ts) replace duplicated
+`children`/`inlineContent` arrays in stored operations. Undo/redo materialize the
+same complete operations and use the existing commit/validation path. Seven
+legacy-representation parity tests and five storage/property tests pass; no stack
+depth, step, cause, identity, counter or redo policy changed.
+
+| Latest run | Evidence | Qualification result |
+| --- | --- | --- |
+| History off | All 3,000 edits in 599.845 s; all 3,000 undo entries retained; peak sampled JS heap 137.46 MiB. | Fixed sustained control completed. |
+| Compact capture only | All 3,000 edits/callbacks in 599.856 s; all undo entries retained; peak sampled JS heap 146.48 MiB. | Fixed sustained control completed without capture errors. |
+| Durable first attempt | All 3,000 revisions captured, server acknowledged and locally acknowledged; empty queue/outbox; maximum 7 event messages in flight; reconnect drain 1.210 s. | Host entered confirmed 243-second clamshell sleep during final verification/report collection. No final oracle/all-frame replay result; interrupted run is not a pass. |
+| Durable identical-code repeat | Outage backlog drained in 1.029 s, then main-page scheduling pause and synchronous catch-up; cap hit at edit 1,681, 1,680 server-accepted revisions at exit. | Explicit 64-message cap failure. G3 remains unmet. |
+
+Both controls retain 321,000 unique sequence slots instead of roughly 150 million
+duplicated paragraph slots across forward/inverse entries (about 467× fewer slots,
+not a total-heap ratio). Prior control heaps reached approximately 3.8 GiB at fewer
+than 1,300 edits. Original failed artifacts remain unchanged.
+
+The repeat's new telemetry distinguishes the failure: 73 worker samples over
+71.999 seconds show 1,616 acknowledged revisions with an empty event queue and
+outbox while the main page stopped advancing. On resumption, overdue edits execute
+without yielding, preventing main-side worker acknowledgement handlers from
+reducing the in-flight count before it reaches 64. Worker received-queue depth
+peaked at 16; IDB/server work continued. The cause of the initial main-page pause
+is unproved; host sampling has no sleep gap and peak sampled main heap was only
+115 MiB. This is not evidence of sustained verifier/server saturation or recurrence
+of the old undo-retention problem, but it is a concrete failure to capture every
+committed event under the unchanged trace.
+
+**Stop decision:** retain the parity-proven undo representation, keep P1–P6 gated,
+and do not raise caps or alter the workload to obtain a pass. The smallest next
+work is to identify the main scheduling pause and prove bounded acknowledgement
+servicing/lossless capture during catch-up, preserving all edits and undo semantics.
+No scheduler/recorder correction was implemented after this failure.
+
+Final checks: 429 tests passed, the same two context-menu tests failed, and the
+already recorded Node storage-suite collection issue under Vitest remains.
+Client/server typecheck and build passed. Full details, raw/derived artifacts,
+source hashes, timing limits and §10 gate assessment are in the
+[undo/instrumented report](BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918.md).
+
+## Earlier G3 qualification rerun — before undo optimization, 2026-09-18
 
 The user freed disk space and authorized rerunning the unchanged sustained trace.
 All three modes were requested sequentially for 600 seconds / 3,000 ordinary edits

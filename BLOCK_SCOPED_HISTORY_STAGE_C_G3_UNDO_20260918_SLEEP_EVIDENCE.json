@@ -1,0 +1,28 @@
+{
+  "command": "pmset -g log",
+  "timezone": "Australia/Brisbane (+1000)",
+  "lines": [
+    "2026-09-18 09:47:32 +1000 Assertions          \tPID 351(powerd) Created InternalPreventSleep \"com.apple.powermanagement.darkwakelinger\" 00:00:00  id:0x0xd00008740 [System: PrevIdle DeclUser SRPrevSleep IntPrevDisp kCPU kDisp]          ",
+    "2026-09-18 09:47:32 +1000 Notification        \tDisplay is turned off                                                      \t          ",
+    "2026-09-18 09:47:32 +1000 Assertions          \tPID 351(powerd) Released PreventUserIdleSystemSleep \"Powerd - Prevent sleep while display is on\" 01:08:17  id:0x0x100008000 [System: PrevIdle DeclUser SRPrevSleep IntPrevDisp kCPU kDisp]          ",
+    "2026-09-18 09:47:32 +1000 Assertions          \tPID 381(timed) Summary NoIdleSleepAssertion \"com.apple.timed.ntp\" 00:00:00  id:0x0x100008741 [System: PrevIdle DeclUser SRPrevSleep IntPrevDisp kCPU kDisp]          ",
+    "2026-09-18 09:47:32 +1000 Assertions          \tPID 408(WindowServer) Summary UserIsActive \"com.apple.iohideventsystem.queue.tickle serviceID:1000008e1 service:AppleMultitouchDevice product:Apple Internal Keyboard / Trackpad eventType:11\" 00:00:06  id:0x0x90000873d [System: PrevIdle DeclUser SRPrevSleep IntPrevDisp kCPU kDisp]          ",
+    "2026-09-18 09:47:32 +1000 Assertions          \tPID 351(powerd) Summary InternalPreventSleep \"com.apple.powermanagement.darkwakelinger\" 00:00:00  id:0x0xd00008740 [System: PrevIdle DeclUser SRPrevSleep IntPrevDisp kCPU kDisp]          ",
+    "2026-09-18 09:47:32 +1000 Assertions          \tPID 351(powerd) Summary InternalPreventDisplaySleep \"com.apple.powermanagement.delayDisplayOff\" 00:00:30  id:0x0x10000081ce [System: PrevIdle DeclUser SRPrevSleep IntPrevDisp kCPU kDisp]          ",
+    "2026-09-18 09:47:36 +1000 Assertions          \tPID 351(powerd) TimedOut InternalPreventSleep \"com.apple.powermanagement.darkwakelinger\" 00:00:04  id:0x0xd00008740 [System: PrevIdle DeclUser SRPrevSleep IntPrevDisp kCPU kDisp]          ",
+    "2026-09-18 09:47:36 +1000 Sleep               \tEntering Sleep state due to 'Clamshell Sleep':TCPKeepAlive=active Using Batt (Charge:34%) 243 secs  ",
+    "2026-09-18 09:51:39 +1000 Assertions          \tPID 351(powerd) Created InternalPreventSleep \"com.apple.powermanagement.wakeschedule\" 00:00:00  id:0x0xd00008758 [System: DeclUser IntPrevDisp kDisp]          ",
+    "2026-09-18 09:51:39 +1000 Assertions          \tPID 351(powerd) Created InternalPreventSleep \"PM configd - Wait for Device enumeration\" 00:00:00  id:0x0xd0000875a [System: DeclUser IntPrevDisp kDisp]          ",
+    "2026-09-18 09:51:39 +1000 com.apple.sleepservices.sessionStarted\tSleepService: window begins with cap time=180 secs                         \t          ",
+    "2026-09-18 09:51:39 +1000 DarkWake            \tDarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi.0x02 rtc/Maintenance Using BATT (Charge:34%) 6 secs    ",
+    "2026-09-18 09:51:39 +1000 WakeTime            \tWakeTime: 0.109 sec                                                        \t          ",
+    "2026-09-18 09:51:39 +1000 Kernel Client Acks  \tDelays to Sleep notifications: [AppleANS3NVMeController driver is slow(msg: SetState to 0)(58 ms)] "
+  ],
+  "interpretation": "The host entered Clamshell Sleep at 09:47:36 for 243 seconds and DarkWake occurred at 09:51:39. This overlaps the final verification/report collection interval; the CDP failure artifact was published at 09:51:40. This does not retroactively establish exactness or qualify the interrupted run.",
+  "repeatInterval": {
+    "started": "2026-09-18T01:12:16.599849+00:00",
+    "finished": "2026-09-18T01:19:10.691756+00:00",
+    "sleepWakeTransitions": [],
+    "maximumHostSampleGapSeconds": 10.044674
+  }
+}

@@ -1,0 +1,4994 @@
+{
+  "mode": "compact",
+  "hostResources": {
+    "availableBytes": 26816847872,
+    "minimumFreeBytes": 8589934592,
+    "physicalMemoryBytes": 8589934592
+  },
+  "date": "2026-09-17T23:37:14.048Z",
+  "node": "v22.12.0",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/153.0.8010.48",
+    "revision": "@199a3a541d76237379e353b348e64045584db057",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "jsVersion": "15.3.76.12"
+  },
+  "requestedSeconds": 600,
+  "completed": true,
+  "samples": [
+    {
+      "edits": 1,
+      "callbacks": 1,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1,
+          "p50": 185.09999999962747,
+          "p95": 185.09999999962747,
+          "p99": 185.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 185.09999999962747
+        },
+        "callback": {
+          "count": 1,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 1,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        }
+      },
+      "elapsedMs": 185.29999999981374,
+      "lastEditMs": 185.09999999962747,
+      "heap": {
+        "usedJSHeapSize": 56707212,
+        "totalJSHeapSize": 125171732,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1,
+      "lastUndoEntryEncodedBytes": 2453178,
+      "completed": false
+    },
+    {
+      "edits": 26,
+      "callbacks": 26,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 26,
+          "p50": 66.20000000018626,
+          "p95": 111.10000000009313,
+          "p99": 185.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 1996.1999999997206
+        },
+        "callback": {
+          "count": 26,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 26,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 7.7999999998137355,
+          "max": 7.7999999998137355,
+          "totalMs": 29.69999999552965
+        }
+      },
+      "elapsedMs": 5051,
+      "lastEditMs": 49,
+      "heap": {
+        "usedJSHeapSize": 153591129,
+        "totalJSHeapSize": 230752957,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 26,
+      "lastUndoEntryEncodedBytes": 2453182,
+      "completed": false
+    },
+    {
+      "edits": 51,
+      "callbacks": 51,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 51,
+          "p50": 55.3000000002794,
+          "p95": 105.20000000018626,
+          "p99": 185.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 3271.100000001956
+        },
+        "callback": {
+          "count": 51,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 51,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 7.7999999998137355,
+          "max": 7.7999999998137355,
+          "totalMs": 54.29999999003485
+        }
+      },
+      "elapsedMs": 10066.19999999972,
+      "lastEditMs": 64.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 62262022,
+        "totalJSHeapSize": 140492730,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 51,
+      "lastUndoEntryEncodedBytes": 2453182,
+      "completed": false
+    },
+    {
+      "edits": 76,
+      "callbacks": 76,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 76,
+          "p50": 52.700000000186265,
+          "p95": 101.60000000009313,
+          "p99": 185.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 4527.50000000326
+        },
+        "callback": {
+          "count": 76,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 76,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 7.7999999998137355,
+          "max": 7.7999999998137355,
+          "totalMs": 77.39999998454005
+        }
+      },
+      "elapsedMs": 15041.399999999907,
+      "lastEditMs": 39.5,
+      "heap": {
+        "usedJSHeapSize": 55556610,
+        "totalJSHeapSize": 134103726,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 76,
+      "lastUndoEntryEncodedBytes": 2453182,
+      "completed": false
+    },
+    {
+      "edits": 101,
+      "callbacks": 101,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 101,
+          "p50": 48.3000000002794,
+          "p95": 100.60000000009313,
+          "p99": 111.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 5642.30000000447
+        },
+        "callback": {
+          "count": 101,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 101,
+          "p50": 0.8999999999068677,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 99.6999999792315
+        }
+      },
+      "elapsedMs": 20045.399999999907,
+      "lastEditMs": 44.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 89996134,
+        "totalJSHeapSize": 150472602,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 101,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 126,
+      "callbacks": 126,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 126,
+          "p50": 49,
+          "p95": 100.09999999962747,
+          "p99": 111.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 6898.500000004191
+        },
+        "callback": {
+          "count": 126,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 126,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 123.6999999745749
+        }
+      },
+      "elapsedMs": 25047.799999999814,
+      "lastEditMs": 47.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 56082030,
+        "totalJSHeapSize": 136202678,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 126,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 151,
+      "callbacks": 151,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 151,
+          "p50": 48.39999999990687,
+          "p95": 96.10000000009313,
+          "p99": 111.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 8184.900000005495
+        },
+        "callback": {
+          "count": 151,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 151,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 146.7999999700114
+        }
+      },
+      "elapsedMs": 30097.69999999972,
+      "lastEditMs": 96.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 90240682,
+        "totalJSHeapSize": 151260834,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 151,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 176,
+      "callbacks": 176,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 176,
+          "p50": 49.6999999997206,
+          "p95": 94.79999999981374,
+          "p99": 111.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 9759.700000005309
+        },
+        "callback": {
+          "count": 176,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 176,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 169.39999996544793
+        }
+      },
+      "elapsedMs": 35053.5,
+      "lastEditMs": 52.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 56274766,
+        "totalJSHeapSize": 139366590,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 176,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 201,
+      "callbacks": 201,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 201,
+          "p50": 50.10000000009313,
+          "p95": 92.5,
+          "p99": 105.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 11115.00000000745
+        },
+        "callback": {
+          "count": 201,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 201,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 194.49999995948747
+        }
+      },
+      "elapsedMs": 40048,
+      "lastEditMs": 46.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 90660330,
+        "totalJSHeapSize": 151262634,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 201,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 226,
+      "callbacks": 226,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 226,
+          "p50": 51.6999999997206,
+          "p95": 92.3000000002794,
+          "p99": 105.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 12449.900000006892
+        },
+        "callback": {
+          "count": 226,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "totalMs": 0
+        },
+        "scheduleLateness": {
+          "count": 226,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 219.29999995604157
+        }
+      },
+      "elapsedMs": 45044.69999999972,
+      "lastEditMs": 44,
+      "heap": {
+        "usedJSHeapSize": 56545590,
+        "totalJSHeapSize": 138041286,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 226,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 251,
+      "callbacks": 251,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 251,
+          "p50": 51.8000000002794,
+          "p95": 92.10000000009313,
+          "p99": 105.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 13757.200000008103
+        },
+        "callback": {
+          "count": 251,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.10000000009313226
+        },
+        "scheduleLateness": {
+          "count": 251,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 246.69999995082617
+        }
+      },
+      "elapsedMs": 50058.89999999991,
+      "lastEditMs": 58.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 90810338,
+        "totalJSHeapSize": 152313010,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 251,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 276,
+      "callbacks": 276,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 276,
+          "p50": 52,
+          "p95": 89.60000000009313,
+          "p99": 105.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 15044.900000006426
+        },
+        "callback": {
+          "count": 276,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.10000000009313226
+        },
+        "scheduleLateness": {
+          "count": 276,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2.5,
+          "max": 7.7999999998137355,
+          "totalMs": 273.0999999460764
+        }
+      },
+      "elapsedMs": 55056.39999999991,
+      "lastEditMs": 55.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 63775090,
+        "totalJSHeapSize": 138141534,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 276,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 301,
+      "callbacks": 301,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 301,
+          "p50": 51.700000000186265,
+          "p95": 84.8000000002794,
+          "p99": 101.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 16246.90000000596
+        },
+        "callback": {
+          "count": 301,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 301,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 294.7999999411404
+        }
+      },
+      "elapsedMs": 60043.39999999991,
+      "lastEditMs": 42.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 97646230,
+        "totalJSHeapSize": 154772554,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 301,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 326,
+      "callbacks": 326,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 326,
+          "p50": 51.799999999813735,
+          "p95": 81.6999999997206,
+          "p99": 101.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 17505.100000007544
+        },
+        "callback": {
+          "count": 326,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 326,
+          "p50": 1,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 316.6999999349937
+        }
+      },
+      "elapsedMs": 65058.09999999963,
+      "lastEditMs": 57,
+      "heap": {
+        "usedJSHeapSize": 84398602,
+        "totalJSHeapSize": 145237678,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 326,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 351,
+      "callbacks": 351,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 351,
+          "p50": 51.6999999997206,
+          "p95": 81.5,
+          "p99": 101.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 18683.80000000773
+        },
+        "callback": {
+          "count": 351,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 351,
+          "p50": 0.8999999999068677,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 335.59999993117526
+        }
+      },
+      "elapsedMs": 70037.79999999981,
+      "lastEditMs": 37.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 84622770,
+        "totalJSHeapSize": 144714290,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 351,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 376,
+      "callbacks": 376,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 376,
+          "p50": 51.299999999813735,
+          "p95": 80,
+          "p99": 101.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 19857.90000000689
+        },
+        "callback": {
+          "count": 376,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 376,
+          "p50": 0.8999999999068677,
+          "p95": 1.7999999998137355,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 354.6999999266118
+        }
+      },
+      "elapsedMs": 75038.3999999999,
+      "lastEditMs": 37.3000000002794,
+      "heap": {
+        "usedJSHeapSize": 83701486,
+        "totalJSHeapSize": 152071966,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 376,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 401,
+      "callbacks": 401,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 401,
+          "p50": 51.6999999997206,
+          "p95": 78.60000000009313,
+          "p99": 101.39999999990687,
+          "max": 185.09999999962747,
+          "totalMs": 21079.400000008754
+        },
+        "callback": {
+          "count": 401,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 401,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 380.1999999214895
+        }
+      },
+      "elapsedMs": 80055.19999999972,
+      "lastEditMs": 54.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 98151594,
+        "totalJSHeapSize": 151712346,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 401,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 426,
+      "callbacks": 426,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 426,
+          "p50": 51.799999999813735,
+          "p95": 78.8000000002794,
+          "p99": 101.39999999990687,
+          "max": 185.09999999962747,
+          "totalMs": 22499.500000008848
+        },
+        "callback": {
+          "count": 426,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 426,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 402.59999991673976
+        }
+      },
+      "elapsedMs": 85056.19999999972,
+      "lastEditMs": 54.3000000002794,
+      "heap": {
+        "usedJSHeapSize": 64266786,
+        "totalJSHeapSize": 141554806,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 426,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 451,
+      "callbacks": 451,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 451,
+          "p50": 52,
+          "p95": 78.60000000009313,
+          "p99": 101.39999999990687,
+          "max": 185.09999999962747,
+          "totalMs": 23787.200000008568
+        },
+        "callback": {
+          "count": 451,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 451,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 425.1999999131076
+        }
+      },
+      "elapsedMs": 90056.59999999963,
+      "lastEditMs": 55.6999999997206,
+      "heap": {
+        "usedJSHeapSize": 98389578,
+        "totalJSHeapSize": 156088674,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 451,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 476,
+      "callbacks": 476,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 476,
+          "p50": 52.10000000009313,
+          "p95": 77.70000000018626,
+          "p99": 101.39999999990687,
+          "max": 185.09999999962747,
+          "totalMs": 25007.40000000922
+        },
+        "callback": {
+          "count": 476,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 476,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 447.29999990714714
+        }
+      },
+      "elapsedMs": 95046.8999999999,
+      "lastEditMs": 45.5,
+      "heap": {
+        "usedJSHeapSize": 78423314,
+        "totalJSHeapSize": 143817526,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 476,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 501,
+      "callbacks": 501,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 501,
+          "p50": 52,
+          "p95": 76.60000000009313,
+          "p99": 100.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 26250.100000009406
+        },
+        "callback": {
+          "count": 501,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 501,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 472.9999999026768
+        }
+      },
+      "elapsedMs": 100047.5,
+      "lastEditMs": 45.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 58034646,
+        "totalJSHeapSize": 136740466,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 501,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 526,
+      "callbacks": 526,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 526,
+          "p50": 51.799999999813735,
+          "p95": 76.60000000009313,
+          "p99": 100.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 27512.000000009313
+        },
+        "callback": {
+          "count": 526,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 526,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 497.1999998977408
+        }
+      },
+      "elapsedMs": 105053.59999999963,
+      "lastEditMs": 52.6999999997206,
+      "heap": {
+        "usedJSHeapSize": 78850866,
+        "totalJSHeapSize": 140771902,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 526,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 551,
+      "callbacks": 551,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 551,
+          "p50": 51.6999999997206,
+          "p95": 75.70000000018626,
+          "p99": 100.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 28711.30000001006
+        },
+        "callback": {
+          "count": 551,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 551,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 523.6999998926185
+        }
+      },
+      "elapsedMs": 110055.29999999981,
+      "lastEditMs": 53.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 78167738,
+        "totalJSHeapSize": 146048810,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 551,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 576,
+      "callbacks": 576,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 576,
+          "p50": 51.6999999997206,
+          "p95": 75.20000000018626,
+          "p99": 100.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 29942.500000008382
+        },
+        "callback": {
+          "count": 576,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 576,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 545.8999998890795
+        }
+      },
+      "elapsedMs": 115046.3999999999,
+      "lastEditMs": 45.5,
+      "heap": {
+        "usedJSHeapSize": 58437418,
+        "totalJSHeapSize": 140085502,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 576,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 601,
+      "callbacks": 601,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 601,
+          "p50": 51.5,
+          "p95": 74.8000000002794,
+          "p99": 100.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 31130.700000009034
+        },
+        "callback": {
+          "count": 601,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 601,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 571.3999998848885
+        }
+      },
+      "elapsedMs": 120052.09999999963,
+      "lastEditMs": 51.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 85811106,
+        "totalJSHeapSize": 149523802,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 601,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 626,
+      "callbacks": 626,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 626,
+          "p50": 51.5,
+          "p95": 74.60000000009313,
+          "p99": 100.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 32378.800000009127
+        },
+        "callback": {
+          "count": 626,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.20000000018626451
+        },
+        "scheduleLateness": {
+          "count": 626,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 594.7999998810701
+        }
+      },
+      "elapsedMs": 125051.3999999999,
+      "lastEditMs": 50.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 78536954,
+        "totalJSHeapSize": 151032246,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 626,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 651,
+      "callbacks": 651,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 651,
+          "p50": 51.200000000186265,
+          "p95": 73.90000000037253,
+          "p99": 100.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 33516.40000001015
+        },
+        "callback": {
+          "count": 651,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 651,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 615.2999998754822
+        }
+      },
+      "elapsedMs": 130046.8999999999,
+      "lastEditMs": 46,
+      "heap": {
+        "usedJSHeapSize": 58808602,
+        "totalJSHeapSize": 139301770,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 651,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 676,
+      "callbacks": 676,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 676,
+          "p50": 51.60000000009313,
+          "p95": 73.10000000009313,
+          "p99": 100.09999999962747,
+          "max": 185.09999999962747,
+          "totalMs": 34811.30000000866
+        },
+        "callback": {
+          "count": 676,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 676,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 636.099999871105
+        }
+      },
+      "elapsedMs": 135052.5,
+      "lastEditMs": 51.6999999997206,
+      "heap": {
+        "usedJSHeapSize": 86435674,
+        "totalJSHeapSize": 148477926,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 676,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 701,
+      "callbacks": 701,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 701,
+          "p50": 51.6999999997206,
+          "p95": 72.3000000002794,
+          "p99": 96.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 36070.100000009406
+        },
+        "callback": {
+          "count": 701,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 701,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 659.1999998665415
+        }
+      },
+      "elapsedMs": 140056.7999999998,
+      "lastEditMs": 55.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 78925578,
+        "totalJSHeapSize": 151297090,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 701,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 726,
+      "callbacks": 726,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 726,
+          "p50": 51.700000000186265,
+          "p95": 72.29999999981374,
+          "p99": 96.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 37377.600000009406
+        },
+        "callback": {
+          "count": 726,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 726,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 686.1999998614192
+        }
+      },
+      "elapsedMs": 145049.2999999998,
+      "lastEditMs": 47.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 59184366,
+        "totalJSHeapSize": 140877334,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 726,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 751,
+      "callbacks": 751,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 751,
+          "p50": 51.799999999813735,
+          "p95": 72,
+          "p99": 96.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 38673.10000000987
+        },
+        "callback": {
+          "count": 751,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 751,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 708.3999998564832
+        }
+      },
+      "elapsedMs": 150056.3999999999,
+      "lastEditMs": 54.700000000186265,
+      "heap": {
+        "usedJSHeapSize": 85758846,
+        "totalJSHeapSize": 152626138,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 751,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 776,
+      "callbacks": 776,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 776,
+          "p50": 51.89999999990687,
+          "p95": 71.5,
+          "p99": 96.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 39955.80000000866
+        },
+        "callback": {
+          "count": 776,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 776,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 731.9999998519197
+        }
+      },
+      "elapsedMs": 155049.8999999999,
+      "lastEditMs": 47.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 59302366,
+        "totalJSHeapSize": 141141278,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 776,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 801,
+      "callbacks": 801,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 801,
+          "p50": 51.89999999990687,
+          "p95": 70.89999999990687,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 41221.80000000866
+        },
+        "callback": {
+          "count": 801,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 801,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 762.4999998472631
+        }
+      },
+      "elapsedMs": 160056.2999999998,
+      "lastEditMs": 54.8000000002794,
+      "heap": {
+        "usedJSHeapSize": 79526018,
+        "totalJSHeapSize": 151988818,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 801,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 826,
+      "callbacks": 826,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 826,
+          "p50": 52,
+          "p95": 69.89999999990687,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 42517.00000000652
+        },
+        "callback": {
+          "count": 826,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 826,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 787.7999998438172
+        }
+      },
+      "elapsedMs": 165055.3999999999,
+      "lastEditMs": 54.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 87178154,
+        "totalJSHeapSize": 146812158,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 826,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 851,
+      "callbacks": 851,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 851,
+          "p50": 52,
+          "p95": 69.29999999981374,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 43801.10000000801
+        },
+        "callback": {
+          "count": 851,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 851,
+          "p50": 0.8999999999068677,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 810.9999998388812
+        }
+      },
+      "elapsedMs": 170054.7999999998,
+      "lastEditMs": 53.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 66532062,
+        "totalJSHeapSize": 141930554,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 851,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 876,
+      "callbacks": 876,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 876,
+          "p50": 52.10000000009313,
+          "p95": 67.09999999962747,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 45074.80000000773
+        },
+        "callback": {
+          "count": 876,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 876,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 835.6999998344108
+        }
+      },
+      "elapsedMs": 175054.19999999972,
+      "lastEditMs": 53.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 94053342,
+        "totalJSHeapSize": 146748566,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 876,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 901,
+      "callbacks": 901,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 901,
+          "p50": 52,
+          "p95": 66,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 46304.20000000764
+        },
+        "callback": {
+          "count": 901,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 901,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 864.1999998292886
+        }
+      },
+      "elapsedMs": 180059.3999999999,
+      "lastEditMs": 57.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 93069138,
+        "totalJSHeapSize": 161102210,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 901,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 926,
+      "callbacks": 926,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 926,
+          "p50": 52,
+          "p95": 66.20000000018626,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 47566.80000000587
+        },
+        "callback": {
+          "count": 926,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 926,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 885.1999998255633
+        }
+      },
+      "elapsedMs": 185043.2999999998,
+      "lastEditMs": 41.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 73393710,
+        "totalJSHeapSize": 146226006,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 926,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 951,
+      "callbacks": 951,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 951,
+          "p50": 52,
+          "p95": 66,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 48823.00000000652
+        },
+        "callback": {
+          "count": 951,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 951,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 909.8999998201616
+        }
+      },
+      "elapsedMs": 190051.5,
+      "lastEditMs": 50.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 100996530,
+        "totalJSHeapSize": 157859762,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 951,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 976,
+      "callbacks": 976,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 976,
+          "p50": 52.10000000009313,
+          "p95": 64.60000000009313,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 50153.90000000736
+        },
+        "callback": {
+          "count": 976,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 976,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 934.9999998151325
+        }
+      },
+      "elapsedMs": 195050.59999999963,
+      "lastEditMs": 49.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 60282294,
+        "totalJSHeapSize": 142459198,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 976,
+      "lastUndoEntryEncodedBytes": 2453186,
+      "completed": false
+    },
+    {
+      "edits": 1001,
+      "callbacks": 1001,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1001,
+          "p50": 52.200000000186265,
+          "p95": 64.09999999962747,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 51478.200000009034
+        },
+        "callback": {
+          "count": 1001,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1001,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 962.7999998098239
+        }
+      },
+      "elapsedMs": 200051.19999999972,
+      "lastEditMs": 49.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 60395286,
+        "totalJSHeapSize": 136758466,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1001,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1026,
+      "callbacks": 1026,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1026,
+          "p50": 52.299999999813735,
+          "p95": 63.299999999813735,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 52757.2000000081
+        },
+        "callback": {
+          "count": 1026,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1026,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 989.299999805633
+        }
+      },
+      "elapsedMs": 205054.69999999972,
+      "lastEditMs": 53.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 107951970,
+        "totalJSHeapSize": 159795918,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1026,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1051,
+      "callbacks": 1051,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1051,
+          "p50": 52.10000000009313,
+          "p95": 62.5,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 53953.40000000922
+        },
+        "callback": {
+          "count": 1051,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1051,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1013.4999998002313
+        }
+      },
+      "elapsedMs": 210056.5,
+      "lastEditMs": 55.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 81530698,
+        "totalJSHeapSize": 146557970,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1051,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1076,
+      "callbacks": 1076,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1076,
+          "p50": 52.200000000186265,
+          "p95": 61.60000000009313,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 55249.50000000745
+        },
+        "callback": {
+          "count": 1076,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1076,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1038.0999997956678
+        }
+      },
+      "elapsedMs": 215045.2999999998,
+      "lastEditMs": 43.5,
+      "heap": {
+        "usedJSHeapSize": 74135970,
+        "totalJSHeapSize": 149901422,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1076,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1101,
+      "callbacks": 1101,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1101,
+          "p50": 52.200000000186265,
+          "p95": 60.799999999813735,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 56476.20000000624
+        },
+        "callback": {
+          "count": 1101,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1101,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1059.8999997912906
+        }
+      },
+      "elapsedMs": 220053.69999999972,
+      "lastEditMs": 52.40000000037253,
+      "heap": {
+        "usedJSHeapSize": 87550346,
+        "totalJSHeapSize": 158127378,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1101,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1126,
+      "callbacks": 1126,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1126,
+          "p50": 52.200000000186265,
+          "p95": 59.799999999813735,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 57716.10000000661
+        },
+        "callback": {
+          "count": 1126,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1126,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1082.9999997862615
+        }
+      },
+      "elapsedMs": 225042.7999999998,
+      "lastEditMs": 41.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 60975670,
+        "totalJSHeapSize": 143251030,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1126,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1151,
+      "callbacks": 1151,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1151,
+          "p50": 52.200000000186265,
+          "p95": 59.5,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 58938.30000000307
+        },
+        "callback": {
+          "count": 1151,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1151,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1106.4999997839332
+        }
+      },
+      "elapsedMs": 230055.2999999998,
+      "lastEditMs": 54.5,
+      "heap": {
+        "usedJSHeapSize": 88724118,
+        "totalJSHeapSize": 151902898,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1151,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1176,
+      "callbacks": 1176,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1176,
+          "p50": 52.10000000009313,
+          "p95": 60.799999999813735,
+          "p99": 94.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 60119.200000002515
+        },
+        "callback": {
+          "count": 1176,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.3000000002793968
+        },
+        "scheduleLateness": {
+          "count": 1176,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1128.1999997799285
+        }
+      },
+      "elapsedMs": 235047.69999999972,
+      "lastEditMs": 46.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 108658478,
+        "totalJSHeapSize": 161816550,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1176,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1201,
+      "callbacks": 1201,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1201,
+          "p50": 52.1999999997206,
+          "p95": 59.5,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 61416.400000002235
+        },
+        "callback": {
+          "count": 1201,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.40000000037252903
+        },
+        "scheduleLateness": {
+          "count": 1201,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1153.0999997756444
+        }
+      },
+      "elapsedMs": 240056.09999999963,
+      "lastEditMs": 54.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 95485014,
+        "totalJSHeapSize": 148595274,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1201,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1226,
+      "callbacks": 1226,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1226,
+          "p50": 52.200000000186265,
+          "p95": 59.39999999990687,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 62753.30000000168
+        },
+        "callback": {
+          "count": 1226,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.40000000037252903
+        },
+        "scheduleLateness": {
+          "count": 1226,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1178.8999997712672
+        }
+      },
+      "elapsedMs": 245050,
+      "lastEditMs": 48.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 61569194,
+        "totalJSHeapSize": 141681766,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1226,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1251,
+      "callbacks": 1251,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1251,
+          "p50": 52.1999999997206,
+          "p95": 59.5,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 64000.90000000177
+        },
+        "callback": {
+          "count": 1251,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.5000000004656613
+        },
+        "scheduleLateness": {
+          "count": 1251,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1201.999999766238
+        }
+      },
+      "elapsedMs": 250049.09999999963,
+      "lastEditMs": 47.09999999962747,
+      "heap": {
+        "usedJSHeapSize": 89074062,
+        "totalJSHeapSize": 151382210,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1251,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1276,
+      "callbacks": 1276,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1276,
+          "p50": 52.200000000186265,
+          "p95": 59.39999999990687,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 65298.10000000242
+        },
+        "callback": {
+          "count": 1276,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.5000000004656613
+        },
+        "scheduleLateness": {
+          "count": 1276,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1224.099999761209
+        }
+      },
+      "elapsedMs": 255056,
+      "lastEditMs": 54.700000000186265,
+      "heap": {
+        "usedJSHeapSize": 102436326,
+        "totalJSHeapSize": 159346022,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1276,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1301,
+      "callbacks": 1301,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1301,
+          "p50": 52.299999999813735,
+          "p95": 59.3000000002794,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 66584.9000000041
+        },
+        "callback": {
+          "count": 1301,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.5000000004656613
+        },
+        "scheduleLateness": {
+          "count": 1301,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1251.199999755714
+        }
+      },
+      "elapsedMs": 260058.19999999972,
+      "lastEditMs": 56.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 109194038,
+        "totalJSHeapSize": 166785402,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1301,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1326,
+      "callbacks": 1326,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1326,
+          "p50": 52.3000000002794,
+          "p95": 59.299999999813735,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 67932.00000000466
+        },
+        "callback": {
+          "count": 1326,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1326,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1275.4999997504056
+        }
+      },
+      "elapsedMs": 265055.5999999996,
+      "lastEditMs": 54,
+      "heap": {
+        "usedJSHeapSize": 95272970,
+        "totalJSHeapSize": 165836102,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1326,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1351,
+      "callbacks": 1351,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1351,
+          "p50": 52.39999999990687,
+          "p95": 59.200000000186265,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 69239.80000000494
+        },
+        "callback": {
+          "count": 1351,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1351,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1299.1999997459352
+        }
+      },
+      "elapsedMs": 270058.0999999996,
+      "lastEditMs": 56.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 116031694,
+        "totalJSHeapSize": 173357330,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1351,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1376,
+      "callbacks": 1376,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1376,
+          "p50": 52.5,
+          "p95": 58.89999999990687,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 70562.800000004
+        },
+        "callback": {
+          "count": 1376,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1376,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1323.1999997412786
+        }
+      },
+      "elapsedMs": 275049.0999999996,
+      "lastEditMs": 47.799999999813735,
+      "heap": {
+        "usedJSHeapSize": 62273342,
+        "totalJSHeapSize": 147519870,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1376,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1401,
+      "callbacks": 1401,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1401,
+          "p50": 52.5,
+          "p95": 58.60000000009313,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 71878.30000000354
+        },
+        "callback": {
+          "count": 1401,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1401,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1347.299999736715
+        }
+      },
+      "elapsedMs": 280055.7999999998,
+      "lastEditMs": 54.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 90144846,
+        "totalJSHeapSize": 155401690,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1401,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1426,
+      "callbacks": 1426,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1426,
+          "p50": 52.5,
+          "p95": 58.1999999997206,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 73155.80000000261
+        },
+        "callback": {
+          "count": 1426,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1426,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1372.6999997319654
+        }
+      },
+      "elapsedMs": 285047.2999999998,
+      "lastEditMs": 44.799999999813735,
+      "heap": {
+        "usedJSHeapSize": 62633854,
+        "totalJSHeapSize": 140378246,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1426,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1451,
+      "callbacks": 1451,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1451,
+          "p50": 52.5,
+          "p95": 58.10000000009313,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 74374.20000000205
+        },
+        "callback": {
+          "count": 1451,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1451,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1397.4999997280538
+        }
+      },
+      "elapsedMs": 290057.6999999997,
+      "lastEditMs": 55.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 82624910,
+        "totalJSHeapSize": 153339322,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1451,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1476,
+      "callbacks": 1476,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1476,
+          "p50": 52.59999999962747,
+          "p95": 58,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 75657.30000000214
+        },
+        "callback": {
+          "count": 1476,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1476,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1421.7999997236766
+        }
+      },
+      "elapsedMs": 295058.6999999997,
+      "lastEditMs": 56.6999999997206,
+      "heap": {
+        "usedJSHeapSize": 103618354,
+        "totalJSHeapSize": 165038470,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1476,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1501,
+      "callbacks": 1501,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1501,
+          "p50": 52.5,
+          "p95": 58.8000000002794,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 77000.9000000041
+        },
+        "callback": {
+          "count": 1501,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1501,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1450.899999719113
+        }
+      },
+      "elapsedMs": 300044.5999999996,
+      "lastEditMs": 42.5,
+      "heap": {
+        "usedJSHeapSize": 97010646,
+        "totalJSHeapSize": 155847802,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1501,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1526,
+      "callbacks": 1526,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1526,
+          "p50": 52.59999999962747,
+          "p95": 58.60000000009313,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 78325.40000000456
+        },
+        "callback": {
+          "count": 1526,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1526,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1477.6999997142702
+        }
+      },
+      "elapsedMs": 305058.6999999997,
+      "lastEditMs": 56.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 82966814,
+        "totalJSHeapSize": 157257798,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1526,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1551,
+      "callbacks": 1551,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1551,
+          "p50": 52.59999999962747,
+          "p95": 58.1999999997206,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 79621.40000000456
+        },
+        "callback": {
+          "count": 1551,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.6000000005587935
+        },
+        "scheduleLateness": {
+          "count": 1551,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1500.8999997097999
+        }
+      },
+      "elapsedMs": 310056.5,
+      "lastEditMs": 54.8000000002794,
+      "heap": {
+        "usedJSHeapSize": 103965114,
+        "totalJSHeapSize": 165303314,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1551,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1576,
+      "callbacks": 1576,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1576,
+          "p50": 52.60000000009313,
+          "p95": 58.10000000009313,
+          "p99": 92.5,
+          "max": 185.09999999962747,
+          "totalMs": 80961.10000000242
+        },
+        "callback": {
+          "count": 1576,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.7000000006519258
+        },
+        "scheduleLateness": {
+          "count": 1576,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1524.0999997062609
+        }
+      },
+      "elapsedMs": 315057.8999999999,
+      "lastEditMs": 55.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 83209006,
+        "totalJSHeapSize": 151066446,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1576,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1601,
+      "callbacks": 1601,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1601,
+          "p50": 52.6999999997206,
+          "p95": 58,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 82275.00000000233
+        },
+        "callback": {
+          "count": 1601,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.7000000006519258
+        },
+        "scheduleLateness": {
+          "count": 1601,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1546.9999997015111
+        }
+      },
+      "elapsedMs": 320054.7999999998,
+      "lastEditMs": 53,
+      "heap": {
+        "usedJSHeapSize": 84112218,
+        "totalJSHeapSize": 147102058,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1601,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1626,
+      "callbacks": 1626,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1626,
+          "p50": 52.700000000186265,
+          "p95": 57.89999999990687,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 83608.70000000438
+        },
+        "callback": {
+          "count": 1626,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.7000000006519258
+        },
+        "scheduleLateness": {
+          "count": 1626,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1574.299999695737
+        }
+      },
+      "elapsedMs": 325055.5999999996,
+      "lastEditMs": 53.90000000037253,
+      "heap": {
+        "usedJSHeapSize": 83571086,
+        "totalJSHeapSize": 156212822,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1626,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1651,
+      "callbacks": 1651,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1651,
+          "p50": 52.6999999997206,
+          "p95": 57.799999999813735,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 84782.3000000054
+        },
+        "callback": {
+          "count": 1651,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.7000000006519258
+        },
+        "scheduleLateness": {
+          "count": 1651,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1597.6999996914528
+        }
+      },
+      "elapsedMs": 330043.0999999996,
+      "lastEditMs": 41.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 84368530,
+        "totalJSHeapSize": 149282930,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1651,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1676,
+      "callbacks": 1676,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1676,
+          "p50": 52.60000000009313,
+          "p95": 57.60000000009313,
+          "p99": 92.3000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 85953.70000000577
+        },
+        "callback": {
+          "count": 1676,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.7000000006519258
+        },
+        "scheduleLateness": {
+          "count": 1676,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1619.3999996865168
+        }
+      },
+      "elapsedMs": 335056.1999999997,
+      "lastEditMs": 54.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 83687666,
+        "totalJSHeapSize": 154903902,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1676,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1701,
+      "callbacks": 1701,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1701,
+          "p50": 52.60000000009313,
+          "p95": 57.5,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 87174.40000000736
+        },
+        "callback": {
+          "count": 1701,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.7000000006519258
+        },
+        "scheduleLateness": {
+          "count": 1701,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1642.7999996808358
+        }
+      },
+      "elapsedMs": 340045.7999999998,
+      "lastEditMs": 44.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 111280054,
+        "totalJSHeapSize": 166193594,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1701,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1726,
+      "callbacks": 1726,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1726,
+          "p50": 52.60000000009313,
+          "p95": 57.40000000037253,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 88364.10000000615
+        },
+        "callback": {
+          "count": 1726,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1726,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1663.699999677483
+        }
+      },
+      "elapsedMs": 345040.1999999997,
+      "lastEditMs": 38.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 77412830,
+        "totalJSHeapSize": 147565526,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1726,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1751,
+      "callbacks": 1751,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1751,
+          "p50": 52.59999999962747,
+          "p95": 57.40000000037253,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 89603.60000000475
+        },
+        "callback": {
+          "count": 1751,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1751,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1683.1999996737577
+        }
+      },
+      "elapsedMs": 350056.0999999996,
+      "lastEditMs": 54.3000000002794,
+      "heap": {
+        "usedJSHeapSize": 111393994,
+        "totalJSHeapSize": 167243970,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1751,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1776,
+      "callbacks": 1776,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1776,
+          "p50": 52.60000000009313,
+          "p95": 57.39999999990687,
+          "p99": 92.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 90935.40000000456
+        },
+        "callback": {
+          "count": 1776,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1776,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1704.6999996695668
+        }
+      },
+      "elapsedMs": 355055.5999999996,
+      "lastEditMs": 53.3000000002794,
+      "heap": {
+        "usedJSHeapSize": 97473494,
+        "totalJSHeapSize": 166638734,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1776,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1801,
+      "callbacks": 1801,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1801,
+          "p50": 52.6999999997206,
+          "p95": 57.3000000002794,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 92249.8000000054
+        },
+        "callback": {
+          "count": 1801,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1801,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1725.7999996636063
+        }
+      },
+      "elapsedMs": 360059.6999999997,
+      "lastEditMs": 57.3000000002794,
+      "heap": {
+        "usedJSHeapSize": 118228598,
+        "totalJSHeapSize": 174946394,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1801,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1826,
+      "callbacks": 1826,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1826,
+          "p50": 52.799999999813735,
+          "p95": 57.3000000002794,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 93569.60000000708
+        },
+        "callback": {
+          "count": 1826,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1826,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1752.0999996582977
+        }
+      },
+      "elapsedMs": 365049.6999999997,
+      "lastEditMs": 47.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 64415630,
+        "totalJSHeapSize": 141703366,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1826,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1851,
+      "callbacks": 1851,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1851,
+          "p50": 52.799999999813735,
+          "p95": 57.3000000002794,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 94850.10000000754
+        },
+        "callback": {
+          "count": 1851,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1851,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1779.8999996529892
+        }
+      },
+      "elapsedMs": 370056.6999999997,
+      "lastEditMs": 54.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 84647586,
+        "totalJSHeapSize": 155188730,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1851,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1876,
+      "callbacks": 1876,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1876,
+          "p50": 52.700000000186265,
+          "p95": 57.3000000002794,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 96084.8000000068
+        },
+        "callback": {
+          "count": 1876,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1876,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1803.4999996488914
+        }
+      },
+      "elapsedMs": 375046.7999999998,
+      "lastEditMs": 45.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 118623806,
+        "totalJSHeapSize": 174424806,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1876,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1901,
+      "callbacks": 1901,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1901,
+          "p50": 52.700000000186265,
+          "p95": 57.3000000002794,
+          "p99": 87.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 97281.40000000643
+        },
+        "callback": {
+          "count": 1901,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1901,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1821.999999645166
+        }
+      },
+      "elapsedMs": 380045.1999999997,
+      "lastEditMs": 43,
+      "heap": {
+        "usedJSHeapSize": 64900654,
+        "totalJSHeapSize": 148587346,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1901,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1926,
+      "callbacks": 1926,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1926,
+          "p50": 52.6999999997206,
+          "p95": 57.39999999990687,
+          "p99": 89.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 98548.50000000698
+        },
+        "callback": {
+          "count": 1926,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1926,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1844.6999996406958
+        }
+      },
+      "elapsedMs": 385041.3999999999,
+      "lastEditMs": 39.799999999813735,
+      "heap": {
+        "usedJSHeapSize": 85749626,
+        "totalJSHeapSize": 155584286,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1926,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1951,
+      "callbacks": 1951,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1951,
+          "p50": 52.60000000009313,
+          "p95": 57.3000000002794,
+          "p99": 89.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 99689.50000000745
+        },
+        "callback": {
+          "count": 1951,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1951,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1864.6999996360391
+        }
+      },
+      "elapsedMs": 390055.8999999999,
+      "lastEditMs": 53.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 71630038,
+        "totalJSHeapSize": 153406186,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1951,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 1976,
+      "callbacks": 1976,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 1976,
+          "p50": 52.6999999997206,
+          "p95": 57.3000000002794,
+          "p99": 89.79999999981374,
+          "max": 185.09999999962747,
+          "totalMs": 100997.20000000903
+        },
+        "callback": {
+          "count": 1976,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 1976,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1887.7999996305443
+        }
+      },
+      "elapsedMs": 395056.5999999996,
+      "lastEditMs": 55,
+      "heap": {
+        "usedJSHeapSize": 92791842,
+        "totalJSHeapSize": 160140982,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 1976,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2001,
+      "callbacks": 2001,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2001,
+          "p50": 52.6999999997206,
+          "p95": 57.3000000002794,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 102272.80000000866
+        },
+        "callback": {
+          "count": 2001,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2001,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1911.999999626074
+        }
+      },
+      "elapsedMs": 400039.1999999997,
+      "lastEditMs": 36.5,
+      "heap": {
+        "usedJSHeapSize": 78786214,
+        "totalJSHeapSize": 157176450,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2001,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2026,
+      "callbacks": 2026,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2026,
+          "p50": 52.6999999997206,
+          "p95": 57.299999999813735,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 103574.30000000959
+        },
+        "callback": {
+          "count": 2026,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2026,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1933.9999996209517
+        }
+      },
+      "elapsedMs": 405058.6999999997,
+      "lastEditMs": 56.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 119324454,
+        "totalJSHeapSize": 174954494,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2026,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2051,
+      "callbacks": 2051,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2051,
+          "p50": 52.700000000186265,
+          "p95": 57.299999999813735,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 104866.50000000792
+        },
+        "callback": {
+          "count": 2051,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2051,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 1958.9999996167608
+        }
+      },
+      "elapsedMs": 410048.7999999998,
+      "lastEditMs": 46.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 65601742,
+        "totalJSHeapSize": 148854890,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2051,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2076,
+      "callbacks": 2076,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2076,
+          "p50": 52.799999999813735,
+          "p95": 57.299999999813735,
+          "p99": 89.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 106197.10000000661
+        },
+        "callback": {
+          "count": 2076,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2076,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 2,
+          "max": 7.7999999998137355,
+          "totalMs": 1986.6999996122904
+        }
+      },
+      "elapsedMs": 415046.7999999998,
+      "lastEditMs": 44.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 72644942,
+        "totalJSHeapSize": 151329918,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2076,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2101,
+      "callbacks": 2101,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2101,
+          "p50": 52.799999999813735,
+          "p95": 57.299999999813735,
+          "p99": 87.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 107519.90000000736
+        },
+        "callback": {
+          "count": 2101,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2101,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2012.6999996076338
+        }
+      },
+      "elapsedMs": 420057.1999999997,
+      "lastEditMs": 54.8000000002794,
+      "heap": {
+        "usedJSHeapSize": 79153658,
+        "totalJSHeapSize": 153772178,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2101,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2126,
+      "callbacks": 2126,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2126,
+          "p50": 52.8000000002794,
+          "p95": 57.200000000186265,
+          "p99": 87.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 108783.70000000764
+        },
+        "callback": {
+          "count": 2126,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2126,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2038.8999996026978
+        }
+      },
+      "elapsedMs": 425056.6999999997,
+      "lastEditMs": 54.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 106614506,
+        "totalJSHeapSize": 160261358,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2126,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2151,
+      "callbacks": 2151,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2151,
+          "p50": 52.8000000002794,
+          "p95": 57.200000000186265,
+          "p99": 87.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 110085.50000000745
+        },
+        "callback": {
+          "count": 2151,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2151,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2062.8999995975755
+        }
+      },
+      "elapsedMs": 430057,
+      "lastEditMs": 55.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 86101850,
+        "totalJSHeapSize": 157018154,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2151,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2176,
+      "callbacks": 2176,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2176,
+          "p50": 52.89999999990687,
+          "p95": 57.200000000186265,
+          "p99": 87.10000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 111416.00000000792
+        },
+        "callback": {
+          "count": 2176,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2176,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2085.899999592919
+        }
+      },
+      "elapsedMs": 435057.0999999996,
+      "lastEditMs": 54.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 86915294,
+        "totalJSHeapSize": 147909190,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2176,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2201,
+      "callbacks": 2201,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2201,
+          "p50": 52.89999999990687,
+          "p95": 57.1999999997206,
+          "p99": 86.90000000037253,
+          "max": 185.09999999962747,
+          "totalMs": 112622.60000000708
+        },
+        "callback": {
+          "count": 2201,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2201,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2103.9999995883554
+        }
+      },
+      "elapsedMs": 440040.6999999997,
+      "lastEditMs": 39.10000000009313,
+      "heap": {
+        "usedJSHeapSize": 106980522,
+        "totalJSHeapSize": 160690042,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2201,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2226,
+      "callbacks": 2226,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2226,
+          "p50": 52.89999999990687,
+          "p95": 57.10000000009313,
+          "p99": 86.90000000037253,
+          "max": 185.09999999962747,
+          "totalMs": 113916.90000000736
+        },
+        "callback": {
+          "count": 2226,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.8000000007450581
+        },
+        "scheduleLateness": {
+          "count": 2226,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2127.699999583885
+        }
+      },
+      "elapsedMs": 445055.3999999999,
+      "lastEditMs": 53.59999999962747,
+      "heap": {
+        "usedJSHeapSize": 87268482,
+        "totalJSHeapSize": 152367438,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2226,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2251,
+      "callbacks": 2251,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2251,
+          "p50": 52.89999999990687,
+          "p95": 57.10000000009313,
+          "p99": 86.90000000037253,
+          "max": 185.09999999962747,
+          "totalMs": 115207.8000000082
+        },
+        "callback": {
+          "count": 2251,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.9000000008381903
+        },
+        "scheduleLateness": {
+          "count": 2251,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2153.999999579042
+        }
+      },
+      "elapsedMs": 450056.3999999999,
+      "lastEditMs": 54.700000000186265,
+      "heap": {
+        "usedJSHeapSize": 107219454,
+        "totalJSHeapSize": 163313282,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2251,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2276,
+      "callbacks": 2276,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2276,
+          "p50": 52.89999999990687,
+          "p95": 57.1999999997206,
+          "p99": 86.90000000037253,
+          "max": 185.09999999962747,
+          "totalMs": 116564.80000000773
+        },
+        "callback": {
+          "count": 2276,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.9000000008381903
+        },
+        "scheduleLateness": {
+          "count": 2276,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2178.899999574758
+        }
+      },
+      "elapsedMs": 455058.1999999997,
+      "lastEditMs": 56.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 93175102,
+        "totalJSHeapSize": 164461134,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2276,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2301,
+      "callbacks": 2301,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2301,
+          "p50": 52.89999999990687,
+          "p95": 57.10000000009313,
+          "p99": 86.70000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 117834.50000000745
+        },
+        "callback": {
+          "count": 2301,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.9000000008381903
+        },
+        "scheduleLateness": {
+          "count": 2301,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2204.4999995706603
+        }
+      },
+      "elapsedMs": 460057.2999999998,
+      "lastEditMs": 55.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 94472110,
+        "totalJSHeapSize": 157269098,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2301,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2326,
+      "callbacks": 2326,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2326,
+          "p50": 53,
+          "p95": 57.10000000009313,
+          "p99": 86.70000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 119185.10000000615
+        },
+        "callback": {
+          "count": 2326,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 0.9000000008381903
+        },
+        "scheduleLateness": {
+          "count": 2326,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2231.7999995667487
+        }
+      },
+      "elapsedMs": 465056.5,
+      "lastEditMs": 53.6999999997206,
+      "heap": {
+        "usedJSHeapSize": 86829594,
+        "totalJSHeapSize": 154501318,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2326,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2351,
+      "callbacks": 2351,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2351,
+          "p50": 53,
+          "p95": 57.10000000009313,
+          "p99": 86.70000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 120506.2000000067
+        },
+        "callback": {
+          "count": 2351,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2351,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2256.1999995615333
+        }
+      },
+      "elapsedMs": 470056.1999999997,
+      "lastEditMs": 53.799999999813735,
+      "heap": {
+        "usedJSHeapSize": 86942918,
+        "totalJSHeapSize": 155714634,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2351,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2376,
+      "callbacks": 2376,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2376,
+          "p50": 53,
+          "p95": 57.10000000009313,
+          "p99": 86.70000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 121835.00000000652
+        },
+        "callback": {
+          "count": 2376,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2376,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2281.399999557063
+        }
+      },
+      "elapsedMs": 475057.6999999997,
+      "lastEditMs": 55.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 93771470,
+        "totalJSHeapSize": 164464734,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2376,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2401,
+      "callbacks": 2401,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2401,
+          "p50": 53,
+          "p95": 57.10000000009313,
+          "p99": 85.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 123065.10000000615
+        },
+        "callback": {
+          "count": 2401,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2401,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2307.6999995526858
+        }
+      },
+      "elapsedMs": 480057.7999999998,
+      "lastEditMs": 55.700000000186265,
+      "heap": {
+        "usedJSHeapSize": 93779554,
+        "totalJSHeapSize": 166579170,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2401,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2426,
+      "callbacks": 2426,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2426,
+          "p50": 53,
+          "p95": 57.10000000009313,
+          "p99": 85.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 124413.90000000596
+        },
+        "callback": {
+          "count": 2426,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2426,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2334.599999547936
+        }
+      },
+      "elapsedMs": 485059,
+      "lastEditMs": 56.299999999813735,
+      "heap": {
+        "usedJSHeapSize": 108044774,
+        "totalJSHeapSize": 169185054,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2426,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2451,
+      "callbacks": 2451,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2451,
+          "p50": 53,
+          "p95": 57.1999999997206,
+          "p99": 85.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 125680.00000000745
+        },
+        "callback": {
+          "count": 2451,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2451,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2361.099999542348
+        }
+      },
+      "elapsedMs": 490058.2999999998,
+      "lastEditMs": 55.5,
+      "heap": {
+        "usedJSHeapSize": 87546474,
+        "totalJSHeapSize": 164205146,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2451,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2476,
+      "callbacks": 2476,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2476,
+          "p50": 53,
+          "p95": 57.200000000186265,
+          "p99": 85.60000000009313,
+          "max": 185.09999999962747,
+          "totalMs": 126924.2000000067
+        },
+        "callback": {
+          "count": 2476,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2476,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2384.1999995377846
+        }
+      },
+      "elapsedMs": 495058.8999999999,
+      "lastEditMs": 56.5,
+      "heap": {
+        "usedJSHeapSize": 101718774,
+        "totalJSHeapSize": 165942678,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2476,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2501,
+      "callbacks": 2501,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2501,
+          "p50": 53,
+          "p95": 57.200000000186265,
+          "p99": 84.8000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 128222.50000000652
+        },
+        "callback": {
+          "count": 2501,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2501,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2411.6999995340593
+        }
+      },
+      "elapsedMs": 500052.7999999998,
+      "lastEditMs": 49.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 80814410,
+        "totalJSHeapSize": 160438482,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2501,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2526,
+      "callbacks": 2526,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2526,
+          "p50": 53,
+          "p95": 57.200000000186265,
+          "p99": 84.8000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 129562.60000000568
+        },
+        "callback": {
+          "count": 2526,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2526,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2435.899999529589
+        }
+      },
+      "elapsedMs": 505057.5999999996,
+      "lastEditMs": 56.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 95560150,
+        "totalJSHeapSize": 162176014,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2526,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2551,
+      "callbacks": 2551,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2551,
+          "p50": 53,
+          "p95": 57.200000000186265,
+          "p99": 84.8000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 130758.60000000522
+        },
+        "callback": {
+          "count": 2551,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2551,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2458.4999995250255
+        }
+      },
+      "elapsedMs": 510058.2999999998,
+      "lastEditMs": 55.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 74795674,
+        "totalJSHeapSize": 156671818,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2551,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2576,
+      "callbacks": 2576,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2576,
+          "p50": 53,
+          "p95": 57.200000000186265,
+          "p99": 84.8000000002794,
+          "max": 185.09999999962747,
+          "totalMs": 132116.20000000345
+        },
+        "callback": {
+          "count": 2576,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2576,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2483.999999520369
+        }
+      },
+      "elapsedMs": 515056.6999999997,
+      "lastEditMs": 54.5,
+      "heap": {
+        "usedJSHeapSize": 88824126,
+        "totalJSHeapSize": 158409350,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2576,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2601,
+      "callbacks": 2601,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2601,
+          "p50": 53.09999999962747,
+          "p95": 57.10000000009313,
+          "p99": 83.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 133445.40000000363
+        },
+        "callback": {
+          "count": 2601,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.0000000009313226
+        },
+        "scheduleLateness": {
+          "count": 2601,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2507.699999516364
+        }
+      },
+      "elapsedMs": 520055.0999999996,
+      "lastEditMs": 53,
+      "heap": {
+        "usedJSHeapSize": 89075658,
+        "totalJSHeapSize": 159098378,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2601,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2626,
+      "callbacks": 2626,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2626,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 83.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 134779.6000000029
+        },
+        "callback": {
+          "count": 2626,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.1000000010244548
+        },
+        "scheduleLateness": {
+          "count": 2626,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2533.3999995123595
+        }
+      },
+      "elapsedMs": 525058.2999999998,
+      "lastEditMs": 55.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 75146474,
+        "totalJSHeapSize": 157198806,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2626,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2651,
+      "callbacks": 2651,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2651,
+          "p50": 53.10000000009313,
+          "p95": 57.1999999997206,
+          "p99": 83.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 136076.30000000354
+        },
+        "callback": {
+          "count": 2651,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.1000000010244548
+        },
+        "scheduleLateness": {
+          "count": 2651,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2557.499999507796
+        }
+      },
+      "elapsedMs": 530056.7999999998,
+      "lastEditMs": 54.59999999962747,
+      "heap": {
+        "usedJSHeapSize": 89153690,
+        "totalJSHeapSize": 159460626,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2651,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2676,
+      "callbacks": 2676,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2676,
+          "p50": 53.10000000009313,
+          "p95": 57.200000000186265,
+          "p99": 83.20000000018626,
+          "max": 185.09999999962747,
+          "totalMs": 137426.90000000363
+        },
+        "callback": {
+          "count": 2676,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2676,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2584.599999502767
+        }
+      },
+      "elapsedMs": 535059.2999999998,
+      "lastEditMs": 56.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 82025826,
+        "totalJSHeapSize": 158773614,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2676,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2701,
+      "callbacks": 2701,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2701,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 82,
+          "max": 185.09999999962747,
+          "totalMs": 138715.3000000012
+        },
+        "callback": {
+          "count": 2701,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2701,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2611.0999994990416
+        }
+      },
+      "elapsedMs": 540057.3999999999,
+      "lastEditMs": 54.1999999997206,
+      "heap": {
+        "usedJSHeapSize": 101630282,
+        "totalJSHeapSize": 170079906,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2701,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2726,
+      "callbacks": 2726,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2726,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 82,
+          "max": 185.09999999962747,
+          "totalMs": 139960.1000000001
+        },
+        "callback": {
+          "count": 2726,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2726,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2632.5999994953163
+        }
+      },
+      "elapsedMs": 545058.0999999996,
+      "lastEditMs": 55.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 116080670,
+        "totalJSHeapSize": 173226462,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2726,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2751,
+      "callbacks": 2751,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2751,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 82,
+          "max": 185.09999999962747,
+          "totalMs": 141209.90000000084
+        },
+        "callback": {
+          "count": 2751,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2751,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2658.5999994906597
+        }
+      },
+      "elapsedMs": 550050.6999999997,
+      "lastEditMs": 47.8000000002794,
+      "heap": {
+        "usedJSHeapSize": 102253286,
+        "totalJSHeapSize": 168082858,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2751,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2776,
+      "callbacks": 2776,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2776,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 82,
+          "max": 185.09999999962747,
+          "totalMs": 142367.00000000233
+        },
+        "callback": {
+          "count": 2776,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2776,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2681.0999994850717
+        }
+      },
+      "elapsedMs": 555046,
+      "lastEditMs": 43.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 123003782,
+        "totalJSHeapSize": 176472438,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2776,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2801,
+      "callbacks": 2801,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2801,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 81.6999999997206,
+          "max": 185.09999999962747,
+          "totalMs": 143666.9000000027
+        },
+        "callback": {
+          "count": 2801,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2801,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2706.3999994806945
+        }
+      },
+      "elapsedMs": 560056.5,
+      "lastEditMs": 53.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 102367186,
+        "totalJSHeapSize": 172803250,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2801,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2826,
+      "callbacks": 2826,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2826,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 81.6999999997206,
+          "max": 185.09999999962747,
+          "totalMs": 144988.40000000177
+        },
+        "callback": {
+          "count": 2826,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2826,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2731.3999994765036
+        }
+      },
+      "elapsedMs": 565047,
+      "lastEditMs": 44.200000000186265,
+      "heap": {
+        "usedJSHeapSize": 102632374,
+        "totalJSHeapSize": 174016566,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2826,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2851,
+      "callbacks": 2851,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2851,
+          "p50": 53.10000000009313,
+          "p95": 57.10000000009313,
+          "p99": 81.6999999997206,
+          "max": 185.09999999962747,
+          "totalMs": 146246.300000004
+        },
+        "callback": {
+          "count": 2851,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2851,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2755.3999994713813
+        }
+      },
+      "elapsedMs": 570047.5999999996,
+      "lastEditMs": 45,
+      "heap": {
+        "usedJSHeapSize": 102613114,
+        "totalJSHeapSize": 175082426,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2851,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2876,
+      "callbacks": 2876,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2876,
+          "p50": 53.10000000009313,
+          "p95": 57.09999999962747,
+          "p99": 81.6999999997206,
+          "max": 185.09999999962747,
+          "totalMs": 147535.10000000568
+        },
+        "callback": {
+          "count": 2876,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2876,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2778.799999466166
+        }
+      },
+      "elapsedMs": 575058.5999999996,
+      "lastEditMs": 55.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 116893954,
+        "totalJSHeapSize": 175066870,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2876,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2901,
+      "callbacks": 2901,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2901,
+          "p50": 53.10000000009313,
+          "p95": 57,
+          "p99": 81.5,
+          "max": 185.09999999962747,
+          "totalMs": 148841.70000000577
+        },
+        "callback": {
+          "count": 2901,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2901,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2802.4999994616956
+        }
+      },
+      "elapsedMs": 580058.3999999999,
+      "lastEditMs": 55.90000000037253,
+      "heap": {
+        "usedJSHeapSize": 110548482,
+        "totalJSHeapSize": 175133162,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2901,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2926,
+      "callbacks": 2926,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2926,
+          "p50": 53.1999999997206,
+          "p95": 57,
+          "p99": 81.5,
+          "max": 185.09999999962747,
+          "totalMs": 150185.2000000067
+        },
+        "callback": {
+          "count": 2926,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2926,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2829.099999457132
+        }
+      },
+      "elapsedMs": 585058.0999999996,
+      "lastEditMs": 54.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 83199658,
+        "totalJSHeapSize": 166646934,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2926,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2951,
+      "callbacks": 2951,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2951,
+          "p50": 53.1999999997206,
+          "p95": 57,
+          "p99": 81.5,
+          "max": 185.09999999962747,
+          "totalMs": 151500.40000000782
+        },
+        "callback": {
+          "count": 2951,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2951,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2854.8999994518235
+        }
+      },
+      "elapsedMs": 590057.1999999997,
+      "lastEditMs": 54.60000000009313,
+      "heap": {
+        "usedJSHeapSize": 90686982,
+        "totalJSHeapSize": 166106946,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2951,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 2976,
+      "callbacks": 2976,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 2976,
+          "p50": 53.1999999997206,
+          "p95": 57,
+          "p99": 81.5,
+          "max": 185.09999999962747,
+          "totalMs": 152828.4000000069
+        },
+        "callback": {
+          "count": 2976,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 2976,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2876.4999994463287
+        }
+      },
+      "elapsedMs": 595056,
+      "lastEditMs": 52.89999999990687,
+      "heap": {
+        "usedJSHeapSize": 109853602,
+        "totalJSHeapSize": 181984734,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 2976,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "completed": false
+    },
+    {
+      "edits": 3000,
+      "callbacks": 3000,
+      "errors": [],
+      "timings": {
+        "edit": {
+          "count": 3000,
+          "p50": 53.1999999997206,
+          "p95": 57,
+          "p99": 81.5,
+          "max": 185.09999999962747,
+          "totalMs": 154056.80000000587
+        },
+        "callback": {
+          "count": 3000,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0.10000000009313226,
+          "totalMs": 1.200000001117587
+        },
+        "scheduleLateness": {
+          "count": 3000,
+          "p50": 1,
+          "p95": 1.6999999997206032,
+          "p99": 1.8999999999068677,
+          "max": 7.7999999998137355,
+          "totalMs": 2900.799999442417
+        }
+      },
+      "elapsedMs": 599856,
+      "lastEditMs": 53.39999999990687,
+      "heap": {
+        "usedJSHeapSize": 91116810,
+        "totalJSHeapSize": 156589606,
+        "jsHeapSizeLimit": 4395630592
+      },
+      "undoEntries": 3000,
+      "lastUndoEntryEncodedBytes": 2453190,
+      "undoStorage": {
+        "sequenceReferences": 24000,
+        "sequenceVersions": 3002,
+        "chunkReferences": 588196,
+        "uniqueChunks": 3196,
+        "uniqueSlots": 321000,
+        "cacheEntries": 1
+      },
+      "completed": true
+    }
+  ],
+  "diagnostics": {
+    "stderr": "\nDevTools listening on ws://127.0.0.1:51020/devtools/browser/027c1e32-3bb9-4e15-b8c6-032d5e1a33bb\nTrying to load the allocator multiple times. This is *not* supported.\n[11364:90122:0918/092711.670085:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092711.670640:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092711.679537:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092711.679606:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092711.681317:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092711.681386:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092711.681567:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092711.681624:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092711.681761:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092711.681812:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092711.698454:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092711.698515:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092713.696755:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092713.696922:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11352:90088:0918/092714.423907:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[11364:90122:0918/092714.508770:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092714.508922:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092714.670593:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092714.670747:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092714.858414:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092714.858551:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092714.991934:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092714.992089:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092715.191923:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092715.192109:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092715.220391:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092715.220510:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90122:0918/092715.460397:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\n[11364:90183:0918/092715.460503:ERROR:ui/display/mac/cv_display_link_mac.mm:195] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670\nCreated TensorFlow Lite XNNPACK delegate for CPU.\n[11448:91296:0918/092730.063234:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake-all --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[11448:91296:0918/092730.063779:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 2968, parent pid: 11352\n[11448:91296:0918/092730.065966:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11448:91296:0918/092730.065984:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11448:91296:0918/092730.066072:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[11450:91300:0918/092730.076136:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[11450:91300:0918/092730.076637:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 2968, parent pid: 1\n[11450:91300:0918/092730.078642:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11450:91300:0918/092730.078659:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11450:91300:0918/092730.078751:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[11448:91296:0918/092730.079248:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[11448:91296:0918/092730.080127:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[11448:91296:0918/092730.080214:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[11448:91296:0918/092730.080304:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[11448:91296:0918/092730.080515:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[11448:91308:0918/092730.080849:VERBOSE1:chrome/updater/app/app_wakeall.cc:58] Launching `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake`\n[11451:91312:0918/092730.091651:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[11451:91312:0918/092730.092220:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 2968, parent pid: 11448\n[11451:91312:0918/092730.094532:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11451:91312:0918/092730.094549:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11451:91312:0918/092730.094632:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[11453:91316:0918/092730.106338:VERBOSE1:chrome/updater/updater.cc:374] Version: 152.0.7933.0, opt, ARM_64, command line: /Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --database=/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=152.0.7933.0 --handshake-fd=6 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2\n[11453:91316:0918/092730.106868:VERBOSE1:chrome/updater/updater.cc:377] OS version: 15.5.0, arch: arm64, System uptime (seconds): 2968, parent pid: 1\n[11453:91316:0918/092730.108927:VERBOSE1:chrome/updater/updater.cc:382] Available disk space in install directory (/Users/iianneill/Library/Application Support/Google/GoogleUpdater): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11453:91316:0918/092730.108942:VERBOSE1:chrome/updater/updater.cc:386] Available disk space in temporary directory (/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/): 26735116288B (24.899GiB) / 245107195904B (228.274GiB)\n[11453:91316:0918/092730.109032:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS START event to the history log\n[11451:91312:0918/092730.109540:VERBOSE1:chrome/updater/crash_reporter.cc:124] Crash handler launched and ready.\n[11451:91312:0918/092730.110384:VERBOSE1:chrome/updater/crash_client.cc:108] Found 0 completed crash reports\n[11451:91312:0918/092730.110469:VERBOSE1:chrome/updater/crash_client.cc:132] Found 0 pending crash reports\n[11451:91312:0918/092730.110556:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /Users/iianneill/Library/Application Support/Google/RLZ/Crashpad/settings.dat: No such file or directory (2)\n[11451:91312:0918/092730.110771:VERBOSE1:chrome/updater/updater.cc:105] Crash reporting initialized.\n[11451:91312:0918/092730.110974:VERBOSE1:chrome/updater/ipc/update_service_internal_proxy_mojo.cc:61] Run\n[11352:90088:0918/092744.701196:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[11451:91312:0918/092746.811048:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[11451:91312:0918/092746.816599:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[11451:91312:0918/092746.816649:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake) returned 0.\n[11448:91308:0918/092746.882976:VERBOSE1:chrome/updater/app/app_wakeall.cc:68] `/Users/iianneill/Library/Application Support/Google/GoogleUpdater/152.0.7933.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake` exited 0\n[11448:91296:0918/092746.883919:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0\n[11448:91296:0918/092746.884503:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[11448:91296:0918/092746.884544:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--wake-all) returned 0.\n[11453:91316:0918/092756.818752:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[11453:91316:0918/092756.818795:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[11450:91300:0918/092756.819830:VERBOSE2:chrome/updater/event_history.cc:265] Emitted a UPDATER_PROCESS END event to the history log\n[11450:91300:0918/092756.819866:VERBOSE1:chrome/updater/updater.cc:419] UpdaterMain (--crash-handler) returned 0.\n[11352:90088:0918/092845.006993:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\nTrying to load the allocator multiple times. This is *not* supported.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1789687811.320072   94743 environment.cc:525] Selected adapter: Apple M1, arch=metal-3, vendor=apple, backend=Metal, adapterType=Integrated GPU\nI0000 00:00:1789687811.328962   94753 environment.cc:525] Selected adapter: Apple M1, arch=metal-3, vendor=apple, backend=Metal, adapterType=Integrated GPU\n[11352:90088:0918/093041.312449:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n[11352:90088:0918/093436.186639:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT\n",
+    "crashes": []
+  }
+}

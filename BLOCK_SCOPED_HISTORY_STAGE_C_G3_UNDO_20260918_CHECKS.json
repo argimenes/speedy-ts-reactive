@@ -1,0 +1,196 @@
+{
+  "sourceRevision": "c181f35d4e7d6f7ef5fddf9ab0018bdb211218f3",
+  "checks": [
+    {
+      "command": "npm test",
+      "exitCode": 1,
+      "output": "\n> speedy-ts-reactive@0.0.0 test\n> vitest run\n\n\n RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive\n\n[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`\n \u276f scripts/stage-c-gates/storage.test.mjs (0 test)\n \u2713 src/block-tree/block-tree.test.ts (18 tests) 48ms\n \u2713 src/block-tree/portable-spike/codec.test.ts (31 tests) 106ms\n \u2713 src/block-tree/commit-capture.test.ts (10 tests) 571ms\n \u2713 src/block-tree/identity.test.ts (10 tests) 84ms\n \u2713 src/history/history.test.ts (10 tests) 123ms\n \u2713 src/rendering/window-icon.test.tsx (6 tests) 659ms\n   \u2713 Window icon minimization > keeps one Block identity, follows metadata through history and restores focus, selection, geometry and children 301ms\n \u2713 src/rendering/standoff-editor-view.test.tsx (21 tests) 968ms\n \u2713 src/rendering/annotation-monitor.test.tsx (16 tests) 988ms\n \u2713 src/rendering/block-selection.test.tsx (17 tests) 1263ms\n \u2713 src/rendering/cross-block-selection.test.tsx (16 tests) 1348ms\n \u2713 src/history/stage-c-gates/resource.test.ts (9 tests) 67ms\n \u2713 src/runtime/entity-candidates.test.ts (11 tests) 875ms\n   \u2713 entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 543ms\n \u2713 src/runtime/text-search.test.ts (11 tests) 917ms\n   \u2713 scoped text search > does no search or snapshots synchronously on edit; only rematches dirty content 635ms\n \u2713 src/rendering/entity-candidates.test.tsx (8 tests) 803ms\n \u2713 src/demo/workspace-demo.test.tsx (9 tests) 4150ms\n   \u2713 WorkspaceDemo > keeps inactive document tabs unmounted and flips card faces in one surface 1258ms\n   \u2713 WorkspaceDemo > loads the YouTube player paused by default 359ms\n   \u2713 WorkspaceDemo > renders margin relations in named gutters and sticky tabs on the window edge 300ms\n   \u2713 WorkspaceDemo > resizes the initial Document shell and exposes collapsed margins without editing the Document 367ms\n   \u2713 WorkspaceDemo > minimizes the demo document to the shared draggable document icon 464ms\n   \u2713 WorkspaceDemo > records editing and recreates pristine state on reset 625ms\n   \u2713 WorkspaceDemo > loads a whole Workspace into the canonical host and saves its manifest separately from its Document 461ms\n \u276f src/rendering/block-context-menu.test.tsx (7 tests | 2 failed) 511ms\n   \u00d7 Block context menu > deletes the clicked Block rather than stale focus and undoes the operation 29ms\n     \u2192 Missing menu item Delete Block: undefined\n   \u00d7 Block context menu > adds, activates, renames, reorders and deletes tabs using their label targets 66ms\n     \u2192 Cannot read properties of undefined (reading 'ownerKey')\n \u2713 src/rendering/timer-block.test.tsx (3 tests) 253ms\n \u2713 src/demo/document-browser.test.tsx (6 tests) 3573ms\n   \u2713 workspace document controls > saves an unnamed edited document before continuing a reset 1172ms\n   \u2713 workspace document controls > discards only unsaved edits when closing and restores the last saved copy on reopen 580ms\n   \u2713 workspace document controls > browses nested folders, loads unchanged legacy data, saves edits, and reopens a saved copy 741ms\n   \u2713 workspace document controls > protects edits on reset and open, and keeps the editor intact when loading fails 467ms\n   \u2713 workspace document controls > requires explicit overwrite and restores focus when the browser is cancelled 549ms\n \u2713 src/history/preplan-spike/preplan.test.ts (15 tests) 393ms\n \u2713 src/reactive-editor/persistence.test.ts (6 tests) 83ms\n \u2713 src/block-tree/undo-storage-parity.test.ts (7 tests) 7402ms\n   \u2713 ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 7129 3224ms\n   \u2713 ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 305419896 2273ms\n   \u2713 ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 3735928559 1574ms\n \u2713 src/rendering/page-minimap.test.tsx (2 tests) 259ms\n \u2713 src/history/edge-cases.test.ts (10 tests) 139ms\n \u2713 src/rendering/document-find.test.tsx (4 tests) 394ms\n \u2713 src/rendering/sticky-note.test.tsx (5 tests) 234ms\n \u2713 server/workspace-store.test.ts (5 tests) 242ms\n \u2713 src/block-tree/inline-performance.test.ts (14 tests) 5744ms\n   \u2713 incremental inline editing (capture=false) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 979ms\n   \u2713 incremental inline editing (capture=false) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 1727ms\n   \u2713 incremental inline editing (capture=true) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 807ms\n   \u2713 incremental inline editing (capture=true) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 1827ms\n \u2713 src/runtime/concertina.test.tsx (5 tests) 305ms\n \u2713 src/rendering/document-entity-list.test.tsx (4 tests) 568ms\n \u2713 src/rendering/entity-search.test.tsx (4 tests) 446ms\n \u2713 src/block-tree/compact-changes.test.ts (9 tests) 6318ms\n   \u2713 compact exact capture > copies only changed sequence keys for 5600 character typing and undo 987ms\n   \u2713 compact exact capture > copies only changed sequence keys for 25000 character typing and undo 5001ms\n \u2713 src/block-tree/definition-ownership.test.ts (9 tests) 86ms\n \u2713 src/history/stage-c-gates/ownership-lifetime.test.ts (4 tests) 30ms\n \u2713 src/history/stage-c-gates/query.test.ts (3 tests) 21ms\n \u2713 src/history/stage-c-gates/definitions.test.ts (3 tests) 32ms\n \u2713 src/rendering/background-media.test.tsx (4 tests) 317ms\n \u2713 src/reactive-editor/workspace-manifest.test.ts (4 tests) 59ms\n \u2713 server/document-store.test.ts (6 tests) 304ms\n \u2713 src/rendering/document-style-bar.test.tsx (4 tests) 317ms\n \u2713 src/rendering/standoff-styles.test.ts (6 tests) 5ms\n \u2713 src/rendering/text-tabs.test.tsx (3 tests) 399ms\n \u2713 src/history/stage-c-gates/portable.test.ts (4 tests) 29ms\n \u2713 src/block-tree/cross-text-edit.test.ts (7 tests) 118ms\n \u2713 src/block-tree/undo-storage.test.ts (5 tests) 2553ms\n   \u2713 private undo sequence storage > round-trips every stored version across seeded insertion, deletion and replacement 486ms\n   \u2713 private undo sequence storage > shares unchanged 25k sequences and bounds fragmentation across repeated small edits 2051ms\n \u2713 src/runtime/block-clipboard.test.ts (3 tests) 124ms\n \u2713 src/runtime/document-counts.test.ts (5 tests) 427ms\n   \u2713 cached text counts > does no counting or snapshots on keystrokes and recounts only the edited Block in a large document 329ms\n \u2713 src/input/bindings.test.ts (4 tests) 11ms\n \u2713 src/rendering/page-creation.test.tsx (2 tests) 186ms\n \u2713 server/entity-search.test.ts (3 tests) 209ms\n \u2713 src/rendering/plain-text-block-view.test.tsx (2 tests) 83ms\n \u2713 src/rendering/floating-window-resize.test.tsx (2 tests) 27ms\n \u2713 src/history/stage-c-gates/incremental.test.ts (4 tests) 8615ms\n   \u2713 G3 incremental owned capture > keeps single-character packets edit-sized and ignores large foreign state 8104ms\n \u2713 src/runtime/document-entities.test.ts (2 tests) 44ms\n \u2713 src/input/graphemes.test.ts (3 tests) 32ms\n \u2713 src/block-tree/margin-commands.test.ts (3 tests) 69ms\n \u2713 src/rendering/decorations.test.ts (2 tests) 3ms\n \u2713 src/rendering/candidate-exclusion-layout.test.ts (3 tests) 2ms\n \u2713 src/demo/workspace-background.test.tsx (1 test) 703ms\n   \u2713 keeps the document, caret and file actions across background changes and document-session reset 701ms\n \u2713 src/rendering/stable-background.test.tsx (1 test) 89ms\n \u2713 src/block-tree/compatibility-fixtures.test.ts (2 tests) 4ms\n \u2713 src/demo/dev-proxy.test.ts (6 tests) 3ms\n \u2713 src/block-tree/split-performance.test.ts (12 tests) 14087ms\n   \u2713 incremental paragraph splitting (capture=false) > inserts empty siblings across shared parent views without touching existing paragraphs 1079ms\n   \u2713 incremental paragraph splitting (capture=false) > rejects a nonempty or detached paragraph from the empty insertion fast path 855ms\n   \u2713 incremental paragraph splitting (capture=false) > splits and restores annotations and Cell identities without snapshots, including redo and another split 1248ms\n   \u2713 incremental paragraph splitting (capture=false) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 2134ms\n   \u2713 incremental paragraph splitting (capture=false) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 921ms\n   \u2713 incremental paragraph splitting (capture=false) > falls back safely for inline atoms and maintains indexes for the next plain-text split 1400ms\n   \u2713 incremental paragraph splitting (capture=true) > inserts empty siblings across shared parent views without touching existing paragraphs 781ms\n   \u2713 incremental paragraph splitting (capture=true) > rejects a nonempty or detached paragraph from the empty insertion fast path 681ms\n   \u2713 incremental paragraph splitting (capture=true) > splits and restores annotations and Cell identities without snapshots, including redo and another split 1200ms\n   \u2713 incremental paragraph splitting (capture=true) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 2033ms\n   \u2713 incremental paragraph splitting (capture=true) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 988ms\n   \u2713 incremental paragraph splitting (capture=true) > falls back safely for inline atoms and maintains indexes for the next plain-text split 763ms\n\n\u23af\u23af\u23af\u23af\u23af\u23af Failed Suites 1 \u23af\u23af\u23af\u23af\u23af\u23af\u23af\n\n FAIL  scripts/stage-c-gates/storage.test.mjs [ scripts/stage-c-gates/storage.test.mjs ]\nTypeError: The URL must be of scheme file\n \u276f scripts/stage-c-gates/filesystem.mjs:10:16\n      8| export const fileIdentity = stat => ({ dev: String(stat.dev), ino: Str\u2026\n      9| const same = (a, b) => a.dev === b.dev && a.ino === b.ino;\n     10| const worker = fileURLToPath(new URL('./filesystem-worker.mjs', import\u2026\n       |                ^\n     11| const sessions = new Map();\n     12| function sessionFor(lockFd) {\n \u276f scripts/stage-c-gates/store.mjs:3:31\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af[1/3]\u23af\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af Failed Tests 2 \u23af\u23af\u23af\u23af\u23af\u23af\u23af\n\n FAIL  src/rendering/block-context-menu.test.tsx > Block context menu > deletes the clicked Block rather than stale focus and undoes the operation\nError: Missing menu item Delete Block: undefined\n \u276f menuButton src/rendering/block-context-menu.test.tsx:23:22\n     21| function menuButton(label: string) {\n     22|   const button = [...document.querySelectorAll<HTMLButtonElement>(\".re\u2026\n     23|   if (!button) throw new Error(`Missing menu item ${label}: ${document\u2026\n       |                      ^\n     24|   return button;\n     25| }\n \u276f src/rendering/block-context-menu.test.tsx:54:5\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af[2/3]\u23af\n\n FAIL  src/rendering/block-context-menu.test.tsx > Block context menu > adds, activates, renames, reorders and deletes tabs using their label targets\nTypeError: Cannot read properties of undefined (reading 'ownerKey')\n \u276f src/rendering/block-context-menu.test.tsx:74:143\n\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af[3/3]\u23af\n\n Test Files  2 failed | 61 passed (63)\n      Tests  2 failed | 429 passed (431)\n   Start at  11:31:44\n   Duration  22.00s (transform 6.30s, setup 0ms, collect 30.69s, tests 68.82s, environment 31.00s, prepare 5.66s)\n\n"
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "output": "\n> speedy-ts-reactive@0.0.0 typecheck\n> tsc --noEmit --project tsconfig.reactive.json && tsc --noEmit --project tsconfig.server.json\n\n"
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "output": "\n> speedy-ts-reactive@0.0.0 build\n> npm run build:client && npm run build:server\n\n\n> speedy-ts-reactive@0.0.0 build:client\n> vite build\n\nvite v4.5.14 building for production...\ntransforming...\n[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`\n\u2713 148 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                               0.65 kB \u2502 gzip:   0.39 kB\ndist/assets/text-count-worker-ff73449a.js     0.67 kB\ndist/assets/search.worker-15a72c52.js         1.62 kB\ndist/assets/favicon-0e726a38.ico             15.09 kB\ndist/assets/medieval-template-ca17e3d1.jpg  567.21 kB\ndist/assets/index-47683f25.css               53.95 kB \u2502 gzip:  11.29 kB\ndist/assets/index-421bdb36.js                37.06 kB \u2502 gzip:   9.30 kB \u2502 map:    51.01 kB\ndist/assets/index-cb5486ca.js               475.80 kB \u2502 gzip: 139.84 kB \u2502 map: 1,520.19 kB\n\u2713 built in 4.57s\n\n> speedy-ts-reactive@0.0.0 build:server\n> tsc --project tsconfig.server.json\n\n"
+    },
+    {
+      "command": "./node_modules/.bin/tsc --noEmit --target ESNext --module ESNext --moduleResolution bundler --skipLibCheck --lib ESNext,DOM,WebWorker scripts/stage-c-gates/cost-browser.ts scripts/stage-c-gates/cost-worker.ts",
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "command": "npm test -- src/block-tree/undo-storage.test.ts src/block-tree/undo-storage-parity.test.ts",
+      "phase": "Before sustained qualification",
+      "exitCode": 0,
+      "output": "\n> speedy-ts-reactive@0.0.0 test\n> vitest run src/block-tree/undo-storage.test.ts src/block-tree/undo-storage-parity.test.ts\n\n\n RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive\n\n \u2713 src/block-tree/undo-storage.test.ts (5 tests) 6141ms\n   \u2713 private undo sequence storage > round-trips every stored version across seeded insertion, deletion and replacement 1189ms\n   \u2713 private undo sequence storage > shares unchanged 25k sequences and bounds fragmentation across repeated small edits 4933ms\n \u2713 src/block-tree/undo-storage-parity.test.ts (7 tests) 10913ms\n   \u2713 ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 7129 4666ms\n   \u2713 ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 305419896 3392ms\n   \u2713 ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 3735928559 2548ms\n\n Test Files  2 passed (2)\n      Tests  12 passed (12)\n   Start at  09:15:46\n   Duration  13.17s (transform 544ms, setup 0ms, collect 785ms, tests 17.05s, environment 1.96s, prepare 343ms)\n\n"
+    }
+  ],
+  "sourcePreservation": [
+    {
+      "path": "scripts/stage-c-gates/cost.mjs",
+      "sha256": "1fa6581f90c21d45c70c09bb656e2f30ebe581df09c6473da404b9b816be2251",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "scripts/stage-c-gates/cost-control.mjs",
+      "sha256": "27623e9de8e3e5dd268e287ab9bb462a1e95b8881e0bb4a2dd6ce91ef350564f",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "scripts/stage-c-gates/cost-browser.ts",
+      "sha256": "37c22f0e0b9795ba0f9066d6b670f531f5b4c0e18ae4295f38c3f1b5e9215d6a",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "scripts/stage-c-gates/cost-worker.ts",
+      "sha256": "f8b97bbabfef9b30d9ce32057d4afe431103df7fb6ac7be8dfc261f35ac78af1",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "scripts/stage-c-gates/browser.mjs",
+      "sha256": "0e111e5a001aafc5a74c0ab12adb34f07196404215ce0b285f413b9787d85c03",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "scripts/stage-c-gates/cost-preflight.mjs",
+      "sha256": "900f5aac549f678073d6aa38a923c59eb29a5a642f9c92a9bc594efe96d1daf6",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "src/history/stage-c-gates/cost-fixture.ts",
+      "sha256": "b828324c12c86768df65909c4b0a019a7149c805e8d3c2038f64d50f474992fe",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "src/block-tree/repository.ts",
+      "sha256": "624b622fe3a7dcebc591153945c8807084aa503763566c9f0625595038bdf5a6",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "src/block-tree/commands.ts",
+      "sha256": "a06730505cc2ff1f73a139977c2e20cc05ec7a8dff020c38d32163c43a33853e",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "src/block-tree/undo-storage.ts",
+      "sha256": "1a53bf30231ca5b5ff22f6096c50a7df6aab76af9721273f5d15122326ff4091",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "src/block-tree/undo-storage.test.ts",
+      "sha256": "a9d3d1b609a879a05f7939d65355bb832196d56e79bf2275c3ca6698dd7f38cd",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "src/block-tree/undo-storage-parity.test.ts",
+      "sha256": "a894c5d3d3a578bf1e2c18661f5f2501bab878723ad2a8b5950aa3f08d7544e1",
+      "matchesBothQualificationRuns": true
+    },
+    {
+      "path": "src/history/stage-c-gates/cost-fixture.ts",
+      "unchangedFromHEAD": true
+    },
+    {
+      "path": "src/block-tree/commands.ts",
+      "unchangedFromHEAD": true
+    },
+    {
+      "path": "src/block-tree/compact-changes.ts",
+      "unchangedFromHEAD": true
+    },
+    {
+      "path": "src/history/stage-c-gates/incremental.ts",
+      "unchangedFromHEAD": true
+    },
+    {
+      "path": "src/history/stage-c-gates/resource.ts",
+      "unchangedFromHEAD": true
+    },
+    {
+      "path": "scripts/stage-c-gates/browser.mjs",
+      "unchangedFromHEAD": true
+    },
+    {
+      "path": "scripts/stage-c-gates/cost-preflight.mjs",
+      "unchangedFromHEAD": true
+    }
+  ],
+  "earlierArtifactsUnchanged": [
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_COMPACT_CONTROL.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_COST_EXPERIMENT.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_OFF_CONTROL.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_CANDIDATE.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_CANDIDATE.log",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_CHECKS.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_COMPACT.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_COMPACT.log",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_HOST.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_OFF.json",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918_OFF.log",
+    "BLOCK_SCOPED_HISTORY_STAGE_C_G3_SMOKE.json"
+  ],
+  "qualificationArtifacts": [
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_HOST.json",
+      "sha256": "caa7c262b2b7d2709848dee13d7d85589aa86d2ef12f6087ab32681dfced4b23"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_AWAKE_CANDIDATE.json",
+      "sha256": "57e1c6dc56dc97e09f96883a6751f0e9257910f4cdb48552d0028e87e94fc42f"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_OFF.log",
+      "sha256": "b84cf2872f03b66b93449ae9db22f8ca50f983572eecdf9ab204e0696541b4b2"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_COMPACT.log",
+      "sha256": "3e601da6e9458704def5c8816cb7a4626c165e9d3576f889b8fd889db930d435"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_SMOKE.log",
+      "sha256": "fb89ddbe0b8bb8099d3209ab02fdc7aa8c35f7561ff3e6b3226e58823a65c217"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_ASSESSMENT.json",
+      "sha256": "7967e4a8fbe9609c3b51000677a136f02d0e4c6f4b99764d1f92e3253bb32e29"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_CANDIDATE.json",
+      "sha256": "fed788e584c578ea3a1753499bece6ecd07a751d7640b020017637dc2128e9c8"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_CANDIDATE.log",
+      "sha256": "7707dd8e34f0f0cfabbeebfdf4f9a46860cc0e53176119065c0b4d6ad38a9f5a"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_COMPACT.json",
+      "sha256": "bc53c0d91decd040c0483757588a3ddce165ae1976c7009cb91025faabf68444"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_SLEEP_EVIDENCE.json",
+      "sha256": "243106139a75a07e99a9afc38a7f229600c34991bc9445e759f0feee63cd4adb"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_AWAKE_HOST.json",
+      "sha256": "7b3a5aa6e22dbc3542e5368f0b51598a045a7ffe16feb92f931cde68b24d25e9"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_AWAKE_CANDIDATE.log",
+      "sha256": "d848a1e21384216589533258a5986da6655de58e1c1984546f0feb9d75db3143"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_SMOKE.json",
+      "sha256": "0b120d79e361e1577085b6b08ef11330e015aae37946b32d0192a06c51b93242"
+    },
+    {
+      "path": "BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918_OFF.json",
+      "sha256": "46cc4b992d4118f6485e4fcff1c97cff68371319d79e875cacac53484d59fa9e"
+    }
+  ],
+  "syntaxJsonLinkAndDiffChecksPassed": true,
+  "outcome": "Undo parity and sustained controls pass; G3 remains unmet after sleep-interrupted final proof and identical-source repeat queue-cap failure. P1-P6 remain gated. No scheduler/recorder fix made after the repeat."
+}

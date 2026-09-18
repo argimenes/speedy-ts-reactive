@@ -1,0 +1,3901 @@
+{
+  "gate": "G3 command/worker/outbox/server feasibility",
+  "hostResources": {
+    "availableBytes": 27624607744,
+    "minimumFreeBytes": 8589934592,
+    "physicalMemoryBytes": 8589934592
+  },
+  "date": "2026-09-17T23:16:44.422Z",
+  "node": "v22.12.0",
+  "browser": "Chrome/153.0.8010.48",
+  "durationSeconds": 10,
+  "revisions": 50,
+  "instrumentation": {
+    "main": {
+      "main.scheduleLateness": {
+        "count": 50,
+        "totalMs": 44.90000000828877,
+        "maxMs": 2.5,
+        "lastMs": 2.1000000000931323
+      },
+      "main.capture": {
+        "count": 50,
+        "totalMs": 1.5000000004656613,
+        "maxMs": 0.10000000009313226,
+        "lastMs": 0.10000000009313226
+      },
+      "main.postMessage": {
+        "count": 50,
+        "totalMs": 1.801025390625,
+        "maxMs": 0.10009765625,
+        "lastMs": 0
+      },
+      "main.callback": {
+        "count": 50,
+        "totalMs": 3.7999999979510903,
+        "maxMs": 0.20000000018626451,
+        "lastMs": 0.10000000009313226
+      },
+      "main.edit": {
+        "count": 50,
+        "totalMs": 2071.999999998603,
+        "maxMs": 55.40000000037253,
+        "lastMs": 40.8000000002794
+      },
+      "main.captureToWorkerAck": {
+        "count": 50,
+        "totalMs": 2783.60009765625,
+        "maxMs": 119.39990234375,
+        "lastMs": 54.5
+      },
+      "workerToMain.ackDelivery": {
+        "count": 50,
+        "totalMs": 27.7001953125,
+        "maxMs": 0.699951171875,
+        "lastMs": 0.599853515625
+      }
+    },
+    "undoStorage": {
+      "sequenceReferences": 400,
+      "sequenceVersions": 52,
+      "chunkReferences": 9996,
+      "uniqueChunks": 246,
+      "uniqueSlots": 29992,
+      "cacheEntries": 1
+    },
+    "worker": {
+      "at": 1789686993639,
+      "phase": "reconnected",
+      "captured": 50,
+      "allocatedSequence": 50,
+      "acknowledged": 50,
+      "serverAcknowledged": 50,
+      "rejected": 14,
+      "queueDepth": 1,
+      "maxQueueDepth": 2,
+      "oldestQueueAgeMs": 0.60009765625,
+      "active": {
+        "kind": "finish",
+        "stage": "start",
+        "started": 1789686993639.1,
+        "stageStarted": 1789686993639.1,
+        "messageAgeMs": 0.60009765625,
+        "stageAgeMs": 0.60009765625
+      },
+      "uploading": false,
+      "outbox": {
+        "bytes": 0,
+        "count": 0
+      },
+      "oldestOutboxAgeMs": 0,
+      "maxOutboxBytes": 13232,
+      "maxOutboxCount": 5,
+      "oldestPendingMs": 964,
+      "reconnectAt": 1789686987697,
+      "reconnectBacklog": {
+        "bytes": 13232,
+        "count": 5,
+        "workerQueueDepth": 0
+      },
+      "reconnectDrainMs": 11,
+      "stages": {
+        "worker.queueWait": {
+          "count": 53,
+          "totalMs": 3.7001953125,
+          "maxMs": 2.800048828125,
+          "lastMs": 0
+        },
+        "idb.init.handoff": {
+          "count": 1,
+          "totalMs": 3,
+          "maxMs": 3,
+          "lastMs": 3
+        },
+        "idb.init.waitAndFirstRequest": {
+          "count": 1,
+          "totalMs": 3.7000000001862645,
+          "maxMs": 3.7000000001862645,
+          "lastMs": 3.7000000001862645
+        },
+        "idb.init.total": {
+          "count": 1,
+          "totalMs": 4.7000000001862645,
+          "maxMs": 4.7000000001862645,
+          "lastMs": 4.7000000001862645
+        },
+        "idb.init.afterFirstRequestThroughCommit": {
+          "count": 1,
+          "totalMs": 1,
+          "maxMs": 1,
+          "lastMs": 1
+        },
+        "idb.readBatch.handoff": {
+          "count": 134,
+          "totalMs": 13.19999999832362,
+          "maxMs": 7.699999999720603,
+          "lastMs": 0.10000000009313226
+        },
+        "idb.readBatch.waitAndFirstRequest": {
+          "count": 134,
+          "totalMs": 72.39999999618158,
+          "maxMs": 12.700000000186265,
+          "lastMs": 0.20000000018626451
+        },
+        "idb.readBatch.total": {
+          "count": 134,
+          "totalMs": 97.89999999990687,
+          "maxMs": 13.300000000279397,
+          "lastMs": 0.39999999990686774
+        },
+        "idb.readBatch.afterFirstRequestThroughCommit": {
+          "count": 134,
+          "totalMs": 25.600000003818423,
+          "maxMs": 1.5,
+          "lastMs": 0.19999999972060323
+        },
+        "mainToWorker.delivery": {
+          "count": 50,
+          "totalMs": -19.800048828125,
+          "maxMs": 0,
+          "lastMs": -0.39990234375
+        },
+        "worker.apply": {
+          "count": 50,
+          "totalMs": 15.299999999813735,
+          "maxMs": 1.5,
+          "lastMs": 0.20000000018626451
+        },
+        "worker.validate": {
+          "count": 50,
+          "totalMs": 2651.300000000745,
+          "maxMs": 104.89999999990687,
+          "lastMs": 51.200000000186265
+        },
+        "worker.encode": {
+          "count": 50,
+          "totalMs": 4.700000000651926,
+          "maxMs": 0.20000000018626451,
+          "lastMs": 0
+        },
+        "idb.capture.handoff": {
+          "count": 50,
+          "totalMs": 1.8999999999068677,
+          "maxMs": 0.10000000009313226,
+          "lastMs": 0.09999999962747097
+        },
+        "idb.capture.waitAndFirstRequest": {
+          "count": 50,
+          "totalMs": 15.099999997299165,
+          "maxMs": 1.099999999627471,
+          "lastMs": 0.2999999998137355
+        },
+        "idb.capture.total": {
+          "count": 50,
+          "totalMs": 100.3999999994412,
+          "maxMs": 12.5,
+          "lastMs": 2.8999999999068677
+        },
+        "idb.capture.afterFirstRequestThroughCommit": {
+          "count": 50,
+          "totalMs": 85.30000000214204,
+          "maxMs": 11.400000000372529,
+          "lastMs": 2.6000000000931323
+        },
+        "worker.eventTotal": {
+          "count": 50,
+          "totalMs": 2774.899999999441,
+          "maxMs": 119.1999999997206,
+          "lastMs": 54.3000000002794
+        },
+        "transport.bodyEncode": {
+          "count": 60,
+          "totalMs": 1.3000000002793968,
+          "maxMs": 0.10000000009313226,
+          "lastMs": 0
+        },
+        "transport.responseHeaders": {
+          "count": 60,
+          "totalMs": 340.8999999985099,
+          "maxMs": 14.5,
+          "lastMs": 6.5
+        },
+        "server.append": {
+          "count": 46,
+          "totalMs": 250.84937299998637,
+          "maxMs": 12.801500000001397,
+          "lastMs": 5.087749999998778
+        },
+        "transport.acknowledgement": {
+          "count": 46,
+          "totalMs": 330.8999999985099,
+          "maxMs": 14.600000000093132,
+          "lastMs": 6.600000000093132
+        },
+        "captureToDurableServerAck": {
+          "count": 50,
+          "totalMs": 5721,
+          "maxMs": 972,
+          "lastMs": 61
+        },
+        "idb.acknowledge.handoff": {
+          "count": 46,
+          "totalMs": 0.8000000002793968,
+          "maxMs": 0.10000000009313226,
+          "lastMs": 0
+        },
+        "idb.acknowledge.waitAndFirstRequest": {
+          "count": 46,
+          "totalMs": 6.000000000465661,
+          "maxMs": 0.3000000002793968,
+          "lastMs": 0.10000000009313226
+        },
+        "idb.acknowledge.total": {
+          "count": 46,
+          "totalMs": 48.200000000651926,
+          "maxMs": 1.6000000000931323,
+          "lastMs": 0.7999999998137355
+        },
+        "idb.acknowledge.afterFirstRequestThroughCommit": {
+          "count": 46,
+          "totalMs": 42.40000000037253,
+          "maxMs": 1.5,
+          "lastMs": 0.6999999997206032
+        },
+        "captureToLocalAckCommit": {
+          "count": 50,
+          "totalMs": 5784,
+          "maxMs": 974,
+          "lastMs": 62
+        },
+        "transport.rejected": {
+          "count": 14,
+          "totalMs": 16.399999999906868,
+          "maxMs": 1.6000000000931323,
+          "lastMs": 1.1000000000931323
+        },
+        "idb.ledger.handoff": {
+          "count": 2,
+          "totalMs": 0,
+          "maxMs": 0,
+          "lastMs": 0
+        },
+        "idb.ledger.waitAndFirstRequest": {
+          "count": 2,
+          "totalMs": 0.10000000009313226,
+          "maxMs": 0.10000000009313226,
+          "lastMs": 0.10000000009313226
+        },
+        "idb.ledger.total": {
+          "count": 2,
+          "totalMs": 0.40000000037252903,
+          "maxMs": 0.20000000018626451,
+          "lastMs": 0.20000000018626451
+        },
+        "idb.ledger.afterFirstRequestThroughCommit": {
+          "count": 2,
+          "totalMs": 0.3000000002793968,
+          "maxMs": 0.20000000018626451,
+          "lastMs": 0.10000000009313226
+        }
+      }
+    },
+    "server": {
+      "stages": {
+        "requestBodyRead": {
+          "count": 46,
+          "totalMs": 8.30646299998989,
+          "maxMs": 0.5939999999973224,
+          "lastMs": 0.15558299999975134
+        },
+        "append": {
+          "count": 46,
+          "totalMs": 250.84937299998637,
+          "maxMs": 12.801500000001397,
+          "lastMs": 5.087749999998778
+        },
+        "requestThroughAppend": {
+          "count": 46,
+          "totalMs": 259.43700199998057,
+          "maxMs": 13.099416000000929,
+          "lastMs": 5.246208000000479
+        }
+      },
+      "rejectedAppends": 14,
+      "networkTransitions": [
+        {
+          "at": 1789686986695,
+          "offline": true,
+          "accepted": 15
+        },
+        {
+          "at": 1789686987696,
+          "offline": false,
+          "accepted": 15
+        }
+      ]
+    },
+    "telemetry": [
+      {
+        "source": "worker",
+        "at": 1789686982398,
+        "phase": "online",
+        "captured": 0,
+        "allocatedSequence": 0,
+        "acknowledged": 0,
+        "serverAcknowledged": 0,
+        "rejected": 0,
+        "queueDepth": 1,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 921.400146484375,
+        "active": {
+          "kind": "init",
+          "stage": "start",
+          "started": 1789686981477.3,
+          "stageStarted": 1789686981477.3,
+          "messageAgeMs": 921.10009765625,
+          "stageAgeMs": 921.10009765625
+        },
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 0,
+        "maxOutboxCount": 0,
+        "oldestPendingMs": 0,
+        "reconnectAt": 0,
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 1,
+            "totalMs": 0.2001953125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0.2001953125
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 5,
+            "totalMs": 0.39999999990686774,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 4,
+            "totalMs": 1.7000000001862645,
+            "maxMs": 0.6999999997206032,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.total": {
+            "count": 4,
+            "totalMs": 2.5,
+            "maxMs": 1.1000000000931323,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 4,
+            "totalMs": 0.7999999998137355,
+            "maxMs": 0.40000000037252903,
+            "lastMs": 0.09999999962747097
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686983397,
+        "phase": "online",
+        "captured": 0,
+        "allocatedSequence": 0,
+        "acknowledged": 0,
+        "serverAcknowledged": 0,
+        "rejected": 0,
+        "queueDepth": 1,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 1921,
+        "active": {
+          "kind": "init",
+          "stage": "start",
+          "started": 1789686981477.3,
+          "stageStarted": 1789686981477.3,
+          "messageAgeMs": 1920.699951171875,
+          "stageAgeMs": 1920.699951171875
+        },
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 0,
+        "maxOutboxCount": 0,
+        "oldestPendingMs": 0,
+        "reconnectAt": 0,
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 1,
+            "totalMs": 0.2001953125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0.2001953125
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 15,
+            "totalMs": 1.0999999991618097,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.09999999962747097
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 14,
+            "totalMs": 5.299999999348074,
+            "maxMs": 0.8999999999068677,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.readBatch.total": {
+            "count": 14,
+            "totalMs": 7.7000000001862645,
+            "maxMs": 1.1000000000931323,
+            "lastMs": 0.39999999990686774
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 14,
+            "totalMs": 2.4000000008381903,
+            "maxMs": 0.40000000037252903,
+            "lastMs": 0.10000000009313226
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686984393,
+        "phase": "online",
+        "captured": 4,
+        "allocatedSequence": 4,
+        "acknowledged": 3,
+        "serverAcknowledged": 3,
+        "rejected": 0,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 2634,
+          "count": 1
+        },
+        "oldestOutboxAgeMs": 56,
+        "maxOutboxBytes": 2638,
+        "maxOutboxCount": 1,
+        "oldestPendingMs": 121,
+        "reconnectAt": 0,
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 5,
+            "totalMs": 0.2001953125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 25,
+            "totalMs": 1.799999998882413,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 25,
+            "totalMs": 21.79999999795109,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.readBatch.total": {
+            "count": 25,
+            "totalMs": 26.199999999254942,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.3000000002793968
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 25,
+            "totalMs": 4.400000001303852,
+            "maxMs": 0.6000000000931323,
+            "lastMs": 0.20000000018626451
+          },
+          "mainToWorker.delivery": {
+            "count": 4,
+            "totalMs": -1.7998046875,
+            "maxMs": 0,
+            "lastMs": -0.5
+          },
+          "worker.apply": {
+            "count": 4,
+            "totalMs": 3.400000000372529,
+            "maxMs": 1.5,
+            "lastMs": 1.1000000000931323
+          },
+          "worker.validate": {
+            "count": 4,
+            "totalMs": 275.79999999981374,
+            "maxMs": 104.89999999990687,
+            "lastMs": 49.799999999813735
+          },
+          "worker.encode": {
+            "count": 4,
+            "totalMs": 0.40000000037252903,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.handoff": {
+            "count": 4,
+            "totalMs": 0.19999999972060323,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 4,
+            "totalMs": 1.6999999997206032,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.total": {
+            "count": 4,
+            "totalMs": 17.00000000046566,
+            "maxMs": 12.5,
+            "lastMs": 1.6000000000931323
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 4,
+            "totalMs": 15.300000000745058,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.5
+          },
+          "worker.eventTotal": {
+            "count": 4,
+            "totalMs": 297.20000000018626,
+            "maxMs": 119.1999999997206,
+            "lastMs": 52.799999999813735
+          },
+          "transport.bodyEncode": {
+            "count": 4,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 3,
+            "totalMs": 21,
+            "maxMs": 7.2999999998137355,
+            "lastMs": 6.899999999906868
+          },
+          "server.append": {
+            "count": 3,
+            "totalMs": 14.509250999999495,
+            "maxMs": 4.988958999998431,
+            "lastMs": 4.988958999998431
+          },
+          "transport.acknowledgement": {
+            "count": 3,
+            "totalMs": 21.699999999720603,
+            "maxMs": 7.7999999998137355,
+            "lastMs": 6.899999999906868
+          },
+          "captureToDurableServerAck": {
+            "count": 3,
+            "totalMs": 268,
+            "maxMs": 129,
+            "lastMs": 57
+          },
+          "idb.acknowledge.handoff": {
+            "count": 3,
+            "totalMs": 0.10000000009313226,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 3,
+            "totalMs": 0.40000000037252903,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 3,
+            "totalMs": 4.300000000279397,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.6000000000931323
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 3,
+            "totalMs": 4,
+            "maxMs": 1.5,
+            "lastMs": 1.5
+          },
+          "captureToLocalAckCommit": {
+            "count": 3,
+            "totalMs": 273,
+            "maxMs": 130,
+            "lastMs": 59
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686985394,
+        "phase": "online",
+        "captured": 9,
+        "allocatedSequence": 9,
+        "acknowledged": 8,
+        "serverAcknowledged": 8,
+        "rejected": 0,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 2638,
+          "count": 1
+        },
+        "oldestOutboxAgeMs": 57,
+        "maxOutboxBytes": 2638,
+        "maxOutboxCount": 1,
+        "oldestPendingMs": 121,
+        "reconnectAt": 0,
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 10,
+            "totalMs": 0.300048828125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0.099853515625
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 37,
+            "totalMs": 2.1999999983236194,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 37,
+            "totalMs": 23.79999999748543,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.readBatch.total": {
+            "count": 37,
+            "totalMs": 29.49999999953434,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 37,
+            "totalMs": 5.70000000204891,
+            "maxMs": 0.6000000000931323,
+            "lastMs": 0.10000000009313226
+          },
+          "mainToWorker.delivery": {
+            "count": 9,
+            "totalMs": -3.900146484375,
+            "maxMs": 0,
+            "lastMs": -0.5
+          },
+          "worker.apply": {
+            "count": 9,
+            "totalMs": 4.800000000279397,
+            "maxMs": 1.5,
+            "lastMs": 0.09999999962747097
+          },
+          "worker.validate": {
+            "count": 9,
+            "totalMs": 519.1999999997206,
+            "maxMs": 104.89999999990687,
+            "lastMs": 47.700000000186265
+          },
+          "worker.encode": {
+            "count": 9,
+            "totalMs": 1,
+            "maxMs": 0.19999999972060323,
+            "lastMs": 0
+          },
+          "idb.capture.handoff": {
+            "count": 9,
+            "totalMs": 0.2999999998137355,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 9,
+            "totalMs": 2.8999999999068677,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.19999999972060323
+          },
+          "idb.capture.total": {
+            "count": 9,
+            "totalMs": 26.50000000046566,
+            "maxMs": 12.5,
+            "lastMs": 2.1999999997206032
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 9,
+            "totalMs": 23.600000000558794,
+            "maxMs": 11.400000000372529,
+            "lastMs": 2
+          },
+          "worker.eventTotal": {
+            "count": 9,
+            "totalMs": 552.3999999999069,
+            "maxMs": 119.1999999997206,
+            "lastMs": 50.09999999962747
+          },
+          "transport.bodyEncode": {
+            "count": 9,
+            "totalMs": 0.10000000009313226,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "transport.responseHeaders": {
+            "count": 8,
+            "totalMs": 52.39999999944121,
+            "maxMs": 7.2999999998137355,
+            "lastMs": 6.5
+          },
+          "server.append": {
+            "count": 8,
+            "totalMs": 38.63095999999496,
+            "maxMs": 5.169958999998926,
+            "lastMs": 5.026332999997976
+          },
+          "transport.acknowledgement": {
+            "count": 8,
+            "totalMs": 53.69999999925494,
+            "maxMs": 7.7999999998137355,
+            "lastMs": 6.600000000093132
+          },
+          "captureToDurableServerAck": {
+            "count": 8,
+            "totalMs": 559,
+            "maxMs": 129,
+            "lastMs": 56
+          },
+          "idb.acknowledge.handoff": {
+            "count": 8,
+            "totalMs": 0.10000000009313226,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 8,
+            "totalMs": 0.900000000372529,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.09999999962747097
+          },
+          "idb.acknowledge.total": {
+            "count": 8,
+            "totalMs": 10.40000000083819,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.5
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 8,
+            "totalMs": 9.600000000558794,
+            "maxMs": 1.5,
+            "lastMs": 1.400000000372529
+          },
+          "captureToLocalAckCommit": {
+            "count": 8,
+            "totalMs": 572,
+            "maxMs": 130,
+            "lastMs": 58
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686986393,
+        "phase": "online",
+        "captured": 14,
+        "allocatedSequence": 14,
+        "acknowledged": 13,
+        "serverAcknowledged": 13,
+        "rejected": 0,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 2648,
+          "count": 1
+        },
+        "oldestOutboxAgeMs": 57,
+        "maxOutboxBytes": 2648,
+        "maxOutboxCount": 1,
+        "oldestPendingMs": 121,
+        "reconnectAt": 0,
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 15,
+            "totalMs": 0.300048828125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 48,
+            "totalMs": 2.599999998230487,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 48,
+            "totalMs": 25.8999999971129,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.readBatch.total": {
+            "count": 48,
+            "totalMs": 33.29999999888241,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.3000000002793968
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 48,
+            "totalMs": 7.500000001862645,
+            "maxMs": 0.6000000000931323,
+            "lastMs": 0.20000000018626451
+          },
+          "mainToWorker.delivery": {
+            "count": 14,
+            "totalMs": -5.699951171875,
+            "maxMs": 0,
+            "lastMs": -0.39990234375
+          },
+          "worker.apply": {
+            "count": 14,
+            "totalMs": 5.8999999994412065,
+            "maxMs": 1.5,
+            "lastMs": 0.19999999972060323
+          },
+          "worker.validate": {
+            "count": 14,
+            "totalMs": 766.1000000005588,
+            "maxMs": 104.89999999990687,
+            "lastMs": 53.3000000002794
+          },
+          "worker.encode": {
+            "count": 14,
+            "totalMs": 1.7000000001862645,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.handoff": {
+            "count": 14,
+            "totalMs": 0.4999999995343387,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 14,
+            "totalMs": 4.300000000279397,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.40000000037252903
+          },
+          "idb.capture.total": {
+            "count": 14,
+            "totalMs": 34.700000000651926,
+            "maxMs": 12.5,
+            "lastMs": 1.6000000000931323
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 14,
+            "totalMs": 30.40000000037253,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.1999999997206032
+          },
+          "worker.eventTotal": {
+            "count": 14,
+            "totalMs": 809.4999999995343,
+            "maxMs": 119.1999999997206,
+            "lastMs": 55.299999999813735
+          },
+          "transport.bodyEncode": {
+            "count": 14,
+            "totalMs": 0.3000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 13,
+            "totalMs": 86.79999999888241,
+            "maxMs": 7.7999999998137355,
+            "lastMs": 5.2999999998137355
+          },
+          "server.append": {
+            "count": 13,
+            "totalMs": 64.82425099999091,
+            "maxMs": 6.24408300000141,
+            "lastMs": 3.7113749999989523
+          },
+          "transport.acknowledgement": {
+            "count": 13,
+            "totalMs": 88.89999999897555,
+            "maxMs": 8,
+            "lastMs": 5.5
+          },
+          "captureToDurableServerAck": {
+            "count": 13,
+            "totalMs": 848,
+            "maxMs": 129,
+            "lastMs": 56
+          },
+          "idb.acknowledge.handoff": {
+            "count": 13,
+            "totalMs": 0.10000000009313226,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 13,
+            "totalMs": 1.300000000745058,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 13,
+            "totalMs": 15.200000000651926,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.8999999999068677
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 13,
+            "totalMs": 14,
+            "maxMs": 1.5,
+            "lastMs": 0.7999999998137355
+          },
+          "captureToLocalAckCommit": {
+            "count": 13,
+            "totalMs": 867,
+            "maxMs": 130,
+            "lastMs": 57
+          }
+        }
+      },
+      {
+        "source": "main",
+        "at": 1789686986693,
+        "progress": {
+          "edits": 15,
+          "total": 50,
+          "inFlight": 1,
+          "elapsedMs": 2841.8000000002794
+        },
+        "errors": [],
+        "maxInFlight": 1,
+        "mainStages": {
+          "main.scheduleLateness": {
+            "count": 15,
+            "totalMs": 13.300000002607703,
+            "maxMs": 1.8000000002793968,
+            "lastMs": 1.400000000372529
+          },
+          "main.capture": {
+            "count": 15,
+            "totalMs": 0.6000000000931323,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "main.postMessage": {
+            "count": 15,
+            "totalMs": 0.400146484375,
+            "maxMs": 0.10009765625,
+            "lastMs": 0
+          },
+          "main.callback": {
+            "count": 15,
+            "totalMs": 1.3999999994412065,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "main.edit": {
+            "count": 15,
+            "totalMs": 617.5,
+            "maxMs": 45.700000000186265,
+            "lastMs": 40.39999999990687
+          },
+          "main.captureToWorkerAck": {
+            "count": 15,
+            "totalMs": 863.7998046875,
+            "maxMs": 119.39990234375,
+            "lastMs": 52.39990234375
+          },
+          "workerToMain.ackDelivery": {
+            "count": 15,
+            "totalMs": 8.000244140625,
+            "maxMs": 0.60009765625,
+            "lastMs": 0.60009765625
+          }
+        },
+        "worker": {
+          "at": 1789686986393,
+          "phase": "online",
+          "captured": 14,
+          "allocatedSequence": 14,
+          "acknowledged": 13,
+          "serverAcknowledged": 13,
+          "rejected": 0,
+          "queueDepth": 0,
+          "maxQueueDepth": 1,
+          "oldestQueueAgeMs": 0,
+          "active": null,
+          "uploading": true,
+          "outbox": {
+            "bytes": 2648,
+            "count": 1
+          },
+          "oldestOutboxAgeMs": 57,
+          "maxOutboxBytes": 2648,
+          "maxOutboxCount": 1,
+          "oldestPendingMs": 121,
+          "reconnectAt": 0,
+          "reconnectDrainMs": null,
+          "stages": {
+            "worker.queueWait": {
+              "count": 15,
+              "totalMs": 0.300048828125,
+              "maxMs": 0.2001953125,
+              "lastMs": 0
+            },
+            "idb.init.handoff": {
+              "count": 1,
+              "totalMs": 3,
+              "maxMs": 3,
+              "lastMs": 3
+            },
+            "idb.init.waitAndFirstRequest": {
+              "count": 1,
+              "totalMs": 3.7000000001862645,
+              "maxMs": 3.7000000001862645,
+              "lastMs": 3.7000000001862645
+            },
+            "idb.init.total": {
+              "count": 1,
+              "totalMs": 4.7000000001862645,
+              "maxMs": 4.7000000001862645,
+              "lastMs": 4.7000000001862645
+            },
+            "idb.init.afterFirstRequestThroughCommit": {
+              "count": 1,
+              "totalMs": 1,
+              "maxMs": 1,
+              "lastMs": 1
+            },
+            "idb.readBatch.handoff": {
+              "count": 48,
+              "totalMs": 2.599999998230487,
+              "maxMs": 0.20000000018626451,
+              "lastMs": 0
+            },
+            "idb.readBatch.waitAndFirstRequest": {
+              "count": 48,
+              "totalMs": 25.8999999971129,
+              "maxMs": 12.700000000186265,
+              "lastMs": 0.10000000009313226
+            },
+            "idb.readBatch.total": {
+              "count": 48,
+              "totalMs": 33.29999999888241,
+              "maxMs": 13.300000000279397,
+              "lastMs": 0.3000000002793968
+            },
+            "idb.readBatch.afterFirstRequestThroughCommit": {
+              "count": 48,
+              "totalMs": 7.500000001862645,
+              "maxMs": 0.6000000000931323,
+              "lastMs": 0.20000000018626451
+            },
+            "mainToWorker.delivery": {
+              "count": 14,
+              "totalMs": -5.699951171875,
+              "maxMs": 0,
+              "lastMs": -0.39990234375
+            },
+            "worker.apply": {
+              "count": 14,
+              "totalMs": 5.8999999994412065,
+              "maxMs": 1.5,
+              "lastMs": 0.19999999972060323
+            },
+            "worker.validate": {
+              "count": 14,
+              "totalMs": 766.1000000005588,
+              "maxMs": 104.89999999990687,
+              "lastMs": 53.3000000002794
+            },
+            "worker.encode": {
+              "count": 14,
+              "totalMs": 1.7000000001862645,
+              "maxMs": 0.20000000018626451,
+              "lastMs": 0.10000000009313226
+            },
+            "idb.capture.handoff": {
+              "count": 14,
+              "totalMs": 0.4999999995343387,
+              "maxMs": 0.10000000009313226,
+              "lastMs": 0
+            },
+            "idb.capture.waitAndFirstRequest": {
+              "count": 14,
+              "totalMs": 4.300000000279397,
+              "maxMs": 1.099999999627471,
+              "lastMs": 0.40000000037252903
+            },
+            "idb.capture.total": {
+              "count": 14,
+              "totalMs": 34.700000000651926,
+              "maxMs": 12.5,
+              "lastMs": 1.6000000000931323
+            },
+            "idb.capture.afterFirstRequestThroughCommit": {
+              "count": 14,
+              "totalMs": 30.40000000037253,
+              "maxMs": 11.400000000372529,
+              "lastMs": 1.1999999997206032
+            },
+            "worker.eventTotal": {
+              "count": 14,
+              "totalMs": 809.4999999995343,
+              "maxMs": 119.1999999997206,
+              "lastMs": 55.299999999813735
+            },
+            "transport.bodyEncode": {
+              "count": 14,
+              "totalMs": 0.3000000002793968,
+              "maxMs": 0.10000000009313226,
+              "lastMs": 0
+            },
+            "transport.responseHeaders": {
+              "count": 13,
+              "totalMs": 86.79999999888241,
+              "maxMs": 7.7999999998137355,
+              "lastMs": 5.2999999998137355
+            },
+            "server.append": {
+              "count": 13,
+              "totalMs": 64.82425099999091,
+              "maxMs": 6.24408300000141,
+              "lastMs": 3.7113749999989523
+            },
+            "transport.acknowledgement": {
+              "count": 13,
+              "totalMs": 88.89999999897555,
+              "maxMs": 8,
+              "lastMs": 5.5
+            },
+            "captureToDurableServerAck": {
+              "count": 13,
+              "totalMs": 848,
+              "maxMs": 129,
+              "lastMs": 56
+            },
+            "idb.acknowledge.handoff": {
+              "count": 13,
+              "totalMs": 0.10000000009313226,
+              "maxMs": 0.10000000009313226,
+              "lastMs": 0
+            },
+            "idb.acknowledge.waitAndFirstRequest": {
+              "count": 13,
+              "totalMs": 1.300000000745058,
+              "maxMs": 0.20000000018626451,
+              "lastMs": 0.10000000009313226
+            },
+            "idb.acknowledge.total": {
+              "count": 13,
+              "totalMs": 15.200000000651926,
+              "maxMs": 1.6000000000931323,
+              "lastMs": 0.8999999999068677
+            },
+            "idb.acknowledge.afterFirstRequestThroughCommit": {
+              "count": 13,
+              "totalMs": 14,
+              "maxMs": 1.5,
+              "lastMs": 0.7999999998137355
+            },
+            "captureToLocalAckCommit": {
+              "count": 13,
+              "totalMs": 867,
+              "maxMs": 130,
+              "lastMs": 57
+            }
+          }
+        },
+        "heap": {
+          "edit": 0,
+          "used": 234290777
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686986695,
+        "phase": "offline",
+        "captured": 15,
+        "allocatedSequence": 15,
+        "acknowledged": 15,
+        "serverAcknowledged": 15,
+        "rejected": 0,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": false,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 2648,
+        "maxOutboxCount": 1,
+        "oldestPendingMs": 121,
+        "reconnectAt": 0,
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 16,
+            "totalMs": 0.300048828125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 50,
+            "totalMs": 2.899999998509884,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 50,
+            "totalMs": 26.3999999971129,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.readBatch.total": {
+            "count": 50,
+            "totalMs": 34.19999999925494,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.6000000000931323
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 50,
+            "totalMs": 7.900000002235174,
+            "maxMs": 0.6000000000931323,
+            "lastMs": 0.3000000002793968
+          },
+          "mainToWorker.delivery": {
+            "count": 15,
+            "totalMs": -6.10009765625,
+            "maxMs": 0,
+            "lastMs": -0.400146484375
+          },
+          "worker.apply": {
+            "count": 15,
+            "totalMs": 5.999999999068677,
+            "maxMs": 1.5,
+            "lastMs": 0.09999999962747097
+          },
+          "worker.validate": {
+            "count": 15,
+            "totalMs": 816.6000000005588,
+            "maxMs": 104.89999999990687,
+            "lastMs": 50.5
+          },
+          "worker.encode": {
+            "count": 15,
+            "totalMs": 1.8000000002793968,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.handoff": {
+            "count": 15,
+            "totalMs": 0.4999999995343387,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 15,
+            "totalMs": 4.6000000005587935,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.3000000002793968
+          },
+          "idb.capture.total": {
+            "count": 15,
+            "totalMs": 36.200000000651926,
+            "maxMs": 12.5,
+            "lastMs": 1.5
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 15,
+            "totalMs": 31.600000000093132,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.1999999997206032
+          },
+          "worker.eventTotal": {
+            "count": 15,
+            "totalMs": 861.6999999992549,
+            "maxMs": 119.1999999997206,
+            "lastMs": 52.1999999997206
+          },
+          "transport.bodyEncode": {
+            "count": 15,
+            "totalMs": 0.3000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 15,
+            "totalMs": 102.29999999888241,
+            "maxMs": 8,
+            "lastMs": 7.5
+          },
+          "server.append": {
+            "count": 15,
+            "totalMs": 76.99116699998922,
+            "maxMs": 6.266124999998283,
+            "lastMs": 5.9007910000000265
+          },
+          "transport.acknowledgement": {
+            "count": 15,
+            "totalMs": 104.59999999869615,
+            "maxMs": 8.099999999627471,
+            "lastMs": 7.600000000093132
+          },
+          "captureToDurableServerAck": {
+            "count": 15,
+            "totalMs": 973,
+            "maxMs": 129,
+            "lastMs": 61
+          },
+          "idb.acknowledge.handoff": {
+            "count": 15,
+            "totalMs": 0.20000000018626451,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 15,
+            "totalMs": 1.6000000010244548,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 15,
+            "totalMs": 17.100000001024455,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.900000000372529
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 15,
+            "totalMs": 15.600000000093132,
+            "maxMs": 1.5,
+            "lastMs": 0.8000000002793968
+          },
+          "captureToLocalAckCommit": {
+            "count": 15,
+            "totalMs": 994,
+            "maxMs": 130,
+            "lastMs": 62
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686987394,
+        "phase": "offline",
+        "captured": 19,
+        "allocatedSequence": 19,
+        "acknowledged": 15,
+        "serverAcknowledged": 15,
+        "rejected": 10,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 10584,
+          "count": 4
+        },
+        "oldestOutboxAgeMs": 660,
+        "maxOutboxBytes": 10584,
+        "maxOutboxCount": 4,
+        "oldestPendingMs": 653,
+        "reconnectAt": 0,
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 20,
+            "totalMs": 0.300048828125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 62,
+            "totalMs": 3.2999999984167516,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.09999999962747097
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 61,
+            "totalMs": 28.8999999971129,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.total": {
+            "count": 61,
+            "totalMs": 39.799999999348074,
+            "maxMs": 13.300000000279397,
+            "lastMs": 1
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 61,
+            "totalMs": 11.000000002328306,
+            "maxMs": 0.7999999998137355,
+            "lastMs": 0.7999999998137355
+          },
+          "mainToWorker.delivery": {
+            "count": 19,
+            "totalMs": -7.800048828125,
+            "maxMs": 0,
+            "lastMs": -0.400146484375
+          },
+          "worker.apply": {
+            "count": 19,
+            "totalMs": 7.099999999627471,
+            "maxMs": 1.5,
+            "lastMs": 0.3000000002793968
+          },
+          "worker.validate": {
+            "count": 19,
+            "totalMs": 1010.5000000009313,
+            "maxMs": 104.89999999990687,
+            "lastMs": 47.799999999813735
+          },
+          "worker.encode": {
+            "count": 19,
+            "totalMs": 2.2000000001862645,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.capture.handoff": {
+            "count": 19,
+            "totalMs": 0.599999999627471,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 19,
+            "totalMs": 5.399999999906868,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.19999999972060323
+          },
+          "idb.capture.total": {
+            "count": 19,
+            "totalMs": 42.700000000186265,
+            "maxMs": 12.5,
+            "lastMs": 1.6999999997206032
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 19,
+            "totalMs": 37.3000000002794,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.5
+          },
+          "worker.eventTotal": {
+            "count": 19,
+            "totalMs": 1063.799999999348,
+            "maxMs": 119.1999999997206,
+            "lastMs": 50
+          },
+          "transport.bodyEncode": {
+            "count": 25,
+            "totalMs": 0.6000000000931323,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "transport.responseHeaders": {
+            "count": 25,
+            "totalMs": 114.09999999869615,
+            "maxMs": 8,
+            "lastMs": 1.1000000000931323
+          },
+          "server.append": {
+            "count": 15,
+            "totalMs": 76.99116699998922,
+            "maxMs": 6.266124999998283,
+            "lastMs": 5.9007910000000265
+          },
+          "transport.acknowledgement": {
+            "count": 15,
+            "totalMs": 104.59999999869615,
+            "maxMs": 8.099999999627471,
+            "lastMs": 7.600000000093132
+          },
+          "captureToDurableServerAck": {
+            "count": 15,
+            "totalMs": 973,
+            "maxMs": 129,
+            "lastMs": 61
+          },
+          "idb.acknowledge.handoff": {
+            "count": 15,
+            "totalMs": 0.20000000018626451,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 15,
+            "totalMs": 1.6000000010244548,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 15,
+            "totalMs": 17.100000001024455,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.900000000372529
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 15,
+            "totalMs": 15.600000000093132,
+            "maxMs": 1.5,
+            "lastMs": 0.8000000002793968
+          },
+          "captureToLocalAckCommit": {
+            "count": 15,
+            "totalMs": 994,
+            "maxMs": 130,
+            "lastMs": 62
+          },
+          "transport.rejected": {
+            "count": 10,
+            "totalMs": 11.799999999813735,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686987697,
+        "phase": "reconnected",
+        "captured": 20,
+        "allocatedSequence": 20,
+        "acknowledged": 15,
+        "serverAcknowledged": 15,
+        "rejected": 14,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": false,
+        "outbox": {
+          "bytes": 13232,
+          "count": 5
+        },
+        "oldestOutboxAgeMs": 963,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 861,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": null,
+        "stages": {
+          "worker.queueWait": {
+            "count": 21,
+            "totalMs": 0.300048828125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 65,
+            "totalMs": 3.2999999984167516,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 65,
+            "totalMs": 29.8999999971129,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.total": {
+            "count": 65,
+            "totalMs": 42.49999999906868,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.6000000000931323
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 65,
+            "totalMs": 12.70000000204891,
+            "maxMs": 0.7999999998137355,
+            "lastMs": 0.39999999990686774
+          },
+          "mainToWorker.delivery": {
+            "count": 20,
+            "totalMs": -8.300048828125,
+            "maxMs": 0,
+            "lastMs": -0.5
+          },
+          "worker.apply": {
+            "count": 20,
+            "totalMs": 7.2999999998137355,
+            "maxMs": 1.5,
+            "lastMs": 0.20000000018626451
+          },
+          "worker.validate": {
+            "count": 20,
+            "totalMs": 1058.5000000009313,
+            "maxMs": 104.89999999990687,
+            "lastMs": 48
+          },
+          "worker.encode": {
+            "count": 20,
+            "totalMs": 2.2000000001862645,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.capture.handoff": {
+            "count": 20,
+            "totalMs": 0.6999999997206032,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 20,
+            "totalMs": 5.699999999720603,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.capture.total": {
+            "count": 20,
+            "totalMs": 44.60000000009313,
+            "maxMs": 12.5,
+            "lastMs": 1.8999999999068677
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 20,
+            "totalMs": 38.90000000037253,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.6000000000931323
+          },
+          "worker.eventTotal": {
+            "count": 20,
+            "totalMs": 1113.8999999994412,
+            "maxMs": 119.1999999997206,
+            "lastMs": 50.10000000009313
+          },
+          "transport.bodyEncode": {
+            "count": 29,
+            "totalMs": 0.900000000372529,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "transport.responseHeaders": {
+            "count": 29,
+            "totalMs": 118.69999999878928,
+            "maxMs": 8,
+            "lastMs": 1.1000000000931323
+          },
+          "server.append": {
+            "count": 15,
+            "totalMs": 76.99116699998922,
+            "maxMs": 6.266124999998283,
+            "lastMs": 5.9007910000000265
+          },
+          "transport.acknowledgement": {
+            "count": 15,
+            "totalMs": 104.59999999869615,
+            "maxMs": 8.099999999627471,
+            "lastMs": 7.600000000093132
+          },
+          "captureToDurableServerAck": {
+            "count": 15,
+            "totalMs": 973,
+            "maxMs": 129,
+            "lastMs": 61
+          },
+          "idb.acknowledge.handoff": {
+            "count": 15,
+            "totalMs": 0.20000000018626451,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 15,
+            "totalMs": 1.6000000010244548,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 15,
+            "totalMs": 17.100000001024455,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.900000000372529
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 15,
+            "totalMs": 15.600000000093132,
+            "maxMs": 1.5,
+            "lastMs": 0.8000000002793968
+          },
+          "captureToLocalAckCommit": {
+            "count": 15,
+            "totalMs": 994,
+            "maxMs": 130,
+            "lastMs": 62
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686988393,
+        "phase": "reconnected",
+        "captured": 24,
+        "allocatedSequence": 24,
+        "acknowledged": 24,
+        "serverAcknowledged": 24,
+        "rejected": 14,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 964,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": 11,
+        "stages": {
+          "worker.queueWait": {
+            "count": 25,
+            "totalMs": 0.300048828125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 75,
+            "totalMs": 3.5999999986961484,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 74,
+            "totalMs": 31.699999996926636,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.total": {
+            "count": 74,
+            "totalMs": 45.999999998603016,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.39999999990686774
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 74,
+            "totalMs": 14.400000001769513,
+            "maxMs": 0.7999999998137355,
+            "lastMs": 0.19999999972060323
+          },
+          "mainToWorker.delivery": {
+            "count": 24,
+            "totalMs": -9.700439453125,
+            "maxMs": 0,
+            "lastMs": -0.400146484375
+          },
+          "worker.apply": {
+            "count": 24,
+            "totalMs": 8.199999999720603,
+            "maxMs": 1.5,
+            "lastMs": 0.10000000009313226
+          },
+          "worker.validate": {
+            "count": 24,
+            "totalMs": 1248.4000000008382,
+            "maxMs": 104.89999999990687,
+            "lastMs": 46.89999999990687
+          },
+          "worker.encode": {
+            "count": 24,
+            "totalMs": 2.6000000005587935,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.handoff": {
+            "count": 24,
+            "totalMs": 0.8999999994412065,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 24,
+            "totalMs": 6.8999999994412065,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.capture.total": {
+            "count": 24,
+            "totalMs": 50.799999999813735,
+            "maxMs": 12.5,
+            "lastMs": 1.5
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 24,
+            "totalMs": 43.90000000037253,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.2999999998137355
+          },
+          "worker.eventTotal": {
+            "count": 24,
+            "totalMs": 1311.299999999348,
+            "maxMs": 119.1999999997206,
+            "lastMs": 48.60000000009313
+          },
+          "transport.bodyEncode": {
+            "count": 34,
+            "totalMs": 1.0000000004656613,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 34,
+            "totalMs": 152.2999999988824,
+            "maxMs": 8.299999999813735,
+            "lastMs": 6.300000000279397
+          },
+          "server.append": {
+            "count": 20,
+            "totalMs": 103.62387399998988,
+            "maxMs": 6.906333000002633,
+            "lastMs": 5.008540999999241
+          },
+          "transport.acknowledgement": {
+            "count": 20,
+            "totalMs": 138.89999999897555,
+            "maxMs": 8.5,
+            "lastMs": 6.399999999906868
+          },
+          "captureToDurableServerAck": {
+            "count": 24,
+            "totalMs": 4054,
+            "maxMs": 972,
+            "lastMs": 56
+          },
+          "idb.acknowledge.handoff": {
+            "count": 20,
+            "totalMs": 0.2999999998137355,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 20,
+            "totalMs": 2.300000000745058,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.acknowledge.total": {
+            "count": 20,
+            "totalMs": 22.800000000745058,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.900000000372529
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 20,
+            "totalMs": 20.600000000093132,
+            "maxMs": 1.5,
+            "lastMs": 0.7000000001862645
+          },
+          "captureToLocalAckCommit": {
+            "count": 24,
+            "totalMs": 4090,
+            "maxMs": 974,
+            "lastMs": 57
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686989392,
+        "phase": "reconnected",
+        "captured": 29,
+        "allocatedSequence": 29,
+        "acknowledged": 29,
+        "serverAcknowledged": 29,
+        "rejected": 14,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 964,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": 11,
+        "stages": {
+          "worker.queueWait": {
+            "count": 30,
+            "totalMs": 0.39990234375,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 89,
+            "totalMs": 3.999999998603016,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 88,
+            "totalMs": 34.3999999971129,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.19999999972060323
+          },
+          "idb.readBatch.total": {
+            "count": 88,
+            "totalMs": 50.59999999916181,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.39999999990686774
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 88,
+            "totalMs": 16.300000002142042,
+            "maxMs": 0.7999999998137355,
+            "lastMs": 0.20000000018626451
+          },
+          "mainToWorker.delivery": {
+            "count": 29,
+            "totalMs": -11.700439453125,
+            "maxMs": 0,
+            "lastMs": -0.400146484375
+          },
+          "worker.apply": {
+            "count": 29,
+            "totalMs": 9.199999999720603,
+            "maxMs": 1.5,
+            "lastMs": 0.20000000018626451
+          },
+          "worker.validate": {
+            "count": 29,
+            "totalMs": 1487.2000000011176,
+            "maxMs": 104.89999999990687,
+            "lastMs": 47.39999999990687
+          },
+          "worker.encode": {
+            "count": 29,
+            "totalMs": 3.0000000009313226,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.capture.handoff": {
+            "count": 29,
+            "totalMs": 1.099999999627471,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 29,
+            "totalMs": 8.099999998230487,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.capture.total": {
+            "count": 29,
+            "totalMs": 58.69999999925494,
+            "maxMs": 12.5,
+            "lastMs": 1.5
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 29,
+            "totalMs": 50.600000001024455,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.2000000001862645
+          },
+          "worker.eventTotal": {
+            "count": 29,
+            "totalMs": 1559.5999999996275,
+            "maxMs": 119.1999999997206,
+            "lastMs": 49.200000000186265
+          },
+          "transport.bodyEncode": {
+            "count": 39,
+            "totalMs": 1.2000000001862645,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 39,
+            "totalMs": 182.29999999981374,
+            "maxMs": 8.299999999813735,
+            "lastMs": 5.600000000093132
+          },
+          "server.append": {
+            "count": 25,
+            "totalMs": 126.86087399998723,
+            "maxMs": 6.906333000002633,
+            "lastMs": 4.29320799999914
+          },
+          "transport.acknowledgement": {
+            "count": 25,
+            "totalMs": 169.39999999897555,
+            "maxMs": 8.5,
+            "lastMs": 5.7000000001862645
+          },
+          "captureToDurableServerAck": {
+            "count": 29,
+            "totalMs": 4336,
+            "maxMs": 972,
+            "lastMs": 55
+          },
+          "idb.acknowledge.handoff": {
+            "count": 25,
+            "totalMs": 0.5,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 25,
+            "totalMs": 3.0000000009313226,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 25,
+            "totalMs": 27.500000000931323,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.8000000002793968
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 25,
+            "totalMs": 24.600000000093132,
+            "maxMs": 1.5,
+            "lastMs": 0.7000000001862645
+          },
+          "captureToLocalAckCommit": {
+            "count": 29,
+            "totalMs": 4377,
+            "maxMs": 974,
+            "lastMs": 56
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686990392,
+        "phase": "reconnected",
+        "captured": 34,
+        "allocatedSequence": 34,
+        "acknowledged": 34,
+        "serverAcknowledged": 34,
+        "rejected": 14,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 964,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": 11,
+        "stages": {
+          "worker.queueWait": {
+            "count": 35,
+            "totalMs": 0.699951171875,
+            "maxMs": 0.2001953125,
+            "lastMs": 0.099853515625
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 100,
+            "totalMs": 4.599999998230487,
+            "maxMs": 0.39999999990686774,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 99,
+            "totalMs": 39.999999998137355,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.readBatch.total": {
+            "count": 99,
+            "totalMs": 58.299999999813735,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.3000000002793968
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 99,
+            "totalMs": 18.400000001769513,
+            "maxMs": 0.7999999998137355,
+            "lastMs": 0.20000000018626451
+          },
+          "mainToWorker.delivery": {
+            "count": 34,
+            "totalMs": -13.500244140625,
+            "maxMs": 0,
+            "lastMs": -0.39990234375
+          },
+          "worker.apply": {
+            "count": 34,
+            "totalMs": 10.499999999068677,
+            "maxMs": 1.5,
+            "lastMs": 0.19999999972060323
+          },
+          "worker.validate": {
+            "count": 34,
+            "totalMs": 1775.9000000008382,
+            "maxMs": 104.89999999990687,
+            "lastMs": 48
+          },
+          "worker.encode": {
+            "count": 34,
+            "totalMs": 3.500000001396984,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.handoff": {
+            "count": 34,
+            "totalMs": 1.2999999998137355,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 34,
+            "totalMs": 9.499999997206032,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.19999999972060323
+          },
+          "idb.capture.total": {
+            "count": 34,
+            "totalMs": 68.79999999841675,
+            "maxMs": 12.5,
+            "lastMs": 1.6999999997206032
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 34,
+            "totalMs": 59.30000000121072,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.5
+          },
+          "worker.eventTotal": {
+            "count": 34,
+            "totalMs": 1860.8999999989755,
+            "maxMs": 119.1999999997206,
+            "lastMs": 50.09999999962747
+          },
+          "transport.bodyEncode": {
+            "count": 44,
+            "totalMs": 1.3000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "transport.responseHeaders": {
+            "count": 44,
+            "totalMs": 216.39999999990687,
+            "maxMs": 8.399999999906868,
+            "lastMs": 5.7999999998137355
+          },
+          "server.append": {
+            "count": 30,
+            "totalMs": 152.3682909999843,
+            "maxMs": 6.906333000002633,
+            "lastMs": 4.407207999996899
+          },
+          "transport.acknowledgement": {
+            "count": 30,
+            "totalMs": 204.2999999988824,
+            "maxMs": 8.699999999720603,
+            "lastMs": 5.899999999906868
+          },
+          "captureToDurableServerAck": {
+            "count": 34,
+            "totalMs": 4673,
+            "maxMs": 972,
+            "lastMs": 56
+          },
+          "idb.acknowledge.handoff": {
+            "count": 30,
+            "totalMs": 0.6000000000931323,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 30,
+            "totalMs": 3.700000001117587,
+            "maxMs": 0.3000000002793968,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 30,
+            "totalMs": 32.100000001024455,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.7999999998137355
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 30,
+            "totalMs": 28.5,
+            "maxMs": 1.5,
+            "lastMs": 0.6999999997206032
+          },
+          "captureToLocalAckCommit": {
+            "count": 34,
+            "totalMs": 4719,
+            "maxMs": 974,
+            "lastMs": 57
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686991397,
+        "phase": "reconnected",
+        "captured": 38,
+        "allocatedSequence": 38,
+        "acknowledged": 38,
+        "serverAcknowledged": 38,
+        "rejected": 14,
+        "queueDepth": 1,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 56.5,
+        "active": {
+          "kind": "event",
+          "commitId": "7b151fd8-11d0-4368-8542-7714976d739f",
+          "stage": "idb.capture",
+          "started": 1789686991341.6,
+          "stageStarted": 1789686991397.9001,
+          "messageAgeMs": 56.5,
+          "stageAgeMs": 0.199951171875
+        },
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 964,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": 11,
+        "stages": {
+          "worker.queueWait": {
+            "count": 40,
+            "totalMs": 0.800048828125,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 111,
+            "totalMs": 5.099999998230487,
+            "maxMs": 0.39999999990686774,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 110,
+            "totalMs": 41.99999999720603,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.total": {
+            "count": 110,
+            "totalMs": 61.99999999953434,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.39999999990686774
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 110,
+            "totalMs": 20.10000000242144,
+            "maxMs": 0.7999999998137355,
+            "lastMs": 0.19999999972060323
+          },
+          "mainToWorker.delivery": {
+            "count": 39,
+            "totalMs": -15.7001953125,
+            "maxMs": 0,
+            "lastMs": -0.39990234375
+          },
+          "worker.apply": {
+            "count": 39,
+            "totalMs": 11.499999999068677,
+            "maxMs": 1.5,
+            "lastMs": 0.20000000018626451
+          },
+          "worker.validate": {
+            "count": 39,
+            "totalMs": 2024.9000000008382,
+            "maxMs": 104.89999999990687,
+            "lastMs": 56
+          },
+          "worker.encode": {
+            "count": 39,
+            "totalMs": 4.000000000931323,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.09999999962747097
+          },
+          "idb.capture.handoff": {
+            "count": 39,
+            "totalMs": 1.5,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 38,
+            "totalMs": 10.499999997671694,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.capture.total": {
+            "count": 38,
+            "totalMs": 74.69999999925494,
+            "maxMs": 12.5,
+            "lastMs": 1.400000000372529
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 38,
+            "totalMs": 64.20000000158325,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.2000000001862645
+          },
+          "worker.eventTotal": {
+            "count": 38,
+            "totalMs": 2061.199999999255,
+            "maxMs": 119.1999999997206,
+            "lastMs": 49.90000000037253
+          },
+          "transport.bodyEncode": {
+            "count": 48,
+            "totalMs": 1.3000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 48,
+            "totalMs": 245.49999999953434,
+            "maxMs": 10.399999999906868,
+            "lastMs": 6.100000000093132
+          },
+          "server.append": {
+            "count": 34,
+            "totalMs": 175.51079099998242,
+            "maxMs": 9.007958999998664,
+            "lastMs": 4.656417000001966
+          },
+          "transport.acknowledgement": {
+            "count": 34,
+            "totalMs": 233.69999999878928,
+            "maxMs": 10.5,
+            "lastMs": 6.2000000001862645
+          },
+          "captureToDurableServerAck": {
+            "count": 38,
+            "totalMs": 4904,
+            "maxMs": 972,
+            "lastMs": 56
+          },
+          "idb.acknowledge.handoff": {
+            "count": 34,
+            "totalMs": 0.7000000001862645,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 34,
+            "totalMs": 4.40000000083819,
+            "maxMs": 0.3000000002793968,
+            "lastMs": 0.19999999972060323
+          },
+          "idb.acknowledge.total": {
+            "count": 34,
+            "totalMs": 36.30000000121072,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 34,
+            "totalMs": 32.00000000046566,
+            "maxMs": 1.5,
+            "lastMs": 0.8000000002793968
+          },
+          "captureToLocalAckCommit": {
+            "count": 38,
+            "totalMs": 4954,
+            "maxMs": 974,
+            "lastMs": 57
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "main",
+        "at": 1789686991693,
+        "progress": {
+          "edits": 40,
+          "total": 50,
+          "inFlight": 1,
+          "elapsedMs": 7845
+        },
+        "errors": [],
+        "maxInFlight": 1,
+        "mainStages": {
+          "main.scheduleLateness": {
+            "count": 40,
+            "totalMs": 35.300000006798655,
+            "maxMs": 2.5,
+            "lastMs": 1.6000000000931323
+          },
+          "main.capture": {
+            "count": 40,
+            "totalMs": 1.0000000004656613,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "main.postMessage": {
+            "count": 40,
+            "totalMs": 1.30078125,
+            "maxMs": 0.10009765625,
+            "lastMs": 0.10009765625
+          },
+          "main.callback": {
+            "count": 40,
+            "totalMs": 2.7999999984167516,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.09999999962747097
+          },
+          "main.edit": {
+            "count": 40,
+            "totalMs": 1645.6999999987893,
+            "maxMs": 55.40000000037253,
+            "lastMs": 43.39999999990687
+          },
+          "main.captureToWorkerAck": {
+            "count": 40,
+            "totalMs": 2179.89990234375,
+            "maxMs": 119.39990234375,
+            "lastMs": 54.699951171875
+          },
+          "workerToMain.ackDelivery": {
+            "count": 40,
+            "totalMs": 21.80029296875,
+            "maxMs": 0.699951171875,
+            "lastMs": 0.599853515625
+          }
+        },
+        "worker": {
+          "at": 1789686991397,
+          "phase": "reconnected",
+          "captured": 38,
+          "allocatedSequence": 38,
+          "acknowledged": 38,
+          "serverAcknowledged": 38,
+          "rejected": 14,
+          "queueDepth": 1,
+          "maxQueueDepth": 1,
+          "oldestQueueAgeMs": 56.5,
+          "active": {
+            "kind": "event",
+            "commitId": "7b151fd8-11d0-4368-8542-7714976d739f",
+            "stage": "idb.capture",
+            "started": 1789686991341.6,
+            "stageStarted": 1789686991397.9001,
+            "messageAgeMs": 56.5,
+            "stageAgeMs": 0.199951171875
+          },
+          "uploading": true,
+          "outbox": {
+            "bytes": 0,
+            "count": 0
+          },
+          "oldestOutboxAgeMs": 0,
+          "maxOutboxBytes": 13232,
+          "maxOutboxCount": 5,
+          "oldestPendingMs": 964,
+          "reconnectAt": 1789686987697,
+          "reconnectBacklog": {
+            "bytes": 13232,
+            "count": 5,
+            "workerQueueDepth": 0
+          },
+          "reconnectDrainMs": 11,
+          "stages": {
+            "worker.queueWait": {
+              "count": 40,
+              "totalMs": 0.800048828125,
+              "maxMs": 0.2001953125,
+              "lastMs": 0
+            },
+            "idb.init.handoff": {
+              "count": 1,
+              "totalMs": 3,
+              "maxMs": 3,
+              "lastMs": 3
+            },
+            "idb.init.waitAndFirstRequest": {
+              "count": 1,
+              "totalMs": 3.7000000001862645,
+              "maxMs": 3.7000000001862645,
+              "lastMs": 3.7000000001862645
+            },
+            "idb.init.total": {
+              "count": 1,
+              "totalMs": 4.7000000001862645,
+              "maxMs": 4.7000000001862645,
+              "lastMs": 4.7000000001862645
+            },
+            "idb.init.afterFirstRequestThroughCommit": {
+              "count": 1,
+              "totalMs": 1,
+              "maxMs": 1,
+              "lastMs": 1
+            },
+            "idb.readBatch.handoff": {
+              "count": 111,
+              "totalMs": 5.099999998230487,
+              "maxMs": 0.39999999990686774,
+              "lastMs": 0.10000000009313226
+            },
+            "idb.readBatch.waitAndFirstRequest": {
+              "count": 110,
+              "totalMs": 41.99999999720603,
+              "maxMs": 12.700000000186265,
+              "lastMs": 0.20000000018626451
+            },
+            "idb.readBatch.total": {
+              "count": 110,
+              "totalMs": 61.99999999953434,
+              "maxMs": 13.300000000279397,
+              "lastMs": 0.39999999990686774
+            },
+            "idb.readBatch.afterFirstRequestThroughCommit": {
+              "count": 110,
+              "totalMs": 20.10000000242144,
+              "maxMs": 0.7999999998137355,
+              "lastMs": 0.19999999972060323
+            },
+            "mainToWorker.delivery": {
+              "count": 39,
+              "totalMs": -15.7001953125,
+              "maxMs": 0,
+              "lastMs": -0.39990234375
+            },
+            "worker.apply": {
+              "count": 39,
+              "totalMs": 11.499999999068677,
+              "maxMs": 1.5,
+              "lastMs": 0.20000000018626451
+            },
+            "worker.validate": {
+              "count": 39,
+              "totalMs": 2024.9000000008382,
+              "maxMs": 104.89999999990687,
+              "lastMs": 56
+            },
+            "worker.encode": {
+              "count": 39,
+              "totalMs": 4.000000000931323,
+              "maxMs": 0.20000000018626451,
+              "lastMs": 0.09999999962747097
+            },
+            "idb.capture.handoff": {
+              "count": 39,
+              "totalMs": 1.5,
+              "maxMs": 0.10000000009313226,
+              "lastMs": 0.10000000009313226
+            },
+            "idb.capture.waitAndFirstRequest": {
+              "count": 38,
+              "totalMs": 10.499999997671694,
+              "maxMs": 1.099999999627471,
+              "lastMs": 0.20000000018626451
+            },
+            "idb.capture.total": {
+              "count": 38,
+              "totalMs": 74.69999999925494,
+              "maxMs": 12.5,
+              "lastMs": 1.400000000372529
+            },
+            "idb.capture.afterFirstRequestThroughCommit": {
+              "count": 38,
+              "totalMs": 64.20000000158325,
+              "maxMs": 11.400000000372529,
+              "lastMs": 1.2000000001862645
+            },
+            "worker.eventTotal": {
+              "count": 38,
+              "totalMs": 2061.199999999255,
+              "maxMs": 119.1999999997206,
+              "lastMs": 49.90000000037253
+            },
+            "transport.bodyEncode": {
+              "count": 48,
+              "totalMs": 1.3000000002793968,
+              "maxMs": 0.10000000009313226,
+              "lastMs": 0
+            },
+            "transport.responseHeaders": {
+              "count": 48,
+              "totalMs": 245.49999999953434,
+              "maxMs": 10.399999999906868,
+              "lastMs": 6.100000000093132
+            },
+            "server.append": {
+              "count": 34,
+              "totalMs": 175.51079099998242,
+              "maxMs": 9.007958999998664,
+              "lastMs": 4.656417000001966
+            },
+            "transport.acknowledgement": {
+              "count": 34,
+              "totalMs": 233.69999999878928,
+              "maxMs": 10.5,
+              "lastMs": 6.2000000001862645
+            },
+            "captureToDurableServerAck": {
+              "count": 38,
+              "totalMs": 4904,
+              "maxMs": 972,
+              "lastMs": 56
+            },
+            "idb.acknowledge.handoff": {
+              "count": 34,
+              "totalMs": 0.7000000001862645,
+              "maxMs": 0.10000000009313226,
+              "lastMs": 0.10000000009313226
+            },
+            "idb.acknowledge.waitAndFirstRequest": {
+              "count": 34,
+              "totalMs": 4.40000000083819,
+              "maxMs": 0.3000000002793968,
+              "lastMs": 0.19999999972060323
+            },
+            "idb.acknowledge.total": {
+              "count": 34,
+              "totalMs": 36.30000000121072,
+              "maxMs": 1.6000000000931323,
+              "lastMs": 1
+            },
+            "idb.acknowledge.afterFirstRequestThroughCommit": {
+              "count": 34,
+              "totalMs": 32.00000000046566,
+              "maxMs": 1.5,
+              "lastMs": 0.8000000002793968
+            },
+            "captureToLocalAckCommit": {
+              "count": 38,
+              "totalMs": 4954,
+              "maxMs": 974,
+              "lastMs": 57
+            },
+            "transport.rejected": {
+              "count": 14,
+              "totalMs": 16.399999999906868,
+              "maxMs": 1.6000000000931323,
+              "lastMs": 1.1000000000931323
+            }
+          }
+        },
+        "heap": {
+          "edit": 0,
+          "used": 234290777
+        },
+        "phase": "reconnected"
+      },
+      {
+        "source": "worker",
+        "at": 1789686992404,
+        "phase": "reconnected",
+        "captured": 43,
+        "allocatedSequence": 43,
+        "acknowledged": 43,
+        "serverAcknowledged": 43,
+        "rejected": 14,
+        "queueDepth": 1,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 61.39990234375,
+        "active": {
+          "kind": "event",
+          "commitId": "1cdbd1fc-bbdd-4352-9de1-5a4020b3285d",
+          "stage": "idb.capture",
+          "started": 1789686992343.2002,
+          "stageStarted": 1789686992404.5,
+          "messageAgeMs": 61.39990234375,
+          "stageAgeMs": 0.10009765625
+        },
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 964,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": 11,
+        "stages": {
+          "worker.queueWait": {
+            "count": 45,
+            "totalMs": 0.900146484375,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 121,
+            "totalMs": 12.999999998137355,
+            "maxMs": 7.699999999720603,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 120,
+            "totalMs": 61.0999999968335,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.readBatch.total": {
+            "count": 120,
+            "totalMs": 84.39999999990687,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.39999999990686774
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 120,
+            "totalMs": 23.400000003166497,
+            "maxMs": 1.5,
+            "lastMs": 0.10000000009313226
+          },
+          "mainToWorker.delivery": {
+            "count": 44,
+            "totalMs": -17.7998046875,
+            "maxMs": 0,
+            "lastMs": -0.39990234375
+          },
+          "worker.apply": {
+            "count": 44,
+            "totalMs": 12.799999998882413,
+            "maxMs": 1.5,
+            "lastMs": 0.2999999998137355
+          },
+          "worker.validate": {
+            "count": 44,
+            "totalMs": 2329.0000000009313,
+            "maxMs": 104.89999999990687,
+            "lastMs": 60.8000000002794
+          },
+          "worker.encode": {
+            "count": 44,
+            "totalMs": 4.40000000083819,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.09999999962747097
+          },
+          "idb.capture.handoff": {
+            "count": 44,
+            "totalMs": 1.6000000000931323,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 43,
+            "totalMs": 12.299999997485429,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.capture.total": {
+            "count": 43,
+            "totalMs": 85.99999999906868,
+            "maxMs": 12.5,
+            "lastMs": 2.7999999998137355
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 43,
+            "totalMs": 73.70000000158325,
+            "maxMs": 11.400000000372529,
+            "lastMs": 2.5
+          },
+          "worker.eventTotal": {
+            "count": 43,
+            "totalMs": 2373.7999999988824,
+            "maxMs": 119.1999999997206,
+            "lastMs": 60.39999999990687
+          },
+          "transport.bodyEncode": {
+            "count": 53,
+            "totalMs": 1.3000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 53,
+            "totalMs": 280.69999999925494,
+            "maxMs": 10.399999999906868,
+            "lastMs": 6.600000000093132
+          },
+          "server.append": {
+            "count": 39,
+            "totalMs": 202.36520699998437,
+            "maxMs": 9.007958999998664,
+            "lastMs": 4.970624999998108
+          },
+          "transport.acknowledgement": {
+            "count": 39,
+            "totalMs": 269.6999999983236,
+            "maxMs": 10.5,
+            "lastMs": 6.699999999720603
+          },
+          "captureToDurableServerAck": {
+            "count": 43,
+            "totalMs": 5254,
+            "maxMs": 972,
+            "lastMs": 67
+          },
+          "idb.acknowledge.handoff": {
+            "count": 39,
+            "totalMs": 0.7000000001862645,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 39,
+            "totalMs": 5.1000000005587935,
+            "maxMs": 0.3000000002793968,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.acknowledge.total": {
+            "count": 39,
+            "totalMs": 41.20000000111759,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.2000000001862645
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 39,
+            "totalMs": 36.200000000651926,
+            "maxMs": 1.5,
+            "lastMs": 1
+          },
+          "captureToLocalAckCommit": {
+            "count": 43,
+            "totalMs": 5310,
+            "maxMs": 974,
+            "lastMs": 69
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686993393,
+        "phase": "reconnected",
+        "captured": 49,
+        "allocatedSequence": 49,
+        "acknowledged": 48,
+        "serverAcknowledged": 48,
+        "rejected": 14,
+        "queueDepth": 0,
+        "maxQueueDepth": 1,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 2644,
+          "count": 1
+        },
+        "oldestOutboxAgeMs": 55,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 964,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": 11,
+        "stages": {
+          "worker.queueWait": {
+            "count": 50,
+            "totalMs": 0.900146484375,
+            "maxMs": 0.2001953125,
+            "lastMs": 0
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 131,
+            "totalMs": 12.999999998137355,
+            "maxMs": 7.699999999720603,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 131,
+            "totalMs": 71.89999999618158,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.readBatch.total": {
+            "count": 131,
+            "totalMs": 96.8000000002794,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 131,
+            "totalMs": 25.00000000419095,
+            "maxMs": 1.5,
+            "lastMs": 0.09999999962747097
+          },
+          "mainToWorker.delivery": {
+            "count": 49,
+            "totalMs": -19.400146484375,
+            "maxMs": 0,
+            "lastMs": -0.300048828125
+          },
+          "worker.apply": {
+            "count": 49,
+            "totalMs": 15.099999999627471,
+            "maxMs": 1.5,
+            "lastMs": 0.3000000002793968
+          },
+          "worker.validate": {
+            "count": 49,
+            "totalMs": 2600.100000000559,
+            "maxMs": 104.89999999990687,
+            "lastMs": 48.1999999997206
+          },
+          "worker.encode": {
+            "count": 49,
+            "totalMs": 4.700000000651926,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.capture.handoff": {
+            "count": 49,
+            "totalMs": 1.8000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 49,
+            "totalMs": 14.799999997485429,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.capture.total": {
+            "count": 49,
+            "totalMs": 97.49999999953434,
+            "maxMs": 12.5,
+            "lastMs": 1.5
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 49,
+            "totalMs": 82.70000000204891,
+            "maxMs": 11.400000000372529,
+            "lastMs": 1.2000000001862645
+          },
+          "worker.eventTotal": {
+            "count": 49,
+            "totalMs": 2720.599999999162,
+            "maxMs": 119.1999999997206,
+            "lastMs": 50.10000000009313
+          },
+          "transport.bodyEncode": {
+            "count": 59,
+            "totalMs": 1.3000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 58,
+            "totalMs": 319.8999999985099,
+            "maxMs": 10.699999999720603,
+            "lastMs": 10.699999999720603
+          },
+          "server.append": {
+            "count": 44,
+            "totalMs": 232.9601229999862,
+            "maxMs": 9.007958999998664,
+            "lastMs": 8.913625000001048
+          },
+          "transport.acknowledgement": {
+            "count": 44,
+            "totalMs": 309.6999999983236,
+            "maxMs": 11,
+            "lastMs": 11
+          },
+          "captureToDurableServerAck": {
+            "count": 48,
+            "totalMs": 5595,
+            "maxMs": 972,
+            "lastMs": 69
+          },
+          "idb.acknowledge.handoff": {
+            "count": 44,
+            "totalMs": 0.8000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 44,
+            "totalMs": 5.7000000001862645,
+            "maxMs": 0.3000000002793968,
+            "lastMs": 0.19999999972060323
+          },
+          "idb.acknowledge.total": {
+            "count": 44,
+            "totalMs": 46.40000000083819,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 44,
+            "totalMs": 40.90000000083819,
+            "maxMs": 1.5,
+            "lastMs": 0.8000000002793968
+          },
+          "captureToLocalAckCommit": {
+            "count": 48,
+            "totalMs": 5656,
+            "maxMs": 974,
+            "lastMs": 70
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          }
+        }
+      },
+      {
+        "source": "worker",
+        "at": 1789686994466,
+        "phase": "reconnected",
+        "captured": 50,
+        "allocatedSequence": 50,
+        "acknowledged": 50,
+        "serverAcknowledged": 50,
+        "rejected": 14,
+        "queueDepth": 0,
+        "maxQueueDepth": 2,
+        "oldestQueueAgeMs": 0,
+        "active": null,
+        "uploading": true,
+        "outbox": {
+          "bytes": 0,
+          "count": 0
+        },
+        "oldestOutboxAgeMs": 0,
+        "maxOutboxBytes": 13232,
+        "maxOutboxCount": 5,
+        "oldestPendingMs": 964,
+        "reconnectAt": 1789686987697,
+        "reconnectBacklog": {
+          "bytes": 13232,
+          "count": 5,
+          "workerQueueDepth": 0
+        },
+        "reconnectDrainMs": 11,
+        "stages": {
+          "worker.queueWait": {
+            "count": 55,
+            "totalMs": 272.30029296875,
+            "maxMs": 268.60009765625,
+            "lastMs": 268.60009765625
+          },
+          "idb.init.handoff": {
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3
+          },
+          "idb.init.waitAndFirstRequest": {
+            "count": 1,
+            "totalMs": 3.7000000001862645,
+            "maxMs": 3.7000000001862645,
+            "lastMs": 3.7000000001862645
+          },
+          "idb.init.total": {
+            "count": 1,
+            "totalMs": 4.7000000001862645,
+            "maxMs": 4.7000000001862645,
+            "lastMs": 4.7000000001862645
+          },
+          "idb.init.afterFirstRequestThroughCommit": {
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1,
+            "lastMs": 1
+          },
+          "idb.readBatch.handoff": {
+            "count": 137,
+            "totalMs": 13.299999998416752,
+            "maxMs": 7.699999999720603,
+            "lastMs": 0
+          },
+          "idb.readBatch.waitAndFirstRequest": {
+            "count": 136,
+            "totalMs": 76.39999999571592,
+            "maxMs": 12.700000000186265,
+            "lastMs": 0.19999999972060323
+          },
+          "idb.readBatch.total": {
+            "count": 136,
+            "totalMs": 102.1999999997206,
+            "maxMs": 13.300000000279397,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.readBatch.afterFirstRequestThroughCommit": {
+            "count": 136,
+            "totalMs": 25.90000000409782,
+            "maxMs": 1.5,
+            "lastMs": 0.10000000009313226
+          },
+          "mainToWorker.delivery": {
+            "count": 50,
+            "totalMs": -19.800048828125,
+            "maxMs": 0,
+            "lastMs": -0.39990234375
+          },
+          "worker.apply": {
+            "count": 50,
+            "totalMs": 15.299999999813735,
+            "maxMs": 1.5,
+            "lastMs": 0.20000000018626451
+          },
+          "worker.validate": {
+            "count": 50,
+            "totalMs": 2651.300000000745,
+            "maxMs": 104.89999999990687,
+            "lastMs": 51.200000000186265
+          },
+          "worker.encode": {
+            "count": 50,
+            "totalMs": 4.700000000651926,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0
+          },
+          "idb.capture.handoff": {
+            "count": 50,
+            "totalMs": 1.8999999999068677,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.09999999962747097
+          },
+          "idb.capture.waitAndFirstRequest": {
+            "count": 50,
+            "totalMs": 15.099999997299165,
+            "maxMs": 1.099999999627471,
+            "lastMs": 0.2999999998137355
+          },
+          "idb.capture.total": {
+            "count": 50,
+            "totalMs": 100.3999999994412,
+            "maxMs": 12.5,
+            "lastMs": 2.8999999999068677
+          },
+          "idb.capture.afterFirstRequestThroughCommit": {
+            "count": 50,
+            "totalMs": 85.30000000214204,
+            "maxMs": 11.400000000372529,
+            "lastMs": 2.6000000000931323
+          },
+          "worker.eventTotal": {
+            "count": 50,
+            "totalMs": 2774.899999999441,
+            "maxMs": 119.1999999997206,
+            "lastMs": 54.3000000002794
+          },
+          "transport.bodyEncode": {
+            "count": 60,
+            "totalMs": 1.3000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "transport.responseHeaders": {
+            "count": 60,
+            "totalMs": 340.8999999985099,
+            "maxMs": 14.5,
+            "lastMs": 6.5
+          },
+          "server.append": {
+            "count": 46,
+            "totalMs": 250.84937299998637,
+            "maxMs": 12.801500000001397,
+            "lastMs": 5.087749999998778
+          },
+          "transport.acknowledgement": {
+            "count": 46,
+            "totalMs": 330.8999999985099,
+            "maxMs": 14.600000000093132,
+            "lastMs": 6.600000000093132
+          },
+          "captureToDurableServerAck": {
+            "count": 50,
+            "totalMs": 5721,
+            "maxMs": 972,
+            "lastMs": 61
+          },
+          "idb.acknowledge.handoff": {
+            "count": 46,
+            "totalMs": 0.8000000002793968,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0
+          },
+          "idb.acknowledge.waitAndFirstRequest": {
+            "count": 46,
+            "totalMs": 6.000000000465661,
+            "maxMs": 0.3000000002793968,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.acknowledge.total": {
+            "count": 46,
+            "totalMs": 48.200000000651926,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 0.7999999998137355
+          },
+          "idb.acknowledge.afterFirstRequestThroughCommit": {
+            "count": 46,
+            "totalMs": 42.40000000037253,
+            "maxMs": 1.5,
+            "lastMs": 0.6999999997206032
+          },
+          "captureToLocalAckCommit": {
+            "count": 50,
+            "totalMs": 5784,
+            "maxMs": 974,
+            "lastMs": 62
+          },
+          "transport.rejected": {
+            "count": 14,
+            "totalMs": 16.399999999906868,
+            "maxMs": 1.6000000000931323,
+            "lastMs": 1.1000000000931323
+          },
+          "idb.ledger.handoff": {
+            "count": 4,
+            "totalMs": 0.10000000009313226,
+            "maxMs": 0.10000000009313226,
+            "lastMs": 0.10000000009313226
+          },
+          "idb.ledger.waitAndFirstRequest": {
+            "count": 4,
+            "totalMs": 0.40000000037252903,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0.20000000018626451
+          },
+          "idb.ledger.total": {
+            "count": 4,
+            "totalMs": 1.1000000005587935,
+            "maxMs": 0.39999999990686774,
+            "lastMs": 0.3000000002793968
+          },
+          "idb.ledger.afterFirstRequestThroughCommit": {
+            "count": 4,
+            "totalMs": 0.7000000001862645,
+            "maxMs": 0.2999999998137355,
+            "lastMs": 0.10000000009313226
+          }
+        }
+      }
+    ]
+  },
+  "baselineBytes": 15926745,
+  "matrices": [
+    {
+      "length": 100,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.6,
+        "p95Ms": 1
+      },
+      "callback": null
+    },
+    {
+      "length": 100,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.6,
+        "p95Ms": 1.1
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 100,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 0.4,
+        "p95Ms": 0.8
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 8.8,
+        "p95Ms": 10.5
+      },
+      "callback": null
+    },
+    {
+      "length": 5600,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 12.5,
+        "p95Ms": 22.3
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 5600,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 8.8,
+        "p95Ms": 13.8
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "off",
+      "edit": {
+        "samples": 60,
+        "medianMs": 42.4,
+        "p95Ms": 87.6
+      },
+      "callback": null
+    },
+    {
+      "length": 25000,
+      "mode": "compact",
+      "edit": {
+        "samples": 60,
+        "medianMs": 39.7,
+        "p95Ms": 43.4
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    {
+      "length": 25000,
+      "mode": "candidate",
+      "edit": {
+        "samples": 60,
+        "medianMs": 39.3,
+        "p95Ms": 42.6
+      },
+      "callback": {
+        "samples": 60,
+        "medianMs": 0,
+        "p95Ms": 0.1
+      }
+    }
+  ],
+  "sustained": {
+    "callback": {
+      "samples": 50,
+      "medianMs": 0.1,
+      "p95Ms": 0.1
+    },
+    "edit": {
+      "samples": 50,
+      "medianMs": 40.8,
+      "p95Ms": 46
+    },
+    "historyAddedOver50ms": 0,
+    "maxInFlight": 1,
+    "verify": {
+      "samples": 50,
+      "medianMs": 48.9,
+      "p95Ms": 80.5
+    },
+    "encode": {
+      "samples": 50,
+      "medianMs": 0.1,
+      "p95Ms": 0.2
+    },
+    "idb": {
+      "samples": 50,
+      "medianMs": 1.7,
+      "p95Ms": 2.9
+    },
+    "append": {
+      "samples": 46,
+      "medianMs": 6.8,
+      "p95Ms": 10.5
+    },
+    "packetBytes": {
+      "min": 2634,
+      "max": 2648
+    },
+    "maxOutboxBytes": 13232,
+    "maxOutboxCount": 5,
+    "oldestPendingMs": 964,
+    "drainMs": 403.89999999990687,
+    "maxAppendRequestBytes": 15398,
+    "heap": [
+      {
+        "edit": 0,
+        "used": 234290777
+      }
+    ]
+  },
+  "exactness": {
+    "allWirePacketsDecoded": 50,
+    "allStateParentsAndPreimagesChecked": true,
+    "sampledIndependentReplays": 1,
+    "finalOracleEquality": true,
+    "finalOutboxCount": 0
+  },
+  "gateCaps": {
+    "workerMessages": 64,
+    "packetWireBytes": 102400,
+    "outboxBytes": 16777216,
+    "outboxRecords": 4096,
+    "batchRecords": 32
+  },
+  "limits": [
+    "Gate-only format/endpoints; actual editor commands without rendering/input-device latency",
+    "Native store has finite whole-journal scans; no production archive scalability claim",
+    "Existing ordinary undo semantics and depth retained in every mode; heap includes editor and browser overhead",
+    "IDB waitAndFirstRequest includes lock waiting and first-request execution; afterFirstRequestThroughCommit includes remaining request work and commit, not isolated fsync timing",
+    "Single local Chrome/macOS host; process/fsync evidence is not power-loss certification",
+    "Short smoke only: does not satisfy the ten-minute gate"
+  ]
+}

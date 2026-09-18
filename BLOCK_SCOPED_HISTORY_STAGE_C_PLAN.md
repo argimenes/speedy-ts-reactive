@@ -6,13 +6,16 @@ instruction; mandatory early proof gates remain in force. See the
 No Stage C completion or production Document-format integration is claimed.
 Implementation has progressed through the G1/G2 candidates into **G3**. The
 retained-definition correction and incremental ownership/Placement-ID regressions
-pass. The 2026-09-18 qualification rerun, after freeing disk space, still **fails
-G3**: history-off and compact-only controls timed out near the browser heap limit;
-candidate durable capture hit its 64-message worker queue cap at 962 of 3,000
-edits, during the scheduled outage. Sampled free disk stayed above 21.6 GiB.
-See the [rerun assessment](BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md)
-for evidence and attribution limits. The workload, undo behavior and gate targets
-are unchanged. No throughput pass or completion is claimed; P1–P6 remain gated.
+pass. A private, behavior-preserving undo-storage optimization now passes legacy
+representation parity tests; both unchanged 25,000-character sustained controls
+complete 3,000 edits with all undo steps retained. **G3 remains unmet:** the first
+instrumented durable run captured/acknowledged all 3,000 edits but host sleep
+interrupted final qualification; its identical-code repeat hit the unchanged
+64-message cap after a main-page scheduling pause and synchronous catch-up.
+See the [undo/instrumented assessment](BLOCK_SCOPED_HISTORY_STAGE_C_G3_UNDO_20260918.md)
+for attribution, remaining proof gaps and smallest corrective options. Earlier
+[failed-run evidence](BLOCK_SCOPED_HISTORY_STAGE_C_G3_RERUN_20260918.md) is preserved.
+Workload, undo behavior and gate targets are unchanged. P1–P6 remain gated.
 
 Requirements: [history specification](BLOCK_SCOPED_HISTORY_SPEC.md), the accepted
 [portable Document direction](PORTABLE_CODEX_DOCUMENT_FORMAT_SPIKE.md), and the
