@@ -33,6 +33,7 @@ import { MinimapService } from "../runtime/minimap";
 import { ConcertinaService } from "../runtime/concertina";
 import { StickyNoteService } from "../runtime/sticky-notes";
 import type { LoadedWorkspace } from "./workspace-manifest";
+import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { BlockHistorySession } from "../runtime/block-history";
 
 export class ReactiveEditor {
@@ -71,7 +72,7 @@ export class ReactiveEditor {
   constructor(dto: ExistingBlockDto | LoadedWorkspace) {
     registerInputActions(this.bindings);
     const loadedWorkspace = "state" in dto && "references" in dto ? dto as LoadedWorkspace : undefined;
-    const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : decodeBlockTree(dto as ExistingBlockDto);
+    const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : isHistoryDocument(dto) ? decodeHistoryDocument(dto) : decodeBlockTree(dto as ExistingBlockDto);
     this.repository = new CanonicalRepository(decoded.state);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
     this.persistence = new PersistenceService(this);
@@ -82,6 +83,7 @@ export class ReactiveEditor {
     this.find = new DocumentFind(this);
     this.entityList = new DocumentEntityList(this);
     this.blockHistory = new BlockHistorySession(this);
+    if (isHistoryDocument(dto)) this.blockHistory.attachIdentity({ resourceId: dto.resourceId, memoirId: dto.memoirId });
     this.multiSelections = new MultiSelectionEditor(
       this.commands,
       this.selections,

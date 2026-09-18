@@ -36,3 +36,6 @@
 .block-history-error { margin: 0 24px 12px; padding: 10px; background: #fff0ea; color: #942d24; }
 .history-bold { font-weight: bold; } .history-italic { font-style: italic; } .history-underline { text-decoration: underline; } .history-strike { text-decoration: line-through; } .history-highlight { background: #ffed9d; }
 @media (max-width: 700px) { .block-history-shade { padding: 8px; } .block-history-panel { height: 95vh; } .block-history-body { grid-template-columns: 155px minmax(0, 1fr); } .block-history-compare { grid-template-columns: minmax(0, 1fr); } .block-history-preview { padding: 12px; } .block-history-header, .block-history-panel footer { padding: 12px; } .block-history-notice { padding: 0 12px 12px; } }
+
+.block-history-session { display: flex; gap: .75rem; align-items: center; padding: 0 1rem .75rem; }
+.block-history-session select { max-width: 100%; padding: .35rem; }

@@ -8,3 +8,5 @@ data/*json
 data/surreal.db
 data/video
 data/appdb
+# Directory-local persistent Document history (runtime data).
+.memory/

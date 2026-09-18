@@ -23,7 +23,8 @@ export interface HistorySelectionResult {
   comparison: DeepReadonly<SubtreeComparison>;
 }
 export interface ReadonlyHistorySession {
-  readonly storage: "session-only";
+  readonly storage: "session-only" | "persistent";
+  readonly segmentId?: string;
   readonly headRevisionId: string;
   readonly status: "available" | "incomplete";
   readonly message: string;

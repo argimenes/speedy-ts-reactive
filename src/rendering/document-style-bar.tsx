@@ -118,6 +118,9 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       if (key) { setNotice(""); editor.commandRegistry.execute("history.open", { targetKey: key, args: undefined }); }
       else setNotice("Focus a Block in this Document to view its history.");
     }}>History</button>
+    <Show when={editor.blockHistory.state.recordingError || editor.blockHistory.state.recording?.phase === "stopped" || editor.blockHistory.state.recording?.phase === "offline"}>
+      <span role="status" class="document-style-bar-notice">History: {editor.blockHistory.state.recordingError ?? editor.blockHistory.state.recording?.message}</span>
+    </Show>
     <button type="button" title={`Entities in Document (${editor.bindings.label("entity.list.open")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.entityList.open(key); if (!editor.entityList.state.open) setNotice(editor.entityList.state.error); } else setNotice("Focus a document first."); }}>Entities</button>
     <button type="button" title={`Add timer (${editor.bindings.label("timer.create")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (!key || !createTimerBlock(editor, key)) setNotice("Focus a Block in this document first."); else setNotice(""); }}>Timer</button>
     <label title="Select, edit and annotate text across adjacent Blocks. This preference is remembered in this browser."><input type="checkbox" aria-label="Experimental cross-Block text selection" checked={editor.crossText.enabled()} onChange={event => editor.crossText.enable(event.currentTarget.checked)} />Cross-Block selection (experimental)</label>

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { createHistoryService } from "./history-router.js";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -24,6 +25,7 @@ export function validateDocument(value: unknown): asserts value is Record<string
 export function createDocumentStoreRouter(options: {
   root: string;
   indexDocument?: (document: any, filepath: string) => Promise<void>;
+  history?: Pick<ReturnType<typeof createHistoryService>, "validatePortable" | "saveDocument">;
 }) {
   const router = Router();
   const inside = (root: string, target: string) => {
@@ -81,7 +83,10 @@ export function createDocumentStoreRouter(options: {
         throw error;
       }
       validateDocument(document);
-      document.metadata = { ...document.metadata, filename: name };
+      if (document.format === "codex-history-document") {
+        if (!options.history) throw new StoreError(503, "Persistent Document support is unavailable.");
+        await options.history.validatePortable(document);
+      } else document.metadata = { ...document.metadata, filename: name };
       res.json({ Success: true, Data: { document } });
     } catch (error) { errorResponse(res, error); }
   });
@@ -95,17 +100,45 @@ export function createDocumentStoreRouter(options: {
       // Check existing symlinks as well as the parent before writing.
       try { inside(root, await fs.realpath(filepath)); }
       catch (error: any) { if (error?.code !== "ENOENT") throw error; }
-      temporary = path.join(target, `.speedy-${randomUUID()}.tmp`);
-      await fs.writeFile(temporary, JSON.stringify(req.body.document), { encoding: "utf8", flag: "wx" });
-      if (req.header("If-None-Match") === "*") await fs.link(temporary, filepath);
-      else await fs.rename(temporary, filepath);
+      const persistent = req.body.document.format === "codex-history-document";
+      const publish = async () => {
+        temporary = path.join(target, `.speedy-${randomUUID()}.tmp`);
+        const file = await fs.open(temporary, "wx");
+        try { await file.writeFile(JSON.stringify(req.body.document), "utf8"); if (persistent) await file.sync(); }
+        finally { await file.close(); }
+        if (req.header("If-None-Match") === "*") await fs.link(temporary, filepath);
+        else await fs.rename(temporary, filepath);
+        if (persistent) {
+          const parent = await fs.open(target, "r");
+          try { await parent.sync(); } finally { await parent.close(); }
+        }
+      };
+      let receipt: unknown;
       let warning: string | undefined;
-      if (options.indexDocument) {
+      if (persistent) {
+        if (!options.history) throw new StoreError(503, "Persistent Document format support is unavailable.");
+        if (req.body.historyProof) {
+          try {
+            const association = await options.history.saveDocument({ folder: req.body.folder ?? "data", filename: req.body.filename }, req.body.historyProof, req.body.document, publish);
+            if ("warning" in association) warning = association.warning;
+            else receipt = association;
+          } catch (error) { throw new StoreError(409, error instanceof Error ? error.message : "The history Save could not be verified."); }
+        } else {
+          // The portable Document is independently usable. Missing archive proof
+          // must never invent a saved revision or silently discard identities.
+          if (req.body.document.saved) throw new StoreError(409, "A saved history revision requires its verified proof.");
+          await options.history.validatePortable(req.body.document);
+          await publish();
+          warning = "Document saved. History association is unavailable; no saved-revision receipt was claimed.";
+        }
+      } else await publish();
+      if (persistent) warning = [warning, "Search indexing for this Document format is not yet supported."].filter(Boolean).join(" ");
+      if (options.indexDocument && !persistent) {
         try { await options.indexDocument(structuredClone(req.body.document), filepath); }
         catch { warning = "Document saved, but the search index could not be updated."; }
       }
       res.setHeader("X-Speedy-Revision", req.header("X-Speedy-Revision") ?? "");
-      res.json({ Success: true, ...(warning ? { Warning: warning } : {}) });
+      res.json({ Success: true, ...(warning ? { Warning: warning } : {}), ...(receipt ? { Data: { receipt } } : {}) });
     } catch (error) { errorResponse(res, error); }
     finally { if (temporary) await fs.unlink(temporary).catch(() => undefined); }
   });

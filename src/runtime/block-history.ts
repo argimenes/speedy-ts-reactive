@@ -1,4 +1,9 @@
 import { createStore } from "solid-js/store";
+import { encodeDocument } from "../block-tree/codecs";
+import { createDurableHistorySource, type DurableHistorySource, type DurableSegment, type DurableRecorderStatus } from "../history/durable-browser";
+import { encodeHistoryDocument, projectWholeDocument } from "../history/durable-core";
+import type { DocumentLocation } from "../reactive-editor/persistence";
+import type { HistorySelection } from "../history/ui-session-source";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { blockAncestors } from "./block-menu-actions";
 import { createSessionHistorySource, type SessionHistoryRecorder, type ReadonlyHistorySession, type HistorySelectionResult, type SessionTimelineEntry } from "../history/ui-session-source";
@@ -10,17 +15,93 @@ export class BlockHistorySession {
   private setState;
   private recorder?: { root: string; source: SessionHistoryRecorder };
   private session?: ReadonlyHistorySession;
+  private location?: DocumentLocation;
+  private identity?: { resourceId: string; memoirId?: string };
+  private durable?: DurableHistorySource;
+  private starting?: Promise<DurableHistorySource>;
+  private statusDisposer?: () => void;
+  private disposed = false;
+  private selection?: HistorySelection;
   private request?: AbortController;
   private generation = 0;
   private origin?: string;
   private inlineSelection?: { anchor: number; head: number };
   private nativeSelection?: { start: number; end: number; direction: "forward" | "backward" | "none" };
-  constructor(private editor: ReactiveEditor, private createSource = createSessionHistorySource) {
+  constructor(private editor: ReactiveEditor, private createSource = createSessionHistorySource, private createPersistent = createDurableHistorySource) {
     [this.state, this.setState] = createStore<{
       open: boolean; viewId?: string; title: string; message: string; error: string;
       loading: boolean; selecting: boolean; incomplete: boolean; entries: readonly SessionTimelineEntry[];
       nextCursor?: string; selectedRevisionId?: string; result?: HistorySelectionResult;
-    }>({ open: false, title: "Block history", message: "", error: "", loading: false, selecting: false, incomplete: false, entries: [] });
+      storage: "session-only" | "persistent"; sessions: readonly DurableSegment[]; segmentId?: string;
+      recording?: Readonly<DurableRecorderStatus>; recordingError?: string;
+    }>({ open: false, title: "Block history", message: "", error: "", loading: false, selecting: false, incomplete: false, entries: [], storage: "session-only", sessions: [] });
+  }
+  attachIdentity(identity: { resourceId: string; memoirId?: string }): void { this.identity = identity; }
+  attachLocation(location: DocumentLocation): void {
+    this.location = { ...location };
+    // A saved portable Document explicitly carries its enrollment. Reopening it
+    // starts capture before user edits; legacy files opt in through History.
+    if (this.identity && !this.starting) void this.ensureDurable().catch(() => {});
+  }
+  hasPendingCapture(): boolean {
+    const status = this.state.recording;
+    return !!this.starting && !this.durable && !this.state.recordingError || !!status && (status.pendingCapture > 0 || status.pendingCount > 0);
+  }
+  private ensureDurable(): Promise<DurableHistorySource> {
+    if (this.starting) return this.starting;
+    if (!this.location) return Promise.reject(new Error("Save this Document before starting persistent history."));
+    const live = this.editor.repository.readState();
+    const root = live.contents[live.placements[live.rootPlacementKey]?.contentKey];
+    if (root?.viewType !== "document-block" || typeof root.payload.id !== "string") {
+      return Promise.reject(new Error("Persistent history currently supports one Document root. Open the Document separately from its Workspace."));
+    }
+    this.identity ??= { resourceId: root.payload.id };
+    this.setState({ storage: "persistent", recordingError: undefined });
+    this.starting = this.createPersistent(this.editor.repository, this.location, this.identity).then(source => {
+      if (this.disposed) { source.dispose(); throw new Error("Document history is closed."); }
+      this.recorder?.source.dispose();
+      this.recorder = { root: live.rootPlacementKey, source };
+      this.durable = source;
+      this.identity = { ...this.identity!, memoirId: source.status().memoirId ?? this.identity?.memoirId };
+      this.statusDisposer = source.subscribeStatus(status => this.setState("recording", status));
+      return source;
+    }).catch(error => {
+      if (!this.disposed) this.setState("recordingError", error instanceof Error ? error.message : String(error));
+      throw error;
+    });
+    return this.starting;
+  }
+  /** A failed archive must not make an independently valid Document unsaveable. */
+  savePersistent(filename: string, folder: string, createOnly = false) {
+    if (!this.starting && !this.identity) return undefined;
+    if (this.durable) return this.durable.save(filename, folder, createOnly);
+    const snapshot = this.editor.repository.snapshot();
+    return this.ensureDurable().then(source => source.save(filename, folder, createOnly, snapshot), async error => {
+      if (this.identity?.memoirId && this.location && (this.location.filename !== filename || this.location.folder !== folder)) throw new Error("Save As of an enrolled Document requires separate history admission.");
+      // Preserve the Save-click snapshot even if enrollment fails after later edits.
+      const document = this.identity?.memoirId
+        ? encodeHistoryDocument(projectWholeDocument(snapshot, this.identity.resourceId), this.identity.memoirId)
+        : encodeDocument(snapshot);
+      if (!this.identity?.memoirId) document.metadata = { ...(document.metadata as Record<string, unknown> | undefined), filename, folder };
+      const response = await fetch("/api/saveDocumentJson", { method: "POST", headers: { "Content-Type": "application/json", ...(createOnly ? { "If-None-Match": "*" } : {}) }, body: JSON.stringify({ folder, filename, document }) });
+      const body = await response.json();
+      if (!response.ok || !body.Success) throw new Error(body.Error ?? "The Document could not be saved.");
+      return { document, revision: snapshot.revision, warning: body.Warning ?? `Document saved; history is unavailable: ${String(error)}` };
+    });
+  }
+  async chooseSession(segmentId: string): Promise<void> {
+    if (!this.durable || !this.selection) return;
+    this.request?.abort();
+    const request = this.request = new AbortController(), generation = ++this.generation;
+    this.setState({ loading: true, selecting: false, error: "", result: undefined, entries: [], segmentId });
+    try {
+      const session = await this.durable.open(this.selection, request.signal, segmentId);
+      const page = await session.timeline({ limit: 25, signal: request.signal });
+      if (generation !== this.generation || request.signal.aborted) return;
+      this.session = session;
+      this.setState({ entries: page.entries, nextCursor: page.nextCursor, loading: false, message: session.message, incomplete: session.status === "incomplete" });
+      await this.select(page.entries.at(-1)?.revisionId ?? session.headRevisionId);
+    } catch (error) { this.failed(error, generation); }
   }
   canOpen(key: string): boolean {
     const node = this.editor.node(key);
@@ -39,7 +120,7 @@ export class BlockHistorySession {
     const metadata = node.payload.metadata as { name?: string; title?: string } | undefined;
     const inlineTitle = node.inlineContent.slice(0, 60).map(key => String(this.editor.node(key)?.payload.text ?? "")).join("");
     const title = metadata?.name ?? metadata?.title ?? (inlineTitle || String(node.payload.text ?? node.payload.id)).slice(0, 60);
-    this.setState({ open: true, viewId: node.viewId, title, message: "Session-only history. Preparing the first recorded state…", loading: true, incomplete: false, error: "", entries: [], result: undefined, nextCursor: undefined, selectedRevisionId: undefined });
+    this.setState({ open: true, viewId: node.viewId, title, message: "Preparing Block history…", loading: true, incomplete: false, error: "", entries: [], result: undefined, nextCursor: undefined, selectedRevisionId: undefined });
     this.editor.focus.request(this.owner, { reason: "block-history" });
     const request = this.request = new AbortController(), generation = ++this.generation;
     void (async () => {
@@ -49,13 +130,18 @@ export class BlockHistorySession {
       const root = blockAncestors(this.editor, key).find(n => n.viewType === "document-block");
       if (!root) throw Error("Select a Block inside a Document to view its history.");
       if (this.recorder && this.recorder.root !== root.placementKey) throw Error("This session is recording another Document. Open that Document's history instead.");
-      this.recorder ??= { root: root.placementKey, source: this.createSource(this.editor.repository, root.placementKey) };
+      if (this.location) await this.ensureDurable();
+      else this.recorder ??= { root: root.placementKey, source: this.createSource(this.editor.repository, root.placementKey) };
+      if (request.signal.aborted) return;
       const placement = this.editor.repository.readState().placements[node.placementKey];
-      const session = await this.recorder.source.open({ blockId: String(node.payload.id), placementId: placement.placementId ?? `session:${placement.key}` }, request.signal);
+      if (!placement) throw new Error("The selected Block is no longer in this Document.");
+      this.selection = { blockId: String(node.payload.id), placementId: placement.placementId ?? `session:${placement.key}` };
+      const sessions = this.durable ? await this.durable.sessions() : [];
+      const session = await this.recorder!.source.open(this.selection, request.signal);
       const page = await session.timeline({ limit: 25, signal: request.signal });
       if (generation !== this.generation || request.signal.aborted) return;
       this.session = session;
-      this.setState({ entries: page.entries, nextCursor: page.nextCursor, loading: false, message: session.message, incomplete: session.status === "incomplete" });
+      this.setState({ entries: page.entries, nextCursor: page.nextCursor, loading: false, message: session.message, incomplete: session.status === "incomplete", storage: session.storage, sessions, segmentId: session.segmentId });
       await this.select(page.entries.at(-1)?.revisionId ?? session.headRevisionId);
     })().catch(error => this.failed(error, generation));
   }
@@ -98,5 +184,5 @@ export class BlockHistorySession {
       });
     }
   }
-  dispose(): void { this.close(false); this.recorder?.source.dispose(); this.recorder = undefined; }
+  dispose(): void { this.disposed = true; this.close(false); this.statusDisposer?.(); this.recorder?.source.dispose(); this.recorder = undefined; }
 }

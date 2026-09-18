@@ -1,4 +1,5 @@
 import { createStore } from "solid-js/store";
+import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { decodeDocument, decodeWorkspace } from "../block-tree/codecs";
 import type { ExistingBlockDto } from "../block-tree/types";
 import type { ReactiveEditor } from "./editor";
@@ -100,6 +101,7 @@ export class PersistenceService {
     }
     try {
       const document = await PersistenceService.loadDocument(source.filename, source.folder);
+      if (isHistoryDocument(document)) throw new Error("Open this history-enrolled Document separately; Workspace integration is not yet supported.");
       const actualId = documentIdentity(document);
       if (actualId && actualId !== documentId) {
         throw new Error(`${source.filename} contains Document ${actualId}, not ${documentId}.`);
@@ -154,6 +156,16 @@ export class PersistenceService {
     const token = this.state.requestToken + 1;
     this.setState({ saving: true, error: undefined, warning: undefined, status: undefined, requestToken: token });
     try {
+      const pendingHistorySave = this.editor.blockHistory.savePersistent(filename, folder, options.createOnly);
+      if (pendingHistorySave) {
+        const persistent = await pendingHistorySave;
+        if (persistent) {
+          if (token !== this.state.requestToken) return false;
+          this.savedDocument = persistent.document as unknown as ExistingBlockDto;
+          this.setState({ saving: false, lastSavedRevision: persistent.revision, warning: persistent.warning });
+          return true;
+        }
+      }
       const document = this.editor.encodeDocument();
       document.metadata = { ...(document.metadata as Record<string, unknown> | undefined), filename, folder };
       const json = await responseJson(
@@ -169,11 +181,12 @@ export class PersistenceService {
       );
       if (token !== this.state.requestToken) return false;
       this.savedDocument = document;
+      this.editor.blockHistory.attachLocation({ folder, filename });
       if (this.editor.repository.state.revision === revision) {
         this.setState("lastSavedRevision", revision);
       }
       this.setState("saving", false);
-      this.setState("warning", json.Warning);
+      this.setState("warning", [json.Warning, this.editor.blockHistory.state.recordingError && `History is unavailable: ${this.editor.blockHistory.state.recordingError}`].filter(Boolean).join(" ") || undefined);
       return true;
     } catch (error) {
       if (token === this.state.requestToken) {
@@ -293,7 +306,8 @@ export class PersistenceService {
     const json = await responseJson(await fetch(`/api/loadDocumentJson?${params}`, { signal }));
     const dto = json.Data?.document as ExistingBlockDto;
     if (!dto || typeof dto !== "object" || Array.isArray(dto) || typeof dto.type !== "string") throw new Error("The file is not a Block document.");
-    decodeDocument(dto);
+    if (isHistoryDocument(dto)) decodeHistoryDocument(dto);
+    else decodeDocument(dto);
     return dto;
   }
 
@@ -328,6 +342,7 @@ export class PersistenceService {
       if (!resource) return;
       try {
         const document = await this.loadDocument(resource.source.filename, resource.source.folder, signal);
+        if (isHistoryDocument(document)) throw new Error("Open this history-enrolled Document separately; Workspace integration is not yet supported.");
         if (!["document-block", "main-list-block", "membrane-block"].includes(String(document.type))) {
           issues.push({ documentId: resource.documentId, kind: "invalid", message: `${resource.source.filename} is not a Document root.` });
           return;

@@ -8,6 +8,7 @@ import { RecordId, Surreal } from "surrealdb";
 import { surrealdbNodeEngines } from "@surrealdb/node";
 import type { IBlockDto, StandoffEditorBlockDto, BlockType, IndexedBlock } from "./types";
 import { createDocumentStoreRouter } from "./document-store.js";
+import { createHistoryService } from "./history-router.js";
 import { createEntitySearchRouter } from "./entity-search.js";
 import { createWorkspaceStoreRouter } from "./workspace-store.js";
 //import { BlockType } from "./types";
@@ -245,7 +246,10 @@ app.use('/image-backgrounds', express.static(path.join(__dirname, basePath, 'bac
 app.use(express.json({limit: '50mb'}));
 app.use(express.urlencoded({limit: '50mb'}));
 
+const documentHistory = createHistoryService({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath) });
+app.use("/api/history", documentHistory.router);
 app.use("/api", createDocumentStoreRouter({
+  history: documentHistory,
   root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),
   indexDocument: async (doc, filepath) => {
     if (!db) throw new Error("Search database unavailable");

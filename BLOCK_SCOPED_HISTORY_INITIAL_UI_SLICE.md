@@ -1,12 +1,133 @@
 # Block history — minimum path to an initial UI slice
 
-Date: 2026-09-18. **Status: first interactive UI implemented; stopped for UI
-review as requested.** The user authorized this increment and the minimum parallel
+Date: 2026-09-18. **Status: initial UI review accepted; minimum persistent-path
+integration implemented and the larger-Document restart demonstration passed.** The user authorized this increment and the minimum parallel
 persistent-path slices below, not the full P1–P6 programme. Stage C is not complete.
 The immediate target is one explicitly enrolled local Document: edit it, inspect
 a Block's earlier revisions in Codex, restart, and inspect the same persistent
 history. Keep ordinary undo, Save and current Document state independent of the
 history preview. No new G3 qualification programme is part of this scope.
+
+## Persistent vertical slice — 2026-09-18
+
+The user accepted the initial UI and authorized the minimum §1 integration,
+including a Document exceeding the temporary adapter's baseline/state budget.
+The temporary adapter's limits remain unchanged. This is a bounded single-Document
+increment, not completion of P1–P6 or a change to earlier G3 results.
+
+Implemented connections:
+
+- A saved repository-root `document-block` opts into persistent recording through
+  **History…**. Unsaved samples retain the labelled temporary adapter. A portable
+  enrolled file resumes capture when Open attaches its saved location, before the
+  panel is opened. Workspace/nested-Document admission remains unsupported.
+- Shared versioned wire, exact checked resource transitions and portable Document
+  encoding preserve authored Block/structural Placement identities. Enrollment
+  never normalizes the live repository or adds an undo step. Foreign descriptors
+  stay terminal; no current foreign state enters an owned historical snapshot.
+- A dedicated browser worker validates and commits immutable packets to strict
+  IndexedDB before native delivery. Separate browser-committed/server-durable/
+  verified watermarks, retained pending bytes, exact retries, lease heartbeats and
+  recovery across worker/page restart are connected to the real editor source.
+- The native server publishes under the Document directory's `.memory/` store,
+  using the established confined filesystem helper and OS writer fence. A single
+  leased writer, independent semantic verifier and content-addressed checkpoint
+  chunks precede acknowledgements. History is independent of ordinary Save.
+- Save serializes the exact captured revision and includes its verified proof.
+  The server compares the artifact with that historical state, syncs publication,
+  and stores its receipt. If history is unavailable, ordinary Save still writes a
+  validated portable Document without claiming a saved history revision, and
+  reports a warning. Receipt-finalization failure after file publication is also
+  Save success plus a history warning, never a false file-save failure. Open loads
+  only the saved artifact. Later unsaved
+  historical edits remain in the earlier recording session. Fresh runtime keys
+  require a new segment baseline; the saved receipt is an origin link, **not** an
+  invented state-parent edge. History relocation/copy/Save As of enrolled files
+  is explicitly unsupported for this slice; the portable Document remains usable
+  without its memoir.
+- The panel uses the same immutable preview/comparison contracts. Its small added
+  **Recording session** selector exposes older sessions after reopening. Readers
+  have a fixed verified head, metadata pages and checkpoint-plus-bounded-tail
+  replay. Cancellation aborts read requests; stale results cannot publish into the
+  UI. Failures and recording limits remain visible, with no pruning or fallback
+  that would silently claim persistence.
+
+Declared admission: one saved local Document, at most **20 MiB** encoded state and
+**100,000** graph records, **1 MiB** checkpoint chunks, checkpoint spacing **12**,
+at most **12** replay records, **25** timeline records per page, **128** segments
+and **4,096** revisions per segment. The strict outbox retains its existing
+**100 KiB** packet / **16 MiB** pending / **4,096** record limits; the native
+record envelope is independently capped at **128 KiB**. The capture cap remains
+**64** messages. These are explicit supported boundaries, not enlarged temporary
+session limits. The state bound admits the measured 25,000-character G3 fixture;
+inputs outside the bounds stop explicitly. No throughput qualification is implied
+by these focused checks.
+
+Small integration decisions: portable Documents are opened individually. Existing
+Workspace reference loading reports that limitation instead of decoding the new
+format as an empty legacy tree; the demo's Save Workspace route also refuses to
+rewrite an enrolled Document through its legacy bundle codec. Search indexing for portable Documents is deferred
+and Save returns a warning; the Document and history publication remain exact.
+The worker bundle is built by both `npm run build:server` and `npm run dev`.
+
+Focused validation: **40 tests pass** across the shared core, browser bridge,
+native store/router/verifier, application enrollment/Save seams and existing
+session-panel/Save/Open tests. Additional counter-boundary assertions reject a
+forged source counter at enrollment and immediately after checkpoint 12; ordinary
+valid transitions still pass. Graph and byte admission are checked before strict
+IDB capture, including exact incremental serialized-size accounting. Readers can
+open the verified prefix without waiting for all pending uploads.
+
+The real-browser demonstration passed in Chrome 153.0.8010.48:
+
+- One actual saved **25,000-character Document**, whose encoded checkpoint is
+  **15,926,771 bytes** (about 15.2 MiB); the unchanged temporary adapter refuses it.
+- Actual Block context menu → History panel, ordinary editor input → undo → redo,
+  then a verified portable Save at revision 3.
+- An additional unsaved edit reached native storage. A further offline edit reached
+  strict IndexedDB: browser committed **5**, native durable/verified **4**, **one
+  6,968-byte pending packet**. Both the browser and native server were killed.
+- After restarting both, the old immutable packet recovered with its original
+  enrollment under the new writer grant. The earlier session has revisions 0–5;
+  reopening creates a distinct baseline session. The final outbox is empty.
+- Each of the **six** historical states equals the independently exported live
+  authored Document captured at that point; its actual panel preview also matches.
+  The live reopened Document stays at saved revision 3, including while previewing
+  the later unsaved/offline edits. No archive replay changes current content.
+
+Evidence: [final-build larger-Document restart check](BLOCK_HISTORY_PERSISTENT_RELEASE_CHECK.json),
+with the [first successful check](BLOCK_HISTORY_PERSISTENT_CHECK_FINAL.json) also
+retained. The final build repeats the same six-state check after source-counter,
+read-cancellation and bounded-intake refinements. Production client/server builds
+and project TypeScript checks pass.
+The [development-reload interruption](BLOCK_HISTORY_PERSISTENT_CHECK.json) and
+[check-harness serialization failure](BLOCK_HISTORY_PERSISTENT_CHECK_REPEAT.json)
+remain preserved as unsuccessful results. The second interruption occurred after
+recovery but before all assertions; serializing the Solid store to plain data
+fixed the check without changing its assertions. Vite file watching/HMR was
+disabled only in the isolated check server to prevent code edits from reloading
+that test page. No browser scheduling/throttling setting or G3 workload changed.
+
+To use the persistent slice, restart `npm run dev` so the new native routes and
+verifier bundle are loaded, then open a saved Document and choose **History…**.
+The badge should read **Persistent**. Close the panel, edit, and Save normally.
+After restart, use **Open…** for the same file and **History…** on its Block; choose
+an earlier **Recording session** to inspect its exact revisions. Save captures
+current authored content independently of history; warnings distinguish missing
+association from file-write failure. Save unsaved work before restarting an
+existing development session.
+
+Reproduce the bounded integration check after `npm run build:server`:
+
+```sh
+HISTORY_PERSISTENT_RESULT=BLOCK_HISTORY_PERSISTENT_LOCAL_CHECK.json node scripts/check-persistent-block-history.mjs
+```
+
+The check refuses to overwrite evidence and owns its temporary Document, native
+server, Vite server and Chrome profile. It does not touch the user's documents or
+existing servers. This completes the admitted vertical-slice milestone. Further
+Stage C expansion, P6 qualification, richer UI and restoration remain deferred;
+prior G3 results and artifacts are unchanged.
 
 ## Initial UI review checkpoint — 2026-09-18
 
@@ -94,7 +215,8 @@ Implementation: [panel](src/rendering/block-history.tsx),
 [temporary read-only adapter](src/history/ui-session-source.ts),
 [persistent outbox foundation](src/history/persistent-outbox.ts).
 
-**Stop:** review this UI before adding persistent-path integration or richer UI.
+**Historical stop (now cleared by the user’s successful UI review):** the initial
+UI was reported before adding persistent-path integration or richer UI.
 No restoration/insertion, sentence grouping, broad Workspace support, P6-scale
 qualification or additional G3 investigation was added. Prior G3 evidence and its
 unestablished foreground-budget status remain unchanged.
@@ -110,9 +232,9 @@ These are narrow slices of P1–P5, not prerequisites to finish those phases in 
 | P3: durable write/restart path | Connect a confined, directory-local `.memory` store to real application endpoints and a single fenced writer. Publish verified prerequisites before acknowledging their records. Use strict IndexedDB transactions for immutable pending bytes, exact retry/deduplication, recovery, and separate browser-committed/server-durable/verified watermarks. Retain pending bytes until the appropriate acknowledgement is committed. Enforce supported record, baseline, outbox and queue bounds with explicit failure status. |
 | P5: bounded read-only access | Read a verified checkpoint and the required state ancestry through a separate read-only capability. Supply an asynchronous, cancellable timeline page, subtree and location for a fixed branch/revision. Preserve external-reference and missing/ambiguous statuses. Use work budgets and continuations; budget exhaustion cannot mean “no history.” Start with exact revision entries; sentence grouping is unnecessary for the first prototype. |
 
-The existing G1/G2/G3 implementations prove these mechanisms in harnesses; they
-are not wired into ordinary Save/Open or a production history service. In
-particular, the finite gate store's whole-journal scans and the existing memory
+At the initial UI review, G1/G2/G3 proved these mechanisms only in harnesses;
+the persistent increment above now connects the admitted single-Document path.
+The original scope identified the following constraints. In particular, the finite gate store's whole-journal scans and the existing memory
 queries' full ancestry scans are not a ready-made lazy durable reader. Reuse the
 checked core and contracts, then add the bounded application adapters needed by
 this one path. Support a declared finite enrollment/record range initially, with
@@ -173,12 +295,11 @@ history in this first read-only slice.
 
 ## Recommended next increment
 
-First build the small panel/session/adapter slice so Block history becomes
-interactive in Codex. Alongside it, integrate only the persistent-path slices in
-§1. Replace the adapter when that path proves restart/reopen equality. Demonstrate
-one real Document end to end before extending supported cases or starting P6's
-large qualification matrix. This advances the UI without claiming that a memory
-prototype is durable or weakening the exactness/durability architecture.
+The small panel and the admitted persistent path have now reached the requested
+review milestones. Stop at this vertical slice for user review. Extend supported
+cases or begin P6's large qualification matrix only as a separately scoped next
+increment. The labelled temporary adapter remains available for unsaved samples;
+saved admitted Documents use the persistent path proved above.
 
 References: [Stage C plan](BLOCK_SCOPED_HISTORY_STAGE_C_PLAN.md),
 [gate results](BLOCK_SCOPED_HISTORY_STAGE_C_GATE_RESULTS.md),

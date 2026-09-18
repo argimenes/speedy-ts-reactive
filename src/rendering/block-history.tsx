@@ -70,7 +70,7 @@ function HistoryPanel(props: { editor: ReactiveEditor }) {
     event.stopPropagation();
     if (event.key === "Escape") { event.preventDefault(); history.close(); return; }
     if (event.key === "Tab") {
-      const buttons = [...root.querySelectorAll<HTMLElement>("button:not(:disabled), summary, [tabindex='0']")];
+      const buttons = [...root.querySelectorAll<HTMLElement>("button:not(:disabled), select:not(:disabled), summary, [tabindex='0']")];
       const at = buttons.indexOf(document.activeElement as HTMLElement);
       if (event.shiftKey && at <= 0) { event.preventDefault(); buttons.at(-1)?.focus(); }
       else if (!event.shiftKey && (at < 0 || at === buttons.length - 1)) { event.preventDefault(); buttons[0]?.focus(); }
@@ -84,10 +84,17 @@ function HistoryPanel(props: { editor: ReactiveEditor }) {
   const date = (value: string) => { const d = new Date(value); return Number.isNaN(d.getTime()) ? value : d.toLocaleString(); };
   return <div class="block-history-shade" onPointerDown={event => { if (event.target === event.currentTarget) history.close(); }}>
     <div ref={root} class="block-history-panel" role="dialog" aria-modal="true" aria-label="Block history" tabIndex={-1} data-native-context-menu onKeyDown={keys}>
-      <header class="block-history-header"><div><span class="block-history-eyebrow">BLOCK HISTORY <span class="block-history-badge">Session-only</span></span><h2>{state.title}</h2></div><button type="button" aria-label="Close Block history" onClick={() => history.close()}>×</button></header>
-      <p class="block-history-notice">Recording starts when History is first opened. Close this panel, make edits, then reopen History to see them. This history is lost when the Document session closes or the page reloads.</p>
+      <header class="block-history-header"><div><span class="block-history-eyebrow">BLOCK HISTORY <span class="block-history-badge">{state.storage === "persistent" ? "Persistent" : "Session-only"}</span></span><h2>{state.title}</h2></div><button type="button" aria-label="Close Block history" onClick={() => history.close()}>×</button></header>
+      <p class="block-history-notice">{state.storage === "persistent"
+        ? "History is recorded separately from Save. Earlier recording sessions remain available after reopening; unsaved historical edits are never applied to your current Document."
+        : "Recording starts when History is first opened. Close this panel, make edits, then reopen History to see them. This history is lost when the Document session closes or the page reloads. Save the Document to use persistent history."}</p>
+      <Show when={state.storage === "persistent" && state.sessions.length}>
+        <label class="block-history-session">Recording session <select aria-label="Recording session" value={state.segmentId} disabled={state.loading} onChange={event => void history.chooseSession(event.currentTarget.value)}>
+          <For each={state.sessions}>{session => <option value={session.segmentId}>{date(session.metadata.timestamp ?? "")} · {session.headSequence} revisions</option>}</For>
+        </select></label>
+      </Show>
       <Show when={state.error}><p class="block-history-error" role="alert">{state.error}</p></Show>
-      <Show when={state.incomplete}><p class="block-history-error" role="status">Recording stopped at a session limit or capture error. Earlier revisions are available; the latest recorded state may differ from your current Document. See Recording status below.</p></Show>
+      <Show when={state.incomplete}><p class="block-history-error" role="status">Recording stopped at a supported limit or capture error. Earlier revisions are available; the latest recorded state may differ from your current Document. See Recording status below.</p></Show>
       <div class="block-history-body">
         <nav class="block-history-timeline" aria-label="Historical revisions" aria-busy={state.loading}>
           <h3>Revisions</h3>
@@ -115,7 +122,7 @@ function HistoryPanel(props: { editor: ReactiveEditor }) {
           </>}</Show>
         </section>
       </div>
-      <footer><span>Read-only preview · Your current Document is unchanged.</span><details><summary>Recording status</summary><p>{state.message}</p></details></footer>
+      <footer><span>Read-only preview · Your current Document is unchanged.</span><details><summary>Recording status</summary><p>{state.message}</p><Show when={state.recording}>{status => <p>{status().message} Browser committed: {status().browserCommitted}; server durable: {status().serverDurable}; verified: {status().verified}; pending: {status().pendingCount + status().pendingCapture}.</p>}</Show></details></footer>
     </div>
   </div>;
 }

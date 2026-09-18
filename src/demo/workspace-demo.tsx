@@ -328,6 +328,7 @@ export function WorkspaceDemo() {
   const saveWorkspace = () => { if (!workspaceBusy()) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("save"); } };
   const saveSplitWorkspace = async (filename: string, createOnly: boolean): Promise<WorkspaceActionResult> => {
     if (!activeDemo) return { success: false, error: "The current Workspace is not ready." };
+    if (activeDemo.editor.blockHistory.state.storage === "persistent") return { success: false, error: "Save this enrolled Document with Save. Workspace saving for persistent-history Documents is not supported yet." };
     const location = activeDemo.location();
     if (!location) return { success: false, error: "Save the current Document with Save as… before saving its Workspace." };
     const document = activeDemo.editor.encodeDocument();

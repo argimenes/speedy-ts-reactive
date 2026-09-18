@@ -10,6 +10,7 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
   onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void;
 }) {
   const [location, setLocation] = createSignal(options.location);
+  if (options.location) editor.blockHistory.attachLocation(options.location);
   const [browser, setBrowser] = createSignal<"open" | "save">();
   const [pending, setPending] = createSignal<PendingAction>();
   const [afterSave, setAfterSave] = createSignal<PendingAction>();
@@ -97,7 +98,7 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
     run(key === "o" ? "document.open" : event.shiftKey ? "document.saveAs" : "document.save");
   };
   const beforeUnload = (event: BeforeUnloadEvent) => {
-    if (dirty() || busy()) { event.preventDefault(); event.returnValue = ""; }
+    if (dirty() || busy() || editor.blockHistory.hasPendingCapture()) { event.preventDefault(); event.returnValue = ""; }
   };
   onMount(() => {
     document.addEventListener("keydown", keyDown, true);
