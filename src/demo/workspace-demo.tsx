@@ -22,6 +22,7 @@ import { createFloatingWindowResize, FloatingWindowResizeHandle } from "../rende
 import { decodeWorkspace } from "../block-tree/codecs";
 import { openJsonFile, saveJsonFile, type BrowserFileHandle } from "./browser-json-file";
 import { resolveFeatureFlags, type ReactiveEditorConfiguration } from "../configuration";
+import { backgroundImages } from "../rendering/backgrounds";
 
 type DemoWindowState = "normal" | "minimized" | "maximized" | "closed";
 interface DemoWindowSnapshot { state: DemoWindowState; position: { x: number; y: number }; size: { w: number; h: number } }
@@ -355,7 +356,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
   const [workspaceError, setWorkspaceError] = createSignal("");
   const [workspaceConflict, setWorkspaceConflict] = createSignal(false);
   const [localWorkspaceFile, setLocalWorkspaceFile] = createSignal<LocalWorkspaceFile>();
-  const background = new BackgroundEditor({ id: "workspace-background", type: "image-background-block", metadata: { url: "/image-backgrounds/green-aurora.jpg" }, children: [] }, configuration);
+  const background = new BackgroundEditor({ id: "workspace-background", type: "image-background-block", metadata: { url: backgroundImages[0].url }, children: [] }, configuration);
   registerCoreViews(background);
   const backgroundView = background.createView("workspace-background");
   let activeEditor: ReactiveEditor | undefined;

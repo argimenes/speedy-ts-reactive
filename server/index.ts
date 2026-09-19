@@ -15,11 +15,12 @@ import { featureFlags } from "../src/configuration.js";
 //import { BlockType } from "./types";
 let db: Surreal | undefined;
 
-const basePath = "../../../codex-data";
-const baseDocumentPath = basePath + "/data";
+const basePath = "../../data";
+const baseDocumentPath = basePath;
 const baseWorkspacesPath = basePath + "/workspaces"
 const baseTemplatesPath = basePath + "/templates"
 const baseReactiveRepositoryPath = basePath + "/reactive-repositories";
+const baseBackgroundPath = "../../src/assets/hosted/backgrounds";
 const publicHostedVersion = process.env.SPEEDY_PUBLIC_HOSTED_VERSION === undefined
   ? featureFlags.publicHostedVersion
   : process.env.SPEEDY_PUBLIC_HOSTED_VERSION !== "0";
@@ -245,8 +246,8 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static('dist'));
 app.use("/templates", express.static('data/templates'));
 app.use('/uploads', express.static('uploads'));
-app.use('/video-backgrounds', express.static(path.join(__dirname, basePath, 'backgrounds/video')));
-app.use('/image-backgrounds', express.static(path.join(__dirname, basePath, 'backgrounds/images')));
+app.use('/video-backgrounds', express.static(path.join(__dirname, baseBackgroundPath, 'video')));
+app.use('/image-backgrounds', express.static(path.join(__dirname, baseBackgroundPath, 'images')));
 app.use(express.json({limit: '50mb'}));
 app.use(express.urlencoded({limit: '50mb'}));
 

@@ -60,7 +60,7 @@ save snapshots record their selected folder/filename without modifying live
 content. Extended inline/reference semantics still use the separate repository
 contract and existing legacy export-loss checks.
 
-The default store remains the sibling `codex-data/data` directory. An explicit
+The default store is the repository-owned `data` directory. An explicit
 `SPEEDY_DOCUMENT_ROOT` can select another existing document root, including an
 isolated test store. Nested paths are confined to that root after resolving
 symlinks; filenames cannot contain path separators. Writes use a temporary file

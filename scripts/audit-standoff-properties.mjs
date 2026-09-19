@@ -24,7 +24,7 @@ function inspectSchema(node) {
 inspectSchema(source);
 
 const stores = [];
-for (const root of process.argv.slice(2).length ? process.argv.slice(2) : ["data", "../codex-data/data"]) {
+for (const root of process.argv.slice(2).length ? process.argv.slice(2) : ["data"]) {
   const properties = new Map();
   const invalid = [];
   let files = 0;

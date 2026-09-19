@@ -32,6 +32,7 @@ import { CanvasBlock } from './blocks/canvas-block';
 import { DocumentTabBlock, DocumentTabRowBlock } from './blocks/document-tabs-block';
 import { PageBlock } from './blocks/page-block';
 import { DocumentBlock } from './blocks/document-block';
+import { backgroundImages, backgroundVideos } from './rendering/backgrounds';
 
 export type BlockBuilder =
     (container: HTMLElement, dto: IBlockDto, manager: UniverseBlock) => Promise<IBlock>;
@@ -1347,14 +1348,13 @@ export class UniverseBlock extends AbstractBlock implements IUniverseBlock {
         const videoBackground = await this.recursivelyBuildBlock(container, {
             type: BlockType.VideoBackgroundBlock,
             metadata: {
-                //url: "/video-backgrounds/green-aurora.mp4"
-                url: "/video-backgrounds/rain.mp4"
+                url: backgroundVideos.rain
             }
         }) as AbstractBlock;
         this.switchBackground(originalBackground, videoBackground);
     }
     async switchToImageBackground(url?: string) {
-        url = url || "/image-backgrounds/green-aurora.jpg";
+        url = url || backgroundImages[0].url;
         const originalBackground = this.getBackground();
         const container = document.createElement("DIV") as HTMLDivElement;
         const videoBackground = await this.recursivelyBuildBlock(container, {
@@ -1372,7 +1372,7 @@ export class UniverseBlock extends AbstractBlock implements IUniverseBlock {
                 {
                     type: BlockType.ImageBackgroundBlock,
                     metadata: {
-                        url: "/image-backgrounds/green-aurora.jpg"
+                        url: backgroundImages[0].url
                     }
                 }
             ]
@@ -1391,7 +1391,7 @@ export class UniverseBlock extends AbstractBlock implements IUniverseBlock {
                 {
                     type: BlockType.VideoBackgroundBlock,
                     metadata: {
-                        url: "/video-backgrounds/green-aurora.mp4"
+                        url: backgroundVideos.greenAurora
                     }
                 }
             ]

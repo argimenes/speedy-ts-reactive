@@ -98,7 +98,9 @@ The new read-only [`audit script`](scripts/audit-standoff-properties.mjs) scans
 those registrations and `standoffProperties` arrays in saved JSON. Run
 `node scripts/audit-standoff-properties.mjs` (optional arguments select stores).
 The census found 16 types in 37 local sample JSON files and **75 types in 2,388
-JSON files** in the user's existing `../codex-data/data` store. Counts include
+JSON files** in the user's then-existing `../codex-data/data` store. That path
+is retained below only as historical audit provenance; it is not a runtime or
+build dependency. Counts include
 saved deleted/client-only records; they describe stored tokens, not active
 rendering. `data/usher.json` failed JSON parsing and was left untouched.
 

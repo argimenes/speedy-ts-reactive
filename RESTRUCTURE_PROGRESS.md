@@ -470,11 +470,11 @@ live snapshot consumers remain outside this scoped performance guarantee.
 
 ## Backgrounds and general context menu — scoped pass completed, 12 September 2026
 
-Development startup correction (same date): the `/uploads` proxy intercepted
-Vite's `medieval-template.jpg?import` module request, returning JPEG bytes and
-leaving the page blank. Both configs now bypass the proxy for `import`, `raw`
-and `url` transforms while ordinary media still goes to Node. Six regression
-cases cover routing and config consistency. Chrome verified the actual
+Development startup correction (same date): demo and background assets are now
+stored under `src/assets/hosted` and imported through Vite. The development
+proxy is consequently limited to `/api`; media no longer depends on an uploads
+directory or sibling data repository. Proxy regression cases cover routing and
+config consistency. Chrome verified the actual
 `http://localhost:3000/` development page loads with 34 editable regions, its
 background image, and no startup console errors. The full suite now passes
 81 tests in 15 suites; typecheck and build pass. Earlier background browser

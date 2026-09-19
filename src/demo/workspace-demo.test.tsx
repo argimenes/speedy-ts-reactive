@@ -47,7 +47,7 @@ describe("workspace demo fixture", () => {
     expect(metadata(image).url).not.toBe(metadata(image).originalUrl);
     expect(String(metadata(image).url)).toContain("medieval-template");
     const frame = blocks.find((block) => block.type === "iframe-block")!;
-    expect(metadata(frame).url).toBe("/demo/embedded-page.html");
+    expect(String(metadata(frame).url)).toContain("embedded-page");
     const video = blocks.find((block) => block.type === "youtube-video-block")!;
     expect(metadata(video).loadOnDemand).toBeUndefined();
 

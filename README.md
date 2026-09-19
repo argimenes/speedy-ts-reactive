@@ -69,7 +69,7 @@ and filename for a copy. The title shows unsaved changes, and opening/resetting/
 closing edited content offers Save, Discard, or Cancel. Shortcuts are Ctrl/Cmd+O,
 Ctrl/Cmd+S, and Ctrl/Cmd+Shift+S respectively.
 
-The default store is the existing sibling `../codex-data/data` directory.
+The default store is the repository-owned [`data`](./data) directory.
 Folders must already exist. To use a different store:
 
 ```bash
@@ -91,8 +91,9 @@ server TypeScript; frontend changes reload automatically.
 
 Control-click or right-click the desktop, or use **Background…**, to select an
 image, looping video, YouTube background or animated WebGL gradient. The original
-image presets and rain video use `../codex-data/backgrounds/images` and
-`../codex-data/backgrounds/video`, served by Node through Vite's media proxies.
+image presets and videos are bundled from
+[`src/assets/hosted/backgrounds`](./src/assets/hosted/backgrounds), so they are
+available in static Vite/Vercel builds without a sibling data repository.
 Custom image/video URLs and YouTube URLs or IDs are accepted. Video backgrounds
 start muted; the menu provides pause/play and sound options. WebGL respects
 reduced motion and falls back to a static gradient if unavailable.
@@ -115,7 +116,8 @@ Disabled legacy actions explain their limits in tooltips. See the
 [background/context-menu migration notes](BACKGROUND_CONTEXT_MENU_MIGRATION.md)
 for source mapping and verification.
 
-Workspace files default to the sibling `../codex-data/workspaces` directory.
+Workspace files default to the repository-owned [`data/workspaces`](./data/workspaces)
+directory.
 Set `SPEEDY_WORKSPACE_ROOT=/absolute/path/to/workspaces` to select a different
 existing directory. See [WORKSPACE_PERSISTENCE_PLAN.md](./WORKSPACE_PERSISTENCE_PLAN.md)
 for the manifest, recovery and compatibility contracts.

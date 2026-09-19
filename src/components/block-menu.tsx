@@ -15,6 +15,7 @@ import { StickyTabBlock, StickyTabRowBlock } from "../blocks/sticky-tab-block";
 import { DocumentBlock } from "../blocks/document-block";
 import { Template } from "../library/templates";
 import { BookBlock, FixedSizePageBlock } from "../blocks/book-block";
+import { backgroundImages } from "../rendering/backgrounds";
 
 type Props = {
     items: ContextMenuItem[];
@@ -866,22 +867,22 @@ export class BlockMenuBlock extends AbstractBlock {
                         { 
                           type: "item",
                           label: "Green aurora",
-                          onClick: () => self.setBackgroundImage("/image-backgrounds/green-aurora.jpg")
+                          onClick: () => self.setBackgroundImage(backgroundImages[0].url)
                         },
                         { 
                           type: "item",
                           label: "Desktop",
-                          onClick: () => self.setBackgroundImage("/image-backgrounds/wood.jpg")
+                          onClick: () => self.setBackgroundImage(backgroundImages[1].url)
                         },
                         { 
                           type: "item",
                           label: "High",
-                          onClick: () => self.setBackgroundImage("/image-backgrounds/clouds.jpg")
+                          onClick: () => self.setBackgroundImage(backgroundImages[2].url)
                         },
                         { 
                           type: "item",
                           label: "Aurora over snow",
-                          onClick: () => self.setBackgroundImage("/image-backgrounds/snow-aurora.jpg")
+                          onClick: () => self.setBackgroundImage(backgroundImages[3].url)
                         }
                       ]
                 },

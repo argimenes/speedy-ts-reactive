@@ -67,9 +67,9 @@ navigation and viewport clamping are included.
    multi-window session/persistence controller; show their unavailability rather
    than silently saving document JSON as a workspace. Existing document browsing
    remains usable from the menu.
-8. Proxy the original `/image-backgrounds` and `/video-backgrounds` static routes
-   in both Vite configs (Node already serves the sibling codex-data assets).
-   Do not copy or modify the user's original media or stored documents.
+8. Bundle the background media from `src/assets/hosted/backgrounds`; Node keeps
+   the `/image-backgrounds` and `/video-backgrounds` aliases for saved workspace
+   compatibility, while Vite imports the same repo-owned files directly.
 
 ## Acceptance checks
 

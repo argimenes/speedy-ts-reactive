@@ -1,7 +1,8 @@
 import type { ExistingBlockDto } from "../block-tree/types";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "../rendering/register-core-views";
-import manuscriptUrl from "../../uploads/medieval-template.jpg";
+import manuscriptUrl from "../assets/hosted/demo/medieval-template.jpg";
+import embeddedPageUrl from "../assets/hosted/demo/embedded-page.html?url";
 import { workspaceBuilderTypes, workspaceDocumentFixture } from "./workspace-document";
 import type { ReactiveEditorConfiguration } from "../configuration";
 
@@ -34,7 +35,7 @@ export function createWorkspaceDemoDocument(): ExistingBlockDto {
     }
     if (block.type === "iframe-block") {
       metadata.originalUrl = metadata.url;
-      metadata.url = `${import.meta.env.BASE_URL}demo/embedded-page.html`;
+      metadata.url = embeddedPageUrl;
       metadata.title = "Local embedded document sample";
     }
     block.metadata = metadata;
