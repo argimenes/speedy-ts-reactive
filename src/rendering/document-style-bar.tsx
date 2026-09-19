@@ -112,12 +112,12 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       </button>
     </Show>
     <button type="button" title={editor.bindings.label("find.open")} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.find.open(key); if (!editor.find.state.open) setNotice(editor.find.state.message); } else setNotice("Focus text in a document first."); }}>Find</button>
-    <button type="button" title="View history of the focused Block" onClick={() => {
+    <Show when={editor.features.blockHistory}><button type="button" title="View history of the focused Block" onClick={() => {
       const key = [editor.focus.state.focusedKey, targetKey(), props.scopeKey, editor.focus.state.lastFocusedKey]
         .find(key => key && inScope(key) && editor.blockHistory.canOpen(key));
       if (key) { setNotice(""); editor.commandRegistry.execute("history.open", { targetKey: key, args: undefined }); }
       else setNotice("Focus a Block in this Document to view its history.");
-    }}>History</button>
+    }}>History</button></Show>
     <Show when={editor.blockHistory.state.recordingError || editor.blockHistory.state.recording?.phase === "stopped" || editor.blockHistory.state.recording?.phase === "offline"}>
       <span role="status" class="document-style-bar-notice">History: {editor.blockHistory.state.recordingError ?? editor.blockHistory.state.recording?.message}</span>
     </Show>

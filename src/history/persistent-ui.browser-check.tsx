@@ -11,7 +11,7 @@ import type { ResourceSnapshot, ResourceTransition } from "./stage-c-gates/resou
 
 const filename = new URLSearchParams(location.search).get("file") ?? "large-document.json", folder = ".";
 const loaded = await PersistenceService.loadDocument(filename, folder);
-const editor = new ReactiveEditor(loaded);
+const editor = new ReactiveEditor(loaded, { features: { blockHistory: true } });
 registerCoreViews(editor);
 const projection = editor.createView("persistent-browser-check");
 editor.persistence.markCurrentRevisionSaved(loaded);

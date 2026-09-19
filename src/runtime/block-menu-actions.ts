@@ -90,7 +90,9 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     if (type === "youtube-video-block" ? !youtubeId(url) : !mediaUrl(url)) throw new Error("Enter a valid media URL (YouTube videos also accept a video ID).");
     add(dto(type, [], { url }));
   });
-  const historyEntry = command("history.open", "History…");
+  const historyEntry = editor.features.blockHistory
+    ? command("history.open", "History…")
+    : unavailable("History…", "Block history is disabled by configuration.");
   const history = [command("history.undo", "Undo"), command("history.redo", "Redo")];
   const files = [command("document.open", "Open…"), command("document.save", "Save"), command("document.saveAs", "Save as…")];
 

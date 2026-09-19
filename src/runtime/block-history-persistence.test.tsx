@@ -16,7 +16,7 @@ const dto: ExistingBlockDto = { id: "doc", type: "document-block", children: [{ 
   standoffProperties: [{ type: "text/colour", start: 0, end: 4, value: "#ff0000", metadata: {}, text: "Save", plugin: null, isDeleted: false }],
 }] };
 function fixture() {
-  const editor = new ReactiveEditor(dto), view = editor.createView("history-persistence");
+  const editor = new ReactiveEditor(dto, { features: { blockHistory: true } }), view = editor.createView("history-persistence");
   cleanup.push(() => editor.dispose());
   const key = Object.values(view.state.nodes).find(node => node.payload.id === "p")!.key;
   const status: DurableRecorderStatus = { phase: "recording", message: "Verified", pendingCapture: 0, pendingCount: 0, pendingBytes: 0, browserCommitted: 1, serverDurable: 1, verified: 1 };
@@ -76,7 +76,7 @@ describe("persistent history application seams", () => {
     expect(editor.persistence.state.lastSavedRevision).toBe(0);
     expect(editor.repository.state.revision).toBe(1);
     expect(editor.persistence.savedDocument).toEqual(savedDocument);
-    const reopened = new ReactiveEditor(savedDocument as unknown as ExistingBlockDto); cleanup.push(() => reopened.dispose());
+    const reopened = new ReactiveEditor(savedDocument as unknown as ExistingBlockDto, { features: { blockHistory: true } }); cleanup.push(() => reopened.dispose());
     expect(reopened.encodeDocument().children![0].text).toBe("Saved");
     expect(reopened.repository.canUndo()).toBe(false);
   });

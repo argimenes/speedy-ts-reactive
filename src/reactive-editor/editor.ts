@@ -35,8 +35,10 @@ import { StickyNoteService } from "../runtime/sticky-notes";
 import type { LoadedWorkspace } from "./workspace-manifest";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { BlockHistorySession } from "../runtime/block-history";
+import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguration } from "../configuration";
 
 export class ReactiveEditor {
+  readonly features: FeatureFlags;
   readonly decorations = new SessionDecorations();
   readonly minimap = new MinimapService();
   readonly find: DocumentFind;
@@ -69,7 +71,8 @@ export class ReactiveEditor {
   private gateway?: InputGateway;
   private crossInput?: CrossBlockInput;
 
-  constructor(dto: ExistingBlockDto | LoadedWorkspace) {
+  constructor(dto: ExistingBlockDto | LoadedWorkspace, configuration: ReactiveEditorConfiguration = {}) {
+    this.features = resolveFeatureFlags(configuration);
     registerInputActions(this.bindings);
     const loadedWorkspace = "state" in dto && "references" in dto ? dto as LoadedWorkspace : undefined;
     const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : isHistoryDocument(dto) ? decodeHistoryDocument(dto) : decodeBlockTree(dto as ExistingBlockDto);

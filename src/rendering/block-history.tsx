@@ -89,5 +89,5 @@ function HistoryPanel(props: { editor: ReactiveEditor }) {
 }
 
 export function BlockHistoryLayer(props: { editor: ReactiveEditor; viewId: string }) {
-  return <Show when={props.editor.blockHistory.state.open && props.editor.blockHistory.state.viewId === props.viewId}><Portal><HistoryPanel editor={props.editor} /></Portal></Show>;
+  return <Show when={props.editor.features.blockHistory && props.editor.blockHistory.state.open && props.editor.blockHistory.state.viewId === props.viewId}><Portal><HistoryPanel editor={props.editor} /></Portal></Show>;
 }

@@ -9,11 +9,12 @@ import type { HistoryDisplayResult } from "../history/preview";
 import { DocumentStyleBar } from "./document-style-bar";
 import { BlockHistorySession } from "../runtime/block-history";
 import { createSessionHistorySource, type ReadonlyHistorySession } from "../history/ui-session-source";
+import { blockMenuItems } from "../runtime/block-menu-actions";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); });
 function setup() {
-  const editor = new ReactiveEditor({ id: "doc", type: "document-block", children: [{ id: "p", type: "standoff-editor-block", text: "Hello", standoffProperties: [{ id: "bold", type: "style/bold", start: 0, end: 1 }] }] });
+  const editor = new ReactiveEditor({ id: "doc", type: "document-block", children: [{ id: "p", type: "standoff-editor-block", text: "Hello", standoffProperties: [{ id: "bold", type: "style/bold", start: 0, end: 1 }] }] }, { features: { blockHistory: true } });
   registerCoreViews(editor);
   const view = editor.createView("history-test"), key = Object.values(view.state.nodes).find(n => n.payload.id === "p")!.key;
   const host = document.body.appendChild(document.createElement("div"));
@@ -22,6 +23,36 @@ function setup() {
   return { editor, view, key, host };
 }
 const ready = (editor: ReactiveEditor) => vi.waitFor(() => { expect(editor.blockHistory.state.error).toBe(""); expect(editor.blockHistory.state.result).toBeDefined(); });
+
+describe("Block history feature switch", () => {
+  it("defaults off and never creates a recorder or enables History/Restore entry points", async () => {
+    const editor = new ReactiveEditor({ id: "doc", type: "document-block", children: [{ id: "p", type: "standoff-editor-block", text: "Hello" }] });
+    registerCoreViews(editor);
+    const view = editor.createView("history-disabled"), key = Object.values(view.state.nodes).find(n => n.payload.id === "p")!.key;
+    const createSource = vi.fn(() => { throw new Error("Session recording must remain off"); });
+    const createPersistent = vi.fn(async () => { throw new Error("Persistent recording must remain off"); });
+    editor.blockHistory.dispose();
+    const history = new BlockHistorySession(editor, createSource, createPersistent);
+    Object.defineProperty(editor, "blockHistory", { value: history });
+    cleanup.push(() => editor.dispose());
+
+    history.attachIdentity({ resourceId: "doc", memoirId: "existing-history" });
+    history.attachLocation({ folder: "notes", filename: "Document.json" });
+    editor.commands.replaceInlineRange(key, 5, 5, "!");
+    history.open(key);
+    await history.prepareRestore();
+    history.confirmRestore();
+
+    expect(editor.features.blockHistory).toBe(false);
+    expect(history.state.open).toBe(false);
+    expect(history.canOpen(key)).toBe(false);
+    expect(history.savePersistent("Document.json", "notes")).toBeUndefined();
+    expect(createSource).not.toHaveBeenCalled();
+    expect(createPersistent).not.toHaveBeenCalled();
+    expect(blockMenuItems(editor, key).find(item => item.label === "History…")?.disabled).toBe(true);
+    expect(editor.commandRegistry.canExecute("history.open", { targetKey: key, args: undefined })).toBe(false);
+  });
+});
 
 describe("initial Block history panel", () => {
   it("opens from the Block menu, records edit/undo/redo, selects past states and restores focus without mutation", async () => {
@@ -103,7 +134,7 @@ describe("initial Block history panel", () => {
       { id: "p", type: "plain-text-block", text: "<img src=x onerror=alert(1)>" },
       { id: "timer", type: "timer-block", metadata: { running: true } },
       { id: "remote", type: "iframe-block", metadata: { url: "https://example.invalid/" } },
-    ] });
+    ] }, { features: { blockHistory: true } });
     cleanup.push(() => editor.dispose());
     const source = createSessionHistorySource(editor.repository, editor.repository.state.rootPlacementKey); cleanup.push(() => source.dispose());
     const session = await source.open({ blockId: "doc" }), selection = await session.select(session.headRevisionId);

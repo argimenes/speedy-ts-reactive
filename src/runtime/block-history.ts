@@ -40,7 +40,9 @@ export class BlockHistorySession {
   private selection?: HistorySelection;
   private target?: { placementKey: string; contentKey: string; blockId: string };
   private pendingRestore?: { plan: DeepReadonly<BlockRestorePlan>; generation: number; revisionId: string };
+  get enabled(): boolean { return this.editor.features.blockHistory; }
   restoreReason(): string | undefined {
+    if (!this.enabled) return "Block history is disabled by configuration.";
     if (this.state.storage !== "persistent" || !this.durable?.preflightRestore || !this.session?.readAuthoredBlock) return "Save and enroll this Document in persistent History before restoring.";
     if (!this.state.result?.restore?.supported) return this.state.result?.restore?.reason ?? "Select an available historical Block.";
     const status = this.state.recording;
@@ -51,6 +53,7 @@ export class BlockHistorySession {
     this.pendingRestore = undefined; this.setState({ restoreConfirmation: undefined, restoring: false });
   }
   async prepareRestore(): Promise<void> {
+    if (!this.enabled) return;
     if (this.state.restoring || this.state.selecting || this.state.loading) return;
     this.cancelRestore();
     const revisionId = this.state.selectedRevisionId, session = this.session, target = this.target;
@@ -75,6 +78,7 @@ export class BlockHistorySession {
     } catch (error) { if (generation === this.generation && !request.signal.aborted) { this.cancelRestore(); this.setState("error", (error as Error).message); } }
   }
   confirmRestore(): void {
+    if (!this.enabled) return;
     const pending = this.pendingRestore;
     try {
       if (!pending || pending.generation !== this.generation || pending.revisionId !== this.state.selectedRevisionId || !this.state.open) throw Error("The selected revision changed. Prepare the restore again.");
@@ -84,7 +88,7 @@ export class BlockHistorySession {
       this.setState({ error: "", restoreNotice: `Restored revision ${pending.revisionId} as a new current change. The previous version remains in History and ordinary Undo. History itself was not changed.` });
     } catch (error) { this.cancelRestore(); this.setState("error", (error as Error).message); }
   }
-  async latest(): Promise<void> { if (this.state.recording?.segmentId && !this.hasPendingCapture()) await this.chooseSession(this.state.recording.segmentId); }
+  async latest(): Promise<void> { if (this.enabled && this.state.recording?.segmentId && !this.hasPendingCapture()) await this.chooseSession(this.state.recording.segmentId); }
 
   private request?: AbortController;
   private generation = 0;
@@ -100,15 +104,18 @@ export class BlockHistorySession {
   attachIdentity(identity: { resourceId: string; memoirId?: string }): void { this.identity = identity; }
   attachLocation(location: DocumentLocation): void {
     this.location = { ...location };
-    // A saved portable Document explicitly carries its enrollment. Reopening it
-    // starts capture before user edits; legacy files opt in through History.
-    if (this.identity && !this.starting) void this.ensureDurable().catch(() => {});
+    // With the feature enabled, a saved portable Document explicitly carries
+    // its enrollment. Reopening it starts capture before user edits; legacy
+    // files opt in through History.
+    if (this.enabled && this.identity && !this.starting) void this.ensureDurable().catch(() => {});
   }
   hasPendingCapture(): boolean {
+    if (!this.enabled) return false;
     const status = this.state.recording;
     return !!this.starting && !this.durable && !this.state.recordingError || !!status && (status.pendingCapture > 0 || status.pendingCount > 0);
   }
   private ensureDurable(): Promise<DurableHistorySource> {
+    if (!this.enabled) return Promise.reject(new Error("Block history is disabled by configuration."));
     if (this.starting) return this.starting;
     if (!this.location) return Promise.reject(new Error("Save this Document before starting persistent history."));
     const live = this.editor.repository.readState();
@@ -134,6 +141,7 @@ export class BlockHistorySession {
   }
   /** A failed archive must not make an independently valid Document unsaveable. */
   savePersistent(filename: string, folder: string, createOnly = false) {
+    if (!this.enabled) return undefined;
     if (!this.starting && !this.identity) return undefined;
     if (this.durable) return this.durable.save(filename, folder, createOnly);
     const snapshot = this.editor.repository.snapshot();
@@ -151,6 +159,7 @@ export class BlockHistorySession {
     });
   }
   async chooseSession(segmentId: string): Promise<void> {
+    if (!this.enabled) return;
     if (!this.durable || !this.selection) return;
     this.cancelRestore();
     this.request?.abort();
@@ -167,10 +176,12 @@ export class BlockHistorySession {
     } catch (error) { this.failed(error, generation); }
   }
   canOpen(key: string): boolean {
+    if (!this.enabled) return false;
     const node = this.editor.node(key);
     return !!node && typeof node.payload.id === "string" && blockAncestors(this.editor, key).some(n => n.viewType === "document-block");
   }
   open(key: string): void {
+    if (!this.enabled) return;
     const node = this.editor.node(key);
     if (!node) return;
     this.close(false);
@@ -215,6 +226,7 @@ export class BlockHistorySession {
     this.setState({ loading: false, selecting: false, error: error instanceof Error ? error.message : String(error) });
   }
   async more(): Promise<void> {
+    if (!this.enabled) return;
     if (!this.session || !this.state.nextCursor || this.state.loading || this.state.selecting) return;
     this.cancelRestore();
     const request = this.request = new AbortController(), generation = ++this.generation;
@@ -226,6 +238,7 @@ export class BlockHistorySession {
     } catch (error) { this.failed(error, generation); }
   }
   async select(revisionId: string): Promise<void> {
+    if (!this.enabled) return;
     if (!this.session) return;
     this.cancelRestore();
     const start = performance.now();
