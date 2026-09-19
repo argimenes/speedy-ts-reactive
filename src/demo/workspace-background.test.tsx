@@ -10,7 +10,7 @@ function click(label: string, selector = "button") {
   if (!button) throw new Error(`Missing button ${label}`); button.click();
 }
 it("keeps the document, caret and file actions across background changes and document-session reset", async () => {
-  const host = document.body.appendChild(document.createElement("div")); cleanup.push(render(() => <WorkspaceDemo />, host));
+  const host = document.body.appendChild(document.createElement("div")); cleanup.push(render(() => <WorkspaceDemo configuration={{ features: { publicHostedVersion: false } }} />, host));
   const flow = host.querySelector<HTMLElement>('[contenteditable="true"]')!;
   const original = flow.textContent;
   flow.focus();

@@ -11,6 +11,7 @@ import { createDocumentStoreRouter } from "./document-store.js";
 import { createHistoryService } from "./history-router.js";
 import { createEntitySearchRouter } from "./entity-search.js";
 import { createWorkspaceStoreRouter } from "./workspace-store.js";
+import { featureFlags } from "../src/configuration.js";
 //import { BlockType } from "./types";
 let db: Surreal | undefined;
 
@@ -19,6 +20,9 @@ const baseDocumentPath = basePath + "/data";
 const baseWorkspacesPath = basePath + "/workspaces"
 const baseTemplatesPath = basePath + "/templates"
 const baseReactiveRepositoryPath = basePath + "/reactive-repositories";
+const publicHostedVersion = process.env.SPEEDY_PUBLIC_HOSTED_VERSION === undefined
+  ? featureFlags.publicHostedVersion
+  : process.env.SPEEDY_PUBLIC_HOSTED_VERSION !== "0";
 
 async function atomicWriteJson(filepath: string, value: unknown): Promise<void> {
   const temporary = `${filepath}.${process.pid}.${Date.now()}.tmp`;
@@ -246,9 +250,27 @@ app.use('/image-backgrounds', express.static(path.join(__dirname, basePath, 'bac
 app.use(express.json({limit: '50mb'}));
 app.use(express.urlencoded({limit: '50mb'}));
 
+const hostedWritePaths = new Set([
+  "/upload",
+  "/api/graph/update-entity-references",
+  "/api/addToGraphJson",
+  "/api/addToGraph",
+  "/api/saveReactiveRepositoryJson",
+]);
+app.use((req, res, next) => {
+  const blocked = publicHostedVersion && req.method !== "GET" &&
+    (req.path.startsWith("/api/history/") || hostedWritePaths.has(req.path));
+  if (blocked) {
+    res.status(403).json({ Success: false, Error: "Server storage is read-only in the public hosted version. Save to a Local file instead." });
+    return;
+  }
+  next();
+});
+
 const documentHistory = createHistoryService({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath) });
 app.use("/api/history", documentHistory.router);
 app.use("/api", createDocumentStoreRouter({
+  readOnly: publicHostedVersion,
   history: documentHistory,
   root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),
   indexDocument: async (doc, filepath) => {
@@ -260,6 +282,7 @@ app.use("/api", createDocumentStoreRouter({
 }));
 
 app.use("/api", createWorkspaceStoreRouter({
+  readOnly: publicHostedVersion,
   documentRoot: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),
   workspaceRoot: process.env.SPEEDY_WORKSPACE_ROOT || path.join(__dirname, baseWorkspacesPath),
   indexDocument: async (doc, filepath) => {

@@ -49,6 +49,19 @@ pilot at [http://localhost:3000/pilot](http://localhost:3000/pilot).
 
 ## Browsing and saving documents
 
+The `publicHostedVersion` feature flag is enabled by default on this branch. It
+splits the toolbar into **Server** and **Local** groups. Server Documents and
+Workspaces can be browsed and opened, but their write actions are disabled.
+Local Open uses the browser's file picker, while Local Save/Save as writes a
+JSON file through the browser File System Access API where available and falls
+back to a JSON download. Local Workspace files are self-contained, so a single
+download includes the Background, window layout, and Document content.
+
+The Node server also rejects Document and Workspace writes by default. Set
+`SPEEDY_PUBLIC_HOSTED_VERSION=0` when running a private writable instance, and
+pass `{ features: { publicHostedVersion: false } }` to `WorkspaceDemo` to restore
+the original single set of server-backed controls.
+
 Use **Open…** for the expandable folder tree and document list. Select a folder,
 filter the filenames if needed, then double-click a document or select it and
 press Open. **Save** updates the current document; **Save as…** chooses a folder

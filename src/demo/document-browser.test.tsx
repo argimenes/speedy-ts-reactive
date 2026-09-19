@@ -42,7 +42,7 @@ function mockStore() {
   vi.stubGlobal("fetch", fetch); return { files, fetch };
 }
 function mountWorkspace() {
-  const host = document.body.appendChild(document.createElement("div")); disposers.push(render(() => <WorkspaceDemo />, host)); return host;
+  const host = document.body.appendChild(document.createElement("div")); disposers.push(render(() => <WorkspaceDemo configuration={{ features: { publicHostedVersion: false } }} />, host)); return host;
 }
 async function browseNotes(host: HTMLElement) {
   click(button("Open…", host));

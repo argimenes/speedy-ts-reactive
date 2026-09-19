@@ -3,6 +3,7 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "../rendering/register-core-views";
 import manuscriptUrl from "../../uploads/medieval-template.jpg";
 import { workspaceBuilderTypes, workspaceDocumentFixture } from "./workspace-document";
+import type { ReactiveEditorConfiguration } from "../configuration";
 
 export function walkDemoBlocks(block: ExistingBlockDto): ExistingBlockDto[] {
   const relations = Object.values(block.relation ?? {}).filter(
@@ -51,15 +52,15 @@ export function assertWorkspaceTypes(editor: ReactiveEditor, document: ExistingB
   if (missing.length) throw new Error(`Missing workspace Block views: ${missing.join(", ")}`);
 }
 
-export function createWorkspaceDemoEditor(): ReactiveEditor {
+export function createWorkspaceDemoEditor(configuration: ReactiveEditorConfiguration = {}): ReactiveEditor {
   const document = createWorkspaceDemoDocument();
-  const editor = createWorkspaceEditor(document);
+  const editor = createWorkspaceEditor(document, configuration);
   assertWorkspaceTypes(editor, document);
   return editor;
 }
 
-export function createWorkspaceEditor(document: ExistingBlockDto): ReactiveEditor {
-  const editor = new ReactiveEditor(document);
+export function createWorkspaceEditor(document: ExistingBlockDto, configuration: ReactiveEditorConfiguration = {}): ReactiveEditor {
+  const editor = new ReactiveEditor(document, configuration);
   registerCoreViews(editor);
   return editor;
 }

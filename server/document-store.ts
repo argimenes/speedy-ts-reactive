@@ -24,6 +24,7 @@ export function validateDocument(value: unknown): asserts value is Record<string
 
 export function createDocumentStoreRouter(options: {
   root: string;
+  readOnly?: boolean;
   indexDocument?: (document: any, filepath: string) => Promise<void>;
   history?: Pick<ReturnType<typeof createHistoryService>, "validatePortable" | "saveDocument">;
 }) {
@@ -94,6 +95,7 @@ export function createDocumentStoreRouter(options: {
   router.post("/saveDocumentJson", async (req, res) => {
     let temporary: string | undefined;
     try {
+      if (options.readOnly) throw new StoreError(403, "Server Documents are read-only in the public hosted version. Save to a Local JSON file instead.");
       const { root, target } = await directory(req.body?.folder ?? "data");
       const filepath = path.join(target, filename(req.body?.filename));
       validateDocument(req.body?.document);

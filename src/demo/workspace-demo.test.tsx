@@ -67,7 +67,7 @@ describe("workspace demo fixture", () => {
 describe("WorkspaceDemo", () => {
   function mount() {
     const host = document.body.appendChild(document.createElement("div"));
-    const dispose = render(() => <WorkspaceDemo />, host);
+    const dispose = render(() => <WorkspaceDemo configuration={{ features: { publicHostedVersion: false } }} />, host);
     disposers.push(dispose);
     return host;
   }

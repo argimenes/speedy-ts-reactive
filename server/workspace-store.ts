@@ -118,6 +118,7 @@ function validateManifest(value: unknown): Record<string, any> {
 export function createWorkspaceStoreRouter(options: {
   documentRoot: string;
   workspaceRoot: string;
+  readOnly?: boolean;
   indexDocument?: (document: any, filepath: string) => Promise<void>;
 }) {
   const router = Router();
@@ -154,6 +155,7 @@ export function createWorkspaceStoreRouter(options: {
   router.post("/saveWorkspaceJson", async (req, res) => {
     let temporary: string | undefined;
     try {
+      if (options.readOnly) throw new WorkspaceStoreError(403, "Server Workspaces are read-only in the public hosted version. Save to a Local JSON file instead.", "read-only");
       const directory = await confinedDirectory(options.workspaceRoot);
       const target = path.join(directory, safeFilename(req.body?.filename, "Workspace"));
       record(req.body?.workspace, "The Workspace must be a JSON object.");
@@ -168,6 +170,7 @@ export function createWorkspaceStoreRouter(options: {
     const staged: Array<{ target: string; temporary: string; document?: any }> = [];
     const committed: Array<{ target: string; previous?: Buffer }> = [];
     try {
+      if (options.readOnly) throw new WorkspaceStoreError(403, "Server Workspaces are read-only in the public hosted version. Save to a Local JSON file instead.", "read-only");
       const manifest = validateManifest(req.body?.workspace);
       const writes = Array.isArray(req.body?.documents) ? req.body.documents : [];
       const seen = new Set<string>();

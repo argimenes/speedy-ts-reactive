@@ -70,6 +70,16 @@
 
 .workspace-demo__toolbar button:disabled { opacity: .35; cursor: default; }
 .workspace-demo__toolbar > span { margin-left: 5px; font-family: ui-monospace, monospace; }
+.workspace-demo__toolbar-group {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  margin: 0 !important;
+  padding-right: 7px;
+  border-right: 1px solid rgba(255, 255, 255, .28);
+  font-family: inherit !important;
+}
+.workspace-demo__toolbar-group > strong { padding: 0 2px; font-size: .66rem; letter-spacing: .04em; text-transform: uppercase; }
 
 .workspace-demo__window {
   box-sizing: border-box;

@@ -100,4 +100,17 @@ describe("Workspace store HTTP routes", () => {
     expect(JSON.parse(await fs.readFile(path.join(workspaces, "Desk.json"), "utf8"))).toEqual({ existing: true });
     expect(await fs.readdir(path.join(documents, "research"))).toEqual([]);
   });
+
+  it("allows Workspace reads but rejects bundle writes in read-only hosted mode", async () => {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    const app = express(); app.use(express.json()); app.use("/api", createWorkspaceStoreRouter({ documentRoot: documents, workspaceRoot: workspaces, readOnly: true }));
+    server = await new Promise<Server>(resolve => { const listener = app.listen(0, "127.0.0.1", () => resolve(listener)); });
+    base = `http://127.0.0.1:${(server.address() as any).port}/api`;
+    expect((await fetch(`${base}/listWorkspaces`)).status).toBe(200);
+    const value = values();
+    const response = await fetch(`${base}/saveWorkspaceBundle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: "Desk.json", workspace: value.workspace, documents: [] }) });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ Success: false, Code: "read-only" });
+    expect(await fs.readdir(workspaces)).toEqual([]);
+  });
 });

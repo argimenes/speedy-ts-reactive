@@ -82,4 +82,15 @@ describe("document store HTTP routes", () => {
     expect((await save("Original.json", { type: "document-block", children: "invalid" })).status).toBe(400);
     expect(JSON.parse(await fs.readFile(path.join(root, "archive", "nested", "Original.json"), "utf8"))).toEqual(document);
   });
+  it("keeps listing and opening available while rejecting writes in read-only hosted mode", async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    const app = express(); app.use(express.json()); app.use("/api", createDocumentStoreRouter({ root, readOnly: true }));
+    server = await new Promise<Server>((resolve) => { const listener = app.listen(0, "127.0.0.1", () => resolve(listener)); });
+    base = `http://127.0.0.1:${(server.address() as any).port}/api`;
+    expect((await fetch(`${base}/listDocuments?folder=archive%2Fnested`)).status).toBe(200);
+    const response = await save("Blocked.json");
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ Success: false, Error: expect.stringContaining("read-only") });
+    expect(await fs.readdir(path.join(root, "archive", "nested"))).not.toContain("Blocked.json");
+  });
 });
