@@ -14,3 +14,56 @@
 .document-count-bar summary span { margin-right:12px; }
 .document-count-bar table { border-collapse:collapse; margin:6px 0; }
 .document-count-bar th,.document-count-bar td { padding:3px 10px; border:1px solid #d9e2df; text-align:right; }
+
+/* Compact presentation: scoped overrides keep the opt-out layout intact. */
+.document-style-bar.document-style-bar--compact {
+  position: relative; box-sizing: border-box; flex-wrap: nowrap; flex: 0 0 40px;
+  height: 40px; min-height: 40px; padding: 3px 5px; overflow: visible;
+  container-type: inline-size;
+}
+.compact-toolbar { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; height: 100%; }
+.compact-toolbar__picker { display: flex; align-items: center; flex: none; }
+.compact-toolbar__picker select { width: 136px; height: 32px; border: 1px solid #bac8c4; border-radius: 4px; background: #f4f8f7; color: #213e36; font: 14px Arial,sans-serif; }
+.document-style-bar .compact-toolbar button { height: 32px; min-width: 32px; padding: 3px; flex: none; white-space: nowrap; }
+.compact-toolbar__tools { display: flex; flex: 1; min-width: 0; align-items: center; gap: 3px; overflow: hidden; height: 100%; }
+.document-style-bar .compact-toolbar__more { width: 66px; border-left: 1px solid #d9e2df; }
+.document-style-bar--compact > .document-style-bar__margins { flex: none; white-space: nowrap; font-size: 12px; }
+.document-style-bar.compact-toolbar__panel {
+  position: fixed; display: flex; flex-direction: column; align-items: stretch; flex-wrap: nowrap;
+  box-sizing: border-box; width: min(340px, calc(100vw - 16px)); overflow: auto; z-index: 10000;
+  padding: 10px; border: 1px solid #bac8c4; border-radius: 6px; background: white; color: #21352e;
+  box-shadow: 0 6px 24px #0003; font: 14px/1.4 Arial,sans-serif;
+}
+.compact-toolbar__panel header { display: flex; align-items: center; justify-content: space-between; }
+.compact-toolbar__panel fieldset { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 0; padding: 6px; border: 1px solid #d9e2df; min-width: 0; }
+.compact-toolbar__panel legend { width: auto; margin: 0; font: 12px Arial,sans-serif; color: #586c64; }
+.compact-toolbar__panel button { min-height: 32px; text-align: left; }
+.compact-toolbar__overflow { display: flex; flex-direction: column; }
+.compact-toolbar__panel label { flex-wrap: wrap; }
+.compact-toolbar__panel input:not([type=checkbox]):not([type=color]) { width: 100%; min-width: 0; }
+.compact-toolbar__panel details { width: 100%; }
+.compact-toolbar__panel summary { padding: 6px; cursor: pointer; }
+.compact-toolbar__panel button:disabled { opacity: .5; cursor: default; }
+.document-status-bar { position: relative; display: flex; align-items: center; gap: 8px; flex: 0 0 24px; height: 24px; box-sizing: border-box; min-width: 0; padding: 0 22px 0 8px; border-top: 1px solid #d9e2df; background: #f7faf9; color: #42564f; font: 12px/1.5 Arial,sans-serif; z-index: 46; }
+.document-status-bar .document-count-bar { flex: 1; min-width: 0; }
+.document-status-bar summary { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.document-status-bar .document-count-bar__details,
+.document-status-bar__message { position: absolute; bottom: calc(100% + 4px); left: 4px; right: 4px; max-height: min(300px, 50vh); overflow: auto; padding: 10px; border: 1px solid #bac8c4; border-radius: 4px; background: white; color: #21352e; box-shadow: 0 -4px 18px #0002; white-space: normal; }
+.document-status-bar__notice { flex: 0 1 40%; min-width: 32px; }
+.document-status-bar__notice summary { color: #795415; }
+.document-status-bar table { width: 100%; }
+.document-status-bar small { display: block; }
+@container (max-width: 440px) { .compact-toolbar__cycle { display: none; } }
+@media (pointer: coarse) {
+  .document-style-bar.document-style-bar--compact { flex-basis: 48px; height: 48px; min-height: 48px; }
+  .document-style-bar .compact-toolbar button, .compact-toolbar__picker select, .compact-toolbar__panel button { min-height: 40px; }
+  .document-status-bar { height: 32px; flex-basis: 32px; }
+}
+/* Make room for the relocated footer instead of covering it with the drawer. */
+.reactive-window:has(> .document-status-bar) > .reactive-window__margin-drawer,
+.workspace-demo__window:has(.document-status-bar) .reactive-window__margin-drawer { bottom: 28px; }
+.document-status-bar { container-type: inline-size; container-name: editor-status; }
+@container editor-status (max-width: 440px) {
+  .document-count-bar summary [data-count-scope="Block"],
+  .document-count-bar summary [data-count-scope="Page"] { display: none; }
+}

@@ -4,6 +4,7 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { blockMenuItems } from "../runtime/block-menu-actions";
+import { toolbarControl } from "./toolbar-test-helpers";
 import { keyboard } from "../input/bindings";
 
 const cleanup: (() => void)[] = [];
@@ -51,7 +52,7 @@ describe("text-block tabs", () => {
   });
   it("uses the same action from the toolbar and context menu", async () => {
     const { host, focus, blocks, node, editor } = setup(); focus();
-    const button = host.querySelector<HTMLButtonElement>('[aria-label="To tab / add tab"]')!;
+    const button = toolbarControl(host, '[aria-label="To tab / add tab"]');
     button.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true })); button.click(); await tick();
     expect(blocks()[1].type).toBe("tab-row-block");
     blockMenuItems(editor, node("source").key).find(item => item.label === "To tab / add tab")!.run!(); await tick();
@@ -63,10 +64,10 @@ describe("text-block tabs", () => {
     for (const extra of [{ isComposing: true }, { repeat: true }, { shiftKey: true }, { metaKey: true }]) { trigger(extra); expect(blocks()[1].id).toBe("source"); }
     editor.bindings.assign("tabs.create", [keyboard("F8")]);
     expect(trigger().defaultPrevented).toBe(false); expect(blocks()[1].id).toBe("source");
-    const input = host.querySelector<HTMLInputElement>('input[type="color"]')!; input.focus();
+    const input = toolbarControl<HTMLInputElement>(host, 'input[type="color"]', 'Visual effects'); input.focus();
     expect(trigger({ key: "F8", ctrlKey: false }).defaultPrevented).toBe(false);
     focus(); expect(trigger({ key: "F8", ctrlKey: false }).defaultPrevented).toBe(true); await tick();
     expect(blocks()[1].type).toBe("tab-row-block");
-    expect(host.querySelector('[aria-label="To tab / add tab"]')!.getAttribute("title")).toContain("F8");
+    expect(toolbarControl(host, '[aria-label="To tab / add tab"]').getAttribute("title")).toContain("F8");
   });
 });

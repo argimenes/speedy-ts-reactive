@@ -4,6 +4,7 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { DocumentStyleBar } from "./document-style-bar";
+import { toolbarControl } from "./toolbar-test-helpers";
 import { openEntitySearch } from "../runtime/entity-search";
 import { matchSources } from "../runtime/search-matching";
 vi.mock("../runtime/search-worker",() => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0],query: string,options: Parameters<typeof matchSources>[2]) => matchSources(sources,query,options) }));
@@ -19,7 +20,7 @@ function setup() {
   const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
   const select = () => { const mount = editor.mounts.get(node("a").key)!; mount.focus(); mount.restoreInlineSelection!({ anchor: 0, head: 6 }); };
   const pause = () => document.querySelector<HTMLInputElement>('[aria-label="Search additional occurrences"]')!.click();
-  const open = () => { select(); host.querySelector<HTMLButtonElement>('[aria-label="Entity reference"]')!.click(); pause(); };
+  const open = () => { select(); toolbarControl(host, '[aria-label="Entity reference"]', 'Annotations').click(); pause(); };
   const panel = () => document.querySelector<HTMLElement>('[role="dialog"][aria-label="Search entities"]');
   const query = () => panel()!.querySelector<HTMLInputElement>('[aria-label="Search entities"]')!;
   return { editor, node, select, open, panel, query, host, pause };

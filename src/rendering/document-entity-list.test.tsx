@@ -4,6 +4,7 @@ import { render } from "solid-js/web";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { DocumentStyleBar } from "./document-style-bar";
+import { toolbarControl } from "./toolbar-test-helpers";
 import { registerCoreViews } from "./register-core-views";
 
 const cleanup: Array<() => void> = [];
@@ -32,7 +33,7 @@ function setup(fail = false, pageless = false) {
 describe("document entity listing", () => {
   it("loads summaries, sorts every column and previews property ranges without document changes", async () => {
     const { editor, host, node, panel, rows } = setup(); const before = editor.encodeDocument();
-    host.querySelector<HTMLButtonElement>("button[title^='Entities in Document']")!.click();
+    toolbarControl(host, "button[title^='Entities in Document']").click();
     await vi.waitFor(() => expect(rows().some(row => row.cells[1].textContent === "10")).toBe(true));
     expect(panel()).toBeTruthy(); expect(rows().map(row => row.cells[0].textContent)).toEqual(["Beta", "Alpha"]);
     const resize = panel().querySelector<HTMLElement>(".document-entity-list__resize")!; resize.setPointerCapture = vi.fn();
@@ -69,7 +70,7 @@ describe("document entity listing", () => {
 
   it("updates live Document counts when standoff properties change", async () => {
     const { editor, host, node, rows } = setup();
-    host.querySelector<HTMLButtonElement>("button[title^='Entities in Document']")!.click();
+    toolbarControl(host, "button[title^='Entities in Document']").click();
     await vi.waitFor(() => expect(rows()).toHaveLength(2));
     editor.commands.setPayloadField(node("b").key, "standoffProperties", []);
     await vi.waitFor(() => expect(rows().find(row => row.cells[0].textContent === "Beta")?.cells[2].textContent).toBe("1"));
@@ -77,7 +78,7 @@ describe("document entity listing", () => {
 
   it("focuses an entity on the current Page and restores the Page on toggle", async () => {
     const { editor, host, node, panel } = setup();
-    host.querySelector<HTMLButtonElement>("button[title^='Entities in Document']")!.click();
+    toolbarControl(host, "button[title^='Entities in Document']").click();
     await vi.waitFor(() => expect(panel().querySelector('[aria-label="Focus occurrences of Alpha on current Page"]')).toBeTruthy());
     const button = panel().querySelector<HTMLButtonElement>('[aria-label="Focus occurrences of Alpha on current Page"]')!;
     expect(button.disabled).toBe(false);

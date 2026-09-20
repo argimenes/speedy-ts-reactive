@@ -4,15 +4,16 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { annotationTools } from "./document-style-bar";
+import { toolbarControl } from "./toolbar-test-helpers";
 import { standoffStyleSchemas } from "./standoff-styles";
 
 const cleanup: (() => void)[] = [];
 afterEach(() => { while (cleanup.length) cleanup.pop()!(); document.body.replaceChildren(); });
-function setup() {
+function fixture(compactEditorChrome: boolean) {
   const editor = new ReactiveEditor({ type: "document-window-block", children: [{ type: "document-block", children: [
     { id: "p", type: "standoff-editor-block", text: "one 😀 two", standoffProperties: [{ id: "entity", type: "codex/entity-reference", start: 0, end: 2, value: "entity-id" }], blockProperties: [{ type: "block/alignment", value: "right" }] },
     { id: "q", type: "standoff-editor-block", text: "Other paragraph" },
-  ] }] });
+  ] }] }, { features: { compactEditorChrome, publicHostedVersion: false } });
   registerCoreViews(editor); const projection = editor.createView("format-test");
   const host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -25,12 +26,13 @@ function setup() {
     document.dispatchEvent(new Event("selectionchange"));
   };
   const click = (title: string) => {
-    const button = host.querySelector<HTMLButtonElement>(`button[title="${title}"]`)!;
+    const button = toolbarControl(host, `button[title="${title}"]`);
     button.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true })); button.click();
   };
   return { editor, host, node, flow, select, click };
 }
-describe("DocumentWindow annotation toolbar", () => {
+describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", compact => {
+  const setup = () => fixture(compact);
   it("exposes every canonical style and both colours, creating inclusive Cell ranges with IDs", () => {
     const { host, node, select, click, editor } = setup();
     expect(annotationTools.map(t => t[0]).sort()).toEqual(Object.keys(standoffStyleSchemas).filter(type => type.startsWith("style/")).sort());
@@ -45,14 +47,15 @@ describe("DocumentWindow annotation toolbar", () => {
       expect.objectContaining({ type: "text/background-colour", value: "#ffff00", start: 0, end: 4 }),
       expect.objectContaining({ id: "entity", value: "entity-id" }),
     ]));
-    expect(host.querySelectorAll("[data-annotation-type]")).toHaveLength(17);
+    if (!compact) expect(host.querySelectorAll("[data-annotation-type]")).toHaveLength(17);
+    else expect(host.querySelector(".document-status-bar .document-count-bar")).not.toBeNull();
     const saved = editor.encodeDocument(), reloaded = new ReactiveEditor(saved);
     expect(reloaded.encodeDocument()).toEqual(saved); reloaded.dispose();
   });
   it("preserves the range through colour-picker focus and leaves collapsed selections unchanged", () => {
     const { host, node, select, click, editor } = setup();
     select(4, 5);
-    const colour = host.querySelector<HTMLInputElement>('input[aria-label="Text colour"]')!;
+    const colour = toolbarControl<HTMLInputElement>(host, 'input[aria-label="Text colour"]', 'Visual effects');
     colour.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); colour.focus();
     colour.value = "#123456"; colour.dispatchEvent(new InputEvent("input", { bubbles: true })); click("Apply text colour");
     expect(node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({ type: "text/colour", start: 4, end: 4, value: "#123456" })]));

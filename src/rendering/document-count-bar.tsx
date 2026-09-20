@@ -20,7 +20,12 @@ export function DocumentCountBar(props: { editor: ReactiveEditor; scopeKey?: str
     setService(counts);
     onCleanup(() => { counts.dispose(); worker.terminate(); for (const request of requests.values()) request.reject(); requests.clear(); });
   });
-  const focused = () => props.editor.node(props.editor.focus.state.focusedKey ?? "") ?? props.editor.node(props.editor.focus.state.lastFocusedKey ?? "");
+  const focused = () => {
+    const node = props.editor.node(props.editor.focus.state.focusedKey ?? "") ?? props.editor.node(props.editor.focus.state.lastFocusedKey ?? "");
+    if (!node || !props.scopeKey) return node;
+    const visit = (key: string): boolean => key === node.key || !!props.editor.node(key)?.children.some(visit) || !!Object.values(props.editor.node(key)?.ownedRelations ?? {}).some(visit);
+    return visit(props.scopeKey) ? node : undefined;
+  };
   const rows = () => {
     const counts = service(), node = focused();
     const root = props.editor.node(props.scopeKey ?? "")?.placementKey ?? props.editor.repository.readState().rootPlacementKey;
@@ -31,14 +36,14 @@ export function DocumentCountBar(props: { editor: ReactiveEditor; scopeKey?: str
       { name: "Document", value: counts?.state.totals[root] },
     ];
   };
-  return <details class="document-count-bar" data-native-context-menu>
-    <summary><For each={rows()}>{row => <span>{row.name}: {row.value?.words.toLocaleString() ?? "—"} words </span>}</For>
+  return <details class="document-count-bar" data-native-context-menu onKeyDown={event => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); event.stopPropagation(); } }}>
+    <summary aria-label={`Text counts: ${rows().map(row => `${row.name}: ${row.value?.words.toLocaleString() ?? "unavailable"} words`).join(", ")}`}><For each={rows()}>{row => <span data-count-scope={row.name}>{row.name}: {row.value?.words.toLocaleString() ?? "—"} words </span>}</For>
       <Show when={!unavailable() && service()?.state.pending}> · Updating…</Show>
       <Show when={unavailable() || service()?.state.error}> · Counts unavailable</Show>
     </summary>
-    <table aria-label="Text counts"><thead><tr><th>Scope</th><th>Words</th><th>Characters</th><th>Without whitespace</th></tr></thead><tbody>
+    <div class="document-count-bar__details"><table aria-label="Text counts"><thead><tr><th>Scope</th><th>Words</th><th>Characters</th><th>Without whitespace</th></tr></thead><tbody>
       <For each={rows()}>{row => <tr><th>{row.name}</th><td>{row.value?.words.toLocaleString() ?? "—"}</td><td>{row.value?.characters.toLocaleString() ?? "—"}</td><td>{row.value?.withoutWhitespace.toLocaleString() ?? "—"}</td></tr>}</For>
     </tbody></table>
-    <small>Main text, including inactive Pages and all tab alternatives. Margins, sticky notes, owned attachments and media are excluded from totals. Block counts are own text only. Repeated Blocks count per occurrence. Characters are graphemes, not annotation Cells; paragraph separators are excluded. Updates follow a typing pause.</small>
+    <small>Main text, including inactive Pages and all tab alternatives. Margins, sticky notes, owned attachments and media are excluded from totals. Block counts are own text only. Repeated Blocks count per occurrence. Characters are graphemes, not annotation Cells; paragraph separators are excluded. Updates follow a typing pause.</small></div>
   </details>;
 }

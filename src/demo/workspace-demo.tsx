@@ -11,6 +11,8 @@ import { createWorkspaceDocuments, type LocalDocumentFile } from "./workspace-do
 import { ReactiveEditor as BackgroundEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "../rendering/register-core-views";
 import "./workspace-demo.css";
+import { DocumentStatusBar } from "../rendering/document-status-bar";
+import type { Toolset } from "../rendering/compact-toolbar";
 import { DocumentStyleBar } from "../rendering/document-style-bar";
 import { WindowIcon } from "../rendering/window-icon";
 import { WorkspaceBrowser } from "./workspace-browser";
@@ -67,6 +69,8 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   const [marginEntries, setMarginEntries] = createSignal<DocumentMarginEntry[]>([]);
   const [marginsCollapsed, setMarginsCollapsed] = createSignal(false);
   const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
+  const [toolset, setToolset] = createSignal<Toolset>("Typography");
+  const [toolbarNotice, setToolbarNotice] = createSignal("");
   let windowElement!: HTMLElement;
   let drag: { pointerId: number; x: number; y: number; originX: number; originY: number; moved: boolean } | undefined;
   let windowObserver: ResizeObserver | undefined;
@@ -256,12 +260,13 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
               </span>
             </header>
             <DocumentMarginContext.Provider value={marginPresentation}>
-              <DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: "demo-document-margin-drawer", toggle: toggleMargins }} />
+              <DocumentStyleBar toolset={toolset()} onToolset={setToolset} onNotice={setToolbarNotice} editor={editor} scopeKey={projection.state.rootKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: "demo-document-margin-drawer", toggle: toggleMargins }} />
               <Show when={documents.error() && !documents.browser() && !documents.pending()}><p class="workspace-demo__file-notice" role="alert">{documents.error()}</p></Show>
               <Show when={editor.persistence.state.warning}><p class="workspace-demo__file-notice" role="status">{editor.persistence.state.warning}</p></Show>
               <section class="workspace-demo__document" classList={{ "workspace-demo__document--tabbed": hasDocumentTabs(), "workspace-demo__document--flow": !hasDocumentTabs() }} aria-label={title()}>
                 <ReactiveTreeView editor={editor} projection={projection} />
               </section>
+              <Show when={editor.features.compactEditorChrome}><DocumentStatusBar editor={editor} scopeKey={projection.state.rootKey} notice={toolbarNotice()} /></Show>
               <Show when={marginsCollapsed() && marginDrawerOpen()}>
                 <ReactiveViewProvider editor={editor} projection={projection}>
                   <DocumentMarginDrawer id="demo-document-margin-drawer" entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />

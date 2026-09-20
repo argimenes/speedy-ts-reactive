@@ -1,6 +1,8 @@
 /**
  * Application feature switches.
  *
+ * `compactEditorChrome` defaults on; set false to use the previous wrapping toolbar.
+ *
  * Block history is deliberately opt-in while the feature is being introduced.
  * Set `blockHistory` to `true` to expose the History/Restore UI and allow a
  * ReactiveEditor to start session or persistent history recording.
@@ -11,11 +13,13 @@
  */
 export type FeatureFlags = Readonly<{
   blockHistory: boolean;
+  compactEditorChrome: boolean;
   publicHostedVersion: boolean;
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
   blockHistory: false,
+  compactEditorChrome: true,
   publicHostedVersion: true,
 });
 

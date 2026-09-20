@@ -6,6 +6,7 @@ import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { CompactPreviewView } from "./history-preview";
 import type { HistoryDisplayResult } from "../history/preview";
+import { toolbarControl } from "./toolbar-test-helpers";
 import { DocumentStyleBar } from "./document-style-bar";
 import { BlockHistorySession } from "../runtime/block-history";
 import { createSessionHistorySource, type ReadonlyHistorySession } from "../history/ui-session-source";
@@ -101,7 +102,7 @@ describe("initial Block history panel", () => {
     const toolbar = document.body.appendChild(document.createElement("div"));
     cleanup.push(render(() => <DocumentStyleBar editor={editor} scopeKey={view.state.rootKey} />, toolbar));
     editor.focus.request(key);
-    const button = [...toolbar.querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent === "History")!;
+    const button = toolbarControl(toolbar, 'button[title="View history of the focused Block"]');
     expect(button).toBeDefined();
     const initial = editor.repository.snapshot();
     button.click(); await ready(editor);

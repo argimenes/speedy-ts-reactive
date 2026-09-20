@@ -7,6 +7,8 @@ import { blockAppearance } from "./appearance";
 import { BlockOutlet, ChildBlocks, RelationBlocks } from "./block-outlet";
 import { BackgroundMedia } from "./background-media";
 import { youtubeId } from "./backgrounds";
+import { DocumentStatusBar } from "./document-status-bar";
+import type { Toolset } from "./compact-toolbar";
 import { DocumentStyleBar } from "./document-style-bar";
 import { DocumentMarginContext, type DocumentMarginEntry } from "./document-margins";
 import { DocumentMarginDrawer } from "./document-margin-drawer";
@@ -442,6 +444,8 @@ export function WindowView(props: BlockViewProps) {
   const [marginEntries, setMarginEntries] = createSignal<DocumentMarginEntry[]>([]);
   const [marginsCollapsed, setMarginsCollapsed] = createSignal(false);
   const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
+  const [toolset, setToolset] = createSignal<Toolset>("Typography");
+  const [toolbarNotice, setToolbarNotice] = createSignal("");
   const state = () => resolvedWindowState(metadata().state);
   const minimized = () => state() === "minimized";
   const isDocument = () => node()?.viewType === "document-window-block";
@@ -610,8 +614,9 @@ export function WindowView(props: BlockViewProps) {
           </span>
         </header>
         <DocumentMarginContext.Provider value={marginPresentation}>
-          <Show when={isDocument()}><DocumentStyleBar editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
+          <Show when={isDocument()}><DocumentStyleBar toolset={toolset()} onToolset={setToolset} onNotice={setToolbarNotice} editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
           <div class="reactive-window__content"><div class="reactive-window__document-body"><ChildBlocks parentKey={props.nodeKey} /></div></div>
+          <Show when={isDocument() && editor.features.compactEditorChrome}><DocumentStatusBar editor={editor} scopeKey={props.nodeKey} notice={toolbarNotice()} /></Show>
           <Show when={isDocument() && marginsCollapsed() && marginDrawerOpen()}>
             <DocumentMarginDrawer id={marginDrawerId} entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />
           </Show>

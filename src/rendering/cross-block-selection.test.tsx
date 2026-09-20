@@ -3,6 +3,7 @@ import { render } from "solid-js/web";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
+import { toolbarControl } from "./toolbar-test-helpers";
 import { DocumentStyleBar, annotationTools } from "./document-style-bar";
 import type { ExistingBlockDto, JsonObject } from "../block-tree/types";
 import { CROSS_TEXT_PREFERENCE_KEY } from "../runtime/cross-block-selection";
@@ -113,7 +114,7 @@ describe("experimental cross-Block text selection", () => {
   it("clears a previous local highlight on click-away but preserves it for toolbar controls", () => {
     const { editor, node, flow, host } = setup();
     editor.selections.setPrimary(node("a").key, node("a").contentKey, node("a").viewId, 1, 4);
-    host.querySelector('button[data-annotation-type]')!.dispatchEvent(new MouseEvent("pointerdown", { button: 0, bubbles: true }));
+    toolbarControl(host, 'button[data-annotation-type]').dispatchEvent(new MouseEvent("pointerdown", { button: 0, bubbles: true }));
     expect(editor.selections.sets[node("a").key]).toBeDefined();
     flow("b").dispatchEvent(new MouseEvent("pointerdown", { button: 0, bubbles: true }));
     expect(editor.selections.sets[node("a").key]).toBeUndefined();
@@ -181,11 +182,11 @@ describe("experimental cross-Block text selection", () => {
   it("retains cross selection for toolbar styles, protects clear/layout actions and preserves local capture", () => {
     const { editor, point, flow, host, node } = setup(); editor.crossText.enable(true); flow("a").focus();
     editor.crossText.set(point("a", 1), point("b", 3));
-    host.querySelector<HTMLButtonElement>('[data-annotation-type="style/bold"]')!.click();
+    toolbarControl(host, '[data-annotation-type="style/bold"]').click();
     expect(editor.crossText.range()).toBeDefined();
     const before = editor.encodeDocument();
-    host.querySelector<HTMLButtonElement>('[title="Clear formatting"]')!.click();
-    host.querySelector<HTMLButtonElement>('[title="Increase indent"]')!.click();
+    toolbarControl(host, '[title="Clear formatting"]').click();
+    toolbarControl(host, '[title="Increase indent"]').click();
     expect(editor.encodeDocument()).toEqual(before);
     editor.crossText.clear();
     const a = editor.mounts.get(node("a").key)!.inlineBoundary!(1), b = editor.mounts.get(node("b").key)!.inlineBoundary!(2);
