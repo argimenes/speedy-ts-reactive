@@ -9,6 +9,10 @@ available as a focused view-local-state example.
 See [`RESTRUCTURE_PROGRESS.md`](./RESTRUCTURE_PROGRESS.md) for the exact hand-off
 state, verified behavior, known limits, and next migration stage.
 
+For the current reactive architecture, data/input/rendering flows, extension
+recipes, and day-to-day source map, start with the
+[Codex developer guide](./docs/README.md).
+
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in
 [BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md](./BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md).
