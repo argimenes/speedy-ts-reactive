@@ -64,6 +64,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   const title = () => documents.localFile()?.filename ?? documents.location()?.filename ?? "Workspace sample document";
   const [loaded, setLoaded] = createSignal(false);
   const [showJson, setShowJson] = createSignal(false);
+  const [debuggingPanelsVisible, setDebuggingPanelsVisible] = createSignal(false);
   const [windowState, setWindowState] = createSignal<DemoWindowState>(props.closed ? "closed" : props.window?.state ?? "normal");
   const [position, setPosition] = createSignal(props.window?.position ?? { x: 0, y: 0 });
   const [windowSize, setWindowSize] = createSignal<{ w: number; h: number } | undefined>(props.window?.size);
@@ -225,6 +226,11 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
+  const toggleDebuggingPanels = () => {
+    const visible = !debuggingPanelsVisible();
+    setDebuggingPanelsVisible(visible);
+    if (!visible) setShowJson(false);
+  };
   onCleanup(() => { if (suppressTimer) clearTimeout(suppressTimer); windowObserver?.disconnect(); releaseEditor(); editor.dispose(); });
   onMount(() => {
     editor.installGateway(document);
@@ -322,6 +328,8 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
           <Show when={windowState() === "closed"}><button type="button" role="menuitem" onClick={restoreWindow}>Reopen document</button></Show>
           <a role="menuitem" href={`${import.meta.env.BASE_URL}pilot`}>Open two-pane pilot</a>
           <hr role="separator" />
+          <button type="button" role="menuitem" aria-controls="workspace-demo-help workspace-demo-coverage workspace-demo-json" onClick={toggleDebuggingPanels}>{debuggingPanelsVisible() ? "Hide debugging panels" : "Show debugging panels"}</button>
+          <hr role="separator" />
           <span class="codex-system-menu__status">Revision: {editor.repository.state.revision}</span>
         </CodexSystemBar>
       </Show>
@@ -381,28 +389,30 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
         </section>
       </Show>
 
-      <details class="workspace-demo__guide">
-        <summary>Demo help</summary>
-        <p><strong>Try it:</strong> edit a paragraph, use Enter and boundary arrows, switch
-          Page 1 / Page 2, open a sticky tab, drag a canvas box, or open tab C and turn
-          the image card over. Open browses the document store; Save writes changes
-          to the current file, and Save as creates a copy. Ctrl/Cmd+O opens,
-          Ctrl/Cmd+S saves, and Ctrl/Cmd+Shift+S opens Save as. Control-click or
-          right-click a Block for its menu; Shift+F10 works from a focused Block.
-          Control-click the desktop or choose Background… to switch backgrounds.</p>
-        <Show when={!props.document}><p>{loaded() ? "Document loaded" : "Loading document…"} · {demoSourceCounts.blocks} Blocks · {demoSourceCounts.types} document types</p></Show>
-      </details>
-      <details class="workspace-demo__coverage">
-        <summary>Block coverage: {workspaceBuilderTypes.length} / {workspaceBuilderTypes.length} source builders registered</summary>
-        <p>All builders referenced by the original workspace resolve to a view. Some use
-          structural previews; registration does not mean their complete handler catalog
-          is implemented. The Universe context is registered separately.</p>
-        <ul><For each={workspaceBuilderTypes}>{(type) => <li>{type}</li>}</For></ul>
-      </details>
-      <details class="workspace-demo__json" onToggle={(event) => setShowJson(event.currentTarget.open)}>
-        <summary>Inspect the current document JSON</summary>
-        <Show when={showJson()}><pre>{encoded()}</pre></Show>
-      </details>
+      <Show when={debuggingPanelsVisible()}>
+        <details id="workspace-demo-help" class="workspace-demo__guide">
+          <summary>Demo help</summary>
+          <p><strong>Try it:</strong> edit a paragraph, use Enter and boundary arrows, switch
+            Page 1 / Page 2, open a sticky tab, drag a canvas box, or open tab C and turn
+            the image card over. Open browses the document store; Save writes changes
+            to the current file, and Save as creates a copy. Ctrl/Cmd+O opens,
+            Ctrl/Cmd+S saves, and Ctrl/Cmd+Shift+S opens Save as. Control-click or
+            right-click a Block for its menu; Shift+F10 works from a focused Block.
+            Control-click the desktop or choose Background… to switch backgrounds.</p>
+          <Show when={!props.document}><p>{loaded() ? "Document loaded" : "Loading document…"} · {demoSourceCounts.blocks} Blocks · {demoSourceCounts.types} document types</p></Show>
+        </details>
+        <details id="workspace-demo-coverage" class="workspace-demo__coverage">
+          <summary>Block coverage: {workspaceBuilderTypes.length} / {workspaceBuilderTypes.length} source builders registered</summary>
+          <p>All builders referenced by the original workspace resolve to a view. Some use
+            structural previews; registration does not mean their complete handler catalog
+            is implemented. The Universe context is registered separately.</p>
+          <ul><For each={workspaceBuilderTypes}>{(type) => <li>{type}</li>}</For></ul>
+        </details>
+        <details id="workspace-demo-json" class="workspace-demo__json" onToggle={(event) => setShowJson(event.currentTarget.open)}>
+          <summary>Inspect the current document JSON</summary>
+          <Show when={showJson()}><pre>{encoded()}</pre></Show>
+        </details>
+      </Show>
       <Show when={documents.browser()}>{(mode) => <DocumentBrowser mode={mode()} initialLocation={documents.location()} busy={documents.busy()} error={documents.error()} conflict={documents.conflict()} onChoose={documents.choose} onClose={documents.closeBrowser} />}</Show>
       <Show when={documents.pending()}>{(next) => <DocumentDialog title="Save your changes?" compact busy={documents.busy()} onClose={documents.cancelPending}>
         <p class="document-dialog__body">Save changes to “{title()}” before you {next().label}?</p>

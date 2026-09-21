@@ -82,15 +82,21 @@ describe("WorkspaceDemo", () => {
     expect(host.querySelector(".codex-system-bar")).not.toBeNull();
     expect(host.querySelector('[aria-label="Compact document"]')).not.toBeNull();
     expect(host.querySelector<HTMLButtonElement>('[aria-label="Codex search (coming soon)"]')?.disabled).toBe(true);
+    expect(host.querySelector(".workspace-demo__guide, .workspace-demo__coverage, .workspace-demo__json")).toBeNull();
     const window = host.querySelector<HTMLElement>(".workspace-demo__window")!, transform = window.style.transform;
 
     click(host.querySelector<HTMLButtonElement>('[data-system-menu-trigger="workspace"]')!); await Promise.resolve();
     const menu = host.querySelector<HTMLElement>('[role="menu"][aria-label="Workspace"]')!;
-    for (const label of ["Background…", "Open…", "Save", "Save as…", "Open Workspace…", "Save Workspace…", "New Sticky Note", "Undo", "Redo", "Reset demo", "Open two-pane pilot"]) {
+    for (const label of ["Background…", "Open…", "Save", "Save as…", "Open Workspace…", "Save Workspace…", "New Sticky Note", "Undo", "Redo", "Reset demo", "Open two-pane pilot", "Show debugging panels"]) {
       expect(menu.textContent).toContain(label);
     }
     expect(menu.textContent).toContain("Revision: 0");
-    click(button("New Sticky Note", menu)); await Promise.resolve();
+    click(button("Show debugging panels", menu)); await Promise.resolve();
+    expect(host.querySelectorAll(".workspace-demo__guide, .workspace-demo__coverage, .workspace-demo__json")).toHaveLength(3);
+    click(host.querySelector<HTMLButtonElement>('[data-system-menu-trigger="workspace"]')!); await Promise.resolve();
+    const reopenedMenu = host.querySelector<HTMLElement>('[role="menu"][aria-label="Workspace"]')!;
+    expect(reopenedMenu.textContent).toContain("Hide debugging panels");
+    click(button("New Sticky Note", reopenedMenu)); await Promise.resolve();
     expect(document.querySelector('[role="dialog"][aria-label="New Sticky Note"]')).not.toBeNull();
     expect(window.style.transform).toBe(transform);
   });
