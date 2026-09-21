@@ -453,3 +453,20 @@
   .workspace-demo--compact-document-feature { padding: 76px 8px 100px; }
   .workspace-demo--compact-document-feature .workspace-demo__window { height: calc(100vh - 86px); }
 }
+
+/* The system bar replaces the floating workspace toolbar and owns the fixed
+   desktop reserve at the top of the viewport. */
+.workspace-demo--system-bar { padding-top: 36px; }
+.workspace-demo--system-bar.workspace-demo--canonical { padding-top: 36px; }
+.workspace-demo--system-bar.workspace-demo--canonical > .reactive-generic-block,
+.workspace-demo--system-bar.workspace-demo--canonical > .reactive-generic-block > .reactive-surface { min-height: calc(100vh - 36px); }
+.workspace-demo--system-bar .workspace-demo__window { height: calc(100vh - 70px); }
+.workspace-demo--system-bar.workspace-demo--compact-document-feature { padding-top: 36px; }
+.workspace-demo--system-bar.workspace-demo--compact-document-feature .workspace-demo__window { height: calc(100vh - 60px); }
+
+@media (max-width: 640px) {
+  .workspace-demo--system-bar,
+  .workspace-demo--system-bar.workspace-demo--compact-document-feature { padding: 36px 8px 100px; }
+  .workspace-demo--system-bar .workspace-demo__window,
+  .workspace-demo--system-bar.workspace-demo--compact-document-feature .workspace-demo__window { height: calc(100vh - 70px); }
+}

@@ -10,6 +10,7 @@ import {
 } from "./workspace-demo-model";
 import { WorkspaceDemo } from "./workspace-demo";
 import { workspaceBuilderTypes, workspaceDocumentFixture } from "./workspace-document";
+import { featureFlags } from "../configuration";
 
 const disposers: Array<() => void> = [];
 
@@ -67,10 +68,32 @@ describe("workspace demo fixture", () => {
 describe("WorkspaceDemo", () => {
   function mount() {
     const host = document.body.appendChild(document.createElement("div"));
-    const dispose = render(() => <WorkspaceDemo configuration={{ features: { publicHostedVersion: false } }} />, host);
+    const dispose = render(() => <WorkspaceDemo configuration={{ features: { codexSystemBar: false, publicHostedVersion: false } }} />, host);
     disposers.push(dispose);
     return host;
   }
+
+  it("uses the system bar by default and migrates workspace actions without moving the Document window", async () => {
+    expect(featureFlags.codexSystemBar).toBe(true);
+    expect(featureFlags.compactDocumentMode).toBe(true);
+    const host = document.body.appendChild(document.createElement("div"));
+    disposers.push(render(() => <WorkspaceDemo configuration={{ features: { publicHostedVersion: false } }} />, host));
+    expect(host.querySelector(".workspace-demo__toolbar")).toBeNull();
+    expect(host.querySelector(".codex-system-bar")).not.toBeNull();
+    expect(host.querySelector('[aria-label="Compact document"]')).not.toBeNull();
+    expect(host.querySelector<HTMLButtonElement>('[aria-label="Codex search (coming soon)"]')?.disabled).toBe(true);
+    const window = host.querySelector<HTMLElement>(".workspace-demo__window")!, transform = window.style.transform;
+
+    click(host.querySelector<HTMLButtonElement>('[data-system-menu-trigger="workspace"]')!); await Promise.resolve();
+    const menu = host.querySelector<HTMLElement>('[role="menu"][aria-label="Workspace"]')!;
+    for (const label of ["Background…", "Open…", "Save", "Save as…", "Open Workspace…", "Save Workspace…", "New Sticky Note", "Undo", "Redo", "Reset demo", "Open two-pane pilot"]) {
+      expect(menu.textContent).toContain(label);
+    }
+    expect(menu.textContent).toContain("Revision: 0");
+    click(button("New Sticky Note", menu)); await Promise.resolve();
+    expect(document.querySelector('[role="dialog"][aria-label="New Sticky Note"]')).not.toBeNull();
+    expect(window.style.transform).toBe(transform);
+  });
 
   it("keeps inactive document tabs unmounted and flips card faces in one surface", () => {
     const host = mount();

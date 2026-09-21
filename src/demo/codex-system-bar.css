@@ -1,0 +1,115 @@
+.codex-system-bar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 1100;
+  display: flex;
+  box-sizing: border-box;
+  height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, .22);
+  color: #eef7f5;
+  background: rgba(6, 17, 27, .84);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.codex-system-bar__menus,
+.codex-system-bar__status,
+.codex-system-bar__battery-status { display: flex; min-width: 0; align-items: center; }
+.codex-system-bar__menus { align-self: stretch; gap: 2px; }
+.codex-system-bar__status { gap: 10px; font-weight: 500; white-space: nowrap; }
+
+.codex-system-bar button {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+.codex-system-bar__logo,
+.codex-system-bar__trigger,
+.codex-system-bar__search { height: 24px; border-radius: 4px !important; cursor: default; }
+.codex-system-bar__logo { display: grid; width: 28px; padding: 3px 5px; place-items: center; }
+.codex-system-bar__logo img { display: block; width: 18px; height: 18px; object-fit: contain; }
+.codex-system-bar__trigger { padding: 0 8px; }
+.codex-system-bar__search { width: 24px; padding: 0; font-size: 18px !important; }
+.codex-system-bar__search svg { display: block; width: 13px; height: 13px; margin: auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.5; }
+.codex-system-bar__search:disabled { opacity: .58; }
+.codex-system-bar__logo:hover,
+.codex-system-bar__trigger:hover,
+.codex-system-bar [aria-expanded="true"] { background: rgba(255, 255, 255, .16); }
+.codex-system-bar button:focus-visible { outline: 2px solid #73d5df; outline-offset: -2px; }
+
+.codex-system-bar__battery-status { gap: 3px; }
+.codex-system-bar__battery {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 21px;
+  height: 10px;
+  padding: 1px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  opacity: .9;
+}
+.codex-system-bar__battery::after { position: absolute; top: 2px; right: -3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: currentColor; content: ""; }
+.codex-system-bar__battery > span { display: block; height: 100%; border-radius: 1px; background: currentColor; }
+
+.codex-system-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 1;
+  box-sizing: border-box;
+  width: 272px;
+  max-height: calc(100vh - 38px);
+  overflow: auto;
+  padding: 5px;
+  border: 1px solid rgba(166, 184, 180, .88);
+  border-radius: 7px;
+  color: #20332e;
+  background: rgba(251, 253, 252, .98);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .34);
+  font: 13px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  user-select: none;
+}
+.codex-system-menu--codex { left: 5px; width: 224px; }
+.codex-system-menu--workspace { left: 36px; }
+.codex-system-menu button,
+.codex-system-menu a {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 27px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 4px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  text-decoration: none;
+  cursor: default;
+  font: inherit;
+}
+.codex-system-menu button:not(:disabled):not([aria-disabled="true"]):hover,
+.codex-system-menu a:hover,
+.codex-system-menu [role="menuitem"]:focus-visible { color: #fff; background: #176f7a; outline: 0; }
+.codex-system-menu button:disabled,
+.codex-system-menu [aria-disabled="true"] { color: #83908c; }
+.codex-system-menu hr { height: 1px; margin: 4px 7px; border: 0; background: #d7dfdc; }
+.codex-system-menu__group { margin: 0; padding: 0; border: 0; }
+.codex-system-menu__group > legend { width: calc(100% - 14px); margin: 4px 7px 2px; padding: 4px 2px 2px; border-bottom: 1px solid #d7dfdc; color: #667570; font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.codex-system-menu__status { display: block; padding: 5px 9px; overflow: hidden; color: #687772; font-size: 11px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .codex-system-bar { padding-inline: 5px; }
+  .codex-system-bar__status { gap: 5px; }
+  .codex-system-bar__search { display: none; }
+  .codex-system-menu--workspace { left: 5px; }
+}

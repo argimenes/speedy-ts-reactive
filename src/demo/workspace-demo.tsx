@@ -25,6 +25,7 @@ import { decodeWorkspace } from "../block-tree/codecs";
 import { openJsonFile, saveJsonFile, type BrowserFileHandle } from "./browser-json-file";
 import { resolveFeatureFlags, type ReactiveEditorConfiguration } from "../configuration";
 import { backgroundImages } from "../rendering/backgrounds";
+import { CodexSystemBar } from "./codex-system-bar";
 
 type DemoWindowState = "normal" | "minimized" | "maximized" | "closed";
 interface DemoWindowSnapshot { state: DemoWindowState; position: { x: number; y: number }; size: { w: number; h: number } }
@@ -225,8 +226,8 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   });
 
   return (
-    <main class="workspace-demo" classList={{ "workspace-demo--compact-document-feature": editor.features.compactDocumentMode }} data-demo-state={loaded() ? "loaded" : "loading"}>
-      <nav class="workspace-demo__toolbar" aria-label="Demo controls">
+    <main class="workspace-demo" classList={{ "workspace-demo--compact-document-feature": editor.features.compactDocumentMode, "workspace-demo--system-bar": editor.features.codexSystemBar }} data-demo-state={loaded() ? "loaded" : "loading"}>
+      <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Demo controls">
         <Show when={editor.features.publicHostedVersion} fallback={<>
           <button type="button" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
           <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
@@ -262,7 +263,49 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
         <Show when={windowState() === "closed"}><button type="button" onClick={restoreWindow}>Reopen document</button></Show>
         <a href={`${import.meta.env.BASE_URL}pilot`}>Open two-pane pilot</a>
         <span>revision {editor.repository.state.revision}</span>
-      </nav>
+      </nav>}>
+        <CodexSystemBar>
+          <button type="button" role="menuitem" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
+          <hr role="separator" />
+          <Show when={editor.features.publicHostedVersion} fallback={<>
+            <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
+            <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
+            <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
+            <hr role="separator" />
+            <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
+            <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace…</button>
+          </>}>
+            <fieldset class="codex-system-menu__group" aria-label="Server files">
+              <legend>Server</legend>
+              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
+              <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save</button>
+              <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save as…</button>
+              <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
+              <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save Workspace…</button>
+            </fieldset>
+            <fieldset class="codex-system-menu__group" aria-label="Local files">
+              <legend>Local</legend>
+              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "local")}>Open…</button>
+              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "local")}>Save</button>
+              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "local")}>Save as…</button>
+              <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
+              <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace…</button>
+            </fieldset>
+          </Show>
+          <hr role="separator" />
+          <button type="button" role="menuitem" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
+          <For each={props.stickyHost.stickyNotes.closedWindows()}>{key => <button type="button" role="menuitem" onClick={() => props.stickyHost.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
+          <hr role="separator" />
+          <button type="button" role="menuitem" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
+          <button type="button" role="menuitem" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
+          <hr role="separator" />
+          <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.guard("reset to the sample document", props.onReset)}>Reset demo</button>
+          <Show when={windowState() === "closed"}><button type="button" role="menuitem" onClick={restoreWindow}>Reopen document</button></Show>
+          <a role="menuitem" href={`${import.meta.env.BASE_URL}pilot`}>Open two-pane pilot</a>
+          <hr role="separator" />
+          <span class="codex-system-menu__status">Revision: {editor.repository.state.revision}</span>
+        </CodexSystemBar>
+      </Show>
 
       <Show when={windowState() !== "closed"}>
         <section
@@ -367,8 +410,8 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   onCleanup(() => { release(); editor.dispose(); });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
-  return <main class="workspace-demo workspace-demo--canonical" classList={{ "workspace-demo--compact-document-feature": editor.features.compactDocumentMode }}>
-    <nav class="workspace-demo__toolbar" aria-label="Workspace controls">
+  return <main class="workspace-demo workspace-demo--canonical" classList={{ "workspace-demo--compact-document-feature": editor.features.compactDocumentMode, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
+    <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Workspace controls">
       <Show when={editor.features.publicHostedVersion} fallback={<>
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
@@ -381,7 +424,33 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
       <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
       <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
       <span>{props.filename} · revision {editor.repository.state.revision}</span>
-    </nav>
+    </nav>}>
+      <CodexSystemBar>
+        <Show when={editor.features.publicHostedVersion} fallback={<>
+          <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
+          <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
+        </>}>
+          <fieldset class="codex-system-menu__group" aria-label="Server files">
+            <legend>Server</legend>
+            <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
+            <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save Workspace</button>
+          </fieldset>
+          <fieldset class="codex-system-menu__group" aria-label="Local files">
+            <legend>Local</legend>
+            <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
+            <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button>
+          </fieldset>
+        </Show>
+        <hr role="separator" />
+        <button type="button" role="menuitem" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
+        <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" role="menuitem" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
+        <hr role="separator" />
+        <button type="button" role="menuitem" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
+        <button type="button" role="menuitem" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
+        <hr role="separator" />
+        <span class="codex-system-menu__status">{props.filename} · Revision: {editor.repository.state.revision}</span>
+      </CodexSystemBar>
+    </Show>
     <Show when={editor.persistence.workspaceLoadIssues().length}><aside class="workspace-demo__workspace-notice" role="status">{editor.persistence.workspaceLoadIssues().map(issue => issue.message).join(" · ")}</aside></Show>
     <ReactiveTreeView editor={editor} projection={projection} />
   </main>;

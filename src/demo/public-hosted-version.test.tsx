@@ -10,7 +10,7 @@ afterEach(() => { while (disposers.length) disposers.pop()?.(); document.body.re
 
 function mount() {
   const host = document.body.appendChild(document.createElement("div"));
-  disposers.push(render(() => <WorkspaceDemo />, host));
+  disposers.push(render(() => <WorkspaceDemo configuration={{ features: { codexSystemBar: false } }} />, host));
   return host;
 }
 
@@ -34,11 +34,15 @@ function writableHandle(name: string, writes: string[]): BrowserFileHandle {
 }
 
 describe("public-hosted-version", () => {
-  it("is enabled by default and separates read-only Server controls from writable Local controls", () => {
+  it("is enabled by default and separates read-only Server actions from writable Local actions in Workspace", async () => {
     expect(featureFlags.publicHostedVersion).toBe(true);
-    const host = mount();
-    const server = host.querySelector<HTMLElement>('[aria-label="Server files"]')!;
-    const local = host.querySelector<HTMLElement>('[aria-label="Local files"]')!;
+    expect(featureFlags.codexSystemBar).toBe(true);
+    const host = document.body.appendChild(document.createElement("div"));
+    disposers.push(render(() => <WorkspaceDemo />, host));
+    click(host.querySelector<HTMLButtonElement>('[data-system-menu-trigger="workspace"]')!); await Promise.resolve();
+    const menu = host.querySelector<HTMLElement>('[role="menu"][aria-label="Workspace"]')!;
+    const server = menu.querySelector<HTMLElement>('[aria-label="Server files"]')!;
+    const local = menu.querySelector<HTMLElement>('[aria-label="Local files"]')!;
     expect(server).not.toBeNull(); expect(local).not.toBeNull();
     expect(button("Save", server).disabled).toBe(true);
     expect(button("Save as…", server).disabled).toBe(true);
