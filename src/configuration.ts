@@ -2,6 +2,8 @@
  * Application feature switches.
  *
  * `compactEditorChrome` defaults on; set false to use the previous wrapping toolbar.
+ * `compactDocumentMode` gates the laptop-density presentation and per-window
+ * Compact Document control while the feature is reviewed.
  *
  * Block history is deliberately opt-in while the feature is being introduced.
  * Set `blockHistory` to `true` to expose the History/Restore UI and allow a
@@ -13,12 +15,14 @@
  */
 export type FeatureFlags = Readonly<{
   blockHistory: boolean;
+  compactDocumentMode: boolean;
   compactEditorChrome: boolean;
   publicHostedVersion: boolean;
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
   blockHistory: false,
+  compactDocumentMode: false,
   compactEditorChrome: true,
   publicHostedVersion: true,
 });

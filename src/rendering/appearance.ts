@@ -8,10 +8,10 @@ type BlockProperty = {
 };
 
 const fontSizes: Record<string, string> = {
-  h1: "3rem",
-  h2: "2.5rem",
-  h3: "2rem",
-  h4: "1.5rem",
+  h1: "var(--document-heading-h1, 3rem)",
+  h2: "var(--document-heading-h2, 2.5rem)",
+  h3: "var(--document-heading-h3, 2rem)",
+  h4: "var(--document-heading-h4, 1.5rem)",
   normal: "1rem",
   "three-quarters": ".75rem",
   half: ".5rem",
@@ -52,7 +52,7 @@ export function blockAppearance(node: BlockNode | undefined): {
       case "block/font/size": {
         const size = fontSizes[String(property.value ?? "normal")] ?? String(property.value ?? "1rem");
         style["font-size"] = size;
-        style["line-height"] = size;
+        style["line-height"] = String(property.value ?? "normal").startsWith("h") ? `var(--document-heading-${String(property.value)}-line-height, ${size})` : size;
         break;
       }
       case "block/indent":
@@ -71,7 +71,7 @@ export function blockAppearance(node: BlockNode | undefined): {
       case "block/font/size/h4": {
         const token = property.type.slice(-2);
         style["font-size"] = fontSizes[token];
-        style["line-height"] = fontSizes[token];
+        style["line-height"] = `var(--document-heading-${token}-line-height, ${fontSizes[token]})`;
         break;
       }
       case "block/margin/top/20px":

@@ -11,6 +11,9 @@ export interface DocumentMarginEntry {
 export interface DocumentMarginPresentation {
   collapsed: Accessor<boolean>;
   drawerOpen: Accessor<boolean>;
+  entries: Accessor<DocumentMarginEntry[]>;
+  indicators: Accessor<boolean>;
+  open: (entry?: DocumentMarginEntry) => void;
   register: (entry: DocumentMarginEntry) => () => void;
 }
 

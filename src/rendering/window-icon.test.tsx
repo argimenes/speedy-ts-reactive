@@ -7,6 +7,7 @@ import { ReactiveTreeView } from "./reactive-tree-view";
 import { resolvedWindowIcon, resolvedWindowState } from "./window-icon";
 import type { ExistingBlockDto } from "../block-tree/types";
 import { matchSources } from "../runtime/search-matching";
+import type { ReactiveEditorConfiguration } from "../configuration";
 
 vi.mock("../runtime/search-worker", () => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0], query: string, options: Parameters<typeof matchSources>[2]) => matchSources(sources, query, options) }));
 
@@ -18,8 +19,8 @@ function mount(dto: ExistingBlockDto = {
   type: "document-window-block",
   metadata: { title: "Research notes", position: { x: 20, y: 30 }, size: { w: 400, h: 300 }, state: "normal", zIndex: 4 },
   children: [{ id: "document", type: "document-block", children: [{ id: "page", type: "page-block", children: [{ id: "text", type: "plain-text-block", text: "Remember this selection" }] }] }],
-}) {
-  const editor = new ReactiveEditor(dto); registerCoreViews(editor);
+}, configuration: ReactiveEditorConfiguration = {}) {
+  const editor = new ReactiveEditor(dto, configuration); registerCoreViews(editor);
   const projection = editor.createView("window-icon-test"), host = globalThis.document.body.appendChild(globalThis.document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(globalThis.document);
   cleanup.push(() => { dispose(); editor.dispose(); });
@@ -112,6 +113,53 @@ describe("Window icon minimization", () => {
 });
 
 describe("Window resizing and compact Document margins", () => {
+  it("keeps explicit Compact Document state independent from narrow-window collapse", async () => {
+    const observers: Array<{ callback: ResizeObserverCallback; targets: Element[] }> = [];
+    vi.stubGlobal("ResizeObserver", class {
+      private record: { callback: ResizeObserverCallback; targets: Element[] };
+      constructor(callback: ResizeObserverCallback) { this.record = { callback, targets: [] }; observers.push(this.record); }
+      observe(target: Element) { this.record.targets.push(target); }
+      disconnect() { this.record.targets = []; }
+      unobserve() {}
+    });
+    const { editor, host, node } = mount({
+      id: "window", type: "document-window-block", metadata: { title: "Compact margins", size: { w: 840, h: 500 }, state: "normal" },
+      children: [{ id: "document", type: "document-block", children: [{ id: "page", type: "page-block", children: [{
+        id: "source", type: "standoff-editor-block", text: "Source", relation: { rightMargin: { id: "margin", type: "right-margin-block", children: [{ id: "note", type: "standoff-editor-block", text: "Note" }] } },
+      }] }] }],
+    }, { features: { compactDocumentMode: true } });
+    const before = editor.encodeDocument(), revision = editor.repository.state.revision;
+    const window = host.querySelector<HTMLElement>("[data-block-id='window']")!;
+    const toggle = host.querySelector<HTMLButtonElement>('[aria-label="Compact document"]')!;
+    const windowObserver = observers.find(observer => observer.targets.some(target => target === window))!;
+
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    const noteKey = node("note").key, noteMount = editor.mounts.get(noteKey)!;
+    noteMount.focus(); noteMount.restoreInlineSelection?.({ anchor: 1, head: 3 }); editor.focus.adopt(noteKey);
+    click(toggle); await new Promise(resolve => setTimeout(resolve, 30));
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    expect(window.classList).toContain("reactive-window--margins-collapsed");
+    expect(editor.mounts.get(noteKey)?.captureInlineSelection?.()).toEqual({ anchor: 1, head: 3 });
+    expect(editor.mounts.get(noteKey)?.focusElement.closest(".reactive-window__margin-drawer")).not.toBeNull();
+    expect(host.querySelectorAll(".document-margin-indicator")).toHaveLength(1);
+    click(host.querySelector<HTMLButtonElement>('[aria-label="Close margins"]')!); await Promise.resolve();
+    click(host.querySelector<HTMLButtonElement>(".document-margin-indicator")!); await Promise.resolve();
+    expect(host.querySelectorAll("[data-margin-drawer-item]")).toHaveLength(1);
+    click(host.querySelector<HTMLButtonElement>('[aria-label="Close margins"]')!); await Promise.resolve();
+
+    click(toggle);
+    expect(window.classList).not.toContain("reactive-window--margins-collapsed");
+    windowObserver.callback([{ contentRect: { width: 700 } } as ResizeObserverEntry], {} as ResizeObserver);
+    expect(window.classList).toContain("reactive-window--margins-collapsed");
+    click(toggle);
+    windowObserver.callback([{ contentRect: { width: 840 } } as ResizeObserverEntry], {} as ResizeObserver);
+    expect(window.classList).toContain("reactive-window--margins-collapsed");
+    click(toggle);
+    expect(window.classList).not.toContain("reactive-window--margins-collapsed");
+    expect(editor.repository.state.revision).toBe(revision);
+    expect(editor.encodeDocument()).toEqual(before);
+  });
+
   it("previews pointer resizing locally, commits once, cancels cleanly and round-trips through history", () => {
     const { editor, host, node } = mount();
     const window = host.querySelector<HTMLElement>("[data-block-id='window']")!;
