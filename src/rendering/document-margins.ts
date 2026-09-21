@@ -27,3 +27,18 @@ export function marginSide(name: string): "left" | "right" | undefined {
   if (name === "leftMargin") return "left";
   if (name === "rightMargin") return "right";
 }
+
+/** Keep the main reading column stable while collapsed margin lanes free window space. */
+export function compactDocumentWindowWidth(root: HTMLElement, currentWidth: number, minimumWidth: number): number {
+  const layout = root.querySelector<HTMLElement>(".workspace-demo__document--flow")
+    ?? root.querySelector<HTMLElement>(".reactive-page");
+  if (!layout || currentWidth <= 0) return currentWidth;
+  const style = getComputedStyle(layout);
+  const leftPadding = Number.parseFloat(style.paddingLeft) || 0;
+  const rightPadding = Number.parseFloat(style.paddingRight) || 0;
+  const compactLeft = layout.classList.contains("reactive-page--minimap-left") ? 58 : 32;
+  const compactRight = layout.classList.contains("reactive-page--minimap-right") ? 58 : 32;
+  const releasedWidth = Math.max(0, leftPadding - compactLeft) + Math.max(0, rightPadding - compactRight);
+  const floor = Math.min(currentWidth, minimumWidth);
+  return Math.max(floor, Math.round(currentWidth - releasedWidth));
+}
