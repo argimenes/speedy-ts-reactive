@@ -7,7 +7,9 @@ import type { JsonObject } from "./types";
 const inlineTypes = new Set([
   "style/bold", "style/italics", "style/underline", "style/strikethrough", "style/strike",
   "style/superscript", "style/subscript", "style/uppercase", "style/highlight", "style/highlighter",
-  "style/rainbow", "style/rectangle", "style/spiky", "style/blur", "style/flip", "style/mirror",
+  "style/rainbow", "style/rectangle", "style/spiky", "style/blur", "style/glow", "style/chromatic-aberration",
+  "style/motion-blur", "style/ghost", "style/grayscale", "style/sepia", "style/invert", "style/contrast-brightness",
+  "style/grain", "style/ink-bleed", "style/turbulence", "style/flip", "style/mirror",
   "text/colour", "text/background-colour", "style/color",
 ]);
 const blockTypes = new Set([
@@ -25,6 +27,20 @@ const layoutFields: Record<string, string[]> = {
   "block/size": ["width", "height", "min-width"],
   "block/position": ["x", "y", "position"],
 };
+const inlineEffectFields: Record<string, string[]> = {
+  "style/blur": ["amount"],
+  "style/glow": ["radius", "intensity"],
+  "style/chromatic-aberration": ["offset", "intensity", "direction"],
+  "style/motion-blur": ["x", "y"],
+  "style/ghost": ["offsetX", "offsetY", "blur", "opacity"],
+  "style/grayscale": ["amount"],
+  "style/sepia": ["amount"],
+  "style/invert": ["amount"],
+  "style/contrast-brightness": ["contrast", "brightness"],
+  "style/grain": ["frequency", "octaves", "opacity", "seed"],
+  "style/ink-bleed": ["spread", "intensity", "roughness"],
+  "style/turbulence": ["frequency", "octaves", "opacity", "seed"],
+};
 const object = (v: unknown): v is JsonObject => !!v && typeof v === "object" && !Array.isArray(v);
 
 export function restoreProperties(value: unknown, kind: "Block property" | "Annotation", textLength = 0): JsonObject[] {
@@ -41,10 +57,16 @@ export function restoreProperties(value: unknown, kind: "Block property" | "Anno
     if (typeof p.type !== "string" || !(inline ? inlineTypes : blockTypes).has(p.type)) {
       fail("this property type has no local authored-value restore semantics; references, plugins and structural properties remain unsupported.");
     }
+    const effectFields = inline ? inlineEffectFields[String(p.type)] ?? [] : [];
     const allowed = inline
-      ? ["id", "type", "start", "end", "value", "isDeleted", "metadata", "attributes", "text", "plugin"]
+      ? ["id", "type", "start", "end", "value", "isDeleted", "metadata", "attributes", "text", "plugin", ...effectFields]
       : ["id", "type", "value", "metadata", "isDeleted"];
     for (const key of Object.keys(p)) if (!allowed.includes(key)) fail(`field ${key} needs explicit restoration semantics.`);
+    for (const field of effectFields) if (p[field] !== undefined) {
+      if (field === "direction") {
+        if (p[field] !== "horizontal") fail("direction currently supports only horizontal rendering.");
+      } else if (typeof p[field] !== "number" || !Number.isFinite(p[field])) fail(`${field} must be a finite number.`);
+    }
     if (p.id !== undefined && typeof p.id !== "string") fail("id must be a local string identity.");
     if (p.isDeleted !== undefined && typeof p.isDeleted !== "boolean") fail("isDeleted must be boolean.");
     if (p.value !== undefined && !(typeof p.value === "string" || (!inline && typeof p.value === "number" && Number.isFinite(p.value)))) {

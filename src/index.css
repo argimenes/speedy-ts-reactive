@@ -201,22 +201,29 @@ textarea {
   z-index: 4;
 }
 
-.reactive-standoff-blur-layer {
+.reactive-standoff-effect-layer,
+.reactive-standoff-noise-layer {
   position: absolute;
   inset: 0;
   z-index: 3;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   pointer-events: none;
 }
 
-.reactive-standoff-blur {
+.reactive-standoff-effect {
   position: absolute;
   box-sizing: border-box;
   background: rgba(255, 255, 255, .001);
-  -webkit-backdrop-filter: var(--standoff-blur);
-  backdrop-filter: var(--standoff-blur);
+  opacity: var(--standoff-region-opacity);
+  mix-blend-mode: var(--standoff-region-blend);
+  -webkit-backdrop-filter: var(--standoff-region-filter);
+  backdrop-filter: var(--standoff-region-filter);
   pointer-events: none;
 }
+
+.reactive-standoff-noise-layer { z-index: 3; }
 
 .reactive-decoration--marching { animation: reactive-outline-crawl .5s linear infinite; }
 @keyframes reactive-outline-crawl { to { stroke-dashoffset: -20px; } }

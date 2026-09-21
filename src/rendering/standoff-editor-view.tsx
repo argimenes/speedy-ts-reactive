@@ -116,38 +116,121 @@ function DecorationLayer(props: { class: string; shapes: DecorationShape[]; blen
   );
 }
 
-interface BlurRegion extends VisualFragment {
+interface RegionEffect extends VisualFragment {
   key: string;
-  amount: number;
+  type: string;
+  filter: string;
+  opacity: number;
+  blendMode: string;
+  limitation?: string;
 }
 
-function BlurLayer(props: { regions: BlurRegion[] }) {
+function RegionEffectLayer(props: { regions: RegionEffect[] }) {
   return (
-    <div class="reactive-standoff-blur-layer" aria-hidden="true">
+    <div class="reactive-standoff-effect-layer reactive-standoff-blur-layer" aria-hidden="true">
       <For each={props.regions}>
-        {(region) => {
-          const filter = `blur(${region.amount}px)`;
-          return <span
-            class="reactive-standoff-blur"
-            data-property-type="style/blur"
-            data-decoration-key={region.key}
-            style={{
-              left: `${region.x}px`,
-              top: `${region.y}px`,
-              width: `${region.width}px`,
-              height: `${region.height}px`,
-              "--standoff-blur": filter,
-            }}
-          />;
-        }}
+        {(region) => <span
+          class="reactive-standoff-effect"
+          classList={{ "reactive-standoff-blur": region.type === "style/blur" }}
+          data-property-type={region.type}
+          data-decoration-key={region.key}
+          data-effect-limitation={region.limitation}
+          style={{
+            left: `${region.x}px`,
+            top: `${region.y}px`,
+            width: `${region.width}px`,
+            height: `${region.height}px`,
+            "--standoff-region-filter": region.filter,
+            "--standoff-region-opacity": region.opacity,
+            "--standoff-region-blend": region.blendMode,
+          }}
+        />}
       </For>
     </div>
   );
 }
 
-function blurAmount(annotation: StandoffAnnotation): number {
-  const amount = Number(annotation.amount ?? 3);
-  return Number.isFinite(amount) && amount >= 0 ? Math.min(amount, 32) : 3;
+interface NoiseRegion extends VisualFragment {
+  key: string;
+  type: string;
+  frequency: number;
+  octaves: number;
+  opacity: number;
+  seed: number;
+  blendMode: "multiply" | "soft-light";
+}
+
+const filterId = (key: string) => `standoff-noise-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+function NoiseLayer(props: { regions: NoiseRegion[] }) {
+  return <svg class="reactive-standoff-noise-layer" aria-hidden="true">
+    <defs>
+      <For each={props.regions}>{region => <filter id={filterId(region.key)} x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency={region.frequency} numOctaves={region.octaves} seed={region.seed} />
+        <feColorMatrix type="saturate" values="0" />
+      </filter>}</For>
+    </defs>
+    <For each={props.regions}>{region => <rect
+      data-property-type={region.type}
+      data-decoration-key={region.key}
+      x={region.x}
+      y={region.y}
+      width={region.width}
+      height={region.height}
+      filter={`url(#${filterId(region.key)})`}
+      opacity={region.opacity}
+      style={{ "mix-blend-mode": region.blendMode }}
+    />}</For>
+  </svg>;
+}
+
+function parameter(annotation: StandoffAnnotation, name: string, fallback: number, minimum: number, maximum: number): number {
+  const value = Number(annotation[name]);
+  return Number.isFinite(value) ? Math.max(minimum, Math.min(maximum, value)) : fallback;
+}
+
+function regionAppearance(annotation: StandoffAnnotation): Pick<RegionEffect, "filter" | "opacity" | "blendMode" | "limitation"> | undefined {
+  switch (annotation.type) {
+    case "style/blur": return { filter: `blur(${parameter(annotation, "amount", 3, 0, 32)}px)`, opacity: 1, blendMode: "normal" };
+    case "style/motion-blur": {
+      const x = parameter(annotation, "x", 6, 0, 24), y = parameter(annotation, "y", 0, 0, 24);
+      return { filter: `blur(${Math.max(x, y) * .6}px)`, opacity: 1, blendMode: "normal", limitation: "isotropic-backdrop-fallback" };
+    }
+    case "style/grayscale": return { filter: `grayscale(${parameter(annotation, "amount", .75, 0, 1)})`, opacity: 1, blendMode: "normal" };
+    case "style/sepia": return { filter: `sepia(${parameter(annotation, "amount", .8, 0, 1)})`, opacity: 1, blendMode: "normal" };
+    case "style/invert": return { filter: `invert(${parameter(annotation, "amount", 1, 0, 1)})`, opacity: 1, blendMode: "normal" };
+    case "style/contrast-brightness": return {
+      filter: `contrast(${parameter(annotation, "contrast", 1.4, 0, 3)}) brightness(${parameter(annotation, "brightness", 1.1, 0, 3)})`,
+      opacity: 1,
+      blendMode: "normal",
+    };
+  }
+}
+
+function noiseAppearance(annotation: StandoffAnnotation): Pick<NoiseRegion, "frequency" | "octaves" | "opacity" | "seed" | "blendMode"> | undefined {
+  switch (annotation.type) {
+    case "style/grain": return {
+      frequency: parameter(annotation, "frequency", .75, .01, 1),
+      octaves: Math.round(parameter(annotation, "octaves", 2, 1, 4)),
+      opacity: parameter(annotation, "opacity", .12, 0, .5),
+      seed: Math.round(parameter(annotation, "seed", 2, 0, 1000)),
+      blendMode: "multiply",
+    };
+    case "style/ink-bleed": return {
+      frequency: .55,
+      octaves: 2,
+      opacity: parameter(annotation, "roughness", .35, 0, 1) * .16,
+      seed: 7,
+      blendMode: "multiply",
+    };
+    case "style/turbulence": return {
+      frequency: parameter(annotation, "frequency", .025, .005, .25),
+      octaves: Math.round(parameter(annotation, "octaves", 2, 1, 4)),
+      opacity: parameter(annotation, "opacity", .14, 0, .4),
+      seed: Math.round(parameter(annotation, "seed", 4, 0, 1000)),
+      blendMode: "soft-light",
+    };
+  }
 }
 
 export function StandoffEditorView(props: BlockViewProps) {
@@ -170,7 +253,8 @@ export function StandoffEditorView(props: BlockViewProps) {
   let frame = 0;
   const [highlighterShapes, setHighlighterShapes] = createSignal<DecorationShape[]>([]);
   const [foregroundShapes, setForegroundShapes] = createSignal<DecorationShape[]>([]);
-  const [blurRegions, setBlurRegions] = createSignal<BlurRegion[]>([]);
+  const [regionEffects, setRegionEffects] = createSignal<RegionEffect[]>([]);
+  const [noiseRegions, setNoiseRegions] = createSignal<NoiseRegion[]>([]);
   const [selectionShapes, setSelectionShapes] = createSignal<DecorationShape[]>([]);
   const [searchShapes, setSearchShapes] = createSignal<DecorationShape[]>([]);
   const [exclusions,setExclusions] = createSignal<Array<{ owner: string; id: string; x: number; y: number; active: boolean; fragments: VisualFragment[] }>>([]);
@@ -211,9 +295,16 @@ export function StandoffEditorView(props: BlockViewProps) {
     frame = 0;
     const foreground: DecorationShape[] = [];
     const highlighters: DecorationShape[] = [];
+    const fragmentCache = new Map<string, VisualFragment[]>();
+    const fragmentsFor = (start: number, end: number) => {
+      const key = `${start}:${end}`;
+      let fragments = fragmentCache.get(key);
+      if (!fragments) fragmentCache.set(key, fragments = rangeFragments(flow, surface, start, end));
+      return fragments;
+    };
     standoffSvgStyles(annotations(), node()?.inlineContent.length ?? 0).forEach(({ annotation, svg, offset, index }) => {
       const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "property"}:${index}`;
-      const fragments = rangeFragments(flow, surface, annotation.start, annotation.end);
+      const fragments = fragmentsFor(annotation.start, annotation.end);
       let shapes: DecorationShape[] = [];
       switch (svg.kind) {
         case "rainbow": shapes = rainbowShapes(key, fragments, offset); break;
@@ -226,12 +317,18 @@ export function StandoffEditorView(props: BlockViewProps) {
       }
       foreground.push(...shapes.map((shape) => ({ ...shape, propertyType: annotation.type })));
     });
-    const blurs: BlurRegion[] = [];
+    const regions: RegionEffect[] = [];
+    const noises: NoiseRegion[] = [];
     annotations().forEach((annotation, annotationIndex) => {
-      if (!hasActiveRange(annotation) || !standoffStyleSchema(annotation.type)?.blur || annotation.start >= (node()?.inlineContent.length ?? 0)) return;
-      const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "blur"}:${annotationIndex}`;
-      rangeFragments(flow, surface, annotation.start, annotation.end).forEach((fragment, fragmentIndex) => {
-        blurs.push({ ...fragment, key: `${key}:${fragmentIndex}`, amount: blurAmount(annotation) });
+      if (!hasActiveRange(annotation) || annotation.start >= (node()?.inlineContent.length ?? 0)) return;
+      const schema = standoffStyleSchema(annotation.type);
+      if (!schema?.regionEffect && !schema?.noiseEffect) return;
+      const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "effect"}:${annotationIndex}`;
+      fragmentsFor(annotation.start, annotation.end).forEach((fragment, fragmentIndex) => {
+        const region = schema.regionEffect ? regionAppearance(annotation) : undefined;
+        if (region) regions.push({ ...fragment, ...region, key: `${key}:region:${fragmentIndex}`, type: String(annotation.type) });
+        const noise = schema.noiseEffect ? noiseAppearance(annotation) : undefined;
+        if (noise) noises.push({ ...fragment, ...noise, key: `${key}:noise:${fragmentIndex}`, type: String(annotation.type) });
       });
     });
     const selectionSet = editor.selections.sets[props.nodeKey];
@@ -257,7 +354,8 @@ export function StandoffEditorView(props: BlockViewProps) {
     });
     setHighlighterShapes(highlighters);
     setForegroundShapes(foreground);
-    setBlurRegions(blurs);
+    setRegionEffects(regions);
+    setNoiseRegions(noises);
     setSelectionShapes(selected);
     const search: DecorationShape[] = [];
     const controls: ReturnType<typeof exclusions> = [];
@@ -423,7 +521,8 @@ export function StandoffEditorView(props: BlockViewProps) {
             }}
           </For>
         </div>
-        <BlurLayer regions={blurRegions()} />
+        <RegionEffectLayer regions={regionEffects()} />
+        <NoiseLayer regions={noiseRegions()} />
         <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes()} />
       </div>
       <RelationBlocks parentKey={props.nodeKey} />

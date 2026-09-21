@@ -34,11 +34,26 @@ describe("Standoff property appearance", () => {
   it("keeps compatibility aliases and excludes deleted, invalid, non-CSS and unknown types from Cell/SVG styling", () => {
     expect(standoffStyleSchema("style/strike")).toBe(standoffStyleSchema("style/strikethrough"));
     expect(standoffStyleSchema("style/color")).toBe(standoffStyleSchema("text/colour"));
-    expect(standoffStyleSchema("style/blur")).toEqual({ blur: true });
+    expect(standoffStyleSchema("style/blur")).toEqual({ regionEffect: true });
     expect(standoffStyleSchema("constructor")).toBeUndefined();
     const ignored = [property("style/bold", { isDeleted: true }), property("text/colour", { start: -1, value: "red" }), property("style/underline", { end: 0 }), property("style/bold", { end: Infinity }), property("future/highlight"), property("animation/spinner"), property("style/blur"), property("cell/micro-document")];
     expect(standoffCellStyles(2, ignored)).toEqual({});
     expect(standoffSvgStyles(ignored, 10)).toEqual([]);
+  });
+
+  it("composes glow, chromatic, ghost and ink effects as non-layout text shadows", () => {
+    const style = standoffCellStyles(2, [
+      property("style/glow", { radius: 4, intensity: .4 }),
+      property("style/chromatic-aberration", { offset: 2, intensity: .3 }),
+      property("style/ghost", { offsetX: 3, offsetY: 1, blur: 2, opacity: .25 }),
+      property("style/ink-bleed", { spread: 1, intensity: .2, roughness: .4 }),
+    ]);
+    expect(style["text-shadow"]).toContain("0 0 4px");
+    expect(style["text-shadow"]).toContain("-2px 0 0");
+    expect(style["text-shadow"]).toContain("3px 1px 2px");
+    expect(style["text-shadow"]?.split(", ").length).toBeGreaterThan(6);
+    expect(style.width).toBeUndefined();
+    expect(style.transform).toBeUndefined();
   });
 
   it("uses the original fixed semantic underline colours and 2px strokes", () => {

@@ -5,6 +5,7 @@ import { ReactiveTreeView } from "./rendering/reactive-tree-view";
 import { registerCoreViews } from "./rendering/register-core-views";
 import { OverlayLayer } from "./rendering/overlay-layer";
 import { WorkspaceDemo } from "./demo/workspace-demo";
+import { StandoffEffectsDemo } from "./demo/standoff-effects-demo";
 
 const pilotDocument: ExistingBlockDto = {
   id: "reactive-pilot-document",
@@ -97,7 +98,7 @@ export function PilotApp() {
   return (
     <main class="reactive-pilot">
       <header class="reactive-pilot__header">
-        <a href={import.meta.env.BASE_URL}>Open workspace demo</a>
+        <a href={import.meta.env.BASE_URL}>Open workspace demo</a> · <a href={`${import.meta.env.BASE_URL}effects`}>Visual effects demo</a>
         <p class="reactive-pilot__eyebrow">speedy-ts reactive reconstruction</p>
         <h1>Solid-owned BlockTree reconstruction</h1>
         <p>
@@ -138,5 +139,6 @@ export function PilotApp() {
 
 export default function App() {
   const route = window.location.pathname.replace(/\/+$/, "");
+  if (route === `${import.meta.env.BASE_URL}effects`) return <StandoffEffectsDemo />;
   return route === `${import.meta.env.BASE_URL}pilot` ? <PilotApp /> : <WorkspaceDemo />;
 }

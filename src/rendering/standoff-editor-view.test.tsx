@@ -222,8 +222,8 @@ describe("StandoffEditorView", () => {
     const regions = () => [...host.querySelectorAll<HTMLElement>('.reactive-standoff-blur[data-property-type="style/blur"]')];
     expect(regions()).toHaveLength(3);
     expect(regions().filter(region => region.dataset.decorationKey?.includes("multi"))).toHaveLength(2);
-    expect(regions().find(region => region.dataset.decorationKey?.includes("single"))?.style.getPropertyValue("--standoff-blur")).toBe("blur(3px)");
-    expect(regions().find(region => region.dataset.decorationKey?.includes("multi"))?.style.getPropertyValue("--standoff-blur")).toBe("blur(5px)");
+    expect(regions().find(region => region.dataset.decorationKey?.includes("single"))?.style.getPropertyValue("--standoff-region-filter")).toBe("blur(3px)");
+    expect(regions().find(region => region.dataset.decorationKey?.includes("multi"))?.style.getPropertyValue("--standoff-region-filter")).toBe("blur(5px)");
     expect(flow.querySelector(".reactive-standoff-blur")).toBeNull();
     expect(flow.children).toHaveLength(10);
     expect(flow.textContent).toBe("abcdefghij");

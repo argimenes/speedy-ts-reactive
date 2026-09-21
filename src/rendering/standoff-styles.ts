@@ -14,7 +14,9 @@ export interface StandoffStyleSchema {
   cell?: JSX.CSSProperties;
   valueStyle?: "color" | "background-color";
   svg?: SvgStyle;
-  blur?: true;
+  cellEffect?: true;
+  regionEffect?: true;
+  noiseEffect?: true;
   deferred?: "range-wrapper" | "animation-plugin" | "embedded-document";
 }
 
@@ -24,7 +26,18 @@ export const standoffStyleSchemas: Readonly<Record<string, StandoffStyleSchema>>
   "text/colour": { valueStyle: "color" },
   "cell/micro-document": { deferred: "embedded-document" },
   "animation/clock": { deferred: "animation-plugin" },
-  "style/blur": { blur: true },
+  "style/blur": { regionEffect: true },
+  "style/glow": { cellEffect: true },
+  "style/chromatic-aberration": { cellEffect: true },
+  "style/motion-blur": { regionEffect: true },
+  "style/ghost": { cellEffect: true },
+  "style/grayscale": { regionEffect: true },
+  "style/sepia": { regionEffect: true },
+  "style/invert": { regionEffect: true },
+  "style/contrast-brightness": { regionEffect: true },
+  "style/grain": { noiseEffect: true },
+  "style/ink-bleed": { cellEffect: true, noiseEffect: true },
+  "style/turbulence": { noiseEffect: true },
   "style/flip": { deferred: "range-wrapper" },
   "style/mirror": { deferred: "range-wrapper" },
   "style/superscript": { cell: { "vertical-align": "super", "font-size": "0.8rem" } },
@@ -61,17 +74,59 @@ export function hasActiveRange(annotation: StandoffAnnotation): annotation is St
     && annotation.start! >= 0 && annotation.end! >= annotation.start!;
 }
 
+function parameter(annotation: StandoffAnnotation, name: string, fallback: number, minimum: number, maximum: number): number {
+  const value = Number(annotation[name]);
+  return Number.isFinite(value) ? Math.max(minimum, Math.min(maximum, value)) : fallback;
+}
+
+function cellEffectStyle(annotation: StandoffAnnotation): JSX.CSSProperties | undefined {
+  const intensity = parameter(annotation, "intensity", .35, 0, 1);
+  switch (annotation.type) {
+    case "style/glow": {
+      const radius = parameter(annotation, "radius", 3, 0, 16);
+      return { "text-shadow": `0 0 ${radius}px rgba(65, 220, 255, ${intensity}), 0 0 ${radius * 2}px rgba(80, 150, 255, ${intensity * .55})` };
+    }
+    case "style/chromatic-aberration": {
+      const offset = parameter(annotation, "offset", 1.5, 0, 8);
+      return { "text-shadow": `${-offset}px 0 0 rgba(255, 28, 64, ${intensity}), ${offset}px 0 0 rgba(0, 205, 255, ${intensity})` };
+    }
+    case "style/ghost": {
+      const x = parameter(annotation, "offsetX", 3, -20, 20);
+      const y = parameter(annotation, "offsetY", 1, -20, 20);
+      const blur = parameter(annotation, "blur", 1.5, 0, 16);
+      const opacity = parameter(annotation, "opacity", .28, 0, 1);
+      return { "text-shadow": `${x}px ${y}px ${blur}px rgba(32, 55, 72, ${opacity})` };
+    }
+    case "style/ink-bleed": {
+      const spread = parameter(annotation, "spread", 1, 0, 5);
+      const roughness = parameter(annotation, "roughness", .35, 0, 1);
+      const alpha = parameter(annotation, "intensity", .26, 0, .8);
+      const diagonal = Math.max(.25, spread * (.45 + roughness * .35));
+      return { "text-shadow": [
+        `${spread}px 0 ${spread}px rgba(35, 24, 16, ${alpha})`,
+        `${-spread}px 0 ${spread}px rgba(35, 24, 16, ${alpha})`,
+        `${diagonal}px ${diagonal}px ${spread * 1.35}px rgba(35, 24, 16, ${alpha * .8})`,
+        `${-diagonal}px ${diagonal}px ${spread * 1.1}px rgba(35, 24, 16, ${alpha * .65})`,
+      ].join(", ") };
+    }
+  }
+}
+
 export function standoffCellStyles(index: number, annotations: readonly StandoffAnnotation[]): JSX.CSSProperties {
   const active = annotations.filter((annotation) => hasActiveRange(annotation) && annotation.start <= index && annotation.end >= index);
   const styles: JSX.CSSProperties = {};
   const lines = new Set<string>();
+  const shadows: string[] = [];
   for (const annotation of active) {
-    const cell = standoffStyleSchema(annotation.type)?.cell;
+    const schema = standoffStyleSchema(annotation.type);
+    const cell = schema?.cell ?? (schema?.cellEffect ? cellEffectStyle(annotation) : undefined);
     if (!cell) continue;
     if (cell["text-decoration-line"]) lines.add(String(cell["text-decoration-line"]));
+    if (cell["text-shadow"]) shadows.push(String(cell["text-shadow"]));
     Object.assign(styles, cell);
   }
   if (lines.size) styles["text-decoration-line"] = [...lines].join(" ");
+  if (shadows.length) styles["text-shadow"] = shadows.join(", ");
   // Original explicit per-Cell colours override class-based highlight colours.
   for (const annotation of active) {
     const field = standoffStyleSchema(annotation.type)?.valueStyle;
@@ -89,7 +144,7 @@ const emptyCellStyle: JSX.CSSProperties = {};
 export function compileCellStyleRuns(annotations: readonly StandoffAnnotation[]): CellStyleRun[] {
   const css = annotations.filter(annotation => {
     const schema = standoffStyleSchema(annotation.type);
-    return (schema?.cell || schema?.valueStyle) && hasActiveRange(annotation);
+    return (schema?.cell || schema?.cellEffect || schema?.valueStyle) && hasActiveRange(annotation);
   });
   const boundaries = new Set<number>([0]);
   for (const annotation of css) { boundaries.add(annotation.start!); boundaries.add(annotation.end! + 1); }

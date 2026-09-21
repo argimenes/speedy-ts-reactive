@@ -49,7 +49,7 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
       expect.objectContaining({ type: "text/background-colour", value: "#ffff00", start: 0, end: 4 }),
       expect.objectContaining({ id: "entity", value: "entity-id" }),
     ]));
-    if (!compact) expect(host.querySelectorAll("[data-annotation-type]")).toHaveLength(17);
+    if (!compact) expect(host.querySelectorAll("[data-annotation-type]")).toHaveLength(annotationTools.length + 2);
     else expect(host.querySelector(".document-status-bar .document-count-bar")).not.toBeNull();
     const saved = editor.encodeDocument(), reloaded = new ReactiveEditor(saved);
     expect(reloaded.encodeDocument()).toEqual(saved); reloaded.dispose();

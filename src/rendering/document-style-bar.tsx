@@ -17,8 +17,29 @@ export const annotationTools = [
   ["style/uppercase", "Uppercase", "AA"], ["style/highlight", "Highlight", "Highlight"],
   ["style/highlighter", "Highlighter", "Marker"], ["style/rainbow", "Rainbow underline", "Rainbow"],
   ["style/rectangle", "Rectangle", "□ Rectangle"], ["style/spiky", "Spiky outline", "Spiky"],
-  ["style/blur", "Blur", "Blur"], ["style/flip", "Flip", "Flip"], ["style/mirror", "Mirror", "Mirror"],
+  ["style/blur", "Blur", "Blur"], ["style/glow", "Glow / bloom", "Glow"],
+  ["style/chromatic-aberration", "Chromatic aberration", "RGB"], ["style/motion-blur", "Directional blur (experimental)", "Motion"],
+  ["style/ghost", "Ghost / echo", "Ghost"], ["style/grayscale", "Grayscale", "Gray"],
+  ["style/sepia", "Sepia", "Sepia"], ["style/invert", "Invert", "Invert"],
+  ["style/contrast-brightness", "Contrast / brightness", "Contrast"], ["style/grain", "Grain / noise", "Grain"],
+  ["style/ink-bleed", "Ink bleed", "Ink"], ["style/turbulence", "Turbulence", "Turbulence"],
+  ["style/flip", "Flip", "Flip"], ["style/mirror", "Mirror", "Mirror"],
 ] as const;
+
+const effectDefaults: Readonly<Record<string, Readonly<Record<string, number | string>>>> = {
+  "style/blur": { amount: 3 },
+  "style/glow": { radius: 3, intensity: .35 },
+  "style/chromatic-aberration": { offset: 1.5, intensity: .38, direction: "horizontal" },
+  "style/motion-blur": { x: 6, y: 0 },
+  "style/ghost": { offsetX: 3, offsetY: 1, blur: 1.5, opacity: .28 },
+  "style/grayscale": { amount: .75 },
+  "style/sepia": { amount: .8 },
+  "style/invert": { amount: 1 },
+  "style/contrast-brightness": { contrast: 1.4, brightness: 1.1 },
+  "style/grain": { frequency: .75, octaves: 2, opacity: .12, seed: 2 },
+  "style/ink-bleed": { spread: 1, intensity: .26, roughness: .35 },
+  "style/turbulence": { frequency: .025, octaves: 2, opacity: .14, seed: 4 },
+};
 
 export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: NodeKey; toolset?: Toolset; onToolset?: (value: Toolset) => void; onNotice?: (value: string) => void; margins?: { collapsed: boolean; count: number; open: boolean; controls: string; toggle: () => void } }) {
   const editor = props.editor;
@@ -81,7 +102,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     const current = (node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
     // Applying a toolbar style never deletes an existing annotation or its metadata.
     if (!current.some(p => !p.isDeleted && p.type === type && p.start === start && p.end === end && p.value === value)) {
-      editor.commands.setPayloadField(node.key, "standoffProperties", [...unwrap(current), { id: crypto.randomUUID(), type, start, end, ...(value !== undefined ? { value } : {}), ...(type === "style/blur" ? { amount: 3 } : {}) }], "Annotate Selection");
+      editor.commands.setPayloadField(node.key, "standoffProperties", [...unwrap(current), { id: crypto.randomUUID(), type, start, end, ...(value !== undefined ? { value } : {}), ...(effectDefaults[type] ?? {}) }], "Annotate Selection");
     }
     setNotice(""); restore();
   };
