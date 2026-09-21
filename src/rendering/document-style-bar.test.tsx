@@ -41,6 +41,8 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
       const p = (node().payload.standoffProperties as any[]).find(p => p.type === type);
       expect(p).toMatchObject({ type, start: 0, end: 4 }); expect(p.id).toBeTruthy();
     }
+    expect((node().payload.standoffProperties as any[]).find(p => p.type === "style/blur")).toMatchObject({ amount: 3 });
+    if (compact) expect(toolbarControl(host, 'button[title="Blur"]', "Typography").dataset.toolId).toBe("style/blur");
     select(); click("Apply text colour"); select(); click("Apply background colour");
     expect(node().payload.standoffProperties).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "text/colour", value: "#ff0000", start: 0, end: 4 }),

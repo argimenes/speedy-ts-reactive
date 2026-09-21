@@ -12,7 +12,7 @@ import {
   type VisualFragment,
 } from "./decorations";
 import { blockAppearance } from "./appearance";
-import { compileCellStyleRuns, cellStyleAt, standoffSvgStyles, type StandoffAnnotation } from "./standoff-styles";
+import { compileCellStyleRuns, cellStyleAt, hasActiveRange, standoffStyleSchema, standoffSvgStyles, type StandoffAnnotation } from "./standoff-styles";
 import "./candidate-exclusions.css";
 import { exclusionPosition } from "./candidate-exclusion-layout";
 
@@ -116,6 +116,40 @@ function DecorationLayer(props: { class: string; shapes: DecorationShape[]; blen
   );
 }
 
+interface BlurRegion extends VisualFragment {
+  key: string;
+  amount: number;
+}
+
+function BlurLayer(props: { regions: BlurRegion[] }) {
+  return (
+    <div class="reactive-standoff-blur-layer" aria-hidden="true">
+      <For each={props.regions}>
+        {(region) => {
+          const filter = `blur(${region.amount}px)`;
+          return <span
+            class="reactive-standoff-blur"
+            data-property-type="style/blur"
+            data-decoration-key={region.key}
+            style={{
+              left: `${region.x}px`,
+              top: `${region.y}px`,
+              width: `${region.width}px`,
+              height: `${region.height}px`,
+              "--standoff-blur": filter,
+            }}
+          />;
+        }}
+      </For>
+    </div>
+  );
+}
+
+function blurAmount(annotation: StandoffAnnotation): number {
+  const amount = Number(annotation.amount ?? 3);
+  return Number.isFinite(amount) && amount >= 0 ? Math.min(amount, 32) : 3;
+}
+
 export function StandoffEditorView(props: BlockViewProps) {
   const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
@@ -136,6 +170,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   let frame = 0;
   const [highlighterShapes, setHighlighterShapes] = createSignal<DecorationShape[]>([]);
   const [foregroundShapes, setForegroundShapes] = createSignal<DecorationShape[]>([]);
+  const [blurRegions, setBlurRegions] = createSignal<BlurRegion[]>([]);
   const [selectionShapes, setSelectionShapes] = createSignal<DecorationShape[]>([]);
   const [searchShapes, setSearchShapes] = createSignal<DecorationShape[]>([]);
   const [exclusions,setExclusions] = createSignal<Array<{ owner: string; id: string; x: number; y: number; active: boolean; fragments: VisualFragment[] }>>([]);
@@ -191,6 +226,14 @@ export function StandoffEditorView(props: BlockViewProps) {
       }
       foreground.push(...shapes.map((shape) => ({ ...shape, propertyType: annotation.type })));
     });
+    const blurs: BlurRegion[] = [];
+    annotations().forEach((annotation, annotationIndex) => {
+      if (!hasActiveRange(annotation) || !standoffStyleSchema(annotation.type)?.blur || annotation.start >= (node()?.inlineContent.length ?? 0)) return;
+      const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "blur"}:${annotationIndex}`;
+      rangeFragments(flow, surface, annotation.start, annotation.end).forEach((fragment, fragmentIndex) => {
+        blurs.push({ ...fragment, key: `${key}:${fragmentIndex}`, amount: blurAmount(annotation) });
+      });
+    });
     const selectionSet = editor.selections.sets[props.nodeKey];
     const selected: DecorationShape[] = [];
     for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search" && !overlay.entityCandidates) {
@@ -214,6 +257,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     });
     setHighlighterShapes(highlighters);
     setForegroundShapes(foreground);
+    setBlurRegions(blurs);
     setSelectionShapes(selected);
     const search: DecorationShape[] = [];
     const controls: ReturnType<typeof exclusions> = [];
@@ -379,6 +423,7 @@ export function StandoffEditorView(props: BlockViewProps) {
             }}
           </For>
         </div>
+        <BlurLayer regions={blurRegions()} />
         <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes()} />
       </div>
       <RelationBlocks parentKey={props.nodeKey} />

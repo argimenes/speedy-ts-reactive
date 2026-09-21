@@ -198,7 +198,24 @@ textarea {
 }
 
 .reactive-annotation-layer--foreground {
+  z-index: 4;
+}
+
+.reactive-standoff-blur-layer {
+  position: absolute;
+  inset: 0;
   z-index: 3;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.reactive-standoff-blur {
+  position: absolute;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, .001);
+  -webkit-backdrop-filter: var(--standoff-blur);
+  backdrop-filter: var(--standoff-blur);
+  pointer-events: none;
 }
 
 .reactive-decoration--marching { animation: reactive-outline-crawl .5s linear infinite; }

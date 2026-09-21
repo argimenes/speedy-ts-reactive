@@ -81,7 +81,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     const current = (node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
     // Applying a toolbar style never deletes an existing annotation or its metadata.
     if (!current.some(p => !p.isDeleted && p.type === type && p.start === start && p.end === end && p.value === value)) {
-      editor.commands.setPayloadField(node.key, "standoffProperties", [...unwrap(current), { id: crypto.randomUUID(), type, start, end, ...(value !== undefined ? { value } : {}) }], "Annotate Selection");
+      editor.commands.setPayloadField(node.key, "standoffProperties", [...unwrap(current), { id: crypto.randomUUID(), type, start, end, ...(value !== undefined ? { value } : {}), ...(type === "style/blur" ? { amount: 3 } : {}) }], "Annotate Selection");
     }
     setNotice(""); restore();
   };
@@ -155,9 +155,9 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     }}>To tab / + Tab</button>
   </>;
   const hasCrossRange = () => { const range = editor.crossText.range(); return !!range && inScope(range.anchor.occurrenceKey); };
-  const typographyTypes = new Set(["style/bold", "style/italics", "style/underline", "style/strikethrough", "style/superscript", "style/subscript", "style/uppercase"]);
+  const typographyTypes = new Set(["style/bold", "style/italics", "style/underline", "style/strikethrough", "style/superscript", "style/subscript", "style/uppercase", "style/blur"]);
   const markupTypes = new Set(["style/highlight", "style/highlighter"]);
-  const deferredTypes = new Set(["style/blur", "style/flip", "style/mirror"]);
+  const deferredTypes = new Set(["style/flip", "style/mirror"]);
   const tools: CompactTool[] = [
     { id: "colours", label: "Text colour and fill", glyph: "Colour / Fill", width: 104, toolset: "Visual effects", panel: ColourControls },
     ...annotationTools.map(([type, label, glyph]): CompactTool => ({

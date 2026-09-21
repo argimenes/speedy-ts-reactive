@@ -192,6 +192,61 @@ describe("StandoffEditorView", () => {
     expect(saved.text).toBe("abc"); expect(saved.standoffProperties).toEqual(initial);
   });
 
+  it("renders passive single- and multi-line blur regions outside the text flow and remeasures them after edits", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
+    Object.defineProperty(Range.prototype, "getClientRects", {
+      configurable: true,
+      value: function (this: Range) {
+        const index = (node: Node) => Number((node.parentElement as HTMLElement | null)?.dataset.inlineIndex ?? -1);
+        const start = index(this.startContainer), end = index(this.endContainer);
+        const rect = (left: number, top: number, width: number, height = 16) => ({ left, top, width, height });
+        if (start === 2 && end === 5) return [rect(10, 20, 40), rect(5, 42, 55)];
+        if (start === 3 && end === 6) return [rect(14, 20, 42), rect(5, 42, 58)];
+        if (start === 3 && end === 7) return [rect(14, 20, 50), rect(5, 42, 62)];
+        return [rect(start * 4, 4, Math.max(8, (end - start + 1) * 8))];
+      },
+    });
+    disposers.push(() => descriptor
+      ? Object.defineProperty(Range.prototype, "getClientRects", descriptor)
+      : Reflect.deleteProperty(Range.prototype, "getClientRects"));
+
+    const { editor, host } = renderEditor("abcdefghij", [
+      { id: "single", type: "style/blur", start: 0, end: 0 },
+      { id: "multi", type: "style/blur", start: 2, end: 5, amount: 5 },
+      { id: "rainbow", type: "style/rainbow", start: 7, end: 8 },
+    ]);
+    const settle = () => new Promise(resolve => setTimeout(resolve, 25));
+    await settle();
+
+    const flow = host.querySelector<HTMLElement>(".reactive-standoff-flow")!;
+    const regions = () => [...host.querySelectorAll<HTMLElement>('.reactive-standoff-blur[data-property-type="style/blur"]')];
+    expect(regions()).toHaveLength(3);
+    expect(regions().filter(region => region.dataset.decorationKey?.includes("multi"))).toHaveLength(2);
+    expect(regions().find(region => region.dataset.decorationKey?.includes("single"))?.style.getPropertyValue("--standoff-blur")).toBe("blur(3px)");
+    expect(regions().find(region => region.dataset.decorationKey?.includes("multi"))?.style.getPropertyValue("--standoff-blur")).toBe("blur(5px)");
+    expect(flow.querySelector(".reactive-standoff-blur")).toBeNull();
+    expect(flow.children).toHaveLength(10);
+    expect(flow.textContent).toBe("abcdefghij");
+    expect(host.querySelector('[data-property-type="style/rainbow"]')).not.toBeNull();
+    expect(host.querySelector(".reactive-standoff-blur-layer")?.getAttribute("aria-hidden")).toBe("true");
+
+    flow.focus(); setCaret(flow, 0, 0);
+    flow.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "X" }));
+    await settle();
+    let multi = regions().find(region => region.dataset.decorationKey?.includes("multi"))!;
+    expect(multi.style.left).toBe("14px");
+    expect((editor.encodeDocument().children![0].standoffProperties as any[]).find(p => p.id === "multi")).toMatchObject({ start: 3, end: 6, amount: 5 });
+
+    setCaret(flow, 4, 1);
+    flow.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "Y" }));
+    await settle();
+    multi = regions().find(region => region.dataset.decorationKey?.includes("multi"))!;
+    expect(multi.style.width).toBe("50px");
+    expect((editor.encodeDocument().children![0].standoffProperties as any[]).find(p => p.id === "multi")).toMatchObject({ start: 3, end: 7, amount: 5 });
+    expect(document.activeElement).toBe(flow);
+    expect(document.getSelection()?.anchorNode && flow.contains(document.getSelection()!.anchorNode)).toBe(true);
+  });
+
   it("moves colour styling with mapped annotation ranges during typing and undo", async () => {
     const { editor, host } = renderEditor("ABCD", [{ id: "colour", type: "text/colour", start: 1, end: 2, value: "purple" }]);
     const flow = host.querySelector<HTMLElement>(".reactive-standoff-flow")!;

@@ -31,9 +31,10 @@ describe("Standoff property appearance", () => {
     expect(standoffCellStyles(2, [property("reference/url")])).toEqual({ "text-decoration-line": "underline", "text-decoration-color": "blue" });
   });
 
-  it("keeps compatibility aliases and ignores deleted, invalid, deferred and unknown types visually", () => {
+  it("keeps compatibility aliases and excludes deleted, invalid, non-CSS and unknown types from Cell/SVG styling", () => {
     expect(standoffStyleSchema("style/strike")).toBe(standoffStyleSchema("style/strikethrough"));
     expect(standoffStyleSchema("style/color")).toBe(standoffStyleSchema("text/colour"));
+    expect(standoffStyleSchema("style/blur")).toEqual({ blur: true });
     expect(standoffStyleSchema("constructor")).toBeUndefined();
     const ignored = [property("style/bold", { isDeleted: true }), property("text/colour", { start: -1, value: "red" }), property("style/underline", { end: 0 }), property("style/bold", { end: Infinity }), property("future/highlight"), property("animation/spinner"), property("style/blur"), property("cell/micro-document")];
     expect(standoffCellStyles(2, ignored)).toEqual({});

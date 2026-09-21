@@ -14,6 +14,7 @@ export interface StandoffStyleSchema {
   cell?: JSX.CSSProperties;
   valueStyle?: "color" | "background-color";
   svg?: SvgStyle;
+  blur?: true;
   deferred?: "range-wrapper" | "animation-plugin" | "embedded-document";
 }
 
@@ -23,7 +24,7 @@ export const standoffStyleSchemas: Readonly<Record<string, StandoffStyleSchema>>
   "text/colour": { valueStyle: "color" },
   "cell/micro-document": { deferred: "embedded-document" },
   "animation/clock": { deferred: "animation-plugin" },
-  "style/blur": { deferred: "range-wrapper" },
+  "style/blur": { blur: true },
   "style/flip": { deferred: "range-wrapper" },
   "style/mirror": { deferred: "range-wrapper" },
   "style/superscript": { cell: { "vertical-align": "super", "font-size": "0.8rem" } },
