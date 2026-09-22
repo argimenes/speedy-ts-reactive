@@ -26,12 +26,14 @@ import { UnknownBlockView } from "./unknown-block-view";
 import { TimerBlockView } from "./timer-block";
 import { DocumentReferenceView } from "./document-reference-view";
 import { StickyNoteBlockView } from "./sticky-note";
+import { registerTextSuperpositionCommands } from "../runtime/text-superposition";
 
 function many(editor: ReactiveEditor, types: string[], view: any, capabilities: string[]) {
   for (const type of types) editor.registry.register({ type, view, capabilities });
 }
 
 export function registerCoreViews(editor: ReactiveEditor): void {
+  registerTextSuperpositionCommands(editor);
   editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: ContainerBlockView, capabilities: ["container", "selectable"] });
   editor.registry.register({ type: "plain-text-block", view: PlainTextBlockView, capabilities: ["native-text", "container", "selectable"] });
   editor.registry.register({ type: "standoff-editor-block", view: StandoffEditorView, capabilities: ["inline-editor", "container", "selectable", "annotations"] });

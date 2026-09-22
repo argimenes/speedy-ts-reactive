@@ -16,12 +16,16 @@ export function registerInputActions(registry: BindingRegistry, platform = typeo
   const stickyChord = chord(k(";", "Ctrl"), k("n"));
   const workspaceOpenChord = chord(k(";", "Ctrl"), k("o"));
   const workspaceSaveChord = chord(k(";", "Ctrl"), k("s"));
+  const superpositionReadingChord = chord(k(";", "Ctrl"), k("a"));
+  const superpositionVisibilityChord = chord(k(";", "Ctrl"), k("v"));
   add("entity.open", "Entity reference", "Search the graph for an entity to link to selected text.", "Entities", "editor/standoff", [entityReferenceChord]);
   add("cross.entity", "Entity reference across Blocks", "Search for one entity shared by the selected Block-local ranges.", "Entities", "cross-text", [entityReferenceChord]);
   add("entity.list.open", "Entity listing", "List entities referenced by standoff properties in the current Document.", "Entities", "editor", [entityListingChord], ["listing", "mentions"]);
   add("cross.entityList", "Entity listing from cross-Block selection", "List entities referenced by standoff properties in the current Document.", "Entities", "cross-text", [entityListingChord], ["listing", "mentions"]);
   add("timer.create", "Add timer", "Replace an empty focused text Block with a timer, or insert one after non-empty text.", "Blocks & Margins", "editor", [timerChord], ["timer", "pomodoro"]);
   add("sticky.createFloating", "New Sticky Note", "Create a floating yellow Sticky Note in the current Workspace.", "Blocks & Margins", "editor", [stickyChord], ["sticky", "note"]);
+  add("superposition.toggleReading", "Switch alternative reading", "Switch the in-scope text superposition between its canonical source and alternative TextBlock.", "Text Editing", "editor/standoff", [superpositionReadingChord], ["alternative", "superposition"]);
+  add("superposition.toggleVisibility", "Show or hide alternative editor", "Toggle superposition annotation furniture without changing the active reading.", "Annotations", "editor/standoff", [superpositionVisibilityChord], ["alternative", "superposition"]);
   add("cross.timerCreate", "Add timer from cross-Block selection", "Insert a timer after the selected text Block.", "Blocks & Margins", "cross-text", [timerChord], ["timer", "pomodoro"]);
   add("workspace.open", "Open Workspace", "Load a Workspace manifest and its externally referenced Documents.", "Documents", "editor", [workspaceOpenChord], ["workspace", "files"]);
   add("workspace.save", "Save Workspace", "Save the Background and window layout plus separate referenced Document files.", "Documents", "editor", [workspaceSaveChord], ["workspace", "files"]);

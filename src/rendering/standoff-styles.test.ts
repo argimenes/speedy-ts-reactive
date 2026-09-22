@@ -56,6 +56,17 @@ describe("Standoff property appearance", () => {
     expect(style.transform).toBeUndefined();
   });
 
+  it("renders amber CRT as a sharp core with two bloom scales and a slight horizontal smear", () => {
+    const style = standoffCellStyles(2, [property("amber-crt")]);
+    expect(style.color).toBe("#ffd45a");
+    expect(style["background-color"]).toBe("#17140d");
+    expect(style["text-shadow"]).toContain("1.5px rgba(255, 176, 0, .92)");
+    expect(style["text-shadow"]).toContain("4px rgba(255, 140, 0, .38)");
+    expect(style["text-shadow"]).toContain(".65px 0 1px");
+    expect(style.filter).toBeUndefined();
+    expect(style.transform).toBeUndefined();
+  });
+
   it("uses the original fixed semantic underline colours and 2px strokes", () => {
     const types = ["block", "trait", "claim", "meta-relation", "time", "entity"];
     const rendered = standoffSvgStyles(types.map((type) => property(`codex/${type}-reference`, { value: "entity-id" })), 10);

@@ -9,7 +9,7 @@ const inlineTypes = new Set([
   "style/superscript", "style/subscript", "style/uppercase", "style/highlight", "style/highlighter",
   "style/rainbow", "style/rectangle", "style/spiky", "style/blur", "style/glow", "style/chromatic-aberration",
   "style/motion-blur", "style/ghost", "style/grayscale", "style/sepia", "style/invert", "style/contrast-brightness",
-  "style/grain", "style/ink-bleed", "style/turbulence", "style/flip", "style/mirror",
+  "style/grain", "style/ink-bleed", "style/turbulence", "amber-crt", "style/flip", "style/mirror",
   "text/colour", "text/background-colour", "style/color",
 ]);
 const blockTypes = new Set([
@@ -40,6 +40,7 @@ const inlineEffectFields: Record<string, string[]> = {
   "style/grain": ["frequency", "octaves", "opacity", "seed"],
   "style/ink-bleed": ["spread", "intensity", "roughness"],
   "style/turbulence": ["frequency", "octaves", "opacity", "seed"],
+  "amber-crt": ["bloom", "halo", "scanlines", "noise", "smear"],
 };
 const object = (v: unknown): v is JsonObject => !!v && typeof v === "object" && !Array.isArray(v);
 

@@ -1,0 +1,21 @@
+.text-superposition-demo {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: clamp(22px, 5vw, 64px);
+  color: #17242c;
+  background: #edf2f5;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.text-superposition-demo > header,
+.text-superposition-demo__document { max-width: 920px; margin: 0 auto; }
+.text-superposition-demo > header { margin-bottom: 26px; }
+.text-superposition-demo > header nav { margin-bottom: 20px; }
+.text-superposition-demo > header h1 { margin: 4px 0 10px; font: 650 clamp(34px, 6vw, 60px)/1 Georgia, serif; }
+.text-superposition-demo > header p { max-width: 760px; line-height: 1.55; }
+.text-superposition-demo__eyebrow { margin: 0; color: #53758c; font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.text-superposition-demo kbd { padding: 1px 5px; border: 1px solid #b7c4cc; border-radius: 4px; background: white; box-shadow: 0 1px #b7c4cc; }
+.text-superposition-demo__document { min-height: 370px; padding: 18px; border: 1px solid #bfccd4; border-radius: 12px; background: white; box-shadow: 0 12px 35px #3853631a; }
+.text-superposition-demo__document .document-style-bar { margin-bottom: 52px; }
+.text-superposition-demo__document .reactive-standoff-block { margin: 18px 0 72px; }
+.text-superposition-demo__document .reactive-standoff-surface { overflow: visible; }
+.text-superposition-demo__notice { color: #7a492c; font-size: 13px; }

@@ -13,6 +13,9 @@
  * `publicHostedVersion` separates the read-only hosted stores from browser-local
  * JSON file operations. It is enabled by default on the public-hosted-version
  * feature branch.
+ *
+ * `textSuperposition` is an experimental projected-reading feature and remains
+ * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
   blockHistory: boolean;
@@ -20,6 +23,7 @@ export type FeatureFlags = Readonly<{
   compactDocumentMode: boolean;
   compactEditorChrome: boolean;
   publicHostedVersion: boolean;
+  textSuperposition: boolean;
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
@@ -28,6 +32,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   compactDocumentMode: true,
   compactEditorChrome: true,
   publicHostedVersion: true,
+  textSuperposition: false,
 });
 
 export type ReactiveEditorConfiguration = {

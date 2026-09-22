@@ -6,6 +6,7 @@ import { registerCoreViews } from "./rendering/register-core-views";
 import { OverlayLayer } from "./rendering/overlay-layer";
 import { WorkspaceDemo } from "./demo/workspace-demo";
 import { StandoffEffectsDemo } from "./demo/standoff-effects-demo";
+import { TextSuperpositionDemo } from "./demo/text-superposition-demo";
 
 const pilotDocument: ExistingBlockDto = {
   id: "reactive-pilot-document",
@@ -140,5 +141,6 @@ export function PilotApp() {
 export default function App() {
   const route = window.location.pathname.replace(/\/+$/, "");
   if (route === `${import.meta.env.BASE_URL}effects`) return <StandoffEffectsDemo />;
+  if (route === `${import.meta.env.BASE_URL}superposition`) return <TextSuperpositionDemo />;
   return route === `${import.meta.env.BASE_URL}pilot` ? <PilotApp /> : <WorkspaceDemo />;
 }

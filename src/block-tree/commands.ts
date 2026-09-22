@@ -670,7 +670,7 @@ export class TreeCommands {
     }
 
     const removed = content.inlineContent.slice(start, end);
-    const incremental = !this.pending && removed.every((key) =>
+    let incremental = !this.pending && removed.every((key) =>
       isTextLeaf(state.contents[state.placements[key].contentKey]));
     const operations: RepositoryOperation[] = [];
     const inserted: PlacementKey[] = [];
@@ -697,18 +697,34 @@ export class TreeCommands {
     const nextInline = [...content.inlineContent];
     nextInline.splice(start, end - start, ...inserted);
     const payload = clone(content.payload);
+    const removedSuperpositionRelations: string[] = [];
     if (Array.isArray(payload.standoffProperties)) {
-      payload.standoffProperties = mapStandoffPropertiesForReplacement(
+      const previous = payload.standoffProperties;
+      const mapped = mapStandoffPropertiesForReplacement(
         payload.standoffProperties,
         start,
         end,
         inserted.length,
       );
+      const surviving = new Set(mapped.flatMap(property => property && typeof property === "object" &&
+        (property as Record<string, unknown>).type === "text/superposition"
+        ? [String((property as Record<string, unknown>).id ?? "")] : []));
+      for (const property of previous) if (property && typeof property === "object") {
+        const candidate = property as Record<string, unknown>;
+        if (candidate.type === "text/superposition" && !surviving.has(String(candidate.id ?? "")) && Array.isArray(candidate.alternatives)) {
+          removedSuperpositionRelations.push(...candidate.alternatives.filter((name): name is string => typeof name === "string" && name.startsWith("superposition:")));
+        }
+      }
+      payload.standoffProperties = mapped;
     }
+    if (removedSuperpositionRelations.length) incremental = false;
+    const ownedRelations = { ...content.ownedRelations };
+    for (const relation of removedSuperpositionRelations) delete ownedRelations[relation];
     operations.push({ kind: "put-content", record: {
       ...clone(content),
       payload,
       inlineContent: nextInline,
+      ownedRelations,
       inlineRevision: content.inlineRevision + 1,
       revision: content.revision + 1,
     } });

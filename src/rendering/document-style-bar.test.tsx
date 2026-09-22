@@ -35,7 +35,7 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
   const setup = () => fixture(compact);
   it("exposes every canonical style and both colours, creating inclusive Cell ranges with IDs", () => {
     const { host, node, select, click, editor } = setup();
-    expect(annotationTools.map(t => t[0]).sort()).toEqual(Object.keys(standoffStyleSchemas).filter(type => type.startsWith("style/")).sort());
+    expect(annotationTools.map(t => t[0]).sort()).toEqual(Object.keys(standoffStyleSchemas).filter(type => type.startsWith("style/") || type === "amber-crt").sort());
     for (const [type, name] of annotationTools) {
       select(); click(name);
       const p = (node().payload.standoffProperties as any[]).find(p => p.type === type);

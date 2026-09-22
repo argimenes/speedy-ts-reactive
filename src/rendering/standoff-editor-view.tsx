@@ -1,7 +1,7 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import type { BlockViewProps, NodeKey } from "../block-tree/types";
+import type { BlockNode, BlockViewProps, NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
-import { ChildBlocks, RelationBlocks } from "./block-outlet";
+import { BlockOutlet, ChildBlocks, RelationBlocks } from "./block-outlet";
 import {
   highlightShapes,
   outlineShapes,
@@ -15,11 +15,19 @@ import { blockAppearance } from "./appearance";
 import { compileCellStyleRuns, cellStyleAt, hasActiveRange, standoffStyleSchema, standoffSvgStyles, type StandoffAnnotation } from "./standoff-styles";
 import "./candidate-exclusions.css";
 import { exclusionPosition } from "./candidate-exclusion-layout";
+import { removeTextSuperposition, textSuperpositions, toggleSuperpositionReading, toggleSuperpositionVisibility, type TextSuperposition } from "../runtime/text-superposition";
 
 function pointBoundary(root: HTMLElement, node: Node | null, offset: number): number {
   if (!node) return 0;
   if (node === root) {
     const childOffset = Math.max(0, Math.min(offset, root.childNodes.length));
+    const previous = root.childNodes[childOffset - 1];
+    if (previous instanceof HTMLElement) {
+      const projectedEnd = Number(previous.dataset.superpositionEnd);
+      if (Number.isInteger(projectedEnd)) return projectedEnd + 1;
+      const inlineIndex = Number(previous.dataset.inlineIndex);
+      if (Number.isInteger(inlineIndex)) return inlineIndex + 1;
+    }
     return [...root.childNodes]
       .slice(0, childOffset)
       .reduce((boundary, child) => {
@@ -32,6 +40,8 @@ function pointBoundary(root: HTMLElement, node: Node | null, offset: number): nu
   const cell = element?.closest<HTMLElement>("[data-inline-index]");
   if (cell && root.contains(cell)) {
     const index = Number(cell.dataset.inlineIndex ?? 0);
+    const projectedEnd = Number(cell.dataset.superpositionEnd);
+    if (Number.isInteger(projectedEnd)) return offset > 0 ? projectedEnd + 1 : index;
     if (cell.classList.contains("reactive-inline-image")) return index + (offset > 0 ? 1 : 0);
     if (node.nodeType === Node.TEXT_NODE) {
       return index + [...(node.textContent ?? "").slice(0, offset)].length;
@@ -158,9 +168,11 @@ interface NoiseRegion extends VisualFragment {
   opacity: number;
   seed: number;
   blendMode: "multiply" | "soft-light";
+  scanlineOpacity?: number;
 }
 
 const filterId = (key: string) => `standoff-noise-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+const scanlineId = (key: string) => `standoff-scanlines-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
 function NoiseLayer(props: { regions: NoiseRegion[] }) {
   return <svg class="reactive-standoff-noise-layer" aria-hidden="true">
@@ -169,6 +181,9 @@ function NoiseLayer(props: { regions: NoiseRegion[] }) {
         <feTurbulence type="fractalNoise" baseFrequency={region.frequency} numOctaves={region.octaves} seed={region.seed} />
         <feColorMatrix type="saturate" values="0" />
       </filter>}</For>
+      <For each={props.regions.filter(region => !!region.scanlineOpacity)}>{region => <pattern id={scanlineId(region.key)} width="1" height="3" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="2.5" x2="1" y2="2.5" stroke="black" stroke-width="1" opacity={region.scanlineOpacity} />
+      </pattern>}</For>
     </defs>
     <For each={props.regions}>{region => <rect
       data-property-type={region.type}
@@ -181,7 +196,45 @@ function NoiseLayer(props: { regions: NoiseRegion[] }) {
       opacity={region.opacity}
       style={{ "mix-blend-mode": region.blendMode }}
     />}</For>
+    <For each={props.regions.filter(region => !!region.scanlineOpacity)}>{region => <rect
+      data-property-type={region.type}
+      data-decoration-key={`${region.key}:scanlines`}
+      x={region.x}
+      y={region.y}
+      width={region.width}
+      height={region.height}
+      fill={`url(#${scanlineId(region.key)})`}
+      style={{ "mix-blend-mode": "multiply" }}
+    />}</For>
   </svg>;
+}
+
+interface SuperpositionAnchor extends VisualFragment {
+  key: string;
+  property: TextSuperposition;
+  alternativeKey: NodeKey;
+}
+
+function SuperpositionLayer(props: { owner: () => BlockNode | undefined; anchors: SuperpositionAnchor[] }) {
+  const { editor } = useReactiveView();
+  return <div class="reactive-superposition-layer" aria-label="Alternative readings">
+    <For each={props.anchors}>{anchor => <section
+      class="reactive-superposition-editor"
+      data-superposition-id={anchor.property.id}
+      data-native-context-menu
+      style={{ left: `${anchor.x}px`, top: `${anchor.y + anchor.height + 5}px` }}
+    >
+      <header>
+        <strong>Alternative</strong>
+        <button type="button" onClick={() => { const owner = props.owner(); if (owner) toggleSuperpositionReading(editor, owner, anchor.property.id); }}>
+          {anchor.property.active === "source" ? "Use alternative" : "Use source"}
+        </button>
+        <button type="button" aria-label="Hide alternative editor" title="Hide alternative editor" onClick={() => { const owner = props.owner(); if (owner) toggleSuperpositionVisibility(editor, owner, anchor.property.id); }}>×</button>
+        <button type="button" class="reactive-superposition-editor__remove" onClick={() => { const owner = props.owner(); if (owner) removeTextSuperposition(editor, owner, anchor.property.id); }}>Remove</button>
+      </header>
+      <div class="reactive-superposition-editor__reading"><BlockOutlet nodeKey={anchor.alternativeKey} /></div>
+    </section>}</For>
+  </div>;
 }
 
 function parameter(annotation: StandoffAnnotation, name: string, fallback: number, minimum: number, maximum: number): number {
@@ -207,7 +260,7 @@ function regionAppearance(annotation: StandoffAnnotation): Pick<RegionEffect, "f
   }
 }
 
-function noiseAppearance(annotation: StandoffAnnotation): Pick<NoiseRegion, "frequency" | "octaves" | "opacity" | "seed" | "blendMode"> | undefined {
+function noiseAppearance(annotation: StandoffAnnotation): Pick<NoiseRegion, "frequency" | "octaves" | "opacity" | "seed" | "blendMode" | "scanlineOpacity"> | undefined {
   switch (annotation.type) {
     case "style/grain": return {
       frequency: parameter(annotation, "frequency", .75, .01, 1),
@@ -230,7 +283,35 @@ function noiseAppearance(annotation: StandoffAnnotation): Pick<NoiseRegion, "fre
       seed: Math.round(parameter(annotation, "seed", 4, 0, 1000)),
       blendMode: "soft-light",
     };
+    case "amber-crt": return {
+      frequency: .8,
+      octaves: 2,
+      opacity: parameter(annotation, "noise", .02, 0, .12),
+      seed: 2,
+      blendMode: "soft-light",
+      scanlineOpacity: parameter(annotation, "scanlines", .1, 0, .3),
+    };
   }
+}
+
+function ProjectedAlternative(props: { nodeKey: NodeKey; sourceIndex: number; sourceEnd: number; propertyId: string }) {
+  const { editor, projection } = useReactiveView();
+  const node = () => projection.state.nodes[props.nodeKey];
+  const runs = createMemo(() => compileCellStyleRuns(
+    ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? [])
+      .map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
+  ));
+  return <span
+    class="reactive-superposition-projection"
+    data-inline-index={props.sourceIndex}
+    data-superposition-end={props.sourceEnd}
+    data-superposition-id={props.propertyId}
+    contentEditable={false}
+    aria-label="Active alternative reading"
+  ><For each={node()?.inlineContent ?? []}>{(cellKey, index) => {
+    const cell = () => projection.state.nodes[cellKey];
+    return <span style={cellStyleAt(runs(), index())}>{String(cell()?.payload.text ?? "")}</span>;
+  }}</For></span>;
 }
 
 export function StandoffEditorView(props: BlockViewProps) {
@@ -239,6 +320,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   const annotations = createMemo(
     () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
   );
+  const superpositions = createMemo(() => editor.features.textSuperposition ? textSuperpositions(node()) : []);
   const cellStyles = createMemo(() => compileCellStyleRuns(annotations()), undefined, {
     equals: (previous, next) => JSON.stringify(previous) === JSON.stringify(next),
   });
@@ -255,6 +337,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   const [foregroundShapes, setForegroundShapes] = createSignal<DecorationShape[]>([]);
   const [regionEffects, setRegionEffects] = createSignal<RegionEffect[]>([]);
   const [noiseRegions, setNoiseRegions] = createSignal<NoiseRegion[]>([]);
+  const [superpositionAnchors, setSuperpositionAnchors] = createSignal<SuperpositionAnchor[]>([]);
   const [selectionShapes, setSelectionShapes] = createSignal<DecorationShape[]>([]);
   const [searchShapes, setSearchShapes] = createSignal<DecorationShape[]>([]);
   const [exclusions,setExclusions] = createSignal<Array<{ owner: string; id: string; x: number; y: number; active: boolean; fragments: VisualFragment[] }>>([]);
@@ -331,6 +414,27 @@ export function StandoffEditorView(props: BlockViewProps) {
         if (noise) noises.push({ ...fragment, ...noise, key: `${key}:noise:${fragmentIndex}`, type: String(annotation.type) });
       });
     });
+    const superpositionRegions: SuperpositionAnchor[] = [];
+    const surfaceRect = surface.getBoundingClientRect();
+    for (const property of superpositions()) {
+      if (property.visible === false) continue;
+      const alternativeKey = node()?.ownedRelations[property.alternatives[0]];
+      if (!alternativeKey) continue;
+      let fragment: VisualFragment | undefined;
+      if (property.active === "source") fragment = fragmentsFor(property.start, property.end)[0];
+      else {
+        const element = [...flow.querySelectorAll<HTMLElement>("[data-superposition-id]")]
+          .find(candidate => candidate.dataset.superpositionId === property.id);
+        const rect = element?.getBoundingClientRect();
+        if (rect) fragment = {
+          x: rect.left - surfaceRect.left + surface.scrollLeft,
+          y: rect.top - surfaceRect.top + surface.scrollTop,
+          width: rect.width,
+          height: rect.height,
+        };
+      }
+      if (fragment) superpositionRegions.push({ ...fragment, key: `${props.nodeKey}:${property.id}`, property, alternativeKey });
+    }
     const selectionSet = editor.selections.sets[props.nodeKey];
     const selected: DecorationShape[] = [];
     for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search" && !overlay.entityCandidates) {
@@ -356,6 +460,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     setForegroundShapes(foreground);
     setRegionEffects(regions);
     setNoiseRegions(noises);
+    setSuperpositionAnchors(superpositionRegions);
     setSelectionShapes(selected);
     const search: DecorationShape[] = [];
     const controls: ReturnType<typeof exclusions> = [];
@@ -412,7 +517,12 @@ export function StandoffEditorView(props: BlockViewProps) {
         if (cell?.firstChild?.nodeType === Node.TEXT_NODE) return { node: cell.firstChild, offset: index < flow.children.length ? 0 : cell.firstChild.textContent!.length };
         return restoreBoundary(flow, index);
       },
-      captureText: () => flow.textContent ?? "",
+      captureText: () => (node()?.inlineContent ?? []).map((cellKey, index) => {
+        const projected = superpositions().some(property => property.active !== "source" && property.start <= index && property.end >= index);
+        return projected
+          ? String(projection.state.nodes[cellKey]?.payload.text ?? "")
+          : String(flow.children[index]?.textContent ?? projection.state.nodes[cellKey]?.payload.text ?? "");
+      }).join(""),
     });
     if (typeof ResizeObserver !== "undefined") {
       observer = new ResizeObserver(scheduleMeasure);
@@ -428,6 +538,11 @@ export function StandoffEditorView(props: BlockViewProps) {
   createEffect(() => {
     node()?.inlineContent.length;
     JSON.stringify(annotations());
+    for (const property of superpositions()) {
+      const alternative = projection.state.nodes[node()?.ownedRelations[property.alternatives[0]] ?? ""];
+      alternative?.inlineContent.length;
+      JSON.stringify(alternative?.payload.standoffProperties);
+    }
     editor.selections.sets[props.nodeKey]?.revision;
     JSON.stringify(editor.decorations.nodes[props.nodeKey]);
     editor.overlays.overlays.find(overlay => overlay.viewType === "entity-search")?.entityCandidates;
@@ -483,44 +598,56 @@ export function StandoffEditorView(props: BlockViewProps) {
           <For each={node()?.inlineContent ?? []}>
             {(cellKey, index) => {
               const cell = () => projection.state.nodes[cellKey];
+              const projected = () => superpositions().find(property =>
+                property.active !== "source" && index() >= property.start && index() <= property.end &&
+                !!node()?.ownedRelations[property.active]);
               return (
-                <Show
-                  when={cell()?.viewType === "image-cell"}
-                  fallback={
-                    <span
+                <Show when={!projected() || index() === projected()!.start} fallback={<span
+                  class="reactive-superposition-source-cell"
+                  data-inline-key={cellKey}
+                  data-inline-index={index()}
+                  aria-hidden="true"
+                >{String(cell()?.payload.text ?? "")}</span>}>
+                  <Show when={projected()} fallback={<Show
+                    when={cell()?.viewType === "image-cell"}
+                    fallback={<span
                       data-inline-key={cellKey}
                       data-inline-index={index()}
                       style={cellStyleAt(cellStyles(), index())}
-                    >
-                      {(cell()?.payload.text as string | undefined) ?? ""}
-                    </span>
-                  }
-                >
-                  <span
-                    class="reactive-inline-image"
-                    data-inline-key={cellKey}
-                    data-inline-index={index()}
-                    contentEditable={false}
-                    role="img"
-                    aria-label={String(cell()?.payload.alt ?? "Inline image")}
+                    >{(cell()?.payload.text as string | undefined) ?? ""}</span>}
                   >
-                    <img
-                      src={String(cell()?.payload.src ?? "")}
-                      alt={String(cell()?.payload.alt ?? "")}
-                      width={cell()?.payload.width as number | undefined}
-                      height={cell()?.payload.height as number | undefined}
-                      onLoad={() => {
-                        editor.commands.updateInlineImage(cellKey, { status: "ready" });
-                        scheduleMeasure();
-                      }}
-                      onError={() => editor.commands.updateInlineImage(cellKey, { status: "failed" })}
-                    />
-                  </span>
+                    <span
+                      class="reactive-inline-image"
+                      data-inline-key={cellKey}
+                      data-inline-index={index()}
+                      contentEditable={false}
+                      role="img"
+                      aria-label={String(cell()?.payload.alt ?? "Inline image")}
+                    >
+                      <img
+                        src={String(cell()?.payload.src ?? "")}
+                        alt={String(cell()?.payload.alt ?? "")}
+                        width={cell()?.payload.width as number | undefined}
+                        height={cell()?.payload.height as number | undefined}
+                        onLoad={() => {
+                          editor.commands.updateInlineImage(cellKey, { status: "ready" });
+                          scheduleMeasure();
+                        }}
+                        onError={() => editor.commands.updateInlineImage(cellKey, { status: "failed" })}
+                      />
+                    </span>
+                  </Show>}>{property => <ProjectedAlternative
+                    nodeKey={node()!.ownedRelations[property().active]}
+                    sourceIndex={index()}
+                    sourceEnd={property().end}
+                    propertyId={property().id}
+                  />}</Show>
                 </Show>
               );
             }}
           </For>
         </div>
+        <SuperpositionLayer owner={node} anchors={superpositionAnchors()} />
         <RegionEffectLayer regions={regionEffects()} />
         <NoiseLayer regions={noiseRegions()} />
         <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes()} />

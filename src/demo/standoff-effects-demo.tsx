@@ -11,9 +11,27 @@ type EffectCard = {
   name: string;
   description: string;
   properties: Array<Record<string, unknown>>;
+  text?: string;
 };
 
+const sample = "The quick brown fox jumps over the lazy dog while Codex keeps ordinary text editing accurate across wrapped lines.";
+const amberWord = "A single CODEX word retains a bright, legible phosphor core.";
+const amberFragment = "The amber terminal wakes quietly beside the ordinary prose.";
+const amberEditing = "Edit this glowing phrase directly; the caret and selection remain native.";
+const amberAdjacent = "Amber terminal output sits beside softened archival text in the same editable line.";
+const range = (type: string, text: string, phrase: string, extra: Record<string, unknown> = {}) => ({
+  type,
+  start: text.indexOf(phrase),
+  end: text.indexOf(phrase) + phrase.length - 1,
+  ...extra,
+});
+
 const effects: EffectCard[] = [
+  { id: "amber-word", name: "Amber CRT — short word", description: "A sharp yellow core, tight amber bloom, diffuse orange halo, scanlines and faint grain.", text: amberWord, properties: [range("amber-crt", amberWord, "CODEX")] },
+  { id: "amber-fragment", name: "Amber CRT — sentence fragment", description: "Phosphor emission applied to a phrase rather than painted orange text.", text: amberFragment, properties: [range("amber-crt", amberFragment, "amber terminal wakes")] },
+  { id: "amber-wrapped", name: "Amber CRT — wrapped range", description: "Every visual line fragment receives the same clipped scanline and grain treatment.", properties: [{ type: "amber-crt" }] },
+  { id: "amber-editing", name: "Amber CRT — live editing", description: "This card receives initial focus. Type inside the glowing range to exercise ordinary editing and geometry updates.", text: amberEditing, properties: [range("amber-crt", amberEditing, "this glowing phrase")] },
+  { id: "amber-adjacent", name: "Amber CRT + adjacent blur", description: "Two independent visual properties share one editable line without replacing its text DOM.", text: amberAdjacent, properties: [range("amber-crt", amberAdjacent, "Amber terminal output"), range("style/blur", amberAdjacent, "softened archival text", { amount: 2 })] },
   { id: "blur", name: "Blur", description: "Backdrop blur, 3px.", properties: [{ type: "style/blur", amount: 3 }] },
   { id: "glow", name: "Glow / bloom", description: "Sharp text with a restrained phosphor halo.", properties: [{ type: "style/glow", radius: 3, intensity: .38 }] },
   { id: "chromatic", name: "Chromatic aberration", description: "Red/cyan text-shadow separation without moving glyph geometry.", properties: [{ type: "style/chromatic-aberration", offset: 1.5, intensity: .4, direction: "horizontal" }] },
@@ -32,7 +50,6 @@ const effects: EffectCard[] = [
   { id: "ink-grain", name: "Ink bleed + grain", description: "Text halo and texture combined.", properties: [{ type: "style/ink-bleed", spread: 1, intensity: .25, roughness: .35 }, { type: "style/grain", frequency: .8, octaves: 2, opacity: .08, seed: 12 }] },
 ];
 
-const sample = "The quick brown fox jumps over the lazy dog while Codex keeps ordinary text editing accurate across wrapped lines.";
 const rangeStart = sample.indexOf("brown");
 const rangeEnd = sample.indexOf("wrapped") + "wrapped".length - 1;
 
@@ -43,7 +60,7 @@ function demoDocument(): ExistingBlockDto {
     children: effects.map(effect => ({
       id: `effect-${effect.id}`,
       type: "standoff-editor-block",
-      text: sample,
+      text: effect.text ?? sample,
       standoffProperties: effect.properties.map((property, index) => ({
         id: `${effect.id}-${index}`,
         start: rangeStart,
@@ -60,11 +77,24 @@ export function StandoffEffectsDemo() {
   registerCoreViews(editor);
   const projection = editor.createView("standoff-effects-demo");
   let disposeGateway: (() => void) | undefined;
-  onMount(() => { disposeGateway = editor.installGateway(document); });
+  let page!: HTMLElement;
+  onMount(() => {
+    disposeGateway = editor.installGateway(document);
+    queueMicrotask(() => {
+      const flow = page.querySelector<HTMLElement>('[data-effect-card="amber-editing"] .reactive-standoff-flow');
+      const cell = flow?.children[amberEditing.indexOf("glowing")];
+      const text = cell?.firstChild;
+      if (!flow || !text) return;
+      flow.focus({ preventScroll: true });
+      const selection = document.getSelection(), caret = document.createRange();
+      caret.setStart(text, 0); caret.collapse(true);
+      selection?.removeAllRanges(); selection?.addRange(caret);
+    });
+  });
   onCleanup(() => { disposeGateway?.(); editor.dispose(); });
   const nodeKey = (index: number) => projection.state.nodes[projection.state.rootKey]?.children[index];
 
-  return <main class="standoff-effects-demo">
+  return <main ref={page} class="standoff-effects-demo">
     <header>
       <nav><a href={import.meta.env.BASE_URL}>Workspace</a> · <a href={`${import.meta.env.BASE_URL}pilot`}>Reactive pilot</a></nav>
       <p class="standoff-effects-demo__eyebrow">Experimental visual standoff effects</p>

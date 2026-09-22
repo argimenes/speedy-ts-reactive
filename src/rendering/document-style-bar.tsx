@@ -8,6 +8,7 @@ import "./document-style-bar.css";
 import { DocumentCountBar } from "./document-count-bar";
 import { CompactToolbar, type CompactTool, type Toolset } from "./compact-toolbar";
 import { createTimerBlock } from "../runtime/timer-block";
+import { createTextSuperposition } from "../runtime/text-superposition";
 
 /** Canonical style types, including the three preserved range-wrapper styles. */
 export const annotationTools = [
@@ -23,6 +24,7 @@ export const annotationTools = [
   ["style/sepia", "Sepia", "Sepia"], ["style/invert", "Invert", "Invert"],
   ["style/contrast-brightness", "Contrast / brightness", "Contrast"], ["style/grain", "Grain / noise", "Grain"],
   ["style/ink-bleed", "Ink bleed", "Ink"], ["style/turbulence", "Turbulence", "Turbulence"],
+  ["amber-crt", "Amber CRT", "Amber CRT"],
   ["style/flip", "Flip", "Flip"], ["style/mirror", "Mirror", "Mirror"],
 ] as const;
 
@@ -106,6 +108,20 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     }
     setNotice(""); restore();
   };
+  const addAlternative = () => {
+    if (editor.crossText.range()) { setNotice("Add an alternative within one text Block."); return; }
+    capture(); const node = target();
+    if (!node || !savedRange) { setNotice("Select text in this document first."); return; }
+    const start = Math.min(savedRange.anchor, savedRange.head), end = Math.max(savedRange.anchor, savedRange.head) - 1;
+    try {
+      const property = createTextSuperposition(editor, node, start, end);
+      setNotice(""); savedRange = undefined;
+      queueMicrotask(() => {
+        const relation = target()?.ownedRelations[property.alternatives[0]];
+        if (relation) editor.focus.request(relation, { caret: "start", reason: "new-alternative" });
+      });
+    } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
+  };
   const blockStyle = (type: string, value: string) => {
     if (editor.crossText.range()) { editor.crossText.notice("Collapse the text selection before changing paragraph layout."); return; }
     capture(); const node = target(); if (!node) { setNotice("Focus a text Block first."); return; }
@@ -125,7 +141,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     const node = target(); if (!node) return;
     editor.commands.transaction("Clear Formatting", () => {
       const annotations = (node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
-      editor.commands.setPayloadField(node.key, "standoffProperties", unwrap(annotations).filter(p => !String(p.type).startsWith("style/") && !["text/colour", "text/background-colour"].includes(String(p.type))), "Clear Formatting");
+      editor.commands.setPayloadField(node.key, "standoffProperties", unwrap(annotations).filter(p => !String(p.type).startsWith("style/") && !["amber-crt", "text/colour", "text/background-colour"].includes(String(p.type))), "Clear Formatting");
       editor.commands.setPayloadField(node.key, "blockProperties", [], "Clear Formatting");
     }); restore();
   };
@@ -181,6 +197,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const deferredTypes = new Set(["style/flip", "style/mirror"]);
   const tools: CompactTool[] = [
     { id: "colours", label: "Text colour and fill", glyph: "Colour / Fill", width: 104, toolset: "Visual effects", panel: ColourControls },
+    ...(editor.features.textSuperposition ? [{ id: "superposition.add", label: "Add alternative", glyph: "Alternative", width: 96, toolset: "Annotations" as const, run: addAlternative }] : []),
     ...annotationTools.map(([type, label, glyph]): CompactTool => ({
       id: type, label, glyph,
       toolset: typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
@@ -210,6 +227,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       </button>
     </Show>
     <Show when={editor.features.compactEditorChrome} fallback={<>
+      <Show when={editor.features.textSuperposition}><button type="button" title="Add alternative" onClick={addAlternative}>Alternative</button></Show>
     <DocumentActions />
     <HistoryAction />
     <Show when={editor.blockHistory.state.recordingError || editor.blockHistory.state.recording?.phase === "stopped" || editor.blockHistory.state.recording?.phase === "offline"}>

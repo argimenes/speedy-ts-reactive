@@ -10,6 +10,7 @@ import type {
 } from "./types";
 
 const ownedRelationNames = new Set(["leftMargin", "rightMargin"]);
+const isOwnedRelationName = (name: string) => ownedRelationNames.has(name) || name.startsWith("superposition:");
 
 function collectionState(value: unknown, present: boolean): WireCollectionState {
   if (!present) return "omitted";
@@ -106,7 +107,7 @@ export function decodeBlockTree(dto: ExistingBlockDto): DecodedSubtree {
 
     if (rawRelation && typeof rawRelation === "object" && !Array.isArray(rawRelation)) {
       for (const [name, value] of Object.entries(rawRelation)) {
-        if (ownedRelationNames.has(name) && isBlockDto(value)) {
+        if (isOwnedRelationName(name) && isBlockDto(value)) {
           content.ownedRelations[name] = decode(value);
         } else {
           content.opaqueRelations[name] = clone(value);

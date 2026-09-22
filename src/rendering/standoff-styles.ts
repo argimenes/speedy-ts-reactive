@@ -38,6 +38,7 @@ export const standoffStyleSchemas: Readonly<Record<string, StandoffStyleSchema>>
   "style/grain": { noiseEffect: true },
   "style/ink-bleed": { cellEffect: true, noiseEffect: true },
   "style/turbulence": { noiseEffect: true },
+  "amber-crt": { cellEffect: true, noiseEffect: true },
   "style/flip": { deferred: "range-wrapper" },
   "style/mirror": { deferred: "range-wrapper" },
   "style/superscript": { cell: { "vertical-align": "super", "font-size": "0.8rem" } },
@@ -108,6 +109,22 @@ function cellEffectStyle(annotation: StandoffAnnotation): JSX.CSSProperties | un
         `${diagonal}px ${diagonal}px ${spread * 1.35}px rgba(35, 24, 16, ${alpha * .8})`,
         `${-diagonal}px ${diagonal}px ${spread * 1.1}px rgba(35, 24, 16, ${alpha * .65})`,
       ].join(", ") };
+    }
+    case "amber-crt": {
+      const bloom = parameter(annotation, "bloom", 1.5, .5, 6);
+      const halo = parameter(annotation, "halo", 4, 1, 12);
+      const smear = parameter(annotation, "smear", .65, 0, 2);
+      return {
+        color: "#ffd45a",
+        "background-color": "#17140d",
+        "text-shadow": [
+          "0 0 .45px rgba(255, 250, 212, .98)",
+          `0 0 ${bloom}px rgba(255, 176, 0, .92)`,
+          `0 0 ${halo}px rgba(255, 140, 0, .38)`,
+          `0 0 ${halo * 1.75}px rgba(255, 140, 0, .13)`,
+          `${smear}px 0 1px rgba(255, 176, 0, .55)`,
+        ].join(", "),
+      };
     }
   }
 }
