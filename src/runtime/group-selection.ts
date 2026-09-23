@@ -156,6 +156,7 @@ export class GroupSelection {
     const range = resolved.handle.captureInlineSelection?.();
     if (!range || !this.add(resolved.nodeKey, range.anchor, range.head)) return false;
     selection?.removeAllRanges();
+    this.editor.selections.removeOccurrence(resolved.nodeKey);
     return true;
   }
 

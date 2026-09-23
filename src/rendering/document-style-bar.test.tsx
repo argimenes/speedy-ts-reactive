@@ -120,7 +120,7 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     select(0, 2); click("Show / hide");
     expect(node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({ type: "style/show-hide", start: 0, end: 1 })]));
     expect(host.querySelector('[data-inline-index="0"]')?.classList.contains("reactive-standoff-cell--concealed")).toBe(true);
-    select(2, 2); click("Show / hide");
+    click("Show / hide");
     expect(editor.showHide.shows(node().key)).toBe(true);
     expect(host.querySelector('[data-inline-index="0"]')?.classList.contains("reactive-standoff-cell--concealed")).toBe(false);
   });

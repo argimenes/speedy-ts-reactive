@@ -84,12 +84,23 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     editor.mounts.get(node.key)?.focusElement?.focus({ preventScroll: true });
     if (savedRange) editor.mounts.get(node.key)?.restoreInlineSelection?.(savedRange);
   };
+  const collapseAfterShowHide = (nodeKey: NodeKey, index: number) => {
+    const node = editor.node(nodeKey), mount = editor.mounts.get(nodeKey);
+    if (!node) { savedRange = undefined; return; }
+    savedRange = { anchor: index, head: index };
+    document.getSelection()?.removeAllRanges();
+    mount?.focus();
+    mount?.restoreInlineSelection?.(savedRange);
+    editor.selections.setPrimary(node.key, node.contentKey, node.viewId, index);
+  };
   const annotate = (type: string, value?: string) => {
     if (editor.groupSelection.active()) {
       if (type === "codex/entity-reference") { setNotice("Entity Reference does not consume a manual group. Choose an ordinary annotation."); return; }
       try {
+        const finalRange = editor.groupSelection.ranges().at(-1);
         const count = editor.groupSelection.apply(type, value, effectDefaults[type] ?? {});
-        savedRange = undefined;
+        if (type === "style/show-hide" && finalRange) collapseAfterShowHide(finalRange.nodeKey, finalRange.end);
+        else savedRange = undefined;
         setNotice(count ? `Applied ${type} to ${count} grouped ranges.` : "Those grouped ranges already have this annotation.");
       } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
       return;
@@ -97,7 +108,14 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     const cross = editor.crossText.range();
     if (cross) {
       if (!inScope(cross.anchor.occurrenceKey)) { setNotice("The text selection belongs to another document."); return; }
-      try { if (type === "codex/entity-reference") openEntitySearch(editor, editor.crossText.resolve(cross.anchor, cross.head)); else editor.crossText.annotate(type, value, effectDefaults[type] ?? {}); setNotice(""); }
+      try {
+        if (type === "codex/entity-reference") openEntitySearch(editor, editor.crossText.resolve(cross.anchor, cross.head));
+        else {
+          editor.crossText.annotate(type, value, effectDefaults[type] ?? {});
+          if (type === "style/show-hide") { const head = cross.head; editor.crossText.collapseToHead(); savedRange = { anchor: head.boundary.index, head: head.boundary.index }; }
+        }
+        setNotice("");
+      }
       catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
       return;
     }
@@ -113,14 +131,16 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     if (type === "codex/entity-reference") { openEntitySearch(editor, [{ nodeKey: node.key, start, end: end + 1 }]); return; }
     const content = editor.repository.readState().contents[node.contentKey];
     applyAnnotationsToRanges(editor, [{ nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey, version: content.inlineRevision, start, end: end + 1, coordinate: "cell" }], type, value, effectDefaults[type] ?? {});
-    setNotice(""); restore();
+    setNotice("");
+    if (type === "style/show-hide") collapseAfterShowHide(node.key, end + 1);
+    else restore();
   };
   const toggleGrouping = () => {
     if (editor.groupSelection.active()) { editor.groupSelection.cancel(); savedRange = undefined; return; }
     capture();
     const node = target(), range = savedRange;
     editor.groupSelection.begin(props.scopeKey);
-    if (node && range && range.anchor !== range.head) editor.groupSelection.add(node.key, range.anchor, range.head);
+    if (node && range && range.anchor !== range.head && editor.groupSelection.add(node.key, range.anchor, range.head)) editor.selections.removeOccurrence(node.key);
     document.getSelection()?.removeAllRanges();
     savedRange = undefined;
     setNotice("");
@@ -218,6 +238,10 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     }}>To tab / + Tab</button>
   </>;
   const hasCrossRange = () => { const range = editor.crossText.range(); return !!range && inScope(range.anchor.occurrenceKey); };
+  const hiddenTextRevealed = () => {
+    const key = props.scopeKey ?? targetKey() ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey;
+    return !!key && editor.showHide.shows(key);
+  };
   const typographyTypes = new Set(["style/bold", "style/italics", "style/underline", "style/strikethrough", "style/superscript", "style/subscript", "style/uppercase", "style/blur"]);
   const markupTypes = new Set(["style/highlight", "style/highlighter", "style/show-hide"]);
   const deferredTypes = new Set(["style/flip", "style/mirror"]);
@@ -229,7 +253,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       id: type, label, glyph,
       toolset: typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
       description: deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined,
-      width: typographyTypes.has(type) ? 36 : 88, run: () => type === "style/show-hide" ? showHide() : annotate(type),
+      width: typographyTypes.has(type) ? 36 : 88, pressed: type === "style/show-hide" ? hiddenTextRevealed : undefined, run: () => type === "style/show-hide" ? showHide() : annotate(type),
     })),
     ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
     ...[["left", "Align left", "≡"], ["center", "Align centre", "≣"], ["right", "Align right", "≡"], ["justify", "Justify", "☰"]].map(([value, label, glyph]) => ({ id: `align-${value}`, label, glyph, toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/alignment", value) })),
@@ -268,7 +292,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <SelectionOption />
     <Show when={editor.crossText.enabled()}><button type="button" disabled={!editor.crossText.range()} onClick={() => editor.crossText.collapseToHead()}>Resume text editing</button></Show>
     <LinkedControls />
-    <For each={annotationTools}>{([type, label, glyph]) => <button type="button" title={label} aria-label={label} data-annotation-type={type} onClick={() => type === "style/show-hide" ? showHide() : annotate(type)}>{glyph}</button>}</For>
+    <For each={annotationTools}>{([type, label, glyph]) => <button type="button" title={label} aria-label={label} aria-pressed={type === "style/show-hide" ? hiddenTextRevealed() : undefined} data-annotation-type={type} onClick={() => type === "style/show-hide" ? showHide() : annotate(type)}>{glyph}</button>}</For>
     <button type="button" aria-label="Entity reference" title="Link selected text to an entity" onClick={() => annotate("codex/entity-reference")}>Entity reference</button>
     <ColourControls />
     <i />
