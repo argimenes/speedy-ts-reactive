@@ -620,6 +620,10 @@ app.get('/', function(req: Request, res: Response) {
   res.sendFile(path.join(__dirname, '../index.html'));
 });
 
+app.get('/superposition', function(req: Request, res: Response) {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
 
 
 function listFolders(): string[] {

@@ -87,7 +87,7 @@ describe("WorkspaceDemo", () => {
 
     click(host.querySelector<HTMLButtonElement>('[data-system-menu-trigger="workspace"]')!); await Promise.resolve();
     const menu = host.querySelector<HTMLElement>('[role="menu"][aria-label="Workspace"]')!;
-    for (const label of ["Background…", "Open…", "Save", "Save as…", "Open Workspace…", "Save Workspace…", "New Sticky Note", "Undo", "Redo", "Reset demo", "Open two-pane pilot", "Show debugging panels"]) {
+    for (const label of ["Background…", "Open…", "Save", "Save as…", "Open Workspace…", "Save Workspace…", "New Sticky Note", "Undo", "Redo", "Reset demo", "Open two-pane pilot", "Text superposition demo", "Show debugging panels"]) {
       expect(menu.textContent).toContain(label);
     }
     expect(menu.textContent).toContain("Revision: 0");

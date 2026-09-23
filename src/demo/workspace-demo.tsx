@@ -287,10 +287,12 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
         <button type="button" disabled={documents.busy()} onClick={() => documents.guard("reset to the sample document", props.onReset)}>Reset demo</button>
         <Show when={windowState() === "closed"}><button type="button" onClick={restoreWindow}>Reopen document</button></Show>
         <a href={`${import.meta.env.BASE_URL}pilot`}>Open two-pane pilot</a>
+        <a href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
         <span>revision {editor.repository.state.revision}</span>
       </nav>}>
         <CodexSystemBar>
           <button type="button" role="menuitem" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
+          <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
           <hr role="separator" />
           <Show when={editor.features.publicHostedVersion} fallback={<>
             <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
@@ -452,9 +454,12 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
       <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
       <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
       <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
+      <a href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
       <span>{props.filename} · revision {editor.repository.state.revision}</span>
     </nav>}>
       <CodexSystemBar>
+        <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
+        <hr role="separator" />
         <Show when={editor.features.publicHostedVersion} fallback={<>
           <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
           <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
