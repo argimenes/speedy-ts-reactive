@@ -19,11 +19,14 @@ function fixture(compactEditorChrome: boolean) {
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
   cleanup.push(() => { dispose(); editor.dispose(); });
   const node = () => Object.values(projection.state.nodes).find(n => n.payload.id === "p")!;
-  const flow = host.querySelector<HTMLElement>(".reactive-standoff-flow")!;
-  const select = (start = 0, end = 5) => {
+  const flowFor = (id = "p") => host.querySelector<HTMLElement>(`.reactive-standoff-block[data-block-id="${id}"] .reactive-standoff-flow`)!;
+  const flow = flowFor();
+  const select = (start = 0, end = 5, id = "p") => {
+    const flow = flowFor(id);
     flow.focus(); const range = document.createRange(); range.setStart(flow, start); range.setEnd(flow, end);
     document.getSelection()!.removeAllRanges(); document.getSelection()!.addRange(range);
     document.dispatchEvent(new Event("selectionchange"));
+    return flow;
   };
   const click = (title: string) => {
     const button = toolbarControl(host, `button[title="${title}"]`);
@@ -82,5 +85,43 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     const revision = editor.repository.state.revision; click("Bold selection"); expect(editor.repository.state.revision).toBe(revision);
     click("Clear formatting"); expect(node().payload.standoffProperties).toEqual([{ id: "entity", type: "codex/entity-reference", start: 0, end: 2, value: "entity-id" }]);
     editor.repository.undo(); expect((node().payload.standoffProperties as any[]).some(p => p.type === "style/bold")).toBe(true);
+  });
+  it("collects ranges across Blocks, applies Highlight, cancels with Escape, and toggles the Show/Hide projection", async () => {
+    const { host, node, select, click, editor } = setup();
+    select(0, 0); click("Group text ranges");
+    expect(editor.groupSelection.active()).toBe(true);
+    select(0, 5).dispatchEvent(new MouseEvent("pointerup", { bubbles: true })); await Promise.resolve();
+    select(0, 5, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true })); await Promise.resolve();
+    expect(editor.groupSelection.ranges()).toHaveLength(2);
+    click("Highlight");
+    expect(editor.groupSelection.active()).toBe(false);
+    expect(node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({ type: "style/highlight", start: 0, end: 4 })]));
+    const q = Object.values(editor.projections.get("format-test")!.state.nodes).find(candidate => candidate.payload.id === "q")!;
+    expect(q.payload.standoffProperties).toEqual([expect.objectContaining({ type: "style/highlight", start: 0, end: 4 })]);
+
+    select(6, 6); click("Group text ranges");
+    select(6, 9).dispatchEvent(new MouseEvent("pointerup", { bubbles: true })); await Promise.resolve();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    expect(editor.groupSelection.active()).toBe(false);
+    expect((node().payload.standoffProperties as any[]).filter(property => property.start === 6)).toHaveLength(0);
+
+    select(6, 9).dispatchEvent(new MouseEvent("pointerup", { bubbles: true, ctrlKey: true })); await Promise.resolve();
+    expect(editor.groupSelection.active()).toBe(true);
+    expect(editor.groupSelection.ranges()).toHaveLength(1);
+    editor.groupSelection.cancel();
+
+    const shortcutTarget = select(3, 5);
+    shortcutTarget.dispatchEvent(new KeyboardEvent("keydown", { key: ";", ctrlKey: true, bubbles: true, cancelable: true }));
+    shortcutTarget.dispatchEvent(new KeyboardEvent("keydown", { key: "g", bubbles: true, cancelable: true }));
+    expect(editor.groupSelection.active()).toBe(true);
+    expect(editor.groupSelection.ranges()).toHaveLength(1);
+    editor.groupSelection.cancel();
+
+    select(0, 2); click("Show / hide");
+    expect(node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({ type: "style/show-hide", start: 0, end: 1 })]));
+    expect(host.querySelector('[data-inline-index="0"]')?.classList.contains("reactive-standoff-cell--concealed")).toBe(true);
+    select(2, 2); click("Show / hide");
+    expect(editor.showHide.shows(node().key)).toBe(true);
+    expect(host.querySelector('[data-inline-index="0"]')?.classList.contains("reactive-standoff-cell--concealed")).toBe(false);
   });
 });

@@ -9,6 +9,7 @@ import { DocumentCountBar } from "./document-count-bar";
 import { CompactToolbar, type CompactTool, type Toolset } from "./compact-toolbar";
 import { createTimerBlock } from "../runtime/timer-block";
 import { createTextSuperposition } from "../runtime/text-superposition";
+import { applyAnnotationsToRanges } from "../runtime/group-selection";
 
 /** Canonical style types, including the three preserved range-wrapper styles. */
 export const annotationTools = [
@@ -16,7 +17,7 @@ export const annotationTools = [
   ["style/underline", "Underline", "U"], ["style/strikethrough", "Strikethrough", "S̶"],
   ["style/superscript", "Superscript", "x²"], ["style/subscript", "Subscript", "x₂"],
   ["style/uppercase", "Uppercase", "AA"], ["style/highlight", "Highlight", "Highlight"],
-  ["style/highlighter", "Highlighter", "Marker"], ["style/rainbow", "Rainbow underline", "Rainbow"],
+  ["style/highlighter", "Highlighter", "Marker"], ["style/show-hide", "Show / hide", "Show / Hide"], ["style/rainbow", "Rainbow underline", "Rainbow"],
   ["style/rectangle", "Rectangle", "□ Rectangle"], ["style/spiky", "Spiky outline", "Spiky"],
   ["style/blur", "Blur", "Blur"], ["style/glow", "Glow / bloom", "Glow"],
   ["style/chromatic-aberration", "Chromatic aberration", "RGB"], ["style/motion-blur", "Directional blur (experimental)", "Motion"],
@@ -50,7 +51,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const [linkedType, setLinkedType] = createSignal("codex/entity-reference"), [linkedValue, setLinkedValue] = createSignal("");
   const [colour, setColour] = createSignal("#ff0000"), [background, setBackground] = createSignal("#ffff00");
   const [localToolset, setLocalToolset] = createSignal<Toolset>("Typography");
-  createEffect(() => props.onNotice?.(notice() || editor.crossText.message()));
+  createEffect(() => props.onNotice?.(notice() || editor.groupSelection.message() || editor.crossText.message()));
   let savedRange: { anchor: number; head: number } | undefined;
   const inScope = (key: NodeKey): boolean => {
     if (!props.scopeKey) return true;
@@ -84,10 +85,19 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     if (savedRange) editor.mounts.get(node.key)?.restoreInlineSelection?.(savedRange);
   };
   const annotate = (type: string, value?: string) => {
+    if (editor.groupSelection.active()) {
+      if (type === "codex/entity-reference") { setNotice("Entity Reference does not consume a manual group. Choose an ordinary annotation."); return; }
+      try {
+        const count = editor.groupSelection.apply(type, value, effectDefaults[type] ?? {});
+        savedRange = undefined;
+        setNotice(count ? `Applied ${type} to ${count} grouped ranges.` : "Those grouped ranges already have this annotation.");
+      } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
+      return;
+    }
     const cross = editor.crossText.range();
     if (cross) {
       if (!inScope(cross.anchor.occurrenceKey)) { setNotice("The text selection belongs to another document."); return; }
-      try { if (type === "codex/entity-reference") openEntitySearch(editor, editor.crossText.resolve(cross.anchor, cross.head)); else editor.crossText.annotate(type, value); setNotice(""); }
+      try { if (type === "codex/entity-reference") openEntitySearch(editor, editor.crossText.resolve(cross.anchor, cross.head)); else editor.crossText.annotate(type, value, effectDefaults[type] ?? {}); setNotice(""); }
       catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
       return;
     }
@@ -101,12 +111,28 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     const start = Math.min(savedRange.anchor, savedRange.head), end = Math.max(savedRange.anchor, savedRange.head) - 1;
     if (start < 0 || end < start || end >= node.inlineContent.length) { setNotice("Select a non-empty text range first."); return; }
     if (type === "codex/entity-reference") { openEntitySearch(editor, [{ nodeKey: node.key, start, end: end + 1 }]); return; }
-    const current = (node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
-    // Applying a toolbar style never deletes an existing annotation or its metadata.
-    if (!current.some(p => !p.isDeleted && p.type === type && p.start === start && p.end === end && p.value === value)) {
-      editor.commands.setPayloadField(node.key, "standoffProperties", [...unwrap(current), { id: crypto.randomUUID(), type, start, end, ...(value !== undefined ? { value } : {}), ...(effectDefaults[type] ?? {}) }], "Annotate Selection");
-    }
+    const content = editor.repository.readState().contents[node.contentKey];
+    applyAnnotationsToRanges(editor, [{ nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey, version: content.inlineRevision, start, end: end + 1, coordinate: "cell" }], type, value, effectDefaults[type] ?? {});
     setNotice(""); restore();
+  };
+  const toggleGrouping = () => {
+    if (editor.groupSelection.active()) { editor.groupSelection.cancel(); savedRange = undefined; return; }
+    capture();
+    const node = target(), range = savedRange;
+    editor.groupSelection.begin(props.scopeKey);
+    if (node && range && range.anchor !== range.head) editor.groupSelection.add(node.key, range.anchor, range.head);
+    document.getSelection()?.removeAllRanges();
+    savedRange = undefined;
+    setNotice("");
+  };
+  const showHide = () => {
+    if (editor.groupSelection.active()) { annotate("style/show-hide"); return; }
+    capture();
+    if (savedRange && savedRange.anchor !== savedRange.head) { annotate("style/show-hide"); return; }
+    const key = props.scopeKey ?? targetKey() ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey;
+    if (!key) { setNotice("Focus a Document before toggling hidden text."); return; }
+    try { setNotice(editor.showHide.toggle(key) ? "Hidden text is visible." : "Hidden text is concealed."); }
+    catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
   };
   const addAlternative = () => {
     if (editor.crossText.range()) { setNotice("Add an alternative within one text Block."); return; }
@@ -193,16 +219,17 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   </>;
   const hasCrossRange = () => { const range = editor.crossText.range(); return !!range && inScope(range.anchor.occurrenceKey); };
   const typographyTypes = new Set(["style/bold", "style/italics", "style/underline", "style/strikethrough", "style/superscript", "style/subscript", "style/uppercase", "style/blur"]);
-  const markupTypes = new Set(["style/highlight", "style/highlighter"]);
+  const markupTypes = new Set(["style/highlight", "style/highlighter", "style/show-hide"]);
   const deferredTypes = new Set(["style/flip", "style/mirror"]);
   const tools: CompactTool[] = [
     { id: "colours", label: "Text colour and fill", glyph: "Colour / Fill", width: 104, toolset: "Visual effects", panel: ColourControls },
+    { id: "group-selection", label: "Group text ranges", glyph: "Group", description: editor.bindings.label("group.toggle"), width: 68, toolset: "Annotations", persistent: true, pressed: editor.groupSelection.active, run: toggleGrouping },
     ...(editor.features.textSuperposition ? [{ id: "superposition.add", label: "Add alternative", glyph: "Alternative", width: 96, toolset: "Annotations" as const, run: addAlternative }] : []),
     ...annotationTools.map(([type, label, glyph]): CompactTool => ({
       id: type, label, glyph,
       toolset: typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
       description: deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined,
-      width: typographyTypes.has(type) ? 36 : 88, run: () => annotate(type),
+      width: typographyTypes.has(type) ? 36 : 88, run: () => type === "style/show-hide" ? showHide() : annotate(type),
     })),
     ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
     ...[["left", "Align left", "≡"], ["center", "Align centre", "≣"], ["right", "Align right", "≡"], ["justify", "Justify", "☰"]].map(([value, label, glyph]) => ({ id: `align-${value}`, label, glyph, toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/alignment", value) })),
@@ -218,6 +245,10 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       <button type="button" onClick={() => editor.crossText.collapseToHead()}>Resume text editing</button>
       <details><summary>New linked annotation</summary><LinkedControls /></details>
     </fieldset></Show>
+    <Show when={editor.groupSelection.active()}><fieldset><legend>Grouped ranges</legend>
+      <span>{editor.groupSelection.ranges().length} retained</span>
+      <button type="button" onClick={() => editor.groupSelection.cancel()}>Cancel grouping</button>
+    </fieldset></Show>
     <fieldset><legend>Editor options</legend><SelectionOption /></fieldset>
   </>;
   return <nav class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": editor.features.compactEditorChrome }} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
@@ -227,7 +258,8 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       </button>
     </Show>
     <Show when={editor.features.compactEditorChrome} fallback={<>
-      <Show when={editor.features.textSuperposition}><button type="button" title="Add alternative" onClick={addAlternative}>Alternative</button></Show>
+    <Show when={editor.features.textSuperposition}><button type="button" title="Add alternative" onClick={addAlternative}>Alternative</button></Show>
+    <button type="button" aria-label="Group text ranges" aria-pressed={editor.groupSelection.active()} title={`Group text ranges (${editor.bindings.label("group.toggle")})`} onClick={toggleGrouping}>Group</button>
     <DocumentActions />
     <HistoryAction />
     <Show when={editor.blockHistory.state.recordingError || editor.blockHistory.state.recording?.phase === "stopped" || editor.blockHistory.state.recording?.phase === "offline"}>
@@ -236,7 +268,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <SelectionOption />
     <Show when={editor.crossText.enabled()}><button type="button" disabled={!editor.crossText.range()} onClick={() => editor.crossText.collapseToHead()}>Resume text editing</button></Show>
     <LinkedControls />
-    <For each={annotationTools}>{([type, label, glyph]) => <button type="button" title={label} aria-label={label} data-annotation-type={type} onClick={() => annotate(type)}>{glyph}</button>}</For>
+    <For each={annotationTools}>{([type, label, glyph]) => <button type="button" title={label} aria-label={label} data-annotation-type={type} onClick={() => type === "style/show-hide" ? showHide() : annotate(type)}>{glyph}</button>}</For>
     <button type="button" aria-label="Entity reference" title="Link selected text to an entity" onClick={() => annotate("codex/entity-reference")}>Entity reference</button>
     <ColourControls />
     <i />
@@ -246,7 +278,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <button type="button" title="Decrease indent" onClick={() => indent(-1)}>⇤</button>
     <TabAction />
     <button type="button" title="Clear formatting" onClick={clear}>T×</button>
-    <span role="status">{notice() || editor.crossText.message()}</span>
+    <span role="status">{notice() || editor.groupSelection.message() || editor.crossText.message()}</span>
     <DocumentCountBar editor={editor} scopeKey={props.scopeKey} />
     </>}>
       <CompactToolbar tools={tools} toolset={props.toolset ?? localToolset()} onToolset={value => { setLocalToolset(value); props.onToolset?.(value); }} capture={capture} restore={restore} retainSelection={retainSelection} more={MoreControls} />

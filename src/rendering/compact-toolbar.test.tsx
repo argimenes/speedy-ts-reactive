@@ -30,6 +30,10 @@ describe("compact editor chrome", () => {
     const { editor, host, select, choose } = fixture(); select();
     const tree = host.querySelector('.reactive-standoff-flow'), before = editor.encodeDocument(), revision = editor.repository.state.revision;
     expect(editor.features.compactEditorChrome).toBe(true);
+    for (const name of ["Typography", "Annotations", "Visual effects"]) {
+      choose(name);
+      expect(host.querySelector<HTMLButtonElement>('[data-tool-id="group-selection"]')).not.toBeNull();
+    }
     expect(host.querySelectorAll('.document-count-bar')).toHaveLength(1);
     expect(host.querySelector('.document-style-bar .document-count-bar')).toBeNull();
     expect(host.querySelector('.reactive-window__content .document-status-bar')).toBeNull();

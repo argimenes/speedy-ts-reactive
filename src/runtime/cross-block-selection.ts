@@ -1,7 +1,8 @@
 import { batch, createSignal } from "solid-js";
-import { createStore, unwrap } from "solid-js/store";
+import { createStore } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { ViewPosition } from "../block-tree/types";
+import { applyAnnotationsToRanges } from "./group-selection";
 
 export interface TextSegment { nodeKey: string; contentKey: string; start: number; end: number }
 export interface CrossTextRange { anchor: ViewPosition; head: ViewPosition; viewId: string }
@@ -114,23 +115,17 @@ export class CrossBlockSelection {
   }
   /** Until structural edit maps exist, external mutations invalidate, never mis-map. */
   beforeChange() { if (this.range() && !this.formatting) this.clear(); this.stream = undefined; }
-  annotate(type: string, value?: string) {
+  annotate(type: string, value?: string, attributes: Readonly<Record<string, number | string>> = {}) {
     const range = this.range(); if (!range) return false;
-    if (!type.startsWith("style/") && !["text/colour", "text/background-colour"].includes(type)) throw new Error("Only ordinary styles are supported across Blocks");
+    if (!type.startsWith("style/") && !["amber-crt", "text/colour", "text/background-colour"].includes(type)) throw new Error("Only ordinary styles are supported across Blocks");
     const segments = this.resolve(range.anchor, range.head).filter(s => s.end > s.start);
-    const seen = new Set<string>();
-    const updates = new Map<string, { key: string; properties: Record<string, unknown>[] }>();
-    for (const segment of segments) {
-      const node = this.editor.node(segment.nodeKey)!;
-      const current = updates.get(node.contentKey)?.properties ?? unwrap(node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
-      const start = segment.start, end = segment.end - 1;
-      const token = `${node.contentKey}:${start}:${end}`;
-      if (seen.has(token)) continue; seen.add(token);
-      if (current.some(p => !p.isDeleted && p.type === type && p.start === start && p.end === end && p.value === value)) continue;
-      updates.set(node.contentKey, { key: node.key, properties: [...current, { id: crypto.randomUUID(), type, start, end, ...(value === undefined ? {} : { value }) }] });
-    }
     this.formatting = true;
-    try { this.editor.commands.transaction("Format cross-Block selection", () => { for (const update of updates.values()) this.editor.commands.setPayloadField(update.key, "standoffProperties", update.properties); }); }
+    try {
+      applyAnnotationsToRanges(this.editor, segments.map(segment => {
+        const node = this.editor.node(segment.nodeKey)!, content = this.editor.repository.readState().contents[node.contentKey];
+        return { ...segment, placementKey: node.placementKey, version: content.inlineRevision, coordinate: "cell" as const };
+      }), type, value, attributes);
+    }
     finally { this.formatting = false; }
     this.notice(`Formatted ${segments.length} text segment(s). Escape returns to editing.`);
     return true;

@@ -12,6 +12,8 @@ export interface CompactTool {
   toolset: Toolset;
   width?: number;
   disabled?: () => boolean;
+  pressed?: () => boolean;
+  persistent?: boolean;
   run?: () => void;
   panel?: () => JSX.Element;
 }
@@ -31,7 +33,8 @@ export function CompactToolbar(props: {
   const [width, setWidth] = createSignal(0);
   const [panel, setPanel] = createSignal<"more" | CompactTool>();
   const [position, setPosition] = createSignal({ left: 0, top: 0, maxHeight: 400 });
-  const current = createMemo(() => props.tools.filter(tool => tool.toolset === props.toolset));
+  const persistent = createMemo(() => props.tools.filter(tool => tool.persistent));
+  const current = createMemo(() => props.tools.filter(tool => !tool.persistent && tool.toolset === props.toolset));
   const visibleCount = createMemo(() => {
     let used = 0, count = 0;
     for (const tool of current()) { used += (tool.width ?? 36) + 3; if (used > width()) break; count++; }
@@ -91,7 +94,7 @@ export function CompactToolbar(props: {
       const wasInside = root.contains(active);
       const id = active?.closest<HTMLElement>('[data-tool-id]')?.dataset.toolId;
       setWidth(strip.getBoundingClientRect().width);
-      if (id && !current().slice(0, visibleCount()).some(tool => tool.id === id) && wasInside) moreButton.focus();
+      if (id && !persistent().some(tool => tool.id === id) && !current().slice(0, visibleCount()).some(tool => tool.id === id) && wasInside) moreButton.focus();
     };
     const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
     observer?.observe(strip); measure();
@@ -107,6 +110,7 @@ export function CompactToolbar(props: {
   const ToolButton = (p: { tool: CompactTool; overflow?: boolean }) => <button type="button" data-tool-id={p.tool.id}
     data-annotation-type={p.tool.id.includes("/") ? p.tool.id : undefined}
     aria-label={p.tool.label} title={p.tool.description ? `${p.tool.label}: ${p.tool.description}` : p.tool.label} disabled={p.tool.disabled?.()}
+    aria-pressed={p.tool.pressed?.()}
     aria-haspopup={p.tool.panel ? "dialog" : undefined}
     style={p.overflow ? undefined : { width: `${p.tool.width ?? 36}px` }}
     onClick={event => activate(p.tool, event)}>{p.overflow ? p.tool.label : p.tool.glyph}</button>;
@@ -118,6 +122,7 @@ export function CompactToolbar(props: {
       </select>
       <button type="button" class="compact-toolbar__cycle" aria-label="Next toolset" title="Next toolset" onClick={() => step(1)}>›</button>
     </div>
+    <div class="compact-toolbar__persistent"><For each={persistent()}>{tool => <ToolButton tool={tool} />}</For></div>
     <div ref={strip} class="compact-toolbar__tools"><For each={current().slice(0, visibleCount())}>{tool => <ToolButton tool={tool} />}</For></div>
     <button ref={moreButton} type="button" class="compact-toolbar__more" aria-haspopup="dialog" aria-expanded={panel() === "more"} onClick={event => open("more", event)}>More ▾</button>
     <Show when={panel()}>{value => <Portal><div ref={popup} class="document-style-bar compact-toolbar__panel" role="dialog" aria-label={value() === "more" ? "More editor tools" : (value() as CompactTool).label}

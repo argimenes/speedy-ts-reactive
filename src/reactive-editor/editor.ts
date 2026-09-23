@@ -36,6 +36,8 @@ import type { LoadedWorkspace } from "./workspace-manifest";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { BlockHistorySession } from "../runtime/block-history";
 import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguration } from "../configuration";
+import { GroupSelection } from "../runtime/group-selection";
+import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
   readonly features: FeatureFlags;
@@ -64,6 +66,8 @@ export class ReactiveEditor {
   readonly blockClipboard = new BlockClipboardService(this);
   readonly crossText = new CrossBlockSelection(this);
   readonly linkedAnnotations = new LinkedAnnotations(this);
+  readonly groupSelection: GroupSelection;
+  readonly showHide = new ShowHideProjection(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
   readonly persistence: PersistenceService;
   readonly multiSelections: MultiSelectionEditor;
@@ -78,6 +82,7 @@ export class ReactiveEditor {
     const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : isHistoryDocument(dto) ? decodeHistoryDocument(dto) : decodeBlockTree(dto as ExistingBlockDto);
     this.repository = new CanonicalRepository(decoded.state);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
+    this.groupSelection = new GroupSelection(this);
     this.persistence = new PersistenceService(this);
     if (loadedWorkspace) this.persistence.attachWorkspace(loadedWorkspace);
     const [viewChildren, setViewChildren] = createStore<Record<string, string | undefined>>({});
@@ -143,6 +148,7 @@ export class ReactiveEditor {
     this.disposeFindInput?.();
     this.disposeFindInput = this.find.install(document);
     this.crossInput = new CrossBlockInput(this, document);
+    const disposeGroupSelection = this.groupSelection.install(document);
     this.gateway = new InputGateway(
       document,
       this.mounts,
@@ -173,7 +179,7 @@ export class ReactiveEditor {
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
     const disposeFind = this.disposeFindInput;
-    return () => { disposeFind(); crossInput.dispose(); dispose(); };
+    return () => { disposeFind(); disposeGroupSelection(); crossInput.dispose(); dispose(); };
   }
 
   node(nodeKey: NodeKey) {
@@ -318,6 +324,7 @@ export class ReactiveEditor {
     this.minimap.clearAll();
     this.crossInput?.dispose();
     this.crossText.clear();
+    this.groupSelection.dispose();
     this.blockClipboard.dismiss();
     this.blockSelection.clear();
     this.bindings.dispose();

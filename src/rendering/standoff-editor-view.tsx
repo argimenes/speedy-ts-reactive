@@ -321,6 +321,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
   );
   const superpositions = createMemo(() => editor.features.textSuperposition ? textSuperpositions(node()) : []);
+  const showHiddenText = createMemo(() => editor.showHide.shows(props.nodeKey));
   const cellStyles = createMemo(() => compileCellStyleRuns(annotations()), undefined, {
     equals: (previous, next) => JSON.stringify(previous) === JSON.stringify(next),
   });
@@ -469,6 +470,9 @@ export function StandoffEditorView(props: BlockViewProps) {
     for (const decoration of searchVisible ? editor.decorations.nodes[props.nodeKey] ?? [] : []) {
       const fragments = rangeFragments(flow, surface, decoration.range.start, decoration.range.end - 1);
       search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
+      if (decoration.type === "editor/group-selection") {
+        search.push(...outlineShapes(`${decoration.id}:group`, fragments, "#167565").map(shape => ({ ...shape, propertyType: decoration.type })));
+      }
       if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
       const position = decoration.excludable && origin ? exclusionPosition(fragments,origin,{ width: window.innerWidth,height: window.innerHeight }) : undefined;
       if (position) controls.push({ owner: decoration.owner,id: decoration.id,...position,active: decoration.active,fragments });
@@ -614,6 +618,7 @@ export function StandoffEditorView(props: BlockViewProps) {
                       data-inline-key={cellKey}
                       data-inline-index={index()}
                       style={cellStyleAt(cellStyles(), index())}
+                      classList={{ "reactive-standoff-cell--concealed": !showHiddenText() && annotations().some(annotation => annotation.type === "style/show-hide" && hasActiveRange(annotation) && annotation.start <= index() && annotation.end >= index()) }}
                     >{(cell()?.payload.text as string | undefined) ?? ""}</span>}
                   >
                     <span

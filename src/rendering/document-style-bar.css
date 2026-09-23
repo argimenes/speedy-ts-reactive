@@ -1,6 +1,7 @@
 .document-style-bar { display:flex; flex-wrap:wrap; align-items:center; gap:3px; padding:5px; background:white; color:#333; }
 .document-style-bar button { border:0; background:transparent; color:inherit; padding:5px; cursor:pointer; font:14px Arial,sans-serif; }
 .document-style-bar button:hover,.document-style-bar button:focus-visible { background:#e3efeb; outline:1px solid #57867b; }
+.document-style-bar button[aria-pressed="true"] { color:#123f37; background:#cfe7df; box-shadow:inset 0 0 0 1px #57867b; }
 .document-style-bar .document-style-bar__margins { border:1px solid #8aa39c; border-radius:3px; font-weight:650; }
 .document-style-bar .document-style-bar__margins[aria-expanded="true"] { background:#dcebe6; }
 .document-style-bar label { display:flex; align-items:center; gap:3px; font:12px Arial,sans-serif; }
@@ -25,6 +26,7 @@
 .compact-toolbar__picker { display: flex; align-items: center; flex: none; }
 .compact-toolbar__picker select { width: 136px; height: 32px; border: 1px solid #bac8c4; border-radius: 4px; background: #f4f8f7; color: #213e36; font: 14px Arial,sans-serif; }
 .document-style-bar .compact-toolbar button { height: 32px; min-width: 32px; padding: 3px; flex: none; white-space: nowrap; }
+.compact-toolbar__persistent { display:flex; flex:none; align-items:center; gap:3px; }
 .compact-toolbar__tools { display: flex; flex: 1; min-width: 0; align-items: center; gap: 3px; overflow: hidden; height: 100%; }
 .document-style-bar .compact-toolbar__more { width: 66px; border-left: 1px solid #d9e2df; }
 .document-style-bar--compact > .document-style-bar__margins { flex: none; white-space: nowrap; font-size: 12px; }

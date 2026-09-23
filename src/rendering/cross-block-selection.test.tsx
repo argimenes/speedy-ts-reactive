@@ -149,13 +149,13 @@ describe("experimental cross-Block text selection", () => {
     editor.crossText.enable(true); editor.crossText.set(point("a", 2), point("c", 3));
     for (const type of [...annotationTools.map(t => t[0]), "text/colour", "text/background-colour"]) editor.crossText.annotate(type, type.startsWith("text/") ? "#123456" : undefined);
     const saved = editor.encodeDocument(), [a, b, c] = saved.children!;
-    expect((a.standoffProperties as any[])).toHaveLength(17); expect(b.standoffProperties).toBeUndefined();
+    expect((a.standoffProperties as any[])).toHaveLength(annotationTools.length + 2); expect(b.standoffProperties).toBeUndefined();
     expect((a.standoffProperties as any[])[0]).toMatchObject({ start: 2, end: 6 });
     expect((c.standoffProperties as any[])[0]).toMatchObject({ start: 0, end: 2 });
     const revision = editor.repository.state.revision; editor.crossText.annotate("style/bold"); expect(editor.repository.state.revision).toBe(revision);
     const restored = new ReactiveEditor(saved); expect(restored.encodeDocument()).toEqual(saved); restored.dispose();
     editor.repository.undo(); expect(editor.crossText.range()).toBeUndefined();
-    expect((editor.encodeDocument().children![0].standoffProperties as any[])).toHaveLength(16);
+    expect((editor.encodeDocument().children![0].standoffProperties as any[])).toHaveLength(annotationTools.length + 1);
     editor.repository.redo(); expect(editor.encodeDocument()).toEqual(saved);
   });
   it("rolls back a failed style command without damaging original annotations", () => {

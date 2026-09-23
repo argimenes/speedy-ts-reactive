@@ -17,6 +17,7 @@ export interface StandoffStyleSchema {
   cellEffect?: true;
   regionEffect?: true;
   noiseEffect?: true;
+  projection?: "show-hide";
   deferred?: "range-wrapper" | "animation-plugin" | "embedded-document";
 }
 
@@ -47,6 +48,7 @@ export const standoffStyleSchemas: Readonly<Record<string, StandoffStyleSchema>>
   "style/italics": { cell: { "font-style": "italic" } },
   "style/strikethrough": { cell: { "text-decoration-line": "line-through" } },
   "style/highlight": { cell: { "background-color": "pink" } },
+  "style/show-hide": { projection: "show-hide" },
   "style/bold": { cell: { "font-weight": "600" } },
   "style/underline": { cell: { "text-decoration-line": "underline" } },
   "reference/url": { cell: { "text-decoration-line": "underline", "text-decoration-color": "blue" } },

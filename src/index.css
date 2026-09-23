@@ -306,6 +306,10 @@ textarea {
   z-index: 1;
 }
 
+.reactive-standoff-cell--concealed {
+  display: none;
+}
+
 .reactive-unknown-block {
   padding: 12px;
   border: 1px dashed #c47a68;
