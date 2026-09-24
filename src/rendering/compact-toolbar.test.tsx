@@ -32,7 +32,7 @@ describe("compact editor chrome", () => {
     expect(editor.features.compactEditorChrome).toBe(true);
     for (const name of ["Typography", "Annotations", "Visual effects"]) {
       choose(name);
-      expect(host.querySelector<HTMLButtonElement>('[data-tool-id="group-selection"]')).not.toBeNull();
+      expect(host.querySelector<HTMLButtonElement>('[data-tool-id="group-selection"]')).toBeNull();
     }
     expect(host.querySelectorAll('.document-count-bar')).toHaveLength(1);
     expect(host.querySelector('.document-style-bar .document-count-bar')).toBeNull();
@@ -42,6 +42,20 @@ describe("compact editor chrome", () => {
     expect(host.querySelector('.reactive-standoff-flow')).toBe(tree);
     expect(editor.encodeDocument()).toEqual(before); expect(editor.repository.state.revision).toBe(revision);
     expect(document.activeElement).toBe(tree);
+  });
+
+  it("keeps Group, Show/Hide and Clear together in the Selection toolset", () => {
+    const { host, select, choose } = fixture();
+    select();
+    toolbarControl(host, '[aria-label="Group text ranges"]', "Selection").click();
+    const toggle = toolbarControl(host, '[aria-label="Show / hide"]', "Selection");
+    expect([...toggle.parentElement!.querySelectorAll<HTMLElement>('[data-tool-id]')].map(button => button.dataset.toolId))
+      .toEqual(["group-selection", "style/show-hide", "group-clear"]);
+    for (const name of ["Typography", "Annotations", "Visual effects"]) {
+      choose(name);
+      host.querySelector<HTMLButtonElement>('.compact-toolbar__more')!.click();
+      expect(document.querySelector('[data-tool-id="group-selection"], [data-tool-id="style/show-hide"], [data-tool-id="group-clear"]')).toBeNull();
+    }
   });
 
   it("keeps toolset state per window across minimize/restore", async () => {

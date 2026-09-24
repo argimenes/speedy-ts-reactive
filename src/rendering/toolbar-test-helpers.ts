@@ -14,7 +14,7 @@ export function toolbarControl<T extends HTMLElement = HTMLButtonElement>(host: 
   const more = () => host.querySelector<HTMLButtonElement>('.compact-toolbar__more')!.click();
   if (preferredToolset) choose(preferredToolset);
   if (find()) return find()!;
-  for (const name of preferredToolset ? [preferredToolset] : ["Typography", "Annotations", "Visual effects"]) {
+  for (const name of preferredToolset ? [preferredToolset] : ["Typography", "Annotations", "Visual effects", "Selection"]) {
     choose(name);
     if (find()) return find()!;
     more();

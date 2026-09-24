@@ -1,8 +1,8 @@
 import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 
-export type Toolset = "Typography" | "Annotations" | "Visual effects";
-export const toolsets: readonly Toolset[] = ["Typography", "Annotations", "Visual effects"];
+export type Toolset = "Typography" | "Annotations" | "Visual effects" | "Selection";
+export const toolsets: readonly Toolset[] = ["Typography", "Annotations", "Visual effects", "Selection"];
 /** Presentation only. Actions remain owned by DocumentStyleBar and existing services. */
 export interface CompactTool {
   id: string;

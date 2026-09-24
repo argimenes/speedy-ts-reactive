@@ -249,14 +249,14 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const deferredTypes = new Set(["style/flip", "style/mirror"]);
   const tools: CompactTool[] = [
     { id: "colours", label: "Text colour and fill", glyph: "Colour / Fill", width: 104, toolset: "Visual effects", panel: ColourControls },
-    { id: "group-selection", label: "Group text ranges", glyph: "Group", description: editor.bindings.label("group.toggle"), width: 68, toolset: "Annotations", persistent: true, pressed: editor.groupSelection.active, run: toggleGrouping },
+    { id: "group-selection", label: "Group text ranges", glyph: "Group", description: `${editor.bindings.label("group.toggle")}. Control-click a selected range to remove it.`, width: 68, toolset: "Selection", pressed: editor.groupSelection.active, run: toggleGrouping },
     ...(editor.features.textSuperposition ? [{ id: "superposition.add", label: "Add alternative", glyph: "Alternative", width: 96, toolset: "Annotations" as const, run: addAlternative }] : []),
     ...annotationTools.flatMap(([type, label, glyph]): CompactTool[] => [{
       id: type, label, glyph,
-      toolset: typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
+      toolset: type === "style/show-hide" ? "Selection" : typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
       description: deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined,
       width: typographyTypes.has(type) ? 36 : 88, pressed: type === "style/show-hide" ? hiddenTextRevealed : undefined, run: () => type === "style/show-hide" ? showHide() : annotate(type),
-    }, ...(type === "style/show-hide" ? [{ id: "group-clear", label: "Clear group selection", glyph: "Clear", description: "Cancel grouping (Esc)", width: 60, toolset: "Annotations" as const, visible: canClearSelection, run: cancelGrouping }] : [])]),
+    }, ...(type === "style/show-hide" ? [{ id: "group-clear", label: "Clear group selection", glyph: "Clear", description: "Cancel grouping (Esc)", width: 60, toolset: "Selection" as const, visible: canClearSelection, run: cancelGrouping }] : [])]),
     ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
     ...[["left", "Align left", "≡"], ["center", "Align centre", "≣"], ["right", "Align right", "≡"], ["justify", "Justify", "☰"]].map(([value, label, glyph]) => ({ id: `align-${value}`, label, glyph, toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/alignment", value) })),
     { id: "indent", label: "Increase indent", glyph: "⇥", toolset: "Typography", disabled: hasCrossRange, run: () => indent(1) },

@@ -88,7 +88,7 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
   });
   it("offers Clear beside Show/Hide only during grouping and cancels with Clear or Escape", async () => {
     const { host, select, click, editor } = setup();
-    const showHide = () => toolbarControl(host, 'button[title="Show / hide"]', "Annotations");
+    const showHide = () => toolbarControl(host, 'button[title="Show / hide"]', "Selection");
     const clearButton = () => document.querySelector<HTMLButtonElement>('[aria-label="Clear group selection"]');
     showHide();
     expect(clearButton()).toBeNull();
@@ -120,7 +120,7 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     cleanup.push(() => descriptor ? Object.defineProperty(Range.prototype, "getClientRects", descriptor) : Reflect.deleteProperty(Range.prototype, "getClientRects"));
     const { host, node, select, click, editor } = setup();
     const settle = () => new Promise(resolve => setTimeout(resolve, 25));
-    const clear = () => toolbarControl(host, '[aria-label="Clear group selection"]', "Annotations");
+    const clear = () => toolbarControl(host, '[aria-label="Clear group selection"]', "Selection");
     const outlines = () => host.querySelectorAll('[data-property-type="editor/show-hide-selection"][stroke-dasharray]');
     select(0, 2); click("Group text ranges");
     select(0, 3, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
@@ -168,7 +168,7 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     select(0, 2); click("Group text ranges"); click("Show / hide");
     click("Show / hide"); await settle();
     expect(outlines("p")).toHaveLength(1);
-    toolbarControl(host, '[aria-label="Clear group selection"]', "Annotations").click();
+    toolbarControl(host, '[aria-label="Clear group selection"]', "Selection").click();
     expect(editor.groupSelection.ranges()).toHaveLength(0);
 
     select(0, 3, "q"); click("Group text ranges"); click("Show / hide"); await settle();
@@ -183,7 +183,7 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     click("Show / hide");
     expect(concealed("p")).toHaveLength(0);
     expect(concealed("q")).toHaveLength(3);
-    toolbarControl(host, '[aria-label="Clear group selection"]', "Annotations").dispatchEvent(
+    toolbarControl(host, '[aria-label="Clear group selection"]', "Selection").dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
     await settle();
     expect(concealed("p")).toHaveLength(0);
@@ -192,6 +192,52 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     expect(outlines("q")).toHaveLength(0);
     expect(editor.showHide.selectionActive()).toBe(false);
     expect(document.querySelector('[aria-label="Clear group selection"]')).toBeNull();
+  });
+
+  it("Control-click removes one collected or revealed range without reopening a menu or recapturing it", async () => {
+    const { host, node, select, click, editor } = setup();
+    select(0, 2); click("Group text ranges");
+    select(0, 3, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+    await Promise.resolve();
+    expect(editor.groupSelection.ranges()).toHaveLength(2);
+    const crossTextEnabled = editor.crossText.enabled();
+    cleanup.push(() => editor.crossText.enable(crossTextEnabled));
+    editor.crossText.enable(true);
+    const remove = async (id: string, index: number) => {
+      const cell = host.querySelector<HTMLElement>(`.reactive-standoff-block[data-block-id="${id}"] [data-inline-index="${index}"]`)!;
+      const before = editor.repository.snapshot();
+      for (const type of ["pointerdown", "contextmenu", "pointerup", "click"]) {
+        const event = new MouseEvent(type, { ctrlKey: true, button: 0, bubbles: true, cancelable: true });
+        cell.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+      }
+      await Promise.resolve();
+      expect(editor.overlays.overlays).toHaveLength(0);
+      expect(editor.repository.snapshot()).toEqual(before);
+    };
+    await remove("p", 1);
+    expect(editor.groupSelection.ranges()).toHaveLength(1);
+    expect(editor.groupSelection.ranges()[0].nodeKey).not.toBe(node().key);
+    expect(editor.decorations.nodes[node().key] ?? []).toHaveLength(0);
+    expect(editor.crossText.range()).toBeUndefined();
+
+    // Ordinary selection can add the removed range back to the group.
+    select(0, 2).dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    select(0, 2).dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+    await Promise.resolve();
+    expect(editor.groupSelection.ranges()).toHaveLength(2);
+    click("Show / hide"); click("Show / hide");
+    const property = (node().payload.standoffProperties as { id: string; type: string }[]).find(p => p.type === "style/show-hide")!;
+    expect(editor.showHide.selectionActive(node().key, property.id)).toBe(true);
+    await remove("p", 1);
+    expect(editor.showHide.selectionActive(node().key, property.id)).toBe(false);
+    click("Show / hide");
+    expect(host.querySelectorAll('.reactive-standoff-block[data-block-id="p"] .reactive-standoff-cell--concealed')).toHaveLength(0);
+    expect(host.querySelectorAll('.reactive-standoff-block[data-block-id="q"] .reactive-standoff-cell--concealed')).toHaveLength(3);
+    click("Show / hide");
+    await remove("q", 1);
+    expect(editor.showHide.selectionActive()).toBe(false);
+    expect(editor.groupSelection.active()).toBe(false);
   });
 
   it("collects ranges across Blocks, applies Highlight, cancels with Escape, and toggles the Show/Hide projection", async () => {

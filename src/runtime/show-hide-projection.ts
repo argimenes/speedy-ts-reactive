@@ -79,6 +79,24 @@ export class ShowHideProjection {
     return id === undefined ? !!tokens?.length : !!tokens?.includes(this.token(nodeKey, id));
   }
 
+  removeAt(nodeKey: NodeKey, index: number): boolean {
+    const key = this.documentKey(nodeKey);
+    const tokens = key ? this.selections[key] : undefined;
+    if (!key || !tokens?.length) return false;
+    const properties = this.editor.node(nodeKey)?.payload.standoffProperties as
+      { id?: string; type: string; start?: number; end?: number; isDeleted?: boolean }[] | undefined;
+    const match = properties?.map((property, i) => ({ property, token: this.token(nodeKey, property.id ?? i) })).reverse()
+      .find(({ property, token }) => property.type === "style/show-hide" && !property.isDeleted &&
+        property.start !== undefined && property.end !== undefined && property.start <= index && index <= property.end &&
+        tokens.includes(token) && this.visibility[token]);
+    if (!match) return false;
+    // Leave deselected text visible and exclude it from future group toggles.
+    this.setVisibility(match.token, true);
+    const remaining = tokens.filter(token => token !== match.token);
+    this.setSelections(key, remaining.length ? remaining : undefined);
+    return true;
+  }
+
   clearSelections(): void {
     // Cancellation restores the active group's text and discards its membership.
     for (const key of Object.keys(this.selections)) {

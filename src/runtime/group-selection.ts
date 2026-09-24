@@ -108,7 +108,7 @@ export class GroupSelection {
     this.viewId = scopeKey ? this.editor.node(scopeKey)?.viewId : undefined;
     this.rangesSignal[1]([]);
     this.activeSignal[1](true);
-    this.messageSignal[1]("Grouping: select one or more text ranges, then choose an annotation. Escape cancels.");
+    this.messageSignal[1]("Grouping: select text ranges, then choose an annotation. Control-click a range to remove it. Escape cancels.");
     this.paint();
   }
 
@@ -162,6 +162,17 @@ export class GroupSelection {
     return true;
   }
 
+  removeAt(nodeKey: NodeKey, index: number): boolean {
+    const ranges = this.ranges();
+    // When ranges overlap, remove the most recently added matching range.
+    const range = [...ranges].reverse().find(range => range.nodeKey === nodeKey && range.start <= index && index < range.end);
+    if (!range) return this.editor.showHide.removeAt(nodeKey, index);
+    this.rangesSignal[1](ranges.filter(candidate => candidate !== range));
+    this.messageSignal[1](`${this.ranges().length} grouped ranges. Control-click a range to remove it. Escape cancels.`);
+    this.paint();
+    return true;
+  }
+
   apply(type: string, value?: string, attributes: Readonly<Record<string, number | string>> = {}): number {
     if (!this.active() || !this.ranges().length) throw new Error("Select at least one text range for this group.");
     this.applying = true;
@@ -196,6 +207,23 @@ export class GroupSelection {
 
   install(document: Document): () => void {
     this.disposeInput?.();
+    let removing = false;
+    const stop = (event: Event) => { event.preventDefault(); event.stopImmediatePropagation(); };
+    const pointerdown = (event: PointerEvent) => {
+      removing = false;
+      if (!event.ctrlKey || event.button !== 0) return;
+      const resolved = this.editor.mounts.resolveEvent(event);
+      const cell = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-inline-index]") : null;
+      if (!cell || resolved?.handle.inputPolicy !== "standoff") return;
+      const index = Number(cell.dataset.inlineIndex);
+      if (!Number.isInteger(index) || !this.removeAt(resolved.nodeKey, index)) return;
+      removing = true;
+      document.getSelection()?.removeAllRanges();
+      this.editor.selections.removeOccurrence(resolved.nodeKey);
+      // Own this gesture before cross-Block selection or the Control-click menu.
+      stop(event);
+    };
+    const suppressRemovalGesture = (event: MouseEvent) => { if (removing && event.ctrlKey) stop(event); };
     const capture = (event?: PointerEvent) => queueMicrotask(() => {
       if (!this.active() && event?.ctrlKey) {
         const resolved = this.editor.mounts.resolveEvent(event);
@@ -203,7 +231,10 @@ export class GroupSelection {
       }
       this.captureCurrent();
     });
-    const pointerup = (event: PointerEvent) => { if (this.active() || event.ctrlKey) capture(event); };
+    const pointerup = (event: PointerEvent) => {
+      if (removing) { stop(event); return; }
+      if (this.active() || event.ctrlKey) capture(event);
+    };
     const keyup = (event: KeyboardEvent) => { if (this.active() && event.shiftKey) capture(); };
     const keydown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || (!this.active() && !this.editor.showHide.selectionActive())) return;
@@ -211,11 +242,17 @@ export class GroupSelection {
       event.stopImmediatePropagation();
       this.cancel();
     };
+    document.addEventListener("pointerdown", pointerdown, true);
     document.addEventListener("pointerup", pointerup, true);
+    document.addEventListener("click", suppressRemovalGesture, true);
+    document.addEventListener("contextmenu", suppressRemovalGesture, true);
     document.addEventListener("keyup", keyup, true);
     document.addEventListener("keydown", keydown, true);
     const dispose = () => {
+      document.removeEventListener("pointerdown", pointerdown, true);
       document.removeEventListener("pointerup", pointerup, true);
+      document.removeEventListener("click", suppressRemovalGesture, true);
+      document.removeEventListener("contextmenu", suppressRemovalGesture, true);
       document.removeEventListener("keyup", keyup, true);
       document.removeEventListener("keydown", keydown, true);
       if (this.disposeInput === dispose) this.disposeInput = undefined;
