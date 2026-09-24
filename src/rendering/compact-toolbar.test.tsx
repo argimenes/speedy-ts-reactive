@@ -44,13 +44,12 @@ describe("compact editor chrome", () => {
     expect(document.activeElement).toBe(tree);
   });
 
-  it("keeps Group, Show/Hide and Clear together in the Selection toolset", () => {
+  it("keeps Show/Hide in Selection without Group or Clear buttons", () => {
     const { host, select, choose } = fixture();
     select();
-    toolbarControl(host, '[aria-label="Group text ranges"]', "Selection").click();
     const toggle = toolbarControl(host, '[aria-label="Show / hide"]', "Selection");
     expect([...toggle.parentElement!.querySelectorAll<HTMLElement>('[data-tool-id]')].map(button => button.dataset.toolId))
-      .toEqual(["group-selection", "style/show-hide", "group-clear"]);
+      .toEqual(["style/show-hide"]);
     for (const name of ["Typography", "Annotations", "Visual effects"]) {
       choose(name);
       host.querySelector<HTMLButtonElement>('.compact-toolbar__more')!.click();

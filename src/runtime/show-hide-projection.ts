@@ -1,6 +1,7 @@
 import { createStore } from "solid-js/store";
 import type { NodeKey } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
+import type { SearchRange } from "./text-search";
 
 /** Per-editor, per-Document projection state. Canonical text and annotations are unchanged. */
 export class ShowHideProjection {
@@ -106,6 +107,28 @@ export class ShowHideProjection {
       this.setRevealed(key, true);
       this.setSelections(key, undefined);
     }
+  }
+
+  /** Resolve only current membership, using annotation positions after any edits. */
+  selectedRanges(nodeKey: NodeKey): SearchRange[] {
+    const node = this.editor.node(nodeKey), key = this.documentKey(nodeKey);
+    const projection = node && this.editor.projections.get(node.viewId);
+    const tokens = key && this.selections[key];
+    if (!projection || !tokens) return [];
+    const ranges: SearchRange[] = [];
+    for (const candidate of Object.values(projection.state.nodes)) {
+      if (candidate.viewType !== "standoff-editor-block" || this.documentKey(candidate.key) !== key) continue;
+      const properties = candidate.payload.standoffProperties as
+        { id?: string; type: string; start?: number; end?: number; isDeleted?: boolean }[] | undefined;
+      properties?.forEach((property, index) => {
+        if (property.type !== "style/show-hide" || property.isDeleted || property.start === undefined || property.end === undefined ||
+          !tokens.includes(this.token(candidate.key, property.id ?? index))) return;
+        ranges.push({ nodeKey: candidate.key, contentKey: candidate.contentKey, placementKey: candidate.placementKey,
+          version: this.editor.repository.readState().contents[candidate.contentKey].inlineRevision,
+          start: property.start, end: property.end + 1, coordinate: "cell" });
+      });
+    }
+    return ranges;
   }
 
   toggle(nodeKey: NodeKey): boolean {

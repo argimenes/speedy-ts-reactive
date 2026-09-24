@@ -74,6 +74,45 @@ describe("manual grouped ranges", () => {
     expect(editor.encodeDocument()).toEqual(before);
   });
 
+  it("deletes overlapping and disjoint ranges once, preserves empty Blocks, and undoes atomically", () => {
+    const { editor, root, a, b } = fixture();
+    editor.commands.setPayloadField(a.key, "standoffProperties", [{ id: "bold", type: "style/bold", start: 2, end: 8 }]);
+    const before = editor.encodeDocument();
+    editor.groupSelection.begin(root);
+    editor.groupSelection.add(a.key, 1, 4);
+    editor.groupSelection.add(a.key, 3, 6);
+    editor.groupSelection.add(a.key, 8, 10);
+    editor.groupSelection.add(b.key, 0, 11);
+    expect(editor.groupSelection.deleteSelected(a.key)).toBe(true);
+    expect(editor.encodeDocument().children!.map(block => block.text)).toEqual(["abe", ""]);
+    expect(editor.groupSelection.active()).toBe(false);
+    expect(editor.groupSelection.ranges()).toHaveLength(0);
+    editor.repository.undo(); expect(editor.encodeDocument()).toEqual(before);
+    editor.repository.redo(); expect(editor.encodeDocument().children!.map(block => block.text)).toEqual(["abe", ""]);
+  });
+
+  it("deletes hidden group membership but never an excluded or cancelled range", () => {
+    const { editor, root, a, b } = fixture();
+    editor.groupSelection.begin(root);
+    editor.groupSelection.add(a.key, 0, 5);
+    editor.groupSelection.apply("style/show-hide");
+    editor.groupSelection.cancel();
+    editor.groupSelection.begin(root);
+    editor.groupSelection.add(a.key, 6, 10);
+    editor.groupSelection.add(b.key, 0, 5);
+    editor.groupSelection.add(b.key, 6, 11);
+    editor.groupSelection.apply("style/show-hide");
+    editor.showHide.toggle(root);
+    expect(editor.groupSelection.removeAt(b.key, 7)).toBe(true);
+    editor.showHide.toggle(root);
+    const before = editor.encodeDocument();
+    expect(editor.groupSelection.deleteSelected(a.key)).toBe(true);
+    expect(editor.encodeDocument().children!.map(block => block.text)).toEqual(["alpha ", " delta"]);
+    expect(editor.showHide.selectionActive()).toBe(false);
+    editor.repository.undo(); expect(editor.encodeDocument()).toEqual(before);
+    expect(editor.groupSelection.deleteSelected(a.key)).toBe(false);
+  });
+
   it("keeps Show/Hide projection state outside the canonical document", () => {
     const { editor, root, a } = fixture();
     const before = editor.encodeDocument();

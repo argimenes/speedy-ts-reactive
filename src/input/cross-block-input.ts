@@ -89,13 +89,14 @@ export class CrossBlockInput {
         this.editor.selections.setPrimary(node.key, node.contentKey, node.viewId, anchor.boundary.index, head.boundary.index);
         return;
       }
+      if (!this.editor.crossText.enabled()) return;
       this.editor.crossText.set(anchor, head);
       this.document.getSelection()?.removeAllRanges();
       this.prepareInput();
     } catch (error) { this.editor.crossText.notice(error instanceof Error ? error.message : String(error)); }
   }
   private down = (event: PointerEvent) => {
-    if (!this.editor.crossText.enabled() || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey) return;
+    if ((!this.editor.crossText.enabled() && !this.editor.groupSelection.pointerSelecting()) || event.button !== 0 || event.metaKey || event.altKey) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target?.closest('.document-style-bar, [data-cross-text-controls]')) return;
     const prior = this.editor.crossText.range();
@@ -205,17 +206,18 @@ export class CrossBlockInput {
       }
     }
     if (!next) return !!this.editor.crossText.range();
+    if (!this.editor.crossText.enabled() && next.occurrenceKey !== anchor.occurrenceKey) return true;
     // Own the complete horizontal Shift-arrow gesture, not only its final step
     // across a host boundary. Native extension can clamp before reporting that
     // boundary (particularly during key repeat). Ordinary caret editing remains
     // native; the DOM selection still represents the local part of this gesture.
-    if (!this.editor.crossText.range() && next.occurrenceKey === anchor.occurrenceKey && direction !== "Left" && direction !== "Right") return false;
+    if (!this.editor.groupSelection.keyboardSelecting() && !this.editor.crossText.range() && next.occurrenceKey === anchor.occurrenceKey && direction !== "Left" && direction !== "Right") return false;
     this.select(anchor, next);
     this.editor.mounts.get(next.occurrenceKey)?.root.scrollIntoView?.({ block: "nearest" });
     return true;
   }
   private key = (event: KeyboardEvent) => {
-    if (!this.editor.crossText.enabled()) return;
+    if (!this.editor.crossText.enabled() && !this.editor.groupSelection.keyboardSelecting()) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target !== this.input && target?.closest('input, textarea, select, .document-style-bar, [data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = target === this.input && this.editor.crossText.range() ? { nodeKey: this.editor.crossText.range()!.anchor.occurrenceKey, handle: this.editor.mounts.get(this.editor.crossText.range()!.anchor.occurrenceKey)! } : this.editor.mounts.resolveEvent(event);

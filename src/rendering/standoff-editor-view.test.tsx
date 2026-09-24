@@ -83,7 +83,7 @@ describe("StandoffEditorView", () => {
     editor.selections.setPrimary(owner.key, owner.contentKey, owner.viewId, 0, 3);
     editor.selections.addCaret(owner.key, owner.contentKey, owner.viewId, 4);
     const press = () => {
-      const event = new KeyboardEvent("keydown", { key: side === "left" ? "ArrowLeft" : "ArrowRight", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true });
+      const event = new KeyboardEvent("keydown", { key: side === "left" ? "l" : "r", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true });
       flow.dispatchEvent(event); return event;
     };
     expect(press().defaultPrevented).toBe(true); await Promise.resolve();
@@ -107,12 +107,12 @@ describe("StandoffEditorView", () => {
     const { editor, host } = renderBlocks([{ type: "standoff-editor-block", text: "Text" }, { type: "plain-text-block", text: "Native" }]);
     const flow = host.querySelector<HTMLElement>(".reactive-standoff-flow")!;
     for (const extra of [{ isComposing: true }, { altKey: true }, { metaKey: true }, { ctrlKey: false }, { shiftKey: false }]) {
-      const event = new KeyboardEvent("keydown", { key: "ArrowLeft", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true, ...extra });
+      const event = new KeyboardEvent("keydown", { key: "l", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true, ...extra });
       flow.dispatchEvent(event); expect(event.defaultPrevented).toBe(false);
     }
-    const native = new KeyboardEvent("keydown", { key: "ArrowLeft", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true });
+    const native = new KeyboardEvent("keydown", { key: "l", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true });
     host.querySelector("textarea")!.dispatchEvent(native); expect(native.defaultPrevented).toBe(false);
-    flow.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", ctrlKey: true, shiftKey: true, repeat: true, bubbles: true, cancelable: true }));
+    flow.dispatchEvent(new KeyboardEvent("keydown", { key: "l", ctrlKey: true, shiftKey: true, repeat: true, bubbles: true, cancelable: true }));
     expect(editor.repository.state.revision).toBe(0);
   });
 
@@ -123,7 +123,7 @@ describe("StandoffEditorView", () => {
     const source = host.querySelectorAll<HTMLElement>('[data-block-type="standoff-editor-block"]')[1];
     const flow = source.querySelector<HTMLElement>(".reactive-standoff-flow")!;
     flow.focus();
-    flow.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }));
+    flow.dispatchEvent(new KeyboardEvent("keydown", { key: "r", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }));
     await Promise.resolve();
     expect(document.activeElement).toBe(source.querySelector('[data-relation-name="rightMargin"] .reactive-standoff-flow'));
     expect(host.querySelectorAll('[data-relation-name="rightMargin"]')).toHaveLength(2);
@@ -192,7 +192,7 @@ describe("StandoffEditorView", () => {
     expect(saved.text).toBe("abc"); expect(saved.standoffProperties).toEqual(initial);
   });
 
-  it("restores range highlights and outlines across Blocks when Show/Hide reveals text", async () => {
+  it("restores static range highlights across Blocks when Show/Hide reveals text", async () => {
     const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
     Object.defineProperty(Range.prototype, "getClientRects", {
       configurable: true,
@@ -219,8 +219,8 @@ describe("StandoffEditorView", () => {
       editor.showHide.toggle(projection.state.rootKey);
       await settle();
       expect(host.querySelectorAll(".reactive-standoff-cell--concealed")).toHaveLength(0);
-      expect(paths()).toHaveLength(8); // Two fragments, each highlighted and outlined, in two Blocks.
-      expect(paths().filter(path => path.hasAttribute("stroke-dasharray"))).toHaveLength(4);
+      expect(paths()).toHaveLength(4); // Two highlighted fragments in each Block.
+      expect(paths().filter(path => path.hasAttribute("stroke-dasharray"))).toHaveLength(0);
       expect(paths().some(path => path.getAttribute("data-decoration-key")?.includes("deleted"))).toBe(false);
       expect(editor.groupSelection.active()).toBe(false);
       editor.showHide.toggle(projection.state.rootKey);

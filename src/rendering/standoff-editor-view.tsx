@@ -447,7 +447,6 @@ export function StandoffEditorView(props: BlockViewProps) {
       const fragments = fragmentsFor(annotation.start, annotation.end);
       selected.push(...[
         ...highlightShapes(key, fragments, "#8bd7c4"),
-        ...outlineShapes(key, fragments, "#167565"),
       ].map(shape => ({ ...shape, propertyType: "editor/show-hide-selection" })));
     });
     for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search" && !overlay.entityCandidates) {
@@ -482,9 +481,6 @@ export function StandoffEditorView(props: BlockViewProps) {
     for (const decoration of searchVisible ? editor.decorations.nodes[props.nodeKey] ?? [] : []) {
       const fragments = rangeFragments(flow, surface, decoration.range.start, decoration.range.end - 1);
       search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
-      if (decoration.type === "editor/group-selection") {
-        search.push(...outlineShapes(`${decoration.id}:group`, fragments, "#167565").map(shape => ({ ...shape, propertyType: decoration.type })));
-      }
       if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
       const position = decoration.excludable && origin ? exclusionPosition(fragments,origin,{ width: window.innerWidth,height: window.innerHeight }) : undefined;
       if (position) controls.push({ owner: decoration.owner,id: decoration.id,...position,active: decoration.active,fragments });

@@ -135,17 +135,6 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     if (type === "style/show-hide") collapseAfterShowHide(node.key, end + 1);
     else restore();
   };
-  const cancelGrouping = () => { editor.groupSelection.cancel(); savedRange = undefined; setNotice(""); };
-  const toggleGrouping = () => {
-    if (editor.groupSelection.active()) { cancelGrouping(); return; }
-    capture();
-    const node = target(), range = savedRange;
-    editor.groupSelection.begin(props.scopeKey);
-    if (node && range && range.anchor !== range.head && editor.groupSelection.add(node.key, range.anchor, range.head)) editor.selections.removeOccurrence(node.key);
-    document.getSelection()?.removeAllRanges();
-    savedRange = undefined;
-    setNotice("");
-  };
   const showHide = () => {
     if (editor.groupSelection.active()) { annotate("style/show-hide"); return; }
     capture();
@@ -243,20 +232,18 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     const key = props.scopeKey ?? targetKey() ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey;
     return !!key && editor.showHide.shows(key);
   };
-  const canClearSelection = () => editor.groupSelection.active() || editor.showHide.selectionActive(props.scopeKey ?? targetKey());
   const typographyTypes = new Set(["style/bold", "style/italics", "style/underline", "style/strikethrough", "style/superscript", "style/subscript", "style/uppercase", "style/blur"]);
   const markupTypes = new Set(["style/highlight", "style/highlighter", "style/show-hide"]);
   const deferredTypes = new Set(["style/flip", "style/mirror"]);
   const tools: CompactTool[] = [
     { id: "colours", label: "Text colour and fill", glyph: "Colour / Fill", width: 104, toolset: "Visual effects", panel: ColourControls },
-    { id: "group-selection", label: "Group text ranges", glyph: "Group", description: `${editor.bindings.label("group.toggle")}. Control-click a selected range to remove it.`, width: 68, toolset: "Selection", pressed: editor.groupSelection.active, run: toggleGrouping },
     ...(editor.features.textSuperposition ? [{ id: "superposition.add", label: "Add alternative", glyph: "Alternative", width: 96, toolset: "Annotations" as const, run: addAlternative }] : []),
-    ...annotationTools.flatMap(([type, label, glyph]): CompactTool[] => [{
+    ...annotationTools.map(([type, label, glyph]): CompactTool => ({
       id: type, label, glyph,
       toolset: type === "style/show-hide" ? "Selection" : typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
-      description: deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined,
+      description: type === "style/show-hide" ? "Hold Control while selecting to group. Control-click removes a range. Esc cancels. Delete removes grouped text." : deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined,
       width: typographyTypes.has(type) ? 36 : 88, pressed: type === "style/show-hide" ? hiddenTextRevealed : undefined, run: () => type === "style/show-hide" ? showHide() : annotate(type),
-    }, ...(type === "style/show-hide" ? [{ id: "group-clear", label: "Clear group selection", glyph: "Clear", description: "Cancel grouping (Esc)", width: 60, toolset: "Selection" as const, visible: canClearSelection, run: cancelGrouping }] : [])]),
+    })),
     ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
     ...[["left", "Align left", "≡"], ["center", "Align centre", "≣"], ["right", "Align right", "≡"], ["justify", "Justify", "☰"]].map(([value, label, glyph]) => ({ id: `align-${value}`, label, glyph, toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/alignment", value) })),
     { id: "indent", label: "Increase indent", glyph: "⇥", toolset: "Typography", disabled: hasCrossRange, run: () => indent(1) },
@@ -273,7 +260,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     </fieldset></Show>
     <Show when={editor.groupSelection.active()}><fieldset><legend>Grouped ranges</legend>
       <span>{editor.groupSelection.ranges().length} retained</span>
-      <button type="button" onClick={cancelGrouping}>Cancel grouping</button>
+      <span>Hold Control to add ranges. Esc cancels. Delete removes grouped text.</span>
     </fieldset></Show>
     <fieldset><legend>Editor options</legend><SelectionOption /></fieldset>
   </>;
@@ -285,7 +272,6 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     </Show>
     <Show when={editor.features.compactEditorChrome} fallback={<>
     <Show when={editor.features.textSuperposition}><button type="button" title="Add alternative" onClick={addAlternative}>Alternative</button></Show>
-    <button type="button" aria-label="Group text ranges" aria-pressed={editor.groupSelection.active()} title={`Group text ranges (${editor.bindings.label("group.toggle")})`} onClick={toggleGrouping}>Group</button>
     <DocumentActions />
     <HistoryAction />
     <Show when={editor.blockHistory.state.recordingError || editor.blockHistory.state.recording?.phase === "stopped" || editor.blockHistory.state.recording?.phase === "offline"}>
@@ -296,7 +282,6 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <LinkedControls />
     <For each={annotationTools}>{([type, label, glyph]) => <>
       <button type="button" title={label} aria-label={label} aria-pressed={type === "style/show-hide" ? hiddenTextRevealed() : undefined} data-annotation-type={type} onClick={() => type === "style/show-hide" ? showHide() : annotate(type)}>{glyph}</button>
-      <Show when={type === "style/show-hide" && canClearSelection()}><button type="button" aria-label="Clear group selection" title="Cancel grouping (Esc)" onClick={cancelGrouping}>Clear</button></Show>
     </>}</For>
     <button type="button" aria-label="Entity reference" title="Link selected text to an entity" onClick={() => annotate("codex/entity-reference")}>Entity reference</button>
     <ColourControls />

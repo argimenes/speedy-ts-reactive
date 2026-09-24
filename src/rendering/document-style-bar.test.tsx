@@ -8,7 +8,7 @@ import { toolbarControl } from "./toolbar-test-helpers";
 import { standoffStyleSchemas } from "./standoff-styles";
 
 const cleanup: (() => void)[] = [];
-afterEach(() => { while (cleanup.length) cleanup.pop()!(); document.body.replaceChildren(); });
+afterEach(() => { while (cleanup.length) cleanup.pop()!(); document.body.replaceChildren(); localStorage.clear(); });
 function fixture(compactEditorChrome: boolean) {
   const editor = new ReactiveEditor({ type: "document-window-block", children: [{ type: "document-block", children: [
     { id: "p", type: "standoff-editor-block", text: "one 😀 two", standoffProperties: [{ id: "entity", type: "codex/entity-reference", start: 0, end: 2, value: "entity-id" }], blockProperties: [{ type: "block/alignment", value: "right" }] },
@@ -32,7 +32,19 @@ function fixture(compactEditorChrome: boolean) {
     const button = toolbarControl(host, `button[title="${title}"]`);
     button.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true })); button.click();
   };
-  return { editor, host, node, flow, select, click };
+  const pointer = (target: HTMLElement, type: string, ctrlKey: boolean, clientX = 0) => {
+    const event = new MouseEvent(type, { button: 0, buttons: type === "pointerup" ? 0 : 1, ctrlKey, clientX, bubbles: true, cancelable: true });
+    target.dispatchEvent(event); return event;
+  };
+  const group = async (start: number, end: number, id = "p") => {
+    const target = select(start, start, id);
+    pointer(target, "pointerdown", true);
+    pointer(target, "pointermove", true, 10);
+    select(start, end, id);
+    pointer(target, "pointerup", true, 10);
+    await Promise.resolve();
+  };
+  return { editor, host, node, flow, select, click, pointer, group };
 }
 describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", compact => {
   const setup = () => fixture(compact);
@@ -86,196 +98,154 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     click("Clear formatting"); expect(node().payload.standoffProperties).toEqual([{ id: "entity", type: "codex/entity-reference", start: 0, end: 2, value: "entity-id" }]);
     editor.repository.undo(); expect((node().payload.standoffProperties as any[]).some(p => p.type === "style/bold")).toBe(true);
   });
-  it("offers Clear beside Show/Hide only during grouping and cancels with Clear or Escape", async () => {
-    const { host, select, click, editor } = setup();
-    const showHide = () => toolbarControl(host, 'button[title="Show / hide"]', "Selection");
-    const clearButton = () => document.querySelector<HTMLButtonElement>('[aria-label="Clear group selection"]');
-    showHide();
-    expect(clearButton()).toBeNull();
-    for (const action of ["clear", "escape"]) {
-      select(0, 5); click("Group text ranges");
-      select(0, 5, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
-      await Promise.resolve();
-      expect(editor.groupSelection.ranges()).toHaveLength(2);
-      const before = editor.repository.snapshot(), revision = editor.repository.state.revision;
-      const toggle = showHide(), clear = clearButton()!;
-      expect(clear).not.toBeNull();
-      expect(toggle.nextElementSibling).toBe(clear);
-      expect(clear.textContent).toContain("Clear");
-      if (action === "clear") clear.click();
-      else clear.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-      expect(editor.groupSelection.active()).toBe(false);
-      expect(editor.groupSelection.ranges()).toHaveLength(0);
-      expect(Object.values(editor.decorations.nodes).flat().filter(range => range.owner === editor.groupSelection.owner)).toHaveLength(0);
-      expect(clearButton()).toBeNull();
-      expect(editor.repository.state.revision).toBe(revision);
-      expect(editor.repository.snapshot()).toEqual(before);
-    }
-  });
-
-  it("keeps Clear after Hide and lets Clear or Escape dismiss revealed group outlines", async () => {
+  it("collects only Control-held gestures, excludes early release, and keeps static highlights", async () => {
+    const { editor, host, group, select, pointer, click } = setup();
     const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
-    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true,
-      value: () => [{ left: 10, top: 10, width: 40, height: 16 }] });
+    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [{ left: 10, top: 10, width: 40, height: 16 }] });
     cleanup.push(() => descriptor ? Object.defineProperty(Range.prototype, "getClientRects", descriptor) : Reflect.deleteProperty(Range.prototype, "getClientRects"));
-    const { host, node, select, click, editor } = setup();
-    const settle = () => new Promise(resolve => setTimeout(resolve, 25));
-    const clear = () => toolbarControl(host, '[aria-label="Clear group selection"]', "Selection");
-    const outlines = () => host.querySelectorAll('[data-property-type="editor/show-hide-selection"][stroke-dasharray]');
-    select(0, 2); click("Group text ranges");
-    select(0, 3, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+    const flow = select(0, 0);
+    pointer(flow, "pointerdown", false); select(0, 2); pointer(flow, "pointerup", true);
     await Promise.resolve();
-    click("Show / hide");
     expect(editor.groupSelection.active()).toBe(false);
-    expect(editor.showHide.selectionActive(node().key)).toBe(true);
-    expect(clear()).not.toBeNull();
-    const before = editor.repository.snapshot();
-    click("Show / hide"); await settle();
-    expect(outlines()).toHaveLength(2);
-    click("Show / hide"); await settle();
-    expect(outlines()).toHaveLength(0);
-    expect(clear()).not.toBeNull();
-    clear().click(); await settle();
-    expect(editor.showHide.shows(node().key)).toBe(true);
-    expect(host.querySelectorAll(".reactive-standoff-cell--concealed")).toHaveLength(0);
-    expect(document.querySelector('[aria-label="Clear group selection"]')).toBeNull();
-    click("Show / hide"); click("Show / hide"); await settle();
-    expect(outlines()).toHaveLength(2);
-    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
-    clear().dispatchEvent(escape); await settle();
-    expect(escape.defaultPrevented).toBe(true);
-    expect(outlines()).toHaveLength(0);
-    expect(editor.showHide.shows(node().key)).toBe(true);
-    expect(host.querySelectorAll(".reactive-standoff-cell--concealed")).toHaveLength(0);
-    expect(document.querySelector('[aria-label="Clear group selection"]')).toBeNull();
-    click("Show / hide"); click("Show / hide"); await settle();
-    expect(outlines()).toHaveLength(2);
-    clear().click(); await settle();
-    expect(outlines()).toHaveLength(0);
-    expect(editor.showHide.shows(node().key)).toBe(true);
-    expect(editor.repository.snapshot()).toEqual(before);
-  });
-
-  it("only hides and outlines the new group after the previous group is cleared", async () => {
-    const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
-    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true,
-      value: () => [{ left: 10, top: 10, width: 40, height: 16 }] });
-    cleanup.push(() => descriptor ? Object.defineProperty(Range.prototype, "getClientRects", descriptor) : Reflect.deleteProperty(Range.prototype, "getClientRects"));
-    const { host, select, click, editor } = setup();
-    const settle = () => new Promise(resolve => setTimeout(resolve, 25));
-    const concealed = (id: string) => host.querySelectorAll(`.reactive-standoff-block[data-block-id="${id}"] .reactive-standoff-cell--concealed`);
-    const outlines = (id: string) => host.querySelectorAll(`.reactive-standoff-block[data-block-id="${id}"] [data-property-type="editor/show-hide-selection"][stroke-dasharray]`);
-    select(0, 2); click("Group text ranges"); click("Show / hide");
-    click("Show / hide"); await settle();
-    expect(outlines("p")).toHaveLength(1);
-    toolbarControl(host, '[aria-label="Clear group selection"]', "Selection").click();
-    expect(editor.groupSelection.ranges()).toHaveLength(0);
-
-    select(0, 3, "q"); click("Group text ranges"); click("Show / hide"); await settle();
-    expect(concealed("p")).toHaveLength(0);
-    expect(concealed("q")).toHaveLength(3);
-    expect(outlines("p")).toHaveLength(0);
-    click("Show / hide"); await settle();
-    expect(concealed("p")).toHaveLength(0);
-    expect(concealed("q")).toHaveLength(0);
-    expect(outlines("p")).toHaveLength(0);
-    expect(outlines("q")).toHaveLength(1);
-    click("Show / hide");
-    expect(concealed("p")).toHaveLength(0);
-    expect(concealed("q")).toHaveLength(3);
-    toolbarControl(host, '[aria-label="Clear group selection"]', "Selection").dispatchEvent(
-      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    await settle();
-    expect(concealed("p")).toHaveLength(0);
-    expect(concealed("q")).toHaveLength(0);
-    expect(outlines("p")).toHaveLength(0);
-    expect(outlines("q")).toHaveLength(0);
-    expect(editor.showHide.selectionActive()).toBe(false);
-    expect(document.querySelector('[aria-label="Clear group selection"]')).toBeNull();
-  });
-
-  it("Control-click removes one collected or revealed range without reopening a menu or recapturing it", async () => {
-    const { host, node, select, click, editor } = setup();
-    select(0, 2); click("Group text ranges");
-    select(0, 3, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+    pointer(flow, "pointerdown", true); select(0, 2);
+    flow.dispatchEvent(new KeyboardEvent("keyup", { key: "Control", bubbles: true }));
+    pointer(flow, "pointerup", true); await Promise.resolve();
+    expect(editor.groupSelection.active()).toBe(false);
+    await group(0, 2); await group(0, 3, "q");
+    pointer(flow, "pointerdown", false); select(6, 9); pointer(flow, "pointerup", false);
     await Promise.resolve();
     expect(editor.groupSelection.ranges()).toHaveLength(2);
-    const crossTextEnabled = editor.crossText.enabled();
-    cleanup.push(() => editor.crossText.enable(crossTextEnabled));
-    editor.crossText.enable(true);
-    const remove = async (id: string, index: number) => {
-      const cell = host.querySelector<HTMLElement>(`.reactive-standoff-block[data-block-id="${id}"] [data-inline-index="${index}"]`)!;
-      const before = editor.repository.snapshot();
-      for (const type of ["pointerdown", "contextmenu", "pointerup", "click"]) {
-        const event = new MouseEvent(type, { ctrlKey: true, button: 0, bubbles: true, cancelable: true });
-        cell.dispatchEvent(event);
-        expect(event.defaultPrevented).toBe(true);
-      }
-      await Promise.resolve();
-      expect(editor.overlays.overlays).toHaveLength(0);
-      expect(editor.repository.snapshot()).toEqual(before);
-    };
-    await remove("p", 1);
-    expect(editor.groupSelection.ranges()).toHaveLength(1);
-    expect(editor.groupSelection.ranges()[0].nodeKey).not.toBe(node().key);
-    expect(editor.decorations.nodes[node().key] ?? []).toHaveLength(0);
-    expect(editor.crossText.range()).toBeUndefined();
-
-    // Ordinary selection can add the removed range back to the group.
-    select(0, 2).dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
-    select(0, 2).dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
-    await Promise.resolve();
-    expect(editor.groupSelection.ranges()).toHaveLength(2);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    expect(host.querySelectorAll('[data-property-type="editor/group-selection"]')).toHaveLength(2);
+    expect(host.querySelector('[data-property-type="editor/group-selection"][stroke-dasharray]')).toBeNull();
     click("Show / hide"); click("Show / hide");
-    const property = (node().payload.standoffProperties as { id: string; type: string }[]).find(p => p.type === "style/show-hide")!;
-    expect(editor.showHide.selectionActive(node().key, property.id)).toBe(true);
-    await remove("p", 1);
-    expect(editor.showHide.selectionActive(node().key, property.id)).toBe(false);
-    click("Show / hide");
-    expect(host.querySelectorAll('.reactive-standoff-block[data-block-id="p"] .reactive-standoff-cell--concealed')).toHaveLength(0);
-    expect(host.querySelectorAll('.reactive-standoff-block[data-block-id="q"] .reactive-standoff-cell--concealed')).toHaveLength(3);
-    click("Show / hide");
-    await remove("q", 1);
-    expect(editor.showHide.selectionActive()).toBe(false);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    expect(host.querySelectorAll('[data-property-type="editor/show-hide-selection"]')).toHaveLength(2);
+    expect(host.querySelector('[data-property-type="editor/show-hide-selection"][stroke-dasharray]')).toBeNull();
+    expect(document.querySelector('[aria-label="Group text ranges"], [aria-label="Clear group selection"]')).toBeNull();
+  });
+
+  it.each(["Shift", "Control"])("collects one keyboard range when %s is released, including across Blocks", release => {
+    const { editor, select } = setup();
+    editor.crossText.enable(true);
+    const flow = select(7, 7);
+    for (let i = 0; i < 5; i++) {
+      (document.activeElement ?? flow).dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", ctrlKey: true, shiftKey: true, repeat: i > 0, bubbles: true, cancelable: true }));
+      expect(editor.groupSelection.active()).toBe(false);
+    }
+    expect(editor.crossText.range()).toBeDefined();
+    document.activeElement!.dispatchEvent(new KeyboardEvent("keyup", { key: release, ctrlKey: release === "Shift", shiftKey: release === "Control", bubbles: true }));
+    expect(editor.groupSelection.ranges()).toHaveLength(2);
+    expect(editor.groupSelection.ranges().map(range => [range.start, range.end])).toEqual([[7, 9], [0, 2]]);
+    expect(editor.crossText.range()).toBeUndefined();
+    document.activeElement!.dispatchEvent(new KeyboardEvent("keyup", { key: release === "Shift" ? "Control" : "Shift", bubbles: true }));
+    expect(editor.groupSelection.ranges()).toHaveLength(2);
+    expect(editor.encodeDocument().children?.[0].children?.[0].relation).toBeUndefined();
+  });
+
+  it("collects successive local keyboard gestures without enabling cross-Block selection", () => {
+    const { editor, select } = setup();
+    const flow = select(0, 0);
+    expect(editor.crossText.enabled()).toBe(false);
+    for (let gesture = 0; gesture < 2; gesture++) {
+      for (let step = 0; step < 2; step++) flow.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "ArrowRight", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true,
+      }));
+      flow.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", ctrlKey: true, bubbles: true }));
+    }
+    expect(editor.groupSelection.ranges().map(range => [range.start, range.end])).toEqual([[0, 2], [2, 4]]);
+    expect(editor.crossText.enabled()).toBe(false);
+  });
+
+  it("does not capture a keyboard selection started without Control or abandoned on blur", () => {
+    const { editor, select } = setup();
+    const flow = select(0, 0);
+    const extend = (ctrlKey: boolean) => flow.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, ctrlKey, bubbles: true }));
+    extend(false); select(0, 1); extend(true); select(0, 2);
+    flow.dispatchEvent(new KeyboardEvent("keyup", { key: "Control", shiftKey: true, bubbles: true }));
+    expect(editor.groupSelection.active()).toBe(false);
+    select(0, 0); extend(true); select(0, 2); window.dispatchEvent(new Event("blur"));
+    flow.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", ctrlKey: true, bubbles: true }));
     expect(editor.groupSelection.active()).toBe(false);
   });
 
-  it("collects ranges across Blocks, applies Highlight, cancels with Escape, and toggles the Show/Hide projection", async () => {
-    const { host, node, select, click, editor } = setup();
-    select(0, 0); click("Group text ranges");
-    expect(editor.groupSelection.active()).toBe(true);
-    select(0, 5).dispatchEvent(new MouseEvent("pointerup", { bubbles: true })); await Promise.resolve();
-    select(0, 5, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true })); await Promise.resolve();
+  it("Control-click removes only its range, while dragging from a highlight adds a range", async () => {
+    const { host, node, editor, group, pointer, select, click } = setup();
+    await group(0, 2); await group(0, 3, "q");
+    const cell = host.querySelector<HTMLElement>('[data-block-id="p"] [data-inline-index="1"]')!;
+    pointer(cell, "pointerdown", true);
     expect(editor.groupSelection.ranges()).toHaveLength(2);
-    click("Highlight");
-    expect(editor.groupSelection.active()).toBe(false);
-    expect(node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({ type: "style/highlight", start: 0, end: 4 })]));
-    const q = Object.values(editor.projections.get("format-test")!.state.nodes).find(candidate => candidate.payload.id === "q")!;
-    expect(q.payload.standoffProperties).toEqual([expect.objectContaining({ type: "style/highlight", start: 0, end: 4 })]);
-
-    select(6, 6); click("Group text ranges");
-    select(6, 9).dispatchEvent(new MouseEvent("pointerup", { bubbles: true })); await Promise.resolve();
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    expect(editor.groupSelection.active()).toBe(false);
-    expect((node().payload.standoffProperties as any[]).filter(property => property.start === 6)).toHaveLength(0);
-
-    select(6, 9).dispatchEvent(new MouseEvent("pointerup", { bubbles: true, ctrlKey: true })); await Promise.resolve();
-    expect(editor.groupSelection.active()).toBe(true);
+    pointer(cell, "pointerup", true); await Promise.resolve();
+    const menu = new MouseEvent("contextmenu", { ctrlKey: true, button: 2, bubbles: true, cancelable: true }); cell.dispatchEvent(menu);
+    expect(menu.defaultPrevented).toBe(true);
+    expect(editor.overlays.overlays).toHaveLength(0);
     expect(editor.groupSelection.ranges()).toHaveLength(1);
-    editor.groupSelection.cancel();
+    await group(0, 2);
+    pointer(cell, "pointerdown", true); pointer(cell, "pointermove", true, 12); select(1, 5); pointer(cell, "pointerup", true, 12);
+    await Promise.resolve();
+    expect(editor.groupSelection.ranges()).toHaveLength(3);
+    click("Show / hide"); click("Show / hide");
+    pointer(cell, "pointerdown", true); pointer(cell, "pointerup", true); await Promise.resolve();
+    const properties = node().payload.standoffProperties as { id: string; type: string; start: number }[];
+    const removed = properties.find(p => p.type === "style/show-hide" && p.start === 1)!;
+    expect(editor.showHide.selectionActive(node().key, removed.id)).toBe(false);
+  });
 
-    const shortcutTarget = select(3, 5);
-    shortcutTarget.dispatchEvent(new KeyboardEvent("keydown", { key: ";", ctrlKey: true, bubbles: true, cancelable: true }));
-    shortcutTarget.dispatchEvent(new KeyboardEvent("keydown", { key: "g", bubbles: true, cancelable: true }));
-    expect(editor.groupSelection.active()).toBe(true);
-    expect(editor.groupSelection.ranges()).toHaveLength(1);
-    editor.groupSelection.cancel();
+  it("Escape restores hidden text and a subsequent group cannot affect cancelled ranges", async () => {
+    const { editor, host, group, click, select } = setup();
+    await group(0, 2); click("Show / hide");
+    const escape = () => document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    escape();
+    expect(editor.showHide.selectionActive()).toBe(false);
+    expect(host.querySelectorAll('.reactive-standoff-cell--concealed')).toHaveLength(0);
+    await group(0, 3, "q"); click("Show / hide");
+    expect(host.querySelectorAll('[data-block-id="p"] .reactive-standoff-cell--concealed')).toHaveLength(0);
+    expect(host.querySelectorAll('[data-block-id="q"] .reactive-standoff-cell--concealed')).toHaveLength(3);
+    select(0, 0, "q"); escape();
+    expect(editor.groupSelection.ranges()).toHaveLength(0);
+    expect(host.querySelectorAll('.reactive-standoff-cell--concealed')).toHaveLength(0);
+  });
 
-    select(0, 2); click("Show / hide");
-    expect(node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({ type: "style/show-hide", start: 0, end: 1 })]));
-    expect(host.querySelector('[data-inline-index="0"]')?.classList.contains("reactive-standoff-cell--concealed")).toBe(true);
-    click("Show / hide");
-    expect(editor.showHide.shows(node().key)).toBe(true);
-    expect(host.querySelector('[data-inline-index="0"]')?.classList.contains("reactive-standoff-cell--concealed")).toBe(false);
+  it.each(["Delete", "Backspace"])("%s deletes only the group once and Undo restores its text", async key => {
+    const { editor, group, select } = setup();
+    const before = editor.encodeDocument();
+    await group(0, 2); await group(0, 3, "q");
+    const flow = select(0, 0);
+    const press = (repeat = false) => {
+      const event = new KeyboardEvent("keydown", { key, repeat, bubbles: true, cancelable: true }); flow.dispatchEvent(event); return event;
+    };
+    expect(press().defaultPrevented).toBe(true);
+    const after = editor.encodeDocument();
+    expect(after.children![0].children!.map(block => block.text)).toEqual(["e 😀 two", "er paragraph"]);
+    expect(editor.groupSelection.active()).toBe(false);
+    expect(press(true).defaultPrevented).toBe(true);
+    expect(editor.encodeDocument()).toEqual(after);
+    flow.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
+    expect(press().defaultPrevented).toBe(false);
+    editor.repository.undo(); expect(editor.encodeDocument().children![0].children).toEqual(before.children![0].children);
+  });
+
+  it("Find/entity highlights and dialog fields never invoke grouped deletion", async () => {
+    const { editor, node, group, select, host } = setup();
+    const n = node(), content = editor.repository.readState().contents[n.contentKey];
+    const ranges = [0, 6].map(start => ({ nodeKey: n.key, contentKey: n.contentKey, placementKey: n.placementKey, version: content.inlineRevision, coordinate: "cell" as const, start, end: start + 2 }));
+    editor.decorations.attachRanges("find-results", ranges, { type: "editor/search", fill: "yellow" });
+    editor.decorations.attachRanges("entity-candidates", ranges, { type: "editor/entity-candidate", fill: "yellow" });
+    const before = editor.encodeDocument();
+    const flow = select(0, 0);
+    for (const key of ["Delete", "Backspace"]) {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }); flow.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+      expect(editor.encodeDocument().children![0].children).toEqual(before.children![0].children);
+    }
+    await group(0, 2);
+    const dialog = host.appendChild(document.createElement("div")); dialog.setAttribute("role", "dialog");
+    const input = dialog.appendChild(document.createElement("input")); input.value = "Find / Create Entity Relation"; input.focus();
+    for (const key of ["Delete", "Backspace"]) {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }); input.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+      expect(editor.groupSelection.ranges()).toHaveLength(1);
+      expect(editor.encodeDocument().children![0].children).toEqual(before.children![0].children);
+    }
   });
 });

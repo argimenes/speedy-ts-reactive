@@ -18,7 +18,6 @@ export function registerInputActions(registry: BindingRegistry, platform = typeo
   const workspaceSaveChord = chord(k(";", "Ctrl"), k("s"));
   const superpositionReadingChord = chord(k(";", "Ctrl"), k("a"));
   const superpositionVisibilityChord = chord(k(";", "Ctrl"), k("v"));
-  const groupSelectionChord = chord(k(";", "Ctrl"), k("g"));
   add("entity.open", "Entity reference", "Search the graph for an entity to link to selected text.", "Entities", "editor/standoff", [entityReferenceChord]);
   add("cross.entity", "Entity reference across Blocks", "Search for one entity shared by the selected Block-local ranges.", "Entities", "cross-text", [entityReferenceChord]);
   add("entity.list.open", "Entity listing", "List entities referenced by standoff properties in the current Document.", "Entities", "editor", [entityListingChord], ["listing", "mentions"]);
@@ -27,12 +26,11 @@ export function registerInputActions(registry: BindingRegistry, platform = typeo
   add("sticky.createFloating", "New Sticky Note", "Create a floating yellow Sticky Note in the current Workspace.", "Blocks & Margins", "editor", [stickyChord], ["sticky", "note"]);
   add("superposition.toggleReading", "Switch alternative reading", "Switch the in-scope text superposition between its canonical source and alternative TextBlock.", "Text Editing", "editor/standoff", [superpositionReadingChord], ["alternative", "superposition"]);
   add("superposition.toggleVisibility", "Show or hide alternative editor", "Toggle superposition annotation furniture without changing the active reading.", "Annotations", "editor/standoff", [superpositionVisibilityChord], ["alternative", "superposition"]);
-  add("group.toggle", "Group text ranges", "Start or cancel manual range accumulation. Retained ranges receive the next ordinary annotation together.", "Text Selection", "editor/standoff", [groupSelectionChord], ["selection", "annotations", "multiple"]);
   add("cross.timerCreate", "Add timer from cross-Block selection", "Insert a timer after the selected text Block.", "Blocks & Margins", "cross-text", [timerChord], ["timer", "pomodoro"]);
   add("workspace.open", "Open Workspace", "Load a Workspace manifest and its externally referenced Documents.", "Documents", "editor", [workspaceOpenChord], ["workspace", "files"]);
   add("workspace.save", "Save Workspace", "Save the Background and window layout plus separate referenced Document files.", "Documents", "editor", [workspaceSaveChord], ["workspace", "files"]);
   for (const [id, name, shift] of [["undo", "Undo change", false], ["redo", "Redo change", true]] as const) add(`history.${id}`, name, "Apply document history, including text, annotations and Block changes. Dialog fields retain native undo.", "Text Editing", "document-history", [k("z", "Ctrl", ...(shift ? ["Shift" as const] : [])), k("z", "Meta", ...(shift ? ["Shift" as const] : []))], ["history"]);
-  for (const direction of ["Left", "Right", "Up", "Down"]) add(`cross.extend${direction}`, `Extend text selection ${direction.toLowerCase()}`, "Experimental: extend within a supported paragraph stream; structural boundaries are barriers.", "Text Selection", "cross-text", [k(`Arrow${direction}`, "Shift")]);
+  for (const direction of ["Left", "Right", "Up", "Down"]) add(`cross.extend${direction}`, `Extend text selection ${direction.toLowerCase()}`, "Experimental: extend within a supported paragraph stream; structural boundaries are barriers.", "Text Selection", "cross-text", [k(`Arrow${direction}`, "Shift"), k(`Arrow${direction}`, "Ctrl", "Shift")]);
   add("cross.cancel", "Collapse cross-Block text selection", "Return to editing at the selection head.", "Text Selection", "cross-text", [k("Escape")]);
   add("cross.undo", "Undo from cross-Block selection", "Undo document history and safely collapse the experimental selection.", "Text Selection", "cross-text", [k("z", "Ctrl"), k("z", "Meta")]);
   add("cross.redo", "Redo from cross-Block selection", "Redo document history and safely collapse the experimental selection.", "Text Selection", "cross-text", [k("z", "Ctrl", "Shift"), k("z", "Meta", "Shift")]);
@@ -49,7 +47,7 @@ export function registerInputActions(registry: BindingRegistry, platform = typeo
     ["clear", "Clear selected Blocks", [k("Escape")]], ["edit", "Edit selected Block", [k("Enter")]],
   ] as Array<[string, string, Trigger[]]>) add(`selection.${id}`, name, "Select whole Blocks using their gutter handles, independently of native text selection. Drag a handle to reorder the selected group within its parent list.", "Block Selection", "block-handle", defaults, ["selection", "blocks"]);
   add("annotation.open", "Inspect annotations", "Open annotations encompassing the caret's left Cell.", "Annotations", "editor/standoff", [k(".", "Ctrl"), k("/", "Ctrl"), k("/", "Meta"), { kind: "custom", name: "inspect-annotation" }]);
-  for (const side of ["left", "right"] as const) add(`margin.${side}`, `Open ${side} margin`, "Create or focus the margin owned by the current Block.", "Blocks & Margins", "editor/standoff", [k(side === "left" ? "ArrowLeft" : "ArrowRight", "Ctrl", "Shift")]);
+  for (const side of ["left", "right"] as const) add(`margin.${side}`, `Open ${side} margin`, "Create or focus the margin owned by the current Block.", "Blocks & Margins", "editor/standoff", [k(side === "left" ? "l" : "r", "Ctrl", "Shift")]);
   add("text.paragraph", "New paragraph", "Split at the caret or insert an empty neighbouring paragraph.", "Text Editing", "editor/standoff", [k("Enter")]);
   add("tabs.create", "To tab / add tab", "Wrap the focused text Block in a tab row, or append an independent copy in a new tab when already inside a tab. Browser-reserved Ctrl+T may require Alt+T or the toolbar instead.", "Blocks & Margins", "editor/standoff", [k("t", "Ctrl"), k("t", "Alt")], ["tabs", "alternatives"]);
   for (const direction of ["Left", "Right", "Up", "Down"]) add(`block.${direction.toLowerCase()}`, `Navigate ${direction.toLowerCase()} at boundary`, "Move to the adjacent editable Block only at a collapsed block boundary; otherwise native caret movement applies.", "Navigation", "editor", [k(`Arrow${direction}`)]);

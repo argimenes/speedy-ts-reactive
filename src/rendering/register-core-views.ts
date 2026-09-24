@@ -63,7 +63,6 @@ export function registerCoreViews(editor: ReactiveEditor): void {
 
   editor.commandRegistry.register({ id: "sticky.createFloating", label: "New Sticky Note", canExecute: () => editor.stickyNotes.canCreate(), execute: () => { editor.stickyNotes.create(); } });
 
-  editor.commandRegistry.register({ id: "group.toggle", label: "Group text ranges", canExecute: ({ targetKey }) => editor.node(targetKey)?.viewType === "standoff-editor-block", execute: ({ targetKey }) => editor.groupSelection.toggleAt(targetKey) });
 
   editor.commandRegistry.register({ id: "history.open", label: "Block history", canExecute: ({ targetKey }) => editor.blockHistory.canOpen(targetKey), execute: ({ targetKey }) => editor.blockHistory.open(targetKey) });
 

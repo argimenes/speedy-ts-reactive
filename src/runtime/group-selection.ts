@@ -94,6 +94,10 @@ export class GroupSelection {
   private viewId?: string;
   private applying = false;
   private disposeInput?: () => void;
+  private pointerSelection = false;
+  pointerSelecting(): boolean { return this.pointerSelection; }
+  private keyboardSelection = false;
+  keyboardSelecting(): boolean { return this.keyboardSelection; }
   private readonly unsubscribe: () => void;
 
   constructor(private editor: ReactiveEditor) {
@@ -104,18 +108,13 @@ export class GroupSelection {
 
   begin(scopeKey?: NodeKey): void {
     this.editor.crossText.clear();
+    this.editor.showHide.clearSelections();
     this.scopeKey = scopeKey;
     this.viewId = scopeKey ? this.editor.node(scopeKey)?.viewId : undefined;
     this.rangesSignal[1]([]);
     this.activeSignal[1](true);
-    this.messageSignal[1]("Grouping: select text ranges, then choose an annotation. Control-click a range to remove it. Escape cancels.");
+    this.messageSignal[1]("Hold Control while selecting to group. Control-click removes a range. Esc cancels. Delete removes grouped text.");
     this.paint();
-  }
-
-  toggleAt(nodeKey: NodeKey): void {
-    if (this.active()) { this.cancel(); return; }
-    this.begin(nearestDocumentScope(this.editor, nodeKey));
-    this.captureCurrent();
   }
 
   add(nodeKey: NodeKey, start: number, end: number): boolean {
@@ -136,30 +135,93 @@ export class GroupSelection {
     };
     if (this.ranges().some(existing => exactRangeKey(existing) === exactRangeKey(range))) return false;
     this.rangesSignal[1]([...this.ranges(), range]);
-    this.messageSignal[1](`${this.ranges().length} grouped range${this.ranges().length === 1 ? "" : "s"}. Select another range or choose an annotation.`);
+    this.messageSignal[1](`${this.ranges().length} grouped range${this.ranges().length === 1 ? "" : "s"}. Hold Control to add another range. Esc cancels. Delete removes grouped text.`);
     this.paint();
     return true;
   }
 
   captureCurrent(): boolean {
-    if (!this.active()) return false;
+    // Snapshot before begin() clears the live cross-Block selection.
     const cross = this.editor.crossText.range();
-    if (cross) {
-      const segments = this.editor.crossText.resolve(cross.anchor, cross.head);
-      let captured = false;
-      for (const segment of segments) captured = this.add(segment.nodeKey, segment.start, segment.end) || captured;
-      if (captured) this.editor.crossText.clear();
-      return captured;
-    }
     const selection = document.getSelection();
     const element = selection?.anchorNode instanceof Element ? selection.anchorNode : selection?.anchorNode?.parentElement;
     const resolved = this.editor.mounts.resolveElement(element ?? null);
-    if (!resolved || resolved.handle.inputPolicy !== "standoff") return false;
-    const range = resolved.handle.captureInlineSelection?.();
-    if (!range || !this.add(resolved.nodeKey, range.anchor, range.head)) return false;
-    selection?.removeAllRanges();
-    this.editor.selections.removeOccurrence(resolved.nodeKey);
-    return true;
+    const local = resolved?.handle.inputPolicy === "standoff" ? resolved.handle.captureInlineSelection?.() : undefined;
+    const segments = cross ? this.editor.crossText.resolve(cross.anchor, cross.head) :
+      resolved && local ? [{ nodeKey: resolved.nodeKey, start: Math.min(local.anchor, local.head), end: Math.max(local.anchor, local.head) }] : [];
+    const nonempty = segments.filter(range => range.end > range.start);
+    if (!nonempty.length) return false;
+    if (!this.active()) this.begin(nearestDocumentScope(this.editor, nonempty[0].nodeKey));
+    let captured = false;
+    for (const range of nonempty) captured = this.add(range.nodeKey, range.start, range.end) || captured;
+    if (captured) {
+      this.editor.crossText.clear();
+      selection?.removeAllRanges();
+      for (const range of nonempty) this.editor.selections.removeOccurrence(range.nodeKey);
+      // Keep a collapsed caret at the gesture's head for the next keyboard range.
+      const headKey = cross?.head.occurrenceKey ?? resolved!.nodeKey;
+      const head = cross?.head.boundary.index ?? local!.head;
+      const node = this.editor.node(headKey)!;
+      const mount = this.editor.mounts.get(headKey);
+      mount?.focus(); mount?.restoreInlineSelection?.({ anchor: head, head });
+      this.editor.selections.setPrimary(headKey, node.contentKey, node.viewId, head);
+    }
+    return captured;
+  }
+
+  /** Delete only manual grouping membership, never Find/entity session decorations. */
+  deleteSelected(nodeKey: NodeKey): boolean {
+    if (this.active() && !contains(this.editor, this.scopeKey, nodeKey)) return false;
+    const ranges = this.active() ? this.ranges() : this.editor.showHide.selectedRanges(nodeKey);
+    if (!ranges.length) return false;
+    const byContent = new Map<string, SearchRange[]>();
+    for (const range of ranges) {
+      const node = this.editor.node(range.nodeKey), content = this.editor.repository.readState().contents[range.contentKey];
+      if (!node || node.contentKey !== range.contentKey || node.placementKey !== range.placementKey ||
+        content?.inlineRevision !== range.version || !Number.isInteger(range.start) || !Number.isInteger(range.end) ||
+        range.start < 0 || range.end <= range.start || range.end > node.inlineContent.length) {
+        this.cancel("Grouping cancelled because a text range changed. Select the ranges again.");
+        return true;
+      }
+      const list = byContent.get(range.contentKey) ?? [];
+      list.push({ ...range }); byContent.set(range.contentKey, list);
+    }
+    const merged: SearchRange[] = [];
+    for (const list of byContent.values()) {
+      const compact: SearchRange[] = [];
+      for (const range of list.sort((a, b) => a.start - b.start)) {
+        const previous = compact.at(-1);
+        if (previous && range.start <= previous.end) previous.end = Math.max(previous.end, range.end);
+        else compact.push(range);
+      }
+      merged.push(...compact);
+    }
+    const projection = this.editor.projections.get(this.editor.node(nodeKey)!.viewId)!;
+    const order = new Map<NodeKey, number>();
+    const visit = (key: NodeKey) => {
+      if (order.has(key)) return;
+      order.set(key, order.size);
+      const node = projection.state.nodes[key];
+      if (node) for (const child of [...node.children, ...Object.values(node.ownedRelations)]) visit(child);
+    };
+    visit(projection.state.rootKey);
+    merged.sort((a, b) => (order.get(a.nodeKey) ?? 0) - (order.get(b.nodeKey) ?? 0) || a.start - b.start);
+    const first = merged[0];
+    this.applying = true;
+    try {
+      this.editor.commands.transaction("Delete grouped text", () => {
+        for (const range of [...merged].reverse()) this.editor.commands.replaceInlineRange(range.nodeKey, range.start, range.end, "");
+      });
+      this.cancel("Grouped text deleted.");
+      this.editor.crossText.clear();
+      const node = this.editor.node(first.nodeKey)!;
+      const mount = this.editor.mounts.get(first.nodeKey);
+      document.getSelection()?.removeAllRanges();
+      mount?.focus(); mount?.restoreInlineSelection?.({ anchor: first.start, head: first.start });
+      this.editor.selections.clearExcept(first.nodeKey);
+      this.editor.selections.setPrimary(first.nodeKey, node.contentKey, node.viewId, first.start);
+      return true;
+    } finally { this.applying = false; }
   }
 
   removeAt(nodeKey: NodeKey, index: number): boolean {
@@ -168,6 +230,7 @@ export class GroupSelection {
     const range = [...ranges].reverse().find(range => range.nodeKey === nodeKey && range.start <= index && index < range.end);
     if (!range) return this.editor.showHide.removeAt(nodeKey, index);
     this.rangesSignal[1](ranges.filter(candidate => candidate !== range));
+    if (!this.ranges().length) { this.finish("Grouping cleared."); return true; }
     this.messageSignal[1](`${this.ranges().length} grouped ranges. Control-click a range to remove it. Escape cancels.`);
     this.paint();
     return true;
@@ -207,54 +270,99 @@ export class GroupSelection {
 
   install(document: Document): () => void {
     this.disposeInput?.();
-    let removing = false;
+    let mouse: { nodeKey: NodeKey; index?: number; x: number; y: number; moved: boolean; eligible: boolean } | undefined;
+    let keyboard: { eligible: boolean } | undefined;
+    let suppressClick = false, heldDelete: string | undefined;
     const stop = (event: Event) => { event.preventDefault(); event.stopImmediatePropagation(); };
-    const pointerdown = (event: PointerEvent) => {
-      removing = false;
-      if (!event.ctrlKey || event.button !== 0) return;
+    const excluded = (event: Event) => event.target instanceof Element && !!event.target.closest(
+      'input, textarea:not([data-cross-text-input]), select, [role="dialog"]:not(.compact-toolbar__panel), [role="menu"], [data-bindings-window], [data-block-selection-handle], [data-block-selection-inspector]');
+    const textTarget = (event: Event) => {
+      if (excluded(event)) return;
+      if (event.target instanceof Element && event.target.matches('[data-cross-text-input]')) return this.editor.crossText.range()?.head.occurrenceKey;
       const resolved = this.editor.mounts.resolveEvent(event);
+      return resolved?.handle.inputPolicy === "standoff" && !resolved.handle.composing ? resolved.nodeKey : undefined;
+    };
+    const reset = () => { mouse = undefined; keyboard = undefined; this.pointerSelection = false; this.keyboardSelection = false; heldDelete = undefined; suppressClick = false; };
+    const pointerdown = (event: PointerEvent) => {
+      reset();
+      const nodeKey = textTarget(event);
+      if (!nodeKey || !event.ctrlKey || event.button !== 0) return;
       const cell = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-inline-index]") : null;
-      if (!cell || resolved?.handle.inputPolicy !== "standoff") return;
-      const index = Number(cell.dataset.inlineIndex);
-      if (!Number.isInteger(index) || !this.removeAt(resolved.nodeKey, index)) return;
-      removing = true;
-      document.getSelection()?.removeAllRanges();
-      this.editor.selections.removeOccurrence(resolved.nodeKey);
-      // Own this gesture before cross-Block selection or the Control-click menu.
-      stop(event);
+      mouse = { nodeKey, index: cell ? Number(cell.dataset.inlineIndex) : undefined, x: event.clientX, y: event.clientY, moved: false, eligible: true };
+      this.pointerSelection = true;
+      suppressClick = true;
+      // CrossBlockInput owns selection geometry; allow it to see this event.
     };
-    const suppressRemovalGesture = (event: MouseEvent) => { if (removing && event.ctrlKey) stop(event); };
-    const capture = (event?: PointerEvent) => queueMicrotask(() => {
-      if (!this.active() && event?.ctrlKey) {
-        const resolved = this.editor.mounts.resolveEvent(event);
-        if (resolved?.handle.inputPolicy === "standoff") this.begin(nearestDocumentScope(this.editor, resolved.nodeKey));
-      }
-      this.captureCurrent();
-    });
+    const pointermove = (event: PointerEvent) => {
+      if (!mouse) return;
+      if (!event.ctrlKey) mouse.eligible = false;
+      if (Math.hypot(event.clientX - mouse.x, event.clientY - mouse.y) > 3) mouse.moved = true;
+    };
     const pointerup = (event: PointerEvent) => {
-      if (removing) { stop(event); return; }
-      if (this.active() || event.ctrlKey) capture(event);
+      const gesture = mouse;
+      mouse = undefined; this.pointerSelection = false;
+      if (!gesture || !gesture.eligible || !event.ctrlKey) return;
+      // Let cross-Block input release pointer capture before collecting its range.
+      queueMicrotask(() => {
+        if (!gesture.moved && gesture.index !== undefined && this.removeAt(gesture.nodeKey, gesture.index)) {
+          document.getSelection()?.removeAllRanges();
+          this.editor.selections.removeOccurrence(gesture.nodeKey);
+          this.editor.crossText.clear();
+        } else this.captureCurrent();
+      });
     };
-    const keyup = (event: KeyboardEvent) => { if (this.active() && event.shiftKey) capture(); };
+    const suppressMenu = (event: MouseEvent) => {
+      if (suppressClick && event.ctrlKey) stop(event);
+    };
+    const keyup = (event: KeyboardEvent) => {
+      if (event.key === heldDelete) heldDelete = undefined;
+      if (event.key === "Control" && mouse) mouse.eligible = false;
+      if (event.key !== "Control" && event.key !== "Shift") return;
+      const gesture = keyboard; keyboard = undefined; this.keyboardSelection = false;
+      if (gesture?.eligible && !excluded(event)) this.captureCurrent();
+    };
     const keydown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || (!this.active() && !this.editor.showHide.selectionActive())) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      this.cancel();
+      if (event.isComposing || excluded(event)) return;
+      const nodeKey = textTarget(event);
+      if (event.key === "Escape") {
+        reset();
+        if (this.active() || this.editor.showHide.selectionActive()) { stop(event); this.cancel(); }
+        return;
+      }
+      if ((event.key === "Delete" || event.key === "Backspace") && (nodeKey || (event.target instanceof Element && event.target.closest('.document-style-bar')))) {
+        if (event.key === heldDelete && event.repeat) { stop(event); return; }
+        const target = nodeKey ?? this.editor.focus.state.focusedKey ?? this.editor.focus.state.lastFocusedKey;
+        if (keyboard?.eligible) { keyboard = undefined; this.keyboardSelection = false; this.captureCurrent(); }
+        if (target && (this.active() || this.editor.showHide.selectionActive(target))) {
+          try {
+            if (this.deleteSelected(target)) { stop(event); heldDelete = event.key; }
+          } catch (error) {
+            stop(event);
+            this.messageSignal[1](error instanceof Error ? error.message : String(error));
+          }
+        }
+        return;
+      }
+      if (nodeKey && event.shiftKey && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) {
+        keyboard ??= { eligible: event.ctrlKey && !event.metaKey && !event.altKey };
+        keyboard.eligible &&= event.ctrlKey;
+        this.keyboardSelection = keyboard.eligible;
+      }
     };
-    document.addEventListener("pointerdown", pointerdown, true);
-    document.addEventListener("pointerup", pointerup, true);
-    document.addEventListener("click", suppressRemovalGesture, true);
-    document.addEventListener("contextmenu", suppressRemovalGesture, true);
-    document.addEventListener("keyup", keyup, true);
-    document.addEventListener("keydown", keydown, true);
+    const focusin = (event: Event) => {
+      if (!textTarget(event)) { mouse = undefined; keyboard = undefined; this.pointerSelection = false; this.keyboardSelection = false; }
+    };
+    const listeners: [string, EventListener][] = [
+      ["pointerdown", pointerdown as EventListener], ["pointermove", pointermove as EventListener], ["pointerup", pointerup as EventListener],
+      ["pointercancel", reset], ["click", suppressMenu as EventListener], ["contextmenu", suppressMenu as EventListener],
+      ["keyup", keyup as EventListener], ["keydown", keydown as EventListener], ["focusin", focusin],
+    ];
+    for (const [name, listener] of listeners) document.addEventListener(name, listener, true);
+    document.defaultView?.addEventListener("blur", reset);
     const dispose = () => {
-      document.removeEventListener("pointerdown", pointerdown, true);
-      document.removeEventListener("pointerup", pointerup, true);
-      document.removeEventListener("click", suppressRemovalGesture, true);
-      document.removeEventListener("contextmenu", suppressRemovalGesture, true);
-      document.removeEventListener("keyup", keyup, true);
-      document.removeEventListener("keydown", keydown, true);
+      reset();
+      for (const [name, listener] of listeners) document.removeEventListener(name, listener, true);
+      document.defaultView?.removeEventListener("blur", reset);
       if (this.disposeInput === dispose) this.disposeInput = undefined;
     };
     this.disposeInput = dispose;
