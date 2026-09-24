@@ -321,7 +321,10 @@ export function StandoffEditorView(props: BlockViewProps) {
     () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
   );
   const superpositions = createMemo(() => editor.features.textSuperposition ? textSuperpositions(node()) : []);
-  const showHiddenText = createMemo(() => editor.showHide.shows(props.nodeKey));
+  const showHideRanges = createMemo(() => annotations().map((annotation, index) => ({ annotation, id: annotation.id ?? index }))
+    .filter(({ annotation }) => annotation.type === "style/show-hide" && hasActiveRange(annotation)));
+  const concealedRanges = createMemo(() => showHideRanges().filter(({ id }) => !editor.showHide.shows(props.nodeKey, id)));
+  const selectedShowHideRanges = createMemo(() => showHideRanges().filter(({ id }) => editor.showHide.shows(props.nodeKey, id) && editor.showHide.selectionActive(props.nodeKey, id)));
   const cellStyles = createMemo(() => compileCellStyleRuns(annotations()), undefined, {
     equals: (previous, next) => JSON.stringify(previous) === JSON.stringify(next),
   });
@@ -438,6 +441,15 @@ export function StandoffEditorView(props: BlockViewProps) {
     }
     const selectionSet = editor.selections.sets[props.nodeKey];
     const selected: DecorationShape[] = [];
+    selectedShowHideRanges().forEach(({ annotation, id }) => {
+      if (annotation.type !== "style/show-hide" || !hasActiveRange(annotation) || annotation.start >= (node()?.inlineContent.length ?? 0)) return;
+      const key = `${props.nodeKey}:show-hide:${id}`;
+      const fragments = fragmentsFor(annotation.start, annotation.end);
+      selected.push(...[
+        ...highlightShapes(key, fragments, "#8bd7c4"),
+        ...outlineShapes(key, fragments, "#167565"),
+      ].map(shape => ({ ...shape, propertyType: "editor/show-hide-selection" })));
+    });
     for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search" && !overlay.entityCandidates) {
       for (const range of overlay.entityRanges ?? []) if (range.nodeKey === props.nodeKey && range.end > range.start) selected.push(...highlightShapes(`${props.nodeKey}:entity-search`, rangeFragments(flow, surface, range.start, range.end - 1), "#f2c767"));
     }
@@ -541,6 +553,8 @@ export function StandoffEditorView(props: BlockViewProps) {
 
   createEffect(() => {
     node()?.inlineContent.length;
+    concealedRanges();
+    selectedShowHideRanges();
     JSON.stringify(annotations());
     for (const property of superpositions()) {
       const alternative = projection.state.nodes[node()?.ownedRelations[property.alternatives[0]] ?? ""];
@@ -618,7 +632,7 @@ export function StandoffEditorView(props: BlockViewProps) {
                       data-inline-key={cellKey}
                       data-inline-index={index()}
                       style={cellStyleAt(cellStyles(), index())}
-                      classList={{ "reactive-standoff-cell--concealed": !showHiddenText() && annotations().some(annotation => annotation.type === "style/show-hide" && hasActiveRange(annotation) && annotation.start <= index() && annotation.end >= index()) }}
+                      classList={{ "reactive-standoff-cell--concealed": concealedRanges().some(({ annotation }) => hasActiveRange(annotation) && annotation.start <= index() && annotation.end >= index()) }}
                     >{(cell()?.payload.text as string | undefined) ?? ""}</span>}
                   >
                     <span

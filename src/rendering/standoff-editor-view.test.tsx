@@ -192,6 +192,46 @@ describe("StandoffEditorView", () => {
     expect(saved.text).toBe("abc"); expect(saved.standoffProperties).toEqual(initial);
   });
 
+  it("restores range highlights and outlines across Blocks when Show/Hide reveals text", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
+    Object.defineProperty(Range.prototype, "getClientRects", {
+      configurable: true,
+      value: () => [{ left: 10, top: 10, width: 40, height: 16 }, { left: 0, top: 30, width: 20, height: 16 }],
+    });
+    disposers.push(() => descriptor
+      ? Object.defineProperty(Range.prototype, "getClientRects", descriptor)
+      : Reflect.deleteProperty(Range.prototype, "getClientRects"));
+    const { editor, projection, host } = renderBlocks([
+      { id: "one", type: "standoff-editor-block", text: "First passage", standoffProperties: [
+        { id: "hidden-one", type: "style/show-hide", start: 0, end: 4 },
+        { id: "deleted", type: "style/show-hide", start: 6, end: 8, isDeleted: true },
+      ] },
+      { id: "two", type: "standoff-editor-block", text: "Second passage", standoffProperties: [
+        { id: "hidden-two", type: "style/show-hide", start: 0, end: 5 },
+      ] },
+    ]);
+    const settle = () => new Promise(resolve => setTimeout(resolve, 25));
+    const paths = () => [...host.querySelectorAll('.reactive-selection-layer [data-property-type="editor/show-hide-selection"]')];
+    const before = editor.encodeDocument(), revision = editor.repository.state.revision;
+    await settle();
+    expect(paths()).toHaveLength(0);
+    for (let cycle = 0; cycle < 2; cycle++) {
+      editor.showHide.toggle(projection.state.rootKey);
+      await settle();
+      expect(host.querySelectorAll(".reactive-standoff-cell--concealed")).toHaveLength(0);
+      expect(paths()).toHaveLength(8); // Two fragments, each highlighted and outlined, in two Blocks.
+      expect(paths().filter(path => path.hasAttribute("stroke-dasharray"))).toHaveLength(4);
+      expect(paths().some(path => path.getAttribute("data-decoration-key")?.includes("deleted"))).toBe(false);
+      expect(editor.groupSelection.active()).toBe(false);
+      editor.showHide.toggle(projection.state.rootKey);
+      await settle();
+      expect(paths()).toHaveLength(0);
+      expect(host.querySelectorAll(".reactive-standoff-cell--concealed")).toHaveLength(11);
+    }
+    expect(editor.repository.state.revision).toBe(revision);
+    expect(editor.encodeDocument()).toEqual(before);
+  });
+
   it("renders passive single- and multi-line blur regions outside the text flow and remeasures them after edits", async () => {
     const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
     Object.defineProperty(Range.prototype, "getClientRects", {

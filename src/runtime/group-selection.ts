@@ -50,6 +50,7 @@ export function applyAnnotationsToRanges(
   const state = editor.repository.readState();
   const updates = new Map<string, { key: NodeKey; properties: Record<string, unknown>[] }>();
   const seen = new Set<string>();
+  const showHideTargets: { nodeKey: NodeKey; id: string | number }[] = [];
   let added = 0;
   for (const range of ranges) {
     const node = editor.node(range.nodeKey), content = state.contents[range.contentKey];
@@ -68,14 +69,15 @@ export function applyAnnotationsToRanges(
       updates.set(range.contentKey, update);
     }
     const end = range.end - 1;
-    if (update.properties.some(property => !property.isDeleted && property.type === type && property.start === range.start && property.end === end && property.value === value)) continue;
-    update.properties.push({ id: crypto.randomUUID(), type, start: range.start, end, ...attributes, ...(value === undefined ? {} : { value }) });
-    added++;
+    const existingIndex = update.properties.findIndex(property => !property.isDeleted && property.type === type && property.start === range.start && property.end === end && property.value === value);
+    const property = existingIndex >= 0 ? update.properties[existingIndex] : { id: crypto.randomUUID(), type, start: range.start, end, ...attributes, ...(value === undefined ? {} : { value }) };
+    if (existingIndex < 0) { update.properties.push(property); added++; }
+    if (type === "style/show-hide") showHideTargets.push({ nodeKey: node.key, id: typeof property.id === "string" ? property.id : existingIndex });
   }
-  if (!added) return 0;
-  editor.commands.transaction("Annotate grouped selection", () => {
+  if (added) editor.commands.transaction("Annotate grouped selection", () => {
     for (const update of updates.values()) editor.commands.setPayloadField(update.key, "standoffProperties", update.properties);
   });
+  if (showHideTargets.length) editor.showHide.retainSelection(showHideTargets);
   return added;
 }
 
@@ -172,6 +174,7 @@ export class GroupSelection {
 
   cancel(message = "Grouping cancelled."): void {
     this.finish(message);
+    this.editor.showHide.clearSelections();
   }
 
   private finish(message = ""): void {
@@ -203,7 +206,7 @@ export class GroupSelection {
     const pointerup = (event: PointerEvent) => { if (this.active() || event.ctrlKey) capture(event); };
     const keyup = (event: KeyboardEvent) => { if (this.active() && event.shiftKey) capture(); };
     const keydown = (event: KeyboardEvent) => {
-      if (!this.active() || event.key !== "Escape") return;
+      if (event.key !== "Escape" || (!this.active() && !this.editor.showHide.selectionActive())) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       this.cancel();

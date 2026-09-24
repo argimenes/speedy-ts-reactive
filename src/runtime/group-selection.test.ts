@@ -45,6 +45,35 @@ describe("manual grouped ranges", () => {
     expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
   });
 
+  it.each([false, true])("reveals and forgets a cleared group (previously visible=%s)", shown => {
+    const { editor, root, a, b } = fixture();
+    editor.groupSelection.begin(root);
+    editor.groupSelection.add(a.key, 0, 5);
+    editor.groupSelection.apply("style/show-hide");
+    const first = (a.payload.standoffProperties as { id: string }[])[0].id;
+    if (shown) editor.showHide.toggle(root);
+    editor.groupSelection.cancel();
+    expect(editor.groupSelection.ranges()).toHaveLength(0);
+    expect(editor.showHide.selectionActive(a.key, first)).toBe(false);
+
+    editor.groupSelection.begin(root);
+    editor.groupSelection.add(a.key, 6, 10);
+    editor.groupSelection.add(b.key, 0, 5);
+    editor.groupSelection.apply("style/show-hide");
+    const second = (a.payload.standoffProperties as { id: string }[])[1].id;
+    const third = (b.payload.standoffProperties as { id: string }[])[0].id;
+    const before = editor.encodeDocument();
+    for (const visible of [false, true, false, true]) {
+      expect(editor.showHide.shows(a.key, first)).toBe(true);
+      expect(editor.showHide.selectionActive(a.key, first)).toBe(false);
+      expect(editor.showHide.shows(a.key, second)).toBe(visible);
+      expect(editor.showHide.shows(b.key, third)).toBe(visible);
+      expect(editor.showHide.selectionActive(a.key, second)).toBe(true);
+      editor.showHide.toggle(root);
+    }
+    expect(editor.encodeDocument()).toEqual(before);
+  });
+
   it("keeps Show/Hide projection state outside the canonical document", () => {
     const { editor, root, a } = fixture();
     const before = editor.encodeDocument();

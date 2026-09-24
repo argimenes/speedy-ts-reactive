@@ -14,6 +14,7 @@ export interface CompactTool {
   disabled?: () => boolean;
   pressed?: () => boolean;
   persistent?: boolean;
+  visible?: () => boolean;
   run?: () => void;
   panel?: () => JSX.Element;
 }
@@ -34,7 +35,7 @@ export function CompactToolbar(props: {
   const [panel, setPanel] = createSignal<"more" | CompactTool>();
   const [position, setPosition] = createSignal({ left: 0, top: 0, maxHeight: 400 });
   const persistent = createMemo(() => props.tools.filter(tool => tool.persistent));
-  const current = createMemo(() => props.tools.filter(tool => !tool.persistent && tool.toolset === props.toolset));
+  const current = createMemo(() => props.tools.filter(tool => !tool.persistent && tool.toolset === props.toolset && (tool.visible?.() ?? true)));
   const visibleCount = createMemo(() => {
     let used = 0, count = 0;
     for (const tool of current()) { used += (tool.width ?? 36) + 3; if (used > width()) break; count++; }

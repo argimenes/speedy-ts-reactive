@@ -86,6 +86,114 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     click("Clear formatting"); expect(node().payload.standoffProperties).toEqual([{ id: "entity", type: "codex/entity-reference", start: 0, end: 2, value: "entity-id" }]);
     editor.repository.undo(); expect((node().payload.standoffProperties as any[]).some(p => p.type === "style/bold")).toBe(true);
   });
+  it("offers Clear beside Show/Hide only during grouping and cancels with Clear or Escape", async () => {
+    const { host, select, click, editor } = setup();
+    const showHide = () => toolbarControl(host, 'button[title="Show / hide"]', "Annotations");
+    const clearButton = () => document.querySelector<HTMLButtonElement>('[aria-label="Clear group selection"]');
+    showHide();
+    expect(clearButton()).toBeNull();
+    for (const action of ["clear", "escape"]) {
+      select(0, 5); click("Group text ranges");
+      select(0, 5, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+      await Promise.resolve();
+      expect(editor.groupSelection.ranges()).toHaveLength(2);
+      const before = editor.repository.snapshot(), revision = editor.repository.state.revision;
+      const toggle = showHide(), clear = clearButton()!;
+      expect(clear).not.toBeNull();
+      expect(toggle.nextElementSibling).toBe(clear);
+      expect(clear.textContent).toContain("Clear");
+      if (action === "clear") clear.click();
+      else clear.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+      expect(editor.groupSelection.active()).toBe(false);
+      expect(editor.groupSelection.ranges()).toHaveLength(0);
+      expect(Object.values(editor.decorations.nodes).flat().filter(range => range.owner === editor.groupSelection.owner)).toHaveLength(0);
+      expect(clearButton()).toBeNull();
+      expect(editor.repository.state.revision).toBe(revision);
+      expect(editor.repository.snapshot()).toEqual(before);
+    }
+  });
+
+  it("keeps Clear after Hide and lets Clear or Escape dismiss revealed group outlines", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
+    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true,
+      value: () => [{ left: 10, top: 10, width: 40, height: 16 }] });
+    cleanup.push(() => descriptor ? Object.defineProperty(Range.prototype, "getClientRects", descriptor) : Reflect.deleteProperty(Range.prototype, "getClientRects"));
+    const { host, node, select, click, editor } = setup();
+    const settle = () => new Promise(resolve => setTimeout(resolve, 25));
+    const clear = () => toolbarControl(host, '[aria-label="Clear group selection"]', "Annotations");
+    const outlines = () => host.querySelectorAll('[data-property-type="editor/show-hide-selection"][stroke-dasharray]');
+    select(0, 2); click("Group text ranges");
+    select(0, 3, "q").dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+    await Promise.resolve();
+    click("Show / hide");
+    expect(editor.groupSelection.active()).toBe(false);
+    expect(editor.showHide.selectionActive(node().key)).toBe(true);
+    expect(clear()).not.toBeNull();
+    const before = editor.repository.snapshot();
+    click("Show / hide"); await settle();
+    expect(outlines()).toHaveLength(2);
+    click("Show / hide"); await settle();
+    expect(outlines()).toHaveLength(0);
+    expect(clear()).not.toBeNull();
+    clear().click(); await settle();
+    expect(editor.showHide.shows(node().key)).toBe(true);
+    expect(host.querySelectorAll(".reactive-standoff-cell--concealed")).toHaveLength(0);
+    expect(document.querySelector('[aria-label="Clear group selection"]')).toBeNull();
+    click("Show / hide"); click("Show / hide"); await settle();
+    expect(outlines()).toHaveLength(2);
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    clear().dispatchEvent(escape); await settle();
+    expect(escape.defaultPrevented).toBe(true);
+    expect(outlines()).toHaveLength(0);
+    expect(editor.showHide.shows(node().key)).toBe(true);
+    expect(host.querySelectorAll(".reactive-standoff-cell--concealed")).toHaveLength(0);
+    expect(document.querySelector('[aria-label="Clear group selection"]')).toBeNull();
+    click("Show / hide"); click("Show / hide"); await settle();
+    expect(outlines()).toHaveLength(2);
+    clear().click(); await settle();
+    expect(outlines()).toHaveLength(0);
+    expect(editor.showHide.shows(node().key)).toBe(true);
+    expect(editor.repository.snapshot()).toEqual(before);
+  });
+
+  it("only hides and outlines the new group after the previous group is cleared", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects");
+    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true,
+      value: () => [{ left: 10, top: 10, width: 40, height: 16 }] });
+    cleanup.push(() => descriptor ? Object.defineProperty(Range.prototype, "getClientRects", descriptor) : Reflect.deleteProperty(Range.prototype, "getClientRects"));
+    const { host, select, click, editor } = setup();
+    const settle = () => new Promise(resolve => setTimeout(resolve, 25));
+    const concealed = (id: string) => host.querySelectorAll(`.reactive-standoff-block[data-block-id="${id}"] .reactive-standoff-cell--concealed`);
+    const outlines = (id: string) => host.querySelectorAll(`.reactive-standoff-block[data-block-id="${id}"] [data-property-type="editor/show-hide-selection"][stroke-dasharray]`);
+    select(0, 2); click("Group text ranges"); click("Show / hide");
+    click("Show / hide"); await settle();
+    expect(outlines("p")).toHaveLength(1);
+    toolbarControl(host, '[aria-label="Clear group selection"]', "Annotations").click();
+    expect(editor.groupSelection.ranges()).toHaveLength(0);
+
+    select(0, 3, "q"); click("Group text ranges"); click("Show / hide"); await settle();
+    expect(concealed("p")).toHaveLength(0);
+    expect(concealed("q")).toHaveLength(3);
+    expect(outlines("p")).toHaveLength(0);
+    click("Show / hide"); await settle();
+    expect(concealed("p")).toHaveLength(0);
+    expect(concealed("q")).toHaveLength(0);
+    expect(outlines("p")).toHaveLength(0);
+    expect(outlines("q")).toHaveLength(1);
+    click("Show / hide");
+    expect(concealed("p")).toHaveLength(0);
+    expect(concealed("q")).toHaveLength(3);
+    toolbarControl(host, '[aria-label="Clear group selection"]', "Annotations").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    await settle();
+    expect(concealed("p")).toHaveLength(0);
+    expect(concealed("q")).toHaveLength(0);
+    expect(outlines("p")).toHaveLength(0);
+    expect(outlines("q")).toHaveLength(0);
+    expect(editor.showHide.selectionActive()).toBe(false);
+    expect(document.querySelector('[aria-label="Clear group selection"]')).toBeNull();
+  });
+
   it("collects ranges across Blocks, applies Highlight, cancels with Escape, and toggles the Show/Hide projection", async () => {
     const { host, node, select, click, editor } = setup();
     select(0, 0); click("Group text ranges");

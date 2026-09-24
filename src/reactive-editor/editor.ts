@@ -147,8 +147,8 @@ export class ReactiveEditor {
     this.crossInput?.dispose();
     this.disposeFindInput?.();
     this.disposeFindInput = this.find.install(document);
-    this.crossInput = new CrossBlockInput(this, document);
     const disposeGroupSelection = this.groupSelection.install(document);
+    this.crossInput = new CrossBlockInput(this, document);
     this.gateway = new InputGateway(
       document,
       this.mounts,
