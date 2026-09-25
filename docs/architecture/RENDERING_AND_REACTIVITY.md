@@ -26,7 +26,7 @@ A `document-window-block` resolves to `WindowView` in [`core-block-views.tsx`](.
 [`decodeBlockTree`](../../src/block-tree/codecs.ts) walks nested `ExistingBlockDto` data and produces one `ContentRecord` plus one owned `PlacementRecord` per nested Block. It:
 
 - maps legacy root aliases `main-list-block` and `membrane-block` to `document-block`;
-- moves `leftMargin` and `rightMargin` Block relations into `ownedRelations`;
+- moves `leftMargin`, `rightMargin` and recognized `superposition:` Block relations into `ownedRelations`;
 - retains other relation values in `opaqueRelations`;
 - records whether `children`/`relation` were omitted, null, or present;
 - removes `text` from a `standoff-editor-block` payload and creates an inline `text-cell` content/placement for each Unicode code point.
@@ -48,15 +48,21 @@ The projection subscribes to repository changes. It has optimized inline, split,
 
 ## Renderer selection and traversal
 
-[`registerCoreViews`](../../src/rendering/register-core-views.ts) explicitly populates `editor.registry`. `BlockOutlet` reads `projection.state.nodes[nodeKey].viewType`, resolves a `BlockTypeRegistration`, and uses Solid's `Dynamic` component. Missing registration falls back to `UnknownBlockView`.
+[`registerApplicationViews`](../../src/application/features.ts) populates registries through legacy/core assembly and configured feature activation. `registerCoreViews` alone excludes optional Timer registration. `BlockOutlet` reads `projection.state.nodes[nodeKey].viewType`, resolves a `BlockTypeRegistration`, and uses Solid's `Dynamic` component. Missing registration falls back to `UnknownBlockView`.
 
-Container views traverse children with:
+Core/legacy container views traverse children with:
 
 ```tsx
 <ChildBlocks parentKey={props.nodeKey} />
 ```
 
 `ChildBlocks` reads the projected `children` array and renders a `BlockOutlet` for each key. `RelationBlocks` does the same for `ownedRelations`; document margins may move their live relation view to a drawer when collapsed. Inline Cells are deliberately different: `StandoffEditorView` renders `node.inlineContent` as text spans or inline images because they are part of one editing host.
+
+## Hosted Block instances
+
+A migrated module registers a `BlockApplicationDefinition`, including authored defaults and a component receiving `BlockRuntime`. The application adapter supplies a separate runtime for each mounted occurrence. Timer's view does not use `useReactiveView`: it reads detached fields through `runtime.field`, writes its own authored state through `runtime.setField`, and registers its widget mount through `runtime.mountWidget`.
+
+The feature registration lifetime and the view's Solid lifetime are different. Removing one Timer cleans only that instance's interval, audio and mount; editor teardown unmounts all contributed views and removes module registrations. Authored data survives ordinary unmounting. The current public runtime does not expose child/relationship rendering or general overlays; those remain future capability decisions.
 
 ## What causes updates
 
@@ -70,11 +76,13 @@ Typical dependencies are deliberately narrow:
 - `StandoffEditorView` reads inline keys, annotation data, and selected session revisions;
 - local UI state such as a timer tick uses component signals and does not commit every second.
 
+Hosted `runtime.field` reads must occur inside reactive expressions or memos. The adapter traverses only that field through Solid proxies before returning a detached copy; unwrapping first would miss nested dependencies.
+
 Do not force a rerender after a command. If the UI does not update, first check that the view reads the projected field reactively rather than a one-time copy.
 
 ## DOM ownership and mounts
 
-Solid components own their DOM lifetime. A view that participates in focus/input registers a `MountHandle` with [`MountRegistry`](../../src/runtime/mounts.ts) in `onMount` and disposes it in `onCleanup`. The handle describes its root, focus element, input policy, and optional text/selection adapters.
+Solid components own their DOM lifetime. Hosted widgets use `runtime.mountWidget` and `runtime.own`; the adapter binds cleanup to the instance owner, including later-acquired resources. A core/legacy view that participates in focus/input registers a `MountHandle` with [`MountRegistry`](../../src/runtime/mounts.ts) in `onMount` and disposes it in `onCleanup`. The handle describes its root, focus element, input policy, and optional text/selection adapters.
 
 The model contains no `HTMLElement`, `Range`, observer, or cleanup callback. A `NodeKey` connects a disposable mount to its projected occurrence. When the component remounts, the registry generation prevents old cleanup from deleting the new handle.
 

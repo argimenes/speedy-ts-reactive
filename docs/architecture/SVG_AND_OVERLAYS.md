@@ -3,10 +3,14 @@
 Codex has three related but separate visual systems:
 
 1. **Standoff decoration SVGs** owned locally by each `StandoffEditorView`.
-2. **Floating UI overlays** owned by `OverlayService` and rendered through `OverlayLayer` portals.
+2. **Floating UI overlays/panels** with existing focus/owner services and feature-specific portal layers mounted by `ReactiveTreeView`. Its current composition is a hard-coded layer list, not a plugin panel registry.
 3. **Page minimap** canvas geometry owned by `PageMinimap`/`MinimapService`.
 
 Do not treat them as one global overlay engine. This page focuses on standoff geometry, then explains when the other systems apply.
+
+## Feature-module status
+
+Stage 1 introduces hosted Block runtimes and two UI action slots; it does not add a public SVG, standoff-effect, panel or decoration contribution API. The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) proposes later boundaries, but those APIs are not implemented. `BlockRuntime.own` can clean up a widget's own resources; it is not access to standoff measurement or other Blocks' DOM. Use the existing local geometry pipeline for approved core/legacy effects, and justify a new public capability before extracting one.
 
 ## Semantic range to SVG
 
@@ -70,7 +74,7 @@ That limitation is documented in [Adding a Block property](../development/ADDING
 
 ## Floating UI overlays
 
-[`OverlayService`](../../src/runtime/overlays.ts) stores transient descriptors for entity search, Find/Replace, annotation panels, and context menus. It captures return focus/selection, assigns session-only keys, and closes overlays whose owner occurrence disappears. [`OverlayLayer`](../../src/rendering/overlay-layer.tsx) portals dialogs to `document.body` and registers their mounts.
+[`OverlayService`](../../src/runtime/overlays.ts) stores transient descriptors for entity search, Find/Replace, annotation panels, and context menus. It captures return focus/selection, assigns session-only keys, and closes overlays whose owner occurrence disappears. The current [`ReactiveTreeView`](../../src/rendering/reactive-tree-view.tsx) mounts the specific entity-search, Find, annotation, context-menu and other layers, which own their portal/mount behavior. The older `OverlayLayer` helper exists but is not that render root's composition path.
 
 Use this path for floating interactive UI anchored to a point. Do not persist overlay descriptors or use it to paint semantic document decoration.
 

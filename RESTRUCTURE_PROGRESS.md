@@ -1,5 +1,32 @@
 # Reactive reconstruction progress
 
+## Feature-module architecture — Stage 0/1 complete, 25 September 2026
+
+Timer is the first self-contained module under `src/features/timer`. Application
+composition activates it through `FeatureHost`; it owns its type, authored defaults,
+commands, ordinary/cross-text bindings, toolbar/Add Block contributions and cleanup.
+Timer remains default on. Core no longer imports its implementation.
+
+The public boundary distinguishes feature activation from hosted Block applications.
+One module registers a type; every mounted occurrence receives a separate self-bound
+`BlockRuntime`. Authored JSON survives unmounting or module absence; local clocks,
+audio, drafts and mounts belong to the instance. Existing Solid ownership handles
+cleanup without a second lifecycle framework.
+
+Stage 1 qualification recorded 100 passing focused tests and successful typechecks
+and builds. Physically removing Timer and its application registration also passed
+both builds/typechecks and 16 focused tests, including unknown authored-data
+preservation. Three context-menu failures reproduce on the untouched baseline.
+A pre-existing History-disabled save can drop the envelope/memoir association;
+that defect is documented for later review, not repaired in this stage.
+
+See the [Stage 1 report](CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) and the current
+[feature/Block application guide](docs/architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md).
+The [architecture review](CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) remains the
+migration plan. **Stage 2, Grouping extraction and selection/input rearchitecture
+have not begun.** Older entries below describe their historical implementation dates.
+
+
 ## Concertina search presentation — initial implementation, 16 September 2026
 
 Audited the original entity-highlighter/text-reference concertina behavior and

@@ -1,6 +1,6 @@
 # Architecture overview
 
-`ReactiveEditor` is the composition root. It decodes input, owns the canonical repository and commands, creates projections, and wires input and runtime services. Application code constructs an editor, calls `registerCoreViews(editor)`, creates one or more views, installs the input gateway, and renders `ReactiveTreeView`.
+`ReactiveEditor` owns canonical state, commands, projections and existing runtime/input services. Application code constructs an editor and calls `registerApplicationViews(editor)` in `src/application/features.ts`, which performs legacy/core registration and activates configured first-party modules. It then creates views, installs input and renders `ReactiveTreeView`. Timer is extracted; other services still use the legacy assembly path. See [Feature modules and hosted Block applications](FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md).
 
 ```mermaid
 flowchart TB
@@ -24,12 +24,14 @@ flowchart TB
 
 | System | Authority/responsibility | Main symbols |
 | --- | --- | --- |
+| Application composition | Activates configured modules and retains legacy registration | `registerApplicationViews`, `FeatureHost` |
+| Public feature boundary | Owned registrations and narrow creation/instance capabilities | `FeatureScope`, `BlockApplicationDefinition`, `BlockRuntime` |
 | Portable boundary | Nested legacy-compatible Block JSON, Workspace manifests, or a versioned history envelope | `ExistingBlockDto`, `decodeBlockTree`, `encodeDocument`, `WorkspaceManifest`, `HistoryDocumentEnvelope` |
 | Canonical model | Normalized content definitions and placement edges | `RepositoryState`, `ContentRecord`, `PlacementRecord`, `CanonicalRepository` |
 | Editing | Validated intent-level changes, transactions, structure, payload, inline edits | `TreeCommands` |
 | Occurrence projection | Finite per-view render tree and canonical-to-occurrence indexes | `BlockTreeProjection`, `OccurrenceIndex`, `BlockNode` |
 | Rendering | Block-type selection, Solid components, child/relation traversal | `BlockRegistry`, `ReactiveTreeView`, `BlockOutlet`, `ChildBlocks`, `RelationBlocks` |
-| Input | One document-level gateway, scoped semantic bindings, browser/model selection bridge | `InputGateway`, `BindingRegistry`, `MountRegistry` |
+| Input | Document-level gateway plus existing scoped helpers, semantic bindings, browser/model selection bridge | `InputGateway`, `BindingRegistry`, `MountRegistry` |
 | Session state | Focus, selections, open overlays, selected Blocks, search highlights, minimap state | services under `src/runtime` |
 | Persistence | HTTP save/load plus workspace resolution and optimistic revision checks | `PersistenceService` |
 | History | In-memory inverse operations; optional immutable durable commit stream and Block-level reader/restore | repository undo stack, `src/history`, `BlockHistorySession` |
@@ -64,7 +66,7 @@ Ordinary undo entries contain forward/inverse repository operations. Durable his
 
 | X | Change this |
 | --- | --- |
-| A Block payload field | `editor.commands.setPayloadField(...)` or a focused command built on `TreeCommands` |
+| A Block payload field | Hosted view: `runtime.setField(...)`; core/legacy: `TreeCommands.setPayloadField(...)` |
 | Child order/ownership | `insert`, `move`, `remove`, `replace`, `unwrap`, or a transaction of structural commands |
 | Text in a standoff paragraph | `replaceInlineRange`; do not edit DOM text or `inlineContent` directly |
 | A standoff property | Replace/edit `payload.standoffProperties` through a command; use `editStandoffProperty` for monitored edits |
@@ -83,7 +85,9 @@ Children, inline content, and named owned relations are distinct slots. Do not p
 ## Current boundaries and transitional areas
 
 - Legacy `src/blocks` code coexists as reference and for unmigrated context. Do not infer the reactive extension path from it.
-- `BlockRegistry` and `CommandRegistry` are explicit per editor; there is no module scanning or automatic plugin discovery.
+- `BlockRegistry`, `CommandRegistry` and bindings have owner-aware disposable registration. Application composition activates Timer through `FeatureHost`; there is no module scanning or automatic plugin discovery.
+- Module lifetime, mounted Block-instance lifetime and authored state are separate. Timer instances receive self-bound runtimes and use existing Solid cleanup.
+- Feature UI contributions currently cover only the document-actions and Add Block slots; broader extension points remain planned.
 - The binding catalogue registers semantic actions, but implementations are distributed between the gateway, command registry, and specific UI/runtime services.
 - Standoff styles and Block appearance are tables/switches, not public renderer registries.
 - Durable Block history is feature-flagged off by default and has stricter document identity/enrollment rules than ordinary undo.

@@ -4,6 +4,10 @@ These rules are more important than the shape of any one interface.
 
 | Rule | Why | What breaks when violated |
 | --- | --- | --- |
+| Keep module implementations behind the public feature API. | Application composition supplies narrow capabilities; core must not import individual modules. | Removal requires edits throughout core; features regain unrestricted editor access. |
+| Separate module, authored-content and mounted-instance lifetimes. | One registered type can run many occurrences sharing or owning authored content. | Removing one widget stops others, or unmount destroys authored data. |
+| Own registrations and external resources at the appropriate lifetime. | Module facades track registration disposal; `runtime.own` tracks instance resources. | Failed activation or closing an editor leaves commands, bindings, intervals or mounts behind. |
+| Preserve absent-module data and treat configuration as activation policy. | Unknown Blocks use fallback views; generic storage is independent of executable behavior. | Disabling a UI feature becomes a destructive document conversion. |
 | Treat `CanonicalRepository` state as read-only; mutate through `TreeCommands`. | Commands clone data, validate intent, attach identity/metadata, and publish one consistent commit. | Solid may miss changes; derived indexes, undo, persistence, and history can disagree. |
 | Never mutate `BlockTreeProjection` or `BlockNode.payload`. | A projection is reconstructed from canonical records and may have several occurrences. | The next projection update overwrites the change; other views and save output never see it. |
 | Keep authored `payload.id` stable. | References and Block-scoped history identify authored Blocks across save/reopen. | Links and historical lookup cannot reliably follow the Block. |
@@ -22,14 +26,14 @@ These rules are more important than the shape of any one interface.
 | Derive graphical coordinates from current DOM; never persist pixels. | Reflow, zoom, fonts, scrolling, and window size change geometry. | Decorations detach from their semantic targets. |
 | Coalesce geometry measurement and observe every real layout cause. | DOM measurement is expensive and only correct after layout. | Jank from repeated layout or stale SVG after resize/image/font changes. |
 | Passive decoration SVG should not capture pointer/accessibility input. | The editable DOM and explicit HTML controls own interaction. | Caret placement and screen-reader output become unreliable. |
-| Register every Block view for every editor instance. | Registries are per `ReactiveEditor`; discovery is explicit. | The same saved type renders as `UnknownBlockView` in a new/load path. |
+| Activate configured modules once per editor; keep legacy assembly explicit. | Registries are per editor, owned and reject duplicate IDs/aliases. | Missing activation gives intentional fallback; duplicate initialization fails rather than replacing owners. |
 | Use generic codecs unless the normalized representation truly differs. | Generic payload/children round-tripping preserves legacy wire details. | Unnecessary codec branches create format divergence and compatibility risk. |
 | Unknown data must survive when it is not owned by the extension. | Codex loads legacy/future fields and opaque relations. | Saving with the extension silently deletes data it did not understand. |
 | Treat history restore as a new command. | Durable history is immutable evidence; current state remains independently undoable. | Rewriting archive state invalidates chronology and verification. |
 
 ## Renderer assumptions
 
-A registered Block view receives only `nodeKey`. It obtains the active editor/projection through `useReactiveView`, reads reactive node fields, and may be mounted more than once for shared content. The view must tolerate its node disappearing during cleanup. `BlockOutlet` adds the general Block-selection handle after the registered view; do not assume your component is the only sibling DOM for an occurrence.
+A hosted Block view receives a self-bound `BlockRuntime`; read fields reactively, edit through its methods and mount only its own widget element. Core/legacy `BlockViewProps` views still receive `nodeKey` and use `useReactiveView` internally. Neither path implies a singleton instance: shared content may be mounted in several occurrences. The view must tolerate its node disappearing during cleanup. `BlockOutlet` adds the general Block-selection handle after the registered view; do not assume your component is the only sibling DOM for an occurrence.
 
 ## Selection assumptions
 
@@ -37,4 +41,6 @@ A registered Block view receives only `nodeKey`. It obtains the active editor/pr
 
 ## Persistence assumptions
 
-Normal document codecs preserve payload and known structure, but runtime state is disposable. Verify that a fresh `ReactiveEditor(encodedDto)` plus registration reproduces the feature. An extension which only works without reconstructing the editor is incomplete.
+Normal document codecs preserve payload and known structure, but runtime state is disposable. Verify a fresh editor with application activation reproduces behavior and an editor without the module preserves authored data using fallback rendering. See [persistence limits](../architecture/PERSISTENCE_AND_HISTORY.md) for the pre-existing History-disabled envelope defect.
+
+The available Stage 1 ports do not include arbitrary selection, annotation or transaction services. Keep future APIs from the architecture review distinct from the [implemented public contract](../../src/feature-api/index.ts).

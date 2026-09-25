@@ -12,7 +12,7 @@ flowchart LR
   R -->|optional durable projection| H[versioned HistoryDocumentEnvelope]
 ```
 
-`PersistenceService.saveDocument` snapshots the current repository revision, calls `editor.encodeDocument()`, adds file metadata, and sends it to `/api/saveDocumentJson`. Load validates the response and constructs a new `ReactiveEditor`, which decodes it. Workspace save/load has a versioned manifest and resolves referenced Document resources separately.
+`PersistenceService.saveDocument` records the current revision and first offers the save to `BlockHistorySession.savePersistent`. When that path is unavailable it calls `editor.encodeDocument()`, adds file metadata, and sends ordinary JSON to `/api/saveDocumentJson`. Load validates the response and constructs a new `ReactiveEditor`, which decodes it. Workspace save/load has a versioned manifest and resolves referenced Document resources separately.
 
 An explicit extended normalized format exists in [`extended-codec.ts`](../../src/block-tree/extended-codec.ts), but it is a separate endpoint/format. Do not make an ordinary extension depend on it.
 
@@ -23,10 +23,10 @@ For ordinary JSON-shaped payload fields, children, and owned left/right margins,
 - `payload.type` becomes `ContentRecord.viewType` and is written back as the Block `type`;
 - other payload fields, including `blockProperties` and `standoffProperties`, round-trip generically;
 - nested `children` become child placements and encode recursively;
-- `leftMargin`/`rightMargin` become owned relations;
+- `leftMargin`/`rightMargin` and recognized `superposition:` Block relations become owned relations;
 - unrecognized relation fields remain opaque and round-trip.
 
-A new leaf Block with `{ id, type, myField }` therefore needs a registered renderer, not a codec branch. Add codec work only for a genuinely different normalized representation, as Standoff text/Cells and Workspace resources do.
+A new leaf Block with `{ id, type, myField }` needs type registration for executable behavior, not for preserving that JSON. It does not need a codec branch. Add codec work only for a genuinely different normalized representation, as Standoff text/Cells and Workspace resources do.
 
 To verify Save → Close → Reopen, encode the repository, construct a fresh editor from the encoded DTO, register views, and assert the payload and rendering. Persistence HTTP tests are only needed when changing store behaviour.
 
@@ -34,11 +34,17 @@ To verify Save → Close → Reopen, encode the repository, construct a fresh ed
 
 Authored Blocks should carry a stable `id`. `TreeCommands.insert` runs `prepareNewBlockIdentities`, so newly inserted authored definitions receive IDs if needed. Copy/detach operations follow explicit identity-remapping rules. Durable history and linked references depend on authored IDs; `NodeKey`, `ContentKey`, and runtime `PlacementKey` are not substitutes.
 
-The codec preserves unknown payload/type data. At rendering time an unregistered `viewType` falls back to `UnknownBlockView`; registering the type later makes it render normally. A DTO with no type normalizes as `unknown-block`.
+The codec preserves unknown payload/type data. At rendering time an unregistered `viewType` falls back to `UnknownBlockView`; activating the type when constructing a fresh editor restores its registered behavior. Hot registration into a running document is not a Stage 1 guarantee. A DTO with no type normalizes as `unknown-block`.
 
 Legacy aliases `main-list-block` and `membrane-block` normalize to `document-block`. Codecs also preserve omitted/null/present collection shape where possible. Avoid post-processing encoded JSON in an extension; that risks breaking these compatibility details.
 
 Inline images are a special case: a Standoff paragraph is no longer representable as only legacy `text` when its inline stream contains non-text atoms. The codec refuses loss unless an explicit lossy export context is used.
+
+## Feature absence is not data removal
+
+The authored state of a hosted Block is serialized independently of its executable type. The Timer pilot verifies unknown fields, Block/standoff properties, child content and opaque relations with the module enabled, disabled and physically absent. Its clocks, audio handles, mount resources and local drafts never enter the DTO. See the [wire fixture](../../src/block-tree/test-support/unknown-feature-document.ts) and [absence test](../../src/rendering/unknown-feature.test.tsx).
+
+Known structural format rules remain available even when their feature UI is absent. Optional registration must not change owned-relation decoding or strip unfamiliar data. Stage 1 adds no serializer plugin system.
 
 ## Ordinary undo/redo
 
@@ -55,7 +61,7 @@ Local Solid signals and runtime services are intentionally not undoable document
 
 ## Commit capture and document history
 
-Each repository commit emits an immutable `RepositoryCommitResult` containing exact changed-record preimages/postimages, revision and root transitions, cause, label, and command descriptors. This stream is separate from the bounded ordinary undo stack.
+When subscribed, the repository prepares an immutable `RepositoryCommitResult` containing exact changed-record preimages/postimages, revision and root transitions, cause, label, and command descriptors. This stream is separate from the bounded ordinary undo stack. History also uses its compact `subscribeHistoryChanges` stream. Capture work is subscription-dependent; do not add an unconditional whole-document observer to dispatch feature updates.
 
 The history code under [`src/history`](../../src/history) projects the repository to a durable resource model, stores verified checkpoints/transitions, groups edits, and supports bounded historical queries. The browser bridge uses a worker and a persistent outbox. It also captures undo and redo transitions; history is a chronology, not merely a larger undo stack.
 
@@ -76,6 +82,12 @@ Current constraints:
 - capture health and verified-prefix checks can block restore without blocking ordinary editing/save fallback.
 
 A new Block/property generally needs no Block-history adapter if its authored data is JSON-shaped and changed through commands. Give authored Blocks stable IDs and use specific command descriptors (which standard `TreeCommands` methods already supply). A new structure with nonstandard identity or serialization requires dedicated history/resource work as well as codec work.
+
+## Known History-disabled envelope limitation
+
+Stage 0/1 confirmed an existing defect: loading a `codex-history-document` with History disabled and calling `saveDocument` falls back to ordinary Block encoding. The captured outgoing request retains authored text but omits the envelope, memoir association and history proof. The ordinary Node save route does not compare the destination's previous format, so overwriting an enrolled file can drop that association.
+
+The characterization reproduced on the untouched baseline and Stage 1 code with a mocked HTTP response; it did not overwrite a user file or establish archive deletion. No History code was changed. Always-available envelope/identity preservation and destination downgrade handling need separate review before History extraction. See [the Stage 1 report](../../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md#6-preservation-fixtures-and-the-history-issue). Timer's generic data preservation does not resolve this separate format issue.
 
 ## Ways to bypass history accidentally
 

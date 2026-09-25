@@ -20,7 +20,7 @@ flowchart LR
 
 ## Browser event entry points
 
-[`ReactiveEditor.installGateway`](../../src/reactive-editor/editor.ts) installs one [`InputGateway`](../../src/input/gateway.ts) for a `Document`, plus cross-Block and Find input helpers. The gateway uses capture listeners for `beforeinput`, `input`, composition, focus, keydown, selection change, pointer, clipboard, and context-menu events.
+[`ReactiveEditor.installGateway`](../../src/reactive-editor/editor.ts) installs one [`InputGateway`](../../src/input/gateway.ts) for a `Document`, plus Find, manual Grouping and cross-Block input helpers. Existing installation order and guards remain; Stage 1 did not introduce gesture ownership. The gateway uses capture listeners for `beforeinput`, `input`, composition, focus, keydown, selection change, pointer, clipboard, and context-menu events.
 
 `MountRegistry.resolveEvent` walks the composed DOM path and returns the nearest registered `NodeKey` and its `inputPolicy`:
 
@@ -74,11 +74,11 @@ Repository validation is the final structural safety net. Command validation pro
 
 ### CommandRegistry
 
-`CommandRegistry` is a semantic UI-command registry with `id`, `label`, `canExecute`, and `execute`. Core registrations currently live beside Block registration in [`register-core-views.ts`](../../src/rendering/register-core-views.ts). It is suitable when keyboard, menus, or other callers need the same named action.
+`CommandRegistry` is a semantic UI-command registry with `id`, `label`, `canExecute`, and `execute`. Migrated modules register commands through `register.command`, with owner identity and automatic disposal. Legacy/core registrations remain beside Block registration in [`register-core-views.ts`](../../src/rendering/register-core-views.ts). Duplicate IDs fail; low-level registration returns an idempotent disposer. It is suitable when keyboard, menus, or other callers need the same named action.
 
 It is distinct from `TreeCommands`: the registry controls availability and invocation; its implementation normally calls a tree command or runtime service.
 
-Programmatic callers may use either:
+Core/legacy programmatic callers may use either (hosted views use `BlockRuntime.setField` instead):
 
 ```ts
 editor.commands.setPayloadField(nodeKey, "checked", true, "Check Block");
@@ -91,7 +91,7 @@ await editor.commandRegistry.execute("block.remove", {
 
 ## Keybindings
 
-[`registerInputActions`](../../src/input/binding-catalog.ts) registers action metadata, scopes, default keyboard/mouse/custom triggers, and a handler which calls `context.run(id)`. [`BindingRegistry`](../../src/input/bindings.ts) matches a normalized event in the active scope, including chords and user overrides.
+Modules register their own actions through `register.binding`; [`registerInputActions`](../../src/input/binding-catalog.ts) retains legacy action metadata, scopes, default keyboard/mouse/custom triggers, and a handler which calls `context.run(id)`. [`BindingRegistry`](../../src/input/bindings.ts) matches a normalized event in the active scope, including chords and user overrides.
 
 The gateway derives the scope from current UI mode and mount policy, dispatches the match, then routes its action ID. Current implementations are distributed:
 
@@ -100,7 +100,13 @@ The gateway derives the scope from current UI mode and mount policy, dispatches 
 - cross-Block input has its own guarded path;
 - some toolbar actions call `TreeCommands` or services directly.
 
-When adding a shortcut, first make the operation callable without the shortcut. Then register an action in the catalogue and add the smallest routing case needed. Do not put document mutation inside trigger matching.
+When adding a feature shortcut, first register a callable command, then register its binding in the module and use `context.run(commandId)`. Timer keeps `timer.create` and `cross.timerCreate` as preference IDs; both invoke the registered `timer.create` command through existing scoped dispatch. No Timer-specific gateway callback remains. The legacy catalogue still serves unmigrated actions. Do not put mutation inside trigger matching or add per-feature document listeners.
+
+## Contribution scope and current limits
+
+Stage 1 provides owner-aware commands/bindings and two command-backed UI slots: `document-actions` and `add-block-menu`. Existing toolbar/menu renderers consume them and use command availability. Timer's Start/Pause/drag controls are local instance interactions using `BlockRuntime`, not global commands duplicated per running Timer.
+
+Ordinary typing still uses the existing native input path. No plugin-wide event broadcast, selection-behavior registry or annotation-target API exists yet. Grouping's gesture cooperation with cross-Block input is unmigrated; Find/Entity highlights do not become Grouping deletion targets through module registration. See [feature modules](FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md).
 
 ## Mouse, menus, and toolbar actions
 

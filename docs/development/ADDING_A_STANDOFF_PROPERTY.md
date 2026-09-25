@@ -1,5 +1,8 @@
 # Adding a standoff property
 
+This recipe documents the current core/legacy property path. The Timer feature-module pilot has not introduced a public property/effect registry or annotation-target API. Follow these internal integration points for scoped property work; do not expose `ReactiveEditor` to a feature as a workaround. See [implemented feature boundaries](../architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md).
+
+
 A persisted standoff property is a JSON object in a Standoff Block's `payload.standoffProperties`. Active ranges use inclusive Cell indexes:
 
 ```ts

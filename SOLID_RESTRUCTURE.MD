@@ -2,6 +2,18 @@
 
 Technical migration proposal · 11 September 2026
 
+Feature-module implementation update (25 September 2026): Stage 0/1 is complete
+under the [feature-module architecture review](CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md).
+Timer now lives in `src/features/timer`, activated by application composition.
+A module registers a Block Type; each mounted occurrence receives a separate
+self-bound `BlockRuntime`. Authored JSON survives module absence, while Solid
+owns each running instance's resources. The [current developer guide](docs/architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md)
+and [Stage 1 report](CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) describe the implemented
+API, removal test, and limitations. Stage 2/Grouping extraction is not implemented.
+The original proposal below remains historical design context; do not copy its
+editor-wide access patterns into new hosted feature modules.
+
+
 Annotation-monitor extension (12 September 2026): original shortcut/action
 inventory, requested Ctrl+period alias, attribute editing and verification are in
 [ANNOTATION_MONITOR_MIGRATION.md](ANNOTATION_MONITOR_MIGRATION.md).

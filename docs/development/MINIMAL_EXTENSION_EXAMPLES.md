@@ -2,42 +2,86 @@
 
 These snippets isolate the lines that matter. Production features should add names, accessibility, error handling, and focused tests appropriate to their behaviour.
 
-## Minimal Block type
+## Minimal hosted Block module
+
+This example uses the implemented Stage 1 API. Place it at
+`src/features/rating/index.tsx`; it does not access `ReactiveEditor`.
 
 ```tsx
-// rendering/rating-block.tsx
-import type { BlockViewProps } from "../block-tree/types";
-import { useReactiveView } from "../reactive-editor/context";
+import { onMount } from "solid-js";
+import type {
+  BlockApplicationDefinition, BlockFeatureCapabilities, BlockRuntime,
+  CodexFeature, FeatureScope,
+} from "../../feature-api";
 
-export function RatingBlockView(props: BlockViewProps) {
-  const { editor, projection } = useReactiveView();
-  const node = () => projection.state.nodes[props.nodeKey];
-  const value = () => Number(node()?.payload.value ?? 0);
+function RatingView(props: { runtime: BlockRuntime }) {
+  const runtime = props.runtime;
+  let root!: HTMLLabelElement;
+  const value = () => Number(runtime.field("value") ?? 0);
+  onMount(() => runtime.mountWidget(root)); // instance-owned cleanup
 
-  return <label class="rating-block">
+  return <label ref={root} tabIndex={-1} class="rating-block"
+    data-runtime-key={runtime.nodeKey}>
     Rating
     <input type="range" min="0" max="5" value={value()}
-      onChange={event => editor.commands.setPayloadField(
-        props.nodeKey, "value", event.currentTarget.valueAsNumber, "Set Rating",
+      onChange={event => runtime.setField(
+        "value", event.currentTarget.valueAsNumber, "Set Rating",
       )} />
   </label>;
 }
 
-// in registerCoreViews(editor)
-editor.registry.register({
-  type: "rating-block",
-  view: RatingBlockView,
-  capabilities: ["control", "selectable"],
-});
-
-// creation
-editor.commands.insert(
-  { id: crypto.randomUUID(), type: "rating-block", value: 3 },
-  { kind: "after", anchorKey },
-);
+export function createRatingFeature(
+  capabilities: (scope: FeatureScope) => BlockFeatureCapabilities,
+): CodexFeature {
+  return {
+    id: "rating",
+    activate(scope) {
+      const { blocks, register } = capabilities(scope);
+      const type: BlockApplicationDefinition = {
+        type: "rating-block", view: RatingView,
+        capabilities: ["control", "opaque-widget", "selectable"],
+        create: () => ({ id: crypto.randomUUID(), type: "rating-block", value: 3 }),
+      };
+      register.block(type);
+      register.command({
+        id: "rating.create", label: "Add rating",
+        canExecute: ({ targetKey }) => !!blocks.get(targetKey),
+        execute: ({ targetKey }) => {
+          const origin = blocks.get(targetKey)!;
+          const placement = blocks.insert(type.create(),
+            origin.isRoot || origin.type === "document-block"
+              ? { kind: "at", parentKey: origin.key, index: origin.children.length }
+              : { kind: "after", anchorKey: origin.key });
+          blocks.focusPlacement(placement, origin.viewId);
+        },
+      });
+      register.action({ id: "rating.add", slot: "add-block-menu",
+        label: "Rating", command: "rating.create" });
+    },
+  };
+}
 ```
 
-The generic codec persists this payload. The command supplies undo and history capture. Register a mount with `inputPolicy: "control"` if the gateway must resolve/focus the root beyond the native input's local handler.
+Application composition imports the factory and activates it with
+`createRatingFeature(scope => blockFeatureCapabilities(editor, scope))`, following
+[Timer's existing registration](../../src/application/features.ts). Gate activation
+with the feature's approved configuration; new substantial features default off
+unless the user specifies otherwise. Call application registration once per editor.
+Do not add the module import to `registerCoreViews` or the input gateway.
+
+The generic codec persists the authored `value` even without the module. The
+runtime supplies undoable edits and only this occurrence's mount access. A timer,
+observer or subscription acquired by the instance should register cleanup with
+`runtime.own(...)`; module-wide resources use `scope.own(...)`. Do not put those
+handles into the DTO. See [Adding a Block type](ADDING_A_BLOCK_TYPE.md) for the
+boundary and verification checklist.
+
+## Remaining core/legacy extension examples
+
+The following property examples describe the existing internal implementation,
+not public feature capabilities. Stage 1 has not added standoff/property renderer,
+annotation-target or selection-behavior registries. Keep changes to these systems
+explicitly scoped; do not pass the editor into a feature to imitate these snippets.
 
 ## Minimal CSS standoff property
 
@@ -132,19 +176,19 @@ flowchart LR
   G --> H[Focused tests + typecheck]
 ```
 
-1. Decide whether the feature is authored document state, placement structure, or transient UI. Only authored data enters the repository.
-2. Reuse a `TreeCommands` operation. Add a focused command only when an existing payload/structure operation cannot express the invariant.
-3. Implement a view/schema/appearance case and register it at the explicit point listed in [Repository map](REPOSITORY_MAP.md).
+1. Separate module lifetime, mounted-instance runtime, authored data and derived state. Only authored data enters the repository.
+2. Use the available public capabilities for a hosted Block; they delegate to existing `TreeCommands` operations. A genuinely missing primitive requires a separately justified core change.
+3. Keep module policy, type defaults/reader, view and contributions together. Register through application composition; use legacy schema/appearance paths only for extensions that still require them.
 4. Add input after the operation is programmatically callable. Use a semantic command when several UI surfaces share it.
 5. Verify the model value and visible result, then undo/redo.
-6. Encode, create a fresh editor, repeat registration, and verify reopen.
+6. Encode, create a fresh editor, activate configured modules, and verify reopen. Repeat with the module absent to verify preservation and fallback.
 7. If durable Block history is relevant, enable it in a focused test and confirm authored ID/attribution. Generic payload changes rarely need a new history suite.
 
 ## Proportionate test choices
 
 | Change | Usually run/add |
 | --- | --- |
-| Block payload/view | one renderer test, relevant command/model test, encode/reopen assertion |
+| Hosted Block module | focused behavior/undo/round-trip tests, activation rollback/disposal, independent instances, disabled/absent-type preservation and removal check |
 | Structure/identity/transclusion | focused `src/block-tree` tests plus compatibility and undo tests |
 | Binding/input | `src/input/bindings.test.ts` and a focused gateway/rendering interaction test |
 | CSS standoff property | `standoff-styles.test.ts`; visual spot-check |

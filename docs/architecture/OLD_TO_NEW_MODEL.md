@@ -32,7 +32,7 @@ The practical rule is: **change the model through `TreeCommands`; let projection
 
 | Original habit | Current location and responsibility |
 | --- | --- |
-| Construct a `Block` subclass which creates its element | Define serializable payload data and a Solid `BlockViewProps` component; register it with `BlockRegistry`. |
+| Construct a `Block` subclass which creates its element | Define authored JSON and a hosted `BlockApplicationDefinition` in a feature module; its view receives a self-bound `BlockRuntime`. Legacy/core views still use `BlockViewProps`. |
 | Store children in `block.blocks` and maintain `parent`, `previous`, and `next` | `ContentRecord.children` stores ordered `PlacementKey`s. `deriveLocations` and projections reconstruct ancestry and occurrence order. |
 | Insert/move/delete the DOM and Block together | Call `TreeCommands.insert`, `move`, `remove`, `replace`, `setRelation`, and related operations. Repository validation and the renderer do the rest. |
 | Treat one Block object as identity | Separate authored `payload.id`, canonical `ContentKey`, attachment `PlacementKey`, and per-view occurrence `NodeKey`. |
@@ -59,7 +59,7 @@ The practical rule is: **change the model through `TreeCommands`; let projection
 - Parent/sibling links are derived rather than independently mutable.
 - Rendering no longer owns canonical state and commands no longer perform routine DOM surgery.
 - Input dispatch is centralized rather than discovered by walking Block instances.
-- One authored Block may have several placements or several view occurrences. An instance-shaped mental model cannot represent that correctly.
+- One authored Block may have several placements or view occurrences. A running Block application belongs to one mounted occurrence; it is not the canonical content object or its registering module.
 
 ## Four identities instead of one object
 
@@ -77,11 +77,14 @@ Use the `NodeKey` received by a view for focus, selection, mounts, and command t
 - **Serializable fields and structure:** [`src/block-tree/types.ts`](../../src/block-tree/types.ts), codecs, and repository records.
 - **Document mutations and validation at the user-operation level:** [`TreeCommands`](../../src/block-tree/commands.ts).
 - **Record validation, undo capture, and reactive publication:** [`CanonicalRepository`](../../src/block-tree/repository.ts).
-- **A view occurrence:** a component under [`src/rendering`](../../src/rendering), registered in [`register-core-views.ts`](../../src/rendering/register-core-views.ts).
+- **A migrated feature and its hosted views:** [`src/features`](../../src/features), using the [`public API`](../../src/feature-api/index.ts) and [`application composition`](../../src/application/features.ts).
+- **Core/legacy view occurrences:** components under [`src/rendering`](../../src/rendering), still assembled by `registerCoreViews`.
 - **Browser event translation:** [`src/input/gateway.ts`](../../src/input/gateway.ts) and focused runtime services.
-- **Semantic shortcuts:** [`binding-catalog.ts`](../../src/input/binding-catalog.ts).
+- **Semantic shortcuts:** module-owned binding registrations for migrated features; [`binding-catalog.ts`](../../src/input/binding-catalog.ts) for legacy actions.
 - **Transient focus, selection, overlays, and measurements:** [`src/runtime`](../../src/runtime).
 - **Save/load:** codecs plus [`PersistenceService`](../../src/reactive-editor/persistence.ts).
 - **Historical recording/read/restore:** [`src/history`](../../src/history) and [`BlockHistorySession`](../../src/runtime/block-history.ts).
 
-The rebuild is not uniformly plugin-oriented. Block views and commands have registries. Standoff appearance uses a schema table plus a rendering switch. Block properties use a rendering switch. The recipes document those actual integration points rather than presenting them as generalized extension APIs.
+The rebuild is not uniformly plugin-oriented. Stage 1 extracts Timer through owned module/type/command/binding/UI registration and per-occurrence runtime capabilities. Grouping and other features remain unmigrated. Standoff appearance uses a schema table plus a rendering switch. Block properties use a rendering switch. The recipes document those actual integration points rather than presenting them as generalized extension APIs.
+
+A sophisticated Block can be a hosted application without returning to the old model: canonical JSON is its authored state, a registered type supplies interpretation, and Solid owns each running occurrence. Local timers/subscriptions and derived display values do not become serialized data. See [feature modules and hosted Block applications](FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md).
