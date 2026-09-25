@@ -40,7 +40,6 @@ export class InputGateway {
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly entitySearch: (key: string, range: { anchor: number; head: number }) => void,
     private readonly entityList: (key: string) => void,
-    private readonly createTimer: (key: string) => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
   ) {}
 
@@ -468,11 +467,6 @@ export class InputGateway {
     if (id === "sticky.createFloating") {
       const resolved = this.mounts.resolveEvent(event);
       return resolved ? this.runCommand(id, resolved.nodeKey) : false;
-    }
-    if (id === "timer.create") {
-      const resolved = this.mounts.resolveEvent(event);
-      if (!resolved) return false;
-      this.createTimer(resolved.nodeKey); return true;
     }
     if (id === "entity.list.open") {
       const resolved = this.mounts.resolveEvent(event);

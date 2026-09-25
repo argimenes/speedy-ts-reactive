@@ -1,0 +1,52 @@
+/** Public first-party feature boundary. No editor, repository or DOM lookup API. */
+import type { Component } from "solid-js";
+import type { CommandDefinition, ExistingBlockDto, NodeKey, PlacementKey, ViewId } from "../block-tree/types";
+import type { BindingAction } from "../input/bindings";
+import type { FeatureAction, Disposer } from "../runtime/features";
+export type { CodexFeature, FeatureScope, Disposer } from "../runtime/features";
+export type { ExistingBlockDto, NodeKey, BlockViewProps } from "../block-tree/types";
+export { keyboard, chord } from "../input/bindings";
+// Existing editor-independent widget primitive, not a new layout abstraction.
+export { createFloatingWindowResize, FloatingWindowResizeHandle } from "../rendering/floating-window-resize";
+
+export interface BlockSummary {
+  readonly key: NodeKey;
+  readonly viewId: ViewId;
+  readonly type: string;
+  readonly children: readonly NodeKey[];
+  readonly isRoot: boolean;
+}
+export interface FeatureBlocks {
+  get(key: NodeKey): BlockSummary | undefined;
+  insert(dto: ExistingBlockDto, destination: { kind: "at"; parentKey: NodeKey; index: number } | { kind: "after"; anchorKey: NodeKey }): PlacementKey;
+  focusPlacement(placement: PlacementKey, view: ViewId): void;
+  bounds(key: NodeKey): { left: number; top: number } | undefined;
+}
+/** One mounted occurrence, not the module or the shared authored content. */
+export interface BlockRuntime {
+  readonly nodeKey: NodeKey;
+  /** Detached reactive read of this Block's authored state. */
+  field(name: string): unknown;
+  setField(name: string, value: unknown, label: string): void;
+  removeAndFocusFallback(): void;
+  mountWidget(element: HTMLElement): Disposer;
+  /** Uses the existing Solid instance owner; nothing here is serialized. */
+  own(dispose: Disposer): Disposer;
+}
+export interface BlockApplicationDefinition {
+  type: string;
+  aliases?: string[];
+  capabilities: string[];
+  create(): ExistingBlockDto;
+  view: Component<{ runtime: BlockRuntime }>;
+}
+export interface FeatureRegistrations {
+  block(definition: BlockApplicationDefinition): void;
+  command(definition: CommandDefinition<void>): void;
+  binding(definition: BindingAction): void;
+  action(definition: FeatureAction): void;
+}
+export interface BlockFeatureCapabilities {
+  blocks: FeatureBlocks;
+  register: FeatureRegistrations;
+}

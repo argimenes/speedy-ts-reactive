@@ -14,6 +14,9 @@
     "noEmit": true
   },
   "include": [
+    "src/feature-api/**/*",
+    "src/application/**/*",
+    "src/features/**/*",
     "src/index.tsx",
     "src/App.tsx",
     "src/demo/**/*",

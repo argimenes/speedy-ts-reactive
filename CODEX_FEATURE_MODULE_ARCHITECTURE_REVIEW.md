@@ -4,6 +4,8 @@ Investigation and migration proposal · 25 September 2026 · baseline `3f70c71`
 
 **Status: for review; no rearchitecture implemented.** This review follows the current reactive editor, its application composition, and the Node.js/local-filesystem persistence path. Findings come from source inspection, including existing tests; they are not claims of new browser or performance qualification. Paths and symbols below identify the implementation being discussed.
 
+Implementation follow-up: [Stage 0 / Stage 1 report](CODEX_FEATURE_MODULE_STAGE_1_REPORT.md), including the distinction between feature registration and hosted Block-instance lifetimes. The assessment below remains the original review baseline.
+
 ## Recommendation
 
 Adopt a small, compiled first-party feature contract, backed by the registries and disposable services Codex already has. Move application assembly out of the editor kernel incrementally. Inject specific capabilities into each feature rather than passing `ReactiveEditor` under a different name.

@@ -1,3 +1,4 @@
+import { FeatureHost, FeatureActions } from "../runtime/features";
 import { decodeBlockTree, encodeDocument, encodeWorkspace } from "../block-tree/codecs";
 import { TreeCommands } from "../block-tree/commands";
 import { createViewId } from "../block-tree/ids";
@@ -28,7 +29,6 @@ import { createStore } from "solid-js/store";
 import { SessionDecorations } from "../runtime/session-decorations";
 import { DocumentFind } from "../runtime/document-find";
 import { DocumentEntityList } from "../runtime/document-entity-list";
-import { createTimerBlock } from "../runtime/timer-block";
 import { MinimapService } from "../runtime/minimap";
 import { ConcertinaService } from "../runtime/concertina";
 import { StickyNoteService } from "../runtime/sticky-notes";
@@ -55,6 +55,8 @@ export class ReactiveEditor {
   readonly commands: TreeCommands;
   readonly registry = new BlockRegistry();
   readonly commandRegistry = new CommandRegistry();
+  readonly featureHost = new FeatureHost();
+  readonly featureActions = new FeatureActions();
   readonly events = new ModelEventBus();
   readonly mounts = new MountRegistry();
   readonly concertina = new ConcertinaService(this);
@@ -168,7 +170,6 @@ export class ReactiveEditor {
       direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
       (nodeKey, range) => openEntitySearch(this, [{ nodeKey, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }]),
       nodeKey => this.entityList.open(nodeKey),
-      nodeKey => { createTimerBlock(this, nodeKey); },
       (id, targetKey) => {
         const context = { targetKey, args: undefined };
         if (!this.commandRegistry.canExecute(id, context)) return false;
@@ -314,6 +315,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.featureHost.dispose();
     this.disposeFindInput?.();
     this.stickyNotes.dispose();
     this.concertina.dispose();

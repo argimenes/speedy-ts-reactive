@@ -63,6 +63,7 @@ function validateTrigger(input: unknown): Trigger {
 /** Data-only preferences; handlers always come from application registration. */
 export class BindingRegistry {
   private actions = new Map<string, BindingAction>();
+  private owners = new Map<string, string>();
   private overrides: Record<string, Trigger[]> = Object.create(null);
   private index = new Map<string, BindingAction[]>();
   private chordStarts = new Map<string, Array<{ action: BindingAction; trigger: Extract<Trigger, { kind: "chord" }> }>>();
@@ -84,10 +85,12 @@ export class BindingRegistry {
   pendingHint = () => this.chordStatus[0]();
   list = () => { this.revision[0](); return [...this.actions.values()]; };
   get(id: string) { return this.actions.get(id); }
-  register(action: BindingAction) {
-    if (this.actions.has(action.id)) throw new Error(`Duplicate binding action ${action.id}`);
-    this.actions.set(action.id, action); this.rebuild();
-    return () => { this.actions.delete(action.id); this.rebuild(); };
+  owner(id: string): string | undefined { return this.owners.get(id); }
+  register(action: BindingAction, owner = "legacy") {
+    if (this.actions.has(action.id)) throw new Error(`Duplicate binding action ${action.id} owned by ${this.owner(action.id)}; cannot register for ${owner}`);
+    this.actions.set(action.id, action); this.owners.set(action.id, owner); this.rebuild();
+    let active = true;
+    return () => { if (!active) return; active = false; this.actions.delete(action.id); this.owners.delete(action.id); this.rebuild(); };
   }
   effective(id: string): Trigger[] { this.revision[0](); return this.overrides[id] ?? this.actions.get(id)?.defaults ?? []; }
   label(id: string) { return this.effective(id).map(triggerLabel).join(" / ") || "Unassigned"; }

@@ -3,7 +3,7 @@ import type { ExistingBlockDto } from "../block-tree/types";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { ReactiveViewProvider } from "../reactive-editor/context";
 import { BlockOutlet } from "../rendering/block-outlet";
-import { registerCoreViews } from "../rendering/register-core-views";
+import { registerApplicationViews } from "../application/features";
 import "./standoff-effects-demo.css";
 
 type EffectCard = {
@@ -74,7 +74,7 @@ function demoDocument(): ExistingBlockDto {
 
 export function StandoffEffectsDemo() {
   const editor = new ReactiveEditor(demoDocument());
-  registerCoreViews(editor);
+  registerApplicationViews(editor);
   const projection = editor.createView("standoff-effects-demo");
   let disposeGateway: (() => void) | undefined;
   let page!: HTMLElement;

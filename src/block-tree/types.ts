@@ -110,6 +110,8 @@ export interface BlockViewProps {
 export interface BlockTypeRegistration {
   type: string;
   view: Component<BlockViewProps>;
+  /** Optional authored defaults, independent of mounted application state. */
+  create?: () => ExistingBlockDto;
   capabilities: string[];
   aliases?: string[];
   slots?: SlotSpec[];

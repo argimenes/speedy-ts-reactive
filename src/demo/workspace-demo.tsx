@@ -9,7 +9,7 @@ import { DocumentBrowser } from "./document-browser";
 import { DocumentDialog } from "./document-dialog";
 import { createWorkspaceDocuments, type LocalDocumentFile } from "./workspace-documents";
 import { ReactiveEditor as BackgroundEditor } from "../reactive-editor/editor";
-import { registerCoreViews } from "../rendering/register-core-views";
+import { registerApplicationViews } from "../application/features";
 import "./workspace-demo.css";
 import { DocumentStatusBar } from "../rendering/document-status-bar";
 import type { Toolset } from "../rendering/compact-toolbar";
@@ -431,7 +431,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
 
 function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
   const editor = new BackgroundEditor(props.loaded, props.configuration);
-  registerCoreViews(editor);
+  registerApplicationViews(editor);
   const projection = editor.createView("loaded-workspace");
   const release = props.onEditor(editor);
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave]] as const) {
@@ -502,7 +502,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
   const [workspaceConflict, setWorkspaceConflict] = createSignal(false);
   const [localWorkspaceFile, setLocalWorkspaceFile] = createSignal<LocalWorkspaceFile>();
   const background = new BackgroundEditor({ id: "workspace-background", type: "image-background-block", metadata: { url: backgroundImages[0].url }, children: [] }, configuration);
-  registerCoreViews(background);
+  registerApplicationViews(background);
   const backgroundView = background.createView("workspace-background");
   let activeEditor: ReactiveEditor | undefined;
   let activeDemo: DemoEditorBridge | undefined;

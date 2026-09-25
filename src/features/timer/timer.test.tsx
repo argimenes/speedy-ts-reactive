@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
-import type { ExistingBlockDto } from "../block-tree/types";
-import { ReactiveEditor } from "../reactive-editor/editor";
-import { blockMenuItems } from "../runtime/block-menu-actions";
-import { timerBlockDto } from "../runtime/timer-block";
-import { ReactiveTreeView } from "./reactive-tree-view";
-import { registerCoreViews } from "./register-core-views";
+import type { ExistingBlockDto } from "../../block-tree/types";
+import { ReactiveEditor } from "../../reactive-editor/editor";
+import { blockMenuItems } from "../../runtime/block-menu-actions";
+import { timerBlockDto } from "./model";
+import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
+import { registerApplicationViews } from "../../application/features";
 
 const cleanup: Array<() => void> = [];
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-14T12:00:00Z")); });
@@ -15,7 +15,7 @@ const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 
 function setup(children: ExistingBlockDto[]) {
   const editor = new ReactiveEditor({ id: "document", type: "document-block", children });
-  registerCoreViews(editor); const projection = editor.createView("timer-test"), host = document.body.appendChild(document.createElement("div"));
+  registerApplicationViews(editor); const projection = editor.createView("timer-test"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
   cleanup.push(() => { dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(item => item.payload.id === id)!;
@@ -123,5 +123,88 @@ describe("TimerBlock", () => {
     expect(editor.repository.state.revision).toBe(moveRevision); expect(window().style.left).toBe("54px"); expect(window().style.top).toBe("130px");
     drag("pointerup", 50, 70); expect(editor.repository.state.revision).toBe(moveRevision + 1);
     expect(node("timer").payload.blockProperties).toContainEqual(expect.objectContaining({ type: "block/position", metadata: expect.objectContaining({ x: 54, y: 130, position: "fixed" }) }));
+  });
+});
+
+// Module boundaries use the real core. No implementation imports outside this directory.
+describe("Timer feature activation and disposal", () => {
+  it("runs three independent Block applications and releases only the unmounted instance", async () => {
+    const audioCloses: ReturnType<typeof vi.fn>[] = [];
+    vi.stubGlobal("AudioContext", class {
+      resume = vi.fn();
+      close = vi.fn();
+      constructor() { audioCloses.push(this.close); }
+    });
+    const dtos = ["a", "b", "c"].map(id => ({ ...timerBlockDto(), id }));
+    const { editor, node, timerElement } = setup(dtos);
+    const keys = dtos.map(dto => node(dto.id).key);
+    for (const key of keys) [...timerElement(key).querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "Start")!.click();
+    await tick();
+    const revision = editor.repository.state.revision;
+    expect(vi.getTimerCount()).toBe(3);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(editor.repository.state.revision).toBe(revision);
+    keys.forEach(key => expect(timerElement(key).querySelector("output")?.textContent).toBe("04:59"));
+    editor.commands.remove(keys[0]); await tick();
+    expect(timerElement(keys[0])).toBeNull(); expect(editor.mounts.get(keys[0])).toBeUndefined();
+    expect(vi.getTimerCount()).toBe(2);
+    expect(audioCloses.map(close => close.mock.calls.length)).toEqual([1, 0, 0]);
+    await vi.advanceTimersByTimeAsync(1000);
+    keys.slice(1).forEach(key => expect(timerElement(key).querySelector("output")?.textContent).toBe("04:58"));
+    const saved = editor.encodeDocument();
+    expect(saved.children).toHaveLength(2);
+    saved.children!.forEach(dto => expect(dto.timer).toEqual({ durationSeconds: 300, mode: "running", runningUntil: Date.now() + 298000 }));
+    editor.dispose(); await tick();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(audioCloses.map(close => close.mock.calls.length)).toEqual([1, 1, 1]);
+    keys.slice(1).forEach(key => expect(editor.mounts.get(key)).toBeUndefined());
+  });
+
+  it("owns all registrations and releases mounted resources on repeated editor teardown", async () => {
+    for (let round = 0; round < 3; round++) {
+      const dto = timerBlockDto(); dto.id = "running";
+      dto.timer = { durationSeconds: 300, mode: "running", runningUntil: Date.now() + 300000 };
+      const { editor, node, timerElement } = setup([dto]);
+      const key = node("running").key;
+      expect(editor.featureHost.list()).toEqual(["timer"]);
+      expect(editor.registry.owner("timer-block")).toBe("timer");
+      expect(editor.commandRegistry.owner("timer.create")).toBe("timer");
+      expect(editor.bindings.owner("timer.create")).toBe("timer");
+      expect(editor.bindings.owner("cross.timerCreate")).toBe("timer");
+      expect(editor.featureActions.list("document-actions")[0].owner).toBe("timer");
+      expect(timerElement(key)).toBeTruthy();
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      const revision = editor.repository.state.revision;
+      editor.dispose(); await tick();
+      expect(editor.featureHost.list()).toEqual([]);
+      expect(editor.registry.resolve("timer-block")).toBeUndefined();
+      expect(editor.commandRegistry.list().some(command => command.id.startsWith("timer."))).toBe(false);
+      expect(editor.bindings.get("timer.create")).toBeUndefined();
+      expect(editor.bindings.get("cross.timerCreate")).toBeUndefined();
+      expect(editor.mounts.get(key)).toBeUndefined();
+      expect(editor.featureActions.list("document-actions")).toEqual([]);
+      expect(editor.featureActions.list("add-block-menu")).toEqual([]);
+      expect(timerElement(key)).toBeNull();
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(600000);
+      expect(editor.repository.state.revision).toBe(revision);
+    }
+  });
+
+  it("keeps authored data intact with the module enabled and disabled", async () => {
+    const { unknownFeatureDocument } = await import("../../block-tree/test-support/unknown-feature-document");
+    const { encodeDocument } = await import("../../block-tree/codecs");
+    for (const enabled of [true, false]) {
+      const editor = new ReactiveEditor(structuredClone(unknownFeatureDocument), { features: { timer: enabled } });
+      registerApplicationViews(editor);
+      const projection = editor.createView(), host = document.body.appendChild(document.createElement("div"));
+      const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host);
+      try {
+        expect(!!editor.registry.resolve("timer-block")).toBe(enabled);
+        expect(encodeDocument(editor.repository.readState())).toEqual(unknownFeatureDocument);
+        expect(!!document.querySelector(".reactive-timer")).toBe(enabled);
+        expect(editor.featureActions.list("document-actions")).toHaveLength(enabled ? 1 : 0);
+      } finally { dispose(); editor.dispose(); host.remove(); }
+    }
   });
 });

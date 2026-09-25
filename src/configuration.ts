@@ -18,6 +18,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Existing Timer capability remains on; activation is decided by application composition. */
+  timer: boolean;
   blockHistory: boolean;
   codexSystemBar: boolean;
   compactDocumentMode: boolean;
@@ -27,6 +29,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  timer: true,
   blockHistory: false,
   codexSystemBar: true,
   compactDocumentMode: true,

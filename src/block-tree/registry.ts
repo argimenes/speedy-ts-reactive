@@ -2,12 +2,29 @@ import type { BlockTypeRegistration, CommandDefinition, CommandContext } from ".
 
 export class BlockRegistry {
   private registrations = new Map<string, BlockTypeRegistration>();
+  private owners = new Map<string, string>();
   private aliases = new Map<string, string>();
 
-  register(registration: BlockTypeRegistration): void {
+  register(registration: BlockTypeRegistration, owner = "legacy"): () => void {
+    const names = [registration.type, ...(registration.aliases ?? [])];
+    if (new Set(names).size !== names.length) throw new Error(`Duplicate Block alias in ${registration.type} (${owner})`);
+    for (const name of names) {
+      if (this.registrations.has(name) || this.aliases.has(name)) throw new Error(`Block type/alias ${name} already belongs to ${this.owner(name)}; cannot register for ${owner}`);
+    }
     this.registrations.set(registration.type, registration);
+    this.owners.set(registration.type, owner);
     for (const alias of registration.aliases ?? []) this.aliases.set(alias, registration.type);
+    let active = true;
+    return () => {
+      if (!active) return;
+      active = false;
+      this.registrations.delete(registration.type);
+      this.owners.delete(registration.type);
+      for (const alias of registration.aliases ?? []) this.aliases.delete(alias);
+    };
   }
+
+  owner(type: string): string | undefined { return this.owners.get(this.aliases.get(type) ?? type); }
 
   resolve(type: string): BlockTypeRegistration | undefined {
     return this.registrations.get(this.aliases.get(type) ?? type);
@@ -20,11 +37,17 @@ export class BlockRegistry {
 
 export class CommandRegistry {
   private commands = new Map<string, CommandDefinition<any>>();
+  private owners = new Map<string, string>();
 
-  register<TArgs>(command: CommandDefinition<TArgs>): void {
-    if (this.commands.has(command.id)) throw new Error(`Command ${command.id} is already registered`);
+  register<TArgs>(command: CommandDefinition<TArgs>, owner = "legacy"): () => void {
+    if (this.commands.has(command.id)) throw new Error(`Command ${command.id} is already registered by ${this.owner(command.id)}; cannot register for ${owner}`);
     this.commands.set(command.id, command);
+    this.owners.set(command.id, owner);
+    let active = true;
+    return () => { if (!active) return; active = false; this.commands.delete(command.id); this.owners.delete(command.id); };
   }
+
+  owner(id: string): string | undefined { return this.owners.get(id); }
 
   canExecute<TArgs>(id: string, context: CommandContext<TArgs>): boolean {
     return this.commands.get(id)?.canExecute(context) ?? false;

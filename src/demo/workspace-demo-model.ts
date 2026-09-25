@@ -1,6 +1,6 @@
 import type { ExistingBlockDto } from "../block-tree/types";
 import { ReactiveEditor } from "../reactive-editor/editor";
-import { registerCoreViews } from "../rendering/register-core-views";
+import { registerApplicationViews } from "../application/features";
 import manuscriptUrl from "../assets/hosted/demo/medieval-template.jpg";
 import embeddedPageUrl from "../assets/hosted/demo/embedded-page.html?url";
 import { workspaceBuilderTypes, workspaceDocumentFixture } from "./workspace-document";
@@ -62,6 +62,6 @@ export function createWorkspaceDemoEditor(configuration: ReactiveEditorConfigura
 
 export function createWorkspaceEditor(document: ExistingBlockDto, configuration: ReactiveEditorConfiguration = {}): ReactiveEditor {
   const editor = new ReactiveEditor(document, configuration);
-  registerCoreViews(editor);
+  registerApplicationViews(editor);
   return editor;
 }

@@ -23,7 +23,6 @@ import {
 import { PlainTextBlockView } from "./plain-text-block-view";
 import { StandoffEditorView } from "./standoff-editor-view";
 import { UnknownBlockView } from "./unknown-block-view";
-import { TimerBlockView } from "./timer-block";
 import { DocumentReferenceView } from "./document-reference-view";
 import { StickyNoteBlockView } from "./sticky-note";
 import { registerTextSuperpositionCommands } from "../runtime/text-superposition";
@@ -38,7 +37,6 @@ export function registerCoreViews(editor: ReactiveEditor): void {
   editor.registry.register({ type: "plain-text-block", view: PlainTextBlockView, capabilities: ["native-text", "container", "selectable"] });
   editor.registry.register({ type: "standoff-editor-block", view: StandoffEditorView, capabilities: ["inline-editor", "container", "selectable", "annotations"] });
   editor.registry.register({ type: "checkbox-block", view: CheckboxView, capabilities: ["control", "container", "selectable"] });
-  editor.registry.register({ type: "timer-block", view: TimerBlockView, capabilities: ["control", "opaque-widget", "selectable"] });
   editor.registry.register({ type: "sticky-note-block", view: StickyNoteBlockView, capabilities: ["container", "selectable"] });
   editor.registry.register({ type: "code-mirror-block", view: CodeBlockView, capabilities: ["native-text", "container", "opaque-widget"] });
   editor.registry.register({ type: "cyclic-reference", view: UnknownBlockView, capabilities: ["reference-placeholder"] });

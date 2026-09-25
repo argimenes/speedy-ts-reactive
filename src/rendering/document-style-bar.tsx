@@ -7,7 +7,6 @@ import { openEntitySearch } from "../runtime/entity-search";
 import "./document-style-bar.css";
 import { DocumentCountBar } from "./document-count-bar";
 import { CompactToolbar, type CompactTool, type Toolset } from "./compact-toolbar";
-import { createTimerBlock } from "../runtime/timer-block";
 import { createTextSuperposition } from "../runtime/text-superposition";
 import { applyAnnotationsToRanges } from "../runtime/group-selection";
 
@@ -185,7 +184,15 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const DocumentActions = () => <>
     <button type="button" title={editor.bindings.label("find.open")} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.find.open(key); if (!editor.find.state.open) setNotice(editor.find.state.message); } else setNotice("Focus text in a document first."); }}>Find</button>
     <button type="button" title={`Entities in Document (${editor.bindings.label("entity.list.open")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.entityList.open(key); if (!editor.entityList.state.open) setNotice(editor.entityList.state.error); } else setNotice("Focus a document first."); }}>Entities</button>
-    <button type="button" title={`Add timer (${editor.bindings.label("timer.create")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (!key || !createTimerBlock(editor, key)) setNotice("Focus a Block in this document first."); else setNotice(""); }}>Timer</button>
+    <For each={editor.featureActions.list("document-actions")}>{item => <button type="button"
+      title={`${item.title ?? item.label}${item.binding ? ` (${editor.bindings.label(item.binding)})` : ""}`}
+      onClick={() => {
+        const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey;
+        const context = key && { targetKey: key, args: undefined };
+        if (!context || !editor.commandRegistry.canExecute(item.command, context)) { setNotice("Focus a Block in this document first."); return; }
+        try { void Promise.resolve(editor.commandRegistry.execute(item.command, context)).catch(error => setNotice(String(error))); setNotice(""); }
+        catch (error) { setNotice(String(error)); }
+      }}>{item.label}</button>}</For>
   </>;
   const HistoryAction = () => <>
     <Show when={editor.features.blockHistory}><button type="button" title="View history of the focused Block" onClick={() => {

@@ -1,5 +1,4 @@
-import type { ExistingBlockDto, NodeKey } from "../block-tree/types";
-import type { ReactiveEditor } from "../reactive-editor/editor";
+import type { ExistingBlockDto, NodeKey, FeatureBlocks } from "../../feature-api";
 
 export const DEFAULT_TIMER_SECONDS = 5 * 60;
 export const MAX_TIMER_SECONDS = 24 * 60 * 60;
@@ -41,8 +40,8 @@ export function timerBlockDto(position?: { x: number; y: number }): ExistingBloc
   };
 }
 
-function initialPosition(editor: ReactiveEditor, originKey: NodeKey) {
-  const rect = editor.mounts.get(originKey)?.root.getBoundingClientRect();
+function initialPosition(blocks: FeatureBlocks, originKey: NodeKey) {
+  const rect = blocks.bounds(originKey);
   if (!rect) return { x: 24, y: 80 };
   const viewportWidth = typeof window === "undefined" ? 1024 : window.innerWidth;
   const viewportHeight = typeof window === "undefined" ? 768 : window.innerHeight;
@@ -53,21 +52,18 @@ function initialPosition(editor: ReactiveEditor, originKey: NodeKey) {
 }
 
 /** Adds a persistent timer beside the origin in the model and anchors its floating view to the origin on screen. */
-export function createTimerBlock(editor: ReactiveEditor, originKey: NodeKey): string | undefined {
-  let origin = editor.node(originKey);
+export function createTimerBlock(blocks: FeatureBlocks, originKey: NodeKey): string | undefined {
+  let origin = blocks.get(originKey);
   if (!origin) return;
-  const position = initialPosition(editor, origin.key);
-  if (origin.viewType === "document-window-block") {
-    const document = origin.children.find(key => editor.node(key)?.viewType === "document-block");
-    if (document) origin = editor.node(document)!;
+  const position = initialPosition(blocks, origin.key);
+  if (origin.type === "document-window-block") {
+    const document = origin.children.find(key => blocks.get(key)?.type === "document-block");
+    if (document) origin = blocks.get(document)!;
   }
   const viewId = origin.viewId;
   let placement: string;
-  if (origin.viewType === "document-block") placement = editor.commands.insert(timerBlockDto(position), { kind: "at", parentKey: origin.key, index: origin.children.length });
-  else placement = editor.commands.insert(timerBlockDto(position), { kind: "after", anchorKey: origin.key });
-  queueMicrotask(() => {
-    const timer = editor.nodeForPlacementInView(placement, viewId);
-    if (timer) editor.focus.request(timer.key, { reason: "create-timer" });
-  });
+  if (origin.type === "document-block") placement = blocks.insert(timerBlockDto(position), { kind: "at", parentKey: origin.key, index: origin.children.length });
+  else placement = blocks.insert(timerBlockDto(position), { kind: "after", anchorKey: origin.key });
+  blocks.focusPlacement(placement, viewId);
   return placement;
 }

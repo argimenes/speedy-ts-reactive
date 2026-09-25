@@ -2,7 +2,7 @@ import { createSignal, onCleanup, onMount } from "solid-js";
 import type { ExistingBlockDto } from "../block-tree/types";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import { ReactiveTreeView } from "../rendering/reactive-tree-view";
-import { registerCoreViews } from "../rendering/register-core-views";
+import { registerApplicationViews } from "../application/features";
 import { DocumentStyleBar } from "../rendering/document-style-bar";
 import type { Toolset } from "../rendering/compact-toolbar";
 import "./text-superposition-demo.css";
@@ -42,7 +42,7 @@ export const textSuperpositionDemoDocument: ExistingBlockDto = {
 
 export function TextSuperpositionDemo() {
   const editor = new ReactiveEditor(textSuperpositionDemoDocument, { features: { textSuperposition: true } });
-  registerCoreViews(editor);
+  registerApplicationViews(editor);
   const projection = editor.createView("text-superposition-demo");
   const [toolset, setToolset] = createSignal<Toolset>("Annotations");
   const [notice, setNotice] = createSignal("");

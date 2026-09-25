@@ -2,7 +2,7 @@ import { createMemo, onCleanup, onMount } from "solid-js";
 import type { ExistingBlockDto } from "./block-tree/types";
 import { ReactiveEditor } from "./reactive-editor/editor";
 import { ReactiveTreeView } from "./rendering/reactive-tree-view";
-import { registerCoreViews } from "./rendering/register-core-views";
+import { registerApplicationViews } from "./application/features";
 import { OverlayLayer } from "./rendering/overlay-layer";
 import { WorkspaceDemo } from "./demo/workspace-demo";
 import { StandoffEffectsDemo } from "./demo/standoff-effects-demo";
@@ -49,7 +49,7 @@ const pilotDocument: ExistingBlockDto = {
 
 function createPilotEditor() {
   const editor = new ReactiveEditor(pilotDocument);
-  registerCoreViews(editor);
+  registerApplicationViews(editor);
   return editor;
 }
 

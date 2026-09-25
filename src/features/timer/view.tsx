@@ -1,11 +1,9 @@
-import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { unwrap } from "solid-js/store";
+import { Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
-import type { BlockViewProps } from "../block-tree/types";
-import { useReactiveView } from "../reactive-editor/context";
-import { DEFAULT_TIMER_SIZE, MAX_TIMER_SECONDS, MIN_TIMER_SIZE, readTimerPayload, type TimerPayload } from "../runtime/timer-block";
-import { createFloatingWindowResize, FloatingWindowResizeHandle } from "./floating-window-resize";
-import "./timer-block.css";
+import type { BlockRuntime } from "../../feature-api";
+import { DEFAULT_TIMER_SIZE, MAX_TIMER_SECONDS, MIN_TIMER_SIZE, readTimerPayload, type TimerPayload } from "./model";
+import { createFloatingWindowResize, FloatingWindowResizeHandle } from "../../feature-api";
+import "./view.css";
 
 const formatDuration = (milliseconds: number) => {
   const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
@@ -19,17 +17,15 @@ const parseDuration = (value: string) => {
   return seconds >= 1 && seconds <= MAX_TIMER_SECONDS ? seconds : undefined;
 };
 
-export function TimerBlockView(props: BlockViewProps) {
-  const { editor, projection } = useReactiveView();
-  const node = () => projection.state.nodes[props.nodeKey];
-  const timer = createMemo(() => readTimerPayload(node()?.payload.timer));
+export function TimerBlockView(props: { runtime: BlockRuntime }) {
+  const runtime = props.runtime;
+  const timer = createMemo(() => readTimerPayload(runtime.field("timer")));
   const [now, setNow] = createSignal(Date.now());
   const [draft, setDraft] = createSignal(formatDuration(timer().durationSeconds * 1000));
   const [message, setMessage] = createSignal("");
   const [previewPosition, setPreviewPosition] = createSignal<{ x: number; y: number }>();
   let root!: HTMLDivElement;
   let durationInput!: HTMLInputElement;
-  let disposeMount: (() => void) | undefined;
   let interval: ReturnType<typeof setInterval> | undefined;
   let audio: AudioContext | undefined;
   let drag: { pointerId: number; x: number; y: number; left: number; top: number } | undefined;
@@ -44,18 +40,18 @@ export function TimerBlockView(props: BlockViewProps) {
   });
   const done = createMemo(() => timer().mode === "running" && remainingMilliseconds() <= 0);
   const size = createMemo(() => {
-    const property = ((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []).find(item => item.type === "block/size" && !item.isDeleted);
+    const property = ((runtime.field("blockProperties") as Array<Record<string, unknown>> | undefined) ?? []).find(item => item.type === "block/size" && !item.isDeleted);
     const metadata = property?.metadata as Record<string, unknown> | undefined;
     return { width: Math.max(MIN_TIMER_SIZE, Number(metadata?.width) || DEFAULT_TIMER_SIZE), height: Math.max(MIN_TIMER_SIZE, Number(metadata?.height) || DEFAULT_TIMER_SIZE) };
   });
   const storedPosition = createMemo(() => {
-    const property = ((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []).find(item => item.type === "block/position" && !item.isDeleted);
+    const property = ((runtime.field("blockProperties") as Array<Record<string, unknown>> | undefined) ?? []).find(item => item.type === "block/position" && !item.isDeleted);
     const metadata = property?.metadata as Record<string, unknown> | undefined;
     const x = Number(metadata?.x), y = Number(metadata?.y);
     return { x: Number.isFinite(x) ? x : 24, y: Number.isFinite(y) ? y : 80 };
   });
 
-  const commit = (next: TimerPayload, label: string) => editor.commands.setPayloadField(props.nodeKey, "timer", next, label);
+  const commit = (next: TimerPayload, label: string) => runtime.setField("timer", next, label);
   const prepareAudio = () => {
     const Audio = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Audio) return;
@@ -90,13 +86,11 @@ export function TimerBlockView(props: BlockViewProps) {
     setMessage(""); commit({ durationSeconds: seconds, mode: "idle", remainingMilliseconds: seconds * 1000 }, "Set Timer Duration");
   };
   const remove = () => {
-    const fallback = editor.focusFallback(props.nodeKey);
-    editor.focus.clearRemoved(props.nodeKey); editor.commands.remove(props.nodeKey);
-    if (fallback) queueMicrotask(() => editor.focus.request(fallback, { reason: "timer-done", caret: "start" }));
+    runtime.removeAndFocusFallback();
   };
   const setBlockProperty = (type: string, metadata: Record<string, unknown>, label: string) => {
-    const properties = unwrap((node()?.payload.blockProperties as Array<Record<string, unknown>> | undefined) ?? []);
-    editor.commands.setPayloadField(props.nodeKey, "blockProperties", [...properties.filter(item => item.type !== type || item.isDeleted), { type, metadata }], label);
+    const properties = (runtime.field("blockProperties") as Array<Record<string, unknown>> | undefined) ?? [];
+    runtime.setField("blockProperties", [...properties.filter(item => item.type !== type || item.isDeleted), { type, metadata }], label);
   };
   const timerResize = createFloatingWindowResize({
     element: () => root,
@@ -131,15 +125,15 @@ export function TimerBlockView(props: BlockViewProps) {
     if (document.activeElement !== durationInput) setDraft(formatDuration(state.durationSeconds * 1000));
   });
   onMount(() => {
-    disposeMount = editor.mounts.register(props.nodeKey, { root, focusElement: root, inputPolicy: "opaque-widget", focus: () => root.focus({ preventScroll: true }) });
+    runtime.mountWidget(root);
   });
-  onCleanup(() => { clearInterval(interval); disposeMount?.(); void audio?.close(); });
+  runtime.own(() => { clearInterval(interval); void audio?.close(); });
 
   const position = () => previewPosition() ?? storedPosition();
   return <Portal><div ref={root} class="abstract-block reactive-timer" classList={{ "reactive-timer--done": done() }} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Timer"
     style={{ width: `${dimensions().width}px`, height: `${dimensions().height}px`, left: `${position().x}px`, top: `${position().y}px` }}
     onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); remove(); } }}
-    data-block-id={String(node()?.payload.id ?? "")} data-client-id={props.nodeKey} data-runtime-key={props.nodeKey} data-block-type="timer-block">
+    data-block-id={String(runtime.field("id") ?? "")} data-client-id={runtime.nodeKey} data-runtime-key={runtime.nodeKey} data-block-type="timer-block">
     <header class="reactive-timer__header"
       onPointerDown={event => { if (event.button !== 0 || (event.target as Element).closest("button")) return; const current = position(); drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: current.x, top: current.y }; event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); }}
       onPointerMove={event => { if (!drag || drag.pointerId !== event.pointerId) return; setPreviewPosition(clampPosition(drag.left + event.clientX - drag.x, drag.top + event.clientY - drag.y)); }}
@@ -153,8 +147,8 @@ export function TimerBlockView(props: BlockViewProps) {
         <button type="button" disabled={timer().mode === "idle"} onClick={reset}>Reset</button>
       </div>
       <div class="reactive-timer__setting">
-        <label for={`${props.nodeKey}-duration`}>Duration</label>
-        <input ref={durationInput} id={`${props.nodeKey}-duration`} aria-label="Timer duration in minutes and seconds" inputmode="numeric" value={draft()} disabled={timer().mode === "running"}
+        <label for={`${runtime.nodeKey}-duration`}>Duration</label>
+        <input ref={durationInput} id={`${runtime.nodeKey}-duration`} aria-label="Timer duration in minutes and seconds" inputmode="numeric" value={draft()} disabled={timer().mode === "running"}
           onInput={event => { setDraft(event.currentTarget.value); setMessage(""); }} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); setDuration(); } }} />
         <button type="button" disabled={timer().mode === "running"} onClick={setDuration}>Set</button>
       </div>

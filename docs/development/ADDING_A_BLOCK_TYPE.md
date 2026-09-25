@@ -1,10 +1,14 @@
 # Adding a Block type
 
-This is the minimum path for a JSON-shaped Block with a Solid renderer. No `AbstractBlock` subclass is involved.
+For a new hosted widget Block, start with the extracted [Timer module](../../src/features/timer/index.tsx), the [public feature API](../../src/feature-api/index.ts), and the [Stage 1 report](../../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md). Register through application composition, not by importing the feature into core. No `AbstractBlock` subclass is involved.
+
+A feature module registers a Block Type once per editor. Each mounted occurrence then receives a separate `BlockRuntime`: reactive reads and edits of its own authored state, widget mounting, removal/focus, and Solid-owned cleanup. Timers, audio, drafts and other running resources belong to that occurrence; authored JSON belongs to the document. Removing one occurrence must not dispose the module or another occurrence. The type's default factory and payload reader supply its authored interpretation; clock/display updates must not create document edits.
+
+The examples below describe the **legacy/core registration path**, retained for unmigrated views. New feature code should not copy their unrestricted editor access. The initial public runtime supports the opaque widget needs demonstrated by Timer; child rendering or richer input capabilities require a separately justified extension, not an editor escape hatch.
 
 ## 1. Define payload conventions and a DTO factory
 
-Payload types are not globally discriminated today. Keep a narrow reader/factory near the feature, as Timer does in [`runtime/timer-block.ts`](../../src/runtime/timer-block.ts):
+Payload types are not globally discriminated today. Keep a narrow reader/factory near the feature, as Timer does in [`features/timer/model.ts`](../../src/features/timer/model.ts):
 
 ```ts
 // src/runtime/callout-block.ts
@@ -100,7 +104,7 @@ If a menu and keybinding should share creation, register a semantic `CommandDefi
 
 ## Serialization, undo, and history
 
-Generic codecs already preserve `id`, `type`, payload, and children. No codec change is needed for the example. Save/reopen succeeds once the view is registered in the fresh editor.
+Generic codecs already preserve `id`, `type`, payload, and children. No codec change is needed for the example. Save/reopen must preserve authored data even when the module is absent; registration supplies the executable interpretation, and an absent type uses the unknown-Block fallback.
 
 `insert` and `setPayloadField` automatically create ordinary undo entries and commit metadata. When Block history is enabled/enrolled, the same commits are captured and attributed to the authored ID. A custom low-level repository mutation can lose this attribution.
 
@@ -126,4 +130,4 @@ You do **not** need a legacy Block class, a serializer, a new repository record 
 - Add an input/binding test only if the type adds input semantics.
 - Add history-specific tests only if it adds identity/structure semantics beyond generic payload/children.
 
-Use [`timer-block.test.tsx`](../../src/rendering/timer-block.test.tsx) and [`plain-text-block-view.test.tsx`](../../src/rendering/plain-text-block-view.test.tsx) as current examples.
+Use [`features/timer/timer.test.tsx`](../../src/features/timer/timer.test.tsx), including independent-instance cleanup and disabled-module preservation, and [`plain-text-block-view.test.tsx`](../../src/rendering/plain-text-block-view.test.tsx) as current examples.

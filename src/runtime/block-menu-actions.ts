@@ -3,7 +3,6 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import { unwrap as unwrapStore } from "solid-js/store";
 import { createTextTab } from "./text-tabs";
 import { backgroundImages, defaultBackgroundUrls, isBackgroundType, mediaUrl, youtubeId, type BackgroundType } from "../rendering/backgrounds";
-import { timerBlockDto } from "./timer-block";
 import { stickyNoteDto } from "./sticky-notes";
 
 export interface BlockMenuItem {
@@ -120,7 +119,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     items.push(command("sticky.createFloating", "New Sticky Note"));
     items.push({ label: "Add Block", children: [
       { label: "Text", run: () => add(text()) }, { label: "Code", run: () => add({ ...dto("code-mirror-block"), text: "" }) },
-      { label: "Timer", run: () => add(timerBlockDto()) },
+      ...editor.featureActions.list("add-block-menu").map(item => command(item.command, item.label)),
       { label: "Insert Sticky Note Here", run: () => add(stickyNoteDto()) },
       mediaInput("Image URL…", "image-block"), mediaInput("YouTube video URL…", "youtube-video-block"),
       { label: "Canvas", run: () => add(dto("canvas-block")) },
