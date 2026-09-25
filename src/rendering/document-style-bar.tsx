@@ -1,4 +1,5 @@
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { ownSelectionToolbar } from "../input/selection-target";
+import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
 import { unwrap } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
@@ -8,7 +9,6 @@ import "./document-style-bar.css";
 import { DocumentCountBar } from "./document-count-bar";
 import { CompactToolbar, type CompactTool, type Toolset } from "./compact-toolbar";
 import { createTextSuperposition } from "../runtime/text-superposition";
-import { applyAnnotationsToRanges } from "../runtime/group-selection";
 
 /** Canonical style types, including the three preserved range-wrapper styles. */
 export const annotationTools = [
@@ -52,12 +52,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const [localToolset, setLocalToolset] = createSignal<Toolset>("Typography");
   createEffect(() => props.onNotice?.(notice() || editor.groupSelection.message() || editor.crossText.message()));
   let savedRange: { anchor: number; head: number } | undefined;
-  const inScope = (key: NodeKey): boolean => {
-    if (!props.scopeKey) return true;
-    const visit = (key: NodeKey): boolean => key === target || !!editor.node(key)?.children.some(visit) || !!Object.values(editor.node(key)?.ownedRelations ?? {}).some(visit);
-    const target = key;
-    return visit(props.scopeKey);
-  };
+  const inScope = (key: NodeKey): boolean => editor.blockQueries.contains(props.scopeKey, key);
   createEffect(() => {
     const key = editor.focus.state.focusedKey, node = key && editor.node(key);
     if (node && node.viewType === "standoff-editor-block" && inScope(node.key)) {
@@ -93,11 +88,12 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     editor.selections.setPrimary(node.key, node.contentKey, node.viewId, index);
   };
   const annotate = (type: string, value?: string) => {
-    if (editor.groupSelection.active()) {
+    const operation = editor.currentTextOperation.annotationOperation();
+    if (operation) {
       if (type === "codex/entity-reference") { setNotice("Entity Reference does not consume a manual group. Choose an ordinary annotation."); return; }
       try {
-        const finalRange = editor.groupSelection.ranges().at(-1);
-        const count = editor.groupSelection.apply(type, value, effectDefaults[type] ?? {});
+        const finalRange = operation.annotationTargets()?.at(-1);
+        const count = operation.apply(type, value, effectDefaults[type] ?? {});
         if (type === "style/show-hide" && finalRange) collapseAfterShowHide(finalRange.nodeKey, finalRange.end);
         else savedRange = undefined;
         setNotice(count ? `Applied ${type} to ${count} grouped ranges.` : "Those grouped ranges already have this annotation.");
@@ -129,13 +125,13 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     if (start < 0 || end < start || end >= node.inlineContent.length) { setNotice("Select a non-empty text range first."); return; }
     if (type === "codex/entity-reference") { openEntitySearch(editor, [{ nodeKey: node.key, start, end: end + 1 }]); return; }
     const content = editor.repository.readState().contents[node.contentKey];
-    applyAnnotationsToRanges(editor, [{ nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey, version: content.inlineRevision, start, end: end + 1, coordinate: "cell" }], type, value, effectDefaults[type] ?? {});
+    editor.rangeAnnotations.apply([{ nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey, version: content.inlineRevision, start, end: end + 1, coordinate: "cell" }], type, value, effectDefaults[type] ?? {});
     setNotice("");
     if (type === "style/show-hide") collapseAfterShowHide(node.key, end + 1);
     else restore();
   };
   const showHide = () => {
-    if (editor.groupSelection.active()) { annotate("style/show-hide"); return; }
+    if (editor.currentTextOperation.annotationOperation()) { annotate("style/show-hide"); return; }
     capture();
     if (savedRange && savedRange.anchor !== savedRange.head) { annotate("style/show-hide"); return; }
     const key = props.scopeKey ?? targetKey() ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey;
@@ -271,7 +267,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     </fieldset></Show>
     <fieldset><legend>Editor options</legend><SelectionOption /></fieldset>
   </>;
-  return <nav class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": editor.features.compactEditorChrome }} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
+  return <nav ref={element => onCleanup(ownSelectionToolbar(element, editor.mounts))} class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": editor.features.compactEditorChrome }} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
     <Show when={props.margins?.collapsed && props.margins.count > 0}>
       <button type="button" class="document-style-bar__margins" aria-expanded={props.margins?.open} aria-controls={props.margins?.controls} onClick={() => props.margins?.toggle()}>
         Margins ({props.margins?.count})

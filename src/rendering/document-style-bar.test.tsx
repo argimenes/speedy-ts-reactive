@@ -225,6 +225,21 @@ describe.each([true, false])("DocumentWindow annotation toolbar (compact=%s)", c
     editor.repository.undo(); expect(editor.encodeDocument().children![0].children).toEqual(before.children![0].children);
   });
 
+  it("routes Escape and toolbar deletion only to their owning editor", async () => {
+    const first = setup(), second = setup();
+    await first.group(0, 2); await second.group(0, 3);
+    second.flow.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    expect(second.editor.groupSelection.active()).toBe(false);
+    expect(first.editor.groupSelection.ranges()).toHaveLength(1);
+    await second.group(0, 3);
+    const toolbar = second.host.querySelector<HTMLElement>(".document-style-bar")!;
+    toolbar.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true }));
+    expect(second.editor.groupSelection.active()).toBe(false);
+    expect(first.editor.groupSelection.ranges()).toHaveLength(1);
+    expect(first.node().inlineContent).toHaveLength(9);
+    expect(second.node().inlineContent).toHaveLength(6);
+  });
+
   it("Find/entity highlights and dialog fields never invoke grouped deletion", async () => {
     const { editor, node, group, select, host } = setup();
     const n = node(), content = editor.repository.readState().contents[n.contentKey];

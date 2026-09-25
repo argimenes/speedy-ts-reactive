@@ -5,7 +5,9 @@ import { runSearchWorker, type SearchRunner } from "./search-worker";
 
 export type ScopeKind = "container" | "page" | "document";
 export interface SearchScope { kind: ScopeKind; viewId: string; rootKey: string; placementKey: string; region: "main" | "subtree"; label: string; fallback?: string }
-export interface SearchRange { nodeKey: string; contentKey: string; placementKey: string; version: number; start: number; end: number; coordinate: "cell" | "utf16" }
+import type { TextRangeSnapshot } from "./text-ranges";
+/** Compatibility name for search consumers; coordinates live in the neutral range API. */
+export type SearchRange = TextRangeSnapshot;
 export interface SearchMatch { id: string; text: string; context: string; captures: (string | undefined)[]; groups?: Record<string, string>; ranges: SearchRange[]; path: string[]; breadcrumb: string; capabilities: { highlight: boolean; reveal: boolean; annotate: boolean; replace: boolean; reason?: string } }
 export interface SearchMatchSet { sessionId: string; generation: number; signature: string; scope: SearchScope; revision: number; status: "complete" | "partial" | "cancelled" | "error"; diagnostics: string[]; matches: SearchMatch[]; exact: boolean; deduplication: Record<string, string[]> }
 const pages = new Set(["page-block", "fixed-size-page-block"]);
@@ -13,19 +15,7 @@ const containers = /^(left-margin|right-margin|table-cell|grid-cell|tab|document
 const side = /^(left-margin|right-margin|sticky-tab)/;
 export function nodeLabel(node: BlockNode) { const m = node.payload.metadata as Record<string, unknown> | undefined; return String(m?.name ?? m?.label ?? m?.title ?? `${node.viewType.replace(/-block$/, "").replaceAll("-", " ")} · ${String(node.payload.id ?? node.placementKey).slice(0,8)}`); }
 export function ancestorPath(editor: ReactiveEditor, key: string): BlockNode[] {
-  const origin = editor.node(key); if (!origin) return [];
-  const projection = editor.projections.get(origin.viewId)!;
-  const parents = new Map<string, BlockNode>();
-  // Only structural nodes, never per-character parent scans.
-  const visit = (key: string, seen = new Set<string>()) => {
-    const node = projection.state.nodes[key]; if (!node || seen.has(node.contentKey)) return;
-    const next = new Set(seen).add(node.contentKey);
-    for (const child of [...node.children, ...Object.values(node.ownedRelations)]) { parents.set(child, node); visit(child, next); }
-  };
-  visit(projection.state.rootKey);
-  const path = [origin]; let parent = parents.get(key);
-  while (parent && !path.includes(parent)) { path.unshift(parent); parent = parents.get(parent.key); }
-  return path;
+  return editor.blockQueries.ancestorPath(key);
 }
 export function resolveSearchScope(editor: ReactiveEditor, key: string, kind: ScopeKind = "page"): SearchScope {
   const path = ancestorPath(editor, key), reversed = [...path].reverse();

@@ -10,7 +10,6 @@ import { encodeHistoryDocument, projectWholeDocument } from "../history/durable-
 import type { DocumentLocation } from "../reactive-editor/persistence";
 import type { HistorySelection } from "../history/ui-session-source";
 import type { ReactiveEditor } from "../reactive-editor/editor";
-import { blockAncestors } from "./block-menu-actions";
 import { createSessionHistorySource, type SessionHistoryRecorder, type ReadonlyHistorySession, type SessionTimelineEntry } from "../history/ui-session-source";
 
 type HistoryPanelState = {
@@ -178,7 +177,7 @@ export class BlockHistorySession {
   canOpen(key: string): boolean {
     if (!this.enabled) return false;
     const node = this.editor.node(key);
-    return !!node && typeof node.payload.id === "string" && blockAncestors(this.editor, key).some(n => n.viewType === "document-block");
+    return !!node && typeof node.payload.id === "string" && this.editor.blockQueries.ancestors(key).some(n => n.viewType === "document-block");
   }
   open(key: string): void {
     if (!this.enabled) return;
@@ -203,7 +202,7 @@ export class BlockHistorySession {
       // Let the initial panel paint before taking its bounded enrollment baseline.
       await new Promise(resolve => setTimeout(resolve, 0));
       if (request.signal.aborted) return;
-      const root = blockAncestors(this.editor, key).find(n => n.viewType === "document-block");
+      const root = this.editor.blockQueries.ancestors(key).find(n => n.viewType === "document-block");
       if (!root) throw Error("Select a Block inside a Document to view its history.");
       if (this.recorder && this.recorder.root !== root.placementKey) throw Error("This session is recording another Document. Open that Document's history instead.");
       if (this.location) await this.ensureDurable();

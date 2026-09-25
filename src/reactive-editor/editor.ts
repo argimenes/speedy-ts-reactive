@@ -1,3 +1,11 @@
+import { captureTextSelection } from "../runtime/selection-snapshot";
+import { TextRanges } from "../runtime/text-ranges";
+import { RangeAnnotations } from "../runtime/range-annotations";
+import { BlockQueries } from "../runtime/block-queries";
+import { CurrentTextOperations } from "../runtime/current-text-operation";
+import { SelectionGestures } from "../input/selection-gestures";
+import { selectionInputTarget } from "../input/selection-target";
+import { unwrap } from "solid-js/store";
 import { FeatureHost, FeatureActions } from "../runtime/features";
 import { decodeBlockTree, encodeDocument, encodeWorkspace } from "../block-tree/codecs";
 import { TreeCommands } from "../block-tree/commands";
@@ -69,6 +77,19 @@ export class ReactiveEditor {
   readonly crossText = new CrossBlockSelection(this);
   readonly linkedAnnotations = new LinkedAnnotations(this);
   readonly groupSelection: GroupSelection;
+  readonly currentTextOperation = new CurrentTextOperations();
+  readonly blockQueries = new BlockQueries({ node: key => this.node(key), root: view => this.projections.get(view)?.state.rootKey });
+  readonly textRanges: TextRanges;
+  readonly rangeAnnotations: RangeAnnotations;
+  readonly selectionGestures = new SelectionGestures({
+    operations: this.currentTextOperation,
+    capture: () => captureTextSelection(document, this.mounts, this.crossText, this.textRanges),
+    target: event => selectionInputTarget(event, this.mounts, target => this.crossInput?.ownsInput(target) ? this.crossText.range()?.head.occurrenceKey : undefined),
+    point: event => { const cell = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-inline-index]") : null; return cell ? Number(cell.dataset.inlineIndex) : undefined; },
+    releasePointer: () => this.crossInput?.releasePointer(),
+    focusedKey: () => this.focus.state.focusedKey ?? this.focus.state.lastFocusedKey,
+    clearSelection: key => { document.getSelection()?.removeAllRanges(); this.selections.removeOccurrence(key); this.crossText.clear(); },
+  });
   readonly showHide = new ShowHideProjection(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
   readonly persistence: PersistenceService;
@@ -84,7 +105,20 @@ export class ReactiveEditor {
     const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : isHistoryDocument(dto) ? decodeHistoryDocument(dto) : decodeBlockTree(dto as ExistingBlockDto);
     this.repository = new CanonicalRepository(decoded.state);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
-    this.groupSelection = new GroupSelection(this);
+    this.textRanges = new TextRanges(key => {
+      const node = this.node(key), content = node && this.repository.readState().contents[node.contentKey];
+      if (!node || !content || !["standoff-editor-block", "plain-text-block"].includes(node.viewType)) return;
+      const cell = node.viewType === "standoff-editor-block";
+      return { nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey,
+        version: cell ? content.inlineRevision : content.revision,
+        length: cell ? node.inlineContent.length : String(node.payload.text ?? "").length, coordinate: cell ? "cell" : "utf16" };
+    });
+    this.rangeAnnotations = new RangeAnnotations({ ranges: this.textRanges,
+      properties: key => unwrap((this.node(key)?.payload.standoffProperties ?? []) as Record<string, unknown>[]),
+      write: (key, properties) => this.commands.setPayloadField(key, "standoffProperties", properties),
+      transaction: (label, apply) => this.commands.transaction(label, apply),
+    }, result => this.showHide.annotationApplied(result));
+    this.groupSelection = new GroupSelection(this, this.showHide.selectionVisibility());
     this.persistence = new PersistenceService(this);
     if (loadedWorkspace) this.persistence.attachWorkspace(loadedWorkspace);
     const [viewChildren, setViewChildren] = createStore<Record<string, string | undefined>>({});
@@ -100,6 +134,7 @@ export class ReactiveEditor {
       (nodeKey) => this.node(nodeKey),
     );
     this.repository.subscribeBeforeChanges((label) => {
+      this.selectionGestures.cancelGesture();
       this.crossText.beforeChange();
       if (this.events.hasSubscribers("beforeChange")) {
         this.events.publish("beforeChange", { label, state: this.repository.snapshot() });
@@ -149,7 +184,7 @@ export class ReactiveEditor {
     this.crossInput?.dispose();
     this.disposeFindInput?.();
     this.disposeFindInput = this.find.install(document);
-    const disposeGroupSelection = this.groupSelection.install(document);
+    const disposeSelectionGestures = this.selectionGestures.install(document);
     this.crossInput = new CrossBlockInput(this, document);
     this.gateway = new InputGateway(
       document,
@@ -180,7 +215,7 @@ export class ReactiveEditor {
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
     const disposeFind = this.disposeFindInput;
-    return () => { disposeFind(); disposeGroupSelection(); crossInput.dispose(); dispose(); };
+    return () => { disposeFind(); disposeSelectionGestures(); crossInput.dispose(); dispose(); };
   }
 
   node(nodeKey: NodeKey) {
@@ -327,6 +362,7 @@ export class ReactiveEditor {
     this.crossInput?.dispose();
     this.crossText.clear();
     this.groupSelection.dispose();
+    this.selectionGestures.dispose();
     this.blockClipboard.dismiss();
     this.blockSelection.clear();
     this.bindings.dispose();

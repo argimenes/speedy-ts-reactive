@@ -36,6 +36,8 @@ export class CrossBlockInput {
       return dispose;
     });
   }
+  releasePointer(): void { this.up(); }
+  ownsInput(target: Element): boolean { return target === this.input; }
   private removeInput() { this.input?.remove(); this.input = undefined; this.composing = false; }
   private prepareInput() {
     if (!this.editor.crossText.range()) return;
@@ -95,7 +97,7 @@ export class CrossBlockInput {
     } catch (error) { this.editor.crossText.notice(error instanceof Error ? error.message : String(error)); }
   }
   private down = (event: PointerEvent) => {
-    if ((!this.editor.crossText.enabled() && !this.editor.groupSelection.pointerSelecting()) || event.button !== 0 || event.metaKey || event.altKey) return;
+    if ((!this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("pointer")) || event.button !== 0 || event.metaKey || event.altKey) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target?.closest('.document-style-bar, [data-cross-text-controls]')) return;
     const prior = this.editor.crossText.range();
@@ -210,13 +212,13 @@ export class CrossBlockInput {
     // across a host boundary. Native extension can clamp before reporting that
     // boundary (particularly during key repeat). Ordinary caret editing remains
     // native; the DOM selection still represents the local part of this gesture.
-    if (!this.editor.groupSelection.keyboardSelecting() && !this.editor.crossText.range() && next.occurrenceKey === anchor.occurrenceKey && direction !== "Left" && direction !== "Right") return false;
+    if (!this.editor.selectionGestures.selecting("keyboard") && !this.editor.crossText.range() && next.occurrenceKey === anchor.occurrenceKey && direction !== "Left" && direction !== "Right") return false;
     this.select(anchor, next);
     this.editor.mounts.get(next.occurrenceKey)?.root.scrollIntoView?.({ block: "nearest" });
     return true;
   }
   private key = (event: KeyboardEvent) => {
-    if (!this.editor.crossText.enabled() && !this.editor.groupSelection.keyboardSelecting()) return;
+    if (!this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("keyboard")) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target !== this.input && target?.closest('input, textarea, select, .document-style-bar, [data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = target === this.input && this.editor.crossText.range() ? { nodeKey: this.editor.crossText.range()!.anchor.occurrenceKey, handle: this.editor.mounts.get(this.editor.crossText.range()!.anchor.occurrenceKey)! } : this.editor.mounts.resolveEvent(event);

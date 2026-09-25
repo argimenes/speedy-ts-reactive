@@ -18,25 +18,12 @@ const text = (): ExistingBlockDto => ({ id: crypto.randomUUID(), type: "standoff
 const dto = (type: string, children: ExistingBlockDto[] = [], metadata: Record<string, unknown> = {}): ExistingBlockDto => ({ id: crypto.randomUUID(), type, metadata, children });
 const metadata = (node?: BlockNode) => unwrapStore((node?.payload.metadata ?? {}) as Record<string, unknown>);
 
-export function blockAncestors(editor: ReactiveEditor, key: NodeKey): BlockNode[] {
-  const node = editor.node(key);
-  if (!node) return [];
-  const nodes = Object.values(editor.projections.get(node.viewId)!.state.nodes);
-  const result = [node];
-  let cursor = node;
-  for (;;) {
-    const parent = nodes.find(item => item.children.includes(cursor.key) || Object.values(item.ownedRelations).includes(cursor.key));
-    if (!parent || result.some(item => item.key === parent.key)) return result;
-    result.push(parent); cursor = parent;
-  }
-}
-
 export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuItem[] {
   const node = editor.node(key);
   if (!node) return [];
-  const ancestors = blockAncestors(editor, key);
+  const ancestors = editor.blockQueries.ancestors(key);
   const ancestor = (...types: string[]) => ancestors.find(item => types.includes(item.viewType));
-  const parent = (key: NodeKey) => blockAncestors(editor, key)[1];
+  const parent = (key: NodeKey) => editor.blockQueries.ancestors(key)[1];
   const root = editor.projections.get(node.viewId)!.state.rootKey;
   const find = (placement: string) => editor.nodeForPlacementInView(placement, node.viewId)!;
   const command = (id: string, label: string): BlockMenuItem => ({ label,

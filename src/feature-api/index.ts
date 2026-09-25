@@ -50,3 +50,10 @@ export interface BlockFeatureCapabilities {
   blocks: FeatureBlocks;
   register: FeatureRegistrations;
 }
+
+// Stage 2: editor-operation contracts are separate from hosted BlockRuntime.
+export type { TextRangeSnapshot, TextRangeSource } from "../runtime/text-ranges";
+export type { AnnotationApplication, AnnotationReference, RangeAnnotationPorts, SelectionVisibility } from "../runtime/range-annotations";
+export type { CurrentTextOperation } from "../runtime/current-text-operation";
+export type { SelectionGesturePolicy } from "../input/selection-gestures";
+export type { TextSelectionSnapshot } from "../runtime/selection-snapshot";

@@ -2,7 +2,6 @@ import { batch, createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { ViewPosition } from "../block-tree/types";
-import { applyAnnotationsToRanges } from "./group-selection";
 
 export interface TextSegment { nodeKey: string; contentKey: string; start: number; end: number }
 export interface CrossTextRange { anchor: ViewPosition; head: ViewPosition; viewId: string }
@@ -121,7 +120,7 @@ export class CrossBlockSelection {
     const segments = this.resolve(range.anchor, range.head).filter(s => s.end > s.start);
     this.formatting = true;
     try {
-      applyAnnotationsToRanges(this.editor, segments.map(segment => {
+      this.editor.rangeAnnotations.apply(segments.map(segment => {
         const node = this.editor.node(segment.nodeKey)!, content = this.editor.repository.readState().contents[node.contentKey];
         return { ...segment, placementKey: node.placementKey, version: content.inlineRevision, coordinate: "cell" as const };
       }), type, value, attributes);

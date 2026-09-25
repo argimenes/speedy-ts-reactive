@@ -1,6 +1,6 @@
 # Feature modules and hosted Block applications
 
-Stage 0/1 is implemented: Timer is the first extracted first-party feature. The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) remains the migration plan; the [Stage 1 report](../../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) records qualification and known issues. Stage 2 selection/input work and Grouping extraction have **not** begun.
+Stage 0/1 is implemented: Timer is the first extracted first-party feature. The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) remains the migration plan; the [Stage 1 report](../../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) records qualification and known issues. [Stage 2](../../CODEX_FEATURE_MODULE_STAGE_2_REPORT.md) establishes neutral range/annotation, current-operation and selection-gesture boundaries. Grouping extraction (Stage 3) has **not** begun.
 
 These are trusted TypeScript modules compiled with Codex. There is no plugin discovery, package loader, runtime dependency resolver, sandbox or hot-loading system.
 
@@ -98,3 +98,11 @@ Unknown authored types, fields, properties, children and opaque relations must s
 Stage 1's physical removal experiment passed typecheck, both builds and focused ordinary-document/unknown-data tests with Timer's directory and application activation absent. See the report for exact results and the separate, pre-existing History-disabled envelope preservation defect.
 
 There are **no** public selection-behavior, annotation-target, panel, standoff-effect, property-renderer or serializer registries in Stage 1. Grouping, Entity References, Compact Mode, History and Superposition remain on their existing paths. The architecture review's proposed APIs are not callable implementation contracts.
+
+## Stage 2 editor-operation boundaries
+
+[`TextRanges`](../../src/runtime/text-ranges.ts) validates versioned, half-open range snapshots. [`RangeAnnotations`](../../src/runtime/range-annotations.ts) applies ordinary independent annotations through narrow read/write/transaction ports and returns references. Core structural ancestry and containment live in [`BlockQueries`](../../src/runtime/block-queries.ts).
+
+[`SelectionGestures`](../../src/input/selection-gestures.ts) owns the existing Control-selection policy, cancellation and completion protocol. Native and cross-Block input retain selection geometry. The registered policy receives a normalized selection snapshot after pointer release; ordinary typing bypasses policy dispatch. [`CurrentTextOperations`](../../src/runtime/current-text-operation.ts) supplies explicit annotation/deletion targets, separate from passive highlights. Both registrations have one owner and disposable lifetimes.
+
+Grouping still lives in its original runtime controller pending Stage 3. It registers against these seams and receives a narrow Show/Hide retained-selection adapter. Its remaining editor access and toolbar notices/counts are transitional dependencies listed in the Stage 2 report. Grouping is an editor operation, independent of hosted `BlockRuntime`.

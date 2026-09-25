@@ -1,7 +1,8 @@
 import { createStore } from "solid-js/store";
 import type { NodeKey } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
-import type { SearchRange } from "./text-search";
+import type { TextRangeSnapshot } from "./text-ranges";
+import type { AnnotationApplication, SelectionVisibility } from "./range-annotations";
 
 /** Per-editor, per-Document projection state. Canonical text and annotations are unchanged. */
 export class ShowHideProjection {
@@ -16,6 +17,16 @@ export class ShowHideProjection {
     [this.revealed, this.setRevealed] = createStore<Record<string, boolean | undefined>>({});
     [this.selections, this.setSelections] = createStore<Record<string, string[] | undefined>>({});
     [this.visibility, this.setVisibility] = createStore<Record<string, boolean | undefined>>({});
+  }
+
+  /** Existing feature-specific response, outside ordinary annotation mutation. */
+  annotationApplied(result: AnnotationApplication): void {
+    if (result.type === "style/show-hide" && result.references.length) this.retainSelection([...result.references]);
+  }
+
+  selectionVisibility(): SelectionVisibility {
+    return { active: key => this.selectionActive(key), ranges: key => this.selectedRanges(key),
+      removeAt: (key, index) => this.removeAt(key, index), clear: () => this.clearSelections() };
   }
 
   documentKey(nodeKey: NodeKey): string | undefined {
@@ -110,12 +121,12 @@ export class ShowHideProjection {
   }
 
   /** Resolve only current membership, using annotation positions after any edits. */
-  selectedRanges(nodeKey: NodeKey): SearchRange[] {
+  selectedRanges(nodeKey: NodeKey): TextRangeSnapshot[] {
     const node = this.editor.node(nodeKey), key = this.documentKey(nodeKey);
     const projection = node && this.editor.projections.get(node.viewId);
     const tokens = key && this.selections[key];
     if (!projection || !tokens) return [];
-    const ranges: SearchRange[] = [];
+    const ranges: TextRangeSnapshot[] = [];
     for (const candidate of Object.values(projection.state.nodes)) {
       if (candidate.viewType !== "standoff-editor-block" || this.documentKey(candidate.key) !== key) continue;
       const properties = candidate.payload.standoffProperties as
