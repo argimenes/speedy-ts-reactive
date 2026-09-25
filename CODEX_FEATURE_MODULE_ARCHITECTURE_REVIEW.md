@@ -4,7 +4,7 @@ Investigation and migration proposal · 25 September 2026 · baseline `3f70c71`
 
 **Status: for review; no rearchitecture implemented.** This review follows the current reactive editor, its application composition, and the Node.js/local-filesystem persistence path. Findings come from source inspection, including existing tests; they are not claims of new browser or performance qualification. Paths and symbols below identify the implementation being discussed.
 
-Implementation follow-up: [Stage 0 / Stage 1 report](CODEX_FEATURE_MODULE_STAGE_1_REPORT.md), including the distinction between feature registration and hosted Block-instance lifetimes. The assessment below remains the original review baseline. [Stage 2 report](CODEX_FEATURE_MODULE_STAGE_2_REPORT.md) records the subsequent neutral range/annotation and input-ownership implementation; Stage 3 remains a separate review gate.
+Implementation follow-up: [Stage 0 / Stage 1 report](CODEX_FEATURE_MODULE_STAGE_1_REPORT.md), including the distinction between feature registration and hosted Block-instance lifetimes. The assessment below remains the original review baseline. [Stage 2 report](CODEX_FEATURE_MODULE_STAGE_2_REPORT.md) records the subsequent neutral range/annotation and input-ownership implementation; [Stage 3 report](CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) records the subsequent Grouping extraction and removal qualification; Stage 4 remains a separate review gate.
 
 ## Recommendation
 
@@ -371,7 +371,7 @@ Move its controller, state, command/binding definitions, target provider, owned 
 
 **Exit:** Grouping passes the removal test with no feature-named branches remaining in input, toolbar or renderer. Escape reveals and clears only the active operation; deletion is one undoable edit only for that operation. A cleared group's ranges cannot affect a later group. Find/Entity result highlights are never deletion targets.
 
-Use [group-selection.test.ts](src/runtime/group-selection.test.ts), relevant cross-Block/toolbar/standoff suites and a short real-browser keyboard/pointer check. Include overlapping/shared-content ranges and Delete repeat protection. Run existing typing benchmarks because input routing changed; avoid a large browser matrix.
+Use [group-selection.test.ts](src/features/grouping/group-selection.test.ts), relevant cross-Block/toolbar/standoff suites and a short real-browser keyboard/pointer check. Include overlapping/shared-content ranges and Delete repeat protection. Run existing typing benchmarks because input routing changed; avoid a large browser matrix.
 
 ### Stage 4 — effect and panel contributions; Entity References
 

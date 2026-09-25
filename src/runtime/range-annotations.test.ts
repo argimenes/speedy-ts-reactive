@@ -43,7 +43,7 @@ describe("neutral range and annotation boundary", () => {
     expect(mergeTextRanges([ranges[0], { ...ranges[1], start: 1, end: 4 }, { ...ranges[0], start: 4, end: 5 }])).toEqual([{ ...ranges[0], end: 5 }]);
   });
   it("ordinary annotation application works independently of Grouping and visibility response", () => {
-    const { editor, a } = fixture(); editor.groupSelection.dispose();
+    const { editor, a } = fixture();
     const ranges = [editor.textRanges.snapshot(a.key, 0, 2)];
     const annotations = new RangeAnnotations({ ranges: editor.textRanges, properties: () => [], write: () => {}, transaction: (_, apply) => apply() });
     const result = annotations.apply(ranges, "style/show-hide");

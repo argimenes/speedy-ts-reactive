@@ -9,7 +9,7 @@ A module registers a Block Type; each mounted occurrence receives a separate
 self-bound `BlockRuntime`. Authored JSON survives module absence, while Solid
 owns each running instance's resources. The [current developer guide](docs/architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md)
 and [Stage 1 report](CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) describe the implemented
-API, removal test, and limitations. Stage 2/Grouping extraction is not implemented.
+API, removal test, and limitations. [Stage 3](CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) now extracts Grouping through the neutral Stage 2 boundaries; Stage 4 awaits review.
 The original proposal below remains historical design context; do not copy its
 editor-wide access patterns into new hosted feature modules.
 

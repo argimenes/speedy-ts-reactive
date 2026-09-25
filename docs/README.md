@@ -23,4 +23,4 @@ Practical recipes:
 
 Names in this guide use **Block** for an authored Codex concept, `ContentRecord` for its canonical content, `PlacementRecord` for an attachment of that content, and `BlockNode` for one occurrence projected into one view.
 
-Current migration status: Stage 0/1 is complete with Timer as the first module; Stage 2 is not implemented. Use the [architecture review](../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) for the plan and the [Stage 1 report](../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) for implementation/qualification. New Block examples use the public runtime; property/selection guides identify the remaining legacy paths.
+Current migration status: Timer is extracted, Stage 2 established neutral operation/input boundaries, and [Stage 3](../CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) extracts Grouping. Use the [architecture review](../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) for later stages. Block applications use the public runtime; Grouping uses narrow editor-operation capabilities. Stage 4 requires a separate review.

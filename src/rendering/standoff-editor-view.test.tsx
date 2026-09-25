@@ -222,7 +222,7 @@ describe("StandoffEditorView", () => {
       expect(paths()).toHaveLength(4); // Two highlighted fragments in each Block.
       expect(paths().filter(path => path.hasAttribute("stroke-dasharray"))).toHaveLength(0);
       expect(paths().some(path => path.getAttribute("data-decoration-key")?.includes("deleted"))).toBe(false);
-      expect(editor.groupSelection.active()).toBe(false);
+      expect(editor.currentTextOperation.annotationOperation()).toBeUndefined();
       editor.showHide.toggle(projection.state.rootKey);
       await settle();
       expect(paths()).toHaveLength(0);

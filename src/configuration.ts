@@ -20,6 +20,8 @@
 export type FeatureFlags = Readonly<{
   /** Existing Timer capability remains on; activation is decided by application composition. */
   timer: boolean;
+  /** Existing retained selection behavior, activated only by application composition. */
+  grouping: boolean;
   blockHistory: boolean;
   codexSystemBar: boolean;
   compactDocumentMode: boolean;
@@ -30,6 +32,7 @@ export type FeatureFlags = Readonly<{
 
 export const featureFlags: FeatureFlags = Object.freeze({
   timer: true,
+  grouping: true,
   blockHistory: false,
   codexSystemBar: true,
   compactDocumentMode: true,

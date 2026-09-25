@@ -1,6 +1,6 @@
-// Stage 2 real-browser selection qualification against a running Vite server.
+// Stage 2/3 real-browser selection qualification against a running Vite server.
 // Node 22+, CHROME_BIN and BENCHMARK_URL supported. Isolated Chrome profile,
-// in-memory fixture, no document saves. Also runs against the Stage 1 baseline.
+// in-memory fixture, no document saves. Also runs against the Stage 2 baseline.
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import assert from 'node:assert/strict';
@@ -34,14 +34,14 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const check = (name, actual, expected) => { assert.deepEqual(actual, expected, name); checks.push(name); };
  await evaluate(`(async () => {
    const {ReactiveEditor} = await import('/src/reactive-editor/editor.ts');
-   const {registerCoreViews} = await import('/src/rendering/register-core-views.ts');
+   const {registerApplicationViews} = await import('/src/application/features.ts');
    const {ReactiveTreeView} = await import('/src/rendering/reactive-tree-view.tsx');
    const source = await (await fetch('/src/rendering/reactive-tree-view.tsx')).text();
    const webPath = source.split('"').find(part => part.includes('/solid-js_web.js'));
    const {render, createComponent} = await import(webPath);
    const editor = new ReactiveEditor({type:'document-block',children:[
      {id:'a',type:'standoff-editor-block',text:'alpha beta'}, {id:'b',type:'standoff-editor-block',text:'gamma delta'}]});
-   registerCoreViews(editor); const projection = editor.createView('selection-qualification');
+   registerApplicationViews(editor); const projection = editor.createView('selection-qualification');
    const host = document.body.appendChild(document.createElement('div'));
    host.style.cssText='position:fixed;inset:0;background:white;z-index:999999;padding:60px;font-size:24px';
    const dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}),host); editor.installGateway(document);
@@ -53,7 +53,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  })()`);
  const key = (key, code, modifiers=0, type='keyDown', autoRepeat=false) => send('Input.dispatchKeyEvent',{type,key,code,modifiers,autoRepeat,windowsVirtualKeyCode:({Control:17,Shift:16,ArrowRight:39,Escape:27,Backspace:8,Delete:46})[key]},sessionId);
- const state = () => evaluate('qualify.editor.groupSelection.ranges().map(r=>[qualify.editor.node(r.nodeKey).payload.id,r.start,r.end])');
+ const state = () => evaluate('(qualify.editor.currentTextOperation.annotationOperation()?.annotationTargets() ?? []).map(r=>[qualify.editor.node(r.nodeKey).payload.id,r.start,r.end])');
  const drag = async (from, to, control=true, releaseEarly=false) => {
    const start=await evaluate('qualify.point('+JSON.stringify(from[0])+','+from[1]+')');
    const end=await evaluate('qualify.point('+JSON.stringify(to[0])+','+to[1]+')');
@@ -70,7 +70,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('native selection remains nonempty',await evaluate('document.getSelection().toString().length>0'),true);
  await drag(['a',0],['a',4],true,true); check('early Control release does not group',await state(),[]);
  await drag(['a',0],['a',4]); check('Control pointer selection with cross mode off',await state(),[['a',0,4]]);
- check('pointer capture released before completion',await evaluate('qualify.host.querySelectorAll("*").length>0 && !(qualify.editor.selectionGestures?.selecting("pointer") ?? qualify.editor.groupSelection.pointerSelecting())'),true);
+ check('pointer capture released before completion',await evaluate('qualify.host.querySelectorAll("*").length>0 && !qualify.editor.selectionGestures.selecting("pointer")'),true);
  await key('Escape','Escape'); check('Escape clears membership',await state(),[]);
  await evaluate('qualify.editor.crossText.enable(true)');
  await drag(['a',2],['b',4]); check('cross-Block pointer range',await state(),[['a',2,10],['b',0,4]]);
@@ -80,7 +80,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  for(let i=0;i<5;i++) await key('ArrowRight','ArrowRight',10,'keyDown',i>0);
  await key('Shift','ShiftLeft',2,'keyUp'); await key('Control','ControlLeft',0,'keyUp');
  check('keyboard cross-Block completion on modifier release',await state(),[['a',8,10],['b',0,2]]);
- await evaluate('qualify.editor.groupSelection.apply("style/show-hide")');
+ await evaluate('qualify.editor.currentTextOperation.annotationOperation().apply("style/show-hide")');
  check('Show/Hide retains membership',await evaluate('qualify.editor.showHide.selectionActive()'),true);
  await key('Escape','Escape'); check('Escape reveals and forgets Show/Hide',await evaluate('qualify.editor.showHide.selectionActive()'),false);
  await drag(['a',0],['a',4]);
@@ -96,7 +96,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('native form receives Backspace',await evaluate('document.getElementById("native-test").value'),'nativ');
  await evaluate(`const modal=document.createElement('div');modal.setAttribute('role','dialog');modal.tabIndex=0;qualify.host.append(modal);modal.focus()`);
  await key('Escape','Escape'); check('dialog Escape does not cancel group',await state(),[['a',0,4]]);
- await evaluate('qualify.editor.groupSelection.cancel();qualify.caret("a",0)');
+ await evaluate('qualify.editor.currentTextOperation.active()?.cancel();qualify.caret("a",0)');
  await drag(['a',0],['a',4]);
 
  await key('Delete','Delete'); await key('Delete','Delete',0,'keyDown',true); await key('Delete','Delete',0,'keyUp');
@@ -112,7 +112,13 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await evaluate('qualify.dispose();qualify.editor.dispose();qualify.host.remove()');
  console.log(JSON.stringify({browser:await send('Browser.getVersion'),checks,observations},null,2));
 } finally {
-  socket?.close();
+  // Finish the CDP close handshake before killing Chrome. Otherwise Node's
+  // WebSocket can retain a closing socket after all assertions have finished.
+  if (socket && socket.readyState !== WebSocket.CLOSED) {
+    const closed = new Promise(resolve => socket.addEventListener('close', resolve, { once: true }));
+    socket.close();
+    await Promise.race([closed, new Promise(resolve => setTimeout(resolve, 1000))]);
+  }
   if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) {
     const exited = new Promise(resolve => chrome.once('exit', resolve));
     chrome.kill('SIGKILL');

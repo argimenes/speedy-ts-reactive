@@ -1,4 +1,4 @@
-import { createRoot, createSignal, type Accessor } from "solid-js";
+import { createRoot, createSignal, type Accessor, type Component } from "solid-js";
 
 export type Disposer = () => void;
 export interface FeatureScope {
@@ -66,8 +66,17 @@ export interface FeatureAction {
   order?: number;
 }
 
-/** Only the two existing presentation slots needed by the pilot. */
+/** The existing formatting notice and Selection details, not a general panel API. */
+export interface FeatureToolbarContribution {
+  id: string;
+  notice(): string;
+  selectionDetails: Component;
+  annotationDescriptions?: Readonly<Record<string, string>>;
+}
+
+/** Owned actions plus the formatting surfaces consumed by retained selections. */
 export class FeatureActions {
+  private toolbarEntries = new Map<string, FeatureToolbarContribution & { owner: string }>();
   private entries = new Map<string, FeatureAction & { owner: string }>();
   private revision = createSignal(0);
   register(action: FeatureAction, owner: string): Disposer {
@@ -75,6 +84,15 @@ export class FeatureActions {
     this.entries.set(action.id, { ...action, owner }); this.revision[1](n => n + 1);
     let live = true;
     return () => { if (!live) return; live = false; this.entries.delete(action.id); this.revision[1](n => n + 1); };
+  }
+  registerToolbar(contribution: FeatureToolbarContribution, owner: string): Disposer {
+    if (this.toolbarEntries.has(contribution.id)) throw new Error(`Toolbar contribution ${contribution.id} already belongs to ${this.toolbarEntries.get(contribution.id)!.owner}`);
+    const entry = { ...contribution, owner };
+    this.toolbarEntries.set(entry.id, entry); this.revision[1](n => n + 1);
+    return () => { if (this.toolbarEntries.get(entry.id) !== entry) return; this.toolbarEntries.delete(entry.id); this.revision[1](n => n + 1); };
+  }
+  toolbar(): readonly (FeatureToolbarContribution & { owner: string })[] {
+    this.revision[0](); return [...this.toolbarEntries.values()];
   }
   list(slot: FeatureAction["slot"]): readonly (FeatureAction & { owner: string })[] {
     this.revision[0]();

@@ -1,5 +1,5 @@
 import { ownSelectionToolbar } from "../input/selection-target";
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { For, Show, createEffect, createSignal, createComponent, onCleanup } from "solid-js";
 import { unwrap } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
@@ -50,7 +50,8 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const [linkedType, setLinkedType] = createSignal("codex/entity-reference"), [linkedValue, setLinkedValue] = createSignal("");
   const [colour, setColour] = createSignal("#ff0000"), [background, setBackground] = createSignal("#ffff00");
   const [localToolset, setLocalToolset] = createSignal<Toolset>("Typography");
-  createEffect(() => props.onNotice?.(notice() || editor.groupSelection.message() || editor.crossText.message()));
+  const featureNotice = () => editor.featureActions.toolbar().map(item => item.notice()).find(Boolean) ?? "";
+  createEffect(() => props.onNotice?.(notice() || featureNotice() || editor.crossText.message()));
   let savedRange: { anchor: number; head: number } | undefined;
   const inScope = (key: NodeKey): boolean => editor.blockQueries.contains(props.scopeKey, key);
   createEffect(() => {
@@ -90,13 +91,12 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const annotate = (type: string, value?: string) => {
     const operation = editor.currentTextOperation.annotationOperation();
     if (operation) {
-      if (type === "codex/entity-reference") { setNotice("Entity Reference does not consume a manual group. Choose an ordinary annotation."); return; }
       try {
         const finalRange = operation.annotationTargets()?.at(-1);
-        const count = operation.apply(type, value, effectDefaults[type] ?? {});
+        operation.apply(type, value, effectDefaults[type] ?? {});
         if (type === "style/show-hide" && finalRange) collapseAfterShowHide(finalRange.nodeKey, finalRange.end);
         else savedRange = undefined;
-        setNotice(count ? `Applied ${type} to ${count} grouped ranges.` : "Those grouped ranges already have this annotation.");
+        setNotice("");
       } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
       return;
     }
@@ -244,7 +244,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     ...annotationTools.map(([type, label, glyph]): CompactTool => ({
       id: type, label, glyph,
       toolset: type === "style/show-hide" ? "Selection" : typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
-      description: type === "style/show-hide" ? "Hold Control while selecting to group. Control-click removes a range. Esc cancels. Delete removes grouped text." : deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined,
+      get description() { return editor.featureActions.toolbar().map(item => item.annotationDescriptions?.[type]).find(Boolean) ?? (deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined); },
       width: typographyTypes.has(type) ? 36 : 88, pressed: type === "style/show-hide" ? hiddenTextRevealed : undefined, run: () => type === "style/show-hide" ? showHide() : annotate(type),
     })),
     ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
@@ -261,10 +261,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       <button type="button" onClick={() => editor.crossText.collapseToHead()}>Resume text editing</button>
       <details><summary>New linked annotation</summary><LinkedControls /></details>
     </fieldset></Show>
-    <Show when={editor.groupSelection.active()}><fieldset><legend>Grouped ranges</legend>
-      <span>{editor.groupSelection.ranges().length} retained</span>
-      <span>Hold Control to add ranges. Esc cancels. Delete removes grouped text.</span>
-    </fieldset></Show>
+    <For each={editor.featureActions.toolbar()}>{item => createComponent(item.selectionDetails, {})}</For>
     <fieldset><legend>Editor options</legend><SelectionOption /></fieldset>
   </>;
   return <nav ref={element => onCleanup(ownSelectionToolbar(element, editor.mounts))} class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": editor.features.compactEditorChrome }} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
@@ -295,7 +292,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <button type="button" title="Decrease indent" onClick={() => indent(-1)}>⇤</button>
     <TabAction />
     <button type="button" title="Clear formatting" onClick={clear}>T×</button>
-    <span role="status">{notice() || editor.groupSelection.message() || editor.crossText.message()}</span>
+    <span role="status">{notice() || featureNotice() || editor.crossText.message()}</span>
     <DocumentCountBar editor={editor} scopeKey={props.scopeKey} />
     </>}>
       <CompactToolbar tools={tools} toolset={props.toolset ?? localToolset()} onToolset={value => { setLocalToolset(value); props.onToolset?.(value); }} capture={capture} restore={restore} retainSelection={retainSelection} more={MoreControls} />

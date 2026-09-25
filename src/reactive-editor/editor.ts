@@ -44,7 +44,6 @@ import type { LoadedWorkspace } from "./workspace-manifest";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { BlockHistorySession } from "../runtime/block-history";
 import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguration } from "../configuration";
-import { GroupSelection } from "../runtime/group-selection";
 import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
@@ -76,7 +75,6 @@ export class ReactiveEditor {
   readonly blockClipboard = new BlockClipboardService(this);
   readonly crossText = new CrossBlockSelection(this);
   readonly linkedAnnotations = new LinkedAnnotations(this);
-  readonly groupSelection: GroupSelection;
   readonly currentTextOperation = new CurrentTextOperations();
   readonly blockQueries = new BlockQueries({ node: key => this.node(key), root: view => this.projections.get(view)?.state.rootKey });
   readonly textRanges: TextRanges;
@@ -118,7 +116,6 @@ export class ReactiveEditor {
       write: (key, properties) => this.commands.setPayloadField(key, "standoffProperties", properties),
       transaction: (label, apply) => this.commands.transaction(label, apply),
     }, result => this.showHide.annotationApplied(result));
-    this.groupSelection = new GroupSelection(this, this.showHide.selectionVisibility());
     this.persistence = new PersistenceService(this);
     if (loadedWorkspace) this.persistence.attachWorkspace(loadedWorkspace);
     const [viewChildren, setViewChildren] = createStore<Record<string, string | undefined>>({});
@@ -361,7 +358,6 @@ export class ReactiveEditor {
     this.minimap.clearAll();
     this.crossInput?.dispose();
     this.crossText.clear();
-    this.groupSelection.dispose();
     this.selectionGestures.dispose();
     this.blockClipboard.dismiss();
     this.blockSelection.clear();

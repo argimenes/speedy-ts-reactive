@@ -57,3 +57,7 @@ export type { AnnotationApplication, AnnotationReference, RangeAnnotationPorts, 
 export type { CurrentTextOperation } from "../runtime/current-text-operation";
 export type { SelectionGesturePolicy } from "../input/selection-gestures";
 export type { TextSelectionSnapshot } from "../runtime/selection-snapshot";
+
+export type { TextOperationCapabilities, TextCaret } from "./text-operation";
+export type { FeatureToolbarContribution } from "../runtime/features";
+export { exactTextRangeKey } from "../runtime/text-ranges";

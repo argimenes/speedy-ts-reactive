@@ -31,6 +31,18 @@ export class BlockQueries {
     };
     return visit(scope);
   }
+  documentOrder(key: NodeKey): ReadonlyMap<NodeKey, number> {
+    const origin = this.ports.node(key), order = new Map<NodeKey, number>();
+    const root = origin && this.ports.root(origin.viewId);
+    const visit = (key: NodeKey) => {
+      if (order.has(key)) return;
+      order.set(key, order.size);
+      const node = this.ports.node(key);
+      if (node) for (const child of [...node.children, ...Object.values(node.ownedRelations)]) visit(child);
+    };
+    if (root) visit(root);
+    return order;
+  }
   documentScope(key: NodeKey): NodeKey | undefined {
     const path = this.ancestors(key);
     const window = path.find(node => node.viewType === "document-window-block");

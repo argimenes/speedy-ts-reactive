@@ -166,7 +166,7 @@ describe("Timer feature activation and disposal", () => {
       dto.timer = { durationSeconds: 300, mode: "running", runningUntil: Date.now() + 300000 };
       const { editor, node, timerElement } = setup([dto]);
       const key = node("running").key;
-      expect(editor.featureHost.list()).toEqual(["timer"]);
+      expect(editor.featureHost.list()).toContain("timer");
       expect(editor.registry.owner("timer-block")).toBe("timer");
       expect(editor.commandRegistry.owner("timer.create")).toBe("timer");
       expect(editor.bindings.owner("timer.create")).toBe("timer");

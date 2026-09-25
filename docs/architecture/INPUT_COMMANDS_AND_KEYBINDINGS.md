@@ -20,7 +20,7 @@ flowchart LR
 
 ## Browser event entry points
 
-[`ReactiveEditor.installGateway`](../../src/reactive-editor/editor.ts) installs one [`InputGateway`](../../src/input/gateway.ts) for a `Document`, plus Find, manual Grouping and cross-Block input helpers. Existing installation order and guards remain; Stage 1 did not introduce gesture ownership. The gateway uses capture listeners for `beforeinput`, `input`, composition, focus, keydown, selection change, pointer, clipboard, and context-menu events.
+[`ReactiveEditor.installGateway`](../../src/reactive-editor/editor.ts) installs one [`InputGateway`](../../src/input/gateway.ts) for a `Document`, plus Find, neutral `SelectionGestures` and cross-Block input helpers. Stage 2 defines the fixed ownership/completion protocol and exclusions; Stage 3 registers Grouping's policy and current-operation provider through feature composition. Input code does not import Grouping. The existing Control/Escape/Delete/Backspace semantics use those owned hooks rather than competing remappable key listeners. The gateway uses capture listeners for `beforeinput`, `input`, composition, focus, keydown, selection change, pointer, clipboard, and context-menu events.
 
 `MountRegistry.resolveEvent` walks the composed DOM path and returns the nearest registered `NodeKey` and its `inputPolicy`:
 

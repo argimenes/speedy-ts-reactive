@@ -1,6 +1,6 @@
 # Feature modules and hosted Block applications
 
-Stage 0/1 is implemented: Timer is the first extracted first-party feature. The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) remains the migration plan; the [Stage 1 report](../../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) records qualification and known issues. [Stage 2](../../CODEX_FEATURE_MODULE_STAGE_2_REPORT.md) establishes neutral range/annotation, current-operation and selection-gesture boundaries. Grouping extraction (Stage 3) has **not** begun.
+Stage 0/1 is implemented: Timer is the first extracted first-party feature. The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) remains the migration plan; the [Stage 1 report](../../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) records qualification and known issues. [Stage 2](../../CODEX_FEATURE_MODULE_STAGE_2_REPORT.md) establishes neutral range/annotation, current-operation and selection-gesture boundaries. [Stage 3](../../CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) extracts Grouping into its own editor feature module. Stage 4 remains a separate review gate.
 
 These are trusted TypeScript modules compiled with Codex. There is no plugin discovery, package loader, runtime dependency resolver, sandbox or hot-loading system.
 
@@ -97,7 +97,7 @@ Unknown authored types, fields, properties, children and opaque relations must s
 
 Stage 1's physical removal experiment passed typecheck, both builds and focused ordinary-document/unknown-data tests with Timer's directory and application activation absent. See the report for exact results and the separate, pre-existing History-disabled envelope preservation defect.
 
-There are **no** public selection-behavior, annotation-target, panel, standoff-effect, property-renderer or serializer registries in Stage 1. Grouping, Entity References, Compact Mode, History and Superposition remain on their existing paths. The architecture review's proposed APIs are not callable implementation contracts.
+The implemented selection-policy and current-operation contracts are described below. There are still no general panel, standoff-effect, property-renderer or serializer registries. Entity References, Compact Mode, History and Superposition remain on their existing paths; later architecture-review proposals are not callable implementation contracts.
 
 ## Stage 2 editor-operation boundaries
 
@@ -105,4 +105,8 @@ There are **no** public selection-behavior, annotation-target, panel, standoff-e
 
 [`SelectionGestures`](../../src/input/selection-gestures.ts) owns the existing Control-selection policy, cancellation and completion protocol. Native and cross-Block input retain selection geometry. The registered policy receives a normalized selection snapshot after pointer release; ordinary typing bypasses policy dispatch. [`CurrentTextOperations`](../../src/runtime/current-text-operation.ts) supplies explicit annotation/deletion targets, separate from passive highlights. Both registrations have one owner and disposable lifetimes.
 
-Grouping still lives in its original runtime controller pending Stage 3. It registers against these seams and receives a narrow Show/Hide retained-selection adapter. Its remaining editor access and toolbar notices/counts are transitional dependencies listed in the Stage 2 report. Grouping is an editor operation, independent of hosted `BlockRuntime`.
+Grouping now lives in [`features/grouping`](../../src/features/grouping/index.tsx). Application composition activates it with `features.grouping` (default true, preserving existing behavior). A bare `ReactiveEditor` plus core views has no Grouping policy. The feature receives [`TextOperationCapabilities`](../../src/feature-api/text-operation.ts) through an explicit application adapter, with no editor/repository/DOM lookup access.
+
+The module owns its controller, commands, semantic operation/gesture bindings, decorations, notices, counts and Selection help. `FeatureActions` has a bounded toolbar contribution for the existing notice, Selection-details and annotation-description surfaces; this is not the future panel/effect registry. Core [`deleteTextRanges`](../../src/runtime/range-edits.ts) validates, merges and deletes supplied ranges atomically and returns a caret. The adapter handles native/logical/cross selection completion and caret restoration.
+
+Grouping uses the Stage 2 Show/Hide visibility port; authored Show/Hide storage/rendering remains independent. Grouping is an editor operation, independent of hosted `BlockRuntime`. Its physical removal qualification and remaining adapter responsibilities are recorded in the Stage 3 report.

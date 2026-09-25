@@ -17,7 +17,7 @@ Stage 0/1 of the feature-module migration is implemented with Timer as the pilot
 See [feature modules and hosted Block applications](./docs/architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md)
 for the current API and separate module/instance lifetimes, and the
 [Stage 1 report](./CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) for qualification and
-known limits. Stage 2 and Grouping extraction have not begun.
+known limits. Stage 2 established neutral operation/input boundaries; [Stage 3](CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) extracts Grouping. Stage 4 awaits review.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

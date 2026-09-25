@@ -32,17 +32,17 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await evaluate('new Promise(resolve => setTimeout(resolve, 1500))');
  const result = await evaluate(`(async () => {
    const {ReactiveEditor} = await import('/src/reactive-editor/editor.ts');
-   const {registerCoreViews} = await import('/src/rendering/register-core-views.ts');
+   const {registerApplicationViews} = await import('/src/application/features.ts');
    const {ReactiveTreeView} = await import('/src/rendering/reactive-tree-view.tsx');
    const source = await (await fetch('/src/rendering/reactive-tree-view.tsx')).text();
-   const webPath = source.split('"').find(part => part.startsWith('/node_modules/.vite/deps/solid-js_web.js'));
+   const webPath = source.split('"').find(part => part.includes('/solid-js_web.js'));
    const {render, createComponent} = await import(webPath);
    const host = document.createElement('div'); document.body.append(host);
    host.style.cssText = 'position:fixed;inset:0;overflow:auto;background:white;z-index:99999';
    const documentUrl = ${JSON.stringify(process.env.BENCHMARK_DOCUMENT_URL ?? "")};
    const dto = documentUrl ? (await (await fetch(documentUrl)).json()).Data.document : {type:'document-block',children:Array.from({length:250},(_,i)=>({id:'bench-'+i,type:'standoff-editor-block',text:'x'.repeat(100),standoffProperties:[{type:'style/bold',start:40,end:60}]}))};
    const editor = new ReactiveEditor(dto);
-   registerCoreViews(editor);
+   registerApplicationViews(editor);
    const projection = editor.createView('browser-performance');
    const dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}), host);
    editor.installGateway(document);
@@ -146,7 +146,13 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  for (const result of boundaries) { assert.equal(result.added,true); assert.equal(result.focusCorrect,true); assert.equal(result.restored,true); assert.equal(result.unrelatedCellStable,true); }
  await evaluate('window.typingBench.dispose();window.typingBench.editor.dispose();window.typingBench.host.remove()');
 } finally {
-  socket?.close();
+  // Finish the CDP close handshake before killing Chrome. Otherwise Node's
+  // WebSocket can retain a closing socket after all assertions have finished.
+  if (socket && socket.readyState !== WebSocket.CLOSED) {
+    const closed = new Promise(resolve => socket.addEventListener('close', resolve, { once: true }));
+    socket.close();
+    await Promise.race([closed, new Promise(resolve => setTimeout(resolve, 1000))]);
+  }
   if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) {
     const exited = new Promise(resolve => chrome.once('exit', resolve));
     chrome.kill('SIGKILL');
