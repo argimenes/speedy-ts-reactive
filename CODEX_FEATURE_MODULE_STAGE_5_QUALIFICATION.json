@@ -1,0 +1,424 @@
+{
+  "stage": 5,
+  "baselineCommit": "298b8f9",
+  "baselineCheckout": "/tmp/speedy-stage4-baseline-298b8f9",
+  "candidate": {
+    "focusedTests": {
+      "passed": 33,
+      "suites": 10,
+      "command": "npm test -- src/features/compact-document src/rendering/window-icon.test.tsx src/rendering/floating-window-resize.test.tsx src/demo/workspace-demo.test.tsx src/demo/public-hosted-version.test.tsx src/block-tree/margin-commands.test.ts src/runtime/features.test.ts src/rendering/unknown-feature.test.tsx src/application/feature-capabilities.test.tsx --maxWorkers=2 --minWorkers=1",
+      "finalAssertionRelocationRecheck": {
+        "passed": 11,
+        "suites": 2
+      }
+    },
+    "typecheck": "passed",
+    "clientBuild": "passed; repeated after final CSS correction",
+    "serverBuild": "passed",
+    "browser": {
+      "browser": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/153.0.8010.53",
+        "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "jsVersion": "15.3.76.13"
+      },
+      "removed": false,
+      "checks": [
+        "1440 laptop initial policy",
+        "1440 laptop automatic collapse",
+        "1440 laptop explicit state",
+        "1440 laptop compact margins",
+        "1440 laptop expanded storage",
+        "1440 laptop focused margin selection",
+        "1440 laptop drawer focus",
+        "1440 laptop drawer Escape focus",
+        "1440 laptop width restored",
+        "1440 laptop automatic cause survives toggle",
+        "1440 laptop presentation preserves authored tree and Cells",
+        "1440 laptop resized automatic margins",
+        "1440 laptop generic drawer access",
+        "1440 laptop normal editing",
+        "1440 laptop unknown authored metadata",
+        "1440 laptop restored document focus",
+        "1280 laptop initial policy",
+        "1280 laptop automatic collapse",
+        "1280 laptop explicit state",
+        "1280 laptop compact margins",
+        "1280 laptop expanded storage",
+        "1280 laptop focused margin selection",
+        "1280 laptop drawer focus",
+        "1280 laptop drawer Escape focus",
+        "1280 laptop width restored",
+        "1280 laptop automatic cause survives toggle",
+        "1280 laptop presentation preserves authored tree and Cells",
+        "1280 laptop resized automatic margins",
+        "1280 laptop generic drawer access",
+        "1280 laptop normal editing",
+        "1280 laptop unknown authored metadata",
+        "1280 laptop restored document focus",
+        "200% effective CSS viewport initial policy",
+        "200% effective CSS viewport automatic collapse",
+        "200% effective CSS viewport explicit state",
+        "200% effective CSS viewport compact margins",
+        "200% effective CSS viewport expanded storage",
+        "200% effective CSS viewport drawer focus",
+        "200% effective CSS viewport drawer Escape focus",
+        "200% effective CSS viewport width restored",
+        "200% effective CSS viewport automatic cause survives toggle",
+        "200% effective CSS viewport presentation preserves authored tree and Cells",
+        "200% effective CSS viewport resized automatic margins",
+        "200% effective CSS viewport generic drawer access",
+        "200% effective CSS viewport normal editing",
+        "200% effective CSS viewport unknown authored metadata",
+        "200% effective CSS viewport restored document focus"
+      ],
+      "shell": {
+        "mainPadding": "36px 38px 24px 175px",
+        "window": [
+          1215,
+          840,
+          36
+        ],
+        "barHeight": 28,
+        "styleHeight": 36,
+        "footerHeight": 22
+      },
+      "geometry": [
+        {
+          "scenario": "1440 laptop",
+          "initial": {
+            "width": 1000,
+            "stored": 1000,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          },
+          "compact": {
+            "width": 849,
+            "stored": 1000,
+            "pressed": "true",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "restored": {
+            "width": 1000,
+            "stored": 1000,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          }
+        },
+        {
+          "scenario": "1280 laptop",
+          "initial": {
+            "width": 840,
+            "stored": 840,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          },
+          "compact": {
+            "width": 740,
+            "stored": 840,
+            "pressed": "true",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "restored": {
+            "width": 840,
+            "stored": 840,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          }
+        },
+        {
+          "scenario": "200% effective CSS viewport",
+          "initial": {
+            "width": 640,
+            "stored": 640,
+            "pressed": "false",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "compact": {
+            "width": 640,
+            "stored": 640,
+            "pressed": "true",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "restored": {
+            "width": 640,
+            "stored": 640,
+            "pressed": "false",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          }
+        }
+      ]
+    }
+  },
+  "baseline": {
+    "browser": {
+      "browser": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/153.0.8010.53",
+        "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "jsVersion": "15.3.76.13"
+      },
+      "removed": false,
+      "checks": [
+        "1440 laptop initial policy",
+        "1440 laptop automatic collapse",
+        "1440 laptop explicit state",
+        "1440 laptop compact margins",
+        "1440 laptop expanded storage",
+        "1440 laptop focused margin selection",
+        "1440 laptop drawer focus",
+        "1440 laptop drawer Escape focus",
+        "1440 laptop width restored",
+        "1440 laptop automatic cause survives toggle",
+        "1440 laptop presentation preserves authored tree and Cells",
+        "1440 laptop resized automatic margins",
+        "1440 laptop generic drawer access",
+        "1440 laptop normal editing",
+        "1440 laptop unknown authored metadata",
+        "1440 laptop restored document focus",
+        "1280 laptop initial policy",
+        "1280 laptop automatic collapse",
+        "1280 laptop explicit state",
+        "1280 laptop compact margins",
+        "1280 laptop expanded storage",
+        "1280 laptop focused margin selection",
+        "1280 laptop drawer focus",
+        "1280 laptop drawer Escape focus",
+        "1280 laptop width restored",
+        "1280 laptop automatic cause survives toggle",
+        "1280 laptop presentation preserves authored tree and Cells",
+        "1280 laptop resized automatic margins",
+        "1280 laptop generic drawer access",
+        "1280 laptop normal editing",
+        "1280 laptop unknown authored metadata",
+        "1280 laptop restored document focus",
+        "200% effective CSS viewport initial policy",
+        "200% effective CSS viewport automatic collapse",
+        "200% effective CSS viewport explicit state",
+        "200% effective CSS viewport compact margins",
+        "200% effective CSS viewport expanded storage",
+        "200% effective CSS viewport drawer focus",
+        "200% effective CSS viewport drawer Escape focus",
+        "200% effective CSS viewport width restored",
+        "200% effective CSS viewport automatic cause survives toggle",
+        "200% effective CSS viewport presentation preserves authored tree and Cells",
+        "200% effective CSS viewport resized automatic margins",
+        "200% effective CSS viewport generic drawer access",
+        "200% effective CSS viewport normal editing",
+        "200% effective CSS viewport unknown authored metadata",
+        "200% effective CSS viewport restored document focus"
+      ],
+      "geometry": [
+        {
+          "scenario": "1440 laptop",
+          "initial": {
+            "width": 1000,
+            "stored": 1000,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          },
+          "compact": {
+            "width": 849,
+            "stored": 1000,
+            "pressed": "true",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "restored": {
+            "width": 1000,
+            "stored": 1000,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          }
+        },
+        {
+          "scenario": "1280 laptop",
+          "initial": {
+            "width": 840,
+            "stored": 840,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          },
+          "compact": {
+            "width": 740,
+            "stored": 840,
+            "pressed": "true",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "restored": {
+            "width": 840,
+            "stored": 840,
+            "pressed": "false",
+            "collapsed": false,
+            "indicators": 0,
+            "revision": 0,
+            "unknown": true
+          }
+        },
+        {
+          "scenario": "200% effective CSS viewport",
+          "initial": {
+            "width": 640,
+            "stored": 640,
+            "pressed": "false",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "compact": {
+            "width": 640,
+            "stored": 640,
+            "pressed": "true",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          },
+          "restored": {
+            "width": 640,
+            "stored": 640,
+            "pressed": "false",
+            "collapsed": true,
+            "indicators": 1,
+            "revision": 0,
+            "unknown": true
+          }
+        }
+      ],
+      "shell": {
+        "mainPadding": "36px 38px 24px 175px",
+        "window": [
+          1215,
+          840,
+          36
+        ],
+        "barHeight": 28,
+        "styleHeight": 36,
+        "footerHeight": 22
+      }
+    },
+    "workspaceSnapshotRegression": {
+      "result": "expected failure",
+      "expandedWidth": 1000,
+      "expectedSavedWidth": 1000,
+      "actualSavedWidth": 824,
+      "candidateResult": "passed; compact/minimized saves and expanded restoration retain 1000px"
+    }
+  },
+  "physicalRemoval": {
+    "checkout": "/tmp/speedy-stage5-without-compact",
+    "procedure": [
+      "Copy candidate src into detached Stage 4 checkout",
+      "Delete src/features/compact-document including CSS and tests",
+      "Remove createCompactDocumentFeature import, presentationCapabilities import and compactDocumentMode activation from src/application/features.ts",
+      "Leave default flag true and core implementation intact"
+    ],
+    "typecheck": "passed",
+    "clientBuild": "passed",
+    "serverBuild": "passed",
+    "focusedTests": {
+      "passed": 29,
+      "suites": 8,
+      "initialResult": "28 passed; system-bar test still expected Compact feature button",
+      "correction": "Move feature-presence assertion into feature suite; rerun affected demo suite: 10 passed"
+    },
+    "browser": {
+      "browser": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/153.0.8010.53",
+        "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "jsVersion": "15.3.76.13"
+      },
+      "removed": true,
+      "checks": [
+        "1440 laptop initial policy",
+        "1440 laptop automatic collapse",
+        "1440 laptop presentation preserves authored tree and Cells",
+        "1440 laptop resized automatic margins",
+        "1440 laptop generic drawer access",
+        "1440 laptop normal editing",
+        "1440 laptop unknown authored metadata",
+        "1440 laptop restored document focus",
+        "1280 laptop initial policy",
+        "1280 laptop automatic collapse",
+        "1280 laptop presentation preserves authored tree and Cells",
+        "1280 laptop resized automatic margins",
+        "1280 laptop generic drawer access",
+        "1280 laptop normal editing",
+        "1280 laptop unknown authored metadata",
+        "1280 laptop restored document focus",
+        "200% effective CSS viewport initial policy",
+        "200% effective CSS viewport automatic collapse",
+        "200% effective CSS viewport presentation preserves authored tree and Cells",
+        "200% effective CSS viewport resized automatic margins",
+        "200% effective CSS viewport generic drawer access",
+        "200% effective CSS viewport normal editing",
+        "200% effective CSS viewport unknown authored metadata",
+        "200% effective CSS viewport restored document focus"
+      ],
+      "geometry": []
+    }
+  },
+  "qualificationLimits": [
+    "Chrome 153 only; high zoom represented by 720x450 effective CSS viewport at device scale factor 2",
+    "No exhaustive viewport/theme matrix",
+    "No typing-performance comparison required or claimed"
+  ],
+  "sourceAudit": {
+    "featureProductionImports": [
+      "solid-js",
+      "../../feature-api",
+      "./compact-document.css"
+    ],
+    "compactNamesInCoreWindowRuntimeDemoAndSharedCSS": 0,
+    "newObservers": 0,
+    "newPolling": 0,
+    "newInputDispatchPaths": 0
+  },
+  "nextStage": "Stop for review before Stage 6; History/persistence and Text Superposition extraction not begun"
+}

@@ -74,3 +74,7 @@ export type { JsonObject } from "../block-tree/types";
 export type { FloatingWindowSize } from "../rendering/floating-window-resize";
 export { graphemeBoundaries } from "../input/graphemes";
 export { rangesToPositionMarkers } from "../runtime/document-position-markers";
+
+// Stage 5: one optional per-window presentation contribution.
+export type { PresentationCapabilities } from "./presentation";
+export type { WindowPresentationPort, WindowPresentationInstance, WindowPresentationContribution } from "../runtime/window-presentation";

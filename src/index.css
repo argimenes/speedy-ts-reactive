@@ -564,12 +564,6 @@ textarea {
   border-radius: 50%;
 }
 
-.reactive-window__controls .compact-document-toggle[aria-pressed="true"] {
-  color: #173d34;
-  background: #b9e4e8;
-  box-shadow: inset 0 0 0 1px rgba(20, 78, 68, .4);
-}
-
 .reactive-window__content {
   container-name: document-window;
   container-type: inline-size;
@@ -616,27 +610,6 @@ textarea {
 .reactive-window__margin-drawer .reactive-relation::before,
 .reactive-window__margin-drawer .reactive-relation::after { display: none !important; }
 
-/* Compact Document is window-local presentation state. */
-.reactive-window--compact-document-feature {
-  --document-heading-h1: 2.5rem;
-  --document-heading-h2: 2rem;
-  --document-heading-h3: 1.625rem;
-  --document-heading-h4: 1.25rem;
-  --document-heading-h1-line-height: 1.12;
-  --document-heading-h2-line-height: 1.18;
-  --document-heading-h3-line-height: 1.24;
-  --document-heading-h4-line-height: 1.3;
-}
-
-.reactive-window--compact-document-feature > .reactive-window__header {
-  min-height: 32px;
-  box-sizing: border-box;
-  padding: 4px 8px;
-  align-items: center;
-}
-
-.reactive-window--compact-document-feature > .reactive-window__content { padding: 10px; }
-.reactive-window--compact-document-feature > .reactive-window__margin-drawer { top: 72px; }
 .reactive-window--margins-collapsed .reactive-window__document-body .reactive-relation[data-relation-name="leftMargin"],
 .reactive-window--margins-collapsed .reactive-window__document-body .reactive-relation[data-relation-name="rightMargin"] { display: none; }
 

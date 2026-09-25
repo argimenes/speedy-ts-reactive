@@ -1,3 +1,5 @@
+import { Dynamic } from "solid-js/web";
+import { createWindowPresentation } from "../rendering/window-presentation";
 import { ErrorBoundary, For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { ReactiveTreeView } from "../rendering/reactive-tree-view";
@@ -17,7 +19,7 @@ import { DocumentStyleBar } from "../rendering/document-style-bar";
 import { WindowIcon } from "../rendering/window-icon";
 import { WorkspaceBrowser } from "./workspace-browser";
 import { isWorkspaceManifest, type LoadedWorkspace } from "../reactive-editor/workspace-manifest";
-import { compactDocumentWindowWidth, DocumentMarginContext, type DocumentMarginEntry } from "../rendering/document-margins";
+import { DocumentMarginContext, type DocumentMarginEntry } from "../rendering/document-margins";
 import { DocumentMarginDrawer } from "../rendering/document-margin-drawer";
 import { ReactiveViewProvider } from "../reactive-editor/context";
 import { createFloatingWindowResize, FloatingWindowResizeHandle } from "../rendering/floating-window-resize";
@@ -70,8 +72,6 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   const [windowSize, setWindowSize] = createSignal<{ w: number; h: number } | undefined>(props.window?.size);
   const [marginEntries, setMarginEntries] = createSignal<DocumentMarginEntry[]>([]);
   const [narrowMarginsCollapsed, setNarrowMarginsCollapsed] = createSignal(false);
-  const [compactDocument, setCompactDocument] = createSignal(false);
-  const [compactWidthReduction, setCompactWidthReduction] = createSignal(0);
   const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
   const [toolset, setToolset] = createSignal<Toolset>("Typography");
   const [toolbarNotice, setToolbarNotice] = createSignal("");
@@ -80,7 +80,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   let windowObserver: ResizeObserver | undefined;
   let suppressIconClick = false;
   let suppressTimer: ReturnType<typeof setTimeout> | undefined;
-  const marginsCollapsed = createMemo(() => narrowMarginsCollapsed() || compactDocument());
+  const marginsCollapsed = () => narrowMarginsCollapsed() || presentation.requested();
   const beginWindowDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
     if (event.ctrlKey || event.button !== 0 || !["normal", "minimized"].includes(windowState()) || (event.target as Element).closest("button") && windowState() !== "minimized") return;
     drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y, moved: false };
@@ -118,7 +118,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
     collapsed: marginsCollapsed,
     drawerOpen: marginDrawerOpen,
     entries: marginEntries,
-    indicators: () => editor.features.compactDocumentMode,
+    indicators: () => true,
     open: (entry?: DocumentMarginEntry) => openMargins(entry),
     register: registerMargin,
   };
@@ -145,29 +145,33 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
     if (collapsed) collapseMargins(() => setNarrowMarginsCollapsed(true));
     else {
       setNarrowMarginsCollapsed(false);
-      if (!compactDocument()) setMarginDrawerOpen(false);
+      if (!presentation.requested()) setMarginDrawerOpen(false);
     }
   };
   const resizeMinimum = () => ({ w: windowElement?.querySelector(".reactive-page--minimap-left, .reactive-page--minimap-right") ? 602 : 560, h: 240 });
+  const expandedWindowSize = () => {
+    const stored = windowSize(), rect = windowElement?.getBoundingClientRect();
+    return { width: stored?.w ?? rect?.width ?? props.window?.size?.w ?? 1200, height: stored?.h ?? rect?.height ?? props.window?.size?.h ?? 760 };
+  };
+  const presentation = createWindowPresentation(editor.windowPresentation, {
+    element: () => windowElement, enabled: () => true,
+    expandedSize: expandedWindowSize, minimumWidth: () => resizeMinimum().w,
+    marginsCollapsed, automaticCollapsed: narrowMarginsCollapsed,
+    collapseWithFocus: collapseMargins, closeDrawer: () => setMarginDrawerOpen(false),
+    captureExpandedSize: size => setWindowSize(value => value ?? { w: size.width, h: size.height }),
+  });
   const windowResize = createFloatingWindowResize({
     element: () => windowElement,
-    size: () => {
-      const stored = windowSize(), rect = windowElement?.getBoundingClientRect();
-      const width = stored?.w ?? rect?.width ?? props.window?.size?.w ?? 1200;
-      const compactWidth = Math.max(Math.min(width, resizeMinimum().w), width - compactWidthReduction());
-      return { width: compactDocument() ? compactWidth : width, height: stored?.h ?? rect?.height ?? props.window?.size?.h ?? 760 };
-    },
+    size: presentation.presentedSize,
     minimum: () => ({ width: resizeMinimum().w, height: resizeMinimum().h }),
     enabled: () => windowState() === "normal",
     onCommit: next => {
-      setWindowSize({ w: next.width + (compactDocument() ? compactWidthReduction() : 0), h: next.height });
+      const expanded = presentation.expandedFromPresented(next);
+      setWindowSize({ w: expanded.width, h: expanded.height });
       updateMarginState(next.width);
     },
   });
-  const displayWindowSize = () => windowResize.preview() ?? (windowSize() ? {
-    width: compactDocument() ? Math.max(Math.min(windowSize()!.w, resizeMinimum().w), windowSize()!.w - compactWidthReduction()) : windowSize()!.w,
-    height: windowSize()!.h,
-  } : undefined);
+  const displayWindowSize = () => windowResize.preview() ?? (windowSize() ? presentation.presentedSize() : undefined);
   const openMargins = (entry?: DocumentMarginEntry) => {
     if (!marginsCollapsed()) return;
     setMarginDrawerOpen(true);
@@ -184,24 +188,6 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
     setMarginDrawerOpen(false);
     queueMicrotask(() => windowElement.querySelector<HTMLButtonElement>(".document-style-bar__margins")?.focus({ preventScroll: true }));
   };
-  const toggleCompactDocument = () => {
-    const next = !compactDocument();
-    if (next) collapseMargins(() => {
-      const rect = windowElement.getBoundingClientRect();
-      const current = windowResize.dimensions();
-      const width = rect.width || current.width;
-      const height = rect.height || current.height;
-      const compactWidth = compactDocumentWindowWidth(windowElement, width, resizeMinimum().w);
-      setWindowSize(value => value ?? { w: width, h: height });
-      setCompactWidthReduction(width - compactWidth);
-      setCompactDocument(true);
-    });
-    else {
-      setCompactDocument(false);
-      setCompactWidthReduction(0);
-      if (!narrowMarginsCollapsed()) setMarginDrawerOpen(false);
-    }
-  };
   const observeWindow = () => {
     if (!windowElement?.isConnected) return;
     if (typeof ResizeObserver !== "undefined") {
@@ -215,7 +201,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
     location: documents.location,
     localFile: documents.localFile,
     filename: title,
-    window: () => ({ state: windowState(), position: position(), size: windowElement?.isConnected ? { w: windowElement.getBoundingClientRect().width, h: windowElement.getBoundingClientRect().height } : props.window?.size ?? { w: 1200, h: 760 } }),
+    window: () => ({ state: windowState(), position: position(), size: windowSize() ?? (windowElement?.isConnected && windowState() === "normal" ? { w: windowElement.getBoundingClientRect().width, h: windowElement.getBoundingClientRect().height } : props.window?.size ?? { w: 1200, h: 760 }) }),
   });
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave]] as const) {
     editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: editor.features.publicHostedVersion ? localExecute : serverExecute });
@@ -251,7 +237,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   });
 
   return (
-    <main class="workspace-demo" classList={{ "workspace-demo--compact-document-feature": editor.features.compactDocumentMode, "workspace-demo--system-bar": editor.features.codexSystemBar }} data-demo-state={loaded() ? "loaded" : "loading"}>
+    <main class="workspace-demo" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }} data-demo-state={loaded() ? "loaded" : "loading"}>
       <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Demo controls">
         <Show when={editor.features.publicHostedVersion} fallback={<>
           <button type="button" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
@@ -340,12 +326,10 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
         <section
           ref={windowElement}
           class="workspace-demo__window"
-          classList={{
+          classList={{ ...presentation.classes(),
             "workspace-demo__window--minimized": windowState() === "minimized",
             "workspace-demo__window--maximized": windowState() === "maximized",
             "workspace-demo__window--glass": glass(),
-            "workspace-demo__window--compact-document-feature": editor.features.compactDocumentMode,
-            "workspace-demo__window--compact-document": compactDocument(),
             "workspace-demo__window--margins-collapsed": marginsCollapsed(),
           }}
           style={{ transform: windowState() !== "maximized" ? `translate(${position().x}px, ${position().y}px)` : undefined, ...(windowState() === "normal" && displayWindowSize() ? { width: `${displayWindowSize()!.width}px`, height: `${displayWindowSize()!.height}px` } : {}) }}
@@ -362,7 +346,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
             >
               <span class="workspace-demo__window-title" title={documents.location() ? `${documents.location()!.folder}/${title()}` : title()}>{title()}<span class="workspace-demo__save-state" role="status" data-save-state={documents.busy() ? "saving" : documents.dirty() ? "unsaved" : "saved"}> · {documents.busy() ? "Working…" : documents.dirty() ? "Unsaved changes" : documents.location() || documents.localFile() ? "Saved" : "Sample"}</span></span>
               <span class="workspace-demo__window-controls">
-                <Show when={editor.features.compactDocumentMode}><button type="button" class="compact-document-toggle" aria-label="Compact document" title="Compact document: hide margins and narrow window" aria-pressed={compactDocument()} onPointerDown={event => { event.stopPropagation(); if (!compactDocument() && !marginsCollapsed()) event.preventDefault(); }} onClick={toggleCompactDocument}>↔</button></Show>
+                <Dynamic component={presentation.control()} />
                 <button type="button" aria-label="Minimize document window" onClick={() => setWindowState("minimized")}>−</button>
                 <button type="button" aria-label="Maximize document window" onClick={() => setWindowState((value) => value === "maximized" ? "normal" : "maximized")}>□</button>
                 <button type="button" aria-label="Close document window" disabled={documents.busy()} onClick={() => documents.guard("close the document window", () => props.onClose(editor.persistence.savedDocument ?? props.document, documents.location(), documents.localFile()))}>×</button>
@@ -441,7 +425,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   onCleanup(() => { release(); editor.dispose(); });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
-  return <main class="workspace-demo workspace-demo--canonical" classList={{ "workspace-demo--compact-document-feature": editor.features.compactDocumentMode, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
+  return <main class="workspace-demo workspace-demo--canonical" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
     <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Workspace controls">
       <Show when={editor.features.publicHostedVersion} fallback={<>
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>

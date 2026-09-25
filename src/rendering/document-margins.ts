@@ -29,7 +29,7 @@ export function marginSide(name: string): "left" | "right" | undefined {
 }
 
 /** Keep the main reading column stable while collapsed margin lanes free window space. */
-export function compactDocumentWindowWidth(root: HTMLElement, currentWidth: number, minimumWidth: number): number {
+export function collapsedMarginWindowWidth(root: HTMLElement, currentWidth: number, minimumWidth: number): number {
   const layout = root.querySelector<HTMLElement>(".workspace-demo__document--flow")
     ?? root.querySelector<HTMLElement>(".reactive-page");
   if (!layout || currentWidth <= 0) return currentWidth;

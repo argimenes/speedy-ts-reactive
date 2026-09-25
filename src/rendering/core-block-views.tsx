@@ -1,5 +1,6 @@
+import { createWindowPresentation } from "./window-presentation";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Dynamic, Portal } from "solid-js/web";
 import { unwrap } from "solid-js/store";
 import type { BlockViewProps, NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
@@ -10,7 +11,7 @@ import { youtubeId } from "./backgrounds";
 import { DocumentStatusBar } from "./document-status-bar";
 import type { Toolset } from "./compact-toolbar";
 import { DocumentStyleBar } from "./document-style-bar";
-import { compactDocumentWindowWidth, DocumentMarginContext, type DocumentMarginEntry } from "./document-margins";
+import { DocumentMarginContext, type DocumentMarginEntry } from "./document-margins";
 import { DocumentMarginDrawer } from "./document-margin-drawer";
 import { DocumentMarginIndicators } from "./document-margin-indicators";
 import { createFloatingWindowResize, FloatingWindowResizeHandle } from "./floating-window-resize";
@@ -445,15 +446,13 @@ export function WindowView(props: BlockViewProps) {
   const [preview, setPreview] = createSignal<{ x: number; y: number }>();
   const [marginEntries, setMarginEntries] = createSignal<DocumentMarginEntry[]>([]);
   const [narrowMarginsCollapsed, setNarrowMarginsCollapsed] = createSignal(false);
-  const [compactDocument, setCompactDocument] = createSignal(false);
-  const [compactWidthReduction, setCompactWidthReduction] = createSignal(0);
   const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
   const [toolset, setToolset] = createSignal<Toolset>("Typography");
   const [toolbarNotice, setToolbarNotice] = createSignal("");
   const state = () => resolvedWindowState(metadata().state);
   const minimized = () => state() === "minimized";
   const isDocument = () => node()?.viewType === "document-window-block";
-  const marginsCollapsed = createMemo(() => narrowMarginsCollapsed() || compactDocument());
+  const marginsCollapsed = () => narrowMarginsCollapsed() || presentation.requested();
   const isSticky = () => node()?.viewType === "window-block" && metadata().stickyNote === true;
   const closedSticky = () => isSticky() && metadata().state === "closed";
   const title = () => String(metadata().title ?? "Untitled");
@@ -491,19 +490,25 @@ export function WindowView(props: BlockViewProps) {
     return { w: Number.isFinite(w) && w > 0 ? w : 840, h: Number.isFinite(h) && h > 0 ? h : 620 };
   };
   const minimumSize = () => isDocument() ? { w: root?.querySelector(".reactive-page--minimap-left, .reactive-page--minimap-right") ? 602 : 560, h: 240 } : { w: 240, h: 160 };
-  const presentedSize = () => {
-    const stored = storedSize();
-    const compactWidth = Math.max(Math.min(stored.w, minimumSize().w), stored.w - compactWidthReduction());
-    return { width: compactDocument() ? compactWidth : stored.w, height: stored.h };
-  };
+  const presentation = createWindowPresentation(editor.windowPresentation, {
+    element: () => root, enabled: isDocument,
+    expandedSize: () => ({ width: storedSize().w, height: storedSize().h }),
+    minimumWidth: () => minimumSize().w,
+    marginsCollapsed, automaticCollapsed: narrowMarginsCollapsed,
+    collapseWithFocus: activate => collapseMargins(activate),
+    closeDrawer: () => setMarginDrawerOpen(false),
+  });
   const commitMetadata = (patch: Record<string, unknown>, label: string) => editor.commands.setPayloadField(props.nodeKey, "metadata", { ...unwrap(metadata()), ...patch }, label);
   const windowResize = createFloatingWindowResize({
     element: () => root,
-    size: presentedSize,
+    size: presentation.presentedSize,
     minimum: () => ({ width: minimumSize().w, height: minimumSize().h }),
     enabled: () => state() === "normal",
     normalizeStartToMinimum: true,
-    onCommit: size => commitMetadata({ size: { w: size.width + (compactDocument() ? compactWidthReduction() : 0), h: size.height } }, "Resize Window"),
+    onCommit: size => {
+      const expanded = presentation.expandedFromPresented(size);
+      commitMetadata({ size: { w: expanded.width, h: expanded.height } }, "Resize Window");
+    },
   });
   const dimensions = () => ({ w: windowResize.dimensions().width, h: windowResize.dimensions().height });
   const registerMargin = (entry: DocumentMarginEntry) => {
@@ -514,7 +519,7 @@ export function WindowView(props: BlockViewProps) {
     collapsed: marginsCollapsed,
     drawerOpen: marginDrawerOpen,
     entries: marginEntries,
-    indicators: () => editor.features.compactDocumentMode,
+    indicators: () => true,
     open: (entry?: DocumentMarginEntry) => openMargins(entry),
     register: registerMargin,
   };
@@ -543,7 +548,7 @@ export function WindowView(props: BlockViewProps) {
       return;
     }
     setNarrowMarginsCollapsed(false);
-    if (!compactDocument()) setMarginDrawerOpen(false);
+    if (!presentation.requested()) setMarginDrawerOpen(false);
   };
   const subtreeKeys = () => {
     const seen = new Set<NodeKey>(), pending = [props.nodeKey];
@@ -602,20 +607,6 @@ export function WindowView(props: BlockViewProps) {
     setMarginDrawerOpen(false);
     queueMicrotask(() => root.querySelector<HTMLButtonElement>(".document-style-bar__margins")?.focus({ preventScroll: true }));
   };
-  const toggleCompactDocument = () => {
-    const next = !compactDocument();
-    if (next) collapseMargins(() => {
-      const currentWidth = root.getBoundingClientRect().width || windowResize.dimensions().width;
-      const compactWidth = compactDocumentWindowWidth(root, currentWidth, minimumSize().w);
-      setCompactWidthReduction(currentWidth - compactWidth);
-      setCompactDocument(true);
-    });
-    else {
-      setCompactDocument(false);
-      setCompactWidthReduction(0);
-      if (!narrowMarginsCollapsed()) setMarginDrawerOpen(false);
-    }
-  };
   const rememberReturnFocus = () => {
     const key = [editor.focus.state.focusedKey, editor.focus.state.lastFocusedKey].find(candidate => candidate !== props.nodeKey && contains(candidate));
     if (!key) return;
@@ -645,14 +636,14 @@ export function WindowView(props: BlockViewProps) {
     });
   };
   const frame = () => (
-    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ "reactive-window--minimized": minimized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--compact-document-feature": isDocument() && editor.features.compactDocumentMode, "reactive-window--compact-document": isDocument() && compactDocument(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
+    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
       hidden={closedSticky()}
       style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
       <Show when={minimized()} fallback={<>
         <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
           <span>{title()}</span>
           <span class="reactive-window__controls">
-            <Show when={isDocument() && editor.features.compactDocumentMode}><button type="button" class="compact-document-toggle" aria-label="Compact document" title="Compact document: hide margins and narrow window" aria-pressed={compactDocument()} onPointerDown={(event) => { event.stopPropagation(); if (!compactDocument() && !marginsCollapsed()) event.preventDefault(); }} onClick={toggleCompactDocument}>↔</button></Show>
+            <Dynamic component={presentation.control()} />
             <button type="button" aria-label="Minimize window" onPointerDown={(e) => { rememberReturnFocus(); e.stopPropagation(); }} onClick={minimizeWindow}>−</button>
             <button type="button" aria-label={isSticky() ? "Close sticky note" : "Close window"} onPointerDown={(e) => e.stopPropagation()} onClick={() => isSticky() ? editor.stickyNotes.closeWindow(props.nodeKey) : editor.commands.remove(props.nodeKey)}>×</button>
           </span>

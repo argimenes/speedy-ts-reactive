@@ -1,3 +1,4 @@
+import { WindowPresentation } from "../runtime/window-presentation";
 import { PanelContributions } from "../runtime/panel-contributions";
 import { AnnotationContributions } from "../runtime/annotation-contributions";
 import { EffectContributions } from "../runtime/effect-contributions";
@@ -48,6 +49,7 @@ import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguratio
 import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
+  readonly windowPresentation = new WindowPresentation();
   readonly panels = new PanelContributions();
   readonly annotationUI = new AnnotationContributions();
   readonly effects = new EffectContributions();

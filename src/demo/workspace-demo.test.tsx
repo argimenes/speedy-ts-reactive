@@ -80,7 +80,6 @@ describe("WorkspaceDemo", () => {
     disposers.push(render(() => <WorkspaceDemo configuration={{ features: { publicHostedVersion: false } }} />, host));
     expect(host.querySelector(".workspace-demo__toolbar")).toBeNull();
     expect(host.querySelector(".codex-system-bar")).not.toBeNull();
-    expect(host.querySelector('[aria-label="Compact document"]')).not.toBeNull();
     expect(host.querySelector<HTMLButtonElement>('[aria-label="Codex search (coming soon)"]')?.disabled).toBe(true);
     expect(host.querySelector(".workspace-demo__guide, .workspace-demo__coverage, .workspace-demo__json")).toBeNull();
     const window = host.querySelector<HTMLElement>(".workspace-demo__window")!, transform = window.style.transform;

@@ -381,79 +381,6 @@
   .workspace-demo .workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="rightMargin"] { display: none; }
 }
 
-/* Laptop density is gated with Compact Document Mode and remains active while
-   the per-window margin toggle is off. */
-.workspace-demo--compact-document-feature { padding-top: 40px; padding-bottom: 24px; }
-.workspace-demo--compact-document-feature.workspace-demo--canonical { padding-top: 40px; }
-.workspace-demo--compact-document-feature.workspace-demo--canonical > .reactive-generic-block,
-.workspace-demo--compact-document-feature.workspace-demo--canonical > .reactive-generic-block > .reactive-surface { min-height: calc(100vh - 40px); }
-.workspace-demo--compact-document-feature .workspace-demo__toolbar { top: 6px; padding: 3px 5px; }
-.workspace-demo--compact-document-feature .workspace-demo__toolbar button,
-.workspace-demo--compact-document-feature .workspace-demo__toolbar a { padding: 3px 6px; }
-.workspace-demo--compact-document-feature .workspace-demo__window { height: calc(100vh - 64px); }
-
-.workspace-demo .workspace-demo__window--compact-document-feature {
-  --document-heading-h1: 2.5rem;
-  --document-heading-h2: 2rem;
-  --document-heading-h3: 1.625rem;
-  --document-heading-h4: 1.25rem;
-  --document-heading-h1-line-height: 1.12;
-  --document-heading-h2-line-height: 1.18;
-  --document-heading-h3-line-height: 1.24;
-  --document-heading-h4-line-height: 1.3;
-}
-.workspace-demo__window--compact-document-feature .workspace-demo__windowbar { min-height: 28px; }
-.workspace-demo__window--compact-document-feature .workspace-demo__window-controls { height: 28px; }
-.workspace-demo__window--compact-document-feature .workspace-demo__window-controls button { width: 30px; }
-.workspace-demo__window--compact-document-feature .compact-document-toggle[aria-pressed="true"] { color: #143f43; background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 1px rgba(20, 78, 68, .32); }
-.workspace-demo__window--glass .document-margin-indicators { --document-margin-indicator: rgba(101, 220, 232, .62); --document-margin-indicator-hover: rgba(137, 236, 244, .95); }
-.workspace-demo__window--compact-document-feature .reactive-tabs__labels,
-.workspace-demo .reactive-window--compact-document-feature .reactive-tabs__labels { min-height: 32px; flex-wrap: nowrap; overflow-x: auto; }
-.workspace-demo__window--compact-document-feature .reactive-tabs__labels button,
-.workspace-demo .reactive-window--compact-document-feature .reactive-tabs__labels button { padding: 5px 10px; font-size: .9rem; white-space: nowrap; }
-.workspace-demo__window--compact-document-feature .reactive-page,
-.workspace-demo .reactive-window--compact-document-feature .reactive-page { --margin-column: clamp(136px, 14cqi, 200px); padding-top: 18px; padding-bottom: 56px; }
-.workspace-demo__window--compact-document-feature .workspace-demo__document--flow { --margin-column: clamp(136px, 14cqi, 200px); padding-top: 18px; padding-bottom: 56px; }
-.workspace-demo__window--compact-document-feature .workspace-demo__document--flow > .reactive-page { padding: 0; }
-.workspace-demo__window--compact-document-feature .reactive-page__main > * + *,
-.workspace-demo .reactive-window--compact-document-feature .reactive-page__main > * + * { margin-top: 6px; }
-.workspace-demo__window--compact-document-feature .reactive-standoff-surface,
-.workspace-demo .reactive-window--compact-document-feature .reactive-standoff-surface { min-height: 1.5em; padding: 1px 0 3px; }
-.workspace-demo__window--compact-document-feature .reactive-standoff-flow,
-.workspace-demo .reactive-window--compact-document-feature .reactive-standoff-flow { line-height: 1.55; }
-.workspace-demo__window--compact-document-feature > .reactive-window__margin-drawer { top: 68px; }
-
-.workspace-demo__window--compact-document-feature.workspace-demo__window--margins-collapsed .reactive-page,
-.reactive-window--compact-document-feature.reactive-window--margins-collapsed .reactive-page { padding-right: 32px; padding-left: 32px; }
-.workspace-demo__window--compact-document-feature.workspace-demo__window--margins-collapsed .workspace-demo__document--flow { padding-right: 32px; padding-left: 32px; }
-.workspace-demo__window--compact-document-feature.workspace-demo__window--margins-collapsed .workspace-demo__document--flow > .reactive-page {
-  --document-margin-indicator-left: -32px;
-  --document-margin-indicator-right: -32px;
-}
-.workspace-demo__window--compact-document-feature.workspace-demo__window--margins-collapsed .reactive-page--minimap-left,
-.reactive-window--compact-document-feature.reactive-window--margins-collapsed .reactive-page--minimap-left { padding-left: 58px; }
-.workspace-demo__window--compact-document-feature.workspace-demo__window--margins-collapsed .reactive-page--minimap-right,
-.reactive-window--compact-document-feature.reactive-window--margins-collapsed .reactive-page--minimap-right { padding-right: 58px; }
-.workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="leftMargin"],
-.workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="rightMargin"] { display: none; }
-
-@container document-window (max-width: 1200px) {
-  .workspace-demo__window--compact-document-feature .reactive-page,
-  .workspace-demo .reactive-window--compact-document-feature .reactive-page,
-  .workspace-demo__window--compact-document-feature .workspace-demo__document--flow { --margin-column: clamp(96px, 11cqi, 128px); }
-}
-
-@container document-window (max-width: 900px) {
-  .workspace-demo__window--compact-document-feature .reactive-page,
-  .workspace-demo .reactive-window--compact-document-feature .reactive-page,
-  .workspace-demo__window--compact-document-feature .workspace-demo__document--flow { --margin-column: clamp(72px, 10cqi, 96px); }
-}
-
-@media (max-width: 640px) {
-  .workspace-demo--compact-document-feature { padding: 76px 8px 100px; }
-  .workspace-demo--compact-document-feature .workspace-demo__window { height: calc(100vh - 86px); }
-}
-
 /* The system bar replaces the floating workspace toolbar and owns the fixed
    desktop reserve at the top of the viewport. */
 .workspace-demo--system-bar { padding-top: 36px; }
@@ -461,12 +388,23 @@
 .workspace-demo--system-bar.workspace-demo--canonical > .reactive-generic-block,
 .workspace-demo--system-bar.workspace-demo--canonical > .reactive-generic-block > .reactive-surface { min-height: calc(100vh - 36px); }
 .workspace-demo--system-bar .workspace-demo__window { height: calc(100vh - 70px); }
-.workspace-demo--system-bar.workspace-demo--compact-document-feature { padding-top: 36px; }
-.workspace-demo--system-bar.workspace-demo--compact-document-feature .workspace-demo__window { height: calc(100vh - 60px); }
 
 @media (max-width: 640px) {
-  .workspace-demo--system-bar,
-  .workspace-demo--system-bar.workspace-demo--compact-document-feature { padding: 36px 8px 100px; }
-  .workspace-demo--system-bar .workspace-demo__window,
-  .workspace-demo--system-bar.workspace-demo--compact-document-feature .workspace-demo__window { height: calc(100vh - 70px); }
+  .workspace-demo--system-bar { padding: 36px 8px 100px; }
+  .workspace-demo--system-bar .workspace-demo__window { height: calc(100vh - 70px); }
 }
+
+.workspace-demo__window--glass .document-margin-indicators { --document-margin-indicator: rgba(101, 220, 232, .62); --document-margin-indicator-hover: rgba(137, 236, 244, .95); }
+.workspace-demo__window--margins-collapsed .reactive-page,
+.reactive-window--margins-collapsed .reactive-page { padding-right: 32px; padding-left: 32px; }
+.workspace-demo__window--margins-collapsed .workspace-demo__document--flow { padding-right: 32px; padding-left: 32px; }
+.workspace-demo__window--margins-collapsed .workspace-demo__document--flow > .reactive-page {
+  --document-margin-indicator-left: -32px;
+  --document-margin-indicator-right: -32px;
+}
+.workspace-demo__window--margins-collapsed .reactive-page--minimap-left,
+.reactive-window--margins-collapsed .reactive-page--minimap-left { padding-left: 58px; }
+.workspace-demo__window--margins-collapsed .reactive-page--minimap-right,
+.reactive-window--margins-collapsed .reactive-page--minimap-right { padding-right: 58px; }
+.workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="leftMargin"],
+.workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="rightMargin"] { display: none; }

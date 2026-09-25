@@ -69,29 +69,3 @@
   .document-count-bar summary [data-count-scope="Block"],
   .document-count-bar summary [data-count-scope="Page"] { display: none; }
 }
-
-/* General laptop density for the Compact Document feature. */
-.reactive-window--compact-document-feature > .document-style-bar.document-style-bar--compact,
-.workspace-demo__window--compact-document-feature > .document-style-bar.document-style-bar--compact {
-  flex-basis: 36px;
-  height: 36px;
-  min-height: 36px;
-  padding-block: 2px;
-}
-.reactive-window--compact-document-feature .document-style-bar .compact-toolbar button,
-.reactive-window--compact-document-feature .compact-toolbar__picker select,
-.workspace-demo__window--compact-document-feature .document-style-bar .compact-toolbar button,
-.workspace-demo__window--compact-document-feature .compact-toolbar__picker select { height: 30px; min-height: 30px; }
-.reactive-window--compact-document-feature > .document-status-bar,
-.workspace-demo__window--compact-document-feature > .document-status-bar { height: 22px; flex-basis: 22px; }
-
-@media (pointer: coarse) {
-  .reactive-window--compact-document-feature > .document-style-bar.document-style-bar--compact,
-  .workspace-demo__window--compact-document-feature > .document-style-bar.document-style-bar--compact { flex-basis: 48px; height: 48px; min-height: 48px; }
-  .reactive-window--compact-document-feature .document-style-bar .compact-toolbar button,
-  .reactive-window--compact-document-feature .compact-toolbar__picker select,
-  .workspace-demo__window--compact-document-feature .document-style-bar .compact-toolbar button,
-  .workspace-demo__window--compact-document-feature .compact-toolbar__picker select { min-height: 40px; }
-  .reactive-window--compact-document-feature > .document-status-bar,
-  .workspace-demo__window--compact-document-feature > .document-status-bar { height: 32px; flex-basis: 32px; }
-}
