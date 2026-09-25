@@ -1,33 +1,26 @@
 import { createStore } from "solid-js/store";
-import { clone } from "../block-tree/clone";
-import { linkedRegistry } from "../block-tree/linked-annotations";
-import type { JsonObject, RepositoryOperation } from "../block-tree/types";
-import type { ReactiveEditor } from "../reactive-editor/editor";
-import type { OverlayDescriptor } from "./overlays";
-import { ancestorPath, nodeLabel, resolveSearchScope, TextSearch, type SearchMatch, type SearchMatchSet, type SearchScope, type ScopeKind } from "./text-search";
-import type { SearchOptions } from "./search-matching";
-import type { SearchRunner } from "./search-worker";
-import { revealMatch } from "./reveal-match";
-import { graphemeBoundaries } from "../input/graphemes";
+import type { AnnotationCapabilities, PanelSession, SearchMatch, SearchMatchSet, SearchScope, ScopeKind, SearchOptions, SearchRunner } from "../../feature-api";
+import { graphemeBoundaries } from "../../feature-api";
+import type { EntitySearchData } from "./entity-search";
 
 export interface NominatedEntity { id: string; name: string }
 export interface EntityCandidate { key: string; match: SearchMatch; occurrences: SearchMatch[]; original: boolean; checked: boolean; reason: string }
 export const candidateKey = (match: SearchMatch) => JSON.stringify(match.ranges.map(r => [r.contentKey,r.start,r.end]).sort((a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
 const overlaps = (a: SearchMatch, b: SearchMatch) => a.ranges.some(x => b.ranges.some(y => x.contentKey === y.contentKey && x.start < y.end && y.start < x.end));
-function textAt(editor: ReactiveEditor, match: SearchMatch) {
+function textAt(editor: AnnotationCapabilities, match: SearchMatch) {
   return match.ranges.map(r => {
-    const node = editor.node(r.nodeKey);
-    if (!node || node.contentKey !== r.contentKey || node.placementKey !== r.placementKey || r.coordinate !== "cell" || !Number.isInteger(r.start) || !Number.isInteger(r.end) || r.start < 0 || r.end <= r.start || r.end > node.inlineContent.length) throw new Error("A mention range is no longer valid.");
-    return node.inlineContent.slice(r.start,r.end).map(k => { const cell = editor.node(k); if (cell?.viewType !== "text-cell") throw new Error("Mentions cannot include inline media."); return String(cell.payload.text ?? ""); }).join("");
+    const node = editor.text(r.nodeKey);
+    if (!node || node.contentKey !== r.contentKey || node.placementKey !== r.placementKey || r.coordinate !== "cell" || !Number.isInteger(r.start) || !Number.isInteger(r.end) || r.start < 0 || r.end <= r.start || r.end > node.cells.length) throw new Error("A mention range is no longer valid.");
+    return node.cells.slice(r.start,r.end).map(cell => { if (!cell.plain) throw new Error("Mentions cannot include inline media."); return cell.text; }).join("");
   }).join(" ");
 }
 /** Resolve both local properties and shared definitions before deciding eligibility. */
-export function candidateReason(editor: ReactiveEditor, match: SearchMatch, entity?: NominatedEntity): string {
+export function candidateReason(editor: AnnotationCapabilities, match: SearchMatch, entity?: NominatedEntity): string {
   if (!match.capabilities.annotate) return match.capabilities.reason ?? "This range cannot receive an entity annotation.";
   const states = match.ranges.map(range => {
-    const node = editor.node(range.nodeKey); if (!node) return "conflict";
-    const properties = (node.payload.standoffProperties ?? []) as JsonObject[];
-    const refs = properties.map(p => editor.linkedAnnotations.resolve(p)).filter(p => !p.isDeleted && p.type === "codex/entity-reference" && Number(p.start) < range.end && Number(p.end) + 1 > range.start);
+    const node = editor.text(range.nodeKey); if (!node) return "conflict";
+    const properties = node.properties;
+    const refs = properties.filter(p => !p.isDeleted && p.type === "codex/entity-reference" && Number(p.start) < range.end && Number(p.end) + 1 > range.start);
     if (!refs.length) return "clear";
     if (entity && refs.every(p => p.start === range.start && Number(p.end) + 1 === range.end && p.value === entity.id)) return "linked";
     if (entity && refs.some(p => p.value === entity.id)) return "linked-overlap";
@@ -40,10 +33,10 @@ export function candidateReason(editor: ReactiveEditor, match: SearchMatch, enti
 }
 
 /** Prevalidate all targets, then one payload update per content and one history entry. */
-export function bindEntityCandidates(editor: ReactiveEditor, set: SearchMatchSet, matches: SearchMatch[], entity: NominatedEntity): number {
+export function bindEntityCandidates(editor: AnnotationCapabilities, set: SearchMatchSet, matches: SearchMatch[], entity: NominatedEntity): number {
   if (!entity.id || !entity.name) throw new Error("Nominate an entity first.");
   if (set.status !== "complete" && set.status !== "partial") throw new Error("Wait for a successful search before binding mentions.");
-  if (set.revision !== editor.repository.readState().revision) throw new Error("The document changed. Select the text again.");
+  if (set.revision !== editor.revision()) throw new Error("The document changed. Select the text again.");
   const unique = [...new Map(matches.map(match => [candidateKey(match),match])).values()];
   const eligible: SearchMatch[] = [];
   for (const match of unique) {
@@ -55,31 +48,8 @@ export function bindEntityCandidates(editor: ReactiveEditor, set: SearchMatchSet
     eligible.push(match);
   }
   if (!eligible.length) return 0;
-  const state = editor.repository.readState(), updates = new Map<string,{ key: string; properties: JsonObject[] }>();
-  const registry = clone(linkedRegistry(state)); let linked = false;
-  for (const match of eligible) {
-    const annotationId = match.ranges.length > 1 ? crypto.randomUUID() : undefined;
-    const metadata = { entityId: entity.id, entityName: entity.name };
-    if (annotationId) { linked = true; registry[annotationId] = { id: annotationId, type: "codex/entity-reference", value: entity.id, metadata, attributes: {} }; }
-    for (const range of match.ranges) {
-      let update = updates.get(range.contentKey);
-      if (!update) updates.set(range.contentKey, update = { key: range.nodeKey, properties: clone(state.contents[range.contentKey].payload.standoffProperties as JsonObject[] ?? []) });
-      update.properties.push({ id: crypto.randomUUID(), type: "codex/entity-reference", start: range.start, end: range.end - 1, ...(annotationId ? { annotationId } : { value: entity.id, metadata }) });
-    }
-  }
-  // Publish a single validated operation batch. Repeated setPayloadField calls
-  // inside TreeCommands.transaction would clone/validate the entire draft once
-  // per Block; that is unnecessarily expensive for a document-wide action.
-  const operations: RepositoryOperation[] = [];
-  if (linked) {
-    const root = state.contents[state.placements[state.rootPlacementKey].contentKey];
-    operations.push({ kind: "put-content",record: { ...root,payload: { ...root.payload,linkedAnnotations: registry } } });
-  }
-  for (const [key,update] of updates) {
-    const content = state.contents[key];
-    operations.push({ kind: "put-content",record: { ...content,payload: { ...content.payload,standoffProperties: update.properties } } });
-  }
-  editor.repository.commit(`Bind ${eligible.length} entity mentions`,operations);
+  editor.annotate(eligible.map(match => match.ranges), "codex/entity-reference", entity.id,
+    { entityId: entity.id, entityName: entity.name }, set.revision, `Bind ${eligible.length} entity mentions`);
   return eligible.length;
 }
 
@@ -87,7 +57,8 @@ export class EntityCandidates {
   readonly state;
   private setState;
   readonly owner: string;
-  readonly search: TextSearch;
+  readonly search: ReturnType<AnnotationCapabilities["search"]>;
+  private decorations: ReturnType<AnnotationCapabilities["decorations"]>;
   private original?: SearchMatch;
   private controller?: AbortController;
   private timer?: ReturnType<typeof setTimeout>;
@@ -95,20 +66,22 @@ export class EntityCandidates {
   private disposed = false;
   private undo: string[] = [];
   private sourceSet?: SearchMatchSet;
-  constructor(private editor: ReactiveEditor, private overlay: OverlayDescriptor, runner?: SearchRunner) {
-    this.owner = `entity-candidates:${overlay.key}`; this.search = new TextSearch(editor,runner);
-    const ranges = (overlay.entityRanges ?? []).map(r => { const node = editor.node(r.nodeKey)!; return { ...r, contentKey: node.contentKey, placementKey: node.placementKey, version: 0, coordinate: "cell" as const }; });
-    const path = ancestorPath(editor,overlay.ownerKey);
+  constructor(private editor: AnnotationCapabilities, private panel: PanelSession, runner?: SearchRunner) {
+    const overlay = panel.data as EntitySearchData;
+    this.owner = `entity-candidates:${panel.key}`; this.search = editor.search(runner);
+    this.decorations = editor.decorations(this.owner);
+    const ranges = (overlay.entityRanges ?? []).map(r => { const node = editor.text(r.nodeKey)!; return { ...r, contentKey: node.contentKey, placementKey: node.placementKey, version: node.version, coordinate: "cell" as const }; });
+    const path = editor.path(panel.ownerKey);
     let actionable = true;
     for (const r of ranges) {
-      const node = editor.node(r.nodeKey)!;
-      const cells = node.inlineContent.map(k => editor.node(k)!);
-      const boundaries = graphemeBoundaries(cells.map(c => c.viewType === "text-cell" ? String(c.payload.text ?? "") : "\uFFFC").join(""));
-      actionable &&= boundaries.includes(r.start) && boundaries.includes(r.end) && cells.slice(r.start,r.end).every(c => c.viewType === "text-cell");
+      const node = editor.text(r.nodeKey)!;
+      const cells = node.cells;
+      const boundaries = graphemeBoundaries(cells.map(c => c.plain ? c.text : "\uFFFC").join(""));
+      actionable &&= boundaries.includes(r.start) && boundaries.includes(r.end) && cells.slice(r.start,r.end).every(c => c.plain);
     }
-    this.original = { id: `${this.owner}:original`, text: overlay.entityQuery ?? "", context: overlay.entityQuery ?? "", captures: [], ranges, path: path.map(n => n.key), breadcrumb: path.map(nodeLabel).join(" / "), capabilities: { annotate: actionable, highlight: true, reveal: true, replace: false, reason: actionable ? undefined : "The selected passage splits a grapheme or includes inline media." } };
+    this.original = { id: `${this.owner}:original`, text: overlay.entityQuery ?? "", context: overlay.entityQuery ?? "", captures: [], ranges, path: path.map(n => n.key), breadcrumb: path.map(n => n.label).join(" / "), capabilities: { annotate: actionable, highlight: true, reveal: true, replace: false, reason: actionable ? undefined : "The selected passage splits a grapheme or includes inline media." } };
     if (!ranges.length) this.original = undefined;
-    const scope = resolveSearchScope(editor,overlay.ownerKey);
+    const scope = editor.scope(panel.ownerKey);
 [this.state,this.setState] = createStore<{ enabled: boolean; query: string; options: SearchOptions; scope: SearchScope; result?: SearchMatchSet; rows: EntityCandidate[]; entity?: NominatedEntity; pending: boolean; visible: boolean; active?: string; activeMatch?: string; message: string; page: number; undoCount: number }>({ enabled: false, query: ranges.length === 1 ? (this.original?.text ?? "") : "", options: { wholeWords: true }, scope, rows: [], pending: false, visible: true, message: "", page: 0, undoCount: 0 });
   }
   enable() {
@@ -117,25 +90,25 @@ export class EntityCandidates {
       else this.selectAll();
       return;
     }
-    this.setState("enabled",true); this.editor.overlays.enableEntityCandidates(this.overlay.key); this.schedule(true);
+    this.setState("enabled",true); this.panel.allowDocumentInput(true); this.schedule(true);
   }
   configure(change: { query?: string; options?: SearchOptions; scope?: ScopeKind }) {
     if (change.query !== undefined) this.setState("query",change.query);
     if (change.options) this.setState("options",change.options);
-    if (change.scope) this.setState("scope",resolveSearchScope(this.editor,this.overlay.ownerKey,change.scope));
+    if (change.scope) this.setState("scope",this.editor.scope(this.panel.ownerKey,change.scope));
     if (this.state.enabled) this.schedule(false);
   }
   disable() {
     this.controller?.abort(); clearTimeout(this.timer); this.generation++; this.undo = [];
     this.sourceSet = undefined;
     this.setState({ enabled: false, pending: false, result: undefined, rows: [], undoCount: 0, active: undefined, activeMatch: undefined, message: "" });
-    this.editor.decorations.clearHighlights(this.owner);
-    this.editor.overlays.enableEntityCandidates(this.overlay.key, false);
+    this.decorations.clear();
+    this.panel.allowDocumentInput(false);
   }
   private schedule(selectAll: boolean) {
     this.controller?.abort(); clearTimeout(this.timer); this.generation++; this.undo = [];
     this.setState({ pending: true, result: undefined, page: 0, undoCount: 0, message: "", active: undefined, activeMatch: undefined });
-    this.editor.decorations.clearHighlights(this.owner);
+    this.decorations.clear();
     this.timer = setTimeout(() => void this.flush(selectAll),200);
   }
   async flush(selectAll = false) {
@@ -173,7 +146,7 @@ export class EntityCandidates {
     if (!this.state.entity) return "Choose an entity from the results on the left.";
     if (!this.selected().length) return "Check at least one eligible mention.";
     if (!this.state.result || !["complete", "partial"].includes(this.state.result.status)) return "Run a successful mention search first.";
-    if (this.state.result.revision !== this.editor.repository.state.revision) return "The document changed. Search again.";
+    if (this.state.result.revision !== this.editor.revision()) return "The document changed. Search again.";
     return "";
   }
   canBind() { return !this.bindingDisabledReason(); }
@@ -191,29 +164,28 @@ export class EntityCandidates {
   }
   selectNone() { this.setState("rows",rows => rows.map(row => ({ ...row,checked: false }))); this.paint(); }
   undoExclusion() { const key = this.undo.pop(); this.setState("undoCount",this.undo.length); if (key) this.toggle(key,true); }
-  toggleHighlights() { this.setState("visible",v => !v); this.editor.decorations.setHighlightsVisible(this.owner,this.state.visible); }
+  toggleHighlights() { this.setState("visible",v => !v); this.decorations.visible(this.state.visible); }
   setPage(page: number) { this.setState("page",Math.max(0,page)); }
   async reveal(row: EntityCandidate, occurrence = 0) {
     const match = row.occurrences[occurrence] ?? row.match;
     this.setState({ active: row.key,activeMatch: match.id }); this.paint();
-    if (!await revealMatch(this.editor,match,() => !this.disposed && this.state.activeMatch === match.id)) this.setState("message","This mention cannot be revealed by the current view adapter.");
+    if (!await this.editor.reveal(match,() => !this.disposed && this.state.activeMatch === match.id)) this.setState("message","This mention cannot be revealed by the current view adapter.");
   }
   bind() {
-    if (this.state.result && this.state.result.revision !== this.editor.repository.state.revision) throw new Error("The document changed. Select the text again.");
+    if (this.state.result && this.state.result.revision !== this.editor.revision()) throw new Error("The document changed. Select the text again.");
     if (!this.canBind()) throw new Error("Choose an entity and checked mentions from a complete search first.");
     return bindEntityCandidates(this.editor,this.state.result!,this.selected().map(r => r.match),this.state.entity!);
   }
   private paint() {
     if (!this.sourceSet || this.disposed || this.state.pending) return;
     const rows = this.selected(), matches = rows.flatMap(row => row.occurrences);
-    this.editor.decorations.attachMatches(this.owner,{ ...this.sourceSet,matches },{ type: "editor/entity-candidate",fill: "#75d9b0", exclude: id => {
-      const keyboardFocus = typeof document !== "undefined" && document.activeElement?.hasAttribute("data-candidate-exclusion");
+    this.decorations.matches({ ...this.sourceSet,matches },{ type: "editor/entity-candidate",fill: "#75d9b0", excludeLabel: "Exclude this mention", excludeTitle: "Exclude this mention from entity binding", exclude: (id, { keyboard }) => {
       const row = this.state.rows.find(r => r.occurrences.some(m => m.id === id)); if (row) this.toggle(row.key,false);
-      if (keyboardFocus) queueMicrotask(() => this.editor.mounts.get(this.overlay.key)?.focus());
+      if (keyboard) queueMicrotask(() => this.panel.focus());
     } });
-    this.editor.decorations.setHighlightsVisible(this.owner,this.state.visible);
+    this.decorations.visible(this.state.visible);
     const active = rows.find(row => row.key === this.state.active);
-    if (active) this.editor.decorations.setActiveMatch(this.owner,this.state.activeMatch ?? active.match.id);
+    if (active) this.decorations.active(this.state.activeMatch ?? active.match.id);
   }
-  dispose() { this.disposed = true; this.generation++; clearTimeout(this.timer); this.controller?.abort(); this.search.dispose(); this.editor.decorations.disposeSession(this.owner); }
+  dispose() { this.disposed = true; this.generation++; clearTimeout(this.timer); this.controller?.abort(); this.search.dispose(); this.decorations.dispose(); }
 }

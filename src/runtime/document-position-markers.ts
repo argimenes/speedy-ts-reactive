@@ -22,10 +22,10 @@ export function searchMatchesToPositionMarkers(matches: Iterable<Pick<SearchMatc
   })));
 }
 
-export function entityRangesToPositionMarkers(entityId: string, ranges: Iterable<SearchRange>): DocumentPositionMarker[] {
+export function rangesToPositionMarkers(groupId: string, ranges: Iterable<SearchRange>): DocumentPositionMarker[] {
   return [...ranges].map((range, index) => ({
-    id: `${entityId}:${index}`,
-    group: entityId,
+    id: `${groupId}:${index}`,
+    group: groupId,
     anchor: { kind: "text-range" as const, range },
   }));
 }

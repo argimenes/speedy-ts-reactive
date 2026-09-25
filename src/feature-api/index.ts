@@ -61,3 +61,16 @@ export type { TextSelectionSnapshot } from "../runtime/selection-snapshot";
 export type { TextOperationCapabilities, TextCaret } from "./text-operation";
 export type { FeatureToolbarContribution } from "../runtime/features";
 export { exactTextRangeKey } from "../runtime/text-ranges";
+
+// Stage 4: passive measured effects and bounded annotation/panel capabilities.
+export type { AnnotationCapabilities, AnnotationText } from "./annotations";
+export type { AnnotationTarget, AnnotationContribution } from "../runtime/annotation-contributions";
+export type { PanelSession, PanelDefinition } from "../runtime/panel-contributions";
+export type { EffectDefinition, MeasuredEffect } from "../runtime/effect-contributions";
+export type { SearchMatch, SearchMatchSet, SearchRange, SearchScope, ScopeKind } from "../runtime/text-search";
+export type { SearchOptions } from "../runtime/search-matching";
+export type { SearchRunner } from "../runtime/search-worker";
+export type { JsonObject } from "../block-tree/types";
+export type { FloatingWindowSize } from "../rendering/floating-window-resize";
+export { graphemeBoundaries } from "../input/graphemes";
+export { rangesToPositionMarkers } from "../runtime/document-position-markers";

@@ -38,7 +38,7 @@ export function OverlayLayer(props: { editor: ReactiveEditor }) {
   return (
     <Portal mount={document.body}>
       <div class="reactive-overlay-layer">
-        <For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType !== "context-menu")}>
+        <For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType !== "context-menu" && !props.editor.panels.get(overlay.viewType))}>
           {(overlay) => <OverlayView editor={props.editor} overlay={overlay} />}
         </For>
       </div>

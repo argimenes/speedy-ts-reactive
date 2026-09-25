@@ -1,3 +1,6 @@
+import { PanelContributions } from "../runtime/panel-contributions";
+import { AnnotationContributions } from "../runtime/annotation-contributions";
+import { EffectContributions } from "../runtime/effect-contributions";
 import { captureTextSelection } from "../runtime/selection-snapshot";
 import { TextRanges } from "../runtime/text-ranges";
 import { RangeAnnotations } from "../runtime/range-annotations";
@@ -31,12 +34,10 @@ import { BlockSelectionService } from "../runtime/block-selection";
 import { BlockClipboardService } from "../runtime/block-clipboard";
 import { CrossBlockSelection } from "../runtime/cross-block-selection";
 import { LinkedAnnotations } from "../runtime/linked-annotations";
-import { openEntitySearch } from "../runtime/entity-search";
 import { CrossBlockInput } from "../input/cross-block-input";
 import { createStore } from "solid-js/store";
 import { SessionDecorations } from "../runtime/session-decorations";
 import { DocumentFind } from "../runtime/document-find";
-import { DocumentEntityList } from "../runtime/document-entity-list";
 import { MinimapService } from "../runtime/minimap";
 import { ConcertinaService } from "../runtime/concertina";
 import { StickyNoteService } from "../runtime/sticky-notes";
@@ -47,11 +48,13 @@ import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguratio
 import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
+  readonly panels = new PanelContributions();
+  readonly annotationUI = new AnnotationContributions();
+  readonly effects = new EffectContributions();
   readonly features: FeatureFlags;
   readonly decorations = new SessionDecorations();
   readonly minimap = new MinimapService();
   readonly find: DocumentFind;
-  readonly entityList: DocumentEntityList;
   readonly blockHistory: BlockHistorySession;
   readonly viewChildren: Record<string, string | undefined>;
   readonly setViewChild: (key: string, child?: string) => void;
@@ -122,7 +125,6 @@ export class ReactiveEditor {
     this.viewChildren = viewChildren;
     this.setViewChild = (key, child) => setViewChildren(key, child);
     this.find = new DocumentFind(this);
-    this.entityList = new DocumentEntityList(this);
     this.blockHistory = new BlockHistorySession(this);
     if (isHistoryDocument(dto)) this.blockHistory.attachIdentity({ resourceId: dto.resourceId, memoirId: dto.memoirId });
     this.multiSelections = new MultiSelectionEditor(
@@ -200,8 +202,6 @@ export class ReactiveEditor {
       key => createTextTab(this, key),
       this.blockSelection,
       direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
-      (nodeKey, range) => openEntitySearch(this, [{ nodeKey, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }]),
-      nodeKey => this.entityList.open(nodeKey),
       (id, targetKey) => {
         const context = { targetKey, args: undefined };
         if (!this.commandRegistry.canExecute(id, context)) return false;
@@ -352,7 +352,6 @@ export class ReactiveEditor {
     this.stickyNotes.dispose();
     this.concertina.dispose();
     this.find.dispose();
-    this.entityList.dispose();
     this.blockHistory.dispose();
     this.decorations.clearAll();
     this.minimap.clearAll();

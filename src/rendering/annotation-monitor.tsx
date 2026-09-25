@@ -1,3 +1,5 @@
+import { Dynamic } from "solid-js/web";
+import { immutable } from "../runtime/effect-contributions";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
@@ -153,20 +155,6 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     const p = selected()?.property;
     return p ? node()?.inlineContent.slice(Number(p.start), Number(p.end) + 1).map(key => String(editor.node(key)?.payload.text ?? "\uFFFC")).join("") : "";
   };
-  const entity = () => {
-    const property = resolvedProperty();
-    if (property?.type !== "codex/entity-reference") return undefined;
-    const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-    const metadata = object(property.metadata), cache = object(property.cache);
-    const details = [object(cache.entity), object(property.entity), object(metadata.entity)];
-    const text = (...values: unknown[]) => values.find(value => typeof value === "string" && value.trim()) as string | undefined;
-    const id = text(property.value, ...details.flatMap(detail => [detail.Guid, detail.id]), metadata.entityId);
-    // Never present cached data for a different reference after Value is edited.
-    const matching = details.filter(detail => { const cachedId = text(detail.Guid, detail.id); return !cachedId || !id || cachedId === id; });
-    const name = text(...matching.flatMap(detail => [detail.Name, detail.name]),
-      !text(metadata.entityId) || metadata.entityId === id ? metadata.entityName : undefined);
-    return { id: id ?? "Not assigned", name: name ?? "Entity name not loaded" };
-  };
   return <div ref={root} class="reactive-annotation-monitor" role="dialog" aria-label="Annotations at caret" tabIndex={-1}
     data-session-overlay={overlay.key} data-native-context-menu onKeyDown={keys} onClick={keys} onDblClick={keys} onContextMenu={keys}
     style={{ left: `${position().x}px`, top: `${position().y}px`, ...(displaySize() ? { width: `${displaySize()!.width}px`, height: `${displaySize()!.height}px` } : {}) }}>
@@ -205,10 +193,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
         <label>Value<input value={value()} onInput={event => setValue(event.currentTarget.value)} /></label>
       </section>
       <section class="annotation-settings" aria-label="Annotation settings">
-        <Show when={entity()}>{details => <fieldset class="annotation-entity"><legend>Entity reference</legend>
-          <label>Entity name<input readOnly value={details().name} /></label>
-          <label>Entity ID<input readOnly value={details().id} /></label>
-        </fieldset>}</Show>
+        <Show when={editor.annotationUI.get(String(resolvedProperty()?.type ?? ""))}>{definition => <Dynamic component={definition().details} property={() => { const property = resolvedProperty(); return property ? immutable(JSON.parse(JSON.stringify(property))) : undefined; }} />}</Show>
         <label>Metadata (JSON object)<textarea rows={3} value={metadata()} onInput={event => setMetadata(event.currentTarget.value)} /></label>
         <label>Attributes (JSON object)<textarea rows={3} value={attributes()} onInput={event => setAttributes(event.currentTarget.value)} /></label>
       </section>

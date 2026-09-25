@@ -1,4 +1,4 @@
-import { createMemo, onCleanup, onMount } from "solid-js";
+import { For, createMemo, onCleanup, onMount } from "solid-js";
 import type { ExistingBlockDto } from "./block-tree/types";
 import { ReactiveEditor } from "./reactive-editor/editor";
 import { ReactiveTreeView } from "./rendering/reactive-tree-view";
@@ -114,7 +114,7 @@ export function PilotApp() {
         <button type="button" onClick={removeFocused}>Remove focused</button>
         <button type="button" onClick={() => editor.repository.undo()}>Undo</button>
         <button type="button" onClick={() => editor.repository.redo()}>Redo</button>
-        <button type="button" onClick={() => editor.overlays.open({ ownerKey: editor.focus.state.focusedKey ?? primary.state.rootKey, viewType: "entity-search", anchor: { x: 80, y: 120 }, title: "Entity search" })}>Open overlay</button>
+        <For each={editor.annotationUI.list()}>{item => <button type="button" onClick={() => item.apply([], editor.focus.state.focusedKey ?? primary.state.rootKey)}>{item.label}</button>}</For>
         <span>revision {editor.repository.state.revision}</span>
       </nav>
 

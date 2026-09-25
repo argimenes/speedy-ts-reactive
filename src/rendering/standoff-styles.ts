@@ -1,3 +1,4 @@
+import type { EffectDefinition } from "../runtime/effect-contributions";
 import type { JSX } from "solid-js";
 
 export type StandoffAnnotation = Record<string, unknown> & {
@@ -9,7 +10,7 @@ export type StandoffAnnotation = Record<string, unknown> & {
   isDeleted?: boolean;
 };
 
-type SvgStyle = { kind: "underline"; colour: string } | { kind: "rainbow" | "highlighter" | "rectangle" | "spiky" };
+type SvgStyle = { kind: "contribution"; definition: EffectDefinition } | { kind: "underline"; colour: string } | { kind: "rainbow" | "highlighter" | "rectangle" | "spiky" };
 export interface StandoffStyleSchema {
   cell?: JSX.CSSProperties;
   valueStyle?: "color" | "background-color";
@@ -58,7 +59,6 @@ export const standoffStyleSchemas: Readonly<Record<string, StandoffStyleSchema>>
   "codex/claim-reference": { svg: { kind: "underline", colour: "red" } },
   "codex/meta-relation-reference": { svg: { kind: "underline", colour: "orange" } },
   "codex/time-reference": { svg: { kind: "underline", colour: "cyan" } },
-  "codex/entity-reference": { svg: { kind: "underline", colour: "purple" } },
   "style/highlighter": { svg: { kind: "highlighter" } },
   "style/rainbow": { svg: { kind: "rainbow" } },
   "style/rectangle": { svg: { kind: "rectangle" } },
@@ -188,14 +188,15 @@ export function cellStyleAt(runs: readonly CellStyleRun[], index: number): JSX.C
 }
 
 /** Allocate pixels only to overlapping SVG underlines; rainbows occupy 14px. */
-export function standoffSvgStyles(annotations: readonly StandoffAnnotation[], cellCount: number) {
+export function standoffSvgStyles(annotations: readonly StandoffAnnotation[], cellCount: number, effect: (type?: string) => EffectDefinition | undefined = () => undefined) {
   const occupied: Array<{ start: number; end: number; offset: number; height: number }> = [];
   return annotations.flatMap((annotation, index) => {
     if (!hasActiveRange(annotation) || annotation.start >= cellCount) return [];
-    const svg = standoffStyleSchema(annotation.type)?.svg;
+    const definition = effect(annotation.type);
+    const svg: SvgStyle | undefined = definition ? { kind: "contribution", definition } : standoffStyleSchema(annotation.type)?.svg;
     if (!svg) return [];
     let offset = 0;
-    const height = svg.kind === "rainbow" ? 14 : svg.kind === "underline" ? 2 : 0;
+    const height = svg.kind === "contribution" ? svg.definition.laneHeight : svg.kind === "rainbow" ? 14 : svg.kind === "underline" ? 2 : 0;
     if (height) {
       const overlaps = occupied.filter((range) => range.start <= annotation.end && annotation.start <= range.end);
       let conflict;

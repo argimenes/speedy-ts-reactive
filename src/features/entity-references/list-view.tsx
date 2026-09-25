@@ -1,12 +1,13 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
-import type { ReactiveEditor } from "../reactive-editor/editor";
-import type { EntityListSort } from "../runtime/document-entity-list";
-import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "./floating-window-resize";
+import type { PanelSession } from "../../feature-api";
+import type { DocumentEntityList } from "./document-entity-list";
+import type { EntityListSort } from "./document-entity-list";
+import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "../../feature-api";
 import "./document-entity-list.css";
 
-function EntityListWindow(props: { editor: ReactiveEditor }) {
-  const list = props.editor.entityList, state = list.state;
+export function EntityListWindow(props: { list: DocumentEntityList; panel: PanelSession }) {
+  const list = props.list, state = list.state;
+  onCleanup(() => list.close(false));
   const rows = createMemo(() => list.sortedRows());
   const focusScope = () => state.pageKey ? "Page" : "Document";
   const [position, setPosition] = createSignal({ x: Math.max(8, window.innerWidth - 388), y: 64 });
@@ -34,7 +35,7 @@ function EntityListWindow(props: { editor: ReactiveEditor }) {
   );
   createEffect(() => { state.focusRequest; if (state.open) queueMicrotask(() => root?.focus({ preventScroll: true })); });
   onMount(() => {
-    disposeMount = props.editor.mounts.register(list.owner, { root, focusElement: root, inputPolicy: "opaque-widget", focus: () => root.focus({ preventScroll: true }) });
+    disposeMount = props.panel.mountWidget(root, () => root.focus({ preventScroll: true }));
     const resize = () => setPosition(value => clamp(value.x, value.y));
     window.addEventListener("resize", resize);
     onCleanup(() => { window.removeEventListener("resize", resize); disposeMount?.(); list.clearPreview(); });
@@ -76,6 +77,3 @@ function EntityListWindow(props: { editor: ReactiveEditor }) {
   </section>;
 }
 
-export function DocumentEntityListLayer(props: { editor: ReactiveEditor; viewId: string }) {
-  return <Portal><Show when={props.editor.entityList.state.open && props.editor.entityList.state.scope?.viewId === props.viewId}><EntityListWindow editor={props.editor} /></Show></Portal>;
-}

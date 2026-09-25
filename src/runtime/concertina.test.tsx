@@ -6,7 +6,7 @@ import { registerCoreViews } from "../rendering/register-core-views";
 import { ReactiveTreeView } from "../rendering/reactive-tree-view";
 import { deriveConcertinaPresentation } from "./concertina-derivation";
 import { DEFAULT_CONCERTINA_SETTINGS, resolveConcertinaSettings } from "./concertina-settings";
-import { blockKeysToPositionMarkers, entityRangesToPositionMarkers, normalisePositionMarkers, searchMatchesToPositionMarkers } from "./document-position-markers";
+import { blockKeysToPositionMarkers, rangesToPositionMarkers, normalisePositionMarkers, searchMatchesToPositionMarkers } from "./document-position-markers";
 import { resolveSearchScope, type SearchRange } from "./text-search";
 
 const cleanup: Array<() => void> = [];
@@ -34,7 +34,7 @@ function setup() {
 describe("concertina marker pipeline", () => {
   it("normalises shared text, entity and Block markers without mutating source values", () => {
     const { node, range } = setup();
-    const entity = entityRangesToPositionMarkers("entity-1", [range("a", 0, 5)]);
+    const entity = rangesToPositionMarkers("entity-1", [range("a", 0, 5)]);
     const text = searchMatchesToPositionMarkers([{ id: "match-1", context: "Alpha", ranges: [range("c", 0, 5)] }]);
     const blocks = blockKeysToPositionMarkers([node("b").key]);
     const markers = normalisePositionMarkers([...entity, ...text, ...blocks, entity[0]]);
@@ -57,7 +57,7 @@ describe("concertina marker pipeline", () => {
   it("derives maximal unmatched branches and rejects stale/out-of-scope anchors", () => {
     const { editor, projection, node, range } = setup();
     const scope = resolveSearchScope(editor, node("a").key, "page");
-    const markers = [...entityRangesToPositionMarkers("entity-1", [range("a", 0, 5)]), ...blockKeysToPositionMarkers(["missing"])];
+    const markers = [...rangesToPositionMarkers("entity-1", [range("a", 0, 5)]), ...blockKeysToPositionMarkers(["missing"])];
     const derived = deriveConcertinaPresentation({ owner: "test", viewId: projection.viewId, scope, markers }, projection);
     expect(derived.protectedKeys.has(node("a").key)).toBe(true);
     expect(derived.hiddenBranchRoots).toEqual(new Set([node("b").key, node("c").key]));
@@ -68,7 +68,7 @@ describe("concertina marker pipeline", () => {
     const { editor, node, range } = setup();
     const scope = resolveSearchScope(editor, node("a").key, "page");
     const otherRoot = editor.mounts.get(node("other").key)!.root as HTMLElement;
-    const markers = entityRangesToPositionMarkers("alpha", [range("a", 0, 5), range("other", 0, 5)]);
+    const markers = rangesToPositionMarkers("alpha", [range("a", 0, 5), range("other", 0, 5)]);
     editor.concertina.activate({ owner: "page-only", viewId: scope.viewId, scope, markers });
     await vi.waitFor(() => expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(true));
     expect(otherRoot.hidden).toBe(false);
@@ -90,7 +90,7 @@ describe("concertina session presentation", () => {
     const scope = resolveSearchScope(editor, node("a").key, "page");
     const before = editor.repository.snapshot(), revision = editor.repository.state.revision;
     const range: SearchRange = { nodeKey: node("a").key, contentKey: node("a").contentKey, placementKey: node("a").placementKey, version: 0, start: 0, end: 1, coordinate: "cell" };
-    editor.concertina.activate({ owner: "test", viewId: scope.viewId, scope, markers: entityRangesToPositionMarkers("entity", [range]) });
+    editor.concertina.activate({ owner: "test", viewId: scope.viewId, scope, markers: rangesToPositionMarkers("entity", [range]) });
     await vi.waitFor(() => expect(b.hidden).toBe(true));
     expect(surface.classList.contains("reactive-concertina-viewport")).toBe(true);
     expect(surface.style.getPropertyValue("--concertina-height")).toBe("200px");

@@ -1,23 +1,24 @@
+import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { render } from "solid-js/web";
-import { ReactiveEditor } from "../reactive-editor/editor";
-import { registerCoreViews } from "./register-core-views";
-import { ReactiveTreeView } from "./reactive-tree-view";
-import { openEntitySearch } from "../runtime/entity-search";
-import { matchSources } from "../runtime/search-matching";
-import { keyboard } from "../input/bindings";
-vi.mock("../runtime/search-worker",() => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0],query: string,options: Parameters<typeof matchSources>[2]) => matchSources(sources,query,options) }));
+import { ReactiveEditor } from "../../reactive-editor/editor";
+import { registerCoreViews } from "../../rendering/register-core-views";
+import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
+import { openEntitySearch } from "./entity-search";
+import { matchSources } from "../../runtime/search-matching";
+import { keyboard } from "../../input/bindings";
+vi.mock("../../runtime/search-worker",() => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0],query: string,options: Parameters<typeof matchSources>[2]) => matchSources(sources,query,options) }));
 const cleanup: (() => void)[] = [];
 beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal("fetch",vi.fn().mockResolvedValue({ ok: true,json: async () => ({ Success: true,Results: [{ id: "blake",name: "Vernon Blake" }],Count: 1,Page: 1,MaxPage: 1 }) })); });
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); localStorage.clear(); });
 function setup(selected = true, unsupported = false) {
   const editor = new ReactiveEditor({ type: "document-block",children: [{ id: "a",type: "standoff-editor-block",text: "he the he" },{ id: "b",type: unsupported ? "code-mirror-block" : "standoff-editor-block",text: "he" }] });
-  registerCoreViews(editor); const projection = editor.createView("candidate-ui"),host = document.body.appendChild(document.createElement("div"));
+  registerEntityTestViews(editor); const projection = editor.createView("candidate-ui"),host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />,host); editor.installGateway(document);
   cleanup.push(() => { dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
   editor.mounts.get(node("a").key)!.focus();
-  openEntitySearch(editor,[{ nodeKey: node("a").key,start: 0,end: selected ? 2 : 0 }]);
+  openEntitySearch(entityTestApi(editor),[{ nodeKey: node("a").key,start: 0,end: selected ? 2 : 0 }]);
   const panel = () => document.querySelector<HTMLElement>('[aria-label="Search entities"][role=dialog]')!;
   const button = (label: string) => [...panel().querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent?.startsWith(label))!;
   const field = (label: string) => panel().querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
@@ -50,7 +51,7 @@ describe("entity candidate review",() => {
     toggle.click();
     expect(toggle.checked).toBe(false);
     expect(field("Mention text").value).toBe("he");
-    expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
+    expect(Object.values(editor.decorations.nodes).flat().filter(d => d.type === "editor/entity-candidate")).toHaveLength(0);
     field("Mention text").value = "the";
     field("Mention text").dispatchEvent(new InputEvent("input",{ bubbles: true }));
     await vi.advanceTimersByTimeAsync(250);
@@ -63,7 +64,7 @@ describe("entity candidate review",() => {
     field("Mention text").dispatchEvent(new InputEvent("input",{ bubbles: true }));
     toggle.click(); await vi.advanceTimersByTimeAsync(250);
     expect(panel().querySelectorAll('[data-candidate-row]')).toHaveLength(0);
-    expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
+    expect(Object.values(editor.decorations.nodes).flat().filter(d => d.type === "editor/entity-candidate")).toHaveLength(0);
   });
   it("cannot link an entity with search disabled and no original selection",async () => {
     const { editor,field,panel } = setup(false);
@@ -129,7 +130,7 @@ describe("entity candidate review",() => {
   });
   it("checks across all rows, synchronizes exclusion/undo and stays open for document-side review",async () => {
     const { editor,node,button,panel } = setup(); button("Find other occurrences").click(); await vi.advanceTimersByTimeAsync(250);
-    const owner = editor.overlays.overlays[0].key, layer = `entity-candidates:${owner}`;
+    const owner = editor.overlays.overlays[0].key, layer = `entity-references:entity-candidates:${owner}`;
     editor.mounts.get(node("b").key)!.root.dispatchEvent(new MouseEvent("pointerdown",{ bubbles: true,button: 0 })); expect(panel()).toBeTruthy();
     const b = editor.decorations.nodes[node("b").key][0]; editor.decorations.exclude(layer,b.id);
     expect(panel().textContent).toContain("2 selected / 3 unique targets");
@@ -138,11 +139,11 @@ describe("entity candidate review",() => {
     button("Select none").click();
     const selectAll = new KeyboardEvent("keydown",{ key: "a",ctrlKey: true,bubbles: true,cancelable: true }); button("Select none").dispatchEvent(selectAll); expect(selectAll.defaultPrevented).toBe(true);
     expect(panel().textContent).toContain("3 selected / 3 unique targets");
-    button("Cancel").click(); expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0); expect(editor.repository.canUndo()).toBe(false);
+    button("Cancel").click(); expect(Object.values(editor.decorations.nodes).flat().filter(d => d.type === "editor/entity-candidate")).toHaveLength(0); expect(editor.repository.canUndo()).toBe(false);
   });
   it("closes and clears candidates on an external edit, and never restores stale worker highlights",async () => {
     const { editor,node,button,panel } = setup(); button("Find other occurrences").click();
     editor.commands.replaceInlineRange(node("a").key,0,0,"x"); expect(panel()).toBeNull();
-    await vi.advanceTimersByTimeAsync(500); expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0); expect(node("b").payload.standoffProperties).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(500); expect(Object.values(editor.decorations.nodes).flat().filter(d => d.type === "editor/entity-candidate")).toHaveLength(0); expect(node("b").payload.standoffProperties).toBeUndefined();
   });
 });

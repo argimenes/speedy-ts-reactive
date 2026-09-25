@@ -31,10 +31,10 @@ try {
   await evaluate('new Promise(resolve => setTimeout(resolve, 1200))');
   await evaluate(`(async () => {
     const {ReactiveEditor}=await import('/src/reactive-editor/editor.ts');
-    const {registerCoreViews}=await import('/src/rendering/register-core-views.ts');
+    const {registerApplicationViews}=await import('/src/application/features.ts');
     const {ReactiveTreeView}=await import('/src/rendering/reactive-tree-view.tsx');
     const source=await (await fetch('/src/rendering/reactive-tree-view.tsx')).text();
-    const webPath=source.split('"').find(part=>part.startsWith('/node_modules/.vite/deps/solid-js_web.js'));
+    const webPath=source.split('"').find(part=>part.includes('/solid-js_web.js'));
     const {render,createComponent}=await import(webPath);
     window.makeFindFixture = (size=3, data) => {
       const host=document.createElement('div');host.className='workspace-demo';host.style.cssText='position:fixed;inset:0;padding:50px;background:white;z-index:9000;overflow:auto';document.body.append(host);
@@ -42,7 +42,7 @@ try {
         ...Array.from({length:size},(_,i)=>({id:'p'+i,type:'standoff-editor-block',text:'Hello 😀 world. '+ 'Hello passage. '.repeat(8)})),
         {id:'tabs',type:'tab-row-block',children:[{type:'tab-block',metadata:{name:'First'},children:[]},{id:'hiddenTab',type:'tab-block',metadata:{name:'Hidden'},children:[{id:'hidden',type:'standoff-editor-block',text:'Hello hidden passage'}]}]}
       ]}]});
-      registerCoreViews(editor);const projection=editor.createView('find-browser');
+      registerApplicationViews(editor);const projection=editor.createView('find-browser');
       const dispose=render(()=>createComponent(ReactiveTreeView,{editor,projection}),host);editor.installGateway(document);
       window.findCheck={editor,host,dispose,node:id=>Object.values(projection.state.nodes).find(n=>n.payload.id===id)};
     };
@@ -67,21 +67,23 @@ try {
     const {editor,node}=findCheck;
     editor.find.open(node('p0').key);editor.find.setQuery('Hello');await editor.find.flush();
     window.originalEntityFetch=window.fetch;window.fetch=async(url,options)=>String(url).includes('/api/findAgentsBy')?{ok:true,json:async()=>({Success:true,Results:[{id:'blake',name:'Vernon Blake'}],Count:1,Page:1,MaxPage:1})}:originalEntityFetch(url,options);
-    const {openEntitySearch}=await import('/src/runtime/entity-search.ts');
-    openEntitySearch(editor,[{nodeKey:node('p0').key,start:0,end:5}]);
+    editor.annotationUI.get('codex/entity-reference').apply([{nodeKey:node('p0').key,start:0,end:5}]);
     window.entityPanel=()=>document.querySelector('[role=dialog][aria-label="Search entities"]');
     window.entityButton=label=>[...entityPanel().querySelectorAll('button')].find(b=>b.textContent.startsWith(label));
     entityButton('Find other occurrences').click();
     for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,100));if(entityPanel().textContent.includes('28 selected / 28 unique targets')&&document.querySelector('[data-candidate-exclusion]'))break;}
+    // The wide lookup panel otherwise covers the first document-side control.
+    // Place the fixture panel below it so this tests a real pointer exclusion.
+    entityPanel().style.top='260px';
     const control=editor.mounts.get(node('p0').key).root.querySelector('[data-candidate-exclusion]');
     if(!control)throw new Error('No exclusion controls: '+entityPanel().textContent);
     const flow=editor.mounts.get(node('p0').key).focusElement,rect=flow.children[0].getBoundingClientRect();
     flow.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:rect.left+2,clientY:rect.top+2}));
     window.beforeExclusionFocus=document.activeElement;window.beforeExclusionSelection=getSelection().toString();
     const r=control.getBoundingClientRect();
-    return {count:entityPanel().textContent.includes('28 selected / 28 unique targets'),opacity:getComputedStyle(control).opacity,x:r.left+r.width/2,y:r.top+r.height/2,history:editor.repository.canUndo(),findOpen:editor.find.state.open};
+    return {count:entityPanel().textContent.includes('28 selected / 28 unique targets'),opacity:getComputedStyle(control).opacity,x:r.left+r.width/2,y:r.top+r.height/2,targetIsControl:document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)===control,history:editor.repository.canUndo(),findOpen:editor.find.state.open};
   })()`);
-  assert.equal(candidates.count,true);assert.equal(candidates.opacity,'1');assert.equal(candidates.history,false);assert.equal(candidates.findOpen,true);
+  assert.equal(candidates.targetIsControl,true);assert.equal(candidates.count,true);assert.equal(candidates.opacity,'1');assert.equal(candidates.history,false);assert.equal(candidates.findOpen,true);
   for (const type of ['mouseMoved','mousePressed','mouseReleased']) await send('Input.dispatchMouseEvent',{type,x:candidates.x,y:candidates.y,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:1},sessionId);
   const binding = await evaluate(`(async()=>{
     const {editor,node}=findCheck;await new Promise(r=>setTimeout(r,100));
@@ -147,7 +149,10 @@ try {
   assert.equal(storedReport.snapshots,0);assert.equal(storedReport.restored,true);assert.ok(storedReport.matches>0);
   console.log(JSON.stringify({initial,navigation,candidates,binding,worker,performance:performanceReport,stored:storedReport},null,2));
 } finally {
-  socket?.close();
+  if (socket && socket.readyState !== WebSocket.CLOSED) {
+    const closed = new Promise(resolve => socket.addEventListener('close', resolve, { once: true }));
+    socket.close(); await Promise.race([closed, new Promise(resolve => setTimeout(resolve, 1000))]);
+  }
   if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) { const exited = new Promise(resolve => chrome.once('exit', resolve)); chrome.kill('SIGKILL'); await exited; }
   // Chrome helpers can retain inherited pipes after the browser exits on macOS.
   // Close only this disposable browser's stdio so the test runner can terminate.

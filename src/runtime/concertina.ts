@@ -13,6 +13,8 @@ export class ConcertinaService {
   readonly state;
   private readonly setState;
   private request?: ConcertinaRequest;
+  private replaced?: () => void;
+  private claimOwner?: string;
   private derivation?: ConcertinaDerivation;
   private settings: Readonly<ConcertinaSettings> = resolveConcertinaSettings();
   private hidden = new Set<HTMLElement>();
@@ -32,10 +34,21 @@ export class ConcertinaService {
 
   private readonly onViewportResize = () => { if (this.request) this.schedule(); };
 
-  activate(request: ConcertinaRequest, settings: Partial<ConcertinaSettings> = {}): boolean {
+  /** One presentation policy, including a Find request awaiting async results. */
+  claim(owner: string, replaced?: () => void) {
+    if (this.claimOwner !== owner) {
+      const release = this.replaced; this.replaced = undefined;
+      release?.(); this.deactivate();
+      this.claimOwner = owner;
+    }
+    if (replaced) this.replaced = replaced;
+  }
+
+  activate(request: ConcertinaRequest, settings: Partial<ConcertinaSettings> = {}, replaced?: () => void): boolean {
+    this.claim(request.owner, replaced);
     const projection = this.editor.projections.get(request.viewId);
     const derived = projection && deriveConcertinaPresentation(request, projection);
-    if (!derived?.markers.length) { this.deactivate(request.owner); return false; }
+    if (!derived?.markers.length) { this.deactivate(request.owner, true); return false; }
     this.restore();
     this.settings = resolveConcertinaSettings(settings);
     this.request = { ...request, markers: derived.markers };
@@ -45,7 +58,7 @@ export class ConcertinaService {
     return true;
   }
 
-  update(request: ConcertinaRequest, settings?: Partial<ConcertinaSettings>) { return this.activate(request, settings ?? this.settings); }
+  update(request: ConcertinaRequest, settings?: Partial<ConcertinaSettings>) { return this.activate(request, settings ?? this.settings, this.claimOwner === request.owner ? this.replaced : undefined); }
 
   configure(settings: Partial<ConcertinaSettings>) {
     this.settings = resolveConcertinaSettings({ ...this.settings, ...settings });
@@ -67,8 +80,9 @@ export class ConcertinaService {
     return { hidden: !!root?.closest("[data-concertina-hidden]"), matched: derived.matching.has(nodeKey) };
   }
 
-  deactivate(owner?: string) {
-    if (owner && this.state.owner !== owner) return;
+  deactivate(owner?: string, retainClaim = false) {
+    if (owner && this.claimOwner !== owner) return;
+    if (!retainClaim) { this.replaced = undefined; this.claimOwner = undefined; }
     this.request = undefined; this.derivation = undefined;
     this.cancelFrame(); this.restore();
     this.setState({ owner: undefined, activeMarkerOrGroup: undefined, revision: this.state.revision + 1, diagnostics: [] });

@@ -28,8 +28,6 @@
 .reactive-annotation-monitor input,.reactive-annotation-monitor textarea { box-sizing:border-box; width:100%; min-width:0; border:1px solid #90aaa4; padding:5px; color:#263a35; background:white; font:inherit; }
 .reactive-annotation-monitor textarea { resize:vertical; }
 .reactive-annotation-monitor input[readonly] { background:#f2f5f4; font-size:12px; }
-.reactive-annotation-monitor .annotation-entity { display:grid; gap:7px; min-width:0; margin:0; padding:8px; border:1px solid #c4d8d1; }
-.reactive-annotation-monitor .annotation-entity legend { padding:0 4px; font-weight:600; }
 .reactive-annotation-monitor footer { grid-column:1/-1; display:flex; justify-content:flex-end; }
 .reactive-annotation-monitor [role=alert] { color:#922; background:#fff0ed; padding:8px; }
 @media (max-width:760px) {

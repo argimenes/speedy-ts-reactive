@@ -7,7 +7,7 @@ import { isolatedBrowser } from './stage-c-gates/browser.mjs';
 
 const browser = await isolatedBrowser();
 const savedDocument = process.env.CONCERTINA_DOCUMENT ? await readFile(process.env.CONCERTINA_DOCUMENT, 'utf8') : undefined;
-const vite = await createServer({ configFile: false, plugins: [solidPlugin(), {
+const vite = await createServer({ configFile: false, cacheDir: `/tmp/speedy-concertina-cache-${process.pid}`, plugins: [solidPlugin(), {
   name: 'concertina-fixture', configureServer(server) {
     if (savedDocument) server.middlewares.use('/__saved-document.json', (_req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(savedDocument); });
     server.middlewares.use('/__concertina', (_req, res) => { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><html><body></body></html>'); });
@@ -20,12 +20,12 @@ try {
   await page.evaluate(`window.pageless = ${process.env.CONCERTINA_PAGELESS === '1'}`);
   await page.evaluate(String.raw`(async () => {
     const {ReactiveEditor} = await import('/src/reactive-editor/editor.ts');
-    const {registerCoreViews} = await import('/src/rendering/register-core-views.ts');
+    const {registerEntityTestViews: registerCoreViews,entityTestList} = await import('/src/features/entity-references/test-support.ts');
     const {ReactiveTreeView} = await import('/src/rendering/reactive-tree-view.tsx');
     const source = await (await fetch('/src/rendering/reactive-tree-view.tsx')).text();
-    const {render, createComponent} = await import(source.split('"').find(p => p.startsWith('/node_modules/.vite/deps/solid-js_web.js')));
+    const {render, createComponent} = await import(source.split('"').find(p => p.includes('/solid-js_web.js')));
     await import('/src/index.css'); await import('/src/demo/workspace-demo.css');
-    window.createConcertinaEditor = {ReactiveEditor,registerCoreViews,ReactiveTreeView,render,createComponent};
+    window.createConcertinaEditor = {ReactiveEditor,registerCoreViews,entityTestList,ReactiveTreeView,render,createComponent};
     window.originalFetch=window.fetch;
     window.fetch = async () => ({ok:true,json:async()=>({Success:true,Results:[{id:'alpha',name:'Alpha',mentions:3}]})});
     const text = 'Alpha\n' + 'Some ordinary intervening text.\n'.repeat(60) + 'Alpha';
@@ -49,13 +49,13 @@ try {
       separation:root('b').getBoundingClientRect().top-root('a').getBoundingClientRect().bottom,
       text:surface().querySelector('.reactive-standoff-flow').textContent,
       revision:editor.repository.state.revision,undo:editor.repository.canUndo()});
-    window.check={editor,node,root,surface,geometry,settle,text,dispose};
+    window.check={editor,entityList:entityTestList(editor),node,root,surface,geometry,settle,text,dispose};
     await settle();
   })()`);
   if (savedDocument) {
     const report = await page.evaluate(String.raw`(async()=>{
       check.dispose(); check.editor.dispose(); document.body.replaceChildren();
-      const {ReactiveEditor,registerCoreViews,ReactiveTreeView,render,createComponent}=createConcertinaEditor;
+      const {ReactiveEditor,registerCoreViews,entityTestList,ReactiveTreeView,render,createComponent}=createConcertinaEditor;
       const dto=await (await originalFetch('/__saved-document.json')).json();
       const editor=new ReactiveEditor(dto); registerCoreViews(editor); const projection=editor.createView('saved-concertina');
       const host=document.body.appendChild(document.createElement('div'));host.className='workspace-demo';host.style.cssText='display:block;width:650px;height:600px;overflow:auto';
@@ -64,12 +64,12 @@ try {
       const nodes=Object.values(projection.state.nodes);
       const origin=nodes.find(n=>n.viewType==='standoff-editor-block' && n.inlineContent.length>100 && editor.mounts.get(n.key));
       const baseline=JSON.stringify(editor.repository.snapshot()), naturalHeight=host.scrollHeight;
-      editor.entityList.open(origin.key); await check.settle();
+      entityTestList(editor).open(origin.key); await check.settle();
       const buttons=[...document.querySelectorAll('.document-entity-list__focus')];
-      const list={pageKey:editor.entityList.state.pageKey,rows:editor.entityList.state.rows.map(r=>({id:r.id,count:r.ranges.length,page:editor.entityList.pageOccurrenceCount(r.id)})),buttons:buttons.map(b=>({title:b.title,disabled:b.disabled}))};
+      const list={pageKey:entityTestList(editor).state.pageKey,rows:entityTestList(editor).state.rows.map(r=>({id:r.id,count:r.ranges.length,page:entityTestList(editor).pageOccurrenceCount(r.id)})),buttons:buttons.map(b=>({title:b.title,disabled:b.disabled}))};
       buttons.find(b=>!b.disabled)?.click();await check.settle();
-      const entity={active:editor.entityList.state.concertinaEntityId,owner:editor.concertina.state.owner,hidden:document.querySelectorAll('[data-concertina-hidden]').length,clipped:document.querySelectorAll('.reactive-concertina-viewport').length,height:host.scrollHeight};
-      editor.entityList.close(false); editor.find.open(origin.key);editor.find.setQuery('the');await editor.find.flush();
+      const entity={active:entityTestList(editor).state.concertinaEntityId,owner:editor.concertina.state.owner,hidden:document.querySelectorAll('[data-concertina-hidden]').length,clipped:document.querySelectorAll('.reactive-concertina-viewport').length,height:host.scrollHeight};
+      entityTestList(editor).close(false); editor.find.open(origin.key);editor.find.setQuery('the');await editor.find.flush();
       const findButton=document.querySelector('[aria-label^="Concertina matching Blocks on current"]');
       const find={pageKey:editor.find.state.pageKey,disabled:findButton.disabled,matches:editor.find.state.result.matches.length};
       findButton.click();await check.settle();
@@ -87,7 +87,7 @@ try {
     assert.equal(report.restoredHeight,report.naturalHeight); assert.equal(report.unchanged,true);
   } else {
   const before = await page.evaluate('check.geometry()');
-  await page.evaluate(`check.editor.entityList.open(check.node('a').key)`);
+  await page.evaluate(`check.entityList.open(check.node('a').key)`);
   await page.evaluate('check.settle()');
   await page.evaluate(`document.querySelector('[aria-label^="Focus occurrences of Alpha on current"]').click()`);
   await page.evaluate('check.settle()');
@@ -96,7 +96,7 @@ try {
   assert.ok(before.height > 1000); assert.ok(focused.height <= 360 && focused.clipped);
   assert.ok(focused.gapHidden); assert.ok(focused.separation < 30);
   assert.equal(focused.text, before.text); assert.equal(focused.revision, before.revision); assert.equal(focused.undo, false);
-  await page.evaluate(`check.editor.entityList.navigateConcertina(1);`);
+  await page.evaluate(`check.entityList.navigateConcertina(1);`);
   await page.evaluate('check.settle()');
   const next = await page.evaluate('check.geometry()');
   assert.ok(next.scroll > focused.scroll + 500); assert.ok(next.height <= 360);
@@ -104,7 +104,7 @@ try {
   await page.evaluate('check.settle()');
   const restored = await page.evaluate('check.geometry()');
   assert.equal(restored.height, before.height); assert.equal(restored.gapHidden, false); assert.equal(restored.scroll, before.scroll);
-  await page.evaluate(`check.editor.entityList.close(false); check.editor.find.open(check.node('a').key); check.editor.find.setQuery('Alpha'); check.editor.find.flush()`);
+  await page.evaluate(`check.entityList.close(false); check.editor.find.open(check.node('a').key); check.editor.find.setQuery('Alpha'); check.editor.find.flush()`);
   await page.evaluate(`document.querySelector('[aria-label^="Concertina matching Blocks on current"]').click(); check.settle()`);
   const find = await page.evaluate('check.geometry()');
   assert.ok(find.clipped && find.height <= 360 && find.gapHidden && find.separation < 30);

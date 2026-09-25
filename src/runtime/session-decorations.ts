@@ -2,9 +2,9 @@ import { batch } from "solid-js";
 import { createStore } from "solid-js/store";
 import type { SearchMatchSet } from "./text-search";
 import type { TextRangeSnapshot } from "./text-ranges";
-export interface SessionDecoration { type: string; owner: string; id: string; range: TextRangeSnapshot; fill: string; active: boolean; priority: number; excludable: boolean }
+export interface SessionDecoration { type: string; owner: string; id: string; range: TextRangeSnapshot; fill: string; active: boolean; priority: number; excludable: boolean; excludeLabel?: string; excludeTitle?: string }
 interface DecorationMatch { id: string; ranges: TextRangeSnapshot[]; capabilities: { highlight: boolean } }
-interface Layer { matches: DecorationMatch[]; visible: boolean; hidden: Set<string>; active?: string; type: string; fill: string; priority: number; exclude?: (id: string) => void }
+interface Layer { matches: DecorationMatch[]; visible: boolean; hidden: Set<string>; active?: string; type: string; fill: string; priority: number; excludeLabel?: string; excludeTitle?: string; exclude?: (id: string, context: { keyboard: boolean }) => void }
 /** Entirely outside canonical state. Indexed by occurrence so editing one Block does not wake every view. */
 export class SessionDecorations {
   readonly nodes: Record<string, SessionDecoration[]>;
@@ -12,9 +12,9 @@ export class SessionDecorations {
   private owners = new Map<string, Layer>();
   private contentIndex = new Map<string, { nodes: Set<string>; matches: { layer: Layer; id: string }[] }>();
   constructor() { [this.nodes, this.setNodes] = createStore<Record<string, SessionDecoration[]>>({}); }
-  attachMatches(owner: string, set: SearchMatchSet, style: { type?: string; fill?: string; priority?: number; exclude?: (id: string) => void } = {}) {
+  attachMatches(owner: string, set: SearchMatchSet, style: { type?: string; fill?: string; priority?: number; excludeLabel?: string; excludeTitle?: string; exclude?: (id: string, context: { keyboard: boolean }) => void } = {}) {
     const previous = this.owners.get(owner);
-    this.owners.set(owner, { matches: set.matches, visible: previous?.visible ?? true, hidden: new Set(), type: style.type ?? "editor/search-match", fill: style.fill ?? "#ffd34d", priority: style.priority ?? 0, exclude: style.exclude });
+    this.owners.set(owner, { matches: set.matches, visible: previous?.visible ?? true, hidden: new Set(), type: style.type ?? "editor/search-match", fill: style.fill ?? "#ffd34d", priority: style.priority ?? 0, exclude: style.exclude, excludeLabel: style.excludeLabel, excludeTitle: style.excludeTitle });
     this.rebuild();
   }
   attachRanges(owner: string, ranges: TextRangeSnapshot[], style: { type?: string; fill?: string; priority?: number } = {}) {
@@ -26,7 +26,7 @@ export class SessionDecorations {
   setActiveMatch(owner: string, id?: string) { const layer = this.owners.get(owner); if (layer) { layer.active = id; this.rebuild(); } }
   clearHighlights(owner: string) { this.owners.delete(owner); this.rebuild(); }
   disposeSession(owner: string) { this.clearHighlights(owner); }
-  exclude(owner: string, id: string) { this.owners.get(owner)?.exclude?.(id); }
+  exclude(owner: string, id: string, keyboard = false) { this.owners.get(owner)?.exclude?.(id, { keyboard }); }
   /** Called only for changed content; does not scan text or measure geometry. */
   invalidateContent(contentKey: string) {
     const affected = this.contentIndex.get(contentKey); if (!affected) return;
@@ -46,7 +46,7 @@ export class SessionDecorations {
         entry.nodes.add(range.nodeKey); entry.matches.push({ layer, id: match.id });
       }
       if (!layer.visible || layer.hidden.has(match.id) || !match.capabilities.highlight) continue;
-      for (const [index,range] of match.ranges.entries()) (next[range.nodeKey] ??= []).push({ owner, type: layer.type, id: match.id, range, fill: layer.fill, active: layer.active === match.id, priority: layer.priority, excludable: !!layer.exclude && index === match.ranges.length - 1 });
+      for (const [index,range] of match.ranges.entries()) (next[range.nodeKey] ??= []).push({ owner, type: layer.type, id: match.id, range, fill: layer.fill, active: layer.active === match.id, priority: layer.priority, excludeLabel: layer.excludeLabel, excludeTitle: layer.excludeTitle, excludable: !!layer.exclude && index === match.ranges.length - 1 });
     }
     batch(() => { for (const key of new Set([...Object.keys(this.nodes), ...Object.keys(next)])) {
       const value = (next[key] ?? []).sort((a,b) => a.priority - b.priority);

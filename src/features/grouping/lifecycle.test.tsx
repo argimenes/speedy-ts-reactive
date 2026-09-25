@@ -23,7 +23,7 @@ describe("Grouping feature lifetime", () => {
     expect(editor.currentTextOperation.owner()).toBeUndefined();
     expect(editor.featureHost.list()).toEqual([]);
     registerApplicationViews(editor);
-    expect(editor.featureHost.list()).toEqual(enabled ? ["grouping"] : []);
+    expect(editor.featureHost.list().includes("grouping")).toBe(enabled);
     expect(editor.currentTextOperation.owner()).toBe(enabled ? "grouping" : undefined);
     expect(editor.commandRegistry.owner("grouping.delete")).toBe(enabled ? "grouping" : undefined);
     expect(editor.featureActions.toolbar()).toHaveLength(enabled ? 1 : 0);

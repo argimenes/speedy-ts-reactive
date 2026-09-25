@@ -1,11 +1,12 @@
+import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
-import { ReactiveEditor } from "../reactive-editor/editor";
-import { ReactiveTreeView } from "./reactive-tree-view";
-import { DocumentStyleBar } from "./document-style-bar";
-import { toolbarControl } from "./toolbar-test-helpers";
-import { registerCoreViews } from "./register-core-views";
+import { ReactiveEditor } from "../../reactive-editor/editor";
+import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
+import { DocumentStyleBar } from "../../rendering/document-style-bar";
+import { toolbarControl } from "../../rendering/toolbar-test-helpers";
+import { registerCoreViews } from "../../rendering/register-core-views";
 
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(dispose => dispose()); document.body.replaceChildren(); vi.unstubAllGlobals(); localStorage.clear(); });
@@ -21,7 +22,7 @@ function setup(fail = false, pageless = false) {
     { id: "c", type: "standoff-editor-block", text: "No entity" },
   ] };
   const editor = new ReactiveEditor({ type: pageless ? "main-list-block" : "document-block", children: pageless ? page.children : [page] });
-  registerCoreViews(editor); const projection = editor.createView("entity-list-test"), host = document.body.appendChild(document.createElement("div"));
+  registerEntityTestViews(editor); const projection = editor.createView("entity-list-test"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <><DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} /><ReactiveTreeView editor={editor} projection={projection} /></>, host);
   const uninstall = editor.installGateway(document); cleanup.push(() => { uninstall(); dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(node => node.payload.id === id)!;
@@ -65,7 +66,29 @@ describe("document entity listing", () => {
     const finish = new KeyboardEvent("keydown", { key: "l", bubbles: true, cancelable: true }); flow.dispatchEvent(finish);
     await vi.waitFor(() => expect(panel().textContent).toContain("Graph counts unavailable: Graph offline"));
     expect(finish.defaultPrevented).toBe(true); expect(panel()).toBeTruthy(); expect(rows()).toHaveLength(2);
-    panel().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); expect(editor.entityList.state.open).toBe(false);
+    panel().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); expect(entityTestList(editor).state.open).toBe(false);
+  });
+
+  it("opens the listing from a Page container through the registered command path", async () => {
+    const { editor, node, panel } = setup(); const root = editor.mounts.get(node("page").key)!.focusElement;
+    root.focus();
+    root.dispatchEvent(new KeyboardEvent("keydown", { key: ";", ctrlKey: true, bubbles: true, cancelable: true }));
+    root.dispatchEvent(new KeyboardEvent("keydown", { key: "l", bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(panel()).toBeTruthy());
+    expect(entityTestList(editor).state.open).toBe(true);
+  });
+
+  it("transfers occurrence focus ownership even while Find is awaiting results", () => {
+    const { editor, node } = setup(); const list = entityTestList(editor);
+    list.open(node("a").key); list.focusOccurrences("alpha");
+    expect(list.state.concertinaEntityId).toBe("alpha");
+    editor.find.open(node("a").key); editor.find.toggleConcertina();
+    expect(list.state.concertinaEntityId).toBeUndefined();
+    list.focusOccurrences("alpha"); expect(editor.find.state.concertinaRequested).toBe(false);
+    editor.find.toggleConcertina(); editor.find.setQuery("Alpha");
+    expect(editor.find.state.pending).toBe(true);
+    list.focusOccurrences("alpha"); expect(editor.find.state.concertinaRequested).toBe(false);
+    expect(list.state.concertinaEntityId).toBe("alpha");
   });
 
   it("updates live Document counts when standoff properties change", async () => {
@@ -86,16 +109,16 @@ describe("document entity listing", () => {
     button.click();
     await vi.waitFor(() => expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(true));
     expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(true);
-    expect(editor.entityList.state.concertinaEntityId).toBe("alpha");
+    expect(entityTestList(editor).state.concertinaEntityId).toBe("alpha");
     button.click();
     expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(false);
     expect(editor.repository.state.revision).toBe(before);
   });
   it("focuses and navigates a legacy letter without a Page, without changing authored content or undo", async () => {
     const { editor, node, panel } = setup(false, true);
-    editor.entityList.open(node("a").key);
+    entityTestList(editor).open(node("a").key);
     await vi.waitFor(() => expect(panel().querySelector('[aria-label="Focus occurrences of Beta on current Document"]')).toBeTruthy());
-    expect(editor.entityList.state.pageKey).toBeUndefined();
+    expect(entityTestList(editor).state.pageKey).toBeUndefined();
     const before = editor.repository.snapshot();
     const button = panel().querySelector<HTMLButtonElement>('[aria-label="Focus occurrences of Beta on current Document"]')!;
     expect(button.disabled).toBe(false); button.click();
@@ -103,7 +126,7 @@ describe("document entity listing", () => {
     expect((editor.mounts.get(node("a").key)!.root as HTMLElement).hidden).toBe(false);
     expect((editor.mounts.get(node("b").key)!.root as HTMLElement).hidden).toBe(false);
     expect(button.getAttribute("aria-pressed")).toBe("true");
-    editor.entityList.navigateConcertina(1); expect(editor.entityList.state.concertinaIndex).toBe(1);
+    entityTestList(editor).navigateConcertina(1); expect(entityTestList(editor).state.concertinaIndex).toBe(1);
     button.click(); expect((editor.mounts.get(node("c").key)!.root as HTMLElement).hidden).toBe(false);
     expect(editor.repository.snapshot()).toEqual(before); expect(editor.repository.canUndo()).toBe(false);
   });

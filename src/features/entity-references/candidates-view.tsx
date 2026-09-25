@@ -1,6 +1,6 @@
 import { For, Show } from "solid-js";
-import type { EntityCandidates } from "../runtime/entity-candidates";
-import type { ScopeKind } from "../runtime/text-search";
+import type { EntityCandidates } from "./entity-candidates";
+import type { ScopeKind } from "../../feature-api";
 
 export function EntityCandidatesPanel(props: { session: EntityCandidates; bind: () => void }) {
   const session = props.session, state = session.state, pageSize = 25;

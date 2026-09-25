@@ -1,6 +1,7 @@
 import { clone } from "../block-tree/clone";
 import { linkedRegistry, resolveLinkedProperty } from "../block-tree/linked-annotations";
-import type { JsonObject } from "../block-tree/types";
+import type { TextRangeSnapshot } from "./text-ranges";
+import type { JsonObject, RepositoryOperation } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { AnnotationAction, AnnotationPatch } from "../block-tree/annotation-commands";
 
@@ -39,6 +40,38 @@ export class LinkedAnnotations {
       for (const update of updates.values()) this.editor.commands.setPayloadField(update.key, "standoffProperties", update.properties);
     });
     return id;
+  }
+  /** Atomic local or linked mentions; policy/eligibility belongs to the caller. */
+  createBatch(groups: readonly (readonly TextRangeSnapshot[])[], type: string, value: string, metadata: JsonObject, revision: number, label: string): string[] {
+    if (this.editor.repository.readState().revision !== revision) throw new Error("The document changed. Select the text again.");
+    if (type.trim().startsWith("style/") || type.trim().startsWith("text/")) throw new Error("Choose a semantic annotation type; ordinary styles stay independent");
+    type = type.trim();
+    if (!type.trim() || !groups.length || groups.some(group => !group.length)) throw new Error("Select a non-empty annotation range");
+    this.editor.textRanges.validate(groups.flat(), "cell");
+    const state = this.editor.repository.readState(), registry = clone(linkedRegistry(state));
+    const updates = new Map<string, JsonObject[]>(), ids: string[] = [];
+    let linked = false;
+    for (const ranges of groups) {
+      const id = crypto.randomUUID(); ids.push(id);
+      const shared = ranges.length > 1;
+      if (shared) { linked = true; registry[id] = { id, type, value, metadata: clone(metadata), attributes: {} }; }
+      for (const range of ranges) {
+        let properties = updates.get(range.contentKey);
+        if (!properties) updates.set(range.contentKey, properties = clone(state.contents[range.contentKey].payload.standoffProperties as JsonObject[] ?? []));
+        if (shared && properties.some(p => p.annotationId === id && p.start === range.start && p.end === range.end - 1)) continue;
+        properties.push({ id: shared ? crypto.randomUUID() : id, type, start: range.start, end: range.end - 1,
+          ...(shared ? { annotationId: id } : { value, metadata: clone(metadata) }) });
+      }
+    }
+    const operations: RepositoryOperation[] = [];
+    const root = state.contents[state.placements[state.rootPlacementKey].contentKey];
+    if (linked) operations.push({ kind: "put-content", record: { ...root, payload: { ...root.payload, linkedAnnotations: registry } } });
+    for (const [key, properties] of updates) {
+      const content = state.contents[key];
+      operations.push({ kind: "put-content", record: { ...content, payload: { ...content.payload, ...(linked && key === root.key ? { linkedAnnotations: registry } : {}), standoffProperties: properties } } });
+    }
+    this.editor.repository.commit(label, operations);
+    return ids;
   }
   edit(nodeKey: string, index: number, expected: JsonObject, action: AnnotationAction | AnnotationPatch) {
     if (typeof expected.annotationId !== "string") return this.editor.commands.editStandoffProperty(nodeKey, index, expected, action);

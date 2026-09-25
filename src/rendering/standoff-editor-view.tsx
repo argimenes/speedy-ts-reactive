@@ -1,3 +1,4 @@
+import { immutable } from "../runtime/effect-contributions";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import type { BlockNode, BlockViewProps, NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
@@ -344,7 +345,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   const [superpositionAnchors, setSuperpositionAnchors] = createSignal<SuperpositionAnchor[]>([]);
   const [selectionShapes, setSelectionShapes] = createSignal<DecorationShape[]>([]);
   const [searchShapes, setSearchShapes] = createSignal<DecorationShape[]>([]);
-  const [exclusions,setExclusions] = createSignal<Array<{ owner: string; id: string; x: number; y: number; active: boolean; fragments: VisualFragment[] }>>([]);
+  const [exclusions,setExclusions] = createSignal<Array<{ owner: string; id: string; x: number; y: number; active: boolean; label?: string; title?: string; fragments: VisualFragment[] }>>([]);
   const [hovered,setHovered] = createSignal<string>();
   let measuredOrigin = { x: 0,y: 0 };
   const hoverCandidate = (event: PointerEvent) => {
@@ -389,11 +390,12 @@ export function StandoffEditorView(props: BlockViewProps) {
       if (!fragments) fragmentCache.set(key, fragments = rangeFragments(flow, surface, start, end));
       return fragments;
     };
-    standoffSvgStyles(annotations(), node()?.inlineContent.length ?? 0).forEach(({ annotation, svg, offset, index }) => {
+    standoffSvgStyles(annotations(), node()?.inlineContent.length ?? 0, type => editor.effects.get(type)).forEach(({ annotation, svg, offset, index }) => {
       const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "property"}:${index}`;
       const fragments = fragmentsFor(annotation.start, annotation.end);
       let shapes: DecorationShape[] = [];
       switch (svg.kind) {
+        case "contribution": shapes = [...svg.definition.render({ key, property: immutable(JSON.parse(JSON.stringify(annotation))), fragments: immutable(fragments), offset })]; break;
         case "rainbow": shapes = rainbowShapes(key, fragments, offset); break;
         case "underline": shapes = underlineShapes(key, fragments, svg.colour, offset); break;
         case "highlighter":
@@ -449,9 +451,6 @@ export function StandoffEditorView(props: BlockViewProps) {
         ...highlightShapes(key, fragments, "#8bd7c4"),
       ].map(shape => ({ ...shape, propertyType: "editor/show-hide-selection" })));
     });
-    for (const overlay of editor.overlays.overlays) if (overlay.viewType === "entity-search" && !overlay.entityCandidates) {
-      for (const range of overlay.entityRanges ?? []) if (range.nodeKey === props.nodeKey && range.end > range.start) selected.push(...highlightShapes(`${props.nodeKey}:entity-search`, rangeFragments(flow, surface, range.start, range.end - 1), "#f2c767"));
-    }
     const cross = editor.crossText.segments[props.nodeKey];
     if (cross && cross.end > cross.start) selected.push(...highlightShapes(`${props.nodeKey}:cross-text`, rangeFragments(flow, surface, cross.start, cross.end - 1), "#75a9e8"));
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
@@ -479,11 +478,11 @@ export function StandoffEditorView(props: BlockViewProps) {
     const origin = searchVisible && (editor.decorations.nodes[props.nodeKey] ?? []).some(d => d.excludable) ? surface.getBoundingClientRect() : undefined;
     if (origin) measuredOrigin = { x: origin.left,y: origin.top };
     for (const decoration of searchVisible ? editor.decorations.nodes[props.nodeKey] ?? [] : []) {
-      const fragments = rangeFragments(flow, surface, decoration.range.start, decoration.range.end - 1);
+      const fragments = fragmentsFor(decoration.range.start, decoration.range.end - 1);
       search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
       if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
       const position = decoration.excludable && origin ? exclusionPosition(fragments,origin,{ width: window.innerWidth,height: window.innerHeight }) : undefined;
-      if (position) controls.push({ owner: decoration.owner,id: decoration.id,...position,active: decoration.active,fragments });
+      if (position) controls.push({ owner: decoration.owner,id: decoration.id,label: decoration.excludeLabel,title: decoration.excludeTitle,...position,active: decoration.active,fragments });
     }
     setSearchShapes(search);
     setExclusions(controls);
@@ -548,6 +547,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   });
 
   createEffect(() => {
+    editor.effects.track();
     node()?.inlineContent.length;
     concealedRanges();
     selectedShowHideRanges();
@@ -559,7 +559,6 @@ export function StandoffEditorView(props: BlockViewProps) {
     }
     editor.selections.sets[props.nodeKey]?.revision;
     JSON.stringify(editor.decorations.nodes[props.nodeKey]);
-    editor.overlays.overlays.find(overlay => overlay.viewType === "entity-search")?.entityCandidates;
     editor.crossText.segments[props.nodeKey]?.start;
     editor.crossText.segments[props.nodeKey]?.end;
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
@@ -594,10 +593,10 @@ export function StandoffEditorView(props: BlockViewProps) {
         <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes()} blendMode="color-dodge" />
         <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />
         <DecorationLayer class="reactive-selection-layer reactive-search-layer" shapes={searchShapes()} />
-        <For each={exclusions()}>{control => <button type="button" class="candidate-exclusion" data-candidate-exclusion data-native-context-menu aria-label="Exclude this mention" title="Exclude this mention from entity binding" classList={{ "candidate-exclusion--visible": control.active || hovered() === `${control.owner}:${control.id}` }} style={{ left: `${control.x}px`,top: `${control.y}px` }}
+        <For each={exclusions()}>{control => <button type="button" class="candidate-exclusion" data-candidate-exclusion data-native-context-menu aria-label={control.label ?? "Exclude this match"} title={control.title ?? "Exclude this match"} classList={{ "candidate-exclusion--visible": control.active || hovered() === `${control.owner}:${control.id}` }} style={{ left: `${control.x}px`,top: `${control.y}px` }}
           onPointerDown={event => { event.preventDefault(); event.stopPropagation(); }}
-          onClick={event => { event.preventDefault(); event.stopPropagation(); editor.decorations.exclude(control.owner,control.id); }}
-          onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); editor.decorations.exclude(control.owner,control.id); } }}
+          onClick={event => { event.preventDefault(); event.stopPropagation(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); }}
+          onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); } }}
         >×</button>}</For>
         <div
           ref={flow}

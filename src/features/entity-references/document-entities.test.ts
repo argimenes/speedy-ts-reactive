@@ -1,5 +1,6 @@
+import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
 import { afterEach, describe, expect, it } from "vitest";
-import { ReactiveEditor } from "../reactive-editor/editor";
+import { ReactiveEditor } from "../../reactive-editor/editor";
 import { collectDocumentEntities } from "./document-entities";
 
 const cleanup: Array<() => void> = [];
@@ -22,7 +23,7 @@ describe("document entity inventory", () => {
     });
     const view = editor.createView("entities"), node = (id: string) => Object.values(view.state.nodes).find(node => node.payload.id === id)!;
     cleanup.push(() => editor.dispose());
-    const result = collectDocumentEntities(editor, node("a").key);
+    const result = collectDocumentEntities(entityTestApi(editor), node("a").key);
     expect(result.rows).toEqual([expect.objectContaining({ id: "blake", fallbackName: "Vernon Blake", documentMentions: 2 })]);
     expect(result.rows[0].ranges).toHaveLength(3);
     expect(result.rows[0].ranges.map(range => range.nodeKey)).toEqual([node("a").key, node("a").key, node("b").key]);
@@ -32,7 +33,7 @@ describe("document entity inventory", () => {
     const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "page", type: "page-block", children: [{ id: "a", type: "standoff-editor-block", text: "Entity", standoffProperties: [{ id: "ref", type: "codex/entity-reference", value: "entity", start: 0, end: 5 }] }] }] });
     const view = editor.createView("entities-repeat"), node = (id: string) => Object.values(view.state.nodes).find(node => node.payload.id === id)!;
     editor.commands.transclude(node("a").key, { kind: "at", parentKey: node("page").key, index: 1 }); cleanup.push(() => editor.dispose());
-    const result = collectDocumentEntities(editor, node("a").key);
+    const result = collectDocumentEntities(entityTestApi(editor), node("a").key);
     expect(result.rows[0].documentMentions).toBe(1); expect(result.rows[0].ranges).toHaveLength(2);
     expect(new Set(result.rows[0].ranges.map(range => range.nodeKey)).size).toBe(2);
   });

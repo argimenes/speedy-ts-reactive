@@ -1,17 +1,19 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
-import type { ReactiveEditor } from "../reactive-editor/editor";
-import type { OverlayDescriptor } from "../runtime/overlays";
-import { chooseEntity } from "../runtime/entity-search";
-import { EntityCandidates } from "../runtime/entity-candidates";
-import { EntityCandidatesPanel } from "./entity-candidates";
-import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "./floating-window-resize";
+import type { AnnotationCapabilities, PanelSession } from "../../feature-api";
+import type { EntitySearchData } from "./entity-search";
+import { chooseEntity } from "./entity-search";
+import { EntityCandidates } from "./entity-candidates";
+import { EntityCandidatesPanel } from "./candidates-view";
+import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "../../feature-api";
 import "./entity-search.css";
 interface Entity { id: string; name: string; text?: string; mentions?: number }
 
-function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
-  const { editor, overlay } = props;
-  const candidates = new EntityCandidates(editor,overlay);
+export function EntitySearch(props: { api: AnnotationCapabilities; panel: PanelSession }) {
+  const { api: editor, panel } = props, overlay = panel.data as EntitySearchData;
+  const candidates = new EntityCandidates(editor,panel);
+  const selectionPreview = editor.decorations(`entity-selection:${panel.key}`);
+  createEffect(() => { if (candidates.state.enabled) selectionPreview.clear(); else selectionPreview.ranges(overlay.entityRanges, { type: "editor/panel-selection", fill: "#f2c767" }); });
+  onCleanup(() => selectionPreview.dispose());
   onCleanup(() => candidates.dispose());
   const [query, setQuery] = createSignal(overlay.entityQuery ?? ""), [alias, setAlias] = createSignal(false), [partial, setPartial] = createSignal(true);
   const [order, setOrder] = createSignal("ByMentions"), [direction, setDirection] = createSignal("Descending"), [page, setPage] = createSignal(1);
@@ -22,7 +24,7 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
   const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
   let root!: HTMLDivElement, input!: HTMLInputElement, editing = false;
   let drag: { id: number; x: number; y: number; left: number; top: number } | undefined;
-  const close = () => editor.overlays.close(overlay.key);
+  const close = () => panel.close();
   const clampPosition = (x: number, y: number) => {
     const width = root?.offsetWidth || initialWidth, height = root?.offsetHeight || window.innerHeight * .76;
     return { x: Math.max(8, Math.min(x, window.innerWidth - Math.min(width, window.innerWidth - 16) - 8)), y: Math.max(8, Math.min(y, window.innerHeight - Math.min(height, window.innerHeight - 16) - 8)) };
@@ -69,8 +71,8 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
   });
   onMount(() => {
     candidates.enable();
-    const disposeMount = editor.mounts.register(overlay.key, { root, focusElement: input, inputPolicy: "opaque-widget", focus: () => { input.focus(); input.select(); } });
-    const unsubscribe = editor.repository.subscribeBeforeChanges(() => { if (!editing) editor.overlays.close(overlay.key, false); });
+    const disposeMount = panel.mountWidget(root, () => { input.focus(); input.select(); });
+    const unsubscribe = editor.beforeChange(() => { if (!editing) panel.close(false); });
     input.focus(); input.select();
     const keepReachable = () => setPosition(current => clampPosition(current.x, current.y));
     window.addEventListener("resize", keepReachable);
@@ -138,7 +140,4 @@ function EntitySearch(props: { editor: ReactiveEditor; overlay: OverlayDescripto
     </div>
     <FloatingWindowResizeHandle controller={windowResize} class="reactive-entity-search__resize" label="Resize Entity Search window" />
   </div>;
-}
-export function EntitySearchLayer(props: { editor: ReactiveEditor; viewId: string }) {
-  return <Portal><For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType === "entity-search" && props.editor.node(overlay.ownerKey)?.viewId === props.viewId)}>{overlay => <EntitySearch editor={props.editor} overlay={overlay} />}</For></Portal>;
 }

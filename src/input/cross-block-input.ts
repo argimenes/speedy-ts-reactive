@@ -2,7 +2,6 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { ViewPosition } from "../block-tree/types";
 import { graphemeBoundaries } from "./graphemes";
 import { createEffect, createRoot } from "solid-js";
-import { openEntitySearch } from "../runtime/entity-search";
 
 /** Model-owned selection across separate contenteditables. Installed before InputGateway. */
 export class CrossBlockInput {
@@ -227,17 +226,10 @@ export class CrossBlockInput {
     if (active && (this.composing || event.isComposing)) return;
     if (this.editor.bindings.dispatch(event, ["cross-text"], id => {
       if (id.startsWith("cross.extend")) return this.extend(id.slice("cross.extend".length));
-      if (id === "cross.entityList") { this.editor.entityList.open(resolved.nodeKey); return true; }
       // Existing scoped actions can use registered commands without feature callbacks.
       const context = { targetKey: resolved.nodeKey, args: undefined };
       if (this.editor.commandRegistry.canExecute(id, context)) {
         void this.editor.commandRegistry.execute(id, context); return true;
-      }
-      if (id === "cross.entity") {
-        if (active) { openEntitySearch(this.editor, this.editor.crossText.resolve(active.anchor, active.head)); return true; }
-        const range = resolved.handle.captureInlineSelection?.();
-        if (!range) return false;
-        openEntitySearch(this.editor, [{ nodeKey: resolved.nodeKey, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }]); return true;
       }
       if (!active) return false;
       if (id === "cross.cancel") { this.collapse(active.head); return true; }

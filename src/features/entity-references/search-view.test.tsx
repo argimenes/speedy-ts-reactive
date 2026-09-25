@@ -1,20 +1,21 @@
+import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
-import { ReactiveEditor } from "../reactive-editor/editor";
-import { registerCoreViews } from "./register-core-views";
-import { ReactiveTreeView } from "./reactive-tree-view";
-import { DocumentStyleBar } from "./document-style-bar";
-import { toolbarControl } from "./toolbar-test-helpers";
-import { openEntitySearch } from "../runtime/entity-search";
-import { matchSources } from "../runtime/search-matching";
-vi.mock("../runtime/search-worker",() => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0],query: string,options: Parameters<typeof matchSources>[2]) => matchSources(sources,query,options) }));
+import { ReactiveEditor } from "../../reactive-editor/editor";
+import { registerCoreViews } from "../../rendering/register-core-views";
+import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
+import { DocumentStyleBar } from "../../rendering/document-style-bar";
+import { toolbarControl } from "../../rendering/toolbar-test-helpers";
+import { openEntitySearch } from "./entity-search";
+import { matchSources } from "../../runtime/search-matching";
+vi.mock("../../runtime/search-worker",() => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0],query: string,options: Parameters<typeof matchSources>[2]) => matchSources(sources,query,options) }));
 const cleanup: (() => void)[] = [];
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); localStorage.clear(); });
 const reply = (Results = [{ id: "Agent:blake", name: "Vernon Blake", mentions: 3 }], extra = {}) => ({ ok: true, json: async () => ({ Success: true, Results, Count: Results.length, Page: 1, MaxPage: 1, ...extra }) });
 function setup() {
   const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "a", type: "standoff-editor-block", text: "Vernon Blake" }, { id: "b", type: "standoff-editor-block", text: "writes on art" }] });
-  registerCoreViews(editor); const projection = editor.createView("entity-test"), host = document.body.appendChild(document.createElement("div"));
+  registerEntityTestViews(editor); const projection = editor.createView("entity-test"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <><DocumentStyleBar editor={editor} /><ReactiveTreeView editor={editor} projection={projection} /></>, host); editor.installGateway(document);
   cleanup.push(() => { dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
@@ -57,7 +58,7 @@ describe("entity search overlay", () => {
   it("creates a shared entity annotation across Blocks and invalidates an open search on edits", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply()));
     const { editor, node, panel, pause } = setup();
-    openEntitySearch(editor, [{ nodeKey: node("a").key, start: 0, end: 12 }, { nodeKey: node("b").key, start: 0, end: 6 }]);
+    openEntitySearch(entityTestApi(editor), [{ nodeKey: node("a").key, start: 0, end: 12 }, { nodeKey: node("b").key, start: 0, end: 6 }]);
     pause();
     await vi.advanceTimersByTimeAsync(310);
     document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
@@ -65,7 +66,7 @@ describe("entity search overlay", () => {
     expect(a.annotationId).toBe(b.annotationId); expect(a.annotationId).toBeTruthy();
     expect(editor.linkedAnnotations.resolve(b)).toMatchObject({ value: "Agent:blake", metadata: { entityName: "Vernon Blake" } });
     editor.repository.undo(); expect(node("a").payload.standoffProperties).toBeUndefined(); expect(node("b").payload.standoffProperties).toBeUndefined();
-    openEntitySearch(editor, [{ nodeKey: node("a").key, start: 0, end: 6 }]);
+    openEntitySearch(entityTestApi(editor), [{ nodeKey: node("a").key, start: 0, end: 6 }]);
     editor.commands.replaceInlineRange(node("a").key, 0, 0, "New "); expect(panel()).toBeNull();
     await vi.advanceTimersByTimeAsync(500); expect(node("a").payload.standoffProperties).toBeUndefined();
   });

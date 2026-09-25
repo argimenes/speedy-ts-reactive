@@ -110,23 +110,6 @@ describe("annotation monitor", () => {
     expect(editor.repository.snapshot()).toEqual(before);
   });
 
-  it("groups the horizontal columns, exposes a readonly annotation ID and displays populated entity details", async () => {
-    const { editor, open, panel } = setup([{ id: "annotation-42", type: "codex/entity-reference", start: 0, end: 2, value: "entity-7", cache: { entity: { Guid: "entity-7", Name: "Vernon Blake" } } }]);
-    const before = editor.repository.snapshot(); await open();
-    expect(panel().querySelector(".annotation-layout > nav")).not.toBeNull();
-    expect(panel().querySelector(".annotation-main blockquote")!.textContent).toBe("one");
-    expect(panel().querySelectorAll(".annotation-settings textarea")).toHaveLength(2);
-    const inputs = [...panel().querySelectorAll<HTMLInputElement>("input[readonly]")];
-    expect(inputs.map(input => input.value)).toEqual(["annotation-42", "Vernon Blake", "entity-7"]);
-    expect(editor.repository.snapshot()).toEqual(before);
-  });
-
-  it("shows honest fallbacks for missing IDs/names and ignores a mismatched entity cache", async () => {
-    const { open, panel } = setup([{ type: "codex/entity-reference", start: 0, end: 2, value: "new-id", cache: { entity: { Guid: "old-id", Name: "Wrong entity" } } }]);
-    await open();
-    expect([...panel().querySelectorAll<HTMLInputElement>("input[readonly]")].map(input => input.value)).toEqual(["Not supplied", "Entity name not loaded", "new-id"]);
-  });
-
   it("anchors below and 100px left of the selected annotation start, updating on selection", async () => {
     const { flow, open, panel } = setup();
     const first = flow.children[0], second = flow.children[1];

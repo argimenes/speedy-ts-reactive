@@ -1,8 +1,9 @@
+import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ReactiveEditor } from "../reactive-editor/editor";
+import { ReactiveEditor } from "../../reactive-editor/editor";
 import { EntityCandidates, bindEntityCandidates } from "./entity-candidates";
-import { matchSources } from "./search-matching";
-import type { ExistingBlockDto } from "../block-tree/types";
+import { matchSources } from "../../runtime/search-matching";
+import type { ExistingBlockDto } from "../../block-tree/types";
 const cleanup: (() => void)[] = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); vi.restoreAllMocks(); });
 const entity = { id: "blake",name: "Vernon Blake" };
@@ -14,7 +15,7 @@ function setup(extra?: ExistingBlockDto[], original?: Array<{ id: string; start:
   ] }] });
   const view = editor.createView("candidate-test"), node = (id: string) => Object.values(view.state.nodes).find(n => n.payload.id === id)!;
   const ranges = (original ?? [{ id: "a",start: 0,end: 2 }]).map(r => ({ nodeKey: node(r.id).key,start: r.start,end: r.end }));
-  const session = new EntityCandidates(editor,{ key: "test-overlay",ownerKey: ranges[0].nodeKey,viewType: "entity-search",anchor: { x: 0,y: 0 },entityRevision: editor.repository.state.revision,entityRanges: ranges,entityQuery: ranges.map(r => node(original?.find(o => node(o.id).key === r.nodeKey)?.id ?? "a").inlineContent.slice(r.start,r.end).map(k => String(editor.node(k)?.payload.text ?? "")).join("")).join(" ") },async (sources,query,options) => matchSources(sources,query,options));
+  const session = new EntityCandidates(entityTestApi(editor),{ close() {}, allowDocumentInput() {}, mountWidget() { return () => {}; }, focus() {}, key: "test-overlay",ownerKey: ranges[0].nodeKey,data: { entityRevision: editor.repository.state.revision,entityRanges: ranges,entityQuery: ranges.map(r => node(original?.find(o => node(o.id).key === r.nodeKey)?.id ?? "a").inlineContent.slice(r.start,r.end).map(k => String(editor.node(k)?.payload.text ?? "")).join("")).join(" ") } },async (sources,query,options) => matchSources(sources,query,options));
   cleanup.push(() => { session.dispose(); editor.dispose(); });
   return { editor,view,node,session };
 }
@@ -24,7 +25,7 @@ describe("entity mention candidates", () => {
     expect(session.state.rows).toHaveLength(5); expect(session.selected()).toHaveLength(5);
     editor.decorations.attachMatches("find",session.state.result!);
     const row = session.state.rows.find(r => r.match.ranges[0].nodeKey === node("b").key)!;
-    editor.decorations.exclude(session.owner,row.match.id);
+    editor.decorations.exclude(`entity-references:${session.owner}`,row.match.id);
     expect(session.selected()).toHaveLength(4); expect(session.state.rows).toHaveLength(5);
     expect(editor.decorations.nodes[node("b").key].every(d => d.owner === "find")).toBe(true);
     session.undoExclusion(); expect(session.selected()).toHaveLength(5);
@@ -75,7 +76,7 @@ describe("entity mention candidates", () => {
   it("rejects stale, failed and cancelled sets before writing", async () => {
     const { session,editor,node } = setup(); session.enable(); await session.flush(true); session.nominate(entity);
     const set = session.state.result!, targets = session.selected().map(r => r.match);
-    for (const status of ["error", "cancelled"] as const) expect(() => bindEntityCandidates(editor,{ ...set,status,exact: false },targets,entity)).toThrow("successful search");
+    for (const status of ["error", "cancelled"] as const) expect(() => bindEntityCandidates(entityTestApi(editor),{ ...set,status,exact: false },targets,entity)).toThrow("successful search");
     expect(editor.repository.canUndo()).toBe(false);
     editor.commands.replaceInlineRange(node("a").key,0,0,"x");
     expect(() => session.bind()).toThrow("changed"); expect(node("b").payload.standoffProperties).toBeUndefined();
@@ -111,7 +112,7 @@ describe("entity mention candidates", () => {
     session.enable(); await session.flush(true); session.nominate({ id: "codex",name: "Codex" });
     expect(session.state.rows).toHaveLength(3); expect(session.state.rows.every(r => r.reason.includes("this entity"))).toBe(true);
     session.selectAll(); expect(session.selected()).toHaveLength(0); expect(session.canBind()).toBe(false);
-    expect(() => bindEntityCandidates(editor,session.state.result!,session.state.rows.map(r => r.match),{ id: "codex",name: "Codex" })).toThrow("existing reference");
+    expect(() => bindEntityCandidates(entityTestApi(editor),session.state.result!,session.state.rows.map(r => r.match),{ id: "codex",name: "Codex" })).toThrow("existing reference");
     expect(node("a").payload.standoffProperties).toHaveLength(3);
   });
   it("batches many Blocks without per-match snapshots and preserves all-or-nothing undo", async () => {
@@ -125,7 +126,7 @@ describe("entity mention candidates", () => {
   it("treats an exact already-linked batch as a no-op and disallows grapheme-splitting originals", async () => {
     const first = setup([{ id: "a",type: "standoff-editor-block",text: "he",standoffProperties: [{ id: "old",type: "codex/entity-reference",value: entity.id,start: 0,end: 1 }] }]);
     first.session.enable(); await first.session.flush(true); first.session.nominate(entity);
-    expect(bindEntityCandidates(first.editor,first.session.state.result!,first.session.state.rows.map(r => r.match),entity)).toBe(0); expect(first.editor.repository.canUndo()).toBe(false);
+    expect(bindEntityCandidates(entityTestApi(first.editor),first.session.state.result!,first.session.state.rows.map(r => r.match),entity)).toBe(0); expect(first.editor.repository.canUndo()).toBe(false);
     const second = setup([{ id: "a",type: "standoff-editor-block",text: "e\u0301" }],[{ id: "a",start: 0,end: 1 }]);
     second.session.enable(); await second.session.flush(true); second.session.nominate(entity);
     expect(second.session.selected()).toHaveLength(0); expect(second.session.canBind()).toBe(false);

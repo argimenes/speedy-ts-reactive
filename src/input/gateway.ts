@@ -38,8 +38,6 @@ export class InputGateway {
     private readonly createTextTab: (key: NodeKey) => boolean,
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
-    private readonly entitySearch: (key: string, range: { anchor: number; head: number }) => void,
-    private readonly entityList: (key: string) => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
   ) {}
 
@@ -325,9 +323,9 @@ export class InputGateway {
     if (resolved && this.overlays.isOverlayKey(resolved.nodeKey)) return;
     // Bulk mention review is nonmodal: document-side exclusion buttons, scrolling
     // and tab navigation belong to the same review session. Actual document edits
-    // still invalidate the entity overlay through its before-change subscription.
+    // still invalidate the contributing panel through its before-change subscription.
     const top = this.overlays.overlays.at(-1);
-    if (top?.viewType === "entity-search" && top.entityCandidates) return;
+    if (top?.allowDocumentInput) return;
     this.overlays.dismissTopWithoutRestoring();
   };
 
@@ -468,20 +466,13 @@ export class InputGateway {
       const resolved = this.mounts.resolveEvent(event);
       return resolved ? this.runCommand(id, resolved.nodeKey) : false;
     }
-    if (id === "entity.list.open") {
-      const resolved = this.mounts.resolveEvent(event);
-      if (!resolved) return false;
-      this.entityList(resolved.nodeKey); return true;
-    }
-    if (id === "entity.open") {
-      const resolved = this.mounts.resolveEvent(event), range = resolved?.handle.captureInlineSelection?.();
-      if (!resolved) return false;
-      this.entitySearch(resolved.nodeKey, range ?? { anchor: 0, head: 0 }); return true;
-    }
     if (event instanceof KeyboardEvent && event.isComposing) return false;
     if (id === "menu.open") { this.openContextMenu(event); return event.defaultPrevented; }
     const resolved = this.mounts.resolveEvent(event);
-    if (!resolved || resolved.handle.composing || !["native-text", "standoff"].includes(resolved.handle.inputPolicy)) return false;
+    if (!resolved || resolved.handle.composing) return false;
+    // Registered, scoped commands may target containers (for example a document
+    // panel). Text-editing branches below still require an editable text mount.
+    if (!["native-text", "standoff"].includes(resolved.handle.inputPolicy)) return this.runCommand(id, resolved.nodeKey);
     if (resolved.handle.inputPolicy === "native-text" && !(event.target instanceof HTMLTextAreaElement)) return false;
 
     if (id === "tabs.create" && resolved.handle.inputPolicy === "standoff") {

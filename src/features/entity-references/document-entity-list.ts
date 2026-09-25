@@ -1,13 +1,8 @@
 import { createStore } from "solid-js/store";
-import type { ReactiveEditor } from "../reactive-editor/editor";
-import type { NativeTextSelection } from "./mounts";
-import type { SearchRange, SearchScope } from "./text-search";
+import type { AnnotationCapabilities, PanelSession, SearchRange, SearchScope } from "../../feature-api";
+import { rangesToPositionMarkers as entityRangesToPositionMarkers } from "../../feature-api";
 import { collectDocumentEntities } from "./document-entities";
 import { loadEntitySummaries, type EntitySummary, type EntitySummaryLoader } from "./entity-summary";
-import { entityRangesToPositionMarkers } from "./document-position-markers";
-import { revealPositionMarker } from "./reveal-match";
-import { currentPageForScope, nodeKeysForPage } from "./minimap";
-import { resolveSearchScope } from "./text-search";
 
 export type EntityListSort = "name" | "graph" | "document";
 export interface EntityListRow {
@@ -28,13 +23,16 @@ export class DocumentEntityList {
   private controller?: AbortController;
   private generation = 0;
   private origin?: string;
-  private inlineSelection?: { anchor: number; head: number };
-  private nativeSelection?: NativeTextSelection;
+  panel?: PanelSession;
+  private previewDecorations: ReturnType<AnnotationCapabilities["decorations"]>;
+  private concertinaDecorations: ReturnType<AnnotationCapabilities["decorations"]>;
   private unsubscribe: () => void;
   private refreshQueued = false;
   private collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
-  constructor(private editor: ReactiveEditor, private loader: EntitySummaryLoader = loadEntitySummaries) {
+  constructor(private editor: AnnotationCapabilities, private loader: EntitySummaryLoader = loadEntitySummaries) {
+    this.previewDecorations = editor.decorations(this.owner);
+    this.concertinaDecorations = editor.decorations(`${this.owner}:concertina`);
     [this.state, this.setState] = createStore<{
       open: boolean;
       scope?: SearchScope;
@@ -49,7 +47,7 @@ export class DocumentEntityList {
       concertinaIndex: number;
       focusRequest: number;
     }>({ open: false, rows: [], sort: "document", direction: "descending", pending: false, error: "", concertinaIndex: 0, focusRequest: 0 });
-    this.unsubscribe = editor.repository.subscribeChanges(() => {
+    this.unsubscribe = editor.afterChange(() => {
       if (!this.state.open || this.refreshQueued) return;
       this.refreshQueued = true;
       // Projections receive the same repository notification. Refresh after they
@@ -67,7 +65,7 @@ export class DocumentEntityList {
     try {
       const inventory = collectDocumentEntities(this.editor, key);
       if (this.state.open && this.state.scope?.rootKey === inventory.scope.rootKey) {
-        const pageKey = currentPageForScope(this.editor, inventory.scope, [this.editor.focus.state.focusedKey, this.editor.focus.state.lastFocusedKey, key]);
+        const pageKey = this.editor.currentPage(inventory.scope, key);
         if (pageKey && pageKey !== this.state.pageKey) { this.clearConcertina(); this.setState("pageKey", pageKey); }
         this.setState("focusRequest", value => value + 1);
         this.refresh(inventory);
@@ -75,10 +73,9 @@ export class DocumentEntityList {
       }
       this.controller?.abort(); this.generation++; this.summaries.clear(); this.clearPreview();
       this.origin = key;
-      const pageKey = currentPageForScope(this.editor, inventory.scope, [this.editor.focus.state.focusedKey, this.editor.focus.state.lastFocusedKey, key]);
-      const mount = this.editor.mounts.get(key);
-      this.inlineSelection = mount?.captureInlineSelection?.();
-      this.nativeSelection = mount?.captureSelection?.();
+      const pageKey = this.editor.currentPage(inventory.scope, key);
+      this.panel = this.editor.openPanel("entity-list", key, {});
+      this.panel.allowDocumentInput(true);
       this.setState({ open: true, scope: inventory.scope, pageKey, rows: [], pending: false, error: "", active: undefined, concertinaEntityId: undefined, concertinaIndex: 0, focusRequest: this.state.focusRequest + 1 });
       this.refresh(inventory);
     } catch (error) {
@@ -143,13 +140,13 @@ export class DocumentEntityList {
     const row = this.state.rows.find(row => row.id === id);
     if (!row) { this.clearPreview(); return; }
     this.setState("active", id);
-    this.editor.decorations.attachRanges(this.owner, row.ranges, { type: "editor/entity-list-preview", fill: "#ffe34d", priority: 20 });
+    this.previewDecorations.ranges( row.ranges, { type: "editor/entity-list-preview", fill: "#ffe34d", priority: 20 });
   }
 
   pageRanges(row: EntityListRow): SearchRange[] {
     const rootKey = this.state.pageKey ?? this.state.scope?.rootKey;
     if (!rootKey) return [];
-    const keys = nodeKeysForPage(this.editor, rootKey);
+    const keys = this.editor.pageKeys(rootKey);
     return row.ranges.filter(range => keys.has(range.nodeKey));
   }
 
@@ -159,7 +156,7 @@ export class DocumentEntityList {
   }
 
   clearPreview() {
-    this.editor.decorations.clearHighlights(this.owner);
+    this.previewDecorations.clear();
     if (this.state.active !== undefined) this.setState("active", undefined);
   }
 
@@ -168,24 +165,23 @@ export class DocumentEntityList {
     if (!rootKey || !row.ranges.length) return;
     // Legacy flowing Documents have no Page wrapper. Use the same Document
     // fallback as Find's Page scope; never widen a real Page to its Document.
-    const scope = resolveSearchScope(this.editor, rootKey, "page");
+    const scope = this.editor.scope(rootKey, "page");
     const ranges = this.pageRanges(row);
     const markers = entityRangesToPositionMarkers(row.id, ranges);
     if (!markers.length) { this.clearConcertina(); return; }
     const index = Math.min(this.state.concertinaIndex, markers.length - 1);
     this.setState("concertinaIndex", index);
-    this.editor.concertina.activate({ owner: this.owner, viewId: scope.viewId, scope, markers, activeMarkerOrGroup: markers[index]?.id });
-    this.editor.decorations.attachRanges(`${this.owner}:concertina`, ranges, { type: "editor/entity-concertina", fill: "#ffe34d", priority: 19 });
+    this.editor.concertina.activate(this.owner, scope, markers, markers[index]?.id, () => this.clearConcertina());
+    this.concertinaDecorations.ranges( ranges, { type: "editor/entity-concertina", fill: "#ffe34d", priority: 19 });
   }
 
   focusOccurrences(id: string) {
     if (this.state.concertinaEntityId === id) { this.clearConcertina(); return; }
     const row = this.state.rows.find(row => row.id === id);
     if (!row || !this.pageRanges(row).length) return;
-    if (this.editor.find.state.concertinaRequested) this.editor.find.toggleConcertina();
     this.setState({ concertinaEntityId: id, concertinaIndex: 0 });
     this.applyConcertina(row);
-    void revealPositionMarker(this.editor, entityRangesToPositionMarkers(row.id, this.pageRanges(row))[0], () => this.state.concertinaEntityId === id);
+    void this.editor.revealMarker(entityRangesToPositionMarkers(row.id, this.pageRanges(row))[0], () => this.state.concertinaEntityId === id);
   }
 
   navigateConcertina(direction: -1 | 1) {
@@ -195,26 +191,22 @@ export class DocumentEntityList {
     if (!ranges.length) { this.clearConcertina(); return; }
     const index = (this.state.concertinaIndex + direction + ranges.length) % ranges.length;
     this.setState("concertinaIndex", index);
-    this.editor.concertina.setActiveMarker(`${row.id}:${index}`);
-    void revealPositionMarker(this.editor, entityRangesToPositionMarkers(row.id, ranges)[index], () => this.state.concertinaEntityId === row.id && this.state.concertinaIndex === index);
+    this.editor.concertina.active(`${row.id}:${index}`);
+    void this.editor.revealMarker(entityRangesToPositionMarkers(row.id, ranges)[index], () => this.state.concertinaEntityId === row.id && this.state.concertinaIndex === index);
   }
 
   clearConcertina() {
-    this.editor.concertina.deactivate(this.owner);
-    this.editor.decorations.clearHighlights(`${this.owner}:concertina`);
+    this.editor.concertina.clear(this.owner);
+    this.concertinaDecorations.clear();
     this.setState({ concertinaEntityId: undefined, concertinaIndex: 0 });
   }
 
   close(restore = true) {
     this.controller?.abort(); this.controller = undefined; this.generation++; this.clearConcertina(); this.clearPreview();
     this.setState({ open: false, rows: [], pending: false, error: "", active: undefined });
-    if (!restore || !this.origin) return;
-    const mount = this.editor.mounts.get(this.origin);
-    if (!mount) return;
-    mount.focus();
-    if (this.inlineSelection) mount.restoreInlineSelection?.(this.inlineSelection);
-    else if (this.nativeSelection) mount.restoreSelection?.(this.nativeSelection);
+    const panel = this.panel; this.panel = undefined;
+    panel?.close(restore);
   }
 
-  dispose() { this.close(false); this.unsubscribe(); }
+  dispose() { this.close(false); this.unsubscribe(); this.previewDecorations.dispose(); this.concertinaDecorations.dispose(); }
 }

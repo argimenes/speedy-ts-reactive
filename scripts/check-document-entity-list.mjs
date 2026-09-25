@@ -45,10 +45,10 @@ try {
   await evaluate("new Promise(resolve => setTimeout(resolve, 1200))");
   await evaluate(`(async () => {
     const { ReactiveEditor } = await import('/src/reactive-editor/editor.ts');
-    const { registerCoreViews } = await import('/src/rendering/register-core-views.ts');
+    const { registerApplicationViews } = await import('/src/application/features.ts');
     const { ReactiveTreeView } = await import('/src/rendering/reactive-tree-view.tsx');
     const source = await (await fetch('/src/rendering/reactive-tree-view.tsx')).text();
-    const webPath = source.split('"').find(part => part.startsWith('/node_modules/.vite/deps/solid-js_web.js'));
+    const webPath = source.split('"').find(part => part.includes('/solid-js_web.js'));
     const { render, createComponent } = await import(webPath);
     const originalFetch = window.fetch;
     window.fetch = async (input, options) => String(input).includes('/api/entities/summary')
@@ -66,7 +66,7 @@ try {
         { id: 'beta-ref-2', type: 'codex/entity-reference', value: 'beta', start: 0, end: 3 },
       ] },
     ] });
-    registerCoreViews(editor);
+    registerApplicationViews(editor);
     const projection = editor.createView('entity-list-browser');
     const dispose = render(() => createComponent(ReactiveTreeView, { editor, projection }), host);
     editor.installGateway(document);
@@ -95,7 +95,7 @@ try {
   assert.ok(highlight.paths >= 2, JSON.stringify(highlight)); assert.ok(highlight.fills.every(fill => fill === "#ffe34d")); assert.equal(highlight.history, false);
   await key("keyDown", "Escape", "Escape"); await key("keyUp", "Escape", "Escape");
   const closed = await evaluate(`new Promise(resolve => setTimeout(() => resolve({
-    open: entityListCheck.editor.entityList.state.open,
+    open: entityListCheck.editor.overlays.overlays.some(panel => panel.viewType === "entity-list"),
     panel: !!document.querySelector('[aria-label="Entities in document"]'),
     highlights: document.querySelectorAll('path[data-property-type="editor/entity-list-preview"]').length,
     focusRestored: document.activeElement === entityListCheck.mount.focusElement,
@@ -105,7 +105,10 @@ try {
   console.log(JSON.stringify({ opened, highlight, closed }, null, 2));
   await evaluate("entityListCheck.dispose(); entityListCheck.editor.dispose(); entityListCheck.host.remove(); window.fetch = entityListCheck.originalFetch");
 } finally {
-  socket?.close();
+  if (socket && socket.readyState !== WebSocket.CLOSED) {
+    const closed = new Promise(resolve => socket.addEventListener('close', resolve, { once: true }));
+    socket.close(); await Promise.race([closed, new Promise(resolve => setTimeout(resolve, 1000))]);
+  }
   if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) {
     const exited = new Promise(resolve => chrome.once("exit", resolve)); chrome.kill("SIGKILL"); await exited;
   }

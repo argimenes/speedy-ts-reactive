@@ -4,10 +4,9 @@ import { ReactiveViewProvider } from "../reactive-editor/context";
 import { BlockOutlet } from "./block-outlet";
 import { BlockContextMenuLayer } from "./block-context-menu";
 import { AnnotationMonitorLayer } from "./annotation-monitor";
-import { EntitySearchLayer } from "./entity-search";
+import { ContributedPanels } from "./contributed-panels";
 import { BlockSelectionInspector } from "./block-selection";
 import { DocumentFindLayer } from "./document-find";
-import { DocumentEntityListLayer } from "./document-entity-list";
 import { BindingChordHint } from "./binding-chord-hint";
 import { StickyDraftLayer } from "./sticky-note";
 import { BlockHistoryLayer } from "./block-history";
@@ -23,9 +22,8 @@ export function ReactiveTreeView(props: {
       <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
       <BlockHistoryLayer editor={props.editor} viewId={props.projection.viewId} />
       <AnnotationMonitorLayer editor={props.editor} viewId={props.projection.viewId} />
-      <EntitySearchLayer editor={props.editor} viewId={props.projection.viewId} />
+      <ContributedPanels editor={props.editor} viewId={props.projection.viewId} />
       <DocumentFindLayer editor={props.editor} viewId={props.projection.viewId} />
-      <DocumentEntityListLayer editor={props.editor} viewId={props.projection.viewId} />
       <BindingChordHint editor={props.editor} viewId={props.projection.viewId} />
       <StickyDraftLayer editor={props.editor} viewId={props.projection.viewId} />
       <BlockSelectionInspector editor={props.editor} viewId={props.projection.viewId} />

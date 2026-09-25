@@ -6,7 +6,9 @@ import type { MountRegistry } from "./mounts";
 export interface OverlayDescriptor {
   key: NodeKey;
   ownerKey: NodeKey;
-  viewType: "entity-search" | "find-replace" | "annotation-panel" | "context-menu";
+  viewType: string;
+  data?: unknown;
+  allowDocumentInput?: boolean;
   anchor: { x: number; y: number };
   title?: string;
   returnFocusKey?: NodeKey;
@@ -16,10 +18,6 @@ export interface OverlayDescriptor {
   returnDomRange?: Range;
   annotationIndexes?: number[];
   annotationPreview?: { start: number; end: number };
-  entityRanges?: Array<{ nodeKey: string; start: number; end: number }>;
-  entityRevision?: number;
-  entityQuery?: string;
-  entityCandidates?: boolean;
 }
 
 let overlayCounter = 0;
@@ -53,7 +51,7 @@ export class OverlayService {
       returnElement: external,
       returnDomRange: external && selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : undefined,
     });
-    queueMicrotask(() => this.focus.request(key, { reason: "opened-panel" }));
+    queueMicrotask(() => { if (this.isOverlayKey(key)) this.focus.request(key, { reason: "opened-panel" }); });
     return key;
   }
 
@@ -85,9 +83,9 @@ export class OverlayService {
     const index = this.overlays.findIndex(overlay => overlay.key === key);
     if (index >= 0) this.setOverlays(index, "annotationPreview", range);
   }
-  enableEntityCandidates(key: NodeKey, enabled = true) {
+  setDocumentInput(key: NodeKey, enabled = true) {
     const index = this.overlays.findIndex(overlay => overlay.key === key);
-    if (index >= 0) this.setOverlays(index,"entityCandidates",enabled);
+    if (index >= 0) this.setOverlays(index,"allowDocumentInput",enabled);
   }
 
   dismissTopWithoutRestoring(): void {

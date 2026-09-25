@@ -626,7 +626,6 @@ export function WindowView(props: BlockViewProps) {
     const focusWasInside = contains(editor.focus.state.focusedKey);
     if (focusWasInside) { rememberReturnFocus(); editor.focus.adopt(props.nodeKey); }
     if (editor.find.state.open && contains(editor.find.state.scope?.rootKey)) editor.find.close(false);
-    if (editor.entityList.state.open && contains(editor.entityList.state.scope?.rootKey)) editor.entityList.close(false);
     for (const overlay of [...editor.overlays.overlays]) if (contains(overlay.ownerKey)) editor.overlays.close(overlay.key, false);
     editor.crossText.clear(); commitMetadata({ state: "minimized" }, "Minimize Window");
     if (focusWasInside) queueMicrotask(() => root.querySelector<HTMLButtonElement>("[data-window-icon]")?.focus({ preventScroll: true }));

@@ -1,0 +1,473 @@
+{
+  "stage": 4,
+  "date": "2026-09-25T21:53:10.171196+10:00",
+  "baseline": {
+    "commit": "a08eeb8",
+    "checkout": "/tmp/speedy-stage3-baseline-a08eeb8"
+  },
+  "candidate": "Working tree based on accepted Stage 3; Stage 5 not started",
+  "environment": {
+    "node": "22.12.0",
+    "chrome": "153.0.8010.53",
+    "platform": "macOS"
+  },
+  "focused": {
+    "tests": 233,
+    "suites": 30,
+    "output": "\n RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive\n\n[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`\n \u2713 src/rendering/standoff-editor-view.test.tsx (23 tests) 762ms\n \u2713 src/features/grouping/document-style-bar.test.tsx (30 tests) 2843ms\n   \u2713 DocumentWindow annotation toolbar (compact=true) > exposes every canonical style and both colours, creating inclusive Cell ranges with IDs 752ms\n   \u2713 DocumentWindow annotation toolbar (compact=false) > collects only Control-held gestures, excludes early release, and keeps static highlights 658ms\n \u2713 src/rendering/cross-block-selection.test.tsx (16 tests) 1400ms\n   \u2713 experimental cross-Block text selection > replaces via beforeinput and pastes plain multiline text atomically 672ms\n \u2713 src/rendering/annotation-monitor.test.tsx (14 tests) 803ms\n \u2713 src/rendering/block-selection.test.tsx (17 tests) 1124ms\n \u2713 src/features/entity-references/candidates-view.test.tsx (8 tests) 641ms\n \u2713 src/features/entity-references/entity-candidates.test.ts (11 tests) 765ms\n   \u2713 entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 553ms\n \u2713 src/runtime/text-search.test.ts (11 tests) 666ms\n   \u2713 scoped text search > does no search or snapshots synchronously on edit; only rematches dirty content 441ms\n \u2713 src/features/entity-references/document-entity-list.test.tsx (7 tests) 842ms\n   \u2713 document entity listing > loads summaries, sorts every column and previews property ranges without document changes 339ms\n \u2713 src/input/selection-gestures.test.ts (24 tests) 47ms\n \u2713 src/rendering/document-find.test.tsx (5 tests) 763ms\n \u2713 src/features/entity-references/search-view.test.tsx (4 tests) 545ms\n \u2713 src/features/grouping/group-selection.test.ts (8 tests) 391ms\n \u2713 src/rendering/standoff-styles.test.ts (8 tests) 8ms\n \u2713 src/runtime/concertina.test.tsx (5 tests) 373ms\n \u2713 src/features/grouping/lifecycle.test.tsx (5 tests) 351ms\n \u2713 src/features/entity-references/lifecycle.test.tsx (3 tests) 460ms\n   \u2713 disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 435ms\n \u2713 src/runtime/range-annotations.test.ts (5 tests) 52ms\n \u2713 src/input/bindings.test.ts (4 tests) 11ms\n \u2713 src/rendering/optional-operation.test.tsx (3 tests) 181ms\n \u2713 src/features/entity-references/property-details.test.tsx (2 tests) 140ms\n \u2713 src/runtime/features.test.ts (2 tests) 8ms\n \u2713 src/features/entity-references/document-entities.test.ts (2 tests) 67ms\n \u2713 src/runtime/effect-contributions.test.tsx (1 test) 201ms\n \u2713 src/features/grouping/policy.test.ts (3 tests) 8ms\n \u2713 src/rendering/optional-annotations.test.tsx (1 test) 91ms\n \u2713 src/input/selection-target.test.ts (6 tests) 31ms\n \u2713 src/runtime/linked-annotations.test.ts (1 test) 32ms\n \u2713 src/demo/standoff-effects-demo.test.tsx (1 test) 645ms\n   \u2713 StandoffEffectsDemo > shows every effect and composition in editable, unwrapped Codex text 644ms\n \u2713 src/input/graphemes.test.ts (3 tests) 22ms\n\n Test Files  30 passed (30)\n      Tests  233 passed (233)\n   Start at  21:41:25\n   Duration  23.07s (transform 2.99s, setup 0ms, collect 9.52s, tests 14.27s, environment 13.71s, prepare 1.92s)\n\n"
+  },
+  "builds": {
+    "candidateTypecheck": "\n> speedy-ts-reactive@0.0.0 typecheck\n> tsc --noEmit --project tsconfig.reactive.json && tsc --noEmit --project tsconfig.server.json\n\n",
+    "candidateBuild": "\n> speedy-ts-reactive@0.0.0 build\n> npm run build:client && npm run build:server\n\n\n> speedy-ts-reactive@0.0.0 build:client\n> vite build\n\nvite v4.5.14 building for production...\ntransforming...\n[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`\n\u2713 220 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                 0.65 kB \u2502 gzip:   0.39 kB\ndist/assets/text-count-worker-ff73449a.js       0.67 kB\ndist/assets/embedded-page-cf5e6448.html         0.97 kB \u2502 gzip:   0.59 kB\ndist/assets/search.worker-15a72c52.js           1.62 kB\ndist/assets/favicon-0e726a38.ico               15.09 kB\ndist/assets/durable.worker-8c222055.js         68.54 kB\ndist/assets/medieval-template-ca17e3d1.jpg    567.21 kB\ndist/assets/codex-system-logo-df3b53ac.png    617.04 kB\ndist/assets/green-aurora-ee5e459d.jpg       1,055.58 kB\ndist/assets/snow-aurora-d1710f1e.jpg        1,607.19 kB\ndist/assets/green-aurora-49091b22.mp4       2,277.51 kB\ndist/assets/rain-d5051878.mp4               3,956.79 kB\ndist/assets/clouds-cf2b2472.jpg             4,056.02 kB\ndist/assets/wood-2bc49664.jpg               6,049.97 kB\ndist/assets/index-019deeb6.css                 81.50 kB \u2502 gzip:  15.93 kB\ndist/assets/index-421bdb36.js                  37.06 kB \u2502 gzip:   9.30 kB \u2502 map:    51.01 kB\ndist/assets/index-6bfc5f8f.js                 657.79 kB \u2502 gzip: 194.71 kB \u2502 map: 2,114.33 kB\n\n(!) Some chunks are larger than 500 kBs after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\n\u2713 built in 7.90s\n\n> speedy-ts-reactive@0.0.0 build:server\n> tsc --project tsconfig.server.json && node scripts/build-history-worker.mjs\n\n",
+    "removalTypecheck": "\n> speedy-ts-reactive@0.0.0 typecheck\n> tsc --noEmit --project tsconfig.reactive.json && tsc --noEmit --project tsconfig.server.json\n\n",
+    "removalBuild": "\n> speedy-ts-reactive@0.0.0 build\n> npm run build:client && npm run build:server\n\n\n> speedy-ts-reactive@0.0.0 build:client\n> vite build\n\nvite v4.5.14 building for production...\ntransforming...\n[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`\n\u2713 205 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                 0.65 kB \u2502 gzip:   0.39 kB\ndist/assets/text-count-worker-ff73449a.js       0.67 kB\ndist/assets/embedded-page-cf5e6448.html         0.97 kB \u2502 gzip:   0.59 kB\ndist/assets/search.worker-15a72c52.js           1.62 kB\ndist/assets/favicon-0e726a38.ico               15.09 kB\ndist/assets/durable.worker-8c222055.js         68.54 kB\ndist/assets/medieval-template-ca17e3d1.jpg    567.21 kB\ndist/assets/codex-system-logo-df3b53ac.png    617.04 kB\ndist/assets/green-aurora-ee5e459d.jpg       1,055.58 kB\ndist/assets/snow-aurora-d1710f1e.jpg        1,607.19 kB\ndist/assets/green-aurora-49091b22.mp4       2,277.51 kB\ndist/assets/rain-d5051878.mp4               3,956.79 kB\ndist/assets/clouds-cf2b2472.jpg             4,056.02 kB\ndist/assets/wood-2bc49664.jpg               6,049.97 kB\ndist/assets/index-f487b2aa.css                 75.73 kB \u2502 gzip:  15.07 kB\ndist/assets/index-421bdb36.js                  37.06 kB \u2502 gzip:   9.30 kB \u2502 map:    51.07 kB\ndist/assets/index-b8436bb8.js                 609.54 kB \u2502 gzip: 180.04 kB \u2502 map: 1,988.57 kB\n\n(!) Some chunks are larger than 500 kBs after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\n\u2713 built in 7.71s\n\n> speedy-ts-reactive@0.0.0 build:server\n> tsc --project tsconfig.server.json && node scripts/build-history-worker.mjs\n\n"
+  },
+  "removal": {
+    "checkout": "/tmp/speedy-stage4-without-entities",
+    "deleted": "src/features/entity-references",
+    "compositionChanges": [
+      "remove implementation import",
+      "remove activation",
+      "remove unused annotationCapabilities import"
+    ],
+    "tests": {
+      "tests": 127,
+      "suites": 15,
+      "output": "\n RUN  v2.1.9 /private/tmp/speedy-stage4-without-entities\n\n[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`\n \u2713 src/rendering/cross-block-selection.test.tsx (16 tests) 565ms\n \u2713 src/rendering/standoff-editor-view.test.tsx (23 tests) 669ms\n \u2713 src/rendering/annotation-monitor.test.tsx (14 tests) 503ms\n \u2713 src/runtime/text-search.test.ts (11 tests) 581ms\n   \u2713 scoped text search > does no search or snapshots synchronously on edit; only rematches dirty content 425ms\n \u2713 src/input/selection-gestures.test.ts (24 tests) 26ms\n \u2713 src/rendering/standoff-styles.test.ts (8 tests) 7ms\n \u2713 src/runtime/concertina.test.tsx (5 tests) 232ms\n \u2713 src/features/grouping/lifecycle.test.tsx (5 tests) 272ms\n \u2713 src/runtime/range-annotations.test.ts (5 tests) 51ms\n \u2713 src/rendering/optional-operation.test.tsx (3 tests) 154ms\n \u2713 src/input/bindings.test.ts (4 tests) 14ms\n \u2713 src/runtime/effect-contributions.test.tsx (1 test) 159ms\n \u2713 src/rendering/optional-annotations.test.tsx (1 test) 76ms\n \u2713 src/input/selection-target.test.ts (6 tests) 21ms\n \u2713 src/runtime/linked-annotations.test.ts (1 test) 20ms\n\n Test Files  15 passed (15)\n      Tests  127 passed (127)\n   Start at  21:51:17\n   Duration  9.37s (transform 2.14s, setup 0ms, collect 5.32s, tests 3.35s, environment 5.75s, prepare 887ms)\n\n"
+    },
+    "browser": {
+      "browser": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/153.0.8010.53",
+        "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "jsVersion": "15.3.76.13"
+      },
+      "removed": true,
+      "checks": [
+        "removed feature produces no entity effect",
+        "resize preserves native selection",
+        "measurement preserves editable cell identity",
+        "adding an effect adds no measurement observer",
+        "authored properties survive resize and undo",
+        "removed feature has no entity command",
+        "ordinary native typing remains functional",
+        "typing undo restores document including unknown fields"
+      ],
+      "geometry": {
+        "first": {
+          "lines": 0,
+          "x": null,
+          "y": null,
+          "expectedX": 15,
+          "expectedY": 43.5
+        },
+        "narrow": {
+          "lines": 0,
+          "x": null,
+          "y": null,
+          "expectedX": 15,
+          "expectedY": 43.5
+        },
+        "scrolled": {
+          "lines": 0,
+          "x": null,
+          "y": null,
+          "expectedX": 15,
+          "expectedY": 43.5
+        }
+      },
+      "observerCount": 2
+    }
+  },
+  "browser": {
+    "measuredEffectsBaseline": {
+      "browser": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/153.0.8010.53",
+        "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "jsVersion": "15.3.76.13"
+      },
+      "removed": false,
+      "checks": [
+        "entity underline covers wrapped lines",
+        "entity underline aligns with centrally measured text",
+        "resize remeasures wrapped entity effect",
+        "resize preserves native selection",
+        "scroll preserves local SVG/text alignment",
+        "measurement preserves editable cell identity",
+        "adding an effect adds no measurement observer",
+        "authored properties survive resize and undo",
+        "entity chord opens contributed panel with selected query",
+        "panel Escape restores native selected text",
+        "panel Escape restores editor focus",
+        "ordinary native typing remains functional",
+        "typing undo restores document including unknown fields"
+      ],
+      "geometry": {
+        "first": {
+          "lines": 3,
+          "x": 15,
+          "y": 43.5,
+          "expectedX": 15,
+          "expectedY": 43.5
+        },
+        "narrow": {
+          "lines": 4,
+          "x": 15,
+          "y": 43.5,
+          "expectedX": 15,
+          "expectedY": 43.5
+        },
+        "scrolled": {
+          "lines": 4,
+          "x": 15,
+          "y": 43.5,
+          "expectedX": 15,
+          "expectedY": 43.5
+        }
+      },
+      "observerCount": 2
+    },
+    "measuredEffectsCandidate": {
+      "browser": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/153.0.8010.53",
+        "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "jsVersion": "15.3.76.13"
+      },
+      "removed": false,
+      "checks": [
+        "entity underline covers wrapped lines",
+        "entity underline aligns with centrally measured text",
+        "resize remeasures wrapped entity effect",
+        "resize preserves native selection",
+        "scroll preserves local SVG/text alignment",
+        "measurement preserves editable cell identity",
+        "adding an effect adds no measurement observer",
+        "authored properties survive resize and undo",
+        "entity chord opens contributed panel with selected query",
+        "panel Escape restores native selected text",
+        "panel Escape restores editor focus",
+        "ordinary native typing remains functional",
+        "typing undo restores document including unknown fields"
+      ],
+      "geometry": {
+        "first": {
+          "lines": 3,
+          "x": 15,
+          "y": 43.5,
+          "expectedX": 15,
+          "expectedY": 43.5
+        },
+        "narrow": {
+          "lines": 4,
+          "x": 15,
+          "y": 43.5,
+          "expectedX": 15,
+          "expectedY": 43.5
+        },
+        "scrolled": {
+          "lines": 4,
+          "x": 15,
+          "y": 43.5,
+          "expectedX": 15,
+          "expectedY": 43.5
+        }
+      },
+      "observerCount": 2
+    },
+    "selection": {
+      "browser": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/153.0.8010.53",
+        "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+        "jsVersion": "15.3.76.13"
+      },
+      "checks": [
+        "ordinary native selection is not grouped",
+        "native selection remains nonempty",
+        "early Control release does not group",
+        "Control pointer selection with cross mode off",
+        "pointer capture released before completion",
+        "Escape clears membership",
+        "cross-Block pointer range",
+        "keyboard cross-Block completion on modifier release",
+        "Show/Hide retains membership",
+        "Escape reveals and forgets Show/Hide",
+        "Control-click removes its range",
+        "native form Backspace retains grouped text",
+        "native form receives Backspace",
+        "dialog Escape does not cancel group",
+        "Delete and repeat remove only membership once",
+        "group deletion undoes atomically",
+        "IME does not delete group"
+      ],
+      "observations": {
+        "imeCancelledMountComposing": true
+      }
+    },
+    "entityList": {
+      "opened": {
+        "names": [
+          "Beta",
+          "Alpha"
+        ],
+        "graph": [
+          "21",
+          "8"
+        ],
+        "document": [
+          "2",
+          "1"
+        ],
+        "x": 8,
+        "right": 367,
+        "width": 359,
+        "point": {
+          "x": 187.5,
+          "y": 182.3671875
+        }
+      },
+      "highlight": {
+        "paths": 2,
+        "fills": [
+          "#ffe34d",
+          "#ffe34d"
+        ],
+        "history": false
+      },
+      "closed": {
+        "open": false,
+        "panel": false,
+        "highlights": 0,
+        "focusRestored": true,
+        "selected": "Alpha"
+      }
+    },
+    "findEntityBaseline": {
+      "initial": {
+        "open": true,
+        "query": "Hello",
+        "matches": 28,
+        "paths": 27,
+        "history": false,
+        "hiddenMounted": false,
+        "debug": {
+          "rect": {
+            "x": 280.390625,
+            "y": 74,
+            "width": 879.21875,
+            "height": 64.78125,
+            "top": 74,
+            "right": 1159.609375,
+            "bottom": 138.78125,
+            "left": 280.390625
+          },
+          "decorations": 9,
+          "flow": "Hello \ud83d\ude00 world. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. "
+        }
+      },
+      "navigation": {
+        "mounted": true,
+        "history": false,
+        "focus": "Find text",
+        "active": 27,
+        "scope": true,
+        "closed": true,
+        "selected": "Hello"
+      },
+      "candidates": {
+        "count": true,
+        "opacity": "1",
+        "x": 332.890625,
+        "y": 81,
+        "targetIsControl": true,
+        "history": false,
+        "findOpen": true
+      },
+      "binding": {
+        "excluded": true,
+        "caretPreserved": true,
+        "focusPreserved": true,
+        "findUntouched": true,
+        "restored": true,
+        "keyboardExcluded": true,
+        "nominatedWithoutWrite": true,
+        "refs": 28,
+        "distinct": 28,
+        "closed": true,
+        "undoCleared": true
+      },
+      "worker": {
+        "message": "Search exceeded its 5-second budget. Simplify the expression or narrow the scope.",
+        "elapsed": 5001.4000000003725,
+        "recovered": 1
+      },
+      "performance": {
+        "paragraphs": 300,
+        "matches": 2701,
+        "closed": {
+          "p95": 1.400000000372529,
+          "max": 28.199999999254942
+        },
+        "highlighted": {
+          "p95": 1.599999999627471,
+          "max": 5.300000000745058
+        },
+        "hidden": {
+          "p95": 1.5,
+          "max": 5
+        },
+        "snapshots": 0,
+        "refreshed": 2701
+      },
+      "stored": {
+        "fixture": "data/siena.json (read-only source; edits in disposable memory)",
+        "longestParagraphCells": 564,
+        "matches": 39,
+        "meanModelEditMs": 6.219999999552965,
+        "maxModelEditMs": 8.199999999254942,
+        "meanEditToFrameMs": 31.969999999925495,
+        "splitModelMs": 86.10000000149012,
+        "snapshots": 0,
+        "restored": true
+      }
+    },
+    "findEntityCandidate": {
+      "initial": {
+        "open": true,
+        "query": "Hello",
+        "matches": 28,
+        "paths": 27,
+        "history": false,
+        "hiddenMounted": false,
+        "debug": {
+          "rect": {
+            "x": 280.390625,
+            "y": 74,
+            "width": 879.21875,
+            "height": 64.78125,
+            "top": 74,
+            "right": 1159.609375,
+            "bottom": 138.78125,
+            "left": 280.390625
+          },
+          "decorations": 9,
+          "flow": "Hello \ud83d\ude00 world. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. Hello passage. "
+        }
+      },
+      "navigation": {
+        "mounted": true,
+        "history": false,
+        "focus": "Find text",
+        "active": 27,
+        "scope": true,
+        "closed": true,
+        "selected": "Hello"
+      },
+      "candidates": {
+        "count": true,
+        "opacity": "1",
+        "x": 332.890625,
+        "y": 81,
+        "targetIsControl": true,
+        "history": false,
+        "findOpen": true
+      },
+      "binding": {
+        "excluded": true,
+        "caretPreserved": true,
+        "focusPreserved": true,
+        "findUntouched": true,
+        "restored": true,
+        "keyboardExcluded": true,
+        "nominatedWithoutWrite": true,
+        "refs": 28,
+        "distinct": 28,
+        "closed": true,
+        "undoCleared": true
+      },
+      "worker": {
+        "message": "Search exceeded its 5-second budget. Simplify the expression or narrow the scope.",
+        "elapsed": 5001.9000000003725,
+        "recovered": 1
+      },
+      "performance": {
+        "paragraphs": 300,
+        "matches": 2701,
+        "closed": {
+          "p95": 6.800000000745058,
+          "max": 28.90000000037253
+        },
+        "highlighted": {
+          "p95": 1.599999999627471,
+          "max": 5.099999999627471
+        },
+        "hidden": {
+          "p95": 5,
+          "max": 10
+        },
+        "snapshots": 0,
+        "refreshed": 2701
+      },
+      "stored": {
+        "fixture": "data/siena.json (read-only source; edits in disposable memory)",
+        "longestParagraphCells": 564,
+        "matches": 39,
+        "meanModelEditMs": 5.790000000037253,
+        "maxModelEditMs": 7.099999999627471,
+        "meanEditToFrameMs": 31.679999999701977,
+        "splitModelMs": 80.30000000074506,
+        "snapshots": 0,
+        "restored": true
+      }
+    },
+    "concertina": [
+      {
+        "before": {
+          "height": 1642.21875,
+          "scroll": 0,
+          "clipped": false,
+          "gapHidden": false,
+          "separation": 555.8125,
+          "text": 1931,
+          "revision": 0,
+          "undo": false
+        },
+        "focused": {
+          "height": 200,
+          "scroll": 0,
+          "clipped": true,
+          "gapHidden": true,
+          "separation": 8,
+          "text": 1931,
+          "revision": 0,
+          "undo": false
+        }
+      },
+      {
+        "passed": true,
+        "nextScroll": 1442,
+        "findHeight": 200,
+        "restoredHeight": 1642.21875
+      }
+    ]
+  },
+  "qualificationNotes": [
+    "Existing blur-region fixed 25ms sleep was flaky under load; retained assertions now wait for observed measured geometry.",
+    "Existing Find pointer-exclusion fixture clicked beneath the wide Entity Search panel on both baseline and candidate; moved fixture panel down and added hit-target assertion. Both full harness runs pass afterward.",
+    "Temporary-checkout test startup initially selected an older Node lacking crypto.getRandomValues; qualification reran successfully with Node 22.12.0.",
+    "Vite browser servers use separate temporary caches for baseline, candidate and removal.",
+    "Browser authored-data comparison excludes existing root saved-focus metadata; text, properties and unknown fields are checked unchanged.",
+    "Find harness timings are single smoke samples, not repeatability evidence or a speedup claim.",
+    "Known CDP empty-composition cancellation leaves mount.composing true as in Stages 2/3; no blanket native IME cancellation claim."
+  ],
+  "screenshots": {
+    "candidate": "/tmp/stage4-annotations.png",
+    "removed": "/tmp/stage4-without-entities.png"
+  }
+}

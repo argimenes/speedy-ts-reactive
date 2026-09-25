@@ -1,7 +1,4 @@
-import type { ReactiveEditor } from "../reactive-editor/editor";
-import type { SearchRange, SearchScope } from "./text-search";
-import { resolveSearchScope, scopeNodes } from "./text-search";
-
+import type { AnnotationCapabilities, SearchRange, SearchScope } from "../../feature-api";
 export interface DocumentEntityRow {
   id: string;
   fallbackName?: string;
@@ -22,26 +19,18 @@ function metadataName(value: unknown): string | undefined {
   }
 }
 
-function documentOrigin(editor: ReactiveEditor, key: string): string {
-  const node = editor.node(key);
-  if (node?.viewType !== "document-window-block") return key;
-  return node.children.find(child => editor.node(child)?.viewType === "document-block") ?? key;
-}
-
 /** Model-only inventory. Counts canonical logical mentions while retaining every occurrence range for previews. */
-export function collectDocumentEntities(editor: ReactiveEditor, originKey: string): DocumentEntityInventory {
-  const scope = resolveSearchScope(editor, documentOrigin(editor, originKey), "document");
-  const state = editor.repository.readState();
+export function collectDocumentEntities(editor: AnnotationCapabilities, originKey: string): DocumentEntityInventory {
+  const { scope, texts } = editor.documentTexts(originKey);
   const grouped = new Map<string, { name?: string; mentions: Set<string>; ranges: SearchRange[]; rangeKeys: Set<string> }>();
 
-  for (const { node } of scopeNodes(editor, scope).found) {
-    if (node.viewType !== "standoff-editor-block") continue;
-    const properties = node.payload.standoffProperties;
+  for (const node of texts) {
+    const properties = node.properties;
     if (!Array.isArray(properties)) continue;
     properties.forEach((property, index) => {
       if (!property || typeof property !== "object" || Array.isArray(property)) return;
       const local = property as Record<string, unknown>;
-      const resolved = editor.linkedAnnotations.resolve(local);
+      const resolved = local;
       if (resolved.isDeleted || resolved.type !== "codex/entity-reference" || typeof resolved.value !== "string" || !resolved.value.trim()) return;
       const id = resolved.value;
       let row = grouped.get(id);
@@ -52,7 +41,7 @@ export function collectDocumentEntities(editor: ReactiveEditor, originKey: strin
       row.mentions.add(annotationId ? `linked:${annotationId}` : `${node.contentKey}:${propertyId}`);
 
       const start = Number(local.start), end = Number(local.end);
-      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end >= node.inlineContent.length) return;
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end >= node.cells.length) return;
       const rangeKey = `${node.key}:${propertyId}:${start}:${end}`;
       if (row.rangeKeys.has(rangeKey)) return;
       row.rangeKeys.add(rangeKey);
@@ -60,7 +49,7 @@ export function collectDocumentEntities(editor: ReactiveEditor, originKey: strin
         nodeKey: node.key,
         contentKey: node.contentKey,
         placementKey: node.placementKey,
-        version: state.contents[node.contentKey]?.inlineRevision ?? 0,
+        version: node.version,
         start,
         end: end + 1,
         coordinate: "cell",

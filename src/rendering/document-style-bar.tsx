@@ -4,7 +4,6 @@ import { unwrap } from "solid-js/store";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
 import { createTextTab } from "../runtime/text-tabs";
-import { openEntitySearch } from "../runtime/entity-search";
 import "./document-style-bar.css";
 import { DocumentCountBar } from "./document-count-bar";
 import { CompactToolbar, type CompactTool, type Toolset } from "./compact-toolbar";
@@ -47,7 +46,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const editor = props.editor;
   const [targetKey, setTargetKey] = createSignal<NodeKey>();
   const [notice, setNotice] = createSignal("");
-  const [linkedType, setLinkedType] = createSignal("codex/entity-reference"), [linkedValue, setLinkedValue] = createSignal("");
+  const [linkedType, setLinkedType] = createSignal(editor.annotationUI.list()[0]?.type ?? "codex/reference"), [linkedValue, setLinkedValue] = createSignal("");
   const [colour, setColour] = createSignal("#ff0000"), [background, setBackground] = createSignal("#ffff00");
   const [localToolset, setLocalToolset] = createSignal<Toolset>("Typography");
   const featureNotice = () => editor.featureActions.toolbar().map(item => item.notice()).find(Boolean) ?? "";
@@ -104,7 +103,8 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     if (cross) {
       if (!inScope(cross.anchor.occurrenceKey)) { setNotice("The text selection belongs to another document."); return; }
       try {
-        if (type === "codex/entity-reference") openEntitySearch(editor, editor.crossText.resolve(cross.anchor, cross.head));
+        const contribution = editor.annotationUI.get(type);
+        if (contribution) contribution.apply(editor.crossText.resolve(cross.anchor, cross.head));
         else {
           editor.crossText.annotate(type, value, effectDefaults[type] ?? {});
           if (type === "style/show-hide") { const head = cross.head; editor.crossText.collapseToHead(); savedRange = { anchor: head.boundary.index, head: head.boundary.index }; }
@@ -115,15 +115,17 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       return;
     }
     capture(); const node = target();
-    if (type === "codex/entity-reference" && (!node || !savedRange || savedRange.anchor === savedRange.head)) {
-      try { openEntitySearch(editor, [], node?.key ?? props.scopeKey); setNotice(""); }
-      catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
+    const contribution = editor.annotationUI.get(type);
+    if (contribution) {
+      try {
+        const ranges = node && savedRange ? [{ nodeKey: node.key, start: Math.min(savedRange.anchor, savedRange.head), end: Math.max(savedRange.anchor, savedRange.head) }] : [];
+        contribution.apply(ranges, node?.key ?? props.scopeKey); setNotice("");
+      } catch (error) { setNotice(error instanceof Error ? error.message : String(error)); }
       return;
     }
     if (!node || !savedRange) { setNotice("Select text in this document first."); return; }
     const start = Math.min(savedRange.anchor, savedRange.head), end = Math.max(savedRange.anchor, savedRange.head) - 1;
     if (start < 0 || end < start || end >= node.inlineContent.length) { setNotice("Select a non-empty text range first."); return; }
-    if (type === "codex/entity-reference") { openEntitySearch(editor, [{ nodeKey: node.key, start, end: end + 1 }]); return; }
     const content = editor.repository.readState().contents[node.contentKey];
     editor.rangeAnnotations.apply([{ nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey, version: content.inlineRevision, start, end: end + 1, coordinate: "cell" }], type, value, effectDefaults[type] ?? {});
     setNotice("");
@@ -179,7 +181,6 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
 
   const DocumentActions = () => <>
     <button type="button" title={editor.bindings.label("find.open")} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.find.open(key); if (!editor.find.state.open) setNotice(editor.find.state.message); } else setNotice("Focus text in a document first."); }}>Find</button>
-    <button type="button" title={`Entities in Document (${editor.bindings.label("entity.list.open")})`} onClick={() => { const key = targetKey() ?? props.scopeKey ?? editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey; if (key) { editor.entityList.open(key); if (!editor.entityList.state.open) setNotice(editor.entityList.state.error); } else setNotice("Focus a document first."); }}>Entities</button>
     <For each={editor.featureActions.list("document-actions")}>{item => <button type="button"
       title={`${item.title ?? item.label}${item.binding ? ` (${editor.bindings.label(item.binding)})` : ""}`}
       onClick={() => {
@@ -208,7 +209,8 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
         const range = editor.crossText.range(); if (!range || !inScope(range.anchor.occurrenceKey)) { setNotice("Select text in this document first."); return; }
         const head = range.head;
         try {
-          if (linkedType().trim() === "codex/entity-reference") { openEntitySearch(editor, editor.crossText.resolve(range.anchor, range.head)); return; }
+          const contribution = editor.annotationUI.get(linkedType().trim());
+          if (contribution) { contribution.apply(editor.crossText.resolve(range.anchor, range.head)); return; }
           const id = editor.linkedAnnotations.create(linkedType(), linkedValue());
           setNotice(`Created linked annotation ${id}`);
           const mount = editor.mounts.get(head.occurrenceKey); mount?.focus(); mount?.restoreInlineSelection?.({ anchor: head.boundary.index, head: head.boundary.index });
@@ -238,7 +240,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const typographyTypes = new Set(["style/bold", "style/italics", "style/underline", "style/strikethrough", "style/superscript", "style/subscript", "style/uppercase", "style/blur"]);
   const markupTypes = new Set(["style/highlight", "style/highlighter", "style/show-hide"]);
   const deferredTypes = new Set(["style/flip", "style/mirror"]);
-  const tools: CompactTool[] = [
+  const tools = (): CompactTool[] => [
     { id: "colours", label: "Text colour and fill", glyph: "Colour / Fill", width: 104, toolset: "Visual effects", panel: ColourControls },
     ...(editor.features.textSuperposition ? [{ id: "superposition.add", label: "Add alternative", glyph: "Alternative", width: 96, toolset: "Annotations" as const, run: addAlternative }] : []),
     ...annotationTools.map(([type, label, glyph]): CompactTool => ({
@@ -252,7 +254,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     { id: "indent", label: "Increase indent", glyph: "⇥", toolset: "Typography", disabled: hasCrossRange, run: () => indent(1) },
     { id: "outdent", label: "Decrease indent", glyph: "⇤", toolset: "Typography", disabled: hasCrossRange, run: () => indent(-1) },
     { id: "clear", label: "Clear formatting", glyph: "T×", toolset: "Typography", disabled: hasCrossRange, run: clear },
-    { id: "entity", label: "Entity reference", glyph: "Entity reference", width: 120, toolset: "Annotations", run: () => annotate("codex/entity-reference") },
+    ...editor.annotationUI.list().map((item): CompactTool => ({ id: item.id, label: item.label, glyph: item.label, width: 120, toolset: "Annotations", run: () => annotate(item.type) })),
   ];
   const MoreControls = () => <>
     <fieldset><legend>Document</legend><DocumentActions /></fieldset>
@@ -283,7 +285,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <For each={annotationTools}>{([type, label, glyph]) => <>
       <button type="button" title={label} aria-label={label} aria-pressed={type === "style/show-hide" ? hiddenTextRevealed() : undefined} data-annotation-type={type} onClick={() => type === "style/show-hide" ? showHide() : annotate(type)}>{glyph}</button>
     </>}</For>
-    <button type="button" aria-label="Entity reference" title="Link selected text to an entity" onClick={() => annotate("codex/entity-reference")}>Entity reference</button>
+    <For each={editor.annotationUI.list()}>{item => <button type="button" aria-label={item.label} title={item.title} onClick={() => annotate(item.type)}>{item.label}</button>}</For>
     <ColourControls />
     <i />
     <For each={[["left", "Align left", "≡"], ["center", "Align centre", "≣"], ["right", "Align right", "≡"], ["justify", "Justify", "☰"]]}>{([value, label, glyph]) => <button type="button" title={label} onClick={() => blockStyle("block/alignment", value)}>{glyph}</button>}</For>
@@ -295,7 +297,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <span role="status">{notice() || featureNotice() || editor.crossText.message()}</span>
     <DocumentCountBar editor={editor} scopeKey={props.scopeKey} />
     </>}>
-      <CompactToolbar tools={tools} toolset={props.toolset ?? localToolset()} onToolset={value => { setLocalToolset(value); props.onToolset?.(value); }} capture={capture} restore={restore} retainSelection={retainSelection} more={MoreControls} />
+      <CompactToolbar tools={tools()} toolset={props.toolset ?? localToolset()} onToolset={value => { setLocalToolset(value); props.onToolset?.(value); }} capture={capture} restore={restore} retainSelection={retainSelection} more={MoreControls} />
     </Show>
   </nav>;
 }

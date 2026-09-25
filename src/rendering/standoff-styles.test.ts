@@ -68,16 +68,16 @@ describe("Standoff property appearance", () => {
   });
 
   it("uses the original fixed semantic underline colours and 2px strokes", () => {
-    const types = ["block", "trait", "claim", "meta-relation", "time", "entity"];
+    const types = ["block", "trait", "claim", "meta-relation", "time"];
     const rendered = standoffSvgStyles(types.map((type) => property(`codex/${type}-reference`, { value: "entity-id" })), 10);
-    expect(rendered.map(({ svg }) => svg.kind === "underline" && svg.colour)).toEqual(["green", "blue", "red", "orange", "cyan", "purple"]);
+    expect(rendered.map(({ svg }) => svg.kind === "underline" && svg.colour)).toEqual(["green", "blue", "red", "orange", "cyan"]);
     expect(underlineShapes("line", [{ x: 0, y: 0, width: 30, height: 15 }], "purple")[0].strokeWidth).toBe(2);
   });
 
   it("allocates separate rainbow lanes only for overlapping underline-producing annotations", () => {
     const rendered = standoffSvgStyles([
       property("style/bold"), property("style/highlight"), property("style/rectangle"),
-      property("style/rainbow"), property("codex/entity-reference"),
+      property("style/rainbow"), property("codex/trait-reference"),
       property("codex/time-reference", { start: 5, end: 8 }),
       property("style/rainbow", { start: 2, end: 5 }),
       property("style/rainbow", { start: 20, end: 25 }),

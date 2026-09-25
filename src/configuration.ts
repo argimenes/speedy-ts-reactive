@@ -22,6 +22,8 @@ export type FeatureFlags = Readonly<{
   timer: boolean;
   /** Existing retained selection behavior, activated only by application composition. */
   grouping: boolean;
+  /** Existing Entity References, activated by application composition. */
+  entityReferences: boolean;
   blockHistory: boolean;
   codexSystemBar: boolean;
   compactDocumentMode: boolean;
@@ -33,6 +35,7 @@ export type FeatureFlags = Readonly<{
 export const featureFlags: FeatureFlags = Object.freeze({
   timer: true,
   grouping: true,
+  entityReferences: true,
   blockHistory: false,
   codexSystemBar: true,
   compactDocumentMode: true,

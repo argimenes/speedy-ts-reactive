@@ -61,9 +61,9 @@ export class DocumentFind {
   toggleHighlights() { this.setState("visible", v => !v); this.editor.decorations.setHighlightsVisible(this.owner, this.state.visible); this.editor.minimap.setLayerVisible(this.owner, this.state.visible && this.editor.concertina.state.owner !== this.owner); }
   toggleConcertina() {
     const requested = !this.state.concertinaRequested;
-    if (requested && this.editor.entityList.state.concertinaEntityId) this.editor.entityList.clearConcertina();
     this.setState("concertinaRequested", requested);
     if (!requested) { this.editor.concertina.deactivate(this.owner); this.editor.minimap.setLayerVisible(this.owner, this.state.visible); return; }
+    this.editor.concertina.claim(this.owner, () => { if (this.state.concertinaRequested) this.toggleConcertina(); });
     this.applyConcertina();
   }
   private applyConcertina() {
@@ -73,12 +73,12 @@ export class DocumentFind {
     const scope = resolveSearchScope(this.editor, rootKey, "page");
     const markers = filterPositionMarkersToScope(searchMatchesToPositionMarkers(result.matches), scope, nodeKeysForPage(this.editor, scope.rootKey));
     const applied = this.editor.concertina.activate({ owner: this.owner, viewId: scope.viewId, scope,
-      markers, activeMarkerOrGroup: result.matches[this.state.active]?.id });
+      markers, activeMarkerOrGroup: result.matches[this.state.active]?.id }, {}, () => { if (this.state.concertinaRequested) this.toggleConcertina(); });
     if (applied) this.editor.minimap.setLayerVisible(this.owner, false);
   }
   private schedule(keepUnchangedHighlights = false) {
     clearTimeout(this.timer); this.controller?.abort(); this.generation++;
-    this.editor.concertina.deactivate(this.owner);
+    this.editor.concertina.deactivate(this.owner, this.state.concertinaRequested);
     this.setState({ pending: !!this.state.query, result: undefined, active: -1 });
     // Query/structure changes must never leave obsolete current-result navigation.
     if (!keepUnchangedHighlights) { this.editor.decorations.clearHighlights(this.owner); this.editor.minimap.dispose(this.owner); }

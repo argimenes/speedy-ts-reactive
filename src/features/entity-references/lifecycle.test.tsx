@@ -1,0 +1,61 @@
+import { OverlayLayer } from "../../rendering/overlay-layer";
+// @vitest-environment jsdom
+import { afterEach, expect, it, vi } from "vitest";
+import { render } from "solid-js/web";
+import { ReactiveEditor } from "../../reactive-editor/editor";
+import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
+import { DocumentStyleBar } from "../../rendering/document-style-bar";
+import { registerCoreViews } from "../../rendering/register-core-views";
+import { annotationCapabilities } from "../../application/annotation-capabilities";
+import type { AnnotationCapabilities } from "../../feature-api";
+import { createEntityReferencesFeature } from ".";
+import { openEntitySearch, chooseEntity, type EntitySearchData } from "./entity-search";
+const cleanup: (() => void)[] = [];
+afterEach(() => { cleanup.reverse().forEach(fn => fn()); cleanup.length = 0; document.body.replaceChildren(); vi.unstubAllGlobals(); localStorage.clear(); });
+it("disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data", async () => {
+  let reply!: (response: unknown) => void, signal!: AbortSignal;
+  vi.stubGlobal("fetch", vi.fn((_url, options) => { signal = options.signal; return new Promise(resolve => reply = resolve); }));
+  const editor = new ReactiveEditor({ type: "document-block", children: [{ type: "standoff-editor-block", text: "Blake", standoffProperties: [{ type: "codex/entity-reference", id: "old", start: 0, end: 4, value: "blake", opaque: { keep: true } }] }] });
+  registerCoreViews(editor); const view = editor.createView("entity-lifetime"), key = view.node(view.state.rootKey)!.children[0];
+  let api!: AnnotationCapabilities;
+  const activate = () => editor.featureHost.activate(createEntityReferencesFeature(scope => api = annotationCapabilities(editor, scope)));
+  const release = activate(); const host = document.body.appendChild(document.createElement("div"));
+  const dispose = render(() => <><DocumentStyleBar editor={editor} /><ReactiveTreeView editor={editor} projection={view} /><OverlayLayer editor={editor} /></>, host);
+  cleanup.push(() => { dispose(); editor.dispose(); });
+  const before = editor.encodeDocument();
+  const panel = openEntitySearch(api, [{ nodeKey: key, start: 0, end: 5 }]);
+  await vi.waitFor(() => expect(reply).toBeTypeOf("function"));
+  expect(document.querySelectorAll(".reactive-entity-search")).toHaveLength(1);
+  expect(document.querySelector(".reactive-overlay")).toBeNull();
+  release(); expect(signal.aborted).toBe(true); expect(editor.overlays.overlays).toHaveLength(0);
+  expect(editor.effects.get("codex/entity-reference")).toBeUndefined(); expect(editor.annotationUI.list()).toHaveLength(0);
+  expect(editor.commandRegistry.owner("entity.open")).toBeUndefined(); expect(editor.bindings.list().some(b => b.id === "entity.open")).toBe(false);
+  expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
+  expect(document.querySelector('.reactive-entity-search')).toBeNull();
+  expect(() => chooseEntity(api, panel.data as EntitySearchData, { id: "new", name: "New" })).toThrow("disposed");
+  reply({ ok: true, json: async () => ({ Success: true, Results: [{ id: "late", name: "Late" }] }) }); await Promise.resolve(); await Promise.resolve();
+  expect(editor.encodeDocument()).toEqual(before);
+  const releaseAgain = activate(); release(); expect(editor.effects.get("codex/entity-reference")).toBeTruthy(); releaseAgain();
+});
+it("reuses detached paragraph snapshots within a revision and refreshes after edits", () => {
+  const editor = new ReactiveEditor({ type: "document-block", children: [{ type: "standoff-editor-block", text: "Blake", standoffProperties: [{ type: "future/reference", start: 0, end: 4, metadata: { retained: true } }] }] });
+  cleanup.push(() => editor.dispose()); const view = editor.createView("snapshot"), key = view.node(view.state.rootKey)!.children[0];
+  let api!: AnnotationCapabilities;
+  editor.featureHost.activate(createEntityReferencesFeature(scope => api = annotationCapabilities(editor, scope)));
+  const first = api.text(key)!; expect(api.text(key)).toBe(first);
+  expect(Object.isFrozen(first.cells)).toBe(true); expect(Object.isFrozen(first.properties[0].metadata)).toBe(true);
+  editor.commands.replaceInlineRange(key, 5, 5, "!");
+  expect(api.text(key)).not.toBe(first); expect(api.text(key)!.cells.map(c => c.text).join("")).toBe("Blake!");
+  expect(first.cells.map(c => c.text).join("")).toBe("Blake");
+});
+it("a failed panel registration cannot close another feature's existing panel", () => {
+  const editor = new ReactiveEditor({ type: "document-block", children: [{ type: "standoff-editor-block", text: "Blake" }] });
+  cleanup.push(() => editor.dispose()); const view = editor.createView("panel-collision"), key = view.node(view.state.rootKey)!.children[0];
+  let api!: AnnotationCapabilities;
+  editor.featureHost.activate(createEntityReferencesFeature(scope => api = annotationCapabilities(editor, scope)));
+  const panel = openEntitySearch(api, [{ nodeKey: key, start: 0, end: 5 }]);
+  expect(() => editor.featureHost.activate({ id: "conflicting", activate(scope) {
+    annotationCapabilities(editor, scope).register.panel({ type: "entity-search", view: () => null });
+  } })).toThrow("activation failed");
+  expect(editor.overlays.isOverlayKey(panel.key)).toBe(true); expect(editor.panels.get("entity-search")).toBeTruthy();
+});
