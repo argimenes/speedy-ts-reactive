@@ -12,6 +12,35 @@ afterEach(() => { cleanup.splice(0).reverse().forEach(dispose => dispose()); doc
 const rect = (left: number, top: number, width: number, height: number) => ({ left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON: () => ({}) });
 
 describe("page minimap", () => {
+  it.each([0.5, 1, 2])("maps a scaled Block to the unscaled portal rail at %s", async scale => {
+    vi.useFakeTimers();
+    const paints: Array<{ colour: string; y: number }> = [];
+    const context = {
+      fillStyle: "", globalCompositeOperation: "", globalAlpha: 1, strokeStyle: "", lineWidth: 1,
+      setTransform: vi.fn(), clearRect: vi.fn(), strokeRect: vi.fn(),
+      fillRect(this: { fillStyle: string }, _x: number, y: number) { paints.push({ colour: this.fillStyle, y }); },
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function(this: HTMLElement) {
+      if (this.id === "scaled-minimap-host") return rect(0, 0, 1200 * scale, 300 * scale) as DOMRect;
+      if (this.classList.contains("reactive-page__main")) return rect(150 * scale, 0, 200 * scale, 1000 * scale) as DOMRect;
+      if (this.classList.contains("reactive-page")) return rect(0, 0, 1000 * scale, 1000 * scale) as DOMRect;
+      return rect(150 * scale, 400 * scale, 200 * scale, 24 * scale) as DOMRect;
+    });
+    const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "page", type: "page-block", children: [{ id: "text", type: "plain-text-block", text: "Marker" }] }] });
+    registerCoreViews(editor); const projection = editor.createView("scaled-minimap");
+    const host = document.body.appendChild(document.createElement("div")); host.id = "scaled-minimap-host"; host.style.overflowY = "auto";
+    const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} coordinates={{ scale: () => scale }} />, host);
+    cleanup.push(() => { dispose(); editor.dispose(); });
+    const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
+    Object.defineProperty(host.querySelector(".reactive-page")!, "scrollHeight", { configurable: true, value: 1000 });
+    editor.minimap.attach("scale-test", { pageKey: node("page").key, markers: [{ id: "marker", anchor: { kind: "block", nodeKey: node("text").key }, colour: "#abc123" }] });
+    await vi.runAllTimersAsync();
+    const rail = document.querySelector<HTMLElement>(".page-minimap")!;
+    expect(rail).toBeTruthy();
+    expect(paints.find(p => p.colour === "#abc123")?.y).toBeCloseTo(.4 * Number.parseFloat(rail.style.height));
+  });
+
   it("keeps owner layers and configuration entirely outside document state", () => {
     const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "page", type: "page-block", children: [{ id: "text", type: "standoff-editor-block", text: "Text" }] }] });
     const projection = editor.createView("minimap-service"); cleanup.push(() => editor.dispose());

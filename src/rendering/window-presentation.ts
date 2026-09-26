@@ -14,6 +14,7 @@ interface WindowPresentationOptions {
   closeDrawer(): void;
   /** CSS-sized legacy windows pin their normal dimensions before narrowing. */
   captureExpandedSize?(size: FloatingWindowSize): void;
+  scale?: Accessor<number>;
 }
 
 /** Shared geometry adapter for canonical windows and the legacy document shell.
@@ -27,8 +28,9 @@ export function createWindowPresentation(slot: WindowPresentation, options: Wind
     if (next) options.collapseWithFocus(() => {
       const size = options.expandedSize(), root = options.element();
       const rect = root?.getBoundingClientRect();
-      const width = rect?.width || size.width;
-      options.captureExpandedSize?.({ width, height: rect?.height || size.height });
+      const scale = options.scale?.() ?? 1;
+      const width = rect?.width ? rect.width / scale : size.width;
+      options.captureExpandedSize?.({ width, height: rect?.height ? rect.height / scale : size.height });
       const narrowed = root ? collapsedMarginWindowWidth(root, width, options.minimumWidth()) : width;
       batch(() => { setReduction(width - narrowed); setRequested(true); });
     });

@@ -1,5 +1,8 @@
 import type { BlockTreeProjection } from "../block-tree/projection";
 import type { ReactiveEditor } from "../reactive-editor/editor";
+import type { NodeKey } from "../block-tree/types";
+import type { LocalCoordinates } from "../runtime/local-coordinates";
+import type { WindowGeometryHost } from "./window-geometry";
 import { ReactiveViewProvider } from "../reactive-editor/context";
 import { BlockOutlet } from "./block-outlet";
 import { BlockContextMenuLayer } from "./block-context-menu";
@@ -15,9 +18,11 @@ import "./concertina.css";
 export function ReactiveTreeView(props: {
   editor: ReactiveEditor;
   projection: BlockTreeProjection;
+  coordinates?: LocalCoordinates;
+  windowGeometry?: (key: NodeKey) => WindowGeometryHost | undefined;
 }) {
   return (
-    <ReactiveViewProvider editor={props.editor} projection={props.projection}>
+    <ReactiveViewProvider editor={props.editor} projection={props.projection} coordinates={props.coordinates} windowGeometry={props.windowGeometry}>
       <BlockOutlet nodeKey={props.projection.state.rootKey} />
       <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
       <BlockHistoryLayer editor={props.editor} viewId={props.projection.viewId} />

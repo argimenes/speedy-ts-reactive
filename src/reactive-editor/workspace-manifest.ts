@@ -307,57 +307,83 @@ export function materializeWorkspace(
     }
     return copy;
   };
-  const decoded = decodeBlockTree(expand(manifest.root));
-  const state = decoded.state;
-  const first = new Map<string, ContentKey>();
-  const ordered: PlacementKey[] = [];
-  const walk = (key: PlacementKey, active = new Set<ContentKey>()) => {
-    const placement = state.placements[key];
-    const content = placement && state.contents[placement.contentKey];
-    if (!content || active.has(content.key)) return;
-    ordered.push(key);
-    const next = new Set(active).add(content.key);
-    content.children.forEach(child => walk(child, next));
-    Object.values(content.ownedRelations).forEach(child => walk(child, next));
-  };
-  walk(state.rootPlacementKey);
-  for (const placementKey of ordered) {
-    const placement = state.placements[placementKey];
-    const content = placement && state.contents[placement.contentKey];
-    if (!content || content.viewType !== "document-block") continue;
-    const documentId = String(metadata(content.payload).documentId ?? content.payload.id ?? "");
+  const { state, identities } = materializeDocumentIdentities(expand(manifest.root));
+  for (const [documentId, contentKey] of identities) {
     const resource = manifest.documents[documentId];
-    if (!resource) continue;
-    const existing = first.get(documentId);
-    if (!existing) {
-      first.set(documentId, content.key);
-      references.push({ ...clone(resource), contentKey: content.key });
-      continue;
-    }
-    const descendants = new Set<PlacementKey>();
-    const contents = new Set<ContentKey>();
-    const collect = (key: PlacementKey) => {
-      const childPlacement = state.placements[key];
-      const childContent = childPlacement && state.contents[childPlacement.contentKey];
-      if (!childContent || contents.has(childContent.key)) return;
-      descendants.add(key); contents.add(childContent.key);
-      childContent.children.forEach(collect);
-      childContent.inlineContent.forEach(collect);
-      Object.values(childContent.ownedRelations).forEach(collect);
-    };
-    content.children.forEach(collect);
-    content.inlineContent.forEach(collect);
-    Object.values(content.ownedRelations).forEach(collect);
-    descendants.forEach(key => delete state.placements[key]);
-    contents.forEach(key => delete state.contents[key]);
-    delete state.contents[content.key];
-    state.placements[placementKey] = { ...placement, contentKey: existing, kind: "reference" };
+    if (resource) references.push({ ...clone(resource), contentKey });
   }
   for (const resource of Object.values(manifest.documents)) {
     if (!references.some(reference => reference.documentId === resource.documentId)) references.push(clone(resource));
   }
   validateRepository(state);
   return { state, manifest: clone(manifest), workspaceId: manifest.workspaceId, references, issues: clone(issues), legacy: false };
+}
+
+/** Materialize only workspace-level Document roots, never arbitrary nested Block
+ * IDs. Input is a freshly decoded tree; all conflicts are checked before aliasing.
+ * No runtime key is persisted, and no caller-owned DTO or live repository changes.
+ */
+function materializeDocumentIdentities(dto: ExistingBlockDto) {
+  const { state } = decodeBlockTree(dto);
+  const identities = new Map<string, ContentKey>();
+  const fingerprints = new Map<string, string>();
+  const aliases: Array<{ placement: PlacementKey; content: ContentKey }> = [];
+  const walk = (key: PlacementKey) => {
+    const placement = state.placements[key], content = state.contents[placement.contentKey];
+    if (content.viewType === "document-block") {
+      const meta = metadata(content.payload);
+      const candidate = meta.documentId !== undefined ? meta.documentId : content.payload.id;
+      if (candidate === undefined) return; // anonymous Documents remain independent
+      const id = text(candidate, "A local Document identity must be a nonempty string.");
+      const fingerprint = canonical(encodeDocument(state, key));
+      const first = identities.get(id);
+      if (first) {
+        if (fingerprints.get(id) !== fingerprint) {
+          throw new WorkspaceManifestError(`Conflicting copies of Document ${id}. The Workspace was not loaded; resolve the conflicting Document content before reopening.`);
+        }
+        aliases.push({ placement: key, content: first });
+      } else {
+        identities.set(id, content.key);
+        fingerprints.set(id, fingerprint);
+      }
+      return;
+    }
+    content.children.forEach(walk);
+    Object.values(content.ownedRelations).forEach(walk);
+  };
+  walk(state.rootPlacementKey);
+  for (const alias of aliases) state.placements[alias.placement] = { ...state.placements[alias.placement], contentKey: alias.content, kind: "reference" };
+  if (aliases.length) {
+    // Sweep only this freshly materialized tree. Shared descendants are retained
+    // by reachability, rather than deleted recursively from a duplicate branch.
+    const placements = new Set<PlacementKey>(), contents = new Set<ContentKey>();
+    const visit = (key: PlacementKey) => {
+      if (placements.has(key)) return;
+      placements.add(key);
+      const content = state.contents[state.placements[key].contentKey];
+      if (contents.has(content.key)) return;
+      contents.add(content.key);
+      content.children.forEach(visit);
+      content.inlineContent.forEach(visit);
+      Object.values(content.ownedRelations).forEach(visit);
+    };
+    visit(state.rootPlacementKey);
+    for (const key of Object.keys(state.placements)) if (!placements.has(key)) delete state.placements[key];
+    for (const key of Object.keys(state.contents)) if (!contents.has(key)) delete state.contents[key];
+  }
+  validateRepository(state);
+  return { state, identities };
+}
+
+/** Existing self-contained local format; no resource fetching or format change. */
+export function materializeLocalWorkspace(value: unknown): LoadedWorkspace {
+  if (isWorkspaceManifest(value)) {
+    throw new WorkspaceManifestError("This Server Workspace manifest refers to separate Document files. Open it from Server, or choose a self-contained Local Workspace JSON file.");
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value) || (value as ExistingBlockDto).type !== "workspace-block") {
+    throw new WorkspaceManifestError("The selected JSON file is not a self-contained Speedy Workspace.");
+  }
+  return { state: materializeDocumentIdentities(value as ExistingBlockDto).state, references: [], issues: [], legacy: true };
 }
 
 export interface LegacyWorkspaceReferences {

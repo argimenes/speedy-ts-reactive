@@ -1,3 +1,4 @@
+import { localFragment } from "../runtime/local-coordinates";
 import { immutable } from "../runtime/effect-contributions";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import type { BlockNode, BlockViewProps, NodeKey } from "../block-tree/types";
@@ -69,6 +70,7 @@ function rangeFragments(
   surface: HTMLElement,
   start: number,
   endInclusive: number,
+  scale = 1,
 ): VisualFragment[] {
   const cells = flow.children;
   if (!cells.length) return [];
@@ -86,12 +88,7 @@ function rangeFragments(
   const rects = typeof range.getClientRects === "function" ? [...range.getClientRects()] : [];
   const fragments = rects
     .filter((rect) => rect.width > 0 || rect.height > 0)
-    .map((rect) => ({
-      x: rect.left - surfaceRect.left + surface.scrollLeft,
-      y: rect.top - surfaceRect.top + surface.scrollTop,
-      width: rect.width,
-      height: rect.height,
-    }));
+    .map((rect) => localFragment(rect, surfaceRect, surface, scale));
   return fragments.reduce<VisualFragment[]>((merged, fragment) => {
     const previous = merged.at(-1);
     const sameLine = previous && Math.abs(previous.y - fragment.y) < 2 && Math.abs(previous.height - fragment.height) < 2;
@@ -316,7 +313,7 @@ function ProjectedAlternative(props: { nodeKey: NodeKey; sourceIndex: number; so
 }
 
 export function StandoffEditorView(props: BlockViewProps) {
-  const { editor, projection } = useReactiveView();
+  const { editor, projection, coordinates } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const annotations = createMemo(
     () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
@@ -350,7 +347,8 @@ export function StandoffEditorView(props: BlockViewProps) {
   let measuredOrigin = { x: 0,y: 0 };
   const hoverCandidate = (event: PointerEvent) => {
     if (!exclusions().length) return;
-    const x = event.clientX - measuredOrigin.x, y = event.clientY - measuredOrigin.y;
+    const scale = coordinates?.scale() ?? 1;
+    const x = (event.clientX - measuredOrigin.x) / scale + surface.scrollLeft, y = (event.clientY - measuredOrigin.y) / scale + surface.scrollTop;
     const control = exclusions().find(c => (x >= c.x - 5 && x <= c.x + 25 && y >= c.y - 5 && y <= c.y + 25) || c.fragments.some(f => x >= f.x - 6 && x <= f.x + f.width + 10 && y >= f.y - 12 && y <= f.y + f.height + 6));
     setHovered(control ? `${control.owner}:${control.id}` : undefined);
   };
@@ -381,13 +379,14 @@ export function StandoffEditorView(props: BlockViewProps) {
 
   const measure = () => {
     frame = 0;
+    const scale = coordinates?.scale() ?? 1;
     const foreground: DecorationShape[] = [];
     const highlighters: DecorationShape[] = [];
     const fragmentCache = new Map<string, VisualFragment[]>();
     const fragmentsFor = (start: number, end: number) => {
       const key = `${start}:${end}`;
       let fragments = fragmentCache.get(key);
-      if (!fragments) fragmentCache.set(key, fragments = rangeFragments(flow, surface, start, end));
+      if (!fragments) fragmentCache.set(key, fragments = rangeFragments(flow, surface, start, end, scale));
       return fragments;
     };
     standoffSvgStyles(annotations(), node()?.inlineContent.length ?? 0, type => editor.effects.get(type)).forEach(({ annotation, svg, offset, index }) => {
@@ -432,12 +431,7 @@ export function StandoffEditorView(props: BlockViewProps) {
         const element = [...flow.querySelectorAll<HTMLElement>("[data-superposition-id]")]
           .find(candidate => candidate.dataset.superpositionId === property.id);
         const rect = element?.getBoundingClientRect();
-        if (rect) fragment = {
-          x: rect.left - surfaceRect.left + surface.scrollLeft,
-          y: rect.top - surfaceRect.top + surface.scrollTop,
-          width: rect.width,
-          height: rect.height,
-        };
+        if (rect) fragment = localFragment(rect, surfaceRect, surface, scale);
       }
       if (fragment) superpositionRegions.push({ ...fragment, key: `${props.nodeKey}:${property.id}`, property, alternativeKey });
     }
@@ -452,9 +446,9 @@ export function StandoffEditorView(props: BlockViewProps) {
       ].map(shape => ({ ...shape, propertyType: "editor/show-hide-selection" })));
     });
     const cross = editor.crossText.segments[props.nodeKey];
-    if (cross && cross.end > cross.start) selected.push(...highlightShapes(`${props.nodeKey}:cross-text`, rangeFragments(flow, surface, cross.start, cross.end - 1), "#75a9e8"));
+    if (cross && cross.end > cross.start) selected.push(...highlightShapes(`${props.nodeKey}:cross-text`, rangeFragments(flow, surface, cross.start, cross.end - 1, scale), "#75a9e8"));
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
-    if (preview) selected.push(...highlightShapes(`${props.nodeKey}:annotation-preview`, rangeFragments(flow, surface, preview.start, preview.end), "#f2c767"));
+    if (preview) selected.push(...highlightShapes(`${props.nodeKey}:annotation-preview`, rangeFragments(flow, surface, preview.start, preview.end, scale), "#f2c767"));
     selectionSet?.items.forEach((item) => {
       const start = Math.min(item.anchor.boundary.index, item.head.boundary.index);
       const end = Math.max(item.anchor.boundary.index, item.head.boundary.index);
@@ -462,7 +456,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       selected.push(
         ...highlightShapes(
           `${props.nodeKey}:${item.id}`,
-          rangeFragments(flow, surface, start, Math.max(start, end - 1)),
+          rangeFragments(flow, surface, start, Math.max(start, end - 1), scale),
           item.id === selectionSet.primaryId ? "#75a99a" : "#b692d1",
         ),
       );
@@ -481,7 +475,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       const fragments = fragmentsFor(decoration.range.start, decoration.range.end - 1);
       search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
       if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
-      const position = decoration.excludable && origin ? exclusionPosition(fragments,origin,{ width: window.innerWidth,height: window.innerHeight }) : undefined;
+      const position = decoration.excludable && origin ? exclusionPosition(fragments,{ left: origin.left / scale - surface.scrollLeft, top: origin.top / scale - surface.scrollTop, width: origin.width / scale },{ width: window.innerWidth / scale,height: window.innerHeight / scale }) : undefined;
       if (position) controls.push({ owner: decoration.owner,id: decoration.id,label: decoration.excludeLabel,title: decoration.excludeTitle,...position,active: decoration.active,fragments });
     }
     setSearchShapes(search);
@@ -547,6 +541,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   });
 
   createEffect(() => {
+    coordinates?.scale();
     editor.effects.track();
     node()?.inlineContent.length;
     concealedRanges();

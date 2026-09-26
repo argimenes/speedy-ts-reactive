@@ -67,7 +67,8 @@ function textRangeRect(marker: MinimapMarker, page: HTMLElement, handle: { root:
 }
 
 export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; main: () => HTMLElement }) {
-  const { editor } = useReactiveView();
+  const { editor, coordinates } = useReactiveView();
+  const scale = () => coordinates?.scale() ?? 1;
   const [layout, setLayout] = createSignal<Layout>({ visible: false, left: 0, top: 0, width: 20, height: 0, total: 0, omitted: 0, viewportTop: 0, viewportHeight: 0 });
   let canvas!: HTMLCanvasElement;
   let frame = 0;
@@ -90,7 +91,7 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     observe(handle.root);
     const rect = marker.anchor.kind === "block" ? handle.root.getBoundingClientRect() : textRangeRect(marker, page, handle);
     if (!rect) return;
-    return { y: rect.top - pageTop + page.scrollTop, height: Math.max(0, rect.height) };
+    return { y: (rect.top - pageTop) / scale() + page.scrollTop, height: Math.max(0, rect.height / scale()) };
   };
 
   const redraw = () => {
@@ -112,7 +113,7 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     if (height < MIN_RAIL_HEIGHT || !fitsSide) { drawn = []; setLayout({ visible: false, left, top: available.top, width: options.width, height, total, omitted: total, viewportTop: 0, viewportHeight: 0 }); return; }
 
     const pageRect = page.getBoundingClientRect();
-    const extent = Math.max(1, page.scrollHeight, pageRect.height);
+    const extent = Math.max(1, page.scrollHeight, pageRect.height / scale());
     const resolved: DrawnMarker[] = [];
     for (const layer of visible) for (const marker of layer.markers) {
       if (marker.group && layer.hiddenGroups.has(marker.group)) continue;
@@ -124,8 +125,8 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     }
     drawn = resolved;
     const pageVisibleTop = Math.max(pageRect.top, available.top), pageVisibleBottom = Math.min(pageRect.bottom, available.bottom);
-    const rawViewportTop = pageVisibleBottom > pageVisibleTop ? (pageVisibleTop - pageRect.top + page.scrollTop) / extent * height : 0;
-    const viewportHeight = pageVisibleBottom > pageVisibleTop ? Math.min(height, Math.max(2, (pageVisibleBottom - pageVisibleTop) / extent * height)) : 0;
+    const rawViewportTop = pageVisibleBottom > pageVisibleTop ? ((pageVisibleTop - pageRect.top) / scale() + page.scrollTop) / extent * height : 0;
+    const viewportHeight = pageVisibleBottom > pageVisibleTop ? Math.min(height, Math.max(2, (pageVisibleBottom - pageVisibleTop) / scale() / extent * height)) : 0;
     const viewportTop = Math.max(0, Math.min(Math.max(0, height - viewportHeight), rawViewportTop));
     const next = { visible: true, left, top: available.top, width: options.width, height, total, omitted: total - resolved.length, viewportTop, viewportHeight };
     setLayout(next);
@@ -171,22 +172,22 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     const current = layout(), page = props.page(), owner = scrollport(page);
     if (!owner || current.height <= 0 || current.viewportHeight <= 0) return;
     const top = Math.max(0, Math.min(current.height - current.viewportHeight, requestedTop));
-    const extent = Math.max(1, page.scrollHeight, page.getBoundingClientRect().height);
+    const extent = Math.max(1, page.scrollHeight, page.getBoundingClientRect().height / scale());
     const desiredPageY = top / current.height * extent;
     if (owner === page) {
-      const visibleHeight = page.clientHeight || page.getBoundingClientRect().height;
+      const visibleHeight = page.clientHeight || page.getBoundingClientRect().height / scale();
       owner.scrollTop = Math.max(0, Math.min(Math.max(0, page.scrollHeight - visibleHeight), desiredPageY));
     } else {
       const ownerRect = owner.getBoundingClientRect(), pageRect = page.getBoundingClientRect();
-      const pageTopInOwner = pageRect.top - ownerRect.top + owner.scrollTop;
-      const visibleTopInOwner = viewportRect(owner).top - ownerRect.top;
-      const maximum = Math.max(0, owner.scrollHeight - (owner.clientHeight || ownerRect.height));
+      const pageTopInOwner = (pageRect.top - ownerRect.top) / scale() + owner.scrollTop;
+      const visibleTopInOwner = (viewportRect(owner).top - ownerRect.top) / scale();
+      const maximum = Math.max(0, owner.scrollHeight - (owner.clientHeight || ownerRect.height / scale()));
       owner.scrollTop = Math.max(0, Math.min(maximum, pageTopInOwner + desiredPageY - visibleTopInOwner));
     }
     schedule();
   };
 
-  createEffect(() => { editor.minimap.state.revision; schedule(); });
+  createEffect(() => { scale(); editor.minimap.state.revision; schedule(); });
   onMount(() => {
     observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(schedule);
     mutation = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(schedule);

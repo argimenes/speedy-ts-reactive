@@ -18,12 +18,11 @@ import type { Toolset } from "../rendering/compact-toolbar";
 import { DocumentStyleBar } from "../rendering/document-style-bar";
 import { WindowIcon } from "../rendering/window-icon";
 import { WorkspaceBrowser } from "./workspace-browser";
-import { isWorkspaceManifest, type LoadedWorkspace } from "../reactive-editor/workspace-manifest";
+import { materializeLocalWorkspace, type LoadedWorkspace } from "../reactive-editor/workspace-manifest";
 import { DocumentMarginContext, type DocumentMarginEntry } from "../rendering/document-margins";
 import { DocumentMarginDrawer } from "../rendering/document-margin-drawer";
 import { ReactiveViewProvider } from "../reactive-editor/context";
 import { createFloatingWindowResize, FloatingWindowResizeHandle } from "../rendering/floating-window-resize";
-import { decodeWorkspace } from "../block-tree/codecs";
 import { openJsonFile, saveJsonFile, type BrowserFileHandle } from "./browser-json-file";
 import { resolveFeatureFlags, type ReactiveEditorConfiguration } from "../configuration";
 import { backgroundImages } from "../rendering/backgrounds";
@@ -41,15 +40,6 @@ interface DemoEditorBridge {
 interface WorkspaceActionResult { success: boolean; error?: string; status?: number }
 interface LocalWorkspaceFile { filename: string; handle?: BrowserFileHandle }
 
-function decodeLocalWorkspace(value: unknown): LoadedWorkspace {
-  if (isWorkspaceManifest(value)) {
-    throw new Error("This Server Workspace manifest refers to separate Document files. Open it from Server, or choose a self-contained Local Workspace JSON file.");
-  }
-  if (!value || typeof value !== "object" || Array.isArray(value) || (value as ExistingBlockDto).type !== "workspace-block") {
-    throw new Error("The selected JSON file is not a self-contained Speedy Workspace.");
-  }
-  return { state: decodeWorkspace(value as ExistingBlockDto).state, references: [], issues: [], legacy: true };
-}
 
 
 function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEditor: (bridge: DemoEditorBridge) => () => void; stickyHost: ReactiveEditor; onBackground: (event: MouseEvent) => void; onReset: () => void; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; workspaceBusy: boolean; document?: ExistingBlockDto; location?: DocumentLocation; localFile?: LocalDocumentFile; closed?: boolean; window?: Partial<DemoWindowSnapshot>; onClose: (document?: ExistingBlockDto, location?: DocumentLocation, localFile?: LocalDocumentFile) => void; onOpen: (document: ExistingBlockDto, location: DocumentLocation) => void; onOpenLocal: (document: ExistingBlockDto, file: LocalDocumentFile) => void }) {
@@ -570,7 +560,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
     try {
       const selected = await openJsonFile();
       if (!selected) return;
-      setLoadedWorkspace(decodeLocalWorkspace(selected.value));
+      setLoadedWorkspace(materializeLocalWorkspace(selected.value));
       setWorkspaceFilename(selected.filename);
       setLocalWorkspaceFile({ filename: selected.filename, handle: selected.handle });
       setWorkspaceBrowser(undefined);

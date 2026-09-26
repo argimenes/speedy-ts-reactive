@@ -1,6 +1,6 @@
 # Canvas workspace / presentation — investigation and plan
 
-Status: **proposal for review; no Canvas implementation is authorized or included.**
+Status: **approved in principle; Milestone A only was authorized.** See the [Milestone A report](CODEX_CANVAS_MILESTONE_A_REPORT.md). Stop for review before Milestone B. The approved pilot preference is an existing suitable inline Block application, with Counter only as a fallback.
 
 Investigated against `3e18a3d` (`Dev docs`), following the accepted Stage 5 baseline `308bd74`. Stages 1–5 remain intact. History extraction, Text Superposition, Spatial/3D and a general presentation-plugin framework are outside this proposal.
 
@@ -110,7 +110,7 @@ Initially permit one Canvas placement per directory object. Distinct windows ref
 | Existing document window | Render the existing Window and its document, with Canvas geometry supplied by the host. |
 | Direct document/note | Possible through existing views; add only when root selection, margins and editing qualification pass. Existing document windows already satisfy the first editing case. |
 | Direct image | Primary non-window pilot; existing image renderer, outer Canvas bounds and move/resize chrome. |
-| General Window with inline Block application | Primary app pilot. Use a small Counter-style application following the [Window guide](docs/development/CREATING_WINDOW_APPLICATIONS.md), unless an existing inline app meets the same test. |
+| General Window with inline Block application | Primary app pilot. Prefer an existing suitable inline application; use a small Counter-style application following the [Window guide](docs/development/CREATING_WINDOW_APPLICATIONS.md) only if none provides a clean test. |
 | PDF | Existing iframe-backed view, not a dedicated PDF engine. Canvas can size its outer host; iframe focus and gesture ownership need qualification. |
 | Video/YouTube | Existing applicable views; playback and iframe behavior must be checked individually. No promise of a universal media player. |
 | Ordinary Block/reference | Support owned standalone Blocks as qualified. Arbitrary nested Block extraction/transclusion is deferred. |
@@ -410,7 +410,7 @@ The smallest coherent slice is **canonical Desktop workspace + optional Canvas**
 - Existing document Windows with usable native editing at tested zoom levels.
 - Pan, anchored zoom, reset/fit, single-object selection, move/resize, ordering and removal from Canvas. Shift-selection/group movement can follow within milestone D if simple; marquee and group resize are excluded.
 - Add-existing object list and a small set of host-owned new-object actions.
-- One direct image and one inline Window-hosted Block application. A small Counter pilot demonstrates the existing BlockRuntime boundary; it does not grant the app editor/window access or refactor Timer.
+- One direct image and one inline Window-hosted Block application. Prefer an existing suitable inline app; Counter is only a fallback. The pilot demonstrates the existing BlockRuntime boundary without granting editor/window access or refactoring Timer.
 - Local and server workspace Save/Save As/Open with Canvas geometry/camera, existing Desktop layout and shared document identity restored. Preserve current server location and History restrictions.
 - Compact/narrow-window behavior, selection/effects/panels and native input pass the focused qualification; physical Canvas removal succeeds.
 

@@ -1,4 +1,4 @@
-import { For, createMemo, onCleanup, onMount } from "solid-js";
+import { For, createMemo, lazy, onCleanup, onMount } from "solid-js";
 import type { ExistingBlockDto } from "./block-tree/types";
 import { ReactiveEditor } from "./reactive-editor/editor";
 import { ReactiveTreeView } from "./rendering/reactive-tree-view";
@@ -140,6 +140,10 @@ export function PilotApp() {
 
 export default function App() {
   const route = window.location.pathname.replace(/\/+$/, "");
+  if (import.meta.env.DEV && import.meta.env.VITE_CANVAS_MILESTONE_A === "1" && route === `${import.meta.env.BASE_URL}scaled-window-prototype`) {
+    const Prototype = lazy(() => import("./demo/scaled-window-prototype"));
+    return <Prototype />;
+  }
   if (route === `${import.meta.env.BASE_URL}effects`) return <StandoffEffectsDemo />;
   if (route === `${import.meta.env.BASE_URL}superposition`) return <TextSuperpositionDemo />;
   return route === `${import.meta.env.BASE_URL}pilot` ? <PilotApp /> : <WorkspaceDemo />;

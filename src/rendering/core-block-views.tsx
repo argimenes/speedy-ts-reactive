@@ -439,7 +439,9 @@ export function StableBackgroundView(props: BlockViewProps) {
 }
 
 export function WindowView(props: BlockViewProps) {
-  const { editor, projection } = useReactiveView();
+  const { editor, projection, coordinates, windowGeometry } = useReactiveView();
+  const geometry = windowGeometry?.(props.nodeKey);
+  const scale = coordinates?.scale;
   const node = () => projection.state.nodes[props.nodeKey];
   const metadata = () => (node()?.payload.metadata as Record<string, any> | undefined) ?? {};
   const appearance = createMemo(() => blockAppearance(node()));
@@ -473,25 +475,26 @@ export function WindowView(props: BlockViewProps) {
     });
     if (typeof ResizeObserver !== "undefined") {
       marginObserver = new ResizeObserver(entries => {
-        const width = entries.at(-1)?.contentRect.width ?? root.getBoundingClientRect().width;
+        const width = entries.at(-1)?.contentRect.width ?? root.getBoundingClientRect().width / (scale?.() ?? 1);
         updateMarginState(width);
       });
       marginObserver.observe(root);
     }
-    queueMicrotask(() => updateMarginState(root.getBoundingClientRect().width));
+    queueMicrotask(() => updateMarginState(root.getBoundingClientRect().width / (scale?.() ?? 1)));
   });
   onCleanup(() => {
     dispose?.(); marginObserver?.disconnect();
     if (suppressTimer) clearTimeout(suppressTimer);
   });
-  const position = () => preview() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
+  const position = () => preview() ?? geometry?.position() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
   const storedSize = () => {
+    if (geometry) { const size = geometry.expandedSize(); return { w: size.width, h: size.height }; }
     const w = Number(metadata().size?.w), h = Number(metadata().size?.h);
     return { w: Number.isFinite(w) && w > 0 ? w : 840, h: Number.isFinite(h) && h > 0 ? h : 620 };
   };
   const minimumSize = () => isDocument() ? { w: root?.querySelector(".reactive-page--minimap-left, .reactive-page--minimap-right") ? 602 : 560, h: 240 } : { w: 240, h: 160 };
   const presentation = createWindowPresentation(editor.windowPresentation, {
-    element: () => root, enabled: isDocument,
+    element: () => root, enabled: isDocument, scale,
     expandedSize: () => ({ width: storedSize().w, height: storedSize().h }),
     minimumWidth: () => minimumSize().w,
     marginsCollapsed, automaticCollapsed: narrowMarginsCollapsed,
@@ -504,10 +507,11 @@ export function WindowView(props: BlockViewProps) {
     size: presentation.presentedSize,
     minimum: () => ({ width: minimumSize().w, height: minimumSize().h }),
     enabled: () => state() === "normal",
-    normalizeStartToMinimum: true,
+    normalizeStartToMinimum: true, scale, constrainToViewport: !geometry,
     onCommit: size => {
       const expanded = presentation.expandedFromPresented(size);
-      commitMetadata({ size: { w: expanded.width, h: expanded.height } }, "Resize Window");
+      if (geometry) geometry.resize(expanded);
+      else commitMetadata({ size: { w: expanded.width, h: expanded.height } }, "Resize Window");
     },
   });
   const dimensions = () => ({ w: windowResize.dimensions().width, h: windowResize.dimensions().height });
@@ -563,10 +567,12 @@ export function WindowView(props: BlockViewProps) {
   const clampIconPosition = (next: { x: number; y: number }) => {
     if (!minimized()) return next;
     const current = position(), rect = root.getBoundingClientRect();
-    const width = rect.width || 96, height = rect.height || 92;
+    const factor = scale?.() ?? 1;
+    const width = rect.width || 96 * factor, height = rect.height || 92 * factor;
+    const left = rect.left + (next.x - current.x) * factor, top = rect.top + (next.y - current.y) * factor;
     return {
-      x: next.x + Math.max(0, 8 - (rect.left + next.x - current.x)) - Math.max(0, rect.left + next.x - current.x + width + 8 - window.innerWidth),
-      y: next.y + Math.max(0, 8 - (rect.top + next.y - current.y)) - Math.max(0, rect.top + next.y - current.y + height + 8 - window.innerHeight),
+      x: next.x + (Math.max(0, 8 - left) - Math.max(0, left + width + 8 - window.innerWidth)) / factor,
+      y: next.y + (Math.max(0, 8 - top) - Math.max(0, top + height + 8 - window.innerHeight)) / factor,
     };
   };
   const beginDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
@@ -577,7 +583,7 @@ export function WindowView(props: BlockViewProps) {
   const moveDrag = (event: PointerEvent) => {
     if (!drag || drag.pointerId !== event.pointerId) return;
     drag.moved ||= Math.abs(event.clientX - drag.x) > 2 || Math.abs(event.clientY - drag.y) > 2;
-    setPreview(clampIconPosition({ x: drag.originX + event.clientX - drag.x, y: drag.originY + event.clientY - drag.y }));
+    setPreview(clampIconPosition({ x: drag.originX + (event.clientX - drag.x) / (scale?.() ?? 1), y: drag.originY + (event.clientY - drag.y) / (scale?.() ?? 1) }));
   };
   const finishDrag = (event: PointerEvent, cancelled = false) => {
     if (!drag || drag.pointerId !== event.pointerId) return;
@@ -587,8 +593,11 @@ export function WindowView(props: BlockViewProps) {
       suppressIconClick = true; clearTimeout(suppressTimer);
       suppressTimer = setTimeout(() => { suppressIconClick = false; suppressTimer = undefined; }, 0);
     }
-    const stored = { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
-    if (moved && (final.x !== stored.x || final.y !== stored.y)) commitMetadata({ position: final }, wasMinimized ? "Move Window Icon" : "Move Window");
+    const stored = geometry?.position() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
+    if (moved && (final.x !== stored.x || final.y !== stored.y)) {
+      if (geometry) geometry.move(final);
+      else commitMetadata({ position: final }, wasMinimized ? "Move Window Icon" : "Move Window");
+    }
   };
   const openMargins = (entry?: DocumentMarginEntry) => {
     if (!marginsCollapsed()) return;

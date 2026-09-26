@@ -25,7 +25,7 @@ export class MeasurementService {
     return typeof range.getClientRects === "function" ? [...range.getClientRects()] : [];
   }
 
-  toLayerPoint(viewportPoint: Point, layer: Element): Point | undefined {
+  toLayerPoint(viewportPoint: Point, layer: Element, scale = 1): Point | undefined {
     if (layer instanceof SVGGraphicsElement) {
       const matrix = layer.getScreenCTM();
       if (!matrix) return undefined;
@@ -39,6 +39,6 @@ export class MeasurementService {
       }
     }
     const rect = layer.getBoundingClientRect();
-    return { x: viewportPoint.x - rect.left, y: viewportPoint.y - rect.top };
+    return { x: (viewportPoint.x - rect.left) / scale, y: (viewportPoint.y - rect.top) / scale };
   }
 }

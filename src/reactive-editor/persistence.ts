@@ -10,6 +10,7 @@ import {
   extractLegacyWorkspaceReferences,
   isWorkspaceManifest,
   materializeWorkspace,
+  materializeLocalWorkspace,
   parseWorkspaceManifest,
   workspaceContentHash,
   workspaceDocumentContentKeys,
@@ -320,7 +321,7 @@ export class PersistenceService {
       decodeWorkspace(dto);
       const legacy = extractLegacyWorkspaceReferences(dto);
       if (!Object.keys(legacy.resources).length) {
-        return { state: decodeWorkspace(dto).state, references: [], issues: [], legacy: true };
+        return materializeLocalWorkspace(dto);
       }
       const workspaceId = typeof (dto.metadata as any)?.workspaceId === "string"
         ? String((dto.metadata as any).workspaceId)

@@ -14,6 +14,9 @@ export interface FloatingWindowResizeOptions {
   enabled?: Accessor<boolean>;
   normalizeStartToMinimum?: boolean;
   viewportInset?: number;
+  /** Client pixels per local layout unit; defaults to one on Desktop. */
+  scale?: Accessor<number>;
+  constrainToViewport?: boolean;
   onCommit: (size: FloatingWindowSize) => void;
 }
 
@@ -40,8 +43,9 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
     const inset = options.viewportInset ?? 8;
     const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
     const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-    const availableWidth = Math.max(1, rect ? viewportWidth - rect.left - inset : viewportWidth - inset * 2);
-    const availableHeight = Math.max(1, rect ? viewportHeight - rect.top - inset : viewportHeight - inset * 2);
+    const scale = options.scale?.() ?? 1;
+    const availableWidth = options.constrainToViewport === false ? Infinity : Math.max(1, (rect ? viewportWidth - rect.left - inset : viewportWidth - inset * 2) / scale);
+    const availableHeight = options.constrainToViewport === false ? Infinity : Math.max(1, (rect ? viewportHeight - rect.top - inset : viewportHeight - inset * 2) / scale);
     const effectiveMinimumWidth = Math.min(minimum.width, availableWidth);
     const effectiveMinimumHeight = Math.min(minimum.height, availableHeight);
     const maxWidth = Math.max(effectiveMinimumWidth, Math.min(maximum.width ?? Number.POSITIVE_INFINITY, availableWidth));
@@ -77,7 +81,8 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
     clearKeyboardTimer();
     const rect = options.element()?.getBoundingClientRect();
     const current = dimensions();
-    const rendered = { width: rect?.width || current.width, height: rect?.height || current.height };
+    const scale = options.scale?.() ?? 1;
+    const rendered = { width: rect?.width ? rect.width / scale : current.width, height: rect?.height ? rect.height / scale : current.height };
     const start = options.normalizeStartToMinimum ? clamp(rendered.width, rendered.height) : rendered;
     pointer = {
       id: event.pointerId,
@@ -94,9 +99,10 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
   };
   const movePointer = (event: PointerEvent) => {
     if (!pointer || pointer.id !== event.pointerId) return;
+    const scale = options.scale?.() ?? 1;
     const dx = event.clientX - pointer.x, dy = event.clientY - pointer.y;
     pointer.moved ||= Math.abs(dx) > 1 || Math.abs(dy) > 1;
-    setPreview(clamp(pointer.width + dx, pointer.height + dy));
+    setPreview(clamp(pointer.width + dx / scale, pointer.height + dy / scale));
     event.preventDefault();
     event.stopPropagation();
   };
