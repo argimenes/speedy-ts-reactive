@@ -64,17 +64,19 @@ There is no source scan or decorator discovery.
 | Keybindings/actions | module `register.binding(...)`; legacy `registerInputActions`; use the existing command bridge |
 | Feature toolbar/menu items | `register.action(...)` in `document-actions` / `add-block-menu` |
 | CSS standoff property | entry in `standoffStyleSchemas` |
-| SVG standoff property | schema entry, `SvgStyle` kind, `StandoffEditorView.measure` switch, and geometry function if new |
+| Passive SVG standoff property | `AnnotationCapabilities.register.effect(EffectDefinition)`; immutable fragments and core lane allocation; legacy effects retain schema/switch paths |
+| Annotation panels / apply buttons / details | `AnnotationCapabilities.register.panel` / `.annotation`; owned overlay sessions |
+| Document-window presentation | `PresentationCapabilities.register`; single optional per-window contribution |
 | Block property | `blockAppearance` switch, plus the UI/action that writes it |
 | Graphical Block property | owning Block view/component integration; no common registry exists |
 | Serialization | generic by default; codec branch only for special normalized forms |
 
 ## Developer friction observed during documentation
 
-These remaining limitations coexist with Stage 1; see [feature modules](../architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md) for what is implemented.
+These remaining limitations coexist with accepted Stages 1–5; see [feature modules](../architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md) for what is implemented.
 
 1. **Action implementation is distributed.** `binding-catalog.ts` makes actions look uniform, but execution may live in `InputGateway.runBinding`, `CrossBlockInput`, `CommandRegistry`, a toolbar, or a runtime service. Tracing an action often requires searching by ID.
-2. **Standoff rendering is only partly registered.** CSS types are table entries, while a new SVG geometry kind requires changing a union, schema, view switch, geometry module, and usually CSS/tests. A small renderer registry could eventually make this one extension point.
+2. **Standoff rendering is only partly extracted.** New passive SVG paths use `EffectContributions`. Cell CSS, existing central effects, region/filter/shader paths and editable projections retain their own integration. The passive contract is not a universal visual-property API.
 3. **Block properties have no property contract/registry in the reactive path.** `appearance.ts` handles common CSS with a switch; complex properties are bespoke view code. The legacy `src/properties/block-properties.ts` can mislead a returning developer because it is not the active reactive registration path.
 4. **Graphical Block properties lack a shared layer lifecycle.** Extension authors must repeat local SVG ownership, measurement, observer, scheduling, and cleanup decisions.
 5. **Legacy assembly still mixes Block views and commands.** New modules use application composition and owned registrations; unmigrated features still use `registerCoreViews` and direct editor services.
@@ -82,4 +84,4 @@ These remaining limitations coexist with Stage 1; see [feature modules](../archi
 7. **Normal, extended, Workspace, and history-enrolled persistence formats coexist.** Their boundaries are deliberate, but discovering which one a feature touches requires reading several codecs/services.
 8. **Legacy and reactive source live side by side.** Familiar class names under `src/blocks` remain useful history but can send new work down the inactive imperative path.
 
-Extend only the boundary an actual feature needs. Property/effect registries, gesture ownership and broader panel/menu contributions remain later-stage work; the Timer pilot does not authorize building them speculatively.
+Extend only the boundary an actual feature needs. Specific gesture/operation, passive-effect, panel/annotation UI and presentation seams now exist. A universal property system and configurable application Window header do not. Use the [current extension guides](EXTENSION_ARCHITECTURE.md), not a future roadmap API; History extraction remains deferred.

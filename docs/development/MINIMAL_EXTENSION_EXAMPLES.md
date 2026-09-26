@@ -1,6 +1,6 @@
 # Minimal extension examples and workflow
 
-These snippets isolate the lines that matter. Production features should add names, accessibility, error handling, and focused tests appropriate to their behaviour.
+For complete current tutorials, start with [the extension overview](EXTENSION_ARCHITECTURE.md). These additional snippets isolate the lines that matter. Production features should add names, accessibility, error handling, and focused tests appropriate to their behaviour.
 
 ## Minimal hosted Block module
 
@@ -78,10 +78,7 @@ boundary and verification checklist.
 
 ## Remaining core/legacy extension examples
 
-The following property examples describe the existing internal implementation,
-not public feature capabilities. Stage 1 has not added standoff/property renderer,
-annotation-target or selection-behavior registries. Keep changes to these systems
-explicitly scoped; do not pass the editor into a feature to imitate these snippets.
+The CSS/Block-property examples below describe internal paths that remain central. Passive SVG effects and annotation/current-operation targets now have public capability boundaries; see [Creating an SVG Standoff Effect](CREATING_STANDOFF_EFFECTS.md) and [Feature Modules](FEATURE_MODULES.md). Do not pass the editor into a module to imitate a core-only snippet.
 
 ## Minimal CSS standoff property
 
@@ -101,29 +98,7 @@ That schema entry is the renderer registration. `start` and `end` are inclusive 
 
 ## Minimal SVG standoff property
 
-If an existing shape is acceptable, one schema entry is enough:
-
-```ts
-// Reuse current outline rendering.
-"review/needs-attention": { svg: { kind: "rectangle" } },
-```
-
-For new geometry, add the kind and view switch as described in [Adding a standoff property](ADDING_A_STANDOFF_PROPERTY.md). The smallest reusable implementation is a pure fragment-to-shape function:
-
-```ts
-export function baselineDots(key: string, fragments: VisualFragment[]): DecorationShape[] {
-  return fragments.map((f, index) => ({
-    key: `${key}:${index}`,
-    path: `M ${f.x} ${f.y + f.height + 2} H ${f.x + f.width}`,
-    stroke: "#7257d8",
-    strokeWidth: 2,
-    dashArray: "1 4",
-    fill: "none",
-  }));
-}
-```
-
-Then connect `svg.kind === "dots"` to `baselineDots` in `StandoffEditorView.measure`. Range-to-DOM geometry, resize invalidation, local coordinates, layering, and cleanup remain owned by the existing view.
+Use the complete [dotted-underline provider and apply command](CREATING_STANDOFF_EFFECTS.md#worked-example-dotted-underline-with-an-apply-command). `EffectDefinition.render` receives immutable, already-measured fragments and returns SVG path descriptors. Its owning feature registers it through `AnnotationCapabilities.register.effect`; core handles wrapping, lane offsets and scheduling. Adding a new passive foreground effect does not require a central renderer switch case.
 
 ## Minimal CSS Block property
 

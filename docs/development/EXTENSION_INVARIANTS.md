@@ -43,4 +43,4 @@ A hosted Block view receives a self-bound `BlockRuntime`; read fields reactively
 
 Normal document codecs preserve payload and known structure, but runtime state is disposable. Verify a fresh editor with application activation reproduces behavior and an editor without the module preserves authored data using fallback rendering. See [persistence limits](../architecture/PERSISTENCE_AND_HISTORY.md) for the pre-existing History-disabled envelope defect.
 
-The available Stage 1 ports do not include arbitrary selection, annotation or transaction services. Keep future APIs from the architecture review distinct from the [implemented public contract](../../src/feature-api/index.ts).
+Stages 1–5 provide specific Block, text-operation, annotation/panel/effect and document-presentation capabilities. They do not expose arbitrary editor/transaction services. Use the [extension overview](EXTENSION_ARCHITECTURE.md) and [implemented public contract](../../src/feature-api/index.ts); Stage 6 / History extraction and a general Window-header API remain unimplemented.

@@ -3,28 +3,28 @@
 Codex has three related but separate visual systems:
 
 1. **Standoff decoration SVGs** owned locally by each `StandoffEditorView`.
-2. **Floating UI overlays/panels** with existing focus/owner services and feature-specific portal layers mounted by `ReactiveTreeView`. Its current composition is a hard-coded layer list, not a plugin panel registry.
+2. **Floating UI overlays/panels** with core focus/owner services, registered feature panels through `ContributedPanels`, and deliberate legacy layers mounted by `ReactiveTreeView`.
 3. **Page minimap** canvas geometry owned by `PageMinimap`/`MinimapService`.
 
 Do not treat them as one global overlay engine. This page focuses on standoff geometry, then explains when the other systems apply.
 
 ## Feature-module status
 
-Stage 1 introduces hosted Block runtimes and two UI action slots; it does not add a public SVG, standoff-effect, panel or decoration contribution API. The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) proposes later boundaries, but those APIs are not implemented. `BlockRuntime.own` can clean up a widget's own resources; it is not access to standoff measurement or other Blocks' DOM. Use the existing local geometry pipeline for approved core/legacy effects, and justify a new public capability before extracting one.
+Stages 1–5 are accepted. [`EffectContributions`](../../src/runtime/effect-contributions.ts) provides a passive measured-fragment-to-SVG contract, and [`PanelContributions`](../../src/runtime/panel-contributions.ts) hosts registered panel views through existing overlay/focus mechanics. Entity References proves both. Follow [Creating an SVG Standoff Effect](../development/CREATING_STANDOFF_EFFECTS.md) or [Feature Modules](../development/FEATURE_MODULES.md) for working examples. `BlockRuntime.own` still only owns its widget's resources; it does not grant access to standoff measurement or other Blocks' DOM.
 
 ## Semantic range to SVG
 
 ```mermaid
 flowchart LR
-  A[standoffProperties\ntype + inclusive Cell range] --> S[standoffStyleSchema]
+  A[standoffProperties\ntype + inclusive Cell range] --> S[EffectContributions or legacy schema]
   S --> R[rangeFragments]
   R -->|DOM Range.getClientRects| F[local VisualFragments]
-  F --> G[decorations.ts geometry function]
+  F --> G[Immutable fragments to effect provider or legacy geometry]
   G --> P[DecorationShape path data]
   P --> L[local SVG layer in StandoffEditorView]
 ```
 
-[`standoff-styles.ts`](../../src/rendering/standoff-styles.ts) decides whether a property is cell CSS, value-based CSS, SVG, or deferred. `standoffSvgStyles` also assigns vertical lanes to overlapping underlines/rainbows.
+[`standoff-styles.ts`](../../src/rendering/standoff-styles.ts) checks registered passive effects before legacy SVG schemas and decides whether a legacy property is cell CSS, value-based CSS, SVG, or deferred. `standoffSvgStyles` also assigns vertical lanes to overlapping underlines/rainbows.
 
 [`StandoffEditorView`](../../src/rendering/standoff-editor-view.tsx) creates a DOM `Range` from the first and last Cell elements. `range.getClientRects()` produces one viewport rectangle per wrapped line fragment. `rangeFragments` translates them into the standoff surface's coordinates:
 
@@ -51,11 +51,11 @@ Multiple properties coexist by producing separate keyed shapes. Underline/rainbo
 
 ## Invalidation and layout changes
 
-Measurement is scheduled through `requestAnimationFrame`, coalescing repeated invalidations. A reactive effect schedules it when inline length, resolved annotation JSON, selection revision, session decorations, entity-candidate mode, cross-Block selection, or annotation preview changes.
+Measurement is scheduled through `requestAnimationFrame`, coalescing repeated invalidations. A reactive effect schedules it when inline length, resolved annotation JSON, selection revision, session decorations, effect registrations, cross-Block selection, or annotation preview changes.
 
 A `ResizeObserver` watches the Standoff surface, covering container resizing and most text reflow. Inline image load explicitly schedules a new measure. A scroll listener is currently used when interactive candidate controls need viewport placement; the SVG itself is local to content and normally moves with the surface without remeasurement. An `IntersectionObserver` avoids maintaining candidate controls while offscreen.
 
-If a new decoration depends on another cause—loaded font metrics, a custom asynchronously sized child, or a transform outside the observed surface—it must schedule measurement for that cause. `PageMinimap` has its own broader observer/font/viewport invalidation logic; it is not automatically inherited by standoff SVG.
+If an effect demonstrates a missing invalidation cause—loaded font metrics, a custom asynchronously sized child, or a transform outside the observed surface—propose a core scheduling correction. A passive feature provider must not install independent observers. Standoff rendering has no dedicated font-ready hook. `PageMinimap` has its own broader observer/font/viewport invalidation logic; it is not automatically inherited by standoff SVG.
 
 ## Coordinate utilities for other graphics
 
@@ -74,7 +74,7 @@ That limitation is documented in [Adding a Block property](../development/ADDING
 
 ## Floating UI overlays
 
-[`OverlayService`](../../src/runtime/overlays.ts) stores transient descriptors for entity search, Find/Replace, annotation panels, and context menus. It captures return focus/selection, assigns session-only keys, and closes overlays whose owner occurrence disappears. The current [`ReactiveTreeView`](../../src/rendering/reactive-tree-view.tsx) mounts the specific entity-search, Find, annotation, context-menu and other layers, which own their portal/mount behavior. The older `OverlayLayer` helper exists but is not that render root's composition path.
+[`OverlayService`](../../src/runtime/overlays.ts) stores transient descriptors for entity search, Find/Replace, annotation panels, and context menus. It captures return focus/selection, assigns session-only keys, and closes overlays whose owner occurrence disappears. [`ContributedPanels`](../../src/rendering/contributed-panels.tsx) renders registered feature panels in a Portal using core `PanelSession` handles. Entity search/list UI owns its widget mounts and cleanup. [`ReactiveTreeView`](../../src/rendering/reactive-tree-view.tsx) also retains deliberate legacy Find, annotation, context-menu and other layers. The older `OverlayLayer` helper exists but is not that render root's composition path.
 
 Use this path for floating interactive UI anchored to a point. Do not persist overlay descriptors or use it to paint semantic document decoration.
 

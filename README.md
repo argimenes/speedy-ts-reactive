@@ -13,11 +13,11 @@ For the current reactive architecture, data/input/rendering flows, extension
 recipes, and day-to-day source map, start with the
 [Codex developer guide](./docs/README.md).
 
-Stage 0/1 of the feature-module migration is implemented with Timer as the pilot.
-See [feature modules and hosted Block applications](./docs/architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md)
-for the current API and separate module/instance lifetimes, and the
-[Stage 1 report](./CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) for qualification and
-known limits. Stage 2 established neutral operation/input boundaries; [Stage 3](CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) extracts Grouping. Stage 4 awaits review.
+Feature-module Stages 1–5 are accepted. Start with the
+[extension architecture and tutorials](./docs/development/EXTENSION_ARCHITECTURE.md)
+for current Block Application, feature, passive standoff-effect and Window presentation
+APIs. The [Stage 5 report](./CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the latest
+qualification. Stage 6 / History extraction is deliberately deferred.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

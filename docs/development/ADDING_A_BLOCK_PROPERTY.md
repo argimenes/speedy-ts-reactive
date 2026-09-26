@@ -1,6 +1,6 @@
 # Adding a Block property
 
-This recipe documents the current core/legacy property path. The Timer feature-module pilot has not introduced a public property/effect registry or annotation-target API. Follow these internal integration points for scoped property work; do not expose `ReactiveEditor` to a feature as a workaround. See [implemented feature boundaries](../architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md).
+This recipe documents the current core/legacy Block-property path. Stages 1–5 supply specific feature capabilities, including passive standoff effects and annotation UI, but no general Block-property renderer/editor registry. Follow these internal integration points for Block-property work; do not expose `ReactiveEditor` to a feature as a workaround. See [implemented extension boundaries](EXTENSION_ARCHITECTURE.md).
 
 
 Block properties are persisted as JSON objects in `payload.blockProperties`, conventionally with `type`, optional `value`, optional `metadata`, and sometimes `isDeleted`. The active reactive implementation has no `BlockProperty` registry. Ordinary appearance is a switch in [`blockAppearance`](../../src/rendering/appearance.ts); specialized views may interpret properties themselves.

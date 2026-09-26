@@ -1,6 +1,6 @@
 # Adding a standoff property
 
-This recipe documents the current core/legacy property path. The Timer feature-module pilot has not introduced a public property/effect registry or annotation-target API. Follow these internal integration points for scoped property work; do not expose `ReactiveEditor` to a feature as a workaround. See [implemented feature boundaries](../architecture/FEATURE_MODULES_AND_BLOCK_APPLICATIONS.md).
+For a new passive SVG effect, use [Creating an SVG Standoff Effect](CREATING_STANDOFF_EFFECTS.md), which documents the implemented Stage 4 provider contract and current Stage 5 limits. This page retains the core/legacy CSS property recipe. CSS/region property schemas are still central; a universal property renderer/editor registry does not exist.
 
 
 A persisted standoff property is a JSON object in a Standoff Block's `payload.standoffProperties`. Active ranges use inclusive Cell indexes:
@@ -11,7 +11,7 @@ A persisted standoff property is a JSON object in a Standoff Block's `payload.st
 
 `StandoffEditorView` resolves each object through `LinkedAnnotations` before rendering. A property may therefore carry its own values or refer to a linked definition. Editing text through `replaceInlineRange` automatically maps valid ranges around inserted/deleted Cells.
 
-There is no separate semantic-property class registration. Appearance is discovered by the exact `type` key in [`standoffStyleSchemas`](../../src/rendering/standoff-styles.ts).
+There is no separate semantic-property class registration. CSS/region appearance uses the exact `type` key in [`standoffStyleSchemas`](../../src/rendering/standoff-styles.ts). Passive SVG first checks `EffectContributions`, then falls back to legacy schema rendering.
 
 ## A. Simple CSS property
 
@@ -34,7 +34,7 @@ For a property whose `value` supplies a colour, use `valueStyle`:
 
 `compileCellStyleRuns` calculates styles only at annotation endpoints and `cellStyleAt` supplies the current run to each Cell. Multiple `text-decoration-line` values are combined; later applicable properties otherwise follow source-order assignment.
 
-Associate the range with text through a command:
+Inside core/legacy code, associate the range with text through a command (a feature should use the validated range-annotation capability shown in the SVG tutorial):
 
 ```ts
 const current = (node.payload.standoffProperties as Record<string, unknown>[] | undefined) ?? [];
@@ -48,52 +48,9 @@ Do not mutate `current`. Clone/replace the array. For editing an existing proper
 
 ## B. Graphical/SVG property
 
-The current integration is explicit rather than registry-driven. For a new geometry kind, make these changes:
+Register an `EffectDefinition` through the scope-owned `AnnotationCapabilities.register.effect`. The [worked dotted-underline tutorial](CREATING_STANDOFF_EFFECTS.md#worked-example-dotted-underline-with-an-apply-command) includes property application, composition and wrapping/lane rules. It needs no new `SvgStyle` kind or `StandoffEditorView.measure` branch.
 
-1. Add a case to the private `SvgStyle` union and a `standoffStyleSchemas` entry.
-2. Add a pure geometry function in [`decorations.ts`](../../src/rendering/decorations.ts) if existing underline/highlight/outline geometry is insufficient.
-3. Add the kind to the `measure()` switch in [`StandoffEditorView`](../../src/rendering/standoff-editor-view.tsx).
-4. Choose background or foreground layer and any lane/collision behaviour.
-5. Add schema/geometry and renderer-focused tests.
-
-Minimal “bracket” skeleton:
-
-```ts
-// standoff-styles.ts
-type SvgStyle =
-  | { kind: "underline"; colour: string }
-  | { kind: "rainbow" | "highlighter" | "rectangle" | "spiky" | "bracket" };
-
-// in standoffStyleSchemas
-"style/bracket": { svg: { kind: "bracket" } },
-```
-
-```ts
-// decorations.ts — keep geometry independent of Solid/DOM
-export function bracketShapes(
-  key: string,
-  fragments: VisualFragment[],
-): DecorationShape[] {
-  return fragments.map((f, i) => ({
-    key: `${key}:${i}`,
-    path: `M ${f.x - 3} ${f.y} h -4 v ${f.height} h 4`,
-    stroke: "currentColor",
-    strokeWidth: 2,
-    fill: "none",
-  }));
-}
-```
-
-```ts
-// StandoffEditorView.measure switch
-case "bracket":
-  shapes = bracketShapes(key, fragments);
-  break;
-```
-
-`rangeFragments` already turns an inclusive Cell range into one local rectangle per wrapped line. The view schedules measurement for annotation/inline/selection changes and observes surface resize. The SVG follows scroll with its local surface. Add another invalidation only when your geometry depends on a cause the surface observer does not cover.
-
-If an existing shape is sufficient, prefer a parameterized schema kind over copying measurement code. Underlines/rainbows currently receive noncolliding vertical offsets; a new below-text decoration must either join that allocation in `standoffSvgStyles` or document intentional overlap.
+Existing rainbow, highlighter, rectangle and other legacy effects still use schema kinds and the central switch. That remains the internal path for those implementations, not the preferred recipe for a new passive foreground SVG. Filters, backdrop regions and editable projections need separate assessment; see the tutorial's limits table.
 
 ## Editing and persistence
 

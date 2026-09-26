@@ -13,14 +13,21 @@ Recommended reading order:
 7. [SVG and overlays](architecture/SVG_AND_OVERLAYS.md)
 8. [Where do I go to change X?](development/REPOSITORY_MAP.md)
 
-Practical recipes:
+Practical extension guides (accepted Stages 1–5):
 
-- [Add a Block type](development/ADDING_A_BLOCK_TYPE.md)
-- [Add a standoff property](development/ADDING_A_STANDOFF_PROPERTY.md)
+- [Choose an extension model](development/EXTENSION_ARCHITECTURE.md)
+- [Creating a Block Type / Block Application](development/CREATING_BLOCK_TYPES.md)
+- [Creating an SVG Standoff Effect](development/CREATING_STANDOFF_EFFECTS.md)
+- [Creating an application hosted by a Window Block](development/CREATING_WINDOW_APPLICATIONS.md)
+- [Creating a cross-cutting Feature Module](development/FEATURE_MODULES.md)
+
+Additional recipes and references:
+
+- [Legacy CSS standoff properties](development/ADDING_A_STANDOFF_PROPERTY.md)
 - [Add a Block property](development/ADDING_A_BLOCK_PROPERTY.md)
 - [Extension invariants](development/EXTENSION_INVARIANTS.md)
-- [Copyable minimal examples and development loop](development/MINIMAL_EXTENSION_EXAMPLES.md)
+- [Other minimal examples and development loop](development/MINIMAL_EXTENSION_EXAMPLES.md)
 
 Names in this guide use **Block** for an authored Codex concept, `ContentRecord` for its canonical content, `PlacementRecord` for an attachment of that content, and `BlockNode` for one occurrence projected into one view.
 
-Current migration status: Timer is extracted, Stage 2 established neutral operation/input boundaries, and [Stage 3](../CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) extracts Grouping. Use the [architecture review](../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) for later stages. Block applications use the public runtime; Grouping uses narrow editor-operation capabilities. Stage 4 requires a separate review.
+Current migration status: Stages 1–5 are accepted: Timer, Grouping, Entity References and Compact Document have feature-owned implementations with the demonstrated Block, operation, passive-effect/panel and presentation boundaries. [Stage 5 report](../CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the latest extraction. Stage 6 / History extraction is deliberately deferred; the [architecture review](../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) is a roadmap, not an API reference.

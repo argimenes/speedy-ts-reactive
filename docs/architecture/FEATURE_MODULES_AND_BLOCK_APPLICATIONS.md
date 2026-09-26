@@ -1,6 +1,6 @@
 # Feature modules and hosted Block applications
 
-Stage 0/1 is implemented: Timer is the first extracted first-party feature. The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) remains the migration plan; the [Stage 1 report](../../CODEX_FEATURE_MODULE_STAGE_1_REPORT.md) records qualification and known issues. [Stage 2](../../CODEX_FEATURE_MODULE_STAGE_2_REPORT.md) establishes neutral range/annotation, current-operation and selection-gesture boundaries. [Stage 3](../../CODEX_FEATURE_MODULE_STAGE_3_REPORT.md) extracts Grouping into its own editor feature module. Stage 4 remains a separate review gate.
+Stages 1–5 are accepted. Timer, Grouping, Entity References and Compact Document use the implemented feature boundaries. For practical examples, start with [the extension architecture](../development/EXTENSION_ARCHITECTURE.md), [Block tutorial](../development/CREATING_BLOCK_TYPES.md) and [feature tutorial](../development/FEATURE_MODULES.md). The [architecture review](../../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) remains the roadmap; Stage 6 / History extraction is deferred.
 
 These are trusted TypeScript modules compiled with Codex. There is no plugin discovery, package loader, runtime dependency resolver, sandbox or hot-loading system.
 
@@ -8,7 +8,7 @@ These are trusted TypeScript modules compiled with Codex. There is no plugin dis
 
 Application entry points construct `ReactiveEditor`, call [`registerApplicationViews(editor)`](../../src/application/features.ts), create projections and mount `ReactiveTreeView`. Call registration once per editor; duplicate registration is an error.
 
-Application composition currently calls `registerCoreViews` for legacy/core views and commands, then activates Timer if configured. `ReactiveEditor` still constructs unmigrated services, but no longer imports Timer. An editor using only `registerCoreViews` intentionally has no Timer implementation.
+Application composition currently calls `registerCoreViews` for legacy/core views and commands, then activates configured Compact Document, Entity References, Grouping and Timer features. `ReactiveEditor` still constructs unmigrated services, but does not import those feature implementations. An editor using only `registerCoreViews` intentionally omits them.
 
 ```mermaid
 flowchart TB
@@ -97,7 +97,7 @@ Unknown authored types, fields, properties, children and opaque relations must s
 
 Stage 1's physical removal experiment passed typecheck, both builds and focused ordinary-document/unknown-data tests with Timer's directory and application activation absent. See the report for exact results and the separate, pre-existing History-disabled envelope preservation defect.
 
-The implemented selection-policy and current-operation contracts are described below. There are still no general panel, standoff-effect, property-renderer or serializer registries. Entity References, Compact Mode, History and Superposition remain on their existing paths; later architecture-review proposals are not callable implementation contracts.
+The implemented selection-policy and current-operation contracts are described below. Stage 4 added passive measured-effect and panel contributions plus bounded annotation UI; Stage 5 added one document-window presentation slot. Entity References and Compact now own their extracted policy/UI. There is still no universal property renderer/editor, serializer or application-window header registry. History extraction and Text Superposition remain deferred.
 
 ## Stage 2 editor-operation boundaries
 
@@ -107,6 +107,12 @@ The implemented selection-policy and current-operation contracts are described b
 
 Grouping now lives in [`features/grouping`](../../src/features/grouping/index.tsx). Application composition activates it with `features.grouping` (default true, preserving existing behavior). A bare `ReactiveEditor` plus core views has no Grouping policy. The feature receives [`TextOperationCapabilities`](../../src/feature-api/text-operation.ts) through an explicit application adapter, with no editor/repository/DOM lookup access.
 
-The module owns its controller, commands, semantic operation/gesture bindings, decorations, notices, counts and Selection help. `FeatureActions` has a bounded toolbar contribution for the existing notice, Selection-details and annotation-description surfaces; this is not the future panel/effect registry. Core [`deleteTextRanges`](../../src/runtime/range-edits.ts) validates, merges and deletes supplied ranges atomically and returns a caret. The adapter handles native/logical/cross selection completion and caret restoration.
+The module owns its controller, commands, semantic operation/gesture bindings, decorations, notices, counts and Selection help. `FeatureActions` has a bounded toolbar contribution for the existing notice, Selection-details and annotation-description surfaces; this is separate from the passive-effect and panel registries. Core [`deleteTextRanges`](../../src/runtime/range-edits.ts) validates, merges and deletes supplied ranges atomically and returns a caret. The adapter handles native/logical/cross selection completion and caret restoration.
 
 Grouping uses the Stage 2 Show/Hide visibility port; authored Show/Hide storage/rendering remains independent. Grouping is an editor operation, independent of hosted `BlockRuntime`. Its physical removal qualification and remaining adapter responsibilities are recorded in the Stage 3 report.
+
+## Stage 4 and Stage 5 contribution boundaries
+
+[Entity References](../../src/features/entity-references/index.tsx) consumes `AnnotationCapabilities`: revision-aware snapshots/search, shared linked-annotation application, owned panels/decorations, annotation UI and passive measured effects. See [the effect tutorial](../development/CREATING_STANDOFF_EFFECTS.md) for the immutable fragment contract and remaining region/projection limits.
+
+[Compact Document](../../src/features/compact-document/index.tsx) consumes `PresentationCapabilities`: one per-window request/control/style contribution. Core retains expanded geometry, automatic narrow-window collapse, observers, margins/drawers and focus. This does not provide a child application with parent Window controls; see [Window applications](../development/CREATING_WINDOW_APPLICATIONS.md).

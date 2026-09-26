@@ -1,5 +1,7 @@
 # Adding a Block type
 
+For the complete Stage 5 tutorial, exact `BlockRuntime` inventory and a working Counter module, use [Creating a New Block Type / Block Application](CREATING_BLOCK_TYPES.md). This page remains a shorter checklist.
+
 Start with the [Timer module](../../src/features/timer/index.tsx) and the
 [copyable hosted Block example](MINIMAL_EXTENSION_EXAMPLES.md#minimal-hosted-block-module).
 The implemented boundary is [`src/feature-api`](../../src/feature-api/index.ts).
