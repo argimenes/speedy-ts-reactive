@@ -31,3 +31,5 @@ Additional recipes and references:
 Names in this guide use **Block** for an authored Codex concept, `ContentRecord` for its canonical content, `PlacementRecord` for an attachment of that content, and `BlockNode` for one occurrence projected into one view.
 
 Current migration status: Stages 1–5 are accepted: Timer, Grouping, Entity References and Compact Document have feature-owned implementations with the demonstrated Block, operation, passive-effect/panel and presentation boundaries. [Stage 5 report](../CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the latest extraction. Stage 6 / History extraction is deliberately deferred; the [architecture review](../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) is a roadmap, not an API reference.
+
+Proposal awaiting review: [Canvas workspace / presentation investigation and plan](../CODEX_CANVAS_WORKSPACE_PRESENTATION_PLAN.md). This describes a possible Desktop/Canvas extension; Canvas is not implemented.
