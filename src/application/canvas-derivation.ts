@@ -46,7 +46,12 @@ export function deriveCanvas(state: RepositoryState, previous?: WorkspacePresent
     const anchor = objectId(target);
     if (targets.has(anchor)) throw new Error(`Ambiguous workspace object anchor: ${id}.`);
     targets.add(anchor);
-    const matches = objects.filter(object => objectId(object.target) === anchor);
+    const hosted = objects.filter(object => object.desktopHostBlockId === id && objectId(object.target) !== anchor);
+    if (hosted.length) {
+      const inner = content.children.length === 1 ? state.contents[state.placements[content.children[0]].contentKey] : undefined;
+      if (!inner || hosted.some(object => object.target.kind === "block" ? inner.payload.id !== object.target.blockId : ((inner.payload.metadata as any)?.documentId ?? inner.payload.id) !== object.target.documentId)) throw new Error(`Desktop host mapping does not match its owned object: ${id}.`);
+    }
+    const matches = objects.filter(object => objectId(object.target) === anchor || hosted.includes(object));
     if (matches.length > 1) throw new Error(`Multiple directory objects target ${id}.`);
     let object = matches[0];
     if (!object) {

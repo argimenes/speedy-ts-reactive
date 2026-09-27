@@ -5,6 +5,7 @@ import type { LoadedWorkspace } from "../reactive-editor/workspace-manifest";
 import { WorkspacePresentationState, type WorkspaceObject } from "../reactive-editor/workspace-presentation";
 import { registerApplicationViews } from "./features";
 import { batch, createSignal } from "solid-js";
+import { deriveDesktop } from "./desktop-derivation";
 import { deriveCanvas } from "./canvas-derivation";
 
 export interface WorkspaceObjectResolution {
@@ -27,7 +28,7 @@ export class WorkspaceSession {
   private readonly resolutionSignal = createSignal(0);
   private readonly cleanup: Array<() => void> = [];
   private composing = false;
-  private pending?: "desktop" | "canvas";
+  private pending?: { name: "desktop" | "canvas"; deriveDesktop: boolean };
   private compositionCompletion?: ReturnType<typeof setTimeout>;
   private readonly closedMedia = createSignal<ReadonlySet<string>>(new Set());
   setCanvasMediaClosed(id: string, closed: boolean) {
@@ -46,6 +47,7 @@ export class WorkspaceSession {
     this.projection = this.editor.createView("loaded-workspace");
     this.resolveObjects();
     if (this.presentation.enabled) {
+      this.cleanup.push(this.editor.commandRegistry.register({ id: "workspace.presentation.createDesktop", label: "Create Desktop from Canvas", canExecute: () => this.canCreateDesktop(), execute: () => { this.createDesktop(); } }, "workspace-session"));
       for (const name of ["desktop", "canvas"] as const) this.cleanup.push(this.editor.commandRegistry.register({
         id: `workspace.presentation.${name}`, label: name === "desktop" ? "Desktop" : "Canvas",
         canExecute: () => this.presentation.editable(), execute: () => { this.selectPresentation(name); },
@@ -79,7 +81,7 @@ export class WorkspaceSession {
       this.compositionCompletion = setTimeout(() => {
         this.compositionCompletion = undefined;
         const pending = this.pending; this.pending = undefined;
-        if (!this.disposed && pending) this.selectPresentation(pending);
+        if (!this.disposed && pending) this.changePresentation(pending.name, pending.deriveDesktop);
       }, 0);
     };
     window.addEventListener("compositionstart", start, true);
@@ -88,11 +90,22 @@ export class WorkspaceSession {
     this.cleanup.push(stop); return stop;
   }
 
-  selectPresentation(name: "desktop" | "canvas"): boolean {
+  canCreateDesktop() {
+    const value = this.presentation.read();
+    return this.presentation.editable() && !!value?.presentations.canvas && value.presentations.desktop === undefined;
+  }
+  createDesktop(): boolean { return this.changePresentation("desktop", true); }
+  selectPresentation(name: "desktop" | "canvas"): boolean { return this.changePresentation(name, false); }
+
+  private changePresentation(name: "desktop" | "canvas", createDesktop: boolean): boolean {
     if (!this.presentation.editable()) return false;
+    if (createDesktop && !this.canCreateDesktop()) return false;
+    if (name === "desktop" && this.canCreateDesktop() && !createDesktop) {
+      this.noticeSignal[1]("Desktop has not been created. Choose Create Desktop from Canvas in Presentations."); return false;
+    }
     const editor = this.editor;
     if (this.composing || Object.keys(this.projection.state.nodes).some(key => editor.mounts.get(key)?.composing)) {
-      this.pending = name; this.noticeSignal[1]("Presentation will switch after composition finishes."); return false;
+      this.pending = { name, deriveDesktop: createDesktop }; this.noticeSignal[1]("Presentation will switch after composition finishes."); return false;
     }
     if (editor.overlays.overlays.length || editor.stickyNotes.state.drafts.length ||
         (typeof document !== "undefined" && document.querySelector('[role="dialog"]')) ||
@@ -102,6 +115,8 @@ export class WorkspaceSession {
       this.noticeSignal[1]("Finish or close the open panel, draft or embedded application before switching presentations."); return false;
     }
     const key = editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey;
+    const focusedPlacement = key ? editor.node(key)?.placementKey : undefined;
+    const focusAncestors = new Set(key ? editor.blockQueries.ancestors(key).map(n => n.placementKey) : []);
     const mount = key ? editor.mounts.get(key) : undefined;
     const logical = key ? editor.selections.sets[key] : undefined;
     const primary = logical?.items.find(item => item.id === logical.primaryId);
@@ -109,6 +124,8 @@ export class WorkspaceSession {
       (primary ? { anchor: primary.anchor.boundary.index, head: primary.head.boundary.index } : undefined);
     try {
       this.interaction?.cancel();
+      const candidate = createDesktop ? deriveDesktop(editor.repository.snapshot(), this.presentation.read()!, this.resolveObjects(),
+        typeof window === "undefined" ? undefined : { width: window.innerWidth, height: window.innerHeight }) : undefined;
       batch(() => {
         if (name === "canvas" && !this.presentation.read()?.presentations.canvas) {
           const candidate = deriveCanvas(editor.repository.snapshot(), this.presentation.read());
@@ -116,20 +133,44 @@ export class WorkspaceSession {
           if (candidate.identities.length) editor.repository.commit("Identify workspace objects", candidate.identities.map(record => ({ kind: "put-content", record })));
           this.presentation.initializeCanvas(candidate.objects, candidate.canvas);
         }
+        if (candidate) {
+          // All identity/layout validation precedes the single structural commit.
+          // TreeCommands buffers wrapper insertion and moves; a failure publishes neither.
+          editor.commands.transaction("Create Desktop from Canvas", () => {
+            for (const entry of candidate.entries) {
+              if (entry.wrapper) {
+                const wrapper = editor.commands.insert(entry.wrapper, { kind: "at", parentKey: entry.destination, index: editor.commands.childrenOf(entry.destination).length });
+                editor.commands.move(entry.placementKey, { kind: "at", parentKey: wrapper, index: 0 });
+              } else {
+                editor.commands.setPayloadField(entry.placementKey, "metadata", entry.metadata);
+                if (entry.move) editor.commands.move(entry.placementKey, { kind: "at", parentKey: entry.destination, index: editor.commands.childrenOf(entry.destination).length });
+              }
+            }
+          });
+          this.presentation.initializeDesktop(candidate.objects);
+        }
         editor.selectionGestures.cancelGesture();
         editor.crossText.clear();
         this.presentation.select(name);
-        this.noticeSignal[1]("");
+        this.noticeSignal[1](candidate ? `Desktop created with ${candidate.entries.length} object(s).${candidate.skipped.length ? " Retained without a Desktop conversion: " + candidate.skipped.map(item => `${item.label} (${item.reason})`).join("; ") + "." : ""}` : "");
       });
       queueMicrotask(() => {
         if (this.disposed || !key) return;
-        if (!editor.mounts.get(key)) {
-          const visible = editor.blockQueries.ancestors(key).find(node => editor.mounts.get(node.key));
+        // Existing occurrences (including minimized ones) keep their bookmark.
+        // A reparented occurrence has a new route: match its retained ancestor
+        // placements so a shared Document does not steal focus into another Window.
+        const matches = candidate && !this.projection.state.nodes[key] && focusedPlacement
+          ? Object.values(this.projection.state.nodes).filter(n => n.placementKey === focusedPlacement)
+            .map(n => ({ key: n.key, score: editor.blockQueries.ancestors(n.key).filter(a => focusAncestors.has(a.placementKey)).length }))
+            .sort((a, b) => b.score - a.score) : [];
+        const target = matches.length && (matches.length === 1 || matches[0].score > matches[1].score) ? matches[0].key : key;
+        if (!editor.mounts.get(target)) {
+          const visible = editor.blockQueries.ancestors(target).find(node => editor.mounts.get(node.key));
           if (visible) editor.focus.request(visible.key, { reason: "presentation-switch-hidden-target" });
           return;
         }
-        editor.focus.request(key, { reason: "presentation-switch", caret: native });
-        if (inline) editor.mounts.get(key)?.restoreInlineSelection?.(inline);
+        editor.focus.request(target, { reason: "presentation-switch", caret: native });
+        if (inline) editor.mounts.get(target)?.restoreInlineSelection?.(inline);
       });
       return true;
     } catch (error) { this.noticeSignal[1](error instanceof Error ? error.message : String(error)); return false; }

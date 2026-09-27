@@ -13,16 +13,17 @@ try {
   // Feature-dependent tests are not the removal build's entry points.
   const stripTests = async dir => { for (const e of await readdir(dir,{withFileTypes:true})) { const p=path.join(dir,e.name); if(e.isDirectory())await stripTests(p); else if(/\.test\.[tj]sx?$/.test(e.name))await rm(p); } };
   await stripTests(path.join(target,'src'));await stripTests(path.join(target,'server'));
-  for(const name of ['src/features/canvas','src/features/canvas-counter','src/application/canvas-actions.ts','src/application/canvas-derivation.ts','src/application/workspace-presentation-view.tsx','src/application/workspace-presentation.css','src/demo/workspace-presentations.tsx']) await rm(path.join(target,name),{recursive:true});
+  for(const name of ['src/features/canvas','src/features/canvas-counter','src/application/canvas-actions.ts','src/application/canvas-derivation.ts','src/application/desktop-derivation.ts','src/application/workspace-presentation-view.tsx','src/application/workspace-presentation.css','src/demo/workspace-presentations.tsx']) await rm(path.join(target,name),{recursive:true});
   // Static assembly changes only: install Desktop, no fake Canvas implementation.
   await edit('src/application/features.ts',s=>s.split('\n').filter(l=>!l.includes('CanvasCounter')).join('\n'));
   await edit('src/application/workspace-session.ts',s=>{
     s=s.replace('import { deriveCanvas } from "./canvas-derivation";','');
+    s=s.replace('import { deriveDesktop } from "./desktop-derivation";','');
+    s=s.split('\n').filter(l=>!l.includes('register({ id: "workspace.presentation.createDesktop"')).join('\n');
     s=s.replace('new ReactiveEditor(loaded, configuration)','new ReactiveEditor(loaded, { ...configuration, features: { ...configuration.features, canvasWorkspace: false } })');
     s=s.slice(0,s.indexOf('  private readonly closedMedia'))+s.slice(s.indexOf('  private interaction?:'));
-    const start=s.indexOf('        if (name === "canvas" &&');const end=s.indexOf('        editor.selectionGestures.cancelGesture();',start);
-    s=s.slice(0,start)+s.slice(end);
-    s=s.replace('    if (!this.presentation.editable()) return false;','    if (name === "canvas" || !this.presentation.editable()) return false;');
+    const start=s.indexOf('  canCreateDesktop()');const end=s.indexOf('  ownPresentationInteraction(',start);
+    s=s.slice(0,start)+'  selectPresentation(_name: "desktop" | "canvas") { return false; }\n  private changePresentation(_name: "desktop" | "canvas", _deriveDesktop: boolean) { return false; }\n\n'+s.slice(end);
     const a=s.indexOf('  /** Resolve roots before mounting.');const b=s.indexOf('  dirty()',a);s=s.slice(0,a)+s.slice(b);
     return s;
   });

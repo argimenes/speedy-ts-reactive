@@ -164,10 +164,17 @@ export class WorkspacePresentationState {
     if (value?.objects.some(previous => !objects.some(next => JSON.stringify(next) === JSON.stringify(previous)))) throw new Error("Initialize Canvas must retain the existing object directory.");
     this.commit({ ...(value ?? { version: 1, active: "desktop", presentations: { desktop: { version: 1, kind: "legacy-tree" } } }), objects, presentations: { ...(value?.presentations ?? { desktop: { version: 1, kind: "legacy-tree" } }), canvas } });
   }
+  /** Explicit reverse derivation; an existing (even empty) Desktop is final. */
+  initializeDesktop(objects: WorkspaceObject[]) {
+    const value = this.read();
+    if (!value?.presentations.canvas) throw new Error("Create Desktop requires a Canvas layout.");
+    if (value.presentations.desktop !== undefined) throw new Error("Desktop layout already exists.");
+    this.commit({ ...value, active: "desktop", objects, presentations: { ...value.presentations, desktop: { version: 1, kind: "legacy-tree" } } });
+  }
   select(active: "desktop" | "canvas") {
     const value = this.read();
     if (!value) { if (active === "desktop" && this.editable()) return; throw new Error("Presentation has not been initialized."); }
-    if (!value.presentations[active]) throw new Error("This workspace has no Desktop layout. Reverse derivation is not available yet.");
+    if (!value.presentations[active]) throw new Error("This workspace has no Desktop layout. Use Create Desktop from Canvas.");
     this.commit({ ...value, active });
   }
   setCamera(next: CanvasCamera) {
