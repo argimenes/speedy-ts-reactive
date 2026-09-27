@@ -229,9 +229,20 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await send('Emulation.setDeviceMetricsOverride',{width:1152,height:800,deviceScaleFactor:1.25,mobile:false},sessionId);await settle();await click(read);
  check('125-percent zoom-equivalent CSS viewport keeps identity DOM',await evaluate(`(()=>{const e=q.flow('a');return getComputedStyle(document.querySelector('.workspace-spatial__document')).transform==='none'&&document.querySelector('.reactive-window').getBoundingClientRect().right<=innerWidth})()`),true);
  await click(back);await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false},sessionId);
+
+ await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]},sessionId);
+ await evaluate("q.session.spatial.select('block:two');q.frame()");await click(read);await settle();
+ check('lying shared Document activates as one ordinary Window',await evaluate("q.session.spatial.document.active().objectId==='block:two'&&document.querySelectorAll('.reactive-window').length===1&&q.node('two').payload.metadata.state==='minimized'"),true);
+ await click(back);await settle();await evaluate("q.session.spatial.select('block:one');q.frame()");
+ await evaluate(`(async()=>{const {workspaceOpen}=await import('/src/application/workspace-open.ts');const open=workspaceOpen(q.session);for(let i=0;i<9;i++)open.image('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==');await q.frame()})()`);await settle();
+ check('larger directory retains unplaced objects without adding live roots',await evaluate("q.session.spatial.objects().length===18&&q.session.spatial.layout().placements.length===8&&document.querySelectorAll('.reactive-window').length===0"),true);
+ await evaluate("q.session.spatial.select('block:one');q.recording=true;q.motionFrames=[];q.motionGroups=[];let previous;const tick=t=>{if(!q.recording)return;const phase=document.querySelector('.workspace-spatial').dataset.phase;if(['approaching','returning'].includes(phase)){if(!previous||previous.phase!==phase){previous={phase,start:t,last:t,intervals:[]};q.motionGroups.push(previous)}else{previous.intervals.push(t-previous.last);previous.last=t;}}else previous=undefined;requestAnimationFrame(tick)};requestAnimationFrame(tick)");
+ for(let i=0;i<3;i++){await click(read);await settle();await click(back);await settle();}
+ const motionMetrics=await evaluate(`(()=>{q.recording=false;const samples=q.motionGroups.flatMap(g=>g.intervals).sort((a,b)=>a-b);return{samples:samples.length,medianMs:samples[Math.floor(samples.length/2)],p95Ms:samples[Math.floor(samples.length*.95)],maxMs:samples.at(-1),groups:q.motionGroups.map(g=>({phase:g.phase,durationMs:g.last-g.start,frames:g.intervals.length+1}))}})()`);
+ await writeFile('artifacts/spatial-b/motion-metrics.json',JSON.stringify(motionMetrics,null,2));
  await evaluate(`(async()=>{const {workspaceOpen}=await import('/src/application/workspace-open.ts');const open=workspaceOpen(q.session);q.beforeOpen=q.editor.repository.snapshot();const a=await open.serverDocument({folder:'notes',filename:'Scale.json'},new AbortController().signal);const b=await open.serverDocument({folder:'notes',filename:'Scale.json'},new AbortController().signal);q.sameServer=a===b})()`);
  check('server reopen reuses shared live identity and unsaved edits',await evaluate("q.sameServer&&JSON.stringify(q.beforeOpen)===JSON.stringify(q.editor.repository.snapshot())&&String(q.node('native').payload.text).includes('Idle proof')"),true);
- await writeFile('artifacts/spatial-b/browser-results.json' ,JSON.stringify({browser:await send('Browser.getVersion'),checks,counts,sequenceFrames:frames.length},null,2));
- console.log(JSON.stringify({b2Checks:checks.slice(45),counts,sequenceFrames:frames.length},null,2));
+ await writeFile('artifacts/spatial-b/browser-results.json' ,JSON.stringify({browser:await send('Browser.getVersion'),gpu:(await send('SystemInfo.getInfo')).gpu.devices,checks,counts,sequenceFrames:frames.length},null,2));
+ console.log(JSON.stringify({b2Checks:checks.slice(49),counts,sequenceFrames:frames.length},null,2));
  await evaluate('q.dispose()');
 } finally { socket?.close();chrome.kill();await new Promise(r=>setTimeout(r,300));await rm(profile,{recursive:true,force:true,maxRetries:8,retryDelay:200}); }

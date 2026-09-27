@@ -12,7 +12,9 @@
     ],
     "softwareGPU": false,
     "objects": 9,
-    "placed": 8
+    "placed": 8,
+    "largerDirectoryObjects": 18,
+    "gpu": "ANGLE Metal / Apple M1"
   },
   "benchmarks": {
     "viewport": "1440 \u00d7 900",
@@ -21,5 +23,6 @@
     "fixture": "250 paragraphs \u00d7 100 characters, bold range in each; 40 measured edits plus real browser insertion/deletion/split/undo/redo"
   },
   "safari": "Installed safaridriver rejected session creation: Allow remote automation is disabled. No preferences changed.",
-  "manualIME": "Not performed; Chrome CDP native composition/input sequence qualified."
+  "manualIME": "Not performed; Chrome CDP native composition/input sequence qualified.",
+  "qualificationCompleted": "2026-09-28"
 }

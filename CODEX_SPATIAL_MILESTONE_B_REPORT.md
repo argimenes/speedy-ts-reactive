@@ -1,6 +1,6 @@
 # Spatial Milestone B — Existing Document activation and DOM handoff
 
-Status: implementation and qualification in progress. Spatial C is not authorized.
+Status: **complete, awaiting review**. Spatial C has not begun.
 
 ## Scope and baseline
 
@@ -30,16 +30,62 @@ Animation has an owned frame handle and generation token. Escape on the study ca
 
 ## Qualification and review evidence
 
-Pending final qualification summary.
+The [review gallery](./artifacts/spatial-b/index.html) includes six captured views and a [64-frame replay](./artifacts/spatial-b/sequence.html), with recorded timing, quarter-speed playback and a frame scrubber. The same sequence is reproducible from the feature controls. The visual review shows a page rising out of the existing desk composition, changing proportions only during approach, then yielding to ordinary Window chrome and live text. The reverse restores the physical page. No desk dimensions or stored page dimensions were changed.
+
+| Qualification | Result |
+| --- | --- |
+| Focused tests | **193 passed in 21 suites**: Spatial authorization/pose math, session/host assembly, selection gestures/targets, cross-Block selection, standoff editing, Grouping, Entity and Compact. |
+| Spatial Chrome browser | **69 checks passed**, including typing, selection, SVG alignment, Control-held Grouping, Ctrl-click removal, native control Backspace, grouped Delete/undo, Entity panel focus/selection restoration, IME return deferral, margins/drawers, Compact and automatic narrow margins. |
+| Ownership and persistence | One live root/projection, shared identity, unchanged Desktop metadata and physical placement, local/server round-trip, server reopening with unsaved edits, removed/unsafe root revocation and stale callback cancellation. |
+| Handoff lifecycle | Propped and lying Documents, Escape cancellation, switching during pickup, resize/DPR changes, reduced motion, graphics loss/retry with the same focused editor, repeated activation/return. Actual terminal scene corners align within **0.01 CSS pixel**. |
+| Default Desktop/Canvas | **46 checks passed** on ports 3000 and 3002, including real server Document opening/editing, images, presentation selection and the existing sample demo. |
+| Build and type checking | Normal production build passed. Physical Spatial removal **passed**: TypeScript checks, Desktop/Canvas editing/opening/save/reload test, unknown Spatial data preservation, and a production build without Spatial or Three.js. Existing large-chunk and stale browser-mapping advisories remain. |
+
+Entity's existing suites cover stale asynchronous responses/candidates and revision changes. The Spatial browser test verifies that its panel stays in the shared overlay layer and restores the existing selection. No alternate Entity or linked-annotation implementation was introduced.
+
+The main browser fixture has **nine directory objects and eight physical placements**, including two Window occurrences sharing one Document. A larger **18-object** directory retains the same eight physical placements, keeps unplaced objects available in the directory, and still mounts only the selected Document. Eight repeated activation/return cycles plateau at **137 geometries, 13 textures and zero live Document roots after return**. The separate 250-paragraph benchmark covers a much larger editable Document.
+
+DPR 1 and 2, viewport resizing, and a 125% zoom-equivalent CSS viewport/DPR combination were exercised. Actual browser-menu zoom was not automated; this is not represented as a manual browser-zoom pass.
+
+Reproduce with Node 22 and an opted-in Vite server on port 5188:
+
+```sh
+CANVAS_SOFTWARE_GPU=0 node scripts/check-spatial-b-browser.mjs
+node scripts/write-spatial-b-review.mjs
+node scripts/check-spatial-removal.mjs
+node scripts/check-canvas-integration-browser.mjs
+```
+
+Detailed [focused-test output](./artifacts/spatial-b/focused-tests.txt), [Desktop/Canvas results](./artifacts/spatial-b/desktop-canvas-results.json), [production build](./artifacts/spatial-b/production-build.txt) and [physical-removal output](./artifacts/spatial-b/removal.txt) are retained.
+
+The browser scripts use isolated profiles and in-memory fixtures; they do not write server Documents. Results and environment details are in [browser-results.json](./artifacts/spatial-b/browser-results.json) and [environment.json](./artifacts/spatial-b/environment.json).
 
 ## Performance
 
-Pending final paired benchmark summary.
+Benchmarks ran on an **Apple M1 / 8 GB, macOS 15.5, Chrome 153.0.8010.53, Node 22.12.0**. The existing typing benchmark used the same 250 × 100-character fixture and SwiftShader settings for baseline/current comparisons, at 1440 × 900 and DPR 1. The optional hosted mode uses that same benchmark and fixture inside an existing Window. Each run measures 40 insert/delete handlers, then checks real browser insertion, Backspace, split, undo and redo.
+
+| Mode | Median handler ms, runs 1 / 2 / 3 | p95 handler ms, runs 1 / 2 / 3 |
+| --- | --- | --- |
+| Accepted A, existing standalone benchmark | 2.8 / 1.8 / 2.2 | 25.8 / 3.4 / 7.6 |
+| B, existing standalone benchmark | 2.8 / 1.9 / 2.3 | 36.0 / 3.1 / 8.9 |
+| Accepted A, Desktop Window host | 1.5 / 2.0 / 1.5 | 2.5 / 7.0 / 5.3 |
+| B, Desktop Window host | 1.7 / 1.5 / 1.7 | 2.7 / 6.6 / 4.0 |
+| B, Spatial Window host | 2.9 / 2.6 / 2.4 | 4.3 / 4.2 / 3.8 |
+
+The standalone median difference is **0–0.1 ms**; Desktop-host differences change direction across runs. Tail timings are noisy, so these runs do not establish a systematic Desktop regression.
+
+Spatial has a **small measurable hosting overhead**. After memoizing the structural authorization result, the final two Spatial medians are **2.6 and 2.4 ms**, versus paired Desktop medians of **1.5 and 1.7 ms**: **+1.1 and +0.7 ms**. This is not a zero-cost claim. The optimization is a disposable cached validation, not a new input path. The earlier CPU-profiler attempt did not complete; its partial output is excluded from the qualification numbers. Further performance claims would need a larger, controlled sample rather than inference from these few runs.
+
+Every completed run preserved unrelated DOM cells, restored content after editing and took **zero full repository snapshots** during ordinary typing. Spatial recorded **zero scene frames during the measured typing loop**. Full outputs and the comparison are retained in [typing-summary.json](./artifacts/spatial-b/typing-summary.json).
+
+Animation was measured separately, without screencast capture, using the native **ANGLE Metal / Apple M1** renderer. In three warmed pickup/return cycles with the 18-object directory, **159 requestAnimationFrame intervals** had a median and p95 of **16.7 ms**, maximum **16.8 ms**; observed phase durations were approximately **483 ms forward / 400 ms reverse**. These are headless browser frame-callback measurements, not GPU timings, first-open latency or a guarantee about OS compositor presentation. The replay intentionally retains capture/mount delays. See [motion-metrics.json](./artifacts/spatial-b/motion-metrics.json).
 
 ## Limits and next milestone
 
 Safari's installed WebDriver rejected session creation because **Allow remote automation** is disabled. Safari has not been qualified; no system preference was changed. Chrome composition coverage uses real browser composition/input events through CDP, not a human-operated OS IME candidate window. Manual IME and Safari review remain explicit limits.
 
 The preview is deliberately schematic: the physical page has its title and manuscript lines, not a rasterized duplicate of live text. The short final crossfade introduces actual content and essential Window chrome. Visual acceptance should judge the captured transition and reproducible browser interaction, rather than treating the projection math as sufficient evidence.
+
+No revision to the approved C/D boundaries is required. B establishes that the physical-to-screen bridge can remain feature-local while editing retains identity coordinates. Arrangement in C must continue to keep saved placement separate from transient pickup geometry, revoke invalid authorization, and preserve one live root. Unsupported shapes and bare Documents still require separate qualification rather than relaxing the authorization guard.
 
 Spatial C remains unstarted. It may reuse the demonstrated pose math and lifetime rules for arrangement, but B supplies no general layout registry or arrangement machinery.

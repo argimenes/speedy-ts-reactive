@@ -6,6 +6,16 @@
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
     "jsVersion": "15.3.76.13"
   },
+  "gpu": [
+    {
+      "vendorId": 4203,
+      "deviceId": 0,
+      "vendorString": "Google Inc. (Apple)",
+      "deviceString": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Version 15.5 (Build 24F74))",
+      "driverVendor": "Apple",
+      "driverVersion": "15.5"
+    }
+  ],
   "checks": [
     "browsing mounts no live Document",
     "qualified activation",
@@ -73,6 +83,8 @@
     "graphics loss preserves the live editor",
     "graphics retry preserves editor and focus",
     "125-percent zoom-equivalent CSS viewport keeps identity DOM",
+    "lying shared Document activates as one ordinary Window",
+    "larger directory retains unplaced objects without adding live roots",
     "server reopen reuses shared live identity and unsaved edits"
   ],
   "counts": [

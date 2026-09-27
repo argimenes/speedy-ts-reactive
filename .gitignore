@@ -4,6 +4,7 @@ public
 uploads
 surrealDB
 .DS_Store
+.env.local
 data/*json
 data/surreal.db
 data/video
