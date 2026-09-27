@@ -1,0 +1,147 @@
+{
+  "baseline": [
+    {
+      "meanMs": 6.380000000074506,
+      "medianMs": 2.7999999970197678,
+      "p95Ms": 25.799999997019768,
+      "maxMs": 58.1000000089407,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 2.5300000004470347,
+      "medianMs": 1.800000011920929,
+      "p95Ms": 3.3999999910593033,
+      "maxMs": 26.69999998807907,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 2.950000000745058,
+      "medianMs": 2.199999988079071,
+      "p95Ms": 7.600000008940697,
+      "maxMs": 24.599999994039536,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    }
+  ],
+  "current": [
+    {
+      "meanMs": 5.14750000089407,
+      "medianMs": 2.7999999970197678,
+      "p95Ms": 36,
+      "maxMs": 50.900000005960464,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 2.6274999979883433,
+      "medianMs": 1.8999999910593033,
+      "p95Ms": 3.0999999940395355,
+      "maxMs": 25.299999997019768,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 4.154999999329448,
+      "medianMs": 2.300000011920929,
+      "p95Ms": 8.900000005960464,
+      "maxMs": 56.6000000089407,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    }
+  ],
+  "host-baseline": [
+    {
+      "meanMs": 2.0600000005215406,
+      "medianMs": 1.5,
+      "p95Ms": 2.5,
+      "maxMs": 22.700000002980232,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 3.594999998435378,
+      "medianMs": 2,
+      "p95Ms": 7,
+      "maxMs": 53.5,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 2.630000001564622,
+      "medianMs": 1.5,
+      "p95Ms": 5.299999997019768,
+      "maxMs": 38.6000000089407,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    }
+  ],
+  "host-current": [
+    {
+      "meanMs": 2.2725000005215406,
+      "medianMs": 1.7000000029802322,
+      "p95Ms": 2.7000000029802322,
+      "maxMs": 23.799999997019768,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 3.0025000009685754,
+      "medianMs": 1.5,
+      "p95Ms": 6.5999999940395355,
+      "maxMs": 53.3999999910593,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 2.875000000372529,
+      "medianMs": 1.7000000029802322,
+      "p95Ms": 4,
+      "maxMs": 44.70000000298023,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    }
+  ],
+  "spatial-current": [
+    {
+      "meanMs": 3.052499999478459,
+      "medianMs": 2.9000000059604645,
+      "p95Ms": 4.300000011920929,
+      "maxMs": 10.5,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 2.7875,
+      "medianMs": 2.6000000089406967,
+      "p95Ms": 4.200000002980232,
+      "maxMs": 6.200000002980232,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "meanMs": 2.612499999627471,
+      "medianMs": 2.3999999910593033,
+      "p95Ms": 3.800000011920929,
+      "maxMs": 5.5,
+      "snapshots": 0,
+      "restored": true,
+      "unrelatedCellStable": true
+    }
+  ]
+}

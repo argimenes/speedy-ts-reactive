@@ -1,6 +1,6 @@
 # Codex Spatial Workspace / Presentation — implementation plan
 
-Status: **accepted**. [Milestone A implementation and qualification](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) are complete and awaiting review. Milestone B has not begun.
+Status: **accepted**. [Milestone A implementation and qualification](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) are accepted. [Milestone B implementation and qualification](./CODEX_SPATIAL_MILESTONE_B_REPORT.md) are complete and awaiting review. Milestone C has not begun.
 
 Inspected baseline: `3e3297f` (`More work Canvas`). Canvas A–E and its application integration are accepted. This proposal does not reopen that programme. No Spatial code, dependency, scene or browser experiment was implemented during this investigation.
 

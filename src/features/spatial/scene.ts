@@ -1,5 +1,6 @@
 import * as T from "three";
-import { alignmentCorners, editingRectangle, projectCss, studyCamera } from "./camera";
+import { handoffPose, type PagePose } from "./handoff";
+import { alignmentCorners, editingRectangle, projectCss, studyCamera, type ScreenRect } from "./camera";
 import { STUDY, type SpatialLayout, type SpatialObject } from "./model";
 
 export interface SceneStatus { frames: number; geometries: number; textures: number; calls: number; alignmentError: number; width: number; height: number }
@@ -16,6 +17,9 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
   let camera = studyCamera({ kind: "perspective", yaw: 0, approach: 0 }, width, height);
   let alignment: T.Mesh | undefined;
   const hits: T.Object3D[] = [];
+  const pages = new Map<string, { page: T.Group; home: PagePose; localRotation: T.Quaternion }>();
+  let pickup: { id: string; rect: ScreenRect; progress: number; opacity: number } | undefined;
+  let renderSignature = "";
   const loading = new Set<HTMLImageElement>();
   const cancelImages = () => { for (const image of loading) { image.onload = image.onerror = null; image.src = ""; } loading.clear(); };
   const material = (color: number, roughness = .75, metalness = 0) => new T.MeshStandardMaterial({ color, roughness, metalness });
@@ -107,13 +111,17 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
     geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); root.clear();
   }
   function rebuild() {
-    generation++; cancelImages(); const current = generation; release(proxies); hits.length = 0;
+    generation++; cancelImages(); const current = generation; release(proxies); hits.length = 0; pages.clear();
     for (const p of layout?.placements ?? []) {
       const object = objects.find(o => o.id === p.objectId) ?? { id: p.objectId, label: p.objectId, kind: "placeholder", reason: "missing" };
       const group = new T.Group(); group.position.set(p.position.x, .012, p.position.z); group.rotation.y = p.heading; proxies.add(group);
       const page = new T.Group(); page.rotation.x = p.posture === "lying" ? -Math.PI / 2 : -.28; group.add(page);
       const paper = box(page, p.size.width, p.size.height, .0015, object.reason ? 0xa79b8a : 0xf0e5c9, 0, p.size.height / 2, 0);
       paper.castShadow = true;
+      page.updateWorldMatrix(true, false);
+      pages.set(object.id, { page, localRotation: page.quaternion.clone(), home: {
+        center: page.localToWorld(new T.Vector3(0, p.size.height / 2, 0)), rotation: page.getWorldQuaternion(new T.Quaternion()), width: p.size.width, height: p.size.height,
+      } });
       const label = texture(512, 724, ctx => {
         ctx.fillStyle = object.reason ? "#c5bbaa" : "#f7edda"; ctx.fillRect(0, 0, 512, 724);
         ctx.fillStyle = "#665d4e"; ctx.font = "18px Georgia"; ctx.fillText(object.kind === "document" ? "CODEX · DOCUMENT" : object.kind === "image" ? "PHOTOGRAPH" : "WORKSPACE OBJECT", 44, 55);
@@ -121,7 +129,7 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
         const title = object.label.replace(/\.json$/, ""); ctx.fillText(title.length > 29 ? title.slice(0, 27) + "…" : title, 44, 106);
         ctx.strokeStyle = "#bcb19b"; ctx.beginPath(); ctx.moveTo(44, 128); ctx.lineTo(468, 128); ctx.stroke();
         ctx.fillStyle = "#bdb49f"; for (let i = 0; i < 23; i++) ctx.fillRect(44, 169 + i * 18, i % 7 === 6 ? 238 : 398 - (i % 3) * 13, 3);
-        ctx.fillStyle = "#8e826d"; ctx.font = "17px Georgia"; ctx.fillText(object.reason ?? "Preview · open on Desktop to edit", 44, 671);
+        ctx.fillStyle = "#8e826d"; ctx.font = "17px Georgia"; ctx.fillText(object.reason ?? "Preview · double-click to read", 44, 671);
       });
       const surface = mesh(page, new T.PlaneGeometry(p.size.width * .96, p.size.height * .97), new T.MeshStandardMaterial({ map: label, roughness: 1 }), 0, p.size.height / 2, .001);
       surface.receiveShadow = false;
@@ -157,6 +165,25 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       const g = new T.BufferGeometry().setFromPoints([points[0], points[3], points[1], points[1], points[3], points[2]]);
       alignment = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffedc9, transparent: true, opacity: .18, side: T.DoubleSide, depthTest: false })); alignment.renderOrder = 10; scene.add(alignment);
     }
+    for (const [id, entry] of pages) {
+      const { page, home } = entry, moving = pickup?.id === id ? pickup : undefined;
+      page.position.set(0, 0, 0); page.quaternion.copy(entry.localRotation); page.scale.set(1, 1, 1);
+      if (moving) {
+        const pose = handoffPose(home, camera, { width, height }, moving.rect, moving.progress);
+        page.quaternion.copy(page.parent!.getWorldQuaternion(new T.Quaternion()).invert().multiply(pose.rotation));
+        const origin = pose.center.clone().add(new T.Vector3(0, -pose.height / 2, 0).applyQuaternion(pose.rotation));
+        page.position.copy(page.parent!.worldToLocal(origin)); page.scale.set(pose.width / home.width, pose.height / home.height, 1);
+        if (moving.progress === 1) {
+          page.updateWorldMatrix(true, false);
+          for (const [x, y] of [[-1, 1], [1, 1], [1, 0], [-1, 0]]) {
+            const point = projectCss(page.localToWorld(new T.Vector3(x * home.width / 2, y * home.height, 0)), camera, width, height);
+            error = Math.max(error, Math.hypot(point.x - moving.rect.x - (x + 1) / 2 * moving.rect.width, point.y - moving.rect.y - (1 - y) * moving.rect.height));
+          }
+        }
+      }
+      page.visible = !moving || moving.opacity > 0;
+      page.traverse(node => { const m = (node as T.Mesh).material; for (const mat of m ? Array.isArray(m) ? m : [m] : []) { mat.transparent = !!moving && moving.opacity < 1; mat.opacity = moving?.opacity ?? 1; } });
+    }
     renderer.render(scene, camera); count++;
     invalidateStatus({ frames: count, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, calls: renderer.info.render.calls, alignmentError: error, width, height });
   }
@@ -167,8 +194,13 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
   canvas.addEventListener("webglcontextlost", contextLost); canvas.addEventListener("webglcontextrestored", contextRestored); document.addEventListener("visibilitychange", visibility);
   return {
     update(next: SpatialLayout, summaries: readonly SpatialObject[], selection?: string, align = false) {
+      const nextSignature = JSON.stringify([next, summaries, selection, align]);
+      if (renderSignature === nextSignature) return; renderSignature = nextSignature;
       layout = next; objects = summaries; selected = selection; rehearsal = align;
       const key = JSON.stringify([next.placements, summaries, selection]); if (key !== signature) { signature = key; rebuild(); } request();
+    },
+    handoff(id?: string, rect?: ScreenRect, progress = 0, opacity = 1) {
+      pickup = id && rect ? { id, rect, progress, opacity } : undefined; request();
     },
     resize(w: number, h: number) { width = Math.max(1, w); height = Math.max(1, h); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); renderer.setSize(width, height, false); request(); },
     hit(clientX: number, clientY: number) {

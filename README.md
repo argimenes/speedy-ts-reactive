@@ -53,9 +53,13 @@ Spatial [Milestone A](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) implements a separa
 default-off Three.js study presentation. The [review gallery](./artifacts/spatial-a/index.html)
 compares both cameras and the physical desk composition. Opt in with
 `VITE_SPATIAL_WORKSPACE=1`, then choose **Workspace → Presentations → Create Spatial**.
-A provides physical Document/image previews; return to Desktop to edit.
+[Milestone B](./CODEX_SPATIAL_MILESTONE_B_REPORT.md) activates one qualified existing
+Document Window: double-click its page, or select it and choose **Read Document**.
+The physical page approaches and hands off to ordinary DOM editing; **Return to desk**
+reverses the transition. Reduced motion uses an immediate handoff. The
+[B review gallery](./artifacts/spatial-b/index.html) includes a replayable sequence.
 The [accepted plan](./CODEX_SPATIAL_WORKSPACE_PRESENTATION_PLAN.md) defines the next
-review gates. Milestone B's live DOM editing handoff has not begun.
+review gates. Work stops after B for review; Spatial C has not begun.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createComputed, createMemo, createRoot, createSignal } from "solid-js";
 import type { WorkspaceSession } from "./workspace-session";
 import type { WorkspaceObject } from "../reactive-editor/workspace-presentation";
 import type { ContentRecord, RepositoryState } from "../block-tree/types";
@@ -16,12 +16,91 @@ function describe(state: RepositoryState, content: ContentRecord | undefined, id
 }
 /** Application adapter: only semantic summaries and validated sidecar changes escape. */
 export function createSpatialActions(session: WorkspaceSession) {
+  return createRoot(dispose => {
   const { editor, presentation } = session;
   const [selected, select] = createSignal<string>();
   const layout = () => { const value = presentation.read()?.presentations.spatial; return value === undefined ? undefined : decodeSpatial(value); };
   const objects = () => session.resolveObjects().map(r => describe(editor.repository.state, r.contentKey ? editor.repository.state.contents[r.contentKey] : undefined, r.object.id, r.object.label ?? r.object.id, r.status === "resolved" ? undefined : r.status));
+  // Application authorization owns the one eligible occurrence. The feature sees
+  // only its object identity, never node keys or the editor.
+  type Active = { objectId: string; label: string; nodeKey: string; contentKey: string };
+  const [active, setActive] = createSignal<Active>();
+  const [editorSize, setEditorSize] = createSignal({ width: 900, height: 700 });
+  const [notice, setNotice] = createSignal("");
+  const bookmarks = new Map<string, { key: string; native?: import("../runtime/mounts").NativeTextSelection; inline?: { anchor: number; head: number } }>();
+  const resolveDocument = (id: string) => {
+    const r = session.resolveObjects().find(r => r.object.id === id);
+    if (!r || r.status !== "resolved" || r.placementKeys.length !== 1) return;
+    let node = session.projection.nodeForPlacement(r.placementKeys[0]);
+    if (r.object.desktopHostBlockId && node) node = editor.blockQueries.ancestors(node.key).find(n => n.payload.id === r.object.desktopHostBlockId);
+    if (!node || !["document-window-block", "window-block"].includes(node.viewType) || (node.payload.metadata as any)?.stickyNote || node.children.length !== 1) return;
+    const document = editor.node(node.children[0]);
+    if (!document || document.viewType !== "document-block") return;
+    const keys = new Set<string>();
+    const visit = (key: string): boolean => {
+      if (keys.has(key)) return false; keys.add(key); const n = editor.node(key); if (!n) return false;
+      if (key !== node!.key && ["document-window-block", "window-block", "portal-block"].includes(n.viewType)) return false;
+      if (editor.registry.hasCapability(n.viewType, "opaque-widget")) return false;
+      return [...n.children, ...Object.values(n.ownedRelations)].every(visit);
+    };
+    if (!visit(node.key)) return;
+    return { objectId: id, label: r.object.label ?? id, nodeKey: node.key, contentKey: node.contentKey };
+  };
+  const activeRoot = createMemo(() => {
+    const target = active(); if (!target || presentation.active() !== "spatial") return;
+    const resolved = resolveDocument(target.objectId);
+    // A removed, replaced or newly ambiguous root cannot silently rebind.
+    if (!resolved || resolved.nodeKey !== target.nodeKey || resolved.contentKey !== target.contentKey) return;
+    return target;
+  });
+  const remember = () => {
+    const target = active(), key = editor.focus.state.focusedKey ?? editor.focus.state.lastFocusedKey;
+    if (!target || !key || !editor.blockQueries.ancestors(key).some(n => n.key === target.nodeKey)) return;
+    const mount = editor.mounts.get(key);
+    bookmarks.set(target.objectId, { key, native: mount?.captureSelection?.(), inline: mount?.captureInlineSelection?.() });
+  };
+  const releaseDocument = () => { remember(); editor.selectionGestures.cancelGesture(); editor.crossText.clear(); setActive(undefined); };
+  createComputed(() => { if (active() && !activeRoot()) releaseDocument(); });
+  const document = {
+    active: () => { const t = activeRoot(); return t && { objectId: t.objectId, label: t.label }; }, notice,
+    eligible: (id: string) => !!layout()?.placements.some(p => p.objectId === id) && !!resolveDocument(id),
+    activate(id: string) {
+      if (!session.inputAvailable() || activeRoot() || presentation.active() !== "spatial") return false;
+      const target = layout()?.placements.some(p => p.objectId === id) ? resolveDocument(id) : undefined;
+      if (!target || editor.mounts.get(target.nodeKey)) { setNotice("This object does not have a qualified, unambiguous Document Window."); return false; }
+      editor.selectionGestures.cancelGesture(); editor.crossText.clear(); setNotice(""); select(id); setActive(target); return true;
+    },
+    requestReturn(complete: () => void) {
+      const target = active(); if (!target) return false;
+      const run = () => { if (active() !== target) return; if (!session.inputAvailable()) { setNotice("Finish or close the open panel before returning to the desk."); return; } remember(); setNotice(""); complete(); };
+      if (session.deferHostedCompletion(run)) { setNotice("Return to desk will wait until composition finishes."); return false; }
+      if (!session.inputAvailable()) { setNotice("Finish or close the open panel before returning to the desk."); return false; }
+      run(); return true;
+    },
+    release: releaseDocument,
+    size: editorSize,
+    resize(size: { width: number; height: number }) {
+      if (Number.isFinite(size.width) && Number.isFinite(size.height)) setEditorSize(previous => previous.width === size.width && previous.height === size.height ? previous : { width: Math.max(560, size.width), height: Math.max(240, size.height) });
+    },
+  };
+  const documentReady = () => {
+    const target = activeRoot(); if (!target) return;
+    queueMicrotask(() => {
+      if (activeRoot() !== target || !session.inputAvailable()) return;
+      const bookmark = bookmarks.get(target.objectId);
+      const key = bookmark && editor.mounts.get(bookmark.key) && editor.blockQueries.ancestors(bookmark.key).some(n => n.key === target.nodeKey) ? bookmark.key : undefined;
+      const first = (root: string): string | undefined => {
+        if (["native-text", "standoff"].includes(editor.mounts.get(root)?.inputPolicy ?? "")) return root;
+        for (const child of editor.node(root)?.children ?? []) { const found = first(child); if (found) return found; }
+      };
+      const focus = key ?? first(target.nodeKey) ?? target.nodeKey;
+      editor.focus.request(focus, { reason: "spatial-document-activation", caret: key ? bookmark?.native : "start", raiseWindow: false });
+      if (key && bookmark?.inline) editor.mounts.get(key)?.restoreInlineSelection?.(bookmark.inline);
+    });
+  };
   return {
-    layout, objects, selected, select,
+    layout, objects, selected, select, document, activeRoot, documentReady,
+    dispose: () => { releaseDocument(); bookmarks.clear(); dispose(); },
     create() {
       if (presentation.read()?.presentations.spatial !== undefined) throw new Error("Spatial already exists; select the retained layout.");
       const candidate = discoverWorkspaceObjects(editor.repository.snapshot(), presentation.read());
@@ -51,4 +130,5 @@ export function createSpatialActions(session: WorkspaceSession) {
     ownInteraction: (value: { cancel(): void; finish(): void }) => session.ownPresentationInteraction(value),
     returnDesktop: () => session.selectPresentation("desktop"),
   };
+  });
 }

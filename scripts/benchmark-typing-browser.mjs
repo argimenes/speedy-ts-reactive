@@ -2,6 +2,7 @@
 // Uses an isolated Chrome profile and an in-memory fixture; never saves documents.
 // Optional: CHROME_BIN, BENCHMARK_URL and BENCHMARK_DOCUMENT_URL (read-only API
 // loadDocumentJson URL). A supplied document benchmarks its longest paragraph.
+// BENCHMARK_PRESENTATION=desktop|spatial optionally hosts the same fixture in a Window.
 // Requires Node 22+ (WebSocket).
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -41,12 +42,29 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    host.style.cssText = 'position:fixed;inset:0;overflow:auto;background:white;z-index:99999';
    const documentUrl = ${JSON.stringify(process.env.BENCHMARK_DOCUMENT_URL ?? "")};
    const dto = documentUrl ? (await (await fetch(documentUrl)).json()).Data.document : {type:'document-block',children:Array.from({length:250},(_,i)=>({id:'bench-'+i,type:'standoff-editor-block',text:'x'.repeat(100),standoffProperties:[{type:'style/bold',start:40,end:60}]}))};
-   const editor = new ReactiveEditor(dto);
-   registerApplicationViews(editor);
-   const projection = editor.createView('browser-performance');
-   const dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}), host);
+   const presentation = ${JSON.stringify(process.env.BENCHMARK_PRESENTATION ?? "")};
+   let editor, projection, dispose;
+   if (presentation) {
+     const {WorkspaceSession}=await import('/src/application/workspace-session.ts');
+     const {WorkspacePresentationView}=await import('/src/application/workspace-presentation-view.tsx');
+     const {materializeLocalWorkspace}=await import('/src/reactive-editor/workspace-manifest.ts');
+     const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[{id:'bench-window',type:'document-window-block',metadata:{size:{w:900,h:700}},children:[dto]}]}),{features:{spatialWorkspace:true}});
+     editor=session.editor;projection=session.projection;
+     if(presentation==='spatial')session.selectPresentation('spatial');
+     const stop=render(()=>createComponent(WorkspacePresentationView,{session}),host);
+     dispose=()=>{stop();session.dispose()};
+     if(presentation==='spatial') {
+       for(let i=0;i<100&&!host.querySelector('.workspace-spatial canvas');i++)await new Promise(r=>setTimeout(r,50));
+       if(!session.spatial.document.activate('block:bench-window'))throw new Error('Benchmark Document authorization failed');
+     }
+   } else {
+     editor = new ReactiveEditor(dto); registerApplicationViews(editor);
+     projection = editor.createView('browser-performance');
+     dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}), host);
+   }
    editor.installGateway(document);
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+   const study=host.querySelector('.workspace-spatial');const sceneFramesBefore=Number(study?.dataset.frames??0);
    const flows = host.querySelectorAll('[contenteditable=true]');
    const flow=documentUrl ? [...flows].sort((a,b)=>b.textContent.length-a.textContent.length)[0] : flows[0];
    const unrelated=[...flows].find(f=>f!==flow), originalCell=unrelated.firstChild;
@@ -71,7 +89,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    const restored=flow.textContent===before;
    window.typingBench={editor,projection,host,flow,dispose,caret,midpoint,before,originalCell,unrelated};
    samples.sort((a,b)=>a-b);
-   return {characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
+   return {presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
  })()`);
  console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
  const before = await evaluate('window.typingBench.before');

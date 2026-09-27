@@ -1,0 +1,121 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/153.0.8010.53",
+    "revision": "@792bf6722e73a45aa9e47c163b9901bdc17f3230",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "jsVersion": "15.3.76.13"
+  },
+  "checks": [
+    "browsing mounts no live Document",
+    "qualified activation",
+    "exactly one live Document",
+    "second activation denied",
+    "one projection",
+    "untransformed DOM ancestry",
+    "no duplicate occurrence roots",
+    "native typing keeps mount",
+    "undo native input",
+    "redo native input",
+    "standoff native typing",
+    "SVG alignment",
+    "cross-Block native selection in composed Spatial",
+    "Grouping in composed Spatial",
+    "Grouping targets survive root remount",
+    "Ctrl-click removes Grouping membership",
+    "native control Backspace preserves grouped text",
+    "Delete consumes only grouped text",
+    "group deletion undo restores text",
+    "single Entity panel outside transformed world",
+    "open panel prevents switching",
+    "Entity restores inline selection",
+    "return waits for native composition",
+    "composition commits before proxy returns",
+    "Compact works on the static Spatial Window",
+    "Compact does not persist narrowed bounds",
+    "Compact restores expanded width",
+    "Compact carries margin focus into drawer",
+    "margin indicator opens drawer",
+    "drawer Escape restores focus",
+    "narrow viewport automatically collapses margins",
+    "automatic collapse is not explicit Compact",
+    "wide viewport restores automatic margins",
+    "projection identity keys retained",
+    "Desktop metadata retained",
+    "local/server roundtrip",
+    "return 0 releases root",
+    "activation 0 restores native selection",
+    "return 1 releases root",
+    "activation 1 restores native selection",
+    "return 2 releases root",
+    "activation 2 restores native selection",
+    "return 3 releases root",
+    "activation 3 restores native selection",
+    "return 4 releases root",
+    "activation 4 restores native selection",
+    "Desktop restores both original Windows",
+    "Canvas restores both original Windows",
+    "Spatial returns to browsing",
+    "pickup starts without mounting editor early",
+    "physical handoff mounts one editor",
+    "physical plane coincides with DOM rectangle",
+    "activation retains saved physical placement",
+    "activation does not author changes",
+    "reverse releases all live roots",
+    "reverse preserves physical placement",
+    "Escape cancels pickup",
+    "switch cancels pending activation",
+    "resize/DPR change during pickup keeps editor within viewport",
+    "repeated transitions plateau resources and release roots",
+    "reduced-motion immediate activation",
+    "ordinary typing does not render the study",
+    "reduced-motion immediate return",
+    "graphics loss preserves the live editor",
+    "graphics retry preserves editor and focus",
+    "125-percent zoom-equivalent CSS viewport keeps identity DOM",
+    "server reopen reuses shared live identity and unsaved edits"
+  ],
+  "counts": [
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    },
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    },
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    },
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    },
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    },
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    },
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    },
+    {
+      "geometries": 137,
+      "textures": 13,
+      "roots": 0
+    }
+  ],
+  "sequenceFrames": 64
+}

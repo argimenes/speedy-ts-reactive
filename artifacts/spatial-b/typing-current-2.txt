@@ -1,0 +1,64 @@
+{
+  "characters": 25000,
+  "paragraphCharacters": 100,
+  "paragraphs": 250,
+  "edits": 40,
+  "meanMs": 2.6274999979883433,
+  "medianMs": 1.8999999910593033,
+  "p95Ms": 3.0999999940395355,
+  "maxMs": 25.299999997019768,
+  "snapshots": 0,
+  "restored": true,
+  "unrelatedCellStable": true
+}
+Real Chrome insertText, Backspace, undo and redo: passed
+{
+  "split": {
+    "splitMs": 7.0999999940395355,
+    "frameMs": 36.79999999701977,
+    "undoMs": 5.300000011920929,
+    "splitSnapshots": 0,
+    "added": true,
+    "focusedRight": true,
+    "restored": true,
+    "unrelatedCellStable": true
+  }
+}
+Real Chrome Enter and split undo: passed
+{
+  "boundaries": [
+    {
+      "position": "start",
+      "handlerMs": 3.7000000029802322,
+      "frameMs": 55.70000000298023,
+      "undoMs": 2.2999999970197678,
+      "snapshots": 0,
+      "added": true,
+      "focusCorrect": true,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "position": "end",
+      "handlerMs": 3.3999999910593033,
+      "frameMs": 117.5,
+      "undoMs": 3.4000000059604645,
+      "snapshots": 0,
+      "added": true,
+      "focusCorrect": true,
+      "restored": true,
+      "unrelatedCellStable": true
+    },
+    {
+      "position": "empty",
+      "handlerMs": 4.5,
+      "frameMs": 90.29999999701977,
+      "undoMs": 3.5999999940395355,
+      "snapshots": 0,
+      "added": true,
+      "focusCorrect": true,
+      "restored": true,
+      "unrelatedCellStable": true
+    }
+  ]
+}

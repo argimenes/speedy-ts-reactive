@@ -37,12 +37,29 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
     onMount(() => onCleanup(props.session.ownPresentationInteraction(input)));
     return null;
   };
+  const [spatialResize, setSpatialResize] = createSignal<WindowResizePort>();
+  const spatialGeometry = (key: string): WindowGeometryHost | undefined => {
+    const actions = props.session.spatial;
+    if (!actions || actions.activeRoot()?.nodeKey !== key) return;
+    return { static: true, position: () => ({ x: 0, y: 0 }), expandedSize: actions.document.size,
+      move: () => {}, resize: () => {}, bindResize: port => { setSpatialResize(port); return () => setSpatialResize(undefined); } };
+  };
+  const SpatialHost = () => {
+    const actions = props.session.spatial!;
+    const DocumentSlot = () => {
+      onMount(actions.documentReady);
+      return <Show when={actions.activeRoot()} keyed>{root => <BlockOutlet nodeKey={root.nodeKey} />}</Show>;
+    };
+    return <SpatialView port={{ layout: actions.layout, objects: actions.objects, selected: actions.selected, select: actions.select,
+      camera: actions.camera, available: actions.available, ownInteraction: actions.ownInteraction, returnDesktop: actions.returnDesktop,
+      document: actions.document, renderDocument: () => <DocumentSlot />, displayedSize: () => spatialResize()?.presentedSize() }} />;
+  };
   return <ReactiveViewProvider editor={editor} projection={projection}
     coordinates={{ scale: () => presentation.active() === "canvas" ? input.camera().zoom : 1 }}
-    windowGeometry={key => presentation.active() === "canvas" ? geometry(key) : undefined}>
+    windowGeometry={key => presentation.active() === "canvas" ? geometry(key) : presentation.active() === "spatial" ? spatialGeometry(key) : undefined}>
     <Show when={presentation.active() === "canvas"} fallback={<Show when={presentation.active() === "spatial" && props.session.spatial} fallback={<BlockOutlet nodeKey={projection.state.rootKey} />}>
       <ErrorBoundary fallback={(error, reset) => <div role="alert">Spatial could not load: {String(error)} <button onClick={reset}>Retry</button><button onClick={() => props.session.selectPresentation("desktop")}>Return to Desktop</button></div>}>
-        <Suspense fallback={<p role="status">Opening the study…</p>}><SpatialView port={props.session.spatial!} /></Suspense>
+        <Suspense fallback={<p role="status">Opening the study…</p>}><SpatialHost /></Suspense>
       </ErrorBoundary>
     </Show>}>
       <CanvasLifetime />

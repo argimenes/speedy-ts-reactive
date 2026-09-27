@@ -20,6 +20,10 @@ try {
  });
  await edit('src/application/workspace-presentation-view.tsx',s=>{
   s=s.split('\n').filter(l=>!l.includes('const SpatialView = lazy')).join('\n');
+  const start=s.indexOf('  const [spatialResize'),end=s.indexOf('  return <ReactiveViewProvider',start);
+  if(start<0||end<0)throw new Error('Spatial host assembly changed; update removal patch.');
+  s=s.slice(0,start)+s.slice(end);
+  s=s.replace(' : presentation.active() === \"spatial\" ? spatialGeometry(key) : undefined', ' : undefined');
   const a=s.indexOf('fallback={<Show when={presentation.active() === "spatial"'),b=s.indexOf('</Show>}>',a);
   if(a<0||b<0)throw new Error('Spatial view assembly changed; update removal patch.');
   return s.slice(0,a)+'fallback={<BlockOutlet nodeKey={projection.state.rootKey} />}> '+s.slice(b+'</Show>}>'.length);

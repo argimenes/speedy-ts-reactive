@@ -111,3 +111,48 @@ describe("Spatial application boundary", () => {
     expect(s.editor.repository.snapshot()).toEqual(before);
   });
 });
+
+
+describe("Spatial live Document authorization", () => {
+  it("authorizes one existing Window, retains shared content and never stores activation geometry", () => {
+    const s = open(); s.selectPresentation("spatial"); const a = s.spatial!, before = s.editor.repository.snapshot(), layout = a.layout();
+    expect(a.document.activate("block:window-0")).toBe(true);
+    const root = a.activeRoot()!;
+    expect(a.document.activate("block:window-1")).toBe(false);
+    a.document.resize({ width: 750, height: 520 });
+    expect(a.activeRoot()).toBe(root); expect(a.layout()).toEqual(layout); expect(s.editor.repository.snapshot()).toEqual(before);
+    expect(Object.values(s.editor.repository.state.contents).filter(c => c.viewType === "document-block")).toHaveLength(1);
+    expect(a.document.requestReturn(a.document.release)).toBe(true); expect(a.activeRoot()).toBeUndefined();
+    expect(a.document.activate("block:window-1")).toBe(true);
+  });
+  it("rejects unsafe shapes and revokes a removed root without rebinding", () => {
+    const dto = fixture(); dto.children![1].children![0].children!.push({ type: "portal-block", id: "portal" });
+    // Both shared copies must describe identical content.
+    dto.children![0].children = structuredClone(dto.children![1].children);
+    const unsafe = open(dto); unsafe.selectPresentation("spatial"); expect(unsafe.spatial!.document.activate("block:window-0")).toBe(false);
+    const s = open(); s.selectPresentation("spatial"); const a = s.spatial!;
+    expect(a.document.activate("block:window-0")).toBe(true); s.editor.commands.remove(a.activeRoot()!.nodeKey);
+    expect(a.activeRoot()).toBeUndefined(); expect(a.document.activate("block:window-0")).toBe(false);
+    expect(a.document.activate("block:window-1")).toBe(true);
+  });
+  it("revalidates structural changes without replacing the editor or retaining an unsafe root", () => {
+    const s = open(); s.selectPresentation("spatial"); const a = s.spatial!, editor = s.editor;
+    a.document.activate("block:window-0"); const root = a.activeRoot()!;
+    const child = editor.node(root.nodeKey)!.children[0];
+    editor.commands.insert({ type: "portal-block", id: "later-portal" }, { kind: "at", parentKey: child, index: 1 });
+    expect(a.activeRoot()).toBeUndefined(); expect(s.editor).toBe(editor);
+    editor.repository.undo(); expect(a.activeRoot()).toBeUndefined();
+    expect(a.document.activate("block:window-0")).toBe(true);
+    a.document.release(); expect(a.activeRoot()).toBeUndefined();
+  });
+  it("defers return until composition reconciliation and cancels stale callbacks on disposal", async () => {
+    const s = open(); s.selectPresentation("spatial"); s.installPresentationInput(window); vi.spyOn(s.editor.mounts, "resolveEvent").mockReturnValue({} as any); const a = s.spatial!;
+    a.document.activate("block:window-0"); window.dispatchEvent(new CompositionEvent("compositionstart"));
+    expect(a.document.requestReturn(a.document.release)).toBe(false); expect(a.activeRoot()).toBeDefined();
+    window.dispatchEvent(new CompositionEvent("compositionend")); expect(a.activeRoot()).toBeDefined();
+    await new Promise(resolve => setTimeout(resolve, 5)); expect(a.activeRoot()).toBeUndefined();
+    a.document.activate("block:window-0"); window.dispatchEvent(new CompositionEvent("compositionstart"));
+    const complete = vi.fn(); a.document.requestReturn(complete); window.dispatchEvent(new CompositionEvent("compositionend")); s.dispose();
+    await new Promise(resolve => setTimeout(resolve, 5)); expect(complete).not.toHaveBeenCalled();
+  });
+});

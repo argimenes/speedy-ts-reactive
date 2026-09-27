@@ -31,6 +31,7 @@ export class WorkspaceSession {
   private readonly cleanup: Array<() => void> = [];
   private composing = false;
   private pending?: { name: PresentationName; deriveDesktop: boolean };
+  private pendingHostedCompletion?: () => void;
   private compositionCompletion?: ReturnType<typeof setTimeout>;
   private readonly closedMedia = createSignal<ReadonlySet<string>>(new Set());
   setCanvasMediaClosed(id: string, closed: boolean) {
@@ -48,7 +49,7 @@ export class WorkspaceSession {
     registerApplicationViews(this.editor);
     this.projection = this.editor.createView("loaded-workspace");
     this.resolveObjects();
-    if (this.editor.features.spatialWorkspace) this.spatial = createSpatialActions(this);
+    if (this.editor.features.spatialWorkspace) { this.spatial = createSpatialActions(this); this.cleanup.push(this.spatial.dispose); }
     if (this.presentation.enabled) {
       this.cleanup.push(this.editor.commandRegistry.register({ id: "workspace.presentation.createDesktop", label: "Create Desktop from Canvas", canExecute: () => this.canCreateDesktop(), execute: () => { this.createDesktop(); } }, "workspace-session"));
       for (const name of (["desktop", "canvas", "spatial"] as const).filter(name => this.presentation.available(name))) this.cleanup.push(this.editor.commandRegistry.register({
@@ -84,13 +85,21 @@ export class WorkspaceSession {
       this.compositionCompletion = setTimeout(() => {
         this.compositionCompletion = undefined;
         const pending = this.pending; this.pending = undefined;
-        if (!this.disposed && pending) this.changePresentation(pending.name, pending.deriveDesktop);
+        const hosted = this.pendingHostedCompletion; this.pendingHostedCompletion = undefined;
+        if (!this.disposed) { if (pending) this.changePresentation(pending.name, pending.deriveDesktop); else hosted?.(); }
       }, 0);
     };
     window.addEventListener("compositionstart", start, true);
     window.addEventListener("compositionend", end, true);
-    const stop = () => { window.removeEventListener("compositionstart", start, true); window.removeEventListener("compositionend", end, true); clearTimeout(this.compositionCompletion); this.pending = undefined; this.composing = false; };
+    const stop = () => { window.removeEventListener("compositionstart", start, true); window.removeEventListener("compositionend", end, true); clearTimeout(this.compositionCompletion); this.pending = undefined; this.pendingHostedCompletion = undefined; this.composing = false; };
     this.cleanup.push(stop); return stop;
+  }
+
+  /** Explicit hosted-document return shares the established composition checkpoint.
+   * This is never an ordinary typing dispatch path. Last explicit request wins. */
+  deferHostedCompletion(action: () => void): boolean {
+    if (!this.composing && !Object.keys(this.projection.state.nodes).some(key => this.editor.mounts.get(key)?.composing)) return false;
+    this.pending = undefined; this.pendingHostedCompletion = action; return true;
   }
 
   canCreateDesktop() {
@@ -108,7 +117,7 @@ export class WorkspaceSession {
     }
     const editor = this.editor;
     if (this.composing || Object.keys(this.projection.state.nodes).some(key => editor.mounts.get(key)?.composing)) {
-      this.pending = { name, deriveDesktop: createDesktop }; this.noticeSignal[1]("Presentation will switch after composition finishes."); return false;
+      this.pendingHostedCompletion = undefined; this.pending = { name, deriveDesktop: createDesktop }; this.noticeSignal[1]("Presentation will switch after composition finishes."); return false;
     }
     if (editor.overlays.overlays.length || editor.stickyNotes.state.drafts.length ||
         (typeof document !== "undefined" && document.querySelector('[role="dialog"]')) ||
@@ -268,7 +277,7 @@ export class WorkspaceSession {
     if (this.disposed) return;
     this.disposed = true;
     this.interaction?.cancel(); this.interaction = undefined;
-    this.pending = undefined;
+    this.pending = undefined; this.pendingHostedCompletion = undefined;
     this.cleanup.splice(0).reverse().forEach(stop => stop());
     this.presentation.dispose(); this.pins.clear(); this.editor.dispose();
   }
