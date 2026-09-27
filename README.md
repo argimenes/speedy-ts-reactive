@@ -20,10 +20,17 @@ APIs. The [Stage 5 report](./CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the
 qualification. Stage 6 / History extraction is deliberately deferred.
 
 Canvas Milestones A–E are accepted and integrated into the main application.
-The home page starts with an editable Desktop workspace. Choose
+The home page starts with an empty Desktop workspace. Choose
 **Workspace → Presentations → Canvas** to switch; the menu is available immediately
 in development (`npm run dev`, port 3000) and production (`npm run build` then
 `npm start`, port 3002), with no opt-in environment variable required.
+Use **Workspace → Open Document from Server…** (or Ctrl/Cmd+O) to browse server
+Documents and open one in the current Desktop or Canvas. No workspace file is
+required. **New Document** and **Open Image…** are also available in both modes.
+Opening adds to the current session; reopening the same server file reveals its
+live Document and preserves unsaved edits. Images accept HTTP(S), data or site-relative
+URLs. Canvas additions use the object bank; explicitly reopening a server Document
+on Desktop reuses its existing Window and content.
 **Create Desktop from Canvas** appears for imported workspaces whose Desktop layout
 is absent. Existing layouts stay independent and content identities remain shared.
 The [Milestone E report](./CODEX_CANVAS_MILESTONE_E_REPORT.md) records derivation
@@ -34,10 +41,13 @@ The application enables `canvasWorkspace`; other editor hosts still opt in throu
 configuration. `VITE_CANVAS_WORKSPACE=0` explicitly disables it for a development
 server or production build. No loaded or edited demo is implicitly converted.
 The [Canvas plan](./CODEX_CANVAS_WORKSPACE_PRESENTATION_PLAN.md) records the scope.
-Integration qualification: 40 focused tests, type checking and client/server builds
+Integration qualification: 61 focused tests, type checking and client/server builds
 passed. The [application browser check](./scripts/check-canvas-integration-browser.mjs)
-passed 30 checks against the actual sites on ports 3000 and 3002, including typing,
-switching, in-memory file save/reopen, reverse derivation and the sample demo link.
+passed 46 checks against the actual sites on ports 3000 and 3002, including typing,
+switching, in-memory file save/reopen, reverse derivation, opening the existing
+server Document `text1.json` on both presentations, images and the sample demo link.
+The physical Canvas-removal check also passes. Browser qualification never writes
+server Documents.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

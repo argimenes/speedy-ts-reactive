@@ -115,12 +115,13 @@ export class PersistenceService {
     return reference ? structuredClone(reference) : undefined;
   }
 
-  registerWorkspaceDocument(contentKey: string, documentId: string, folder: string, filename: string, title?: string): void {
+  registerWorkspaceDocument(contentKey: string, documentId: string, folder: string, filename: string, title?: string, contentHash?: string): void {
     const next: WorkspaceDocumentRegistration = {
       documentId,
       contentKey,
       source: { kind: "document-store", folder, filename },
       ...(title ? { title } : {}),
+      ...(contentHash ? { contentHash } : {}),
     };
     this.workspaceReferences = this.workspaceReferences.filter(reference => reference.contentKey !== contentKey && reference.documentId !== documentId);
     this.workspaceReferences.push(next);

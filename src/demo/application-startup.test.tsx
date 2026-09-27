@@ -23,13 +23,41 @@ async function menu() { if (!document.querySelector('[data-system-menu="workspac
 async function select(name: string) { await menu(); button('Presentations').click(); await tick(); button(name, document.querySelector('[aria-label="Presentations"]')!).click(); await tick(); }
 
 describe('main application workspace', () => {
-  it('starts with an editable Desktop and exposes Canvas without a development opt-in', async () => {
+  it.each(['desktop', 'canvas'])('opens server Documents directly in an empty %s and preserves live edits on reopen', async mode => {
+    vi.stubEnv('VITE_CANVAS_WORKSPACE', undefined);
+    const fetch = vi.fn(async (address: string) => {
+      const path = new URL(address, 'http://localhost').pathname;
+      const value = path.endsWith('listFolders') ? { folders: [] } : path.endsWith('listDocuments') ? { files: ['Notes.json'] } : { Success: true, Data: { document: { id: 'server-note', type: 'document-block', children: [{ id: 'text', type: 'plain-text-block', text: 'Server text' }] } } };
+      return new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetch);
+    const host = mount(); if (mode === 'canvas') await select('Canvas');
+    const open = async () => {
+      await menu(); button('Open Document from Server…').click();
+      await vi.waitFor(() => expect(document.querySelector('[role="option"]')).not.toBeNull());
+      (document.querySelector('[role="option"]') as HTMLButtonElement).click();
+      button('Open', document.querySelector('[role="dialog"]')!).click();
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull());
+      await tick();
+    };
+    await open(); const input = host.querySelector('textarea')!;
+    expect(input.value).toBe('Server text'); expect(document.activeElement).toBe(input);
+    input.value = 'Unsaved edits'; input.dispatchEvent(new Event('input', { bubbles: true }));
+    await open(); expect(host.querySelector('textarea')).toBe(input); expect(input.value).toBe('Unsaved edits');
+    expect(host.querySelectorAll('.reactive-window')).toHaveLength(1);
+    expect(fetch.mock.calls.filter(([url]) => url.includes('loadDocumentJson'))).toHaveLength(1);
+    expect(!!host.querySelector('.workspace-canvas')).toBe(mode === 'canvas');
+    expect(fetch.mock.calls.some(([url]) => url.includes('loadWorkspace'))).toBe(false);
+  });
+
+  it('starts with an empty Desktop and exposes Canvas without a development opt-in', async () => {
     vi.stubEnv('VITE_CANVAS_WORKSPACE', undefined);
     vi.stubEnv('DEV', false);
     const host = mount();
     expect(host.querySelector('.workspace-demo--canonical')).not.toBeNull();
     expect(host.querySelector('.workspace-demo__window')).toBeNull();
-    expect(host.querySelectorAll('[contenteditable="true"]')).toHaveLength(1);
+    expect(host.querySelectorAll('[contenteditable="true"]')).toHaveLength(0);
+    await menu(); button('New Document').click(); await tick();
     await select('Canvas'); expect(host.querySelector('.workspace-canvas')).not.toBeNull();
     expect(host.querySelectorAll('.reactive-window')).toHaveLength(1);
     await select('Desktop'); expect(host.querySelector('.workspace-canvas')).toBeNull();
@@ -43,10 +71,10 @@ describe('main application workspace', () => {
     const handle = { name: 'Workspace.json', getFile: async () => ({ name: 'Workspace.json', text: async () => saved }), createWritable: async () => ({ write: async (value: string) => { saved = value; writes++; }, close: async () => {} }) };
     vi.stubGlobal('showSaveFilePicker', vi.fn().mockResolvedValue(handle));
     vi.stubGlobal('showOpenFilePicker', vi.fn().mockResolvedValue([handle]));
-    const host = mount(); await select('Canvas'); await menu();
+    const host = mount(); await select('Canvas'); await menu(); button('New Document').click(); await tick(); await menu();
     button('Save Workspace', document.querySelector('[aria-label="Local files"]')!).click();
     await vi.waitFor(() => expect(saved).not.toBe(''));
-    const value = JSON.parse(saved), doc = value.children[0].children[0].children[0];
+    const value = JSON.parse(saved), doc = value.children.find((c: any) => c.type === 'workspace-object-bank-block').children[0].children[0];
     expect(value.metadata.workspacePresentation.active).toBe('canvas');
     expect(doc.metadata.documentId).toBe(doc.id); expect(doc.metadata.filename).toBe(`${doc.id}.json`);
     await tick(); await select('Desktop'); await menu();
@@ -54,13 +82,15 @@ describe('main application workspace', () => {
     await vi.waitFor(() => expect(host.querySelector('.workspace-canvas')).not.toBeNull());
     await menu(); button('Save Workspace', document.querySelector('[aria-label="Local files"]')!).click();
     await vi.waitFor(() => expect(writes).toBe(2));
-    expect(JSON.parse(saved).children[0].children[0].children[0].metadata.documentId).toBe(doc.id);
+    expect(JSON.parse(saved).children.find((c: any) => c.type === 'workspace-object-bank-block').children[0].children[0].metadata.documentId).toBe(doc.id);
   });
 
   it('retains an explicit application opt-out', async () => {
     vi.stubEnv('VITE_CANVAS_WORKSPACE', '0');
     const host = mount(); await menu();
     expect(document.querySelector('[data-system-menu="workspace"]')?.textContent).not.toContain('Presentations');
+    expect(host.querySelectorAll('[contenteditable="true"]')).toHaveLength(0);
+    button('New Document').click(); await tick();
     expect(host.querySelectorAll('[contenteditable="true"]')).toHaveLength(1);
   });
 

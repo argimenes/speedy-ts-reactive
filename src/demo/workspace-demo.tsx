@@ -30,6 +30,7 @@ import { openJsonFile, saveJsonFile, type BrowserFileHandle } from "./browser-js
 import { resolveFeatureFlags, type ReactiveEditorConfiguration } from "../configuration";
 import { backgroundImages } from "../rendering/backgrounds";
 import { CodexSystemBar } from "./codex-system-bar";
+import { createWorkspaceOpenControls } from "./workspace-open-controls";
 
 type DemoWindowState = "normal" | "minimized" | "maximized" | "closed";
 interface DemoWindowSnapshot { state: DemoWindowState; position: { x: number; y: number }; size: { w: number; h: number } }
@@ -409,6 +410,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
 function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
   const session = new WorkspaceSession(props.loaded, props.configuration);
   const { editor, projection } = session;
+  const opening = createWorkspaceOpenControls(session, () => !props.workspaceBusy);
   const release = props.onEditor(editor);
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave], ["workspace.saveAs", props.onWorkspaceSave, props.onLocalWorkspaceSaveAs]] as const) {
     editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: editor.features.publicHostedVersion ? localExecute : serverExecute });
@@ -419,6 +421,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
   return <main class="workspace-demo workspace-demo--canonical" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
     <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Workspace controls">
+      <opening.Buttons />
       <Show when={editor.features.publicHostedVersion} fallback={<>
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
@@ -437,6 +440,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
     </nav>}>
       <CodexSystemBar>
         <Show when={editor.features.canvasWorkspace}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
+        <opening.Buttons menu />
         <a role="menuitem" href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
         <hr role="separator" />
@@ -472,6 +476,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
     <Show when={editor.features.canvasWorkspace} fallback={<ReactiveTreeView editor={editor} projection={projection} />}>
       <WorkspacePresentationView session={session} />
     </Show>
+    <opening.Dialogs />
   </main>;
 }
 

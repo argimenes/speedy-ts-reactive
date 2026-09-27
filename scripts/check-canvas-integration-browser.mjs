@@ -1,6 +1,7 @@
 // Main application integration: exercise the served app, without injected fixtures or module imports.
 // Node 22+, CHROME_BIN supported. Isolated Chrome profile; ports 3000 and 3002 required.
 // Works with both Vite and the production server. File handles are simulated in memory.
+// Reads the existing server Document text1.json; never writes server files.
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import assert from 'node:assert/strict';
@@ -35,7 +36,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const mouse=(type,p)=>send('Input.dispatchMouseEvent',{type,...p,button:'left',buttons:type==='mouseReleased'?0:1,clickCount:1},sessionId);
  const frame=()=>evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,80))))');
  const click=async selector=>{
-   const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw new Error('Missing '+${JSON.stringify(selector)});const r=e.getBoundingClientRect(),p={x:r.left+r.width/2,y:r.top+r.height/2};if(!e.contains(document.elementFromPoint(p.x,p.y)))throw new Error('Obscured '+${JSON.stringify(selector)});return p})()`);
+   const p=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw new Error('Missing '+${JSON.stringify(selector)});const r=e.getBoundingClientRect(),p={x:r.left+r.width/2,y:r.top+r.height/2};if(!e.contains(document.elementFromPoint(p.x,p.y)))throw new Error('Obscured '+${JSON.stringify(selector)}+' by '+document.elementFromPoint(p.x,p.y)?.outerHTML.slice(0,400));return p})()`);
    await mouse('mousePressed',p);await mouse('mouseReleased',p);await frame();
  };
  const label=async (name,scope='document')=>{
@@ -47,11 +48,12 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  for(const port of [3000,3002]) {
    await send('Page.navigate',{url:`http://localhost:${port}/`},sessionId);
    for(let attempt=0;attempt<60;attempt++) {
-     if(await evaluate('!!document.querySelector(".workspace-demo--canonical .reactive-standoff-flow")'))break;
+     if(await evaluate('!!document.querySelector(".workspace-demo--canonical")'))break;
      await evaluate('new Promise(r=>setTimeout(r,100))');
    }
    await frame();
-   check(port+' starts in an editable Desktop workspace',await evaluate('!!document.querySelector(".reactive-standoff-flow[contenteditable=true]")&&!document.querySelector(".workspace-canvas")'),true);
+   check(port+' starts in an empty Desktop workspace',await evaluate('!document.querySelector(".reactive-window")&&!document.querySelector(".workspace-canvas")'),true);
+   await menu();await label('New Document');
    check(port+' starts with a single Document Window',await evaluate('document.querySelectorAll(".reactive-window").length'),1);
    await click('.reactive-standoff-flow');await send('Input.insertText',{text:'Desktop entry'},sessionId);await frame();
    check(port+' Desktop native typing',await evaluate('document.querySelector(".reactive-standoff-flow").textContent'),'Desktop entry');
@@ -72,11 +74,39 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    await menu();await label('Open Workspace…','document.querySelector(\'[aria-label="Local files"]\')');
    check(port+' Local Open restores saved Canvas',await evaluate('!!document.querySelector(".workspace-canvas")'),true);
    await menu();await label('Save Workspace','document.querySelector(\'[aria-label="Local files"]\')');
-   check(port+' reopening retains identity',await evaluate('JSON.parse(integration.saved).children[0].children[0].children[0].metadata.documentId'),doc.id);
+   check(port+' reopening retains identity',await evaluate(`JSON.parse(integration.saved).children[0].children[0].children[0].metadata.documentId`),doc.id);
    await evaluate(`const saved=JSON.parse(integration.saved);delete saved.metadata.workspacePresentation.presentations.desktop;integration.saved=JSON.stringify(saved)`);
    await menu();await label('Open Workspace…','document.querySelector(\'[aria-label="Local files"]\')');
    await choose('Create Desktop from Canvas');
    check(port+' reverse derivation is available for Canvas-only files',await evaluate('!document.querySelector(".workspace-canvas")&&[...document.querySelectorAll("[role=status]")].some(e=>e.textContent.includes("Desktop created"))'),true);
+
+   for(const mode of ['desktop','canvas']) {
+     await send('Page.navigate',{url:`http://localhost:${port}/`},sessionId);
+     for(let attempt=0;attempt<60;attempt++) {
+       if(await evaluate('!!document.querySelector(".workspace-demo--canonical")'))break;
+       await evaluate('new Promise(r=>setTimeout(r,100))');
+     }
+     await frame();if(mode==='canvas')await choose('Canvas');
+     await menu();await label('Open Document from Server…');
+     for(let attempt=0;attempt<60;attempt++) {
+       if(await evaluate(`[...document.querySelectorAll('[role=option]')].some(e=>e.textContent.includes('text1.json'))`))break;
+       await evaluate('new Promise(r=>setTimeout(r,100))');
+     }
+     await click('[placeholder="Filter documents…"]');await send('Input.insertText',{text:'text1.json'},sessionId);await frame();
+     await evaluate(`[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.includes('text1.json')).setAttribute('data-server-file','')`);
+     await click('[data-server-file]');await label('Open','document.querySelector(\'[role="dialog"]\')');
+     for(let attempt=0;attempt<60;attempt++) {
+       if(await evaluate('!document.querySelector("[role=dialog]")&&document.querySelectorAll(".reactive-window").length===1'))break;
+       await evaluate('new Promise(r=>setTimeout(r,100))');
+     }
+     check(port+' opens real server text1.json on empty '+mode,await evaluate('!document.querySelector("[role=dialog]")&&document.querySelectorAll(".reactive-window").length===1'),true);
+     check(port+' server open preserves '+mode,await evaluate('!!document.querySelector(".workspace-canvas")'),mode==='canvas');
+     check(port+' opened server Document receives focus',await evaluate('!!document.activeElement.closest(".reactive-window")'),true);
+     await menu();await label('Open Image…');
+     await evaluate(`const e=document.querySelector('[aria-label="Image URL"]');e.value='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';e.dispatchEvent(new Event('input',{bubbles:true}))`);
+     await label('Open','document.querySelector(\'[role="dialog"]\')');
+     check(port+' image opens alongside Document on '+mode,await evaluate('document.querySelectorAll(".reactive-window").length'),2);
+   }
    await menu();
    check(port+' sample demo link opens separately',await evaluate('document.querySelector(\'a[href="/?demo=1"]\')?.target'),'_blank');
    await send('Page.navigate',{url:`http://localhost:${port}/?demo=1`},sessionId);
