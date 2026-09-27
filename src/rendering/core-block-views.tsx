@@ -451,7 +451,7 @@ export function WindowView(props: BlockViewProps) {
   const [marginDrawerOpen, setMarginDrawerOpen] = createSignal(false);
   const [toolset, setToolset] = createSignal<Toolset>("Typography");
   const [toolbarNotice, setToolbarNotice] = createSignal("");
-  const state = () => resolvedWindowState(metadata().state);
+  const state = () => geometry?.static ? "normal" : resolvedWindowState(metadata().state);
   const minimized = () => state() === "minimized";
   const isDocument = () => node()?.viewType === "document-window-block";
   const marginsCollapsed = () => narrowMarginsCollapsed() || presentation.requested();
@@ -506,7 +506,7 @@ export function WindowView(props: BlockViewProps) {
     element: () => root,
     size: presentation.presentedSize,
     minimum: () => ({ width: minimumSize().w, height: minimumSize().h }),
-    enabled: () => state() === "normal",
+    enabled: () => !geometry?.static && state() === "normal",
     normalizeStartToMinimum: true, scale, constrainToViewport: !geometry,
     onCommit: size => {
       const expanded = presentation.expandedFromPresented(size);
@@ -576,7 +576,7 @@ export function WindowView(props: BlockViewProps) {
     };
   };
   const beginDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
-    if (event.ctrlKey || event.button !== 0) return;
+    if (geometry?.static || event.ctrlKey || event.button !== 0) return;
     drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y, moved: false };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
@@ -653,8 +653,10 @@ export function WindowView(props: BlockViewProps) {
           <span>{title()}</span>
           <span class="reactive-window__controls">
             <Dynamic component={presentation.control()} />
+            <Show when={!geometry?.static}>
             <button type="button" aria-label="Minimize window" onPointerDown={(e) => { rememberReturnFocus(); e.stopPropagation(); }} onClick={minimizeWindow}>−</button>
             <button type="button" aria-label={isSticky() ? "Close sticky note" : "Close window"} onPointerDown={(e) => e.stopPropagation()} onClick={() => isSticky() ? editor.stickyNotes.closeWindow(props.nodeKey) : editor.commands.remove(props.nodeKey)}>×</button>
+            </Show>
           </span>
         </header>
         <DocumentMarginContext.Provider value={marginPresentation}>
@@ -665,7 +667,7 @@ export function WindowView(props: BlockViewProps) {
             <DocumentMarginDrawer id={marginDrawerId} entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />
           </Show>
         </DocumentMarginContext.Provider>
-        <Show when={state() === "normal"}><FloatingWindowResizeHandle controller={windowResize} class="reactive-window__resize" label={`Resize ${title()} window`} /></Show>
+        <Show when={!geometry?.static && state() === "normal"}><FloatingWindowResizeHandle controller={windowResize} class="reactive-window__resize" label={`Resize ${title()} window`} /></Show>
       </>}>
         <WindowIcon title={title()} kind={resolvedWindowIcon(node()?.viewType ?? "window-block", metadata().icon)} onRestore={restoreWindow}
           onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)} />

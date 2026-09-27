@@ -13,6 +13,8 @@ import { createWorkspaceDocuments, type LocalDocumentFile } from "./workspace-do
 import { ReactiveEditor as BackgroundEditor } from "../reactive-editor/editor";
 import { registerApplicationViews } from "../application/features";
 import { WorkspaceSession } from "../application/workspace-session";
+import { WorkspacePresentationView } from "../application/workspace-presentation-view";
+import { WorkspacePresentations } from "./workspace-presentations";
 import "./workspace-demo.css";
 import { DocumentStatusBar } from "../rendering/document-status-bar";
 import type { Toolset } from "../rendering/compact-toolbar";
@@ -404,11 +406,11 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   );
 }
 
-function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
+function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
   const session = new WorkspaceSession(props.loaded, props.configuration);
   const { editor, projection } = session;
   const release = props.onEditor(editor);
-  for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave]] as const) {
+  for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave], ["workspace.saveAs", props.onWorkspaceSave, props.onLocalWorkspaceSaveAs]] as const) {
     editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: editor.features.publicHostedVersion ? localExecute : serverExecute });
   }
   onMount(() => editor.installGateway(document));
@@ -422,16 +424,18 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
       </>}>
         <span class="workspace-demo__toolbar-group" aria-label="Server files"><strong>Server</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button><button type="button" disabled title="Server files are read-only in the public hosted version.">Save Workspace</button></span>
-        <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button></span>
+        <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button><Show when={editor.features.canvasWorkspace}><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show></span>
       </Show>
       <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
       <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
       <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
       <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
       <a href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
+      <Show when={editor.features.canvasWorkspace}><WorkspacePresentations session={session} busy={props.workspaceBusy} /></Show>
       <span>{props.filename} · revision {editor.repository.state.revision}{session.dirty() ? " · Unsaved changes" : ""}</span>
     </nav>}>
       <CodexSystemBar>
+        <Show when={editor.features.canvasWorkspace}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
         <hr role="separator" />
         <Show when={editor.features.publicHostedVersion} fallback={<>
@@ -447,6 +451,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
             <legend>Local</legend>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button>
+            <Show when={editor.features.canvasWorkspace}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
           </fieldset>
         </Show>
         <hr role="separator" />
@@ -461,7 +466,10 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
     </Show>
     <Show when={editor.persistence.workspaceLoadIssues().length}><aside class="workspace-demo__workspace-notice" role="status">{editor.persistence.workspaceLoadIssues().map(issue => issue.message).join(" · ")}</aside></Show>
     <Show when={session.presentation.issue()}>{issue => <aside class="workspace-demo__workspace-notice" role="status">{issue()}</aside>}</Show>
-    <ReactiveTreeView editor={editor} projection={projection} />
+    <Show when={session.notice()}>{notice => <aside class="workspace-demo__workspace-notice" role="status">{notice()}</aside>}</Show>
+    <Show when={editor.features.canvasWorkspace} fallback={<ReactiveTreeView editor={editor} projection={projection} />}>
+      <WorkspacePresentationView session={session} />
+    </Show>
   </main>;
 }
 
@@ -568,7 +576,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
     } catch (error) { setWorkspaceError(error instanceof Error ? error.message : String(error)); }
     finally { setWorkspaceBusy(false); }
   };
-  const saveLocalWorkspace = async () => {
+  const saveLocalWorkspace = async (saveAs = false) => {
     if (workspaceBusy()) return;
     setWorkspaceBusy(true); setWorkspaceError("");
     try {
@@ -576,7 +584,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
       const captured = owner?.persistence.captureWorkspace();
       const workspace = captured?.document ?? splitWorkspaceDocument(false);
       const current = localWorkspaceFile();
-      const saved = await saveJsonFile(workspace, { suggestedName: current?.filename ?? workspaceFilename() ?? "Workspace.json", handle: current?.handle });
+      const saved = await saveJsonFile(workspace, { suggestedName: current?.filename ?? workspaceFilename() ?? "Workspace.json", handle: current?.handle, saveAs });
       if (!saved) return;
       setLocalWorkspaceFile(saved); setWorkspaceFilename(saved.filename);
       if (captured) owner!.persistence.acknowledgeWorkspaceSave(captured);
@@ -600,7 +608,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
             {(initial) => <DemoSession {...initial} configuration={configuration} stickyHost={background} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onEditor={bridge => { activeDemo = bridge; activeEditor = bridge.editor; return () => { if (activeDemo === bridge) activeDemo = undefined; if (activeEditor === bridge.editor) activeEditor = undefined; }; }} onBackground={openBackground} onReset={() => setSession({})} onClose={(document, location, localFile) => setSession({ document, location, localFile, closed: true })} onOpen={(document, location) => setSession({ document, location })} onOpenLocal={(document, localFile) => setSession({ document, localFile })} />}
           </For>
         </>}>
-          {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession configuration={configuration} loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}
+          {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession configuration={configuration} loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onLocalWorkspaceSaveAs={() => void saveLocalWorkspace(true)} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}
         </Show>
         <Show when={workspaceError() && !workspaceBrowser()}><aside class="workspace-demo__workspace-notice" role="alert">{workspaceError()}</aside></Show>
         <Show when={workspaceBrowser()}>{mode => <WorkspaceBrowser mode={mode()} initialFilename={workspaceFilename()} busy={workspaceBusy()} error={workspaceError()} conflict={workspaceConflict()} onChoose={chooseWorkspace} onClose={() => { if (!workspaceBusy()) { setWorkspaceBrowser(undefined); setWorkspaceError(""); } }} />}</Show>

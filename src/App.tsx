@@ -146,5 +146,5 @@ export default function App() {
   }
   if (route === `${import.meta.env.BASE_URL}effects`) return <StandoffEffectsDemo />;
   if (route === `${import.meta.env.BASE_URL}superposition`) return <TextSuperpositionDemo />;
-  return route === `${import.meta.env.BASE_URL}pilot` ? <PilotApp /> : <WorkspaceDemo />;
+  return route === `${import.meta.env.BASE_URL}pilot` ? <PilotApp /> : <WorkspaceDemo configuration={{ features: { canvasWorkspace: import.meta.env.DEV && import.meta.env.VITE_CANVAS_WORKSPACE === "1" } }} />;
 }

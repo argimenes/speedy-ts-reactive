@@ -99,7 +99,9 @@
 }
 .codex-system-menu button:not(:disabled):not([aria-disabled="true"]):hover,
 .codex-system-menu a:hover,
-.codex-system-menu [role="menuitem"]:focus-visible { color: #fff; background: #176f7a; outline: 0; }
+.codex-system-menu [role="menuitem"]:focus-visible,
+.codex-system-menu [role="menuitemradio"]:focus-visible { color: #fff; background: #176f7a; outline: 0; }
+.codex-system-submenu > [role="menu"] { margin: 2px 0 4px 12px; padding: 3px; border-left: 2px solid #176f7a; }
 .codex-system-menu button:disabled,
 .codex-system-menu [aria-disabled="true"] { color: #83908c; }
 .codex-system-menu hr { height: 1px; margin: 4px 7px; border: 0; background: #d7dfdc; }

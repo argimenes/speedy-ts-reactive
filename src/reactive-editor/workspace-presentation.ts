@@ -126,10 +126,15 @@ export class WorkspacePresentationState {
   }
   revision() { return this.revisionSignal[0](); }
   dirty() { return this.revision() !== this.savedSignal[0](); }
+  editable() { return this.enabled && !this.disposed && this.readStatus.status !== "opaque"; }
+  active(): "desktop" | "canvas" {
+    const value = this.read();
+    return this.enabled && value?.active === "canvas" && value.presentations.canvas ? "canvas" : "desktop";
+  }
   issue(): string | undefined {
     if (this.readStatus.status === "opaque") return `${this.readStatus.reason} Presentation data was preserved; Desktop is shown.`;
     const active = this.read()?.active;
-    if (active !== undefined && active !== "desktop") return "The saved presentation is not available in this build. Its layout and preference were preserved; Desktop is shown.";
+    if (active !== undefined && active !== "desktop" && this.active() !== "canvas") return "The saved presentation is not available in this build. Its layout and preference were preserved; Desktop is shown.";
   }
   read(): WorkspacePresentation | undefined {
     this.revision();
@@ -152,13 +157,18 @@ export class WorkspacePresentationState {
     this.value = validated; this.present = true;
     this.revisionSignal[1](n => n + 1);
   }
-  /** C supplies a validated derivation later. B does not discover/assign IDs or
-   * generate layouts, and an existing layout can never be overwritten here. */
+  /** Initialization retains existing directory entries and never overwrites a layout. */
   initializeCanvas(objects: WorkspaceObject[], canvas: CanvasLayout) {
     const value = this.read();
     if (value?.presentations.canvas !== undefined) throw new Error("Canvas layout already exists.");
-    if (value && value.objects.length) throw new Error("Initialize Canvas must not replace an existing object directory.");
+    if (value?.objects.some(previous => !objects.some(next => JSON.stringify(next) === JSON.stringify(previous)))) throw new Error("Initialize Canvas must retain the existing object directory.");
     this.commit({ ...(value ?? { version: 1, active: "desktop", presentations: { desktop: { version: 1, kind: "legacy-tree" } } }), objects, presentations: { ...(value?.presentations ?? { desktop: { version: 1, kind: "legacy-tree" } }), canvas } });
+  }
+  select(active: "desktop" | "canvas") {
+    const value = this.read();
+    if (!value) { if (active === "desktop" && this.editable()) return; throw new Error("Presentation has not been initialized."); }
+    if (!value.presentations[active]) throw new Error("This workspace has no Desktop layout. Reverse derivation is not available yet.");
+    this.commit({ ...value, active });
   }
   setCamera(next: CanvasCamera) {
     const value = this.read();

@@ -8,9 +8,9 @@ import type { BrowserFileHandle } from "./browser-json-file";
 const disposers: Array<() => void> = [];
 afterEach(() => { while (disposers.length) disposers.pop()?.(); document.body.replaceChildren(); vi.unstubAllGlobals(); });
 
-function mount() {
+function mount(canvasWorkspace = false) {
   const host = document.body.appendChild(document.createElement("div"));
-  disposers.push(render(() => <WorkspaceDemo configuration={{ features: { codexSystemBar: false } }} />, host));
+  disposers.push(render(() => <WorkspaceDemo configuration={{ features: { codexSystemBar: false, canvasWorkspace } }} />, host));
   return host;
 }
 
@@ -34,6 +34,34 @@ function writableHandle(name: string, writes: string[]): BrowserFileHandle {
 }
 
 describe("public-hosted-version", () => {
+  it("switches a loaded workspace through fallback commands and uses the same snapshot for Local Save As", async () => {
+    const original = { id: "workspace", type: "workspace-block", children: [{ id: "window", type: "document-window-block", children: [{ id: "document", type: "document-block", metadata: { documentId: "stable" }, children: [{ id: "text", type: "plain-text-block", text: "Identity retained" }] }] }] };
+    const writes = [JSON.stringify(original)], copies: string[] = [];
+    const handle = writableHandle("Original.json", writes), copy = writableHandle("Copy.json", copies);
+    vi.stubGlobal("showOpenFilePicker", vi.fn().mockResolvedValue([handle]));
+    const picker = vi.fn().mockRejectedValueOnce(new DOMException("Cancelled", "AbortError")).mockResolvedValueOnce(copy);
+    vi.stubGlobal("showSaveFilePicker", picker);
+    const host = mount(true);
+    expect(host.querySelector('[aria-label="Presentations"]')).toBeNull();
+    click(button("Open Workspace…", host.querySelector('[aria-label="Local files"]')!));
+    await vi.waitFor(() => expect(host.querySelector('[aria-label="Presentations"]')).not.toBeNull());
+    click(button("Canvas", host));
+    expect(host.querySelector('.workspace-canvas')).not.toBeNull();
+    click(button("Save Workspace as…", host));
+    await vi.waitFor(() => expect(button("Save Workspace as…", host).disabled).toBe(false));
+    expect(writes).toHaveLength(1); expect(copies).toHaveLength(0);
+    expect(host.textContent).toContain("Unsaved changes");
+    click(button("Save Workspace as…", host));
+    await vi.waitFor(() => expect(copies).toHaveLength(1));
+    expect(writes).toHaveLength(1);
+    const saved = JSON.parse(copies[0]);
+    expect(saved.id).toBe("workspace");
+    expect(saved.children[0].children[0].metadata.documentId).toBe("stable");
+    expect(saved.metadata.workspacePresentation.active).toBe("canvas");
+    expect(host.textContent).not.toContain("Unsaved changes");
+    click(button("Desktop", host)); expect(host.querySelector('.workspace-canvas')).toBeNull();
+    click(button("Canvas", host)); expect(host.querySelectorAll('textarea')).toHaveLength(1);
+  });
   it("is enabled by default and separates read-only Server actions from writable Local actions in Workspace", async () => {
     expect(featureFlags.publicHostedVersion).toBe(true);
     expect(featureFlags.codexSystemBar).toBe(true);

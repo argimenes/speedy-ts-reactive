@@ -15,6 +15,20 @@ import { StickyDraftLayer } from "./sticky-note";
 import { BlockHistoryLayer } from "./block-history";
 import "./concertina.css";
 
+/** Once per projection, outside any transformed content surface. */
+export function ReactiveViewLayers(props: { editor: ReactiveEditor; projection: BlockTreeProjection }) {
+  return <>
+    <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
+    <BlockHistoryLayer editor={props.editor} viewId={props.projection.viewId} />
+    <AnnotationMonitorLayer editor={props.editor} viewId={props.projection.viewId} />
+    <ContributedPanels editor={props.editor} viewId={props.projection.viewId} />
+    <DocumentFindLayer editor={props.editor} viewId={props.projection.viewId} />
+    <BindingChordHint editor={props.editor} viewId={props.projection.viewId} />
+    <StickyDraftLayer editor={props.editor} viewId={props.projection.viewId} />
+    <BlockSelectionInspector editor={props.editor} viewId={props.projection.viewId} />
+  </>;
+}
+
 export function ReactiveTreeView(props: {
   editor: ReactiveEditor;
   projection: BlockTreeProjection;
@@ -24,14 +38,7 @@ export function ReactiveTreeView(props: {
   return (
     <ReactiveViewProvider editor={props.editor} projection={props.projection} coordinates={props.coordinates} windowGeometry={props.windowGeometry}>
       <BlockOutlet nodeKey={props.projection.state.rootKey} />
-      <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
-      <BlockHistoryLayer editor={props.editor} viewId={props.projection.viewId} />
-      <AnnotationMonitorLayer editor={props.editor} viewId={props.projection.viewId} />
-      <ContributedPanels editor={props.editor} viewId={props.projection.viewId} />
-      <DocumentFindLayer editor={props.editor} viewId={props.projection.viewId} />
-      <BindingChordHint editor={props.editor} viewId={props.projection.viewId} />
-      <StickyDraftLayer editor={props.editor} viewId={props.projection.viewId} />
-      <BlockSelectionInspector editor={props.editor} viewId={props.projection.viewId} />
+      <ReactiveViewLayers editor={props.editor} projection={props.projection} />
     </ReactiveViewProvider>
   );
 }

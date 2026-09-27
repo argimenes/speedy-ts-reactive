@@ -6,6 +6,8 @@ import type { FloatingWindowSize } from "./floating-window-resize";
  * existing Window metadata remains authoritative, including viewport limits.
  */
 export interface WindowGeometryHost {
+  /** A static presentation shows normal content without Desktop or geometry actions. */
+  static?: boolean;
   position: Accessor<{ x: number; y: number }>;
   expandedSize: Accessor<FloatingWindowSize>;
   move(position: { x: number; y: number }): void;

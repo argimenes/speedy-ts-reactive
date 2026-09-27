@@ -3,6 +3,27 @@ import codexLogo from "../assets/codex-system-logo.png";
 import "./codex-system-bar.css";
 
 type MenuName = "codex" | "workspace";
+const itemSelector = '[role="menuitem"], [role="menuitemradio"]';
+function menuItems(menu: HTMLElement) {
+  return [...menu.querySelectorAll<HTMLElement>(itemSelector)].filter(item => item.closest('[role="menu"]') === menu && !(item as HTMLButtonElement).disabled && item.getAttribute("aria-disabled") !== "true");
+}
+
+/** Bounded submenu used by Workspace Presentations. No menu registry. */
+export function SystemSubmenu(props: { label: string; children: JSX.Element }) {
+  const [open, setOpen] = createSignal(false);
+  let trigger!: HTMLButtonElement, menu!: HTMLDivElement;
+  const show = () => { setOpen(true); queueMicrotask(() => menuItems(menu)[0]?.focus()); };
+  const hide = () => { setOpen(false); trigger.focus(); };
+  return <div class="codex-system-submenu">
+    <button ref={trigger} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={open()}
+      onClick={() => open() ? hide() : show()} onKeyDown={event => {
+        if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); show(); }
+      }}>{props.label}<span aria-hidden="true">▸</span></button>
+    <Show when={open()}><div ref={menu} role="menu" aria-label={props.label} onKeyDown={event => {
+      if (event.key === "Escape" || event.key === "ArrowLeft") { event.preventDefault(); event.stopPropagation(); hide(); }
+    }}>{props.children}</div></Show>
+  </div>;
+}
 
 type BrowserBattery = {
   level: number;
@@ -44,14 +65,14 @@ export function CodexSystemBar(props: { children: JSX.Element }) {
   const toggle = (name: MenuName) => {
     const next = open() === name ? undefined : name;
     setOpen(next);
-    if (next) queueMicrotask(() => root.querySelector<HTMLElement>(`[data-system-menu="${next}"] [role="menuitem"]`)?.focus());
+    if (next) queueMicrotask(() => { const menu = root.querySelector<HTMLElement>(`[data-system-menu="${next}"]`); if (menu) menuItems(menu)[0]?.focus(); });
   };
   const menuKeyDown = (event: KeyboardEvent) => {
-    const menu = event.currentTarget as HTMLElement;
+    const menu = (event.target as Element).closest<HTMLElement>('[role="menu"]') ?? event.currentTarget as HTMLElement;
     if (event.key === "Escape") { event.preventDefault(); close(true); return; }
     if (event.key === "Tab") { close(); return; }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-    const items = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+    const items = menuItems(menu);
     if (!items.length) return;
     event.preventDefault();
     const current = items.indexOf(document.activeElement as HTMLElement);
@@ -59,8 +80,9 @@ export function CodexSystemBar(props: { children: JSX.Element }) {
     items[index].focus();
   };
   const menuClick = (event: MouseEvent) => {
-    const item = (event.target as Element).closest<HTMLElement>('[role="menuitem"]');
+    const item = (event.target as Element).closest<HTMLElement>(itemSelector);
     if (!item || item.getAttribute("aria-disabled") === "true" || (item as HTMLButtonElement).disabled) return;
+    if (item.getAttribute("aria-haspopup") === "menu") return;
     close();
   };
 
