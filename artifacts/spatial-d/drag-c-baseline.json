@@ -1,0 +1,1950 @@
+{
+  "initial": {
+    "arranging": "false",
+    "moving": "false",
+    "phase": "desk",
+    "handoffProgress": "0",
+    "camera": "perspective",
+    "frames": "2",
+    "geometries": "136",
+    "textures": "13",
+    "calls": "144",
+    "alignmentError": "0"
+  },
+  "states": [
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    },
+    {
+      "arranging": "true",
+      "moving": "true",
+      "phase": "desk",
+      "handoffProgress": "0",
+      "camera": "perspective",
+      "frames": "2",
+      "geometries": "136",
+      "textures": "13",
+      "calls": "144",
+      "alignmentError": "0",
+      "capture": true
+    }
+  ],
+  "summary": {
+    "intersection": {
+      "count": 101,
+      "median": 0,
+      "p95": 0.10000000894069672
+    },
+    "constraint": {
+      "count": 101,
+      "median": 0,
+      "p95": 0.09999999403953552
+    },
+    "publishDelay": {
+      "count": 101,
+      "median": 0.09999999403953552,
+      "p95": 0.20000000298023224
+    },
+    "sceneWait": {
+      "count": 0
+    },
+    "renderCPU": {
+      "count": 0
+    },
+    "inputToRender": {
+      "count": 0
+    }
+  },
+  "samples": [
+    {
+      "input": 2652,
+      "intersection": 2652.1000000089407,
+      "constrained": 2652.2000000029802,
+      "published": 2652.6000000089407
+    },
+    {
+      "input": 2665.4000000059605,
+      "intersection": 2665.5,
+      "constrained": 2665.5,
+      "published": 2665.5
+    },
+    {
+      "input": 2682.9000000059605,
+      "intersection": 2682.9000000059605,
+      "constrained": 2682.9000000059605,
+      "published": 2683
+    },
+    {
+      "input": 2698.9000000059605,
+      "intersection": 2699,
+      "constrained": 2699,
+      "published": 2699.1000000089407
+    },
+    {
+      "input": 2716.2999999970198,
+      "intersection": 2716.4000000059605,
+      "constrained": 2716.4000000059605,
+      "published": 2716.5
+    },
+    {
+      "input": 2732.9000000059605,
+      "intersection": 2732.9000000059605,
+      "constrained": 2733,
+      "published": 2733.1000000089407
+    },
+    {
+      "input": 2749.7000000029802,
+      "intersection": 2749.7000000029802,
+      "constrained": 2749.7000000029802,
+      "published": 2749.7999999970198
+    },
+    {
+      "input": 2766.4000000059605,
+      "intersection": 2766.4000000059605,
+      "constrained": 2766.4000000059605,
+      "published": 2766.5
+    },
+    {
+      "input": 2782.1000000089407,
+      "intersection": 2782.1000000089407,
+      "constrained": 2782.1000000089407,
+      "published": 2782.2999999970198
+    },
+    {
+      "input": 2798.7000000029802,
+      "intersection": 2798.7000000029802,
+      "constrained": 2798.7000000029802,
+      "published": 2798.7999999970198
+    },
+    {
+      "input": 2816.1000000089407,
+      "intersection": 2816.2000000029802,
+      "constrained": 2816.2000000029802,
+      "published": 2816.2999999970198
+    },
+    {
+      "input": 2832.9000000059605,
+      "intersection": 2832.9000000059605,
+      "constrained": 2832.9000000059605,
+      "published": 2833.1000000089407
+    },
+    {
+      "input": 2849.6000000089407,
+      "intersection": 2849.6000000089407,
+      "constrained": 2849.6000000089407,
+      "published": 2849.6000000089407
+    },
+    {
+      "input": 2866.2000000029802,
+      "intersection": 2866.2999999970198,
+      "constrained": 2866.2999999970198,
+      "published": 2866.2999999970198
+    },
+    {
+      "input": 2883,
+      "intersection": 2883,
+      "constrained": 2883,
+      "published": 2883
+    },
+    {
+      "input": 2899.7000000029802,
+      "intersection": 2899.7999999970198,
+      "constrained": 2899.7999999970198,
+      "published": 2899.7999999970198
+    },
+    {
+      "input": 2916.7000000029802,
+      "intersection": 2916.7000000029802,
+      "constrained": 2916.7000000029802,
+      "published": 2916.9000000059605
+    },
+    {
+      "input": 2932.7999999970198,
+      "intersection": 2932.7999999970198,
+      "constrained": 2932.9000000059605,
+      "published": 2932.9000000059605
+    },
+    {
+      "input": 2949.7000000029802,
+      "intersection": 2949.7000000029802,
+      "constrained": 2949.7999999970198,
+      "published": 2949.7999999970198
+    },
+    {
+      "input": 2965.7999999970198,
+      "intersection": 2965.7999999970198,
+      "constrained": 2965.7999999970198,
+      "published": 2965.9000000059605
+    },
+    {
+      "input": 2982.9000000059605,
+      "intersection": 2982.9000000059605,
+      "constrained": 2982.9000000059605,
+      "published": 2982.9000000059605
+    },
+    {
+      "input": 2999.7000000029802,
+      "intersection": 2999.7999999970198,
+      "constrained": 2999.7999999970198,
+      "published": 2999.7999999970198
+    },
+    {
+      "input": 3016.4000000059605,
+      "intersection": 3016.4000000059605,
+      "constrained": 3016.4000000059605,
+      "published": 3016.5
+    },
+    {
+      "input": 3033,
+      "intersection": 3033,
+      "constrained": 3033,
+      "published": 3033.1000000089407
+    },
+    {
+      "input": 3049.1000000089407,
+      "intersection": 3049.1000000089407,
+      "constrained": 3049.2000000029802,
+      "published": 3049.2000000029802
+    },
+    {
+      "input": 3066.2999999970198,
+      "intersection": 3066.2999999970198,
+      "constrained": 3066.2999999970198,
+      "published": 3066.2999999970198
+    },
+    {
+      "input": 3082.9000000059605,
+      "intersection": 3083,
+      "constrained": 3083,
+      "published": 3083
+    },
+    {
+      "input": 3099.7000000029802,
+      "intersection": 3099.7000000029802,
+      "constrained": 3099.7000000029802,
+      "published": 3099.7999999970198
+    },
+    {
+      "input": 3116.4000000059605,
+      "intersection": 3116.4000000059605,
+      "constrained": 3116.4000000059605,
+      "published": 3116.5
+    },
+    {
+      "input": 3132.9000000059605,
+      "intersection": 3133,
+      "constrained": 3133,
+      "published": 3133.1000000089407
+    },
+    {
+      "input": 3149.7000000029802,
+      "intersection": 3149.7000000029802,
+      "constrained": 3149.7000000029802,
+      "published": 3149.7000000029802
+    },
+    {
+      "input": 3166.4000000059605,
+      "intersection": 3166.4000000059605,
+      "constrained": 3166.4000000059605,
+      "published": 3166.6000000089407
+    },
+    {
+      "input": 3182.1000000089407,
+      "intersection": 3182.1000000089407,
+      "constrained": 3182.1000000089407,
+      "published": 3182.2000000029802
+    },
+    {
+      "input": 3199.7000000029802,
+      "intersection": 3199.7000000029802,
+      "constrained": 3199.7000000029802,
+      "published": 3199.7999999970198
+    },
+    {
+      "input": 3216.2999999970198,
+      "intersection": 3216.2999999970198,
+      "constrained": 3216.2999999970198,
+      "published": 3216.4000000059605
+    },
+    {
+      "input": 3233,
+      "intersection": 3233.1000000089407,
+      "constrained": 3233.1000000089407,
+      "published": 3233.2000000029802
+    },
+    {
+      "input": 3249.6000000089407,
+      "intersection": 3249.7000000029802,
+      "constrained": 3249.7000000029802,
+      "published": 3249.7000000029802
+    },
+    {
+      "input": 3266.2000000029802,
+      "intersection": 3266.2999999970198,
+      "constrained": 3266.2999999970198,
+      "published": 3266.2999999970198
+    },
+    {
+      "input": 3282.9000000059605,
+      "intersection": 3282.9000000059605,
+      "constrained": 3282.9000000059605,
+      "published": 3283
+    },
+    {
+      "input": 3299.6000000089407,
+      "intersection": 3299.6000000089407,
+      "constrained": 3299.6000000089407,
+      "published": 3299.7000000029802
+    },
+    {
+      "input": 3315.7999999970198,
+      "intersection": 3315.7999999970198,
+      "constrained": 3315.7999999970198,
+      "published": 3315.9000000059605
+    },
+    {
+      "input": 3332.9000000059605,
+      "intersection": 3332.9000000059605,
+      "constrained": 3332.9000000059605,
+      "published": 3333
+    },
+    {
+      "input": 3349.6000000089407,
+      "intersection": 3349.7000000029802,
+      "constrained": 3349.7000000029802,
+      "published": 3349.7999999970198
+    },
+    {
+      "input": 3382.7000000029802,
+      "intersection": 3382.7999999970198,
+      "constrained": 3382.7999999970198,
+      "published": 3382.7999999970198
+    },
+    {
+      "input": 3399.7000000029802,
+      "intersection": 3399.7000000029802,
+      "constrained": 3399.7000000029802,
+      "published": 3399.7999999970198
+    },
+    {
+      "input": 3416.2999999970198,
+      "intersection": 3416.2999999970198,
+      "constrained": 3416.2999999970198,
+      "published": 3416.4000000059605
+    },
+    {
+      "input": 3433,
+      "intersection": 3433,
+      "constrained": 3433,
+      "published": 3433.1000000089407
+    },
+    {
+      "input": 3462.4000000059605,
+      "intersection": 3462.6000000089407,
+      "constrained": 3462.6000000089407,
+      "published": 3463.6000000089407
+    },
+    {
+      "input": 3483.9000000059605,
+      "intersection": 3483.9000000059605,
+      "constrained": 3484.1000000089407,
+      "published": 3484.2000000029802
+    },
+    {
+      "input": 3501.2999999970198,
+      "intersection": 3501.2999999970198,
+      "constrained": 3501.2999999970198,
+      "published": 3501.4000000059605
+    },
+    {
+      "input": 3515.5,
+      "intersection": 3515.5,
+      "constrained": 3515.5,
+      "published": 3515.5
+    },
+    {
+      "input": 3533.2999999970198,
+      "intersection": 3533.2999999970198,
+      "constrained": 3533.2999999970198,
+      "published": 3533.4000000059605
+    },
+    {
+      "input": 3549,
+      "intersection": 3549.1000000089407,
+      "constrained": 3549.1000000089407,
+      "published": 3549.1000000089407
+    },
+    {
+      "input": 3566.2000000029802,
+      "intersection": 3566.2000000029802,
+      "constrained": 3566.2000000029802,
+      "published": 3566.2999999970198
+    },
+    {
+      "input": 3582.6000000089407,
+      "intersection": 3582.6000000089407,
+      "constrained": 3582.6000000089407,
+      "published": 3582.7000000029802
+    },
+    {
+      "input": 3599.7000000029802,
+      "intersection": 3599.7000000029802,
+      "constrained": 3599.7000000029802,
+      "published": 3599.7000000029802
+    },
+    {
+      "input": 3616.2000000029802,
+      "intersection": 3616.2999999970198,
+      "constrained": 3616.2999999970198,
+      "published": 3616.4000000059605
+    },
+    {
+      "input": 3632.4000000059605,
+      "intersection": 3632.4000000059605,
+      "constrained": 3632.5,
+      "published": 3632.5
+    },
+    {
+      "input": 3649.7000000029802,
+      "intersection": 3649.7000000029802,
+      "constrained": 3649.7000000029802,
+      "published": 3649.7000000029802
+    },
+    {
+      "input": 3666.2999999970198,
+      "intersection": 3666.2999999970198,
+      "constrained": 3666.2999999970198,
+      "published": 3666.2999999970198
+    },
+    {
+      "input": 3682.2999999970198,
+      "intersection": 3682.2999999970198,
+      "constrained": 3682.2999999970198,
+      "published": 3682.2999999970198
+    },
+    {
+      "input": 3699,
+      "intersection": 3699.1000000089407,
+      "constrained": 3699.1000000089407,
+      "published": 3699.2000000029802
+    },
+    {
+      "input": 3716.6000000089407,
+      "intersection": 3716.6000000089407,
+      "constrained": 3716.6000000089407,
+      "published": 3716.7000000029802
+    },
+    {
+      "input": 3733.4000000059605,
+      "intersection": 3733.4000000059605,
+      "constrained": 3733.4000000059605,
+      "published": 3733.6000000089407
+    },
+    {
+      "input": 3750,
+      "intersection": 3750,
+      "constrained": 3750,
+      "published": 3750.2000000029802
+    },
+    {
+      "input": 3765.7000000029802,
+      "intersection": 3765.7000000029802,
+      "constrained": 3765.7000000029802,
+      "published": 3765.7999999970198
+    },
+    {
+      "input": 3783.5,
+      "intersection": 3783.5,
+      "constrained": 3783.5,
+      "published": 3783.7000000029802
+    },
+    {
+      "input": 3799.2999999970198,
+      "intersection": 3799.4000000059605,
+      "constrained": 3799.4000000059605,
+      "published": 3799.5
+    },
+    {
+      "input": 3816.5,
+      "intersection": 3816.6000000089407,
+      "constrained": 3816.7000000029802,
+      "published": 3816.7999999970198
+    },
+    {
+      "input": 3832.7999999970198,
+      "intersection": 3832.7999999970198,
+      "constrained": 3832.7999999970198,
+      "published": 3832.9000000059605
+    },
+    {
+      "input": 3850.1000000089407,
+      "intersection": 3850.1000000089407,
+      "constrained": 3850.1000000089407,
+      "published": 3850.2000000029802
+    },
+    {
+      "input": 3866.6000000089407,
+      "intersection": 3866.7000000029802,
+      "constrained": 3866.7000000029802,
+      "published": 3866.7999999970198
+    },
+    {
+      "input": 3882.4000000059605,
+      "intersection": 3882.4000000059605,
+      "constrained": 3882.4000000059605,
+      "published": 3882.6000000089407
+    },
+    {
+      "input": 3899.9000000059605,
+      "intersection": 3900.1000000089407,
+      "constrained": 3900.1000000089407,
+      "published": 3900.1000000089407
+    },
+    {
+      "input": 3916.6000000089407,
+      "intersection": 3916.6000000089407,
+      "constrained": 3916.6000000089407,
+      "published": 3916.7000000029802
+    },
+    {
+      "input": 3933.1000000089407,
+      "intersection": 3933.2000000029802,
+      "constrained": 3933.2000000029802,
+      "published": 3933.4000000059605
+    },
+    {
+      "input": 3950.1000000089407,
+      "intersection": 3950.1000000089407,
+      "constrained": 3950.2000000029802,
+      "published": 3950.2999999970198
+    },
+    {
+      "input": 3967.1000000089407,
+      "intersection": 3967.2000000029802,
+      "constrained": 3967.2000000029802,
+      "published": 3967.5
+    },
+    {
+      "input": 3983.4000000059605,
+      "intersection": 3983.4000000059605,
+      "constrained": 3983.4000000059605,
+      "published": 3983.5
+    },
+    {
+      "input": 4000.1000000089407,
+      "intersection": 4000.1000000089407,
+      "constrained": 4000.1000000089407,
+      "published": 4000.2999999970198
+    },
+    {
+      "input": 4016.9000000059605,
+      "intersection": 4017,
+      "constrained": 4017,
+      "published": 4017.2000000029802
+    },
+    {
+      "input": 4033.2999999970198,
+      "intersection": 4033.2999999970198,
+      "constrained": 4033.2999999970198,
+      "published": 4033.5
+    },
+    {
+      "input": 4049.7000000029802,
+      "intersection": 4049.7000000029802,
+      "constrained": 4049.7000000029802,
+      "published": 4049.9000000059605
+    },
+    {
+      "input": 4066.2000000029802,
+      "intersection": 4066.2999999970198,
+      "constrained": 4066.2999999970198,
+      "published": 4066.5
+    },
+    {
+      "input": 4083.2999999970198,
+      "intersection": 4083.2999999970198,
+      "constrained": 4083.4000000059605,
+      "published": 4083.5
+    },
+    {
+      "input": 4100,
+      "intersection": 4100,
+      "constrained": 4100,
+      "published": 4100.100000008941
+    },
+    {
+      "input": 4116.70000000298,
+      "intersection": 4116.79999999702,
+      "constrained": 4116.79999999702,
+      "published": 4116.9000000059605
+    },
+    {
+      "input": 4133.4000000059605,
+      "intersection": 4133.5,
+      "constrained": 4133.5,
+      "published": 4133.600000008941
+    },
+    {
+      "input": 4149.79999999702,
+      "intersection": 4149.79999999702,
+      "constrained": 4149.79999999702,
+      "published": 4150
+    },
+    {
+      "input": 4166.70000000298,
+      "intersection": 4166.79999999702,
+      "constrained": 4166.79999999702,
+      "published": 4167.100000008941
+    },
+    {
+      "input": 4183.5,
+      "intersection": 4183.5,
+      "constrained": 4183.5,
+      "published": 4183.70000000298
+    },
+    {
+      "input": 4200,
+      "intersection": 4200,
+      "constrained": 4200,
+      "published": 4200.100000008941
+    },
+    {
+      "input": 4216.100000008941,
+      "intersection": 4216.100000008941,
+      "constrained": 4216.100000008941,
+      "published": 4216.29999999702
+    },
+    {
+      "input": 4233.4000000059605,
+      "intersection": 4233.4000000059605,
+      "constrained": 4233.5,
+      "published": 4233.70000000298
+    },
+    {
+      "input": 4249.70000000298,
+      "intersection": 4249.79999999702,
+      "constrained": 4249.79999999702,
+      "published": 4249.9000000059605
+    },
+    {
+      "input": 4266.9000000059605,
+      "intersection": 4266.9000000059605,
+      "constrained": 4266.9000000059605,
+      "published": 4267
+    },
+    {
+      "input": 4283.79999999702,
+      "intersection": 4283.79999999702,
+      "constrained": 4283.9000000059605,
+      "published": 4284
+    },
+    {
+      "input": 4300.100000008941,
+      "intersection": 4300.100000008941,
+      "constrained": 4300.20000000298,
+      "published": 4300.29999999702
+    },
+    {
+      "input": 4316.70000000298,
+      "intersection": 4316.70000000298,
+      "constrained": 4316.70000000298,
+      "published": 4316.79999999702
+    },
+    {
+      "input": 4333.4000000059605,
+      "intersection": 4333.4000000059605,
+      "constrained": 4333.4000000059605,
+      "published": 4333.5
+    },
+    {
+      "input": 4948.5,
+      "intersection": 4948.5,
+      "constrained": 4948.5,
+      "published": 4949
+    }
+  ]
+}

@@ -34,3 +34,6 @@
 .workspace-spatial__arrangement strong { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .workspace-spatial__arrangement-help { flex-basis: 100%; color: #c4baaa; font-size: 11px; }
 .workspace-spatial__footer details[open] { position: relative; z-index: 4; }
+
+.workspace-spatial__arrangement { max-width: none; }
+.workspace-spatial__orientation { display: inline-flex; gap: 4px; border-left: 1px solid #ad966441; padding-left: 8px; }

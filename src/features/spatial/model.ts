@@ -1,14 +1,23 @@
+import type { DocumentPreview } from "./document-preview";
 /** Spatial v1 is a seated, desk-constrained presentation. Distances are metres. */
 export interface SpatialCamera { kind: "perspective" | "orthographic"; yaw: number; approach: number; [key: string]: unknown }
 export interface SpatialPlacement {
   id: string; objectId: string; position: { x: number; z: number; [key: string]: unknown };
+  orientation?: "portrait" | "landscape";
   heading: number; posture: "lying" | "propped"; size: { width: number; height: number; [key: string]: unknown }; [key: string]: unknown;
+}
+/** Omitted orientation preserves the exact dimensions of existing v1 placements. */
+export function paperOrientation(p: SpatialPlacement): "portrait" | "landscape" { return p.orientation ?? (p.size.width > p.size.height ? "landscape" : "portrait"); }
+export function paperSize(p: SpatialPlacement) {
+  if (!p.orientation) return p.size;
+  const short = Math.min(p.size.width, p.size.height), long = Math.max(p.size.width, p.size.height);
+  return p.orientation === "portrait" ? { width: short, height: long } : { width: long, height: short };
 }
 export interface SpatialLayout {
   version: 1; environment: { preset: "night-study-v1"; [key: string]: unknown };
   camera: SpatialCamera; placements: SpatialPlacement[]; [key: string]: unknown;
 }
-export interface SpatialObject { id: string; label: string; kind: "document" | "image" | "placeholder"; reason?: string; imageUrl?: string }
+export interface SpatialObject { id: string; label: string; kind: "document" | "image" | "placeholder"; reason?: string; imageUrl?: string; preview?: DocumentPreview }
 export const STUDY = Object.freeze({ innerRadius: .55, outerRadius: 1.45, arc: 150, thickness: .065, eyeHeight: .6, yawLimit: Math.PI / 4, maxPlaced: 8 });
 const record = (v: unknown): Record<string, any> => { if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("Expected Spatial object."); return v; };
 const finite = (v: unknown, min: number, max: number) => { if (typeof v !== "number" || !Number.isFinite(v) || v < min || v > max) throw new Error("Invalid Spatial geometry."); };
@@ -30,6 +39,7 @@ export function decodeSpatial(value: unknown): SpatialLayout {
     const radius = Math.hypot(pos.x, pos.z);
     if (radius < STUDY.innerRadius || radius > STUDY.outerRadius || Math.abs(Math.atan2(pos.x, -pos.z)) > STUDY.arc / 2 * Math.PI / 180) throw new Error("Placement is outside the desk.");
     finite(p.heading, -Math.PI, Math.PI); finite(size.width, .03, .5); finite(size.height, .03, .6);
+    if (p.orientation !== undefined && !["portrait", "landscape"].includes(p.orientation)) throw new Error("Unsupported paper orientation.");
     if (!["lying", "propped"].includes(p.posture)) throw new Error("Unsupported page posture.");
   }
   return structuredClone(v) as SpatialLayout;

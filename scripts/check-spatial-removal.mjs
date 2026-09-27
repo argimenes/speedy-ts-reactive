@@ -10,7 +10,7 @@ try {
  await symlink(path.join(root,'node_modules'),path.join(target,'node_modules'),'dir');
  const strip=async dir=>{for(const e of await readdir(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())await strip(p);else if(/\.test\.[tj]sx?$/.test(e.name))await rm(p);}};
  await strip(path.join(target,'src'));await strip(path.join(target,'server'));
- await rm(path.join(target,'src/features/spatial'),{recursive:true});await rm(path.join(target,'src/application/spatial-actions.ts'));
+ await rm(path.join(target,'src/features/spatial'),{recursive:true});await rm(path.join(target,'src/application/spatial-actions.ts'));await rm(path.join(target,'src/application/spatial-document-preview.ts'));
  await edit('src/application/workspace-session.ts',s=>s.split('\n').filter(l=>!l.includes('import { createSpatialActions')&&!l.includes('readonly spatial?')&&!l.includes('this.spatial = createSpatialActions')&&!l.includes('this.spatial?.create()')).join('\n').replace('spatial: this.editor.features.spatialWorkspace ? { supports: supportsSpatial } : undefined','spatial: undefined'));
  await edit('src/application/workspace-open.ts',s=>{
   s=s.split('\n').filter(l=>!l.includes('const spatial =')&&!l.includes('const spatialCommit =')&&!l.includes('spatialCommit?.()')).join('\n').replace('const banked = !!canvas || spatial;','const banked = !!canvas;');

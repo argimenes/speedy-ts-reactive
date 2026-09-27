@@ -1,8 +1,11 @@
+import { paintDocumentPreview, type PreviewImageSlot } from "./document-preview";
+import { dragStage } from "./drag-profile";
+import { paintWalnut, paintAlpineNight } from "./study-materials";
 import * as T from "three";
 import { PAGE_TILT, surfaceHeight } from "./arrangement";
 import { handoffPose, type PagePose } from "./handoff";
 import { alignmentCorners, editingRectangle, projectCss, studyCamera, deskPoint, type ScreenRect } from "./camera";
-import { STUDY, type SpatialLayout, type SpatialObject, type SpatialPlacement } from "./model";
+import { STUDY, paperSize, type SpatialLayout, type SpatialObject, type SpatialPlacement } from "./model";
 
 export interface SceneStatus { frames: number; geometries: number; textures: number; calls: number; alignmentError: number; width: number; height: number }
 /** One disposable GPU lifetime. No editor, content renderer, timers or global controls. */
@@ -18,7 +21,7 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
   let camera = studyCamera({ kind: "perspective", yaw: 0, approach: 0 }, width, height);
   let alignment: T.Mesh | undefined;
   const hits: T.Object3D[] = [];
-  const pages = new Map<string, { page: T.Group }>();
+  const pages = new Map<string, { page: T.Group; edge: T.LineSegments }>();
   let pickup: { id: string; rect: ScreenRect; progress: number; opacity: number } | undefined;
   let renderSignature = "";
   let arrangement: SpatialPlacement | undefined;
@@ -36,12 +39,9 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
     const c = document.createElement("canvas"); c.width = w; c.height = h; paint(c.getContext("2d")!);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
   };
-  const wood = texture(1024, 256, ctx => {
-    ctx.fillStyle = "#70452c"; ctx.fillRect(0, 0, 1024, 256);
-    for (let i = 0; i < 1300; i++) { const y = random() * 256; ctx.strokeStyle = `rgba(${random() > .4 ? "39,18,8" : "208,143,82"},${.05 + random() * .14})`; ctx.lineWidth = .4 + random() * 1.2; ctx.beginPath(); for (let x = 0; x <= 1024; x += 16) { const yy = y + Math.sin(x / 90 + y / 35) * 1.8; if (!x) ctx.moveTo(x, yy); else ctx.lineTo(x, yy); } ctx.stroke(); }
-  });
+  const wood = texture(1024, 256, paintWalnut);
   wood.wrapS = wood.wrapT = T.RepeatWrapping; wood.repeat.set(1.8, 1.8);
-  const deskMat = new T.MeshStandardMaterial({ map: wood, roughness: .48, color: 0xb89979 });
+  const deskMat = new T.MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: .0012, roughness: .64, color: 0xbfa789 });
   const annulus = new T.Shape(), half = STUDY.arc * Math.PI / 360;
   for (let i = 0; i <= 80; i++) { const a = -half + i / 80 * half * 2, x = Math.sin(a) * STUDY.outerRadius, z = Math.cos(a) * STUDY.outerRadius; if (!i) annulus.moveTo(x, z); else annulus.lineTo(x, z); }
   for (let i = 80; i >= 0; i--) { const a = -half + i / 80 * half * 2; annulus.lineTo(Math.sin(a) * STUDY.innerRadius, Math.cos(a) * STUDY.innerRadius); } annulus.closePath();
@@ -52,16 +52,7 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
   box(world, 4.7, 3, .16, 0x34271e, 0, .6, -2.4);
   for (const side of [-1, 1]) box(world, .16, 3, 5, 0x2c251f, side * 2.32, .6, -.2);
   // The window is an inexpensive emissive exterior, with layered mountain silhouettes.
-  const sky = texture(1024, 768, ctx => {
-    const g = ctx.createLinearGradient(0, 0, 0, 768); g.addColorStop(0, "#060d20"); g.addColorStop(.55, "#1c304c"); g.addColorStop(1, "#283745"); ctx.fillStyle = g; ctx.fillRect(0, 0, 1024, 768);
-    for (let i = 0; i < 290; i++) { ctx.fillStyle = `rgba(211,229,255,${.15 + random() * .65})`; ctx.beginPath(); ctx.arc(random() * 1024, random() * 450, .4 + random() * .8, 0, Math.PI * 2); ctx.fill(); }
-    for (let layer = 0; layer < 4; layer++) {
-      const points: Array<[number, number]> = []; for (let x = -60; x < 1100; x += 45 + random() * 65) points.push([x, 280 + layer * 105 + random() * 100]);
-      ctx.beginPath(); ctx.moveTo(-60, 768); points.forEach(p => ctx.lineTo(...p)); ctx.lineTo(1100, 768); ctx.closePath(); ctx.fillStyle = ["#34465d", "#233449", "#152737", "#0c1b29"][layer]; ctx.fill();
-      if (layer === 0) for (let i = 1; i < points.length - 1; i++) { const [x, y] = points[i]; if (y > points[i - 1][1] || y > points[i + 1][1]) continue; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 34, y + 50); ctx.lineTo(x + 10, y + 28); ctx.lineTo(x - 4, y + 44); ctx.lineTo(x - 27, y + 32); ctx.closePath(); ctx.fillStyle = "#7890a7"; ctx.fill(); }
-    }
-    for (let i = 0; i < 100; i++) { const x = random() * 1024, y = 627 + Math.sin(x / 150) * 22 + random() * 48; ctx.fillStyle = random() > .25 ? "#bc884b" : "#edc287"; ctx.fillRect(x, y, 1.5, 1); }
-  });
+  const sky = texture(1024, 768, paintAlpineNight);
   mesh(world, new T.PlaneGeometry(3.02, 2.32), new T.MeshBasicMaterial({ map: sky }), 0, 1.04, -2.29);
   for (const x of [-1.55, 1.55]) box(world, .12, 2.52, .17, 0x3e2a1d, x, 1.02, -2.17);
   for (const y of [-.18, 2.23]) box(world, 3.22, .13, .2, 0x4c3220, 0, y, -2.16);
@@ -115,14 +106,17 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
   function rebuild() {
     generation++; cancelImages(); const current = generation; release(proxies); hits.length = 0; pages.clear();
     for (const [index, p] of (layout?.placements ?? []).entries()) {
+      const size = paperSize(p);
       const object = objects.find(o => o.id === p.objectId) ?? { id: p.objectId, label: p.objectId, kind: "placeholder", reason: "missing" };
       const group = new T.Group(); group.position.set(p.position.x, surfaceHeight(index), p.position.z); group.rotation.y = p.heading; proxies.add(group);
       const page = new T.Group(); page.rotation.x = p.posture === "lying" ? -Math.PI / 2 : PAGE_TILT; group.add(page);
-      const paper = box(page, p.size.width, p.size.height, .0015, object.reason ? 0xa79b8a : 0xf0e5c9, 0, p.size.height / 2, 0);
+      const paper = box(page, size.width, size.height, .0015, object.reason ? 0xa79b8a : 0xf0e5c9, 0, size.height / 2, 0);
       paper.castShadow = true;
       page.updateWorldMatrix(true, false);
-      pages.set(object.id, { page });
-      const label = texture(512, 724, ctx => {
+      let imageSlots: PreviewImageSlot[] = [];
+      const label = texture(512, Math.round(512 * size.height / size.width), ctx => {
+        if (object.preview) { imageSlots = paintDocumentPreview(ctx, object.preview); return; }
+        ctx.scale(1, ctx.canvas.height / 724);
         ctx.fillStyle = object.reason ? "#c5bbaa" : "#f7edda"; ctx.fillRect(0, 0, 512, 724);
         ctx.fillStyle = "#665d4e"; ctx.font = "18px Georgia"; ctx.fillText(object.kind === "document" ? "CODEX · DOCUMENT" : object.kind === "image" ? "PHOTOGRAPH" : "WORKSPACE OBJECT", 44, 55);
         ctx.fillStyle = "#302e29"; ctx.font = "28px Georgia";
@@ -131,26 +125,27 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
         ctx.fillStyle = "#bdb49f"; for (let i = 0; i < 23; i++) ctx.fillRect(44, 169 + i * 18, i % 7 === 6 ? 238 : 398 - (i % 3) * 13, 3);
         ctx.fillStyle = "#8e826d"; ctx.font = "17px Georgia"; ctx.fillText(object.reason ?? "Preview · double-click to read", 44, 671);
       });
-      const surface = mesh(page, new T.PlaneGeometry(p.size.width * .96, p.size.height * .97), new T.MeshStandardMaterial({ map: label, roughness: 1 }), 0, p.size.height / 2, .001);
+      const surface = mesh(page, new T.PlaneGeometry(size.width * .96, size.height * .97), new T.MeshStandardMaterial({ map: label, roughness: 1 }), 0, size.height / 2, .001);
       surface.receiveShadow = false;
       for (const m of [paper, surface]) { m.userData.objectId = object.id; hits.push(m); }
-      if (object.kind === "image" && object.imageUrl) {
+      if (object.kind === "image" && object.imageUrl) imageSlots = [{ url: object.imageUrl, x: 16, y: 16, width: 480, height: (label.image as HTMLCanvasElement).height - 32 }];
+      for (const slot of imageSlots) {
         const img = new Image(); loading.add(img); img.crossOrigin = "anonymous";
         img.onload = () => {
           loading.delete(img);
           if (disposed || current !== generation) return;
           try {
-            const c = document.createElement("canvas"); c.width = 768; c.height = Math.round(768 * p.size.height / p.size.width);
-            const ctx = c.getContext("2d")!, ratio = Math.min((c.width - 32) / img.width, (c.height - 32) / img.height);
-            ctx.fillStyle = "#f4ead8"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, (c.width - img.width * ratio) / 2, (c.height - img.height * ratio) / 2, img.width * ratio, img.height * ratio);
-            const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; const mat = surface.material as T.MeshStandardMaterial; mat.map?.dispose(); mat.map = t; mat.needsUpdate = true; request();
-          } catch { /* Cross-origin/decoder failures leave the labelled print. */ }
+            const ctx = (label.image as HTMLCanvasElement).getContext("2d")!;
+            const ratio = Math.min(slot.width / img.naturalWidth, slot.height / img.naturalHeight);
+            ctx.save(); ctx.resetTransform(); ctx.fillStyle = "#f5efe0"; ctx.fillRect(slot.x, slot.y, slot.width, slot.height);
+            ctx.drawImage(img, slot.x + (slot.width - img.naturalWidth * ratio) / 2, slot.y + (slot.height - img.naturalHeight * ratio) / 2, img.naturalWidth * ratio, img.naturalHeight * ratio); ctx.restore();
+            label.needsUpdate = true; request();
+          } catch { /* Cross-origin/decoder failures leave the labelled placeholder. */ }
         };
-        img.onerror = () => { loading.delete(img); }; img.src = object.imageUrl;
+        img.onerror = () => { loading.delete(img); }; img.src = slot.url;
       }
-      if (selected === object.id) {
-        const edge = new T.LineSegments(new T.EdgesGeometry(paper.geometry), new T.LineBasicMaterial({ color: 0xd6b56c })); edge.position.copy(paper.position); page.add(edge);
-      }
+      const edge = new T.LineSegments(new T.EdgesGeometry(paper.geometry), new T.LineBasicMaterial({ color: 0xd6b56c })); edge.position.copy(paper.position); page.add(edge);
+      pages.set(object.id, { page, edge });
     }
   }
   function render() {
@@ -166,13 +161,15 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       alignment = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffedc9, transparent: true, opacity: .18, side: T.DoubleSide, depthTest: false })); alignment.renderOrder = 10; scene.add(alignment);
     }
     for (const [id, entry] of pages) {
+      entry.edge.visible = selected === id;
       const { page } = entry, moving = pickup?.id === id ? pickup : undefined;
       const index = layout.placements.findIndex(p => p.objectId === id), p = arrangement?.objectId === id ? arrangement : layout.placements[index];
       if (!p) continue;
+      const size = paperSize(p);
       page.parent!.position.set(p.position.x, surfaceHeight(index), p.position.z); page.parent!.rotation.y = p.heading;
       page.position.set(0, 0, 0); page.rotation.set(p.posture === "lying" ? -Math.PI / 2 : PAGE_TILT, 0, 0); page.scale.set(1, 1, 1);
       page.updateWorldMatrix(true, false);
-      const home: PagePose = { center: page.localToWorld(new T.Vector3(0, p.size.height / 2, 0)), rotation: page.getWorldQuaternion(new T.Quaternion()), width: p.size.width, height: p.size.height };
+      const home: PagePose = { center: page.localToWorld(new T.Vector3(0, size.height / 2, 0)), rotation: page.getWorldQuaternion(new T.Quaternion()), width: size.width, height: size.height };
       if (moving) {
         const pose = handoffPose(home, camera, { width, height }, moving.rect, moving.progress);
         page.quaternion.copy(page.parent!.getWorldQuaternion(new T.Quaternion()).invert().multiply(pose.rotation));
@@ -189,7 +186,8 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       page.visible = !moving || moving.opacity > 0;
       page.traverse(node => { const m = (node as T.Mesh).material; for (const mat of m ? Array.isArray(m) ? m : [m] : []) { (node as T.Mesh).renderOrder = index; mat.transparent = !!moving && moving.opacity < 1; mat.opacity = moving?.opacity ?? 1; } });
     }
-    renderer.render(scene, camera); count++;
+    dragStage(arrangement, "transformed");
+    renderer.render(scene, camera); count++; dragStage(arrangement, "rendered");
     invalidateStatus({ frames: count, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, calls: renderer.info.render.calls, alignmentError: error, width, height });
   }
   function request() { if (!disposed && !lost && !document.hidden && !frame) frame = requestAnimationFrame(render); }
@@ -202,11 +200,15 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       const nextSignature = JSON.stringify([next, summaries, selection, align]);
       if (renderSignature === nextSignature) return; renderSignature = nextSignature;
       layout = next; objects = summaries; selected = selection; rehearsal = align;
-      const key = JSON.stringify([next.placements, summaries, selection]); if (key !== signature) { signature = key; rebuild(); } request();
+      const key = JSON.stringify([next.placements.map(p => [p.objectId, paperSize(p)]), summaries]); if (key !== signature) { signature = key; rebuild(); } request();
     },
-    previewPlacement(value?: SpatialPlacement) { arrangement = value; request(); },
-    deskPoint(clientX: number, clientY: number) {
-      const rect = canvas.getBoundingClientRect(); return deskPoint(camera, { width: rect.width, height: rect.height }, clientX - rect.left, clientY - rect.top);
+    previewPlacement(value?: SpatialPlacement) { arrangement = value; dragStage(value, "queued"); request(); },
+    deskPoint(clientX: number, clientY: number, height = 0) {
+      const rect = canvas.getBoundingClientRect(); return deskPoint(camera, { width: rect.width, height: rect.height }, clientX - rect.left, clientY - rect.top, height);
+    },
+    grabHeight(clientX: number, clientY: number) {
+      const rect = canvas.getBoundingClientRect(), ray = new T.Raycaster(); ray.setFromCamera(new T.Vector2((clientX - rect.left) / rect.width * 2 - 1, 1 - (clientY - rect.top) / rect.height * 2), camera);
+      return ray.intersectObjects(hits, false)[0]?.point.y;
     },
     handoff(id?: string, rect?: ScreenRect, progress = 0, opacity = 1) {
       pickup = id && rect ? { id, rect, progress, opacity } : undefined; request();

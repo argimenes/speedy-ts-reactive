@@ -19,7 +19,7 @@ function setup() {
 }
 it("save flushes the latest pending delta once, even before the preview frame", () => {
   const q = setup(); q.element.dispatchEvent(q.event("pointerdown")); q.element.dispatchEvent(q.event("pointermove", 30)); q.element.dispatchEvent(q.event("pointermove", 70));
-  expect(q.commit).not.toHaveBeenCalled(); expect(q.frames.size).toBe(1); expect(q.input.preview()).toBeUndefined();
+  expect(q.commit).not.toHaveBeenCalled(); expect(q.frames.size).toBe(0); expect(q.input.preview()?.position.x).toBeCloseTo(.07);
   q.input.finish(); expect(q.commit).toHaveBeenCalledTimes(1); expect(q.commit.mock.calls[0][1].position!.x).toBeCloseTo(.07);
   expect(q.frames.size).toBe(0); expect(q.captured()).toBe(false); expect(q.input.owned()).toBe(false); q.input.finish(); expect(q.commit).toHaveBeenCalledTimes(1);
 });

@@ -1,5 +1,5 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount, type JSX } from "solid-js";
-import { clampCamera, type SpatialCamera, type SpatialLayout, type SpatialObject, type SpatialPlacement } from "./model";
+import { paperOrientation, clampCamera, type SpatialCamera, type SpatialLayout, type SpatialObject, type SpatialPlacement } from "./model";
 import { createStudyScene, type SceneStatus } from "./scene";
 import { createArrangementInput } from "./arrangement-input";
 import { type PlacementChange } from "./arrangement";
@@ -35,7 +35,7 @@ export default function SpatialView(props: { port: SpatialPort }) {
   const [arranging, setArranging] = createSignal(false);
   const placement = (id: string) => props.port.layout()?.placements.find(p => p.objectId === id);
   const canArrange = (id: string) => browsing() && props.port.available() && !error() && !!placement(id) && !!props.port.objects().find(o => o.id === id && !o.reason && o.kind !== "placeholder");
-  const arrangement = createArrangementInput({ placement, available: canArrange, point: (x, y) => scene?.deskPoint(x, y),
+  const arrangement = createArrangementInput({ placement, available: canArrange, grabHeight: (x, y) => scene?.grabHeight(x, y), point: (x, y, height) => scene?.deskPoint(x, y, height),
     select: props.port.select, commit: props.port.arrange });
   const selectedPlacement = () => { const id = props.port.selected(); return id ? arrangement.preview() ?? placement(id) : undefined; };
   const adjust = (change: PlacementChange) => {
@@ -105,7 +105,7 @@ export default function SpatialView(props: { port: SpatialPort }) {
 
   });
   createEffect(() => { props.port.layout(); props.port.objects(); props.port.available(); arrangement.validate(); });
-  createEffect(() => { scene?.previewPlacement(arrangement.preview()); });
+  createEffect(() => { const value = arrangement.preview(); scene?.previewPlacement(value); });
   createEffect(() => { const layout = props.port.layout(); if (layout) scene?.update({ ...layout, camera: camera() }, props.port.objects(), props.port.selected(), rehearsal()); });
   createEffect(() => { if (!active() && phase() === "editing") { scene?.handoff(); setPhase("desk"); } });
   const key = (event: KeyboardEvent) => {
@@ -174,10 +174,11 @@ export default function SpatialView(props: { port: SpatialPort }) {
         <button aria-pressed={arranging()} onClick={() => { cancel(); setArranging(!arranging()); canvas.focus({ preventScroll: true }); }}>{arranging() ? "View controls" : "Arrange with keyboard"}</button>
         <button aria-label="Move left" onClick={() => nudge(-.01, 0)}>←</button><button aria-label="Move right" onClick={() => nudge(.01, 0)}>→</button>
         <button aria-label="Move away" onClick={() => nudge(0, -.01)}>↑</button><button aria-label="Move closer" onClick={() => nudge(0, .01)}>↓</button>
-        <button aria-label="Rotate left" onClick={() => rotate(-Math.PI / 36)}>↶</button><button aria-label="Rotate right" onClick={() => rotate(Math.PI / 36)}>↷</button>
-        <span>{Math.round((selectedPlacement()?.heading ?? 0) * 180 / Math.PI)}°</span>
+        <button aria-label="Rotate left" title="Rotate heading 5° left; Shift-click for 1°" onClick={e => rotate(-(e.shiftKey ? 1 : 5) * Math.PI / 180)}>↶ Rotate left</button><button aria-label="Rotate right" title="Rotate heading 5° right; Shift-click for 1°" onClick={e => rotate((e.shiftKey ? 1 : 5) * Math.PI / 180)}>Rotate right ↷</button>
+        <span>Heading {Math.round((selectedPlacement()?.heading ?? 0) * 180 / Math.PI)}°</span>
         <button aria-pressed={selectedPlacement()?.posture === "lying"} onClick={() => adjust({ posture: "lying" })}>Lay flat</button>
         <button aria-pressed={selectedPlacement()?.posture === "propped"} onClick={() => adjust({ posture: "propped" })}>Prop up</button>
+        <span class="workspace-spatial__orientation" role="group" aria-label="Paper orientation"><button aria-pressed={!!selectedPlacement() && paperOrientation(selectedPlacement()!) === "portrait"} onClick={() => adjust({ orientation: "portrait" })}>Portrait</button><button aria-pressed={!!selectedPlacement() && paperOrientation(selectedPlacement()!) === "landscape"} onClick={() => adjust({ orientation: "landscape" })}>Landscape</button></span>
         <button onClick={() => adjust({ toFront: true })}>Bring to top</button>
         <span class="workspace-spatial__arrangement-help">{arranging() ? "Arrows move · [ ] rotate · L/P posture · Shift fine steps · Esc cancels" : "Drag a paper to move it. Background drag swivels the view."}</span>
       </div>

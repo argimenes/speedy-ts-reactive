@@ -1,4 +1,6 @@
-import { createComputed, createMemo, createRoot, createSignal } from "solid-js";
+import { createComputed, createMemo, createRoot, createSignal, untrack } from "solid-js";
+import { spatialDocumentPreview } from "./spatial-document-preview";
+import type { DocumentPreview } from "../features/spatial/document-preview";
 import type { WorkspaceSession } from "./workspace-session";
 import type { WorkspaceObject } from "../reactive-editor/workspace-presentation";
 import type { ContentRecord, RepositoryState } from "../block-tree/types";
@@ -22,11 +24,39 @@ export function createSpatialActions(session: WorkspaceSession) {
   const { editor, presentation } = session;
   const [selected, select] = createSignal<string>();
   const layout = () => { const value = presentation.read()?.presentations.spatial; return value === undefined ? undefined : decodeSpatial(value); };
-  const objects = () => session.resolveObjects().map(r => describe(editor.repository.state, r.contentKey ? editor.repository.state.contents[r.contentKey] : undefined, r.object.id, r.object.label ?? r.object.id, r.status === "resolved" ? undefined : r.status));
   // Application authorization owns the one eligible occurrence. The feature sees
   // only its object identity, never node keys or the editor.
   type Active = { objectId: string; label: string; nodeKey: string; contentKey: string };
   const [active, setActive] = createSignal<Active>();
+  let disposed = false;
+  const previews = new Map<string, { revision: number; value: DocumentPreview }>();
+  const objects = createMemo(() => {
+    if (disposed) return [];
+    const spatial = presentation.active() === "spatial", editing = !!active();
+    const resolved = session.resolveObjects();
+    // Authored reads deliberately do not subscribe this memo to text/annotations.
+    // Entry/return and directory changes are sufficient preview boundaries.
+    return untrack(() => {
+      const state = editor.repository.state, placed = new Set(spatial ? layout()?.placements.map(p => p.objectId) : []), retained = new Set<string>();
+      const result = resolved.map(r => {
+        let content = r.contentKey ? state.contents[r.contentKey] : undefined;
+        const object = describe(state, content, r.object.id, r.object.label ?? r.object.id, r.status === "resolved" ? undefined : r.status);
+        if (spatial && placed.has(object.id) && object.kind === "document" && content) {
+          if (["document-window-block", "window-block"].includes(content.viewType)) content = state.contents[state.placements[content.children[0]]?.contentKey];
+          if (content) {
+            retained.add(content.key); let cached = previews.get(content.key);
+            if (!cached || !editing && cached.revision !== state.revision) {
+              cached = { revision: state.revision, value: spatialDocumentPreview(state, content, object.label) }; previews.set(content.key, cached);
+            }
+            object.preview = cached.value;
+          }
+        }
+        return object;
+      });
+      for (const key of previews.keys()) if (!retained.has(key)) previews.delete(key);
+      return result;
+    });
+  });
   const [editorSize, setEditorSize] = createSignal({ width: 900, height: 700 });
   const [notice, setNotice] = createSignal("");
   const bookmarks = new Map<string, { key: string; native?: import("../runtime/mounts").NativeTextSelection; inline?: { anchor: number; head: number } }>();
@@ -102,13 +132,13 @@ export function createSpatialActions(session: WorkspaceSession) {
   };
   return {
     layout, objects, selected, select, document, activeRoot, documentReady,
-    dispose: () => { releaseDocument(); bookmarks.clear(); dispose(); },
+    dispose: () => { disposed = true; releaseDocument(); bookmarks.clear(); previews.clear(); dispose(); },
     arrange(id: string, change: PlacementChange, expected: SpatialPlacement) {
       if (!session.inputAvailable() || presentation.active() !== "spatial" || activeRoot()) return false;
       const current = layout(), object = objects().find(o => o.id === id);
       const placement = current?.placements.find(p => p.objectId === id);
       if (!current || !placement || !object || object.reason || object.kind === "placeholder" || JSON.stringify(placement) !== JSON.stringify(expected)) return false;
-      const replacement = change.position || change.heading !== undefined || change.posture ? arrangedPlacement(placement, change) : placement;
+      const replacement = change.position || change.heading !== undefined || change.posture || change.orientation ? arrangedPlacement(placement, change) : placement;
       const placements = current.placements.map(p => p === placement ? replacement : p);
       if (change.toFront) { placements.splice(placements.indexOf(replacement), 1); placements.push(replacement); }
       const next = decodeSpatial({ ...current, placements }); validateSpatialDirectory(next, presentation.read()!.objects);

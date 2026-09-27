@@ -27,10 +27,11 @@ export function projectCss(point: Vector3, camera: StudyCamera, width: number, h
   const p = point.clone().project(camera); return { x: (p.x + 1) * width / 2, y: (1 - p.y) * height / 2 };
 }
 
-/** Pointer coordinates intersect the fixed physical desk plane, never editor DOM. */
-export function deskPoint(camera: StudyCamera, viewport: { width: number; height: number }, x: number, y: number) {
+/** Pointer coordinates intersect a desk-parallel plane. A captured move fixes
+ * its height at the grabbed point, keeping a propped page attached to the pointer. */
+export function deskPoint(camera: StudyCamera, viewport: { width: number; height: number }, x: number, y: number, height = 0) {
   const ray = new Raycaster(); ray.setFromCamera(new Vector2(x / viewport.width * 2 - 1, 1 - y / viewport.height * 2), camera);
   if (Math.abs(ray.ray.direction.y) < .0001) return;
-  const point = ray.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), 0), new Vector3());
+  const point = ray.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), -height), new Vector3());
   return point && Number.isFinite(point.x) && Number.isFinite(point.z) ? { x: point.x, z: point.z } : undefined;
 }
