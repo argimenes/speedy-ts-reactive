@@ -12,6 +12,7 @@ import { DocumentDialog } from "./document-dialog";
 import { createWorkspaceDocuments, type LocalDocumentFile } from "./workspace-documents";
 import { ReactiveEditor as BackgroundEditor } from "../reactive-editor/editor";
 import { registerApplicationViews } from "../application/features";
+import { WorkspaceSession } from "../application/workspace-session";
 import "./workspace-demo.css";
 import { DocumentStatusBar } from "../rendering/document-status-bar";
 import type { Toolset } from "../rendering/compact-toolbar";
@@ -404,15 +405,14 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
 }
 
 function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
-  const editor = new BackgroundEditor(props.loaded, props.configuration);
-  registerApplicationViews(editor);
-  const projection = editor.createView("loaded-workspace");
+  const session = new WorkspaceSession(props.loaded, props.configuration);
+  const { editor, projection } = session;
   const release = props.onEditor(editor);
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave]] as const) {
     editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: editor.features.publicHostedVersion ? localExecute : serverExecute });
   }
   onMount(() => editor.installGateway(document));
-  onCleanup(() => { release(); editor.dispose(); });
+  onCleanup(() => { release(); session.dispose(); });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
   return <main class="workspace-demo workspace-demo--canonical" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
@@ -429,7 +429,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
       <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
       <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
       <a href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
-      <span>{props.filename} · revision {editor.repository.state.revision}</span>
+      <span>{props.filename} · revision {editor.repository.state.revision}{session.dirty() ? " · Unsaved changes" : ""}</span>
     </nav>}>
       <CodexSystemBar>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
@@ -456,10 +456,11 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
         <button type="button" role="menuitem" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
         <button type="button" role="menuitem" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
         <hr role="separator" />
-        <span class="codex-system-menu__status">{props.filename} · Revision: {editor.repository.state.revision}</span>
+        <span class="codex-system-menu__status">{props.filename} · Revision: {editor.repository.state.revision}{session.dirty() ? " · Unsaved changes" : ""}</span>
       </CodexSystemBar>
     </Show>
     <Show when={editor.persistence.workspaceLoadIssues().length}><aside class="workspace-demo__workspace-notice" role="status">{editor.persistence.workspaceLoadIssues().map(issue => issue.message).join(" · ")}</aside></Show>
+    <Show when={session.presentation.issue()}>{issue => <aside class="workspace-demo__workspace-notice" role="status">{issue()}</aside>}</Show>
     <ReactiveTreeView editor={editor} projection={projection} />
   </main>;
 }
@@ -571,12 +572,14 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
     if (workspaceBusy()) return;
     setWorkspaceBusy(true); setWorkspaceError("");
     try {
-      const workspace = activeWorkspaceEditor ? activeWorkspaceEditor.encodeWorkspace() : splitWorkspaceDocument(false);
+      const owner = activeWorkspaceEditor;
+      const captured = owner?.persistence.captureWorkspace();
+      const workspace = captured?.document ?? splitWorkspaceDocument(false);
       const current = localWorkspaceFile();
       const saved = await saveJsonFile(workspace, { suggestedName: current?.filename ?? workspaceFilename() ?? "Workspace.json", handle: current?.handle });
       if (!saved) return;
       setLocalWorkspaceFile(saved); setWorkspaceFilename(saved.filename);
-      activeWorkspaceEditor?.persistence.markCurrentRevisionSaved();
+      if (captured) owner!.persistence.acknowledgeWorkspaceSave(captured);
       if (activeDemo) activeDemo.editor.persistence.markCurrentRevisionSaved(activeDemo.editor.encodeDocument());
       background.persistence.markCurrentRevisionSaved();
     } catch (error) { setWorkspaceError(error instanceof Error ? error.message : String(error)); }

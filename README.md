@@ -19,6 +19,12 @@ for current Block Application, feature, passive standoff-effect and Window prese
 APIs. The [Stage 5 report](./CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the latest
 qualification. Stage 6 / History extraction is deliberately deferred.
 
+Canvas [Milestone B](./CODEX_CANVAS_MILESTONE_B_REPORT.md) adds canonical workspace
+session ownership and presentation persistence, preserving the existing local
+and server formats. `canvasWorkspace` remains disabled by default; the Canvas
+renderer and presentation switching await Milestone C review/authorization.
+The [Canvas plan](./CODEX_CANVAS_WORKSPACE_PRESENTATION_PLAN.md) records the scope.
+
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in
 [BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md](./BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md).

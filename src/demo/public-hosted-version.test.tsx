@@ -98,4 +98,41 @@ describe("public-hosted-version", () => {
     await vi.waitFor(() => expect(host.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Portable Workspace"));
     expect(host.textContent).toContain("Portable Workspace.json · revision 0");
   });
+
+  it("preserves unavailable presentation data and leaves edits during a local write unsaved", async () => {
+    const presentation = { version: 99, futureLayout: { retained: true } };
+    const workspace = { type: "workspace-block", metadata: { workspacePresentation: presentation }, children: [
+      { type: "document-window-block", children: [{ type: "document-block", children: [{ type: "plain-text-block", text: "Before" }] }] },
+    ] };
+    const writes: string[] = [];
+    let finish!: () => void;
+    const handle: BrowserFileHandle = {
+      name: "Workspace.json", getFile: async () => ({ name: "Workspace.json", text: async () => JSON.stringify(workspace) }) as File,
+      createWritable: async () => ({ write: async data => { writes.push(String(data)); }, close: () => new Promise<void>(resolve => { finish = resolve; }) }),
+    };
+    vi.stubGlobal("showOpenFilePicker", vi.fn().mockResolvedValue([handle]));
+    const host = mount();
+    click(button("Open Workspace…", host.querySelector('[aria-label="Local files"]')!));
+    await vi.waitFor(() => expect(host.querySelector(".workspace-demo--canonical")).not.toBeNull());
+    expect(host.textContent).toContain("Presentation data was preserved; Desktop is shown");
+    const input = host.querySelector<HTMLTextAreaElement>("textarea")!;
+    const edit = (text: string) => { input.value = text; input.dispatchEvent(new Event("input", { bubbles: true })); };
+    edit("Captured");
+    click(button("Save Workspace", host.querySelector('[aria-label="Local files"]')!));
+    await vi.waitFor(() => expect(writes).toHaveLength(1));
+    edit("Newer"); finish();
+    await vi.waitFor(() => expect(button("Save Workspace", host.querySelector('[aria-label="Local files"]')!).disabled).toBe(false));
+    expect(host.textContent).toContain("Unsaved changes");
+    expect(JSON.parse(writes[0]).metadata.workspacePresentation).toEqual(presentation);
+    expect(writes[0]).toContain("Captured"); expect(writes[0]).not.toContain("Newer");
+    click(button("Save Workspace", host.querySelector('[aria-label="Local files"]')!));
+    await vi.waitFor(() => expect(writes).toHaveLength(2)); finish();
+    await vi.waitFor(() => expect(host.textContent).not.toContain("Unsaved changes"));
+    expect(writes[1]).toContain("Newer");
+    edit("Unsaved after failure");
+    handle.createWritable = async () => { throw new Error("Disk write failed"); };
+    click(button("Save Workspace", host.querySelector('[aria-label="Local files"]')!));
+    await vi.waitFor(() => expect(host.querySelector('[role="alert"]')?.textContent).toContain("Disk write failed"));
+    expect(host.textContent).toContain("Unsaved changes");
+  });
 });

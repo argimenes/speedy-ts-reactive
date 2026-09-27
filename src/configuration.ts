@@ -18,6 +18,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Opt-in workspace presentation state; no Canvas renderer/menu until C. */
+  canvasWorkspace: boolean;
   /** Existing Timer capability remains on; activation is decided by application composition. */
   timer: boolean;
   /** Existing retained selection behavior, activated only by application composition. */
@@ -33,6 +35,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  canvasWorkspace: false,
   timer: true,
   grouping: true,
   entityReferences: true,

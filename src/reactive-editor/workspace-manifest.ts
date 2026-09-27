@@ -2,6 +2,7 @@ import { clone } from "../block-tree/clone";
 import { decodeBlockTree, encodeDocument, encodeWorkspace } from "../block-tree/codecs";
 import { validateRepository } from "../block-tree/repository";
 import type { ContentKey, ExistingBlockDto, PlacementKey, RepositoryState } from "../block-tree/types";
+import { withWorkspacePresentation, type PresentationSnapshot } from "./workspace-presentation";
 
 export interface WorkspaceDocumentSource {
   kind: "document-store";
@@ -189,10 +190,11 @@ export async function createWorkspaceSaveBundle(
   state: RepositoryState,
   registrations: WorkspaceDocumentRegistration[] = [],
   workspaceId: string = globalThis.crypto.randomUUID(),
+  presentation?: PresentationSnapshot,
 ): Promise<WorkspaceSaveBundle> {
   const rootContent = state.contents[state.placements[state.rootPlacementKey]?.contentKey];
   if (rootContent?.viewType !== "workspace-block") throw new WorkspaceManifestError("Save Workspace requires a workspace-block root.");
-  const encoded = encodeWorkspace(state);
+  const encoded = withWorkspacePresentation(encodeWorkspace(state), presentation);
   const documents: WorkspaceDocumentWrite[] = [];
   const resources: Record<string, WorkspaceDocumentResource> = {};
   const identityOwners = new Map<string, ContentKey>();

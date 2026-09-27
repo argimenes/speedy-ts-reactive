@@ -1,7 +1,8 @@
 import { createStore } from "solid-js/store";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { decodeDocument, decodeWorkspace } from "../block-tree/codecs";
-import type { ExistingBlockDto } from "../block-tree/types";
+import type { ExistingBlockDto, RepositoryState } from "../block-tree/types";
+import { withWorkspacePresentation, type PresentationSnapshot, type WorkspacePresentationState } from "./workspace-presentation";
 import type { ReactiveEditor } from "./editor";
 import { decodeExtendedRepository, encodeExtendedRepository, type ExtendedRepositoryDto } from "../block-tree/extended-codec";
 import {
@@ -46,6 +47,12 @@ async function responseJson(response: Response, listing = false) {
 
 export interface DocumentLocation { folder: string; filename: string; }
 
+export interface WorkspaceSaveSnapshot {
+  repository: RepositoryState;
+  document: ExistingBlockDto;
+  presentation?: PresentationSnapshot;
+}
+
 export class PersistenceService {
   readonly state: SaveState;
   savedDocument?: ExistingBlockDto;
@@ -54,6 +61,9 @@ export class PersistenceService {
   private workspaceManifest?: WorkspaceManifest;
   private workspaceReferences: WorkspaceDocumentRegistration[] = [];
   private loadIssues: WorkspaceLoadIssue[] = [];
+  private workspacePresentation?: Pick<WorkspacePresentationState, "capture" | "markSaved">;
+  private captures = new WeakSet<WorkspaceSaveSnapshot>();
+  private disposed = false;
 
   constructor(private readonly editor: ReactiveEditor) {
     const [state, setState] = createStore<SaveState>({ saving: false, requestToken: 0 });
@@ -66,6 +76,34 @@ export class PersistenceService {
     this.workspaceManifest = workspace.manifest;
     this.workspaceReferences = workspace.references.map(reference => structuredClone(reference));
     this.loadIssues = workspace.issues.map(issue => structuredClone(issue));
+  }
+
+  attachWorkspacePresentation(presentation: Pick<WorkspacePresentationState, "capture" | "markSaved">): void {
+    if (this.workspacePresentation || this.disposed) throw new Error("Workspace presentation lifetime is already owned or disposed.");
+    this.workspacePresentation = presentation;
+  }
+
+  /** The same synchronous capture is used by local writes and server bundles.
+   * Focus bookmarks belong to the DTO, not the repository/layout dirty clocks. */
+  captureWorkspace(): WorkspaceSaveSnapshot {
+    if (this.disposed) throw new Error("Workspace persistence is disposed.");
+    const repository = this.editor.repository.snapshot();
+    if (repository.contents[repository.placements[repository.rootPlacementKey].contentKey].viewType !== "workspace-block") throw new Error("Save Workspace requires a workspace-block root.");
+    const presentation = this.workspacePresentation?.capture();
+    const snapshot = { repository, presentation, document: withWorkspacePresentation(this.editor.encodeWorkspace(repository), presentation) };
+    this.captures.add(snapshot);
+    return snapshot;
+  }
+
+  acknowledgeWorkspaceSave(snapshot: WorkspaceSaveSnapshot): void {
+    if (this.disposed || !this.captures.delete(snapshot)) return;
+    if (this.editor.repository.state.revision === snapshot.repository.revision) this.setState("lastSavedRevision", snapshot.repository.revision);
+    if (snapshot.presentation) this.workspacePresentation?.markSaved(snapshot.presentation);
+  }
+
+  dispose(): void {
+    this.disposed = true; this.captures = new WeakSet(); this.workspacePresentation = undefined;
+    this.setState({ requestToken: this.state.requestToken + 1, saving: false });
   }
 
   workspaceLoadIssues(): readonly WorkspaceLoadIssue[] {
@@ -198,7 +236,7 @@ export class PersistenceService {
   }
 
   async saveWorkspace(filename: string, options: { createOnly?: boolean } = {}): Promise<boolean> {
-    if (this.state.saving) return false;
+    if (this.state.saving || this.disposed) return false;
     let snapshot = this.editor.repository.snapshot();
     const root = snapshot.contents[snapshot.placements[snapshot.rootPlacementKey]?.contentKey];
     if (root?.viewType !== "workspace-block") {
@@ -216,11 +254,13 @@ export class PersistenceService {
       this.editor.repository.commit("Assign Document identities", identityOperations);
       snapshot = this.editor.repository.snapshot();
     }
-    const revision = snapshot.revision;
+    const captured = this.captureWorkspace();
+    const revision = captured.repository.revision;
     const token = this.state.requestToken + 1;
     this.setState({ saving: true, error: undefined, warning: undefined, status: undefined, requestToken: token });
     try {
-      const bundle = await createWorkspaceSaveBundle(snapshot, this.workspaceReferences, this.workspaceId);
+      const bundle = await createWorkspaceSaveBundle(captured.repository, this.workspaceReferences, this.workspaceId, captured.presentation);
+      if (token !== this.state.requestToken) return false;
       const json = await responseJson(
         await fetch("/api/saveWorkspaceBundle", {
           method: "POST",
@@ -245,7 +285,7 @@ export class PersistenceService {
         return { ...structuredClone(resource), contentKey };
       });
       this.loadIssues = [];
-      if (this.editor.repository.state.revision === revision) this.setState("lastSavedRevision", revision);
+      this.acknowledgeWorkspaceSave(captured);
       this.setState("saving", false);
       this.setState("warning", json.Warning);
       return true;

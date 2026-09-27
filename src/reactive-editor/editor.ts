@@ -311,8 +311,8 @@ export class ReactiveEditor {
     return encodeDocument(this.repository.snapshot(), rootPlacementKey, this.focusBookmarks());
   }
 
-  encodeWorkspace(): ExistingBlockDto {
-    return encodeWorkspace(this.repository.snapshot(), undefined, this.focusBookmarks());
+  encodeWorkspace(snapshot = this.repository.snapshot()): ExistingBlockDto {
+    return encodeWorkspace(snapshot, undefined, this.focusBookmarks());
   }
 
   private focusBookmarks() {
@@ -349,6 +349,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.persistence.dispose();
     this.featureHost.dispose();
     this.disposeFindInput?.();
     this.stickyNotes.dispose();

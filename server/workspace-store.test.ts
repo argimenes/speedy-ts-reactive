@@ -41,6 +41,8 @@ describe("Workspace store HTTP routes", () => {
 
   it("writes separate Documents before the manifest and reloads the manifest", async () => {
     const value = values();
+    // Root metadata also carries presentation data unknown to this server.
+    Object.assign(value.workspace.root, { metadata: { workspacePresentation: { version: 99, active: "future", layouts: { retained: true } } } });
     const response = await fetch(`${base}/saveWorkspaceBundle`, { method: "POST", headers: { "Content-Type": "application/json", "X-Speedy-Revision": "9" }, body: JSON.stringify({ filename: "Desk.json", workspace: value.workspace, documents: [{ documentId: "document-one", source: value.source, document: value.document, contentHash: value.contentHash }] }) });
     expect(response.status).toBe(200); expect(response.headers.get("X-Speedy-Revision")).toBe("9");
     expect(JSON.parse(await fs.readFile(path.join(documents, "research", "Notes.json"), "utf8"))).toEqual(value.document);
