@@ -29,3 +29,8 @@
 .workspace-spatial__footer[hidden] { display: none; }
 .workspace-spatial__notice { position: absolute; z-index: 4; bottom: 4px; left: 25%; right: 25%; padding: 8px; background: #172131; color: #eee; }
 .workspace-spatial__bar { z-index: 3; }
+
+.workspace-spatial__arrangement { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: 77px; justify-content: flex-start; padding: 10px 12px; border: 1px solid #ad966441; border-radius: 6px; background: #101620ed; }
+.workspace-spatial__arrangement strong { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.workspace-spatial__arrangement-help { flex-basis: 100%; color: #c4baaa; font-size: 11px; }
+.workspace-spatial__footer details[open] { position: relative; z-index: 4; }

@@ -1,0 +1,45 @@
+
+> speedy-ts-reactive@0.0.0 test
+> vitest run --maxWorkers=2 --minWorkers=1 src/application/spatial-actions.test.ts src/application/workspace-session.test.ts src/application/workspace-presentation-view.test.tsx src/features/spatial src/features/grouping src/features/entity-references src/input/selection-gestures.test.ts src/input/selection-target.test.ts src/rendering/cross-block-selection.test.tsx src/rendering/standoff-editor-view.test.tsx src/features/compact-document/workspace.test.tsx
+
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/rendering/standoff-editor-view.test.tsx (23 tests) 1186ms
+ ✓ src/features/grouping/document-style-bar.test.tsx (30 tests) 4958ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > exposes every canonical style and both colours, creating inclusive Cell ranges with IDs 1352ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > collects only Control-held gestures, excludes early release, and keeps static highlights 338ms
+   ✓ DocumentWindow annotation toolbar (compact=false) > exposes every canonical style and both colours, creating inclusive Cell ranges with IDs 574ms
+ ✓ src/rendering/cross-block-selection.test.tsx (16 tests) 1691ms
+   ✓ experimental cross-Block text selection > replaces via beforeinput and pastes plain multiline text atomically 330ms
+   ✓ experimental cross-Block text selection > applies all ordinary styles and colours locally with atomic history and persistence 351ms
+ ✓ src/application/spatial-actions.test.ts (17 tests) 535ms
+ ✓ src/features/entity-references/entity-candidates.test.ts (11 tests) 1006ms
+   ✓ entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 738ms
+ ✓ src/application/workspace-session.test.ts (13 tests) 497ms
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 803ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (7 tests) 774ms
+ ✓ src/application/workspace-presentation-view.test.tsx (6 tests) 667ms
+ ✓ src/input/selection-gestures.test.ts (24 tests) 67ms
+ ✓ src/features/grouping/group-selection.test.ts (8 tests) 155ms
+ ✓ src/features/entity-references/search-view.test.tsx (4 tests) 452ms
+ ✓ src/features/grouping/lifecycle.test.tsx (5 tests) 295ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 514ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 485ms
+ ✓ src/features/spatial/arrangement-input.test.ts (7 tests) 16ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 193ms
+ ✓ src/features/entity-references/document-entities.test.ts (2 tests) 63ms
+ ✓ src/features/grouping/policy.test.ts (3 tests) 11ms
+ ✓ src/features/compact-document/workspace.test.tsx (1 test) 1096ms
+   ✓ Compact workspace geometry > saves expanded dimensions while compact or minimized, and restores width on reopening 1094ms
+ ✓ src/features/spatial/model.test.ts (4 tests) 20ms
+ ✓ src/features/spatial/arrangement.test.ts (4 tests) 178ms
+ ✓ src/input/selection-target.test.ts (6 tests) 33ms
+ ✓ src/features/spatial/handoff.test.ts (2 tests) 12ms
+
+ Test Files  23 passed (23)
+      Tests  206 passed (206)
+   Start at  07:34:15
+   Duration  27.85s (transform 6.08s, setup 0ms, collect 16.60s, tests 15.22s, environment 15.43s, prepare 2.22s)
+

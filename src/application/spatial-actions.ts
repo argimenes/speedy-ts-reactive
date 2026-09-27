@@ -2,6 +2,8 @@ import { createComputed, createMemo, createRoot, createSignal } from "solid-js";
 import type { WorkspaceSession } from "./workspace-session";
 import type { WorkspaceObject } from "../reactive-editor/workspace-presentation";
 import type { ContentRecord, RepositoryState } from "../block-tree/types";
+import { arrangedPlacement, type PlacementChange } from "../features/spatial/arrangement";
+import type { SpatialPlacement } from "../features/spatial/model";
 import { discoverWorkspaceObjects } from "./workspace-objects";
 import { decodeSpatial, starterLayout, starterPlacement, STUDY, validateSpatialDirectory, type SpatialCamera, type SpatialObject } from "../features/spatial/model";
 export { supportsSpatial } from "../features/spatial/model";
@@ -101,6 +103,18 @@ export function createSpatialActions(session: WorkspaceSession) {
   return {
     layout, objects, selected, select, document, activeRoot, documentReady,
     dispose: () => { releaseDocument(); bookmarks.clear(); dispose(); },
+    arrange(id: string, change: PlacementChange, expected: SpatialPlacement) {
+      if (!session.inputAvailable() || presentation.active() !== "spatial" || activeRoot()) return false;
+      const current = layout(), object = objects().find(o => o.id === id);
+      const placement = current?.placements.find(p => p.objectId === id);
+      if (!current || !placement || !object || object.reason || object.kind === "placeholder" || JSON.stringify(placement) !== JSON.stringify(expected)) return false;
+      const replacement = change.position || change.heading !== undefined || change.posture ? arrangedPlacement(placement, change) : placement;
+      const placements = current.placements.map(p => p === placement ? replacement : p);
+      if (change.toFront) { placements.splice(placements.indexOf(replacement), 1); placements.push(replacement); }
+      const next = decodeSpatial({ ...current, placements }); validateSpatialDirectory(next, presentation.read()!.objects);
+      if (JSON.stringify(next) !== JSON.stringify(current)) presentation.updateSpatial(next);
+      return true;
+    },
     create() {
       if (presentation.read()?.presentations.spatial !== undefined) throw new Error("Spatial already exists; select the retained layout.");
       const candidate = discoverWorkspaceObjects(editor.repository.snapshot(), presentation.read());

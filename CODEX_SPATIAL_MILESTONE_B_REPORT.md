@@ -1,6 +1,6 @@
 # Spatial Milestone B — Existing Document activation and DOM handoff
 
-Status: **complete, awaiting review**. Spatial C has not begun.
+Status: **accepted**, including manual confirmation of Document proxy creation, activation and live editing. The accepted B baseline is commit `4481beb` (`3D verified`). [Milestone C](./CODEX_SPATIAL_MILESTONE_C_REPORT.md) follows this baseline.
 
 ## Scope and baseline
 
@@ -88,4 +88,4 @@ The preview is deliberately schematic: the physical page has its title and manus
 
 No revision to the approved C/D boundaries is required. B establishes that the physical-to-screen bridge can remain feature-local while editing retains identity coordinates. Arrangement in C must continue to keep saved placement separate from transient pickup geometry, revoke invalid authorization, and preserve one live root. Unsupported shapes and bare Documents still require separate qualification rather than relaxing the authorization guard.
 
-Spatial C remains unstarted. It may reuse the demonstrated pose math and lifetime rules for arrangement, but B supplies no general layout registry or arrangement machinery.
+At B completion, Spatial C remained unstarted. It may reuse the demonstrated pose math and lifetime rules for arrangement, but B supplies no general layout registry or arrangement machinery.

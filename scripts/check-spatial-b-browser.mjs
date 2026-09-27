@@ -6,6 +6,7 @@ import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+const artifacts = process.env.SPATIAL_ARTIFACT_DIR ?? 'artifacts/spatial-b';
 const profile = await mkdtemp(path.join(tmpdir(), 'speedy-presentation-check-'));
 const chrome = spawn(process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--headless=new', ...(process.env.CANVAS_SOFTWARE_GPU === '0' ? [] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']), '--disk-cache-size=1', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', '--user-data-dir=' + profile, 'about:blank']);
 let socket;
@@ -172,9 +173,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await evaluate("q.session.selectPresentation('spatial');q.frame()");
  check('Spatial returns to browsing',await evaluate('document.querySelectorAll(".reactive-window").length'),0);
  await evaluate("q.session.spatial.document.activate('block:one');q.frame()");
- await mkdir('artifacts/spatial-b',{recursive:true});
- const shot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile('artifacts/spatial-b/b1-editing.png',Buffer.from(shot.data,'base64'));
- await writeFile('artifacts/spatial-b/b1-browser-results.json',JSON.stringify({checks},null,2));
+ await mkdir(artifacts,{recursive:true});
+ const shot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(artifacts+'/b1-editing.png',Buffer.from(shot.data,'base64'));
+ await writeFile(artifacts+'/b1-browser-results.json',JSON.stringify({checks},null,2));
  console.log(JSON.stringify({checks},null,2));
 
  // B2 exercises the actual feature controls; B1 above deliberately tests the
@@ -183,7 +184,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const settle=()=>evaluate('new Promise(r=>setTimeout(r,600))');
  const read='.workspace-spatial__footer > button', back='.workspace-spatial__controls button:nth-last-child(2)';
  await evaluate("q.session.spatial.select('block:one');q.physical=JSON.stringify(q.session.spatial.layout());q.repoRevision=q.editor.repository.state.revision;q.frame()");
- const capture=async name=>{const result=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile('artifacts/spatial-b/'+name+'.png',Buffer.from(result.data,'base64'));};
+ const capture=async name=>{const result=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(artifacts+'/'+name+'.png',Buffer.from(result.data,'base64'));};
  await capture('01-desk');
  const frames=[];
  const record=async event=>{const message=JSON.parse(event.data);if(message.method==='Page.screencastFrame'){frames.push({data:message.params.data,timestamp:message.params.metadata.timestamp});await send('Page.screencastFrameAck',{sessionId:message.params.sessionId},sessionId);}};
@@ -197,7 +198,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('activation does not author changes',await evaluate('q.editor.repository.state.revision===q.repoRevision'),true);
  await click(back);await settle();await capture('06-desk-restored');
  await send('Page.stopScreencast',{},sessionId);socket.removeEventListener('message',record);
- await writeFile('artifacts/spatial-b/sequence.json',JSON.stringify(frames));
+ await writeFile(artifacts+'/sequence.json',JSON.stringify(frames));
  check('reverse releases all live roots',await evaluate("document.querySelector('.workspace-spatial').dataset.phase==='desk'&&document.querySelectorAll('.reactive-window').length===0"),true);
  check('reverse preserves physical placement',await evaluate('JSON.stringify(q.session.spatial.layout())===q.physical'),true);
  await click(read);await evaluate("document.querySelector('.workspace-spatial__scene').focus()");await key('Escape');await settle();
@@ -239,10 +240,10 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await evaluate("q.session.spatial.select('block:one');q.recording=true;q.motionFrames=[];q.motionGroups=[];let previous;const tick=t=>{if(!q.recording)return;const phase=document.querySelector('.workspace-spatial').dataset.phase;if(['approaching','returning'].includes(phase)){if(!previous||previous.phase!==phase){previous={phase,start:t,last:t,intervals:[]};q.motionGroups.push(previous)}else{previous.intervals.push(t-previous.last);previous.last=t;}}else previous=undefined;requestAnimationFrame(tick)};requestAnimationFrame(tick)");
  for(let i=0;i<3;i++){await click(read);await settle();await click(back);await settle();}
  const motionMetrics=await evaluate(`(()=>{q.recording=false;const samples=q.motionGroups.flatMap(g=>g.intervals).sort((a,b)=>a-b);return{samples:samples.length,medianMs:samples[Math.floor(samples.length/2)],p95Ms:samples[Math.floor(samples.length*.95)],maxMs:samples.at(-1),groups:q.motionGroups.map(g=>({phase:g.phase,durationMs:g.last-g.start,frames:g.intervals.length+1}))}})()`);
- await writeFile('artifacts/spatial-b/motion-metrics.json',JSON.stringify(motionMetrics,null,2));
+ await writeFile(artifacts+'/motion-metrics.json',JSON.stringify(motionMetrics,null,2));
  await evaluate(`(async()=>{const {workspaceOpen}=await import('/src/application/workspace-open.ts');const open=workspaceOpen(q.session);q.beforeOpen=q.editor.repository.snapshot();const a=await open.serverDocument({folder:'notes',filename:'Scale.json'},new AbortController().signal);const b=await open.serverDocument({folder:'notes',filename:'Scale.json'},new AbortController().signal);q.sameServer=a===b})()`);
  check('server reopen reuses shared live identity and unsaved edits',await evaluate("q.sameServer&&JSON.stringify(q.beforeOpen)===JSON.stringify(q.editor.repository.snapshot())&&String(q.node('native').payload.text).includes('Idle proof')"),true);
- await writeFile('artifacts/spatial-b/browser-results.json' ,JSON.stringify({browser:await send('Browser.getVersion'),gpu:(await send('SystemInfo.getInfo')).gpu.devices,checks,counts,sequenceFrames:frames.length},null,2));
+ await writeFile(artifacts+'/browser-results.json' ,JSON.stringify({browser:await send('Browser.getVersion'),gpu:(await send('SystemInfo.getInfo')).gpu.devices,checks,counts,sequenceFrames:frames.length},null,2));
  console.log(JSON.stringify({b2Checks:checks.slice(49),counts,sequenceFrames:frames.length},null,2));
  await evaluate('q.dispose()');
 } finally { socket?.close();chrome.kill();await new Promise(r=>setTimeout(r,300));await rm(profile,{recursive:true,force:true,maxRetries:8,retryDelay:200}); }

@@ -51,7 +51,7 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
       return <Show when={actions.activeRoot()} keyed>{root => <BlockOutlet nodeKey={root.nodeKey} />}</Show>;
     };
     return <SpatialView port={{ layout: actions.layout, objects: actions.objects, selected: actions.selected, select: actions.select,
-      camera: actions.camera, available: actions.available, ownInteraction: actions.ownInteraction, returnDesktop: actions.returnDesktop,
+      camera: actions.camera, arrange: actions.arrange, available: actions.available, ownInteraction: actions.ownInteraction, returnDesktop: actions.returnDesktop,
       document: actions.document, renderDocument: () => <DocumentSlot />, displayedSize: () => spatialResize()?.presentedSize() }} />;
   };
   return <ReactiveViewProvider editor={editor} projection={projection}

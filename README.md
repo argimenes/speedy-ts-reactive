@@ -58,8 +58,16 @@ Document Window: double-click its page, or select it and choose **Read Document*
 The physical page approaches and hands off to ordinary DOM editing; **Return to desk**
 reverses the transition. Reduced motion uses an immediate handoff. The
 [B review gallery](./artifacts/spatial-b/index.html) includes a replayable sequence.
+[Milestone C](./CODEX_SPATIAL_MILESTONE_C_REPORT.md) adds desk-constrained dragging,
+heading rotation, lying/propped posture and **Bring to top**. Select any placed
+Document or image through **Workspace objects** to access its controls, even when
+covered. **Arrange with keyboard** focuses the study: arrows move 1 cm, brackets
+rotate 5°, Shift gives 1 mm / 1° steps, and L/P changes posture. Escape cancels an
+unfinished drag; a second Escape returns to view controls. Saved arrangements are
+separate from authored undo. The [C gallery](./artifacts/spatial-c/index.html) shows
+the controls and unchanged editing handoff.
 The [accepted plan](./CODEX_SPATIAL_WORKSPACE_PRESENTATION_PLAN.md) defines the next
-review gates. Work stops after B for review; Spatial C has not begun.
+review gates. C is complete and awaiting review; Spatial D has not begun.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

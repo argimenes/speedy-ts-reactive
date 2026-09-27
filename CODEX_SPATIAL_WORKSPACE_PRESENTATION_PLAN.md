@@ -1,6 +1,6 @@
 # Codex Spatial Workspace / Presentation — implementation plan
 
-Status: **accepted**. [Milestone A implementation and qualification](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) are accepted. [Milestone B implementation and qualification](./CODEX_SPATIAL_MILESTONE_B_REPORT.md) are complete and awaiting review. Milestone C has not begun.
+Status: **accepted**. [Milestone A implementation and qualification](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) are accepted. [Milestone B implementation and qualification](./CODEX_SPATIAL_MILESTONE_B_REPORT.md) are accepted, including manual confirmation of proxy creation, activation and live Document editing. [Milestone C implementation and qualification](./CODEX_SPATIAL_MILESTONE_C_REPORT.md) are complete and awaiting review; D has not begun.
 
 Inspected baseline: `3e3297f` (`More work Canvas`). Canvas A–E and its application integration are accepted. This proposal does not reopen that programme. No Spatial code, dependency, scene or browser experiment was implemented during this investigation.
 
@@ -285,6 +285,8 @@ Persist settled placement through the existing sidecar capture; qualify cancel/c
 Evidence: useful arrangement with mouse/trackpad and keyboard, repeated-document/all-layout round-trip, independence assertions, activation after moves/posture changes and physical removal. **Stop for review before D.**
 
 ### D — Selective environment and additional Block qualification
+
+Record from B acceptance: investigate a lightweight, non-live preview that makes papers recognisable from actual Document content—title/layout, headings, images and significant visual/standoff features. This is a candidate for D, not C scope; do not use hidden duplicate editors or per-keystroke texture generation.
 
 Agree the bounded D selection after A–C evidence. Candidates are improved photograph presentation, a user-started unobtrusive YouTube music surface, better wood/props/exterior, reduced-motion-aware distant lights, and a small window-local rain effect. Do not treat every candidate as automatically authorized scope.
 

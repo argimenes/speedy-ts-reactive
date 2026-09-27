@@ -156,3 +156,31 @@ describe("Spatial live Document authorization", () => {
     await new Promise(resolve => setTimeout(resolve, 5)); expect(complete).not.toHaveBeenCalled();
   });
 });
+
+describe("Spatial arrangement sidecar", () => {
+  it("persists only settled Spatial geometry, preserving shared documents, other layouts and unknown fields", async () => {
+    const s = open(fixture(), true); s.selectPresentation("canvas"); s.selectPresentation("spatial");
+    const a = s.spatial!, layout = a.layout()!; layout.future = { keep: [1] }; layout.placements[0].future = "placement"; layout.placements[0].position.future = "position";
+    s.presentation.updateSpatial(layout);
+    const repository = s.editor.repository.snapshot(), canvas = s.presentation.read()!.presentations.canvas, desktop = s.presentation.read()!.presentations.desktop, revision = s.presentation.revision();
+    const first = a.layout()!.placements[0];
+    expect(a.arrange(first.objectId, { position: { x: .3, z: -.9 }, heading: .4, posture: "lying", toFront: true }, first)).toBe(true);
+    expect(s.presentation.revision()).toBe(revision + 1); expect(s.editor.repository.snapshot()).toEqual(repository);
+    expect(s.presentation.read()!.presentations.canvas).toEqual(canvas); expect(s.presentation.read()!.presentations.desktop).toEqual(desktop);
+    const last = a.layout()!.placements.at(-1)!; expect(last.objectId).toBe(first.objectId); expect(last.future).toBe("placement"); expect(last.position.future).toBe("position"); expect(last.size).toEqual(first.size);
+    const captured = s.editor.persistence.captureWorkspace(), bundle = await createWorkspaceSaveBundle(captured.repository, [], "workspace", captured.presentation);
+    expect(bundle.documents).toHaveLength(1);
+    const local = open(JSON.parse(JSON.stringify(captured.document)), true);
+    const server = new WorkspaceSession(materializeWorkspace(bundle.manifest, new Map(bundle.documents.map(d => [d.documentId, d.document]))), { features: { canvasWorkspace: true, spatialWorkspace: true } }); sessions.push(server);
+    expect(local.presentation.read()).toEqual(s.presentation.read()); expect(server.presentation.read()).toEqual(s.presentation.read());
+    s.selectPresentation("desktop"); s.selectPresentation("canvas"); s.selectPresentation("spatial"); expect(a.layout()).toEqual(local.spatial!.layout());
+  });
+  it("rejects stale or missing targets and any arrangement while the live editor owns the surface", () => {
+    const s = open(); s.selectPresentation("spatial"); const a = s.spatial!, first = a.layout()!.placements[0];
+    expect(a.arrange(first.objectId, { heading: .2 }, first)).toBe(true);
+    expect(a.arrange(first.objectId, { posture: "lying" }, first)).toBe(false);
+    a.document.activate(first.objectId); const now = a.layout()!.placements[0]; expect(a.arrange(first.objectId, { heading: 1 }, now)).toBe(false);
+    a.document.release(); const root = s.projection.nodeForPlacement(s.resolveObjects()[0].placementKeys[0])!; s.editor.commands.remove(root.key);
+    expect(a.arrange(first.objectId, { heading: 1 }, now)).toBe(false);
+  });
+});
