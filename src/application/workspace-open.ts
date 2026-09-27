@@ -24,19 +24,23 @@ export function workspaceOpen(session: WorkspaceSession) {
     const window: ExistingBlockDto = { id, type: isDocument ? "document-window-block" : "window-block", metadata, children: [content] };
     const value = presentation.read(), canvas = presentation.active() === "canvas" ? value?.presentations.canvas : undefined;
     const objectId = `block:${id}`;
+    const spatial = presentation.active() === "spatial";
+    const spatialCommit = spatial ? session.spatial!.prepareObject({ id: objectId, label: title, target: { kind: "block", blockId: id } }, isDocument ? "document" : "image") : undefined;
+    const banked = !!canvas || spatial;
     const objects = canvas ? [...value!.objects, { id: objectId, label: title, target: { kind: "block" as const, blockId: id } }] : undefined;
     const next = canvas ? { ...canvas, placements: [...canvas.placements, { id: `canvas:${objectId}`, objectId, order: canvas.placements.length,
       bounds: { x: canvas.camera.x + 60 / canvas.camera.zoom, y: canvas.camera.y + 100 / canvas.camera.zoom, width: metadata.size.w, height: metadata.size.h } }] } : undefined;
     if (next) validateWorkspacePresentation({ ...value!, objects: objects!, presentations: { ...value!.presentations, canvas: next } });
     const banks = projection.state.nodes[root].children.filter(key => editor.node(key)?.viewType === "workspace-object-bank-block");
-    if (canvas && banks.length > 1) throw new Error("Ambiguous workspace object bank.");
+    if (banked && banks.length > 1) throw new Error("Ambiguous workspace object bank.");
     let placement!: PlacementKey;
     batch(() => {
       editor.commands.transaction("Open workspace object", () => {
-        const parent = canvas ? banks[0] ?? editor.commands.insert({ id: crypto.randomUUID(), type: "workspace-object-bank-block", children: [] }, { kind: "at", parentKey: root, index: editor.commands.childrenOf(root).length }) : desktopParent();
-        placement = editor.commands.insert(window, { kind: "at", parentKey: parent, index: canvas ? editor.commands.childrenOf(parent).length : 0 });
+        const parent = banked ? banks[0] ?? editor.commands.insert({ id: crypto.randomUUID(), type: "workspace-object-bank-block", children: [] }, { kind: "at", parentKey: root, index: editor.commands.childrenOf(root).length }) : desktopParent();
+        placement = editor.commands.insert(window, { kind: "at", parentKey: parent, index: banked ? editor.commands.childrenOf(parent).length : 0 });
       });
       if (next) presentation.updateCanvas(next, objects);
+      spatialCommit?.();
     });
     return placement;
   };
@@ -62,7 +66,14 @@ export function workspaceOpen(session: WorkspaceSession) {
     const node = Object.values(projection.state.nodes).find(n => n.contentKey === contentKey);
     const host = node && editor.blockQueries.ancestors(node.key).find(n => ["document-window-block", "window-block"].includes(n.viewType));
     if (!host) throw new Error("This Document is already in the workspace without a Window. Open it through its existing owner.");
-    if (presentation.active() === "canvas") {
+    if (presentation.active() === "spatial") {
+      const id = host.payload.id;
+      if (typeof id !== "string" || !id.trim()) throw new Error("The existing Window has no stable identity.");
+      const matches = presentation.read()!.objects.filter(o => o.desktopHostBlockId === id || o.target.kind === "block" && o.target.blockId === id);
+      if (matches.length > 1) throw new Error("The existing Window has ambiguous directory ownership.");
+      const object = matches[0] ?? { id: `block:${encodeURIComponent(id)}`, label: String((host.payload.metadata as any)?.title ?? "Document"), target: { kind: "block" as const, blockId: id } };
+      session.spatial!.prepareObject(object, "document")();
+    } else if (presentation.active() === "canvas") {
       const value = presentation.read()!, layout = value.presentations.canvas!;
       const id = host.payload.id;
       if (typeof id !== "string" || !id.trim()) throw new Error("The existing Document Window has no stable identity.");
@@ -114,6 +125,7 @@ export function workspaceOpen(session: WorkspaceSession) {
       return insert({ id: crypto.randomUUID(), type: "image-block", metadata: { url, title: "Image" } }, "Image");
     },
     focus(placement: PlacementKey) {
+      if (presentation.active() === "spatial") return; // A has proxies, never a hidden editor focus request.
       const host = projection.nodeForPlacement(placement); if (!host) return;
       const visit = (key: string): string | undefined => {
         if (["native-text", "standoff"].includes(editor.mounts.get(key)?.inputPolicy ?? "")) return key;

@@ -21,6 +21,8 @@ export type FeatureFlags = Readonly<{
   /** Canonical Desktop/Canvas presentation. The main application enables it;
    * other editor hosts opt in explicitly. */
   canvasWorkspace: boolean;
+  /** Experimental study presentation; explicitly opt in at application assembly. */
+  spatialWorkspace: boolean;
   /** Existing Timer capability remains on; activation is decided by application composition. */
   timer: boolean;
   /** Existing retained selection behavior, activated only by application composition. */
@@ -37,6 +39,7 @@ export type FeatureFlags = Readonly<{
 
 export const featureFlags: FeatureFlags = Object.freeze({
   canvasWorkspace: false,
+  spatialWorkspace: false,
   timer: true,
   grouping: true,
   entityReferences: true,

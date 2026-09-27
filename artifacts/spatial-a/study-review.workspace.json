@@ -1,0 +1,268 @@
+{
+  "id": "spatial-fixture",
+  "type": "workspace-block",
+  "children": [
+    {
+      "id": "window-0",
+      "type": "document-window-block",
+      "metadata": {
+        "title": "A visit to the Alps",
+        "position": {
+          "x": 30,
+          "y": 60
+        },
+        "size": {
+          "w": 840,
+          "h": 620
+        }
+      },
+      "children": [
+        {
+          "id": "doc-0",
+          "type": "document-block",
+          "metadata": {
+            "documentId": "doc-0",
+            "focus": {
+              "blockId": "text-0",
+              "caret": 64
+            }
+          },
+          "children": [
+            {
+              "id": "text-0",
+              "type": "plain-text-block",
+              "text": "A visit to the Alps — existing Codex content. Edited on Desktop."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "window-1",
+      "type": "document-window-block",
+      "metadata": {
+        "title": "Notes for the evening",
+        "position": {
+          "x": 80,
+          "y": 60
+        },
+        "size": {
+          "w": 840,
+          "h": 620
+        }
+      },
+      "children": [
+        {
+          "id": "doc-1",
+          "type": "document-block",
+          "metadata": {
+            "documentId": "doc-1"
+          },
+          "children": [
+            {
+              "id": "text-1",
+              "type": "plain-text-block",
+              "text": "Notes for the evening — existing Codex content."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "window-2",
+      "type": "document-window-block",
+      "metadata": {
+        "title": "Collected passages",
+        "position": {
+          "x": 130,
+          "y": 60
+        },
+        "size": {
+          "w": 840,
+          "h": 620
+        }
+      },
+      "children": [
+        {
+          "id": "doc-2",
+          "type": "document-block",
+          "metadata": {
+            "documentId": "doc-2"
+          },
+          "children": [
+            {
+              "id": "text-2",
+              "type": "plain-text-block",
+              "text": "Collected passages — existing Codex content."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "photo",
+      "type": "image-block",
+      "metadata": {
+        "title": "Alpine photograph",
+        "url": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22400%22%3E%3Crect%20width%3D%22600%22%20height%3D%22400%22%20fill%3D%22%2320354f%22%2F%3E%3Cpath%20d%3D%22M0%20240L150%2045L300%20230L430%2065L600%20230V400H0Z%22%20fill%3D%22%236c8297%22%2F%3E%3Cpath%20d%3D%22M95%20120L150%2045L220%20130L155%20100L135%20135Z%20M375%20150L430%2065L510%20145L444%20115L420%20160Z%22%20fill%3D%22%23c6d0d6%22%2F%3E%3Cpath%20d%3D%22M0%20290L160%20205L310%20320L470%20225L600%20295V400H0Z%22%20fill%3D%22%231a292c%22%2F%3E%3Cpath%20d%3D%22M0%20355Q280%20290%20600%20370V400H0Z%22%20fill%3D%22%23536571%22%2F%3E%3C%2Fsvg%3E"
+      }
+    },
+    {
+      "id": "notes-window",
+      "type": "document-window-block",
+      "metadata": {
+        "title": "Reading list"
+      },
+      "children": [
+        {
+          "id": "reading",
+          "type": "document-block",
+          "children": [
+            {
+              "id": "reading-text",
+              "type": "plain-text-block",
+              "text": "A quiet place to think."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "workspacePresentation": {
+      "version": 1,
+      "active": "spatial",
+      "objects": [
+        {
+          "id": "block:window-0",
+          "target": {
+            "kind": "block",
+            "blockId": "window-0"
+          },
+          "label": "A visit to the Alps"
+        },
+        {
+          "id": "block:window-1",
+          "target": {
+            "kind": "block",
+            "blockId": "window-1"
+          },
+          "label": "Notes for the evening"
+        },
+        {
+          "id": "block:window-2",
+          "target": {
+            "kind": "block",
+            "blockId": "window-2"
+          },
+          "label": "Collected passages"
+        },
+        {
+          "id": "block:photo",
+          "target": {
+            "kind": "block",
+            "blockId": "photo"
+          },
+          "label": "Alpine photograph"
+        },
+        {
+          "id": "block:notes-window",
+          "target": {
+            "kind": "block",
+            "blockId": "notes-window"
+          },
+          "label": "Reading list"
+        }
+      ],
+      "presentations": {
+        "desktop": {
+          "version": 1,
+          "kind": "legacy-tree"
+        },
+        "spatial": {
+          "version": 1,
+          "environment": {
+            "preset": "night-study-v1"
+          },
+          "camera": {
+            "kind": "perspective",
+            "yaw": 0,
+            "approach": 0
+          },
+          "placements": [
+            {
+              "id": "spatial:block:window-0",
+              "objectId": "block:window-0",
+              "position": {
+                "x": 0,
+                "z": -0.98
+              },
+              "heading": 0,
+              "posture": "propped",
+              "size": {
+                "width": 0.21,
+                "height": 0.297
+              }
+            },
+            {
+              "id": "spatial:block:window-1",
+              "objectId": "block:window-1",
+              "position": {
+                "x": -0.317562167826971,
+                "z": -0.9271214966578193
+              },
+              "heading": 0.33,
+              "posture": "lying",
+              "size": {
+                "width": 0.21,
+                "height": 0.297
+              }
+            },
+            {
+              "id": "spatial:block:window-2",
+              "objectId": "block:window-2",
+              "position": {
+                "x": 0.32681735029799813,
+                "z": -0.9238995722177793
+              },
+              "heading": -0.34,
+              "posture": "propped",
+              "size": {
+                "width": 0.21,
+                "height": 0.297
+              }
+            },
+            {
+              "id": "spatial:block:photo",
+              "objectId": "block:photo",
+              "position": {
+                "x": -0.6085662672958285,
+                "z": -0.7681452325632322
+              },
+              "heading": 0.67,
+              "posture": "propped",
+              "size": {
+                "width": 0.18,
+                "height": 0.12
+              }
+            },
+            {
+              "id": "spatial:block:notes-window",
+              "objectId": "block:notes-window",
+              "position": {
+                "x": 0.6162171635380992,
+                "z": -0.7620212643759093
+              },
+              "heading": -0.68,
+              "posture": "lying",
+              "size": {
+                "width": 0.21,
+                "height": 0.297
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,8 +1,9 @@
+import { createSpatialActions, supportsSpatial } from "./spatial-actions";
 import type { ReactiveEditorConfiguration } from "../configuration";
 import type { ContentKey, PlacementKey } from "../block-tree/types";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import type { LoadedWorkspace } from "../reactive-editor/workspace-manifest";
-import { WorkspacePresentationState, type WorkspaceObject } from "../reactive-editor/workspace-presentation";
+import { WorkspacePresentationState, type WorkspaceObject, type PresentationName } from "../reactive-editor/workspace-presentation";
 import { registerApplicationViews } from "./features";
 import { batch, createSignal } from "solid-js";
 import { deriveDesktop } from "./desktop-derivation";
@@ -21,6 +22,7 @@ export class WorkspaceSession {
   readonly editor: ReactiveEditor;
   readonly projection;
   readonly presentation: WorkspacePresentationState;
+  readonly spatial?: ReturnType<typeof createSpatialActions>;
   private readonly pins = new Map<string, ContentKey>();
   private disposed = false;
   private readonly noticeSignal = createSignal("");
@@ -28,7 +30,7 @@ export class WorkspaceSession {
   private readonly resolutionSignal = createSignal(0);
   private readonly cleanup: Array<() => void> = [];
   private composing = false;
-  private pending?: { name: "desktop" | "canvas"; deriveDesktop: boolean };
+  private pending?: { name: PresentationName; deriveDesktop: boolean };
   private compositionCompletion?: ReturnType<typeof setTimeout>;
   private readonly closedMedia = createSignal<ReadonlySet<string>>(new Set());
   setCanvasMediaClosed(id: string, closed: boolean) {
@@ -41,15 +43,16 @@ export class WorkspaceSession {
     const root = loaded.state.contents[loaded.state.placements[loaded.state.rootPlacementKey].contentKey];
     if (root.viewType !== "workspace-block") throw new Error("A workspace session requires a workspace-block root.");
     this.editor = new ReactiveEditor(loaded, configuration);
-    this.presentation = new WorkspacePresentationState(root.payload, this.editor.features.canvasWorkspace);
+    this.presentation = new WorkspacePresentationState(root.payload, { canvas: this.editor.features.canvasWorkspace, spatial: this.editor.features.spatialWorkspace ? { supports: supportsSpatial } : undefined });
     this.editor.persistence.attachWorkspacePresentation({ capture: () => { this.interaction?.finish(); return this.presentation.capture(); }, markSaved: snapshot => this.presentation.markSaved(snapshot) });
     registerApplicationViews(this.editor);
     this.projection = this.editor.createView("loaded-workspace");
     this.resolveObjects();
+    if (this.editor.features.spatialWorkspace) this.spatial = createSpatialActions(this);
     if (this.presentation.enabled) {
       this.cleanup.push(this.editor.commandRegistry.register({ id: "workspace.presentation.createDesktop", label: "Create Desktop from Canvas", canExecute: () => this.canCreateDesktop(), execute: () => { this.createDesktop(); } }, "workspace-session"));
-      for (const name of ["desktop", "canvas"] as const) this.cleanup.push(this.editor.commandRegistry.register({
-        id: `workspace.presentation.${name}`, label: name === "desktop" ? "Desktop" : "Canvas",
+      for (const name of (["desktop", "canvas", "spatial"] as const).filter(name => this.presentation.available(name))) this.cleanup.push(this.editor.commandRegistry.register({
+        id: `workspace.presentation.${name}`, label: name === "desktop" ? "Desktop" : name === "canvas" ? "Canvas" : "Spatial",
         canExecute: () => this.presentation.editable(), execute: () => { this.selectPresentation(name); },
       }, "workspace-session"));
       this.cleanup.push(this.editor.repository.subscribeChanges(change => {
@@ -95,10 +98,10 @@ export class WorkspaceSession {
     return this.presentation.editable() && !!value?.presentations.canvas && value.presentations.desktop === undefined;
   }
   createDesktop(): boolean { return this.changePresentation("desktop", true); }
-  selectPresentation(name: "desktop" | "canvas"): boolean { return this.changePresentation(name, false); }
+  selectPresentation(name: PresentationName): boolean { return this.changePresentation(name, false); }
 
-  private changePresentation(name: "desktop" | "canvas", createDesktop: boolean): boolean {
-    if (!this.presentation.editable()) return false;
+  private changePresentation(name: PresentationName, createDesktop: boolean): boolean {
+    if (!this.presentation.editable() || !this.presentation.available(name)) return false;
     if (createDesktop && !this.canCreateDesktop()) return false;
     if (name === "desktop" && this.canCreateDesktop() && !createDesktop) {
       this.noticeSignal[1]("Desktop has not been created. Choose Create Desktop from Canvas in Presentations."); return false;
@@ -127,6 +130,7 @@ export class WorkspaceSession {
       const candidate = createDesktop ? deriveDesktop(editor.repository.snapshot(), this.presentation.read()!, this.resolveObjects(),
         typeof window === "undefined" ? undefined : { width: window.innerWidth, height: window.innerHeight }) : undefined;
       batch(() => {
+        if (name === "spatial" && this.presentation.read()?.presentations.spatial === undefined) this.spatial?.create();
         if (name === "canvas" && !this.presentation.read()?.presentations.canvas) {
           const candidate = deriveCanvas(editor.repository.snapshot(), this.presentation.read());
           // Validation precedes both writes. No document content is reconstructed.
@@ -223,6 +227,7 @@ export class WorkspaceSession {
   /** Resolve on demand, not on every keystroke. Runtime keys never enter the
    * persisted directory; document internals are not workspace Block anchors. */
   resolveObjects(): WorkspaceObjectResolution[] {
+    this.resolutionSignal[0]();
     if (this.disposed) throw new Error("Workspace session is disposed.");
     const objects = this.presentation.read()?.objects ?? [];
     if (!objects.length) return [];

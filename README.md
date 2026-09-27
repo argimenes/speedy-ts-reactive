@@ -49,9 +49,13 @@ server Document `text1.json` on both presentations, images and the sample demo l
 The physical Canvas-removal check also passes. Browser qualification never writes
 server Documents.
 
-The [Spatial Workspace plan](./CODEX_SPATIAL_WORKSPACE_PRESENTATION_PLAN.md)
-proposes a separate, default-off Three.js study presentation with existing Codex
-DOM editing. It is awaiting review; Spatial Milestone A has not begun.
+Spatial [Milestone A](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) implements a separate,
+default-off Three.js study presentation. The [review gallery](./artifacts/spatial-a/index.html)
+compares both cameras and the physical desk composition. Opt in with
+`VITE_SPATIAL_WORKSPACE=1`, then choose **Workspace → Presentations → Create Spatial**.
+A provides physical Document/image previews; return to Desktop to edit.
+The [accepted plan](./CODEX_SPATIAL_WORKSPACE_PRESENTATION_PLAN.md) defines the next
+review gates. Milestone B's live DOM editing handoff has not begun.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

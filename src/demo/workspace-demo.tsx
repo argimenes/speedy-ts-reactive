@@ -427,19 +427,19 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
         <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
       </>}>
         <span class="workspace-demo__toolbar-group" aria-label="Server files"><strong>Server</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button><button type="button" disabled title="Server files are read-only in the public hosted version.">Save Workspace</button></span>
-        <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button><Show when={editor.features.canvasWorkspace}><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show></span>
+        <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button><Show when={session.presentation.enabled}><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show></span>
       </Show>
       <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
       <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
       <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
       <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
       <a href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
-      <Show when={editor.features.canvasWorkspace}><WorkspacePresentations session={session} busy={props.workspaceBusy} /></Show>
+      <Show when={session.presentation.enabled}><WorkspacePresentations session={session} busy={props.workspaceBusy} /></Show>
       <a href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
       <span>{props.filename} · revision {editor.repository.state.revision}{session.dirty() ? " · Unsaved changes" : ""}</span>
     </nav>}>
       <CodexSystemBar>
-        <Show when={editor.features.canvasWorkspace}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
+        <Show when={session.presentation.enabled}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
         <opening.Buttons menu />
         <a role="menuitem" href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
@@ -457,7 +457,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
             <legend>Local</legend>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button>
-            <Show when={editor.features.canvasWorkspace}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
+            <Show when={session.presentation.enabled}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
           </fieldset>
         </Show>
         <hr role="separator" />
@@ -473,7 +473,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
     <Show when={editor.persistence.workspaceLoadIssues().length}><aside class="workspace-demo__workspace-notice" role="status">{editor.persistence.workspaceLoadIssues().map(issue => issue.message).join(" · ")}</aside></Show>
     <Show when={session.presentation.issue()}>{issue => <aside class="workspace-demo__workspace-notice" role="status">{issue()}</aside>}</Show>
     <Show when={session.notice()}>{notice => <aside class="workspace-demo__workspace-notice" role="status">{notice()}</aside>}</Show>
-    <Show when={editor.features.canvasWorkspace} fallback={<ReactiveTreeView editor={editor} projection={projection} />}>
+    <Show when={session.presentation.enabled} fallback={<ReactiveTreeView editor={editor} projection={projection} />}>
       <WorkspacePresentationView session={session} />
     </Show>
     <opening.Dialogs />

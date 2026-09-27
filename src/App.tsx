@@ -149,7 +149,7 @@ export default function App() {
   if (route === `${import.meta.env.BASE_URL}superposition`) return <TextSuperpositionDemo />;
   if (route === `${import.meta.env.BASE_URL}pilot`) return <PilotApp />;
   // Accepted application capability; hosts can still explicitly disable it.
-  const configuration = { features: { canvasWorkspace: import.meta.env.VITE_CANVAS_WORKSPACE !== "0" } };
+  const configuration = { features: { canvasWorkspace: import.meta.env.VITE_CANVAS_WORKSPACE !== "0", spatialWorkspace: import.meta.env.VITE_SPATIAL_WORKSPACE === "1" } };
   return <WorkspaceDemo configuration={configuration}
     initialWorkspace={new URLSearchParams(window.location.search).get("demo") === "1" ? undefined : createInitialWorkspace()} />;
 }

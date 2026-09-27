@@ -23,7 +23,7 @@ try {
     s=s.replace('new ReactiveEditor(loaded, configuration)','new ReactiveEditor(loaded, { ...configuration, features: { ...configuration.features, canvasWorkspace: false } })');
     s=s.slice(0,s.indexOf('  private readonly closedMedia'))+s.slice(s.indexOf('  private interaction?:'));
     const start=s.indexOf('  canCreateDesktop()');const end=s.indexOf('  ownPresentationInteraction(',start);
-    s=s.slice(0,start)+'  selectPresentation(_name: "desktop" | "canvas") { return false; }\n  private changePresentation(_name: "desktop" | "canvas", _deriveDesktop: boolean) { return false; }\n\n'+s.slice(end);
+    s=s.slice(0,start)+'  selectPresentation(_name: "desktop" | "canvas" | "spatial") { return false; }\n  private changePresentation(_name: "desktop" | "canvas" | "spatial", _deriveDesktop: boolean) { return false; }\n\n'+s.slice(end);
     const a=s.indexOf('  /** Resolve roots before mounting.');const b=s.indexOf('  dirty()',a);s=s.slice(0,a)+s.slice(b);
     return s;
   });

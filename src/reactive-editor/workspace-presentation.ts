@@ -1,6 +1,9 @@
 import { createSignal } from "solid-js";
 import type { ExistingBlockDto } from "../block-tree/types";
 
+export type PresentationName = "desktop" | "canvas" | "spatial";
+export interface PresentationAvailability { canvas: boolean; spatial?: { supports(value: unknown): boolean } }
+
 export interface WorkspaceObject {
   id: string;
   target: ({ kind: "block"; blockId: string } | { kind: "document"; documentId: string }) & Record<string, unknown>;
@@ -119,7 +122,11 @@ export class WorkspacePresentationState {
   private readonly readStatus: PresentationRead;
   private disposed = false;
 
-  constructor(root: ExistingBlockDto, readonly enabled: boolean) {
+  readonly enabled: boolean;
+  readonly availability: PresentationAvailability;
+  constructor(root: ExistingBlockDto, available: boolean | PresentationAvailability) {
+    this.availability = typeof available === "boolean" ? { canvas: available } : available;
+    this.enabled = this.availability.canvas || !!this.availability.spatial;
     this.readStatus = readWorkspacePresentation(root);
     this.present = this.readStatus.status !== "absent";
     if (this.present) this.value = structuredClone((root.metadata as Record<string, unknown>).workspacePresentation);
@@ -127,14 +134,19 @@ export class WorkspacePresentationState {
   revision() { return this.revisionSignal[0](); }
   dirty() { return this.revision() !== this.savedSignal[0](); }
   editable() { return this.enabled && !this.disposed && this.readStatus.status !== "opaque"; }
-  active(): "desktop" | "canvas" {
+  available(name: PresentationName) {
+    return name === "desktop" || (name === "canvas" ? this.availability.canvas : !!this.availability.spatial);
+  }
+  active(): PresentationName {
     const value = this.read();
-    return this.enabled && value?.active === "canvas" && value.presentations.canvas ? "canvas" : "desktop";
+    if (value?.active === "canvas" && this.availability.canvas && value.presentations.canvas) return "canvas";
+    if (value?.active === "spatial" && this.availability.spatial?.supports(value.presentations.spatial)) return "spatial";
+    return "desktop";
   }
   issue(): string | undefined {
     if (this.readStatus.status === "opaque") return `${this.readStatus.reason} Presentation data was preserved; Desktop is shown.`;
     const active = this.read()?.active;
-    if (active !== undefined && active !== "desktop" && this.active() !== "canvas") return "The saved presentation is not available in this build. Its layout and preference were preserved; Desktop is shown.";
+    if (active !== undefined && active !== "desktop" && this.active() !== active) return "The saved presentation is not available in this build. Its layout and preference were preserved; Desktop is shown.";
   }
   read(): WorkspacePresentation | undefined {
     this.revision();
@@ -150,7 +162,7 @@ export class WorkspacePresentationState {
   }
   private commit(value: WorkspacePresentation) {
     if (this.disposed) throw new Error("Workspace presentation session is disposed.");
-    if (!this.enabled) throw new Error("Canvas workspace state is disabled.");
+    if (!this.enabled) throw new Error("Workspace presentation state is disabled.");
     if (this.readStatus.status === "opaque") throw new Error("Cannot edit unsupported presentation data.");
     const validated = validateWorkspacePresentation(value);
     if (this.present && JSON.stringify(validated) === JSON.stringify(this.value)) return;
@@ -159,10 +171,25 @@ export class WorkspacePresentationState {
   }
   /** Initialization retains existing directory entries and never overwrites a layout. */
   initializeCanvas(objects: WorkspaceObject[], canvas: CanvasLayout) {
+    if (!this.availability.canvas) throw new Error("Canvas is disabled.");
     const value = this.read();
     if (value?.presentations.canvas !== undefined) throw new Error("Canvas layout already exists.");
     if (value?.objects.some(previous => !objects.some(next => JSON.stringify(next) === JSON.stringify(previous)))) throw new Error("Initialize Canvas must retain the existing object directory.");
     this.commit({ ...(value ?? { version: 1, active: "desktop", presentations: { desktop: { version: 1, kind: "legacy-tree" } } }), objects, presentations: { ...(value?.presentations ?? { desktop: { version: 1, kind: "legacy-tree" } }), canvas } });
+  }
+  /** The removable application decoder validates the named opaque Spatial entry. */
+  initializeSpatial(objects: WorkspaceObject[], spatial: unknown) {
+    const value = this.read();
+    if (value?.presentations.spatial !== undefined) throw new Error("Spatial layout already exists.");
+    if (!this.availability.spatial?.supports(spatial)) throw new Error("Spatial layout is unavailable or invalid.");
+    if (value?.objects.some(previous => !objects.some(next => JSON.stringify(next) === JSON.stringify(previous)))) throw new Error("Initialize Spatial must retain the existing object directory.");
+    this.commit({ ...(value ?? { version: 1, active: "desktop" }), objects,
+      presentations: { ...(value?.presentations ?? { desktop: { version: 1, kind: "legacy-tree" } }), spatial } });
+  }
+  updateSpatial(spatial: unknown, objects?: WorkspaceObject[]) {
+    const value = this.read();
+    if (!value || value.presentations.spatial === undefined || !this.availability.spatial?.supports(spatial)) throw new Error("Spatial layout is unavailable or invalid.");
+    this.commit({ ...value, objects: objects ?? value.objects, presentations: { ...value.presentations, spatial } });
   }
   /** Explicit reverse derivation; an existing (even empty) Desktop is final. */
   initializeDesktop(objects: WorkspaceObject[]) {
@@ -171,10 +198,12 @@ export class WorkspacePresentationState {
     if (value.presentations.desktop !== undefined) throw new Error("Desktop layout already exists.");
     this.commit({ ...value, active: "desktop", objects, presentations: { ...value.presentations, desktop: { version: 1, kind: "legacy-tree" } } });
   }
-  select(active: "desktop" | "canvas") {
+  select(active: PresentationName) {
+    if (!this.available(active)) throw new Error("Presentation is disabled.");
     const value = this.read();
     if (!value) { if (active === "desktop" && this.editable()) return; throw new Error("Presentation has not been initialized."); }
     if (!value.presentations[active]) throw new Error("This workspace has no Desktop layout. Use Create Desktop from Canvas.");
+    if (active === "spatial" && !this.availability.spatial?.supports(value.presentations.spatial)) throw new Error("Spatial layout is unsupported and has been preserved.");
     this.commit({ ...value, active });
   }
   setCamera(next: CanvasCamera) {

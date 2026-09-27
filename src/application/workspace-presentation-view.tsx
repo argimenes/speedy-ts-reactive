@@ -1,4 +1,4 @@
-import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { ErrorBoundary, Suspense, lazy, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { ReactiveViewProvider } from "../reactive-editor/context";
 import { BlockOutlet } from "../rendering/block-outlet";
 import { ReactiveViewLayers } from "../rendering/reactive-tree-view";
@@ -9,6 +9,8 @@ import { CanvasView } from "../features/canvas/view";
 import { createCanvasInteractions } from "../features/canvas/interactions";
 import { canvasActions } from "./canvas-actions";
 import "./workspace-presentation.css";
+
+const SpatialView = lazy(() => import("../features/spatial/view"));
 
 /** One provider and one overlay set survive switches; only active roots mount. */
 export function WorkspacePresentationView(props: { session: WorkspaceSession }) {
@@ -30,11 +32,20 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
     };
   };
   const actions = canvasActions(props.session);
-  onMount(() => { onCleanup(props.session.installPresentationInput(window)); onCleanup(props.session.ownPresentationInteraction(input)); });
+  onMount(() => onCleanup(props.session.installPresentationInput(window)));
+  const CanvasLifetime = () => {
+    onMount(() => onCleanup(props.session.ownPresentationInteraction(input)));
+    return null;
+  };
   return <ReactiveViewProvider editor={editor} projection={projection}
     coordinates={{ scale: () => presentation.active() === "canvas" ? input.camera().zoom : 1 }}
     windowGeometry={key => presentation.active() === "canvas" ? geometry(key) : undefined}>
-    <Show when={presentation.active() === "canvas"} fallback={<BlockOutlet nodeKey={projection.state.rootKey} />}>
+    <Show when={presentation.active() === "canvas"} fallback={<Show when={presentation.active() === "spatial" && props.session.spatial} fallback={<BlockOutlet nodeKey={projection.state.rootKey} />}>
+      <ErrorBoundary fallback={(error, reset) => <div role="alert">Spatial could not load: {String(error)} <button onClick={reset}>Retry</button><button onClick={() => props.session.selectPresentation("desktop")}>Return to Desktop</button></div>}>
+        <Suspense fallback={<p role="status">Opening the study…</p>}><SpatialView port={props.session.spatial!} /></Suspense>
+      </ErrorBoundary>
+    </Show>}>
+      <CanvasLifetime />
       <CanvasView port={{ layout: canvas, roots, interactions: input, available: () => props.session.inputAvailable(), ...actions,
         setCamera: value => presentation.setCamera(value),
         displayedSize: id => resizePort(id)?.presentedSize(),

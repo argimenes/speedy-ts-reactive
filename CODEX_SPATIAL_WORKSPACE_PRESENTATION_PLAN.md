@@ -1,6 +1,6 @@
 # Codex Spatial Workspace / Presentation — implementation plan
 
-Status: **planning only; stop for review before Spatial Milestone A**.
+Status: **accepted**. [Milestone A implementation and qualification](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) are complete and awaiting review. Milestone B has not begun.
 
 Inspected baseline: `3e3297f` (`More work Canvas`). Canvas A–E and its application integration are accepted. This proposal does not reopen that programme. No Spatial code, dependency, scene or browser experiment was implemented during this investigation.
 
@@ -318,4 +318,4 @@ Recommended decisions for approval:
 6. Minimum camera/input/state ownership in A; immediate editor proof before animation in B; arrangement in C; bounded optional enrichment in D.
 7. Review gates after every milestone, with a specific B stop condition for major editor changes.
 
-This planning stage produced repository inspection and technical-source review only. Browser behavior, visual quality, performance and handoff viability remain to be demonstrated by the approved milestones. **No Spatial implementation has begun.**
+This planning stage produced repository inspection and technical-source review only. Browser behavior, visual quality, performance and handoff viability remain to be demonstrated by the approved milestones. **No Spatial implementation had begun when this planning investigation was completed.**
