@@ -7,6 +7,7 @@ import { OverlayLayer } from "./rendering/overlay-layer";
 import { WorkspaceDemo } from "./demo/workspace-demo";
 import { StandoffEffectsDemo } from "./demo/standoff-effects-demo";
 import { TextSuperpositionDemo } from "./demo/text-superposition-demo";
+import { createInitialWorkspace } from "./application/initial-workspace";
 
 const pilotDocument: ExistingBlockDto = {
   id: "reactive-pilot-document",
@@ -146,5 +147,9 @@ export default function App() {
   }
   if (route === `${import.meta.env.BASE_URL}effects`) return <StandoffEffectsDemo />;
   if (route === `${import.meta.env.BASE_URL}superposition`) return <TextSuperpositionDemo />;
-  return route === `${import.meta.env.BASE_URL}pilot` ? <PilotApp /> : <WorkspaceDemo configuration={{ features: { canvasWorkspace: import.meta.env.DEV && import.meta.env.VITE_CANVAS_WORKSPACE === "1" } }} />;
+  if (route === `${import.meta.env.BASE_URL}pilot`) return <PilotApp />;
+  // Accepted application capability; hosts can still explicitly disable it.
+  const configuration = { features: { canvasWorkspace: import.meta.env.VITE_CANVAS_WORKSPACE !== "0" } };
+  return <WorkspaceDemo configuration={configuration}
+    initialWorkspace={new URLSearchParams(window.location.search).get("demo") === "1" ? undefined : createInitialWorkspace()} />;
 }

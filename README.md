@@ -19,13 +19,25 @@ for current Block Application, feature, passive standoff-effect and Window prese
 APIs. The [Stage 5 report](./CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the latest
 qualification. Stage 6 / History extraction is deliberately deferred.
 
-Canvas [Milestone E](./CODEX_CANVAS_MILESTONE_E_REPORT.md) adds explicit
-**Workspace → Presentations → Create Desktop from Canvas** for workspaces whose
-Desktop layout is absent. Existing layouts stay independent and content identities
-remain shared. `canvasWorkspace` remains disabled by default; use
-`VITE_CANVAS_WORKSPACE=1 npm run dev:client` for development and open a Workspace.
-Milestones A–D are accepted; E is implemented and stopped for review.
+Canvas Milestones A–E are accepted and integrated into the main application.
+The home page starts with an editable Desktop workspace. Choose
+**Workspace → Presentations → Canvas** to switch; the menu is available immediately
+in development (`npm run dev`, port 3000) and production (`npm run build` then
+`npm start`, port 3002), with no opt-in environment variable required.
+**Create Desktop from Canvas** appears for imported workspaces whose Desktop layout
+is absent. Existing layouts stay independent and content identities remain shared.
+The [Milestone E report](./CODEX_CANVAS_MILESTONE_E_REPORT.md) records derivation
+behavior and qualification. The original sample remains at **Workspace → Sample
+document demo** (`/?demo=1`), opening separately without replacing your workspace.
+
+The application enables `canvasWorkspace`; other editor hosts still opt in through
+configuration. `VITE_CANVAS_WORKSPACE=0` explicitly disables it for a development
+server or production build. No loaded or edited demo is implicitly converted.
 The [Canvas plan](./CODEX_CANVAS_WORKSPACE_PRESENTATION_PLAN.md) records the scope.
+Integration qualification: 40 focused tests, type checking and client/server builds
+passed. The [application browser check](./scripts/check-canvas-integration-browser.mjs)
+passed 30 checks against the actual sites on ports 3000 and 3002, including typing,
+switching, in-memory file save/reopen, reverse derivation and the sample demo link.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

@@ -1,6 +1,6 @@
 # Canvas workspace / presentation — investigation and plan
 
-Status: **Milestones A–D accepted; Milestone E implemented and stopped for review.** See the [Milestone D report](CODEX_CANVAS_MILESTONE_D_REPORT.md) and [Milestone E report](CODEX_CANVAS_MILESTONE_E_REPORT.md). The approved pilot preference remains an existing suitable inline Block application, with Counter only as a fallback; D records the bounded Counter fallback.
+Status: **Milestones A–E accepted and integrated into the main application.** See the [application access instructions](README.md), [Milestone D report](CODEX_CANVAS_MILESTONE_D_REPORT.md) and [Milestone E report](CODEX_CANVAS_MILESTONE_E_REPORT.md). The approved pilot preference remains an existing suitable inline Block application, with Counter only as a fallback; D records the bounded Counter fallback. Main-page startup now constructs a fresh canonical workspace before editing; the original split demo remains separately accessible and is not migrated on presentation switches.
 
 Investigated against `3e18a3d` (`Dev docs`), following the accepted Stage 5 baseline `308bd74`. Stages 1–5 remain intact. History extraction, Text Superposition, Spatial/3D and a general presentation-plugin framework are outside this proposal.
 

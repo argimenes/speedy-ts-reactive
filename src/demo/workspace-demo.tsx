@@ -432,10 +432,12 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
       <button type="button" disabled={!canRedo()} onClick={() => editor.repository.redo()}>Redo</button>
       <a href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
       <Show when={editor.features.canvasWorkspace}><WorkspacePresentations session={session} busy={props.workspaceBusy} /></Show>
+      <a href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
       <span>{props.filename} · revision {editor.repository.state.revision}{session.dirty() ? " · Unsaved changes" : ""}</span>
     </nav>}>
       <CodexSystemBar>
         <Show when={editor.features.canvasWorkspace}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
+        <a role="menuitem" href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
         <hr role="separator" />
         <Show when={editor.features.publicHostedVersion} fallback={<>
@@ -473,11 +475,11 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   </main>;
 }
 
-export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfiguration } = {}) {
+export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfiguration; initialWorkspace?: ExistingBlockDto } = {}) {
   const features = resolveFeatureFlags(props.configuration);
   const configuration: ReactiveEditorConfiguration = { ...props.configuration, features };
   const [session, setSession] = createSignal<{ document?: ExistingBlockDto; location?: DocumentLocation; localFile?: LocalDocumentFile; closed?: boolean; window?: Partial<DemoWindowSnapshot> }>({});
-  const [loadedWorkspace, setLoadedWorkspace] = createSignal<LoadedWorkspace>();
+  const [loadedWorkspace, setLoadedWorkspace] = createSignal<LoadedWorkspace | undefined>(props.initialWorkspace ? materializeLocalWorkspace(props.initialWorkspace) : undefined);
   const [workspaceBrowser, setWorkspaceBrowser] = createSignal<"open" | "save">();
   const [workspaceFilename, setWorkspaceFilename] = createSignal<string>();
   const [workspaceBusy, setWorkspaceBusy] = createSignal(false);
@@ -596,7 +598,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
   return (
     <ErrorBoundary fallback={(error, reset) => (
       <main class="workspace-demo" data-demo-state="error">
-        <h1>The demo could not load.</h1>
+        <h1>The workspace could not load.</h1>
         <p role="alert">{error instanceof Error ? error.message : String(error)}</p>
         <button type="button" onClick={reset}>Try again</button>
       </main>

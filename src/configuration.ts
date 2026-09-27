@@ -18,7 +18,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
-  /** Opt-in canonical Desktop/Canvas presentation; disabled by default. */
+  /** Canonical Desktop/Canvas presentation. The main application enables it;
+   * other editor hosts opt in explicitly. */
   canvasWorkspace: boolean;
   /** Existing Timer capability remains on; activation is decided by application composition. */
   timer: boolean;
