@@ -29,13 +29,19 @@ export class WorkspaceSession {
   private composing = false;
   private pending?: "desktop" | "canvas";
   private compositionCompletion?: ReturnType<typeof setTimeout>;
+  private readonly closedMedia = createSignal<ReadonlySet<string>>(new Set());
+  setCanvasMediaClosed(id: string, closed: boolean) {
+    this.closedMedia[1](previous => { const next = new Set(previous); if (closed) next.add(id); else next.delete(id); return next; });
+  }
+
+  private interaction?: { cancel(): void; finish(): void };
 
   constructor(loaded: LoadedWorkspace, configuration: ReactiveEditorConfiguration = {}) {
     const root = loaded.state.contents[loaded.state.placements[loaded.state.rootPlacementKey].contentKey];
     if (root.viewType !== "workspace-block") throw new Error("A workspace session requires a workspace-block root.");
     this.editor = new ReactiveEditor(loaded, configuration);
     this.presentation = new WorkspacePresentationState(root.payload, this.editor.features.canvasWorkspace);
-    this.editor.persistence.attachWorkspacePresentation(this.presentation);
+    this.editor.persistence.attachWorkspacePresentation({ capture: () => { this.interaction?.finish(); return this.presentation.capture(); }, markSaved: snapshot => this.presentation.markSaved(snapshot) });
     registerApplicationViews(this.editor);
     this.projection = this.editor.createView("loaded-workspace");
     this.resolveObjects();
@@ -91,6 +97,7 @@ export class WorkspaceSession {
     if (editor.overlays.overlays.length || editor.stickyNotes.state.drafts.length ||
         (typeof document !== "undefined" && document.querySelector('[role="dialog"]')) ||
         Object.values(this.projection.state.nodes).some(node => editor.mounts.get(node.key) &&
+          node.viewType !== "canvas-counter-block" && node.viewType !== "youtube-video-block" &&
           (editor.mounts.get(node.key)?.inputPolicy === "opaque-widget" || editor.registry.hasCapability(node.viewType, "opaque-widget")))) {
       this.noticeSignal[1]("Finish or close the open panel, draft or embedded application before switching presentations."); return false;
     }
@@ -101,6 +108,7 @@ export class WorkspaceSession {
     const native = mount?.captureSelection?.(), inline = mount?.captureInlineSelection?.() ??
       (primary ? { anchor: primary.anchor.boundary.index, head: primary.head.boundary.index } : undefined);
     try {
+      this.interaction?.cancel();
       batch(() => {
         if (name === "canvas" && !this.presentation.read()?.presentations.canvas) {
           const candidate = deriveCanvas(editor.repository.snapshot(), this.presentation.read());
@@ -127,6 +135,16 @@ export class WorkspaceSession {
     } catch (error) { this.noticeSignal[1](error instanceof Error ? error.message : String(error)); return false; }
   }
 
+  ownPresentationInteraction(interaction: { cancel(): void; finish(): void }): () => void {
+    if (this.interaction) throw new Error("A presentation already owns an interaction lifetime.");
+    this.interaction = interaction;
+    return () => { interaction.cancel(); if (this.interaction === interaction) this.interaction = undefined; };
+  }
+
+  inputAvailable() {
+    return !this.disposed && !this.composing && !this.editor.overlays.overlays.length && !this.editor.stickyNotes.state.drafts.length && !document.querySelector('[role="dialog"]');
+  }
+
   /** Resolve roots before mounting. Ambiguous occurrences and overlapping
    * ancestor/descendant roots retain placeholders instead of duplicate mounts. */
   canvasRoots() {
@@ -139,7 +157,7 @@ export class WorkspaceSession {
       let reason: string | undefined = !resolved || resolved.status !== "resolved" ? resolved?.status ?? "missing" : undefined;
       const node = resolved?.placementKeys.length === 1 ? this.projection.nodeForPlacement(resolved.placementKeys[0]) : undefined;
       if (!reason && !node) reason = "ambiguous occurrence";
-      if (node && !["document-window-block", "window-block", "image-block"].includes(node.viewType)) reason ??= "unsupported in this presentation";
+      if (node && !["document-window-block", "window-block", "image-block", "youtube-video-block", "canvas-counter-block", "iframe-block", "pdf-block", "html-block", "html-editor-block"].includes(node.viewType)) reason ??= "unsupported in this presentation";
       if (node && (node.payload.metadata as any)?.stickyNote) reason ??= "Portal window is not supported";
       const descendants = new Set<string>();
       const visit = (key: string) => {
@@ -148,10 +166,12 @@ export class WorkspaceSession {
         if (child) [...child.children, ...Object.values(child.ownedRelations)].forEach(visit);
       };
       if (node) visit(node.key);
-      if (!reason && [...descendants].some(key => this.editor.registry.hasCapability(this.projection.state.nodes[key]?.viewType ?? "", "opaque-widget"))) reason = "embedded application awaits qualification";
+      const embedded = !!node && ["iframe-block", "pdf-block", "html-block", "html-editor-block"].includes(node.viewType);
+      if (embedded && this.closedMedia[0]().has(placement.id)) reason ??= "embedded media closed";
+      if (!reason && [...descendants].some(key => !(embedded && key === node?.key) && !["canvas-counter-block", "youtube-video-block"].includes(this.projection.state.nodes[key]?.viewType) && this.editor.registry.hasCapability(this.projection.state.nodes[key]?.viewType ?? "", "opaque-widget"))) reason = "embedded application awaits qualification";
       if (!reason && [...descendants].some(key => mounted.has(key))) reason = "overlapping render root";
       if (!reason) descendants.forEach(key => mounted.add(key));
-      return { placement, label: resolved?.object.label ?? placement.objectId, nodeKey: reason ? undefined : node?.key, reason };
+      return { placement, label: resolved?.object.label ?? placement.objectId, nodeKey: reason ? undefined : node?.key, reason, embedded };
     });
   }
 
@@ -201,6 +221,7 @@ export class WorkspaceSession {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.interaction?.cancel(); this.interaction = undefined;
     this.pending = undefined;
     this.cleanup.splice(0).reverse().forEach(stop => stop());
     this.presentation.dispose(); this.pins.clear(); this.editor.dispose();

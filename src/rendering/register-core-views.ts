@@ -1,3 +1,4 @@
+import { WorkspaceObjectBankView } from "./workspace-object-bank";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { ContainerBlockView } from "./container-block-view";
 import {
@@ -33,6 +34,7 @@ function many(editor: ReactiveEditor, types: string[], view: any, capabilities: 
 
 export function registerCoreViews(editor: ReactiveEditor): void {
   registerTextSuperpositionCommands(editor);
+  editor.registry.register({ type: "workspace-object-bank-block", view: WorkspaceObjectBankView, capabilities: ["container"] });
   editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: ContainerBlockView, capabilities: ["container", "selectable"] });
   editor.registry.register({ type: "plain-text-block", view: PlainTextBlockView, capabilities: ["native-text", "container", "selectable"] });
   editor.registry.register({ type: "standoff-editor-block", view: StandoffEditorView, capabilities: ["inline-editor", "container", "selectable", "annotations"] });

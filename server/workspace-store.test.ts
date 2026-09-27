@@ -1,3 +1,4 @@
+import { createWorkspaceSaveBundle, materializeLocalWorkspace, materializeWorkspace } from "../src/reactive-editor/workspace-manifest";
 import express from "express";
 import { promises as fs } from "node:fs";
 import os from "node:os";
@@ -52,6 +53,25 @@ describe("Workspace store HTTP routes", () => {
     const loaded = await (await fetch(`${base}/loadWorkspaceJson?filename=Desk.json`)).json();
     expect(loaded.Data.workspace).toEqual(value.workspace);
     expect(await (await fetch(`${base}/listWorkspaces`)).json()).toEqual({ workspaces: ["Desk.json"] });
+  });
+
+  it("writes bank Documents to the existing store root and retains Canvas/app data across Save As and Open", async () => {
+    const presentation = { version: 1, active: "canvas", objects: [{ id: "object", target: { kind: "block", blockId: "window" } }], presentations: { desktop: { version: 1, kind: "legacy-tree" }, canvas: { version: 1, camera: { x: 15, y: 35, zoom: .5 }, placements: [{ id: "placement", objectId: "object", bounds: { x: 50, y: 90, width: 840, height: 620 }, order: 0 }] } } };
+    const dto = { type: "workspace-block", metadata: { workspacePresentation: presentation }, children: [{ type: "workspace-object-bank-block", children: [
+      { id: "window", type: "document-window-block", children: [{ id: "note", type: "document-block", metadata: { documentId: "bank-document", folder: ".", filename: "bank-document.json" }, children: [{ type: "plain-text-block", text: "New Canvas document" }] }] },
+      { type: "canvas-counter-block", count: 9 },
+    ] }] };
+    const bundle = await createWorkspaceSaveBundle(materializeLocalWorkspace(dto).state, [], "bank-workspace");
+    for (const filename of ["Canvas.json", "Canvas-copy.json"]) {
+      const saved = await fetch(`${base}/saveWorkspaceBundle`, { method: "POST", headers: { "Content-Type": "application/json", "If-None-Match": "*" }, body: JSON.stringify({ filename, workspace: bundle.manifest, documents: bundle.documents }) });
+      expect(saved.status).toBe(200);
+      const loaded = await (await fetch(`${base}/loadWorkspaceJson?filename=${filename}`)).json();
+      expect(loaded.Data.workspace.root.metadata.workspacePresentation).toEqual(presentation);
+      const document = JSON.parse(await fs.readFile(path.join(documents, "bank-document.json"), "utf8"));
+      const reopened = materializeWorkspace(loaded.Data.workspace, new Map([["bank-document", document]]));
+      expect(Object.values(reopened.state.contents).filter(c => c.viewType === "document-block")).toHaveLength(1);
+      expect(Object.values(reopened.state.contents).find(c => c.viewType === "canvas-counter-block")?.payload.count).toBe(9);
+    }
   });
 
   it("rejects embedded content, mismatched hashes and unsafe paths without writing", async () => {

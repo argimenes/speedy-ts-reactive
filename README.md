@@ -19,11 +19,11 @@ for current Block Application, feature, passive standoff-effect and Window prese
 APIs. The [Stage 5 report](./CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the latest
 qualification. Stage 6 / History extraction is deliberately deferred.
 
-Canvas [Milestone C](./CODEX_CANVAS_MILESTONE_C_REPORT.md) adds static Canvas
-composition, presentation switching and deterministic first derivation to B's
-canonical session and persistence. `canvasWorkspace` remains disabled by default;
-use `VITE_CANVAS_WORKSPACE=1 npm run dev:client` for the development opt-in.
-Milestone D's gestures and object actions await review/authorization.
+Canvas [Milestone D](./CODEX_CANVAS_MILESTONE_D_REPORT.md) adds bounded camera
+controls, object handles/actions, bank access and an inline application pilot to
+the canonical session and independent layouts. `canvasWorkspace` remains disabled
+by default; use `VITE_CANVAS_WORKSPACE=1 npm run dev:client` for development.
+Implementation stops for review before Milestone E / reverse derivation.
 The [Canvas plan](./CODEX_CANVAS_WORKSPACE_PRESENTATION_PLAN.md) records the scope.
 
 The design principles for portable Blocks and reusable tools, with a staged

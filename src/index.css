@@ -694,3 +694,6 @@ textarea {
   width: 100%;
   padding: 9px 10px;
 }
+.workspace-object-bank { position: relative; z-index: 100; padding: 8px; background: var(--surface, #f7f8fa); color: var(--text, #253741); }
+.workspace-object-bank button { margin: 4px; }
+.workspace-object-bank__viewer { position: relative; min-height: 720px; overflow: auto; }

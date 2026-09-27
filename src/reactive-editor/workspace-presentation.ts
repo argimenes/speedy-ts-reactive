@@ -182,5 +182,11 @@ export class WorkspacePresentationState {
     placement.bounds = { ...placement.bounds, ...next };
     this.commit(value);
   }
+  /** Canvas-only edits; other presentations and their unknown fields survive. */
+  updateCanvas(canvas: CanvasLayout, objects?: WorkspaceObject[]) {
+    const value = this.read();
+    if (!value?.presentations.canvas) throw new Error("Canvas layout does not exist.");
+    this.commit({ ...value, objects: objects ?? value.objects, presentations: { ...value.presentations, canvas } });
+  }
   dispose() { this.disposed = true; }
 }

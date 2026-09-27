@@ -377,6 +377,8 @@ Result: **3 files, 16 tests passed**. These establish current persistence behavi
 
 ## 16. Staged implementation and qualification plan
 
+Implementation status: A–C accepted; [D implemented for review](CODEX_CANVAS_MILESTONE_D_REPORT.md). E remains unauthorized. The table below retains the approved scope.
+
 All stages below require approval of this plan first. They are proposed Canvas milestones, unrelated to the deferred feature-architecture Stage 6.
 
 | Milestone | Work and completion gate |

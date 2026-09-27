@@ -1,7 +1,7 @@
 import type { ContentRecord, RepositoryState } from "../block-tree/types";
 import { validateWorkspacePresentation, type CanvasBounds, type CanvasLayout, type WorkspaceObject, type WorkspacePresentation } from "../reactive-editor/workspace-presentation";
 
-const containers = new Set(["workspace-block", "image-background-block", "video-background-block", "youtube-video-background-block", "canvas-background-block"]);
+const containers = new Set(["workspace-block", "workspace-object-bank-block", "image-background-block", "video-background-block", "youtube-video-background-block", "canvas-background-block"]);
 const objectId = (target: WorkspaceObject["target"]) => `${target.kind}:${encodeURIComponent(target.kind === "block" ? target.blockId : target.documentId)}`;
 const finite = (value: unknown, fallback: number) => typeof value === "number" && Number.isFinite(value) ? value : fallback;
 const dimension = (value: unknown, fallback: number) => typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
@@ -15,7 +15,7 @@ export function deriveCanvas(state: RepositoryState, previous?: WorkspacePresent
   const walk = (key: string) => {
     const content = state.contents[state.placements[key].contentKey];
     if (containers.has(content.viewType)) {
-      if (!background && content.viewType !== "workspace-block") background = { type: content.viewType, metadata: structuredClone(content.payload.metadata ?? {}) as Record<string, unknown> };
+      if (!background && !["workspace-block", "workspace-object-bank-block"].includes(content.viewType)) background = { type: content.viewType, metadata: structuredClone(content.payload.metadata ?? {}) as Record<string, unknown> };
       content.children.forEach(walk);
     } else candidates.push(content);
   };

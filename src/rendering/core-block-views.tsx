@@ -514,6 +514,11 @@ export function WindowView(props: BlockViewProps) {
       else commitMetadata({ size: { w: expanded.width, h: expanded.height } }, "Resize Window");
     },
   });
+  onMount(() => {
+    const release = geometry?.bindResize?.({ presentedSize: presentation.presentedSize,
+      minimum: () => ({ width: minimumSize().w, height: minimumSize().h }), toExpanded: presentation.expandedFromPresented });
+    if (release) onCleanup(release);
+  });
   const dimensions = () => ({ w: windowResize.dimensions().width, h: windowResize.dimensions().height });
   const registerMargin = (entry: DocumentMarginEntry) => {
     setMarginEntries(current => current.some(candidate => candidate.ownerKey === entry.ownerKey && candidate.relationKey === entry.relationKey && candidate.name === entry.name) ? current : [...current, entry]);
