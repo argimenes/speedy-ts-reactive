@@ -49,6 +49,10 @@ server Document `text1.json` on both presentations, images and the sample demo l
 The physical Canvas-removal check also passes. Browser qualification never writes
 server Documents.
 
+The [Spatial Workspace plan](./CODEX_SPATIAL_WORKSPACE_PRESENTATION_PLAN.md)
+proposes a separate, default-off Three.js study presentation with existing Codex
+DOM editing. It is awaiting review; Spatial Milestone A has not begun.
+
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in
 [BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md](./BLOCK_COMPOSITION_AND_TOOLBAR_PLAN.md).
