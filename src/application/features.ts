@@ -1,4 +1,6 @@
 import { createCanvasCounterFeature } from "../features/canvas-counter";
+import { createAnchorRelationshipsFeature } from "../features/anchor-relationships";
+import { anchorCapabilities } from "./anchor-capabilities";
 import { createCompactDocumentFeature } from "../features/compact-document";
 import { presentationCapabilities } from "./presentation-capabilities";
 import { createEntityReferencesFeature } from "../features/entity-references";
@@ -13,6 +15,7 @@ import { blockFeatureCapabilities } from "./feature-capabilities";
 export function registerApplicationViews(editor: ReactiveEditor): void {
   // Temporary legacy assembly: unmigrated views/commands retain their existing path.
   registerCoreViews(editor);
+  if (editor.features.anchorRelationships) editor.featureHost.activate(createAnchorRelationshipsFeature(scope => anchorCapabilities(editor, scope)));
   if (editor.features.canvasWorkspace) editor.featureHost.activate(createCanvasCounterFeature(scope => blockFeatureCapabilities(editor, scope)));
   if (editor.features.compactDocumentMode) editor.featureHost.activate(createCompactDocumentFeature(scope => presentationCapabilities(editor, scope)));
   if (editor.features.entityReferences) editor.featureHost.activate(createEntityReferencesFeature(scope => annotationCapabilities(editor, scope)));

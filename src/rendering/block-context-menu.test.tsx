@@ -4,14 +4,16 @@ import { render } from "solid-js/web";
 import { ReactiveEditor } from "../reactive-editor/editor";
 import type { ExistingBlockDto } from "../block-tree/types";
 import { registerCoreViews } from "./register-core-views";
+import { registerApplicationViews } from "../application/features";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { blockMenuItems, type BlockMenuItem } from "../runtime/block-menu-actions";
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); });
 const text = (id: string): ExistingBlockDto => ({ id, type: "standoff-editor-block", text: id, children: [] });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
-function mount(children: ExistingBlockDto[] = [text("first"), text("second")]) {
-  const editor = new ReactiveEditor({ id: "doc", type: "document-block", children }); registerCoreViews(editor);
+function mount(children: ExistingBlockDto[] = [text("first"), text("second")], application = false) {
+  const editor = new ReactiveEditor({ id: "doc", type: "document-block", children });
+  (application ? registerApplicationViews : registerCoreViews)(editor);
   const view = editor.createView("menu-test"); const host = document.body.appendChild(document.createElement("div"));
   cleanup.push(() => editor.dispose(), render(() => <ReactiveTreeView editor={editor} projection={view} />, host)); editor.installGateway(document);
   const key = (id: string) => Object.values(view.state.nodes).find(node => node.payload.id === id)!.key;
@@ -28,19 +30,35 @@ function action(items: BlockMenuItem[], ...path: string[]): BlockMenuItem {
   return path.length === 1 ? item : action(item.children!, ...path.slice(1));
 }
 describe("Block context menu", () => {
+  it.each(["click", "early native menu", "secondary native menu"])("opens with Grouping enabled for %s and exposes inline StickyNote insertion", async sequence => {
+    const { element, editor, key } = mount(undefined, true);
+    const target = element("second").querySelector("[data-inline-index]")!;
+    const send = (type: string, button = 0) => target.dispatchEvent(new MouseEvent(type, { ctrlKey: true, button, bubbles: true, cancelable: true }));
+    send("pointerdown", sequence === "secondary native menu" ? 2 : 0);
+    if (sequence === "early native menu") send("contextmenu", 2);
+    if (sequence === "secondary native menu") send("contextmenu", 2);
+    send("pointerup", sequence === "secondary native menu" ? 2 : 0); await tick();
+    if (sequence === "click") send("click");
+    await tick();
+    expect(document.querySelectorAll(".reactive-block-menu")).toHaveLength(1);
+    expect(editor.overlays.overlays[0].ownerKey).toBe(key("second"));
+    menuButton("Add Block").click(); await tick();
+    menuButton("Insert Sticky Note Here").click(); await tick();
+    expect(editor.encodeDocument().children!.some(child => child.type === "sticky-note-block")).toBe(true);
+  });
   it("opens once for Control-click plus native contextmenu, targets the clicked Block, and restores selection on Escape", async () => {
     const { editor, element, key } = mount(); editor.focus.request(key("first"), { caret: "start" });
     editor.mounts.get(key("first"))!.restoreInlineSelection!({ anchor: 1, head: 3 });
     const down = new MouseEvent("pointerdown", { ctrlKey: true, button: 0, bubbles: true, cancelable: true }); element("second").dispatchEvent(down); expect(down.defaultPrevented).toBe(true);
     const click = new MouseEvent("click", { ctrlKey: true, bubbles: true, cancelable: true }); element("second").dispatchEvent(click);
-    element("second").dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })); await tick();
+    element("second").dispatchEvent(new MouseEvent("contextmenu", { button: 2, bubbles: true, cancelable: true })); await tick();
     expect(click.defaultPrevented).toBe(true); expect(document.querySelectorAll(".reactive-block-menu")).toHaveLength(1); expect(editor.overlays.overlays[0].ownerKey).toBe(key("second"));
     document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); await tick();
     expect(document.querySelector(".reactive-block-menu")).toBeNull(); expect(editor.focus.state.focusedKey).toBe(key("first")); expect(editor.mounts.get(key("first"))!.captureInlineSelection!()).toEqual({ anchor: 1, head: 3 });
   });
   it("preserves native input menus, dismisses outside, and supports keyboard submenu navigation and URL validation", async () => {
     const { editor, element, host, key } = mount([{ id: "plain", type: "plain-text-block", text: "native" }, text("first")]);
-    const native = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); host.querySelector("textarea")!.dispatchEvent(native); expect(native.defaultPrevented).toBe(false);
+    const native = new MouseEvent("contextmenu", { button: 2, bubbles: true, cancelable: true }); host.querySelector("textarea")!.dispatchEvent(native); expect(native.defaultPrevented).toBe(false);
     editor.focus.request(key("first")); element("first").dispatchEvent(new KeyboardEvent("keydown", { key: "F10", shiftKey: true, bubbles: true, cancelable: true })); await tick();
     expect(document.activeElement).toBe(menuButton("Add Block"));
     document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })); await tick();
@@ -50,7 +68,7 @@ describe("Block context menu", () => {
   });
   it("deletes the clicked Block rather than stale focus and undoes the operation", async () => {
     const { editor, element, key } = mount(); editor.focus.request(key("first"));
-    element("second").dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })); await tick();
+    element("second").dispatchEvent(new MouseEvent("contextmenu", { button: 2, bubbles: true, cancelable: true })); await tick();
     menuButton("Delete Block").focus(); menuButton("Delete Block").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })); expect(element("second")).not.toBeNull();
     menuButton("Delete Block").click(); await tick();
     expect(element("second")).toBeNull(); expect(element("first")).not.toBeNull(); expect(document.querySelector(".reactive-block-menu")).toBeNull();
@@ -71,7 +89,7 @@ describe("Block context menu", () => {
     const secondKey = key(second.id!); action(blockMenuItems(editor, secondKey), "Tabs", "Rename…").input!.submit("Renamed");
     action(blockMenuItems(editor, secondKey), "Tabs", "Move left").run!(); expect(editor.encodeDocument().children![0].children![0].id).toBe(second.id);
     const label = [...host.querySelectorAll<HTMLElement>("[role=tab]")].find(item => item.textContent === "First")!;
-    label.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })); await tick(); expect(editor.overlays.overlays[0].ownerKey).toBe(key("tab"));
+    label.dispatchEvent(new MouseEvent("contextmenu", { button: 2, bubbles: true, cancelable: true })); await tick(); expect(editor.overlays.overlays[0].ownerKey).toBe(key("tab"));
     editor.overlays.close(editor.overlays.overlays[0].key, false);
     action(blockMenuItems(editor, secondKey), "Tabs", "Delete").run!(); expect(host.querySelector('[role=tab][aria-selected=true]')?.textContent).toBe("First"); editor.repository.undo(); expect(editor.encodeDocument().children![0].children).toHaveLength(2);
   });

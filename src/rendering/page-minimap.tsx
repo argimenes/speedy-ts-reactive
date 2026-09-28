@@ -4,6 +4,7 @@ import type { NodeKey } from "../block-tree/types";
 import type { MinimapMarker } from "../runtime/minimap";
 import { useReactiveView } from "../reactive-editor/context";
 import "./page-minimap.css";
+import { pageLayout } from "./page-layout";
 
 const MIN_RAIL_HEIGHT = 120;
 const MANICULE_LANE = 32;
@@ -71,31 +72,23 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
   const scale = () => coordinates?.scale() ?? 1;
   const [layout, setLayout] = createSignal<Layout>({ visible: false, left: 0, top: 0, width: 20, height: 0, total: 0, omitted: 0, viewportTop: 0, viewportHeight: 0 });
   let canvas!: HTMLCanvasElement;
-  let frame = 0;
+  let layoutSource: ReturnType<typeof pageLayout> | undefined;
   let drawn: DrawnMarker[] = [];
   let thumbDrag: { pointerId: number; offset: number; startY: number; moved: boolean } | undefined;
   let suppressClick = false;
-  let observer: ResizeObserver | undefined;
-  let mutation: MutationObserver | undefined;
-  let observed = new WeakSet<Element>();
-
-  const observe = (element?: Element) => {
-    if (!element || observed.has(element)) return;
-    observed.add(element); observer?.observe(element);
-  };
+  const observe = (element?: Element) => layoutSource?.observe(element);
 
   const measureMarker = (marker: MinimapMarker, page: HTMLElement, pageTop: number, extent: number) => {
     if (marker.anchor.kind === "ratio") return { y: Math.max(0, Math.min(1, marker.anchor.top)) * extent, height: Math.max(0, Math.min(1, marker.anchor.height ?? 0)) * extent };
     const handle = marker.anchor.kind === "block" ? editor.mounts.get(marker.anchor.nodeKey) : editor.mounts.get(marker.anchor.range.nodeKey);
     if (!handle || hidden(handle.root) || !page.contains(handle.root)) return;
     observe(handle.root);
-    const rect = marker.anchor.kind === "block" ? handle.root.getBoundingClientRect() : textRangeRect(marker, page, handle);
+    const rect = marker.anchor.kind === "block" ? (layoutSource?.rect(handle.root) ?? handle.root.getBoundingClientRect()) : textRangeRect(marker, page, handle);
     if (!rect) return;
     return { y: (rect.top - pageTop) / scale() + page.scrollTop, height: Math.max(0, rect.height / scale()) };
   };
 
   const redraw = () => {
-    frame = 0;
     const page = props.page(), main = props.main(), options = editor.minimap.state.options;
     const layers = editor.minimap.layersFor(props.pageKey);
     const visible = layers.filter(layer => layer.visible);
@@ -147,10 +140,7 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     context.globalAlpha = 1; context.globalCompositeOperation = "source-over";
   };
 
-  const schedule = () => {
-    if (frame) return;
-    frame = typeof requestAnimationFrame === "function" ? requestAnimationFrame(redraw) : (setTimeout(redraw, 0) as unknown as number);
-  };
+  const schedule = () => layoutSource?.schedule();
 
   const candidates = (event: { clientY: number }) => {
     const y = pointerY(event);
@@ -189,23 +179,10 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
 
   createEffect(() => { scale(); editor.minimap.state.revision; schedule(); });
   onMount(() => {
-    observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(schedule);
-    mutation = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(schedule);
-    mutation?.observe(props.page(), { childList: true, subtree: true, characterData: true });
+    layoutSource = pageLayout(props.page());
+    const release = layoutSource.subscribe(redraw);
     const unsubscribe = editor.mounts.subscribe(schedule);
-    document.addEventListener("scroll", schedule, true); window.addEventListener("resize", schedule);
-    window.visualViewport?.addEventListener("resize", schedule); window.visualViewport?.addEventListener("scroll", schedule);
-    props.page().addEventListener("load", schedule, true);
-    document.fonts?.addEventListener?.("loadingdone", schedule);
-    schedule();
-    onCleanup(() => {
-      unsubscribe(); observer?.disconnect(); mutation?.disconnect();
-      document.removeEventListener("scroll", schedule, true); window.removeEventListener("resize", schedule);
-      window.visualViewport?.removeEventListener("resize", schedule); window.visualViewport?.removeEventListener("scroll", schedule);
-      props.page()?.removeEventListener("load", schedule, true); document.fonts?.removeEventListener?.("loadingdone", schedule);
-      if (frame) typeof cancelAnimationFrame === "function" ? cancelAnimationFrame(frame) : clearTimeout(frame);
-      observed = new WeakSet(); drawn = [];
-    });
+    onCleanup(() => { unsubscribe(); release(); layoutSource = undefined; drawn = []; });
   });
 
   const summary = () => {

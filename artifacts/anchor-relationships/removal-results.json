@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "physically absent feature keeps B in flow",
+    "physically absent feature retains anchor metadata",
+    "physically absent feature remains editable",
+    "physically absent feature round-trips unknown record"
+  ],
+  "passed": 4
+}

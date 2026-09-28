@@ -21,11 +21,17 @@ export interface SelectionInputPorts {
   operations: Pick<CurrentTextOperations, "active">;
 }
 const selectionKeys = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"]);
+interface PointerGesture {
+  policy: SelectionGesturePolicy; key: NodeKey; index?: number; x: number; y: number;
+  pointerId: number; moved: boolean; eligible: boolean;
+  menu?: { target: EventTarget; event: MouseEvent };
+}
 
 /** One owned selection policy; geometry and normal editing remain with core input. */
 export class SelectionGestures {
   private policy?: SelectionGesturePolicy;
-  private mouse?: { policy: SelectionGesturePolicy; key: NodeKey; index?: number; x: number; y: number; pointerId: number; moved: boolean; eligible: boolean };
+  private mouse?: PointerGesture;
+  private pendingMouse?: PointerGesture;
   private keyboard?: { policy?: SelectionGesturePolicy; eligible: boolean };
   private generation = 0;
   private suppressClick = false;
@@ -44,7 +50,7 @@ export class SelectionGestures {
   cancelGesture(): void {
     this.generation++;
     if (this.mouse) this.ports.releasePointer();
-    this.mouse = undefined; this.keyboard = undefined;
+    this.mouse = undefined; this.pendingMouse = undefined; this.keyboard = undefined;
   }
   private reset = () => { this.cancelGesture(); this.heldDelete = undefined; this.composing = false; this.suppressClick = false; };
   private consume(event: Event): void { if (event.cancelable) event.preventDefault(); event.stopImmediatePropagation(); }
@@ -65,33 +71,56 @@ export class SelectionGestures {
       const target = this.ports.target(event);
       if (!target.key || target.excluded || target.composing || this.composing) return;
       this.mouse = { policy: this.policy, key: target.key, index: this.ports.point(event), x: event.clientX, y: event.clientY, pointerId: event.pointerId, moved: false, eligible: true };
-      this.suppressClick = true;
       // Claim policy, not the DOM event: core still performs selection geometry.
     };
     const move = (event: PointerEvent) => {
       if (!this.mouse || this.mouse.pointerId !== event.pointerId) return;
       if (!event.ctrlKey) this.mouse.eligible = false;
-      if (Math.hypot(event.clientX - this.mouse.x, event.clientY - this.mouse.y) > 3) this.mouse.moved = true;
+      if (Math.hypot(event.clientX - this.mouse.x, event.clientY - this.mouse.y) > 3) {
+        this.mouse.moved = true; this.suppressClick = true;
+      }
     };
     const up = (event: PointerEvent) => {
       const gesture = this.mouse;
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       this.mouse = undefined;
       if (!gesture.eligible || !event.ctrlKey) return;
+      this.pendingMouse = gesture;
       const generation = this.generation;
       // Preserve core pointer-capture release before observing the final selection.
       queueMicrotask(() => {
         if (generation !== this.generation || gesture.policy !== this.policy) return;
+        this.pendingMouse = undefined;
         try {
-          if (!gesture.moved && gesture.index !== undefined && gesture.policy.removeAt(gesture.key, gesture.index)) this.ports.clearSelection(gesture.key);
-          else this.complete(gesture.policy);
-        } catch (error) { gesture.policy.error(error); }
+          if (gesture.moved) this.complete(gesture.policy);
+          else {
+            this.suppressClick = gesture.index !== undefined && gesture.policy.removeAt(gesture.key, gesture.index);
+            if (this.suppressClick) this.ports.clearSelection(gesture.key);
+            else if (gesture.menu) {
+              // Some browsers send contextmenu before pointerup. Decide only
+              // after the gesture: an ordinary click belongs to the menu,
+              // while a drag or range removal belongs to the selection policy.
+              const { target, event } = gesture.menu;
+              target.dispatchEvent(new MouseEvent(event.type, {
+                bubbles: true, cancelable: true, composed: true, button: event.button,
+                clientX: event.clientX, clientY: event.clientY,
+                ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey, shiftKey: event.shiftKey,
+              }));
+            }
+          }
+        } catch (error) { this.suppressClick = true; gesture.policy.error(error); }
       });
     };
     const menu = (event: MouseEvent) => {
-      if (!this.suppressClick || !event.ctrlKey) return;
+      if (!event.ctrlKey) return;
       const target = this.ports.target(event);
-      if (!target.excluded && (target.key || target.toolbar)) this.consume(event);
+      if (target.excluded || !(target.key || target.toolbar)) return;
+      const gesture = this.mouse ?? this.pendingMouse;
+      if (gesture?.eligible && !gesture.moved && event.target) {
+        gesture.menu ??= { target: event.target, event };
+        this.consume(event); return;
+      }
+      if (this.suppressClick) this.consume(event);
     };
     const keyup = (event: KeyboardEvent) => {
       if (event.key === this.heldDelete) this.heldDelete = undefined;

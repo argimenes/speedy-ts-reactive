@@ -15,6 +15,8 @@ export interface BlockFragment {
 
 /** Remap only known Block references; opaque relations and entity IDs are data. */
 export function remapKnownBlockReferences(payload: JsonObject, ids: ReadonlyMap<string, string>): void {
+  const anchor = (payload.metadata as { anchor?: { version?: number; blockId?: string } } | undefined)?.anchor;
+  if (anchor?.version === 1 && typeof anchor.blockId === "string" && ids.has(anchor.blockId)) anchor.blockId = ids.get(anchor.blockId)!;
   const remap = (value: unknown) => {
     if (!value || typeof value !== "object") return;
     const property = value as JsonObject;

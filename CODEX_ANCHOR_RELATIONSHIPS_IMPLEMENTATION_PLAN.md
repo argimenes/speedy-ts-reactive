@@ -1,12 +1,12 @@
 # Codex Anchor Relationships — Implementation Plan
 
-Status: proposed; planning only, awaiting review. No implementation authorized by this document.
+Status: implemented; see [implementation report](CODEX_ANCHOR_RELATIONSHIPS_IMPLEMENTATION_REPORT.md). Awaiting review.
 
-This revision incorporates `CODEX_ANCHOR_RELATIONSHIPS_AMENDMENT.md`: the anchor supplies both the coordinate system and the visibility/lifecycle context. Implementation remains paused.
+This revision incorporates `CODEX_ANCHOR_RELATIONSHIPS_AMENDMENT.md`: the anchor supplies both the coordinate system and the visibility/lifecycle context.
 
 Anchor positions an ordinary Block B relative to a nominated Block A, including its containing Document. It is independent of Block type: text, images, StickyNotes and other normal Block views use the same mechanism. StickyNote is the first proof case, not the feature's owner. 3DBlock is excluded and awaits a separate specification.
 
-Recommend one bounded implementation pass, behind a new `anchorRelationships` feature flag disabled by default, following the repository's `AGENTS.md`. Preserve the accepted Canvas and Spatial implementations.
+Implement one bounded pass behind a new `anchorRelationships` feature flag enabled by default, following the user's updated project convention. Preserve the accepted Canvas and Spatial implementations.
 
 ## 1. Can Anchor reuse the margin mechanics?
 
@@ -88,7 +88,7 @@ Drag only from a dedicated generic placement handle. Preserve the pointer's grab
 preview offset = (desired B viewport origin − current A viewport origin) / s
 ```
 
-This remains correct if the Document scrolls during a drag. Pointer capture owns the drag; Escape, pointer cancellation, lost capture, target disappearance or loss of anchor visibility cancels without saving. Pointer completion saves once. Geometry updates move the existing view without remounting it or disturbing composition. Attach/detach and visibility transitions must preserve content/selection and use existing composition and focus handling. Provide labelled x/y controls and detach/re-anchor actions for keyboard access; do not intercept ordinary text selection or native controls.
+This remains correct if the Document scrolls during a drag. Pointer capture owns the drag; Escape, pointer cancellation, lost capture or target disappearance/invalidation cancels without saving. An already-started drag temporarily retains its presentation while its anchor remains valid and measurable, even if the anchor leaves the viewport. Pointer completion saves once and restores normal visibility semantics. Geometry updates move the existing view without remounting it or disturbing composition. Attach/detach and visibility transitions must preserve content/selection and use existing composition and focus handling. Provide labelled x/y controls and detach/re-anchor actions for keyboard access; do not intercept ordinary text selection or native controls.
 
 ## 5. What about multiple occurrences and transclusion?
 
@@ -120,7 +120,7 @@ The pass should deliver:
 Qualification should be focused:
 
 - Unit/integration checks for offsets, invalid records, one-hop restrictions and the Document ancestor exception, missing/ambiguous versus offscreen occurrences, repeated Document Windows, copy remapping, save/reopen, one-step undo/redo and cancellation.
-- Real-browser proof of following scroll, insertion above, text reflow, delayed image loading, Window movement/resizing and Compact/margin changes. Verify disappearance/reappearance at the visibility boundary without offset changes, including cancellation when A leaves view during dragging. Exercise negative offsets and B outside Window bounds while A is visible, including stacking and hit testing.
+- Real-browser proof of following scroll, insertion above, text reflow, delayed image loading, Window movement/resizing and Compact/margin changes. Verify disappearance/reappearance at the visibility boundary without offset changes, including completion of a drag that takes A out of view and cancellation if A disappears. Exercise negative offsets and B outside Window bounds while A is visible, including stacking and hit testing.
 - Document-anchor proof: internal content scrolling leaves B fixed relative to the Document presentation; host movement/transforms move it; hiding/minimizing or leaving the presentation removes it. Verify independent visibility/geometry for repeated Windows sharing that Document.
 - Desktop plus Canvas at 0.5×, 1× and 2×; smoke-test the existing Spatial live DOM editing handoff and return with no stranded Portal. No Spatial proxy or 3D anchoring work.
 - Editable anchored text: native typing/caret/selection, IME, representative standoff rendering and cross-Block/Grouping selection. Check Entity panels, native controls and focus return across the Portal. DOM ancestry assumptions are a real risk; do not replace selection machinery to conceal failures.

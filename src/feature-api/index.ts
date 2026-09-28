@@ -77,4 +77,5 @@ export { rangesToPositionMarkers } from "../runtime/document-position-markers";
 
 // Stage 5: one optional per-window presentation contribution.
 export type { PresentationCapabilities } from "./presentation";
+export type { AnchorCapabilities, AnchorRecord } from "./anchors";
 export type { WindowPresentationPort, WindowPresentationInstance, WindowPresentationContribution } from "../runtime/window-presentation";

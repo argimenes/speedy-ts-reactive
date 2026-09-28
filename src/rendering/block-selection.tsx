@@ -1,5 +1,5 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Dynamic, Portal } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { MountHandle } from "../runtime/mounts";
 import type { BlockSelectionMode } from "../runtime/block-selection";
@@ -147,6 +147,9 @@ export function BlockSelectionInspector(props: { editor: ReactiveEditor; viewId:
       <div><strong role="status">{selection.state.items.length} Block(s) selected</strong><button type="button" onClick={clear}>Clear selection</button></div>
       <div class="block-clipboard-actions"><For each={["copy", "cut", "paste", "delete"]}>{action => <button type="button" disabled={action === "paste" ? !clipboard.available() : !selection.state.items.length} title={props.editor.bindings.label(`selection.${action}`)} onClick={() => clipboard.run(`selection.${action}`)}>{action[0].toUpperCase() + action.slice(1)}</button>}</For></div>
       <small>Drag a selected handle to reorder the group. Shift-click: range · Ctrl/Cmd-click: toggle.</small>
+      <Show when={selection.state.items.length === 1 && props.editor.blockPresentation.current()}>{contribution =>
+        <Dynamic component={contribution().controls} nodeKey={selection.state.items[0].nodeKey} />
+      }</Show>
       <Show when={selection.state.message}><p role="status">{selection.state.message}</p></Show>
       <details><summary>Selected Block IDs ({selection.actionTargets().length} independent action targets)</summary>
         <For each={selection.state.items}>{item => <label>{item.type}<input readOnly aria-label="Selected Block ID" value={item.blockId ?? item.placementKey} /></label>}</For>

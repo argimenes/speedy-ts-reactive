@@ -1,0 +1,8 @@
+.anchor-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; border: 1px solid #aab5af; }
+.anchor-controls label { display: flex; align-items: center; gap: 4px; }
+.anchor-controls input { width: 72px; }
+.anchor-controls select { max-width: 280px; }
+.anchor-controls small { flex-basis: 100%; }
+.anchor-drag-handle { position: absolute; bottom: 100%; left: 0; cursor: move; touch-action: none; border: 1px solid #aab5af; border-radius: 4px; background: #fff; color: #354a41; padding: 2px 10px; }
+[data-positioned-block] > .abstract-block { margin: 0; }
+[data-positioned-block][hidden] { display: none !important; }

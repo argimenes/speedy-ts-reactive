@@ -17,8 +17,8 @@ function fixture() {
   const policy = { owner: "test", modifier: "Control" as const, complete: vi.fn(), removeAt: vi.fn(() => false), error: vi.fn() };
   const release = gestures.register(policy);
   gestures.install(document); cleanup.push(() => { gestures.dispose(); releaseOperation(); });
-  const pointer = (type: string, ctrlKey = true, pointerId = 1) => {
-    const event = new MouseEvent(type, { ctrlKey, button: 0, bubbles: true, cancelable: true });
+  const pointer = (type: string, ctrlKey = true, pointerId = 1, clientX = 0) => {
+    const event = new MouseEvent(type, { ctrlKey, button: 0, clientX, bubbles: true, cancelable: true });
     Object.defineProperty(event, "pointerId", { value: pointerId }); element.dispatchEvent(event); return event;
   };
   const key = (type: string, key: string, options: KeyboardEventInit = {}) => {
@@ -32,13 +32,14 @@ describe("owned selection input", () => {
     const f = fixture();
     expect(f.pointer("pointerdown").defaultPrevented).toBe(false);
     expect(f.gestures.owner()).toBe("test");
+    f.pointer("pointermove", true, 1, 10);
     f.pointer("pointerup", true, 2); expect(f.gestures.selecting("pointer")).toBe(true);
     f.pointer("pointerup"); expect(f.policy.complete).not.toHaveBeenCalled();
     expect(f.gestures.owner()).toBeUndefined();
     await Promise.resolve(); expect(f.policy.complete).toHaveBeenCalledWith(f.snapshot);
   });
   it.each(["Control release", "pointercancel", "blur", "composition", "focus", "change", "dispose"])("cancels pending pointer completion on %s", async reason => {
-    const f = fixture(); f.pointer("pointerdown");
+    const f = fixture(); f.pointer("pointerdown"); f.pointer("pointermove", true, 1, 10);
     if (reason === "Control release") f.key("keyup", "Control");
     f.pointer("pointerup");
     if (reason === "pointercancel") f.pointer("pointercancel");
@@ -66,6 +67,29 @@ describe("owned selection input", () => {
   it("removes a clicked range without collecting the selection again", async () => {
     const f = fixture(); f.policy.removeAt.mockReturnValue(true); f.pointer("pointerdown"); f.pointer("pointerup");
     await Promise.resolve(); expect(f.ports.clearSelection).toHaveBeenCalledWith("text"); expect(f.policy.complete).not.toHaveBeenCalled();
+  });
+  it("passes an ordinary Control-click instead of collecting an old selection", async () => {
+    const f = fixture(); f.pointer("pointerdown"); f.pointer("pointerup"); await Promise.resolve();
+    expect(f.pointer("click").defaultPrevented).toBe(false);
+    expect(f.policy.complete).not.toHaveBeenCalled();
+  });
+  it("replays an early native contextmenu only after a plain click finishes", async () => {
+    const f = fixture(), opened = vi.fn(); f.element.addEventListener("contextmenu", opened);
+    f.pointer("pointerdown"); expect(f.pointer("contextmenu").defaultPrevented).toBe(true);
+    expect(opened).not.toHaveBeenCalled();
+    f.pointer("pointerup"); await Promise.resolve();
+    expect(opened).toHaveBeenCalledOnce(); expect(f.policy.complete).not.toHaveBeenCalled();
+  });
+  it.each(["drag", "removal", "cancel"])("does not replay an early menu after %s", async reason => {
+    const f = fixture(), opened = vi.fn(); f.element.addEventListener("contextmenu", opened);
+    f.pointer("pointerdown"); f.pointer("contextmenu");
+    if (reason === "drag") f.pointer("pointermove", true, 1, 10);
+    if (reason === "removal") f.policy.removeAt.mockReturnValue(true);
+    if (reason === "cancel") f.pointer("pointercancel");
+    f.pointer("pointerup"); await Promise.resolve();
+    expect(opened).not.toHaveBeenCalled();
+    expect(f.policy.complete).toHaveBeenCalledTimes(reason === "drag" ? 1 : 0);
+    if (reason === "removal") expect(f.policy.removeAt).toHaveBeenCalledOnce();
   });
   it.each(["Shift", "Control"])("completes keyboard selection once on %s release", release => {
     const f = fixture(); f.key("keydown", "ArrowRight", { ctrlKey: true, shiftKey: true });

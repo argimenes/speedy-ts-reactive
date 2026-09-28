@@ -38,7 +38,7 @@ export function registerInputActions(registry: BindingRegistry, platform = typeo
   add("tabs.create", "To tab / add tab", "Wrap the focused text Block in a tab row, or append an independent copy in a new tab when already inside a tab. Browser-reserved Ctrl+T may require Alt+T or the toolbar instead.", "Blocks & Margins", "editor/standoff", [k("t", "Ctrl"), k("t", "Alt")], ["tabs", "alternatives"]);
   for (const direction of ["Left", "Right", "Up", "Down"]) add(`block.${direction.toLowerCase()}`, `Navigate ${direction.toLowerCase()} at boundary`, "Move to the adjacent editable Block only at a collapsed block boundary; otherwise native caret movement applies.", "Navigation", "editor", [k(`Arrow${direction}`)]);
   add("block.delete", "Delete current Block", "Remove the focused Block and transfer focus to a surviving neighbour.", "Blocks & Margins", "editor", [k("Delete", "Shift"), k("Backspace", "Shift")]);
-  add("menu.open", "Open Block menu", "Show actions for the Block or background under the pointer/focus.", "Windows", "editor", [k("ContextMenu"), k("F10", "Shift"), mouse(0, "click", "Ctrl"), mouse(2, "contextmenu"), mouse(0, "contextmenu", "Ctrl")]);
+  add("menu.open", "Open Block menu", "Show actions for the Block or background under the pointer/focus.", "Windows", "editor", [k("ContextMenu"), k("F10", "Shift"), mouse(0, "click", "Ctrl"), mouse(2, "contextmenu"), mouse(0, "contextmenu", "Ctrl"), mouse(2, "contextmenu", "Ctrl")]);
   for (const [id, name, triggers] of [
     ["left", "Move left", [k("ArrowLeft", "Shift")]], ["right", "Move right", [k("ArrowRight", "Shift")]],
     ["previous-word", "Previous word", [k("ArrowLeft", "Alt")]], ["next-word", "Next word", [k("ArrowRight", "Alt")]],

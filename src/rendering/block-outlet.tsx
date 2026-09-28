@@ -7,12 +7,15 @@ import { BlockSelectionHandle } from "./block-selection";
 import { marginSide, useDocumentMargins } from "./document-margins";
 
 export function BlockOutlet(props: { nodeKey: NodeKey }) {
-  const { editor, projection } = useReactiveView();
+  const { editor, projection, coordinates } = useReactiveView();
   const registration = () => {
     const type = projection.state.nodes[props.nodeKey]?.viewType ?? "unknown-block";
     return editor.registry.resolve(type);
   };
-  return <><Dynamic component={registration()?.view ?? UnknownBlockView} nodeKey={props.nodeKey} /><BlockSelectionHandle editor={editor} nodeKey={props.nodeKey} /></>;
+  const render = () => <><Dynamic component={registration()?.view ?? UnknownBlockView} nodeKey={props.nodeKey} /><BlockSelectionHandle editor={editor} nodeKey={props.nodeKey} /></>;
+  return <Show when={editor.blockPresentation.current()} fallback={render()}>{contribution =>
+    <Dynamic component={contribution().view} nodeKey={props.nodeKey} scale={() => coordinates?.scale() ?? 1} render={render} />
+  }</Show>;
 }
 
 export function ChildBlocks(props: { parentKey: NodeKey }) {
