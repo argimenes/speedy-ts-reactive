@@ -67,7 +67,14 @@ unfinished drag; a second Escape returns to view controls. Saved arrangements ar
 separate from authored undo. The [C gallery](./artifacts/spatial-c/index.html) shows
 the controls and unchanged editing handoff.
 The [accepted plan](./CODEX_SPATIAL_WORKSPACE_PRESENTATION_PLAN.md) defines the next
-review gates. C is complete and awaiting review; Spatial D has not begun.
+review gates. C is accepted. [Milestone D](./CODEX_SPATIAL_MILESTONE_D_REPORT.md)
+repairs live drag previews, removes an extra frame delay, adds explicit **Portrait** /
+**Landscape** and labeled **Rotate left/right** controls, and paints bounded previews
+from actual Document titles, text, headings and images. Previews refresh when entering
+Spatial or returning to the desk; editing still uses the existing live DOM Window.
+D also adds static procedural wood/paper materials and Alpine exterior depth.
+The [D review gallery](./artifacts/spatial-d/index.html) includes both orientations
+and a drag-latency comparison. D is complete and awaiting review.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

@@ -37,8 +37,8 @@ import { workspaceOpen } from './workspace-open';
 import { materializeLocalWorkspace } from '../reactive-editor/workspace-manifest';
 import { WorkspacePresentationView } from './workspace-presentation-view';
 it('physically absent Spatial preserves its data while Desktop/Canvas edit and open content',async()=>{
- const spatial={version:1,environment:{preset:'night-study-v1'},camera:{kind:'perspective',yaw:0,approach:0},placements:[],future:{a:[1,2]}};
- const envelope={version:1,active:'spatial',objects:[],presentations:{desktop:{version:1,kind:'legacy-tree'},spatial}};
+ const spatial={version:1,environment:{preset:'night-study-v1'},camera:{kind:'perspective',yaw:0,approach:0},placements:[{id:'spatial:w',objectId:'block:w',position:{x:0,z:-.98},size:{width:.21,height:.297},heading:.2,posture:'propped',orientation:'landscape'}],future:{a:[1,2]}};
+ const envelope={version:1,active:'spatial',objects:[{id:'block:w',target:{kind:'block',blockId:'w'}}],presentations:{desktop:{version:1,kind:'legacy-tree'},spatial}};
  const s=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',metadata:{workspacePresentation:envelope},children:[{id:'w',type:'document-window-block',children:[{id:'doc',type:'document-block',children:[{id:'text',type:'plain-text-block',text:'Before'}]}]}]}),{features:{canvasWorkspace:true,spatialWorkspace:true}});
  const host=document.body.appendChild(document.createElement('main'));const dispose=render(()=><WorkspacePresentationView session={s}/>,host);s.editor.installGateway(document);
  try {

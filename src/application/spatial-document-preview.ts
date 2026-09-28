@@ -3,7 +3,7 @@ import { previewImageUrl, type DocumentPreview, type PreviewBlock } from "../fea
 /** Read a bounded first-page digest directly from authored records at a desk
  * lifecycle boundary. No DTO encoding, mounts, measurement, effects or observers. */
 export function spatialDocumentPreview(state: RepositoryState, root: ContentRecord, label: string): DocumentPreview {
-  const blocks: PreviewBlock[] = [], seen = new Set<string>(); let remaining = 6000, images = 0, truncated = false;
+  const blocks: PreviewBlock[] = [], seen = new Set<string>(); let remaining = 6000, inlineBudget = 8000, images = 0, truncated = false;
   const visit = (content: ContentRecord | undefined) => {
     if (!content || seen.has(content.key)) return;
     if (seen.size >= 160 || blocks.length >= 20 || remaining <= 0) { truncated = true; return; }
@@ -17,9 +17,9 @@ export function spatialDocumentPreview(state: RepositoryState, root: ContentReco
       let text = "";
       if (content.inlineKind === "standoff") {
         for (const key of content.inlineContent) {
-          if (text.length >= remaining) { truncated = true; break; }
+          if (text.length >= remaining || inlineBudget-- <= 0) { truncated = true; break; }
           const cell = state.contents[state.placements[key]?.contentKey];
-          if (typeof cell?.payload.text === "string") text += cell.payload.text;
+          if (typeof cell?.payload.text === "string") text += cell.payload.text.slice(0, remaining - text.length);
         }
       } else if (typeof content.payload.text === "string") text = content.payload.text;
       text = text.slice(0, remaining); remaining -= text.length;

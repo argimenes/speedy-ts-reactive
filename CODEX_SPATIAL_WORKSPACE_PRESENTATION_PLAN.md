@@ -1,6 +1,6 @@
 # Codex Spatial Workspace / Presentation — implementation plan
 
-Status: **accepted**. [Milestone A implementation and qualification](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) are accepted. [Milestone B implementation and qualification](./CODEX_SPATIAL_MILESTONE_B_REPORT.md) are accepted, including manual confirmation of proxy creation, activation and live Document editing. [Milestone C implementation and qualification](./CODEX_SPATIAL_MILESTONE_C_REPORT.md) are complete and awaiting review; D has not begun.
+Status: **accepted**. [Milestone A implementation and qualification](./CODEX_SPATIAL_MILESTONE_A_REPORT.md) are accepted. [Milestone B implementation and qualification](./CODEX_SPATIAL_MILESTONE_B_REPORT.md) are accepted, including manual confirmation of proxy creation, activation and live Document editing. [Milestone C implementation and qualification](./CODEX_SPATIAL_MILESTONE_C_REPORT.md) are accepted, including manual arrangement and editing checks. [Milestone D](./CODEX_SPATIAL_MILESTONE_D_REPORT.md) is complete and awaiting review.
 
 Inspected baseline: `3e3297f` (`More work Canvas`). Canvas A–E and its application integration are accepted. This proposal does not reopen that programme. No Spatial code, dependency, scene or browser experiment was implemented during this investigation.
 
@@ -288,7 +288,9 @@ Evidence: useful arrangement with mouse/trackpad and keyboard, repeated-document
 
 Record from B acceptance: investigate a lightweight, non-live preview that makes papers recognisable from actual Document content—title/layout, headings, images and significant visual/standoff features. This is a candidate for D, not C scope; do not use hidden duplicate editors or per-keystroke texture generation.
 
-Agree the bounded D selection after A–C evidence. Candidates are improved photograph presentation, a user-started unobtrusive YouTube music surface, better wood/props/exterior, reduced-motion-aware distant lights, and a small window-local rain effect. Do not treat every candidate as automatically authorized scope.
+Approved D scope after C: investigate and fix drag responsiveness, improve heading discoverability, add restrained portrait/landscape orientation, then prioritize recognisable non-live Document previews. The selected environmental subset is static procedural wood/paper materials and Alpine exterior depth, lake and distant lights. Music, rain and animated traffic are not selected.
+
+Original candidate guidance: agree the bounded D selection after A–C evidence. Candidates are improved photograph presentation, a user-started unobtrusive YouTube music surface, better wood/props/exterior, reduced-motion-aware distant lights, and a small window-local rain effect. Do not treat every candidate as automatically authorized scope.
 
 Reuse the existing YouTube application/player where it provides a clean fit. Define its mount/disposal and playback behavior when changing presentation; do not promise background playback across unmount without separately justified ownership. Avoid new autoplay or hidden audio behavior. Rain is a visual window treatment, not a weather-service integration.
 

@@ -1,0 +1,38 @@
+{
+  "samples": 159,
+  "medianMs": 16.69999999999709,
+  "p95Ms": 16.700000000004366,
+  "maxMs": 16.80000000000291,
+  "groups": [
+    {
+      "phase": "approaching",
+      "durationMs": 483.29999999999563,
+      "frames": 30
+    },
+    {
+      "phase": "returning",
+      "durationMs": 400,
+      "frames": 25
+    },
+    {
+      "phase": "approaching",
+      "durationMs": 483.29999999999563,
+      "frames": 30
+    },
+    {
+      "phase": "returning",
+      "durationMs": 400,
+      "frames": 25
+    },
+    {
+      "phase": "approaching",
+      "durationMs": 483.40000000000146,
+      "frames": 30
+    },
+    {
+      "phase": "returning",
+      "durationMs": 400,
+      "frames": 25
+    }
+  ]
+}

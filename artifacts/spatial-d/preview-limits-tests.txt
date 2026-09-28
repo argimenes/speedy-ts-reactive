@@ -1,0 +1,15 @@
+
+> speedy-ts-reactive@0.0.0 test
+> vitest run --maxWorkers=1 --minWorkers=1 src/application/spatial-document-preview.test.ts
+
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/spatial-document-preview.test.ts (3 tests) 215ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:48:43
+   Duration  4.99s (transform 3.25s, setup 0ms, collect 4.00s, tests 215ms, environment 534ms, prepare 53ms)
+

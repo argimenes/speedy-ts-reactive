@@ -27,11 +27,23 @@ it("uses bounded actual text/headings/images, shares a digest and refreshes only
     expect(a.objects()[0].preview!.blocks[1]).toEqual({ kind: "text", text: "Desktop observation." });
   } finally { s.dispose(); }
 });
-it("caps large documents and skips unsafe image URLs without evaluating authored markup", () => {
+it("caps large documents without evaluating authored markup", () => {
   const s = open({ ...documentDto, children: Array.from({ length: 50 }, (_, i) => ({ id: "p" + i, type: "plain-text-block", text: "<script>not HTML</script>".repeat(1000) })) } as typeof documentDto);
   try {
     const state = s.editor.repository.state, root = Object.values(state.contents).find(c => c.payload.id === "doc")!;
     const preview = spatialDocumentPreview(state, root, "Fallback");
     expect(preview.truncated).toBe(true); expect(preview.blocks).toHaveLength(1); expect(preview.blocks[0].kind === "text" && preview.blocks[0].text.length).toBe(6000);
+  } finally { s.dispose(); }
+});
+
+it("bounds empty inline cells as well as text and ignores unsafe image URLs", () => {
+  const s = open(); try {
+    const state = s.editor.repository.snapshot(), root = Object.values(state.contents).find(c => c.payload.id === "doc")!;
+    const heading = Object.values(state.contents).find(c => c.payload.id === "heading")!, cellKey = heading.inlineContent[0], cell = state.contents[state.placements[cellKey].contentKey];
+    let reads = 0; Object.defineProperty(cell.payload, "text", { get() { reads++; return ""; } });
+    heading.inlineContent = Array(20000).fill(cellKey);
+    const image = Object.values(state.contents).find(c => c.payload.id === "photo")!; (image.payload.metadata as any).url = "javascript:alert(1)";
+    const preview = spatialDocumentPreview(state, root, "Fallback");
+    expect(preview.truncated).toBe(true); expect(reads).toBeLessThanOrEqual(16000); expect(preview.blocks.some(b => b.kind === "image")).toBe(false);
   } finally { s.dispose(); }
 });

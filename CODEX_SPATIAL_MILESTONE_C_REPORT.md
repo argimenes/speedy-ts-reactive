@@ -1,6 +1,6 @@
 # Spatial Milestone C — Restrained desk arrangement
 
-Status: **complete, awaiting review**. Stop before Spatial D.
+Status: **accepted**, including manual confirmation of physical dragging and activation/editing after arrangement. The accepted C baseline is `fe3a6ea` (`Dragging, etc`). [Milestone D](./CODEX_SPATIAL_MILESTONE_D_REPORT.md) follows this baseline. The qualification results below describe C at completion; D reports the subsequently discovered live-preview subscription gap.
 
 ## Baseline and scope
 
