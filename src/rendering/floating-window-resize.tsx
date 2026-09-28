@@ -17,6 +17,8 @@ export interface FloatingWindowResizeOptions {
   /** Client pixels per local layout unit; defaults to one on Desktop. */
   scale?: Accessor<number>;
   constrainToViewport?: boolean;
+  /** Optional width / height lock; unconstrained consumers retain their behavior. */
+  aspectRatio?: number;
   onCommit: (size: FloatingWindowSize) => void;
 }
 
@@ -30,7 +32,7 @@ const sameSize = (left: FloatingWindowSize, right: FloatingWindowSize) => Math.r
 export function createFloatingWindowResize(options: FloatingWindowResizeOptions) {
   const [preview, setPreview] = createSignal<FloatingWindowSize>();
   const [active, setActive] = createSignal(false);
-  let pointer: { id: number; x: number; y: number; width: number; height: number; moved: boolean } | undefined;
+  let pointer: { id: number; x: number; y: number; width: number; height: number; moved: boolean; capture: HTMLElement } | undefined;
   let keyboardTimer: ReturnType<typeof setTimeout> | undefined;
 
   const isEnabled = () => options.enabled?.() ?? true;
@@ -50,6 +52,13 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
     const effectiveMinimumHeight = Math.min(minimum.height, availableHeight);
     const maxWidth = Math.max(effectiveMinimumWidth, Math.min(maximum.width ?? Number.POSITIVE_INFINITY, availableWidth));
     const maxHeight = Math.max(effectiveMinimumHeight, Math.min(maximum.height ?? Number.POSITIVE_INFINITY, availableHeight));
+    if (options.aspectRatio && options.aspectRatio > 0) {
+      const ratio = options.aspectRatio;
+      const upper = Math.min(maxWidth, maxHeight * ratio);
+      const lower = Math.min(upper, Math.max(effectiveMinimumWidth, effectiveMinimumHeight * ratio));
+      const locked = Math.max(lower, Math.min(upper, width));
+      return { width: locked, height: locked / ratio };
+    }
     return {
       width: Math.max(effectiveMinimumWidth, Math.min(maxWidth, width)),
       height: Math.max(effectiveMinimumHeight, Math.min(maxHeight, height)),
@@ -62,18 +71,20 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
   };
   const cancel = () => {
     clearKeyboardTimer();
-    pointer = undefined;
+    const captured = pointer; pointer = undefined;
+    if (options.aspectRatio && captured?.capture.hasPointerCapture?.(captured.id)) captured.capture.releasePointerCapture(captured.id);
     setPreview(undefined);
     setActive(false);
   };
   const commit = () => {
+    if (!isEnabled()) { cancel(); return; }
     clearKeyboardTimer();
     const final = preview();
     pointer = undefined;
     setPreview(undefined);
     setActive(false);
     if (!final) return;
-    const rounded = { width: Math.round(final.width), height: Math.round(final.height) };
+    const rounded = { width: Math.round(final.width), height: options.aspectRatio ? Math.round(final.width) / options.aspectRatio : Math.round(final.height) };
     if (!sameSize(rounded, options.size())) options.onCommit(rounded);
   };
   const beginPointer = (event: PointerEvent & { currentTarget: HTMLElement }) => {
@@ -91,6 +102,7 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
       width: start.width,
       height: start.height,
       moved: false,
+      capture: event.currentTarget,
     };
     setActive(true);
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -102,7 +114,10 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
     const scale = options.scale?.() ?? 1;
     const dx = event.clientX - pointer.x, dy = event.clientY - pointer.y;
     pointer.moved ||= Math.abs(dx) > 1 || Math.abs(dy) > 1;
-    setPreview(clamp(pointer.width + dx / scale, pointer.height + dy / scale));
+    if (!isEnabled()) { cancel(); return; }
+    const ratio = options.aspectRatio;
+    const delta = ratio ? (Math.abs(dx) >= Math.abs(dy * ratio) ? dx : dy * ratio) / scale : dx / scale;
+    setPreview(clamp(pointer.width + delta, pointer.height + dy / scale));
     event.preventDefault();
     event.stopPropagation();
   };
@@ -119,7 +134,7 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
     event.stopPropagation();
   };
   const keyDown = (event: KeyboardEvent) => {
-    if (event.key === "Escape" && preview()) {
+    if (event.key === "Escape" && active()) {
       cancel(); event.preventDefault(); event.stopPropagation(); return;
     }
     if (event.key === "Enter" && preview()) {
@@ -127,7 +142,10 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
     }
     if (!isEnabled() || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
     const current = dimensions(), step = event.shiftKey ? 1 : 10;
-    setPreview(clamp(
+    if (options.aspectRatio) {
+      const width = current.width + (["ArrowRight", "ArrowDown"].includes(event.key) ? step : -step);
+      setPreview(clamp(width, width / options.aspectRatio));
+    } else setPreview(clamp(
       current.width + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0),
       current.height + (event.key === "ArrowDown" ? step : event.key === "ArrowUp" ? -step : 0),
     ));
@@ -139,7 +157,7 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
   };
 
   onCleanup(clearKeyboardTimer);
-  return { dimensions, active, preview, clamp, cancel, commit, beginPointer, movePointer, endPointer, cancelPointer, keyDown };
+  return { dimensions, active, preview, clamp, cancel, commit, beginPointer, movePointer, endPointer, cancelPointer, keyDown, lostPointerCapture: options.aspectRatio ? cancelPointer : endPointer };
 }
 
 export type FloatingWindowResizeController = ReturnType<typeof createFloatingWindowResize>;
@@ -155,7 +173,7 @@ export function FloatingWindowResizeHandle(props: { controller: FloatingWindowRe
     onPointerDown={props.controller.beginPointer}
     onPointerMove={props.controller.movePointer}
     onPointerUp={props.controller.endPointer}
-    onLostPointerCapture={props.controller.endPointer}
+    onLostPointerCapture={props.controller.lostPointerCapture}
     onPointerCancel={props.controller.cancelPointer}
     onKeyDown={props.controller.keyDown}
     onBlur={props.controller.commit}

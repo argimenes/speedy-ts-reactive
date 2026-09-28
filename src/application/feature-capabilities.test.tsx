@@ -41,3 +41,26 @@ describe("feature and Block runtime adapters", () => {
     } finally { dispose(); editor.dispose(); host.remove(); }
   });
 });
+
+it("owns widget menu callbacks, guards stale actions, and exposes only occurrence scale", async () => {
+  const editor = new ReactiveEditor({ type: 'document-block', children: [{ id: 'pilot', type: 'menu-pilot', value: 0 }] });
+  registerCoreViews(editor); let runtime!: BlockRuntime;
+  editor.featureHost.activate({ id: 'menu-pilot', activate(scope) {
+    blockFeatureCapabilities(editor,scope).register.block({ type:'menu-pilot',create:()=>({type:'menu-pilot'}),capabilities:['opaque-widget'],view:props=> {
+      runtime=props.runtime;
+      const root=document.createElement('div');root.tabIndex=-1;
+      runtime.mountWidget(root,{contextActions:()=>[{label:'Increment',run:()=>runtime.setField('value',1,'Increment')}]});
+      return root;
+    } });
+  } });
+  const projection=editor.createView(),host=document.body.appendChild(document.createElement('div'));
+  const dispose=render(()=><ReactiveTreeView editor={editor} projection={projection} coordinates={{scale:()=>2}}/>,host);
+  try {
+    expect(runtime.scale()).toBe(2);
+    const handle=editor.mounts.get(runtime.nodeKey)!;const action=handle.contextActions!()[0];
+    runtime.openContextMenu({x:40,y:50});runtime.openContextMenu({x:40,y:50});expect(editor.overlays.overlays).toHaveLength(1); expect(runtime.contextMenuOpen()).toBe(true);
+    action.run!();expect(runtime.field('value')).toBe(1);
+    editor.featureHost.dispose();expect(editor.overlays.overlays).toHaveLength(0);
+    expect(()=>action.run!()).toThrow('disposed');expect(()=>runtime.openContextMenu()).toThrow('disposed');
+  } finally {dispose();editor.dispose();host.remove();}
+});

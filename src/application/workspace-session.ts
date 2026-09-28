@@ -122,7 +122,7 @@ export class WorkspaceSession {
     if (editor.overlays.overlays.length || editor.stickyNotes.state.drafts.length ||
         (typeof document !== "undefined" && document.querySelector('[role="dialog"]')) ||
         Object.values(this.projection.state.nodes).some(node => editor.mounts.get(node.key) &&
-          node.viewType !== "canvas-counter-block" && node.viewType !== "youtube-video-block" &&
+          !editor.registry.hasCapability(node.viewType, "spatial-document-compatible") && node.viewType !== "youtube-video-block" &&
           (editor.mounts.get(node.key)?.inputPolicy === "opaque-widget" || editor.registry.hasCapability(node.viewType, "opaque-widget")))) {
       this.noticeSignal[1]("Finish or close the open panel, draft or embedded application before switching presentations."); return false;
     }
@@ -222,7 +222,7 @@ export class WorkspaceSession {
       if (node) visit(node.key);
       const embedded = !!node && ["iframe-block", "pdf-block", "html-block", "html-editor-block"].includes(node.viewType);
       if (embedded && this.closedMedia[0]().has(placement.id)) reason ??= "embedded media closed";
-      if (!reason && [...descendants].some(key => !(embedded && key === node?.key) && !["canvas-counter-block", "youtube-video-block"].includes(this.projection.state.nodes[key]?.viewType) && this.editor.registry.hasCapability(this.projection.state.nodes[key]?.viewType ?? "", "opaque-widget"))) reason = "embedded application awaits qualification";
+      if (!reason && [...descendants].some(key => !(embedded && key === node?.key) && !["canvas-counter-block", "youtube-video-block"].includes(this.projection.state.nodes[key]?.viewType) && this.editor.registry.hasCapability(this.projection.state.nodes[key]?.viewType ?? "", "opaque-widget") && !this.editor.registry.hasCapability(this.projection.state.nodes[key]?.viewType ?? "", "spatial-document-compatible"))) reason = "embedded application awaits qualification";
       if (!reason && [...descendants].some(key => mounted.has(key))) reason = "overlapping render root";
       if (!reason) descendants.forEach(key => mounted.add(key));
       return { placement, label: resolved?.object.label ?? placement.objectId, nodeKey: reason ? undefined : node?.key, reason, embedded };

@@ -1,6 +1,6 @@
 # 3DObjectBlock — implementation plan
 
-Status: proposed; planning only. No feature implementation is authorized by this document.
+Status: approved and implemented; awaiting user review. See [implementation report](CODEX_3D_OBJECT_BLOCK_IMPLEMENTATION_REPORT.md).
 
 Revision: the user approved including focused Spatial support in this plan. Separate widget input ownership from live-Document compatibility; qualify the new 3D Block and the existing inline Counter without opening all opaque widgets or extending the Spatial desk scene.
 

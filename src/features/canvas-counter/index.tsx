@@ -13,5 +13,5 @@ function Counter(props: { runtime: BlockRuntime }) {
 }
 /** Small inline qualification pilot. Every update is authored; there are no drafts. */
 export function createCanvasCounterFeature(capabilities: (scope: FeatureScope) => BlockFeatureCapabilities): CodexFeature {
-  return { id: "canvas-counter", activate(scope) { capabilities(scope).register.block({ type: "canvas-counter-block", create: () => ({ type: "canvas-counter-block", count: 0 }), view: Counter, capabilities: ["control", "opaque-widget", "selectable"] }); } };
+  return { id: "canvas-counter", activate(scope) { capabilities(scope).register.block({ type: "canvas-counter-block", create: () => ({ type: "canvas-counter-block", count: 0 }), view: Counter, capabilities: ["control", "opaque-widget", "selectable", "spatial-document-compatible"] }); } };
 }

@@ -1,0 +1,7 @@
+{
+  "checks": [
+    "unknown block fallback",
+    "unknown authored payload round-trips",
+    "adjacent editing with physical feature removal"
+  ]
+}

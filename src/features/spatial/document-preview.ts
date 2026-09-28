@@ -1,5 +1,5 @@
 /** A bounded visual digest, not a Document DTO or editable projection. */
-export type PreviewBlock = { kind: "text"; text: string; heading?: number } | { kind: "image"; url: string; alt: string };
+export type PreviewBlock = { kind: "widget"; label: string } | { kind: "text"; text: string; heading?: number } | { kind: "image"; url: string; alt: string };
 export interface DocumentPreview { title: string; blocks: readonly PreviewBlock[]; truncated: boolean }
 export interface PreviewImageSlot { url: string; x: number; y: number; width: number; height: number }
 export function previewImageUrl(value: unknown): string | undefined {
@@ -30,7 +30,10 @@ export function paintDocumentPreview(ctx: CanvasRenderingContext2D, preview: Doc
   ctx.fillStyle = "#bba98a"; ctx.fillRect(margin, y, inner, 1); y += 24;
   for (const block of preview.blocks) {
     if (y >= bottom - 18) break;
-    if (block.kind === "image") {
+    if (block.kind === "widget") {
+      ctx.fillStyle = "#e4ddcf"; ctx.fillRect(margin, y, inner, 48);
+      ctx.fillStyle = "#6b6357"; ctx.font = "14px Georgia"; ctx.fillText(block.label, margin + 12, y + 29, inner - 24); y += 62;
+    } else if (block.kind === "image") {
       const height = Math.min(inner * .53, bottom - y - 12); if (height < 36) break;
       ctx.fillStyle = "#e2dbcc"; ctx.fillRect(margin, y, inner, height);
       ctx.fillStyle = "#6b6357"; ctx.font = "12px Georgia"; ctx.fillText(block.alt || "Image", margin + 12, y + 24, inner - 24);

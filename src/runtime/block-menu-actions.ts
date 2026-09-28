@@ -5,14 +5,8 @@ import { createTextTab } from "./text-tabs";
 import { backgroundImages, defaultBackgroundUrls, isBackgroundType, mediaUrl, youtubeId, type BackgroundType } from "../rendering/backgrounds";
 import { stickyNoteDto } from "./sticky-notes";
 
-export interface BlockMenuItem {
-  label: string;
-  disabled?: boolean;
-  reason?: string;
-  run?: () => void | Promise<void>;
-  children?: BlockMenuItem[];
-  input?: { label: string; value?: string; submit(value: string): void };
-}
+import type { BlockMenuItem } from "./block-menu-types";
+export type { BlockMenuItem } from "./block-menu-types";
 
 const text = (): ExistingBlockDto => ({ id: crypto.randomUUID(), type: "standoff-editor-block", text: "", standoffProperties: [], children: [] });
 const dto = (type: string, children: ExistingBlockDto[] = [], metadata: Record<string, unknown> = {}): ExistingBlockDto => ({ id: crypto.randomUUID(), type, metadata, children });
@@ -100,7 +94,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     return [historyEntry, command("sticky.createFloating", "New Sticky Note"), { label: "Background", children: backgrounds }, { label: "Document", children: files }, ...history];
   }
 
-  const items: BlockMenuItem[] = [historyEntry];
+  const items: BlockMenuItem[] = [...(editor.mounts.get(key)?.contextActions?.() ?? []), historyEntry];
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if (doc) {
     items.push(command("sticky.createFloating", "New Sticky Note"));

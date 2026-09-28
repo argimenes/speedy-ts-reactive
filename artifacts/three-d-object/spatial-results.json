@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "resting paper has no live widgets",
+    "bounded generic previews",
+    "Compact keeps the same live widget",
+    "ordinary Anchor Relationship hosts the 3D Block",
+    "one live document root",
+    "insertion retains live Spatial Document",
+    "qualified counter stays live",
+    "Spatial widget menu opens",
+    "return cancels unfinished orbit",
+    "return removes live widgets",
+    "unmounted renderer stops",
+    "physical desk placement unchanged",
+    "repeated activation 0",
+    "repeated activation 1",
+    "widget graphics failure retains live Document",
+    "second widget unaffected",
+    "graphics retry replaces the lost canvas",
+    "graphics retry has a usable context",
+    "same Block works in actual Canvas host",
+    "return to Desktop preserves counter"
+  ]
+}

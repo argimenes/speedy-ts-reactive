@@ -7,6 +7,8 @@ export interface NativeTextSelection {
 }
 
 export interface MountHandle {
+  /** Optional actions owned by this mounted occurrence. */
+  contextActions?(): import("./block-menu-types").BlockMenuItem[];
   root: Element;
   focusElement: HTMLElement;
   inputPolicy: "native-text" | "standoff" | "control" | "container" | "opaque-widget";

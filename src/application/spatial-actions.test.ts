@@ -184,3 +184,23 @@ describe("Spatial arrangement sidecar", () => {
     expect(a.arrange(first.objectId, { heading: 1 }, now)).toBe(false);
   });
 });
+
+describe("qualified inline widgets in Spatial", () => {
+  it("keeps one active Document when a qualified widget is inserted, and retains other restrictions", () => {
+    const s = open(fixture(), true); s.selectPresentation("spatial"); const a = s.spatial!;
+    expect(a.document.activate("block:window-0")).toBe(true);
+    const root = a.activeRoot()!, docKey = s.editor.node(root.nodeKey)!.children[0];
+    for (const type of ["3d-object-block", "canvas-counter-block"]) {
+      s.editor.commands.insert({ type, id: type }, { kind: "at", parentKey: docKey, index: 0 });
+      expect(s.editor.registry.hasCapability(type, "opaque-widget")).toBe(true);
+      expect(a.activeRoot()).toBe(root);
+    }
+    a.document.release();
+    expect(a.objects()[0].preview!.blocks.filter(b => b.kind === "widget")).toHaveLength(2);
+    expect(a.document.activate("block:window-0")).toBe(true);
+    s.editor.commands.insert({ type: "timer-block", id: "unqualified" }, { kind: "at", parentKey: docKey, index: 0 });
+    expect(a.activeRoot()).toBeUndefined();
+    expect(a.document.eligible("block:window-0")).toBe(false);
+    s.editor.repository.undo(); expect(a.document.activate("block:window-0")).toBe(true);
+  });
+});

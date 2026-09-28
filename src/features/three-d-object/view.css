@@ -1,0 +1,12 @@
+.three-d-object { position: relative; aspect-ratio: 1; width: 100%; min-width: 0; min-height: 0; flex: 0 0 auto; outline: none; margin: 8px 0; isolation: isolate; }
+.three-d-object:focus-within { outline: 1px dashed #8d8d8d65; outline-offset: 3px; border-radius: 8px; }
+.three-d-object__canvas, .three-d-object__surface { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.three-d-object__canvas { background: transparent; outline: none; touch-action: pan-y; cursor: grab; }
+.three-d-object__canvas:active { cursor: grabbing; }
+.three-d-object__surface { pointer-events: none; }
+.three-d-object__menu { position: absolute; right: 4px; top: 4px; opacity: 0; border: 1px solid #9996; background: #f5f3eee8; color: #494039; border-radius: 6px; padding: 3px 7px; cursor: pointer; }
+.three-d-object:hover .three-d-object__menu, .three-d-object:focus-within .three-d-object__menu { opacity: 1; }
+.three-d-object__resize { opacity: .35; }
+.three-d-object:hover .three-d-object__resize, .three-d-object:focus-within .three-d-object__resize { opacity: 1; }
+.three-d-object__fallback { position: absolute; inset: 35px 15px; display: flex; flex-direction: column; justify-content: center; gap: 12px; font: 13px/1.5 system-ui; color: inherit; }
+.three-d-object__fallback button { align-self: center; }

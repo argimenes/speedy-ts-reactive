@@ -1,3 +1,4 @@
+import { openBlockContextMenu } from "../runtime/open-block-context-menu";
 import type { NodeKey, PlacementKey, ViewId } from "../block-tree/types";
 import type { TreeCommands } from "../block-tree/commands";
 import type { FocusService } from "../runtime/focus";
@@ -86,12 +87,7 @@ export class InputGateway {
     const key = explicit && this.node(explicit)?.viewId === this.node(resolved.nodeKey)?.viewId ? explicit : resolved.nodeKey;
     if (!this.node(key)) return;
     event.preventDefault(); event.stopPropagation();
-    const existing = this.overlays.overlays.find(item => item.viewType === "context-menu");
-    // macOS can emit both Control-click and contextmenu for one gesture.
-    if (existing?.ownerKey === key) return;
-    if (existing) this.overlays.close(existing.key, false);
-    const rect = resolved.handle.root.getBoundingClientRect();
-    this.overlays.open({ ownerKey: key, viewType: "context-menu", title: "Block menu", anchor: event instanceof MouseEvent ? { x: event.clientX, y: event.clientY } : { x: rect.left + 12, y: rect.top + 24 } });
+    openBlockContextMenu(this.overlays, key, resolved.handle.root, event instanceof MouseEvent ? { x: event.clientX, y: event.clientY } : undefined);
   }
 
   private scopes(event: Event) {

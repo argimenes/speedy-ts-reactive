@@ -18,6 +18,7 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  threeDObjects: boolean;
   /** Block-relative presentation; disable to retain data with ordinary rendering. */
   anchorRelationships: boolean;
   /** Canonical Desktop/Canvas presentation. The main application enables it;
@@ -40,6 +41,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  threeDObjects: true,
   anchorRelationships: true,
   canvasWorkspace: false,
   spatialWorkspace: false,

@@ -60,3 +60,23 @@ describe("shared floating-window resize", () => {
     expect(element.style.width).toBe("310px"); expect(commits).toHaveLength(1);
   });
 });
+
+it("locks ratio through scale, viewport clamps, keyboard and capture cancellation", () => {
+  const host = document.body.appendChild(document.createElement('div'));
+  const commits: FloatingWindowSize[] = []; let controller!: ReturnType<typeof createFloatingWindowResize>;
+  const dispose = render(() => {
+    controller = createFloatingWindowResize({ element: () => host, size: () => ({width:280,height:280}), minimum:{width:160,height:160}, maximum:{width:640,height:640}, aspectRatio:1, scale:()=>2, constrainToViewport:false, onCommit:s=>commits.push(s) });
+    return <FloatingWindowResizeHandle controller={controller} label="ratio"/>;
+  },host); cleanup.push(dispose);
+  host.getBoundingClientRect=()=>({x:0,y:0,left:0,top:0,right:560,bottom:560,width:560,height:560,toJSON:()=>({})});
+  expect(controller.clamp(100,500)).toEqual({width:160,height:160});
+  expect(controller.clamp(900,200)).toEqual({width:640,height:640});
+  const handle=host.firstElementChild as HTMLElement;
+  const pointer=(type:string,x:number,y:number)=>handle.dispatchEvent(new MouseEvent(type,{button:0,clientX:x,clientY:y,bubbles:true,cancelable:true}));
+  pointer('pointerdown',560,560);pointer('pointermove',640,580);
+  expect(controller.preview()).toEqual({width:320,height:320});
+  pointer('lostpointercapture',640,580);expect(commits).toHaveLength(0);expect(controller.preview()).toBeUndefined();
+  handle.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
+  expect(controller.preview()).toEqual({width:290,height:290});
+  handle.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));expect(commits).toEqual([{width:290,height:290}]);
+});

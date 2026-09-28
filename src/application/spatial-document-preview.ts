@@ -2,7 +2,7 @@ import type { ContentRecord, RepositoryState } from "../block-tree/types";
 import { previewImageUrl, type DocumentPreview, type PreviewBlock } from "../features/spatial/document-preview";
 /** Read a bounded first-page digest directly from authored records at a desk
  * lifecycle boundary. No DTO encoding, mounts, measurement, effects or observers. */
-export function spatialDocumentPreview(state: RepositoryState, root: ContentRecord, label: string): DocumentPreview {
+export function spatialDocumentPreview(state: RepositoryState, root: ContentRecord, label: string, widget: (type: string) => boolean = () => false): DocumentPreview {
   const blocks: PreviewBlock[] = [], seen = new Set<string>(); let remaining = 6000, inlineBudget = 8000, images = 0, truncated = false;
   const visit = (content: ContentRecord | undefined) => {
     if (!content || seen.has(content.key)) return;
@@ -10,7 +10,10 @@ export function spatialDocumentPreview(state: RepositoryState, root: ContentReco
     seen.add(content.key);
     if (["document-window-block", "window-block", "portal-block"].includes(content.viewType) && content !== root) return;
     const metadata = content.payload.metadata as Record<string, unknown> | undefined;
-    if (content.viewType === "image-block") {
+    if (widget(content.viewType)) {
+      const label = String(metadata?.title ?? content.viewType.replace(/-block$/, "").replace(/-/g, " ")).slice(0, 80);
+      blocks.push({ kind: "widget", label });
+    } else if (content.viewType === "image-block") {
       const url = previewImageUrl(metadata?.url);
       if (url && images++ < 3) blocks.push({ kind: "image", url, alt: String(metadata?.alt ?? metadata?.title ?? "Image").slice(0, 120) });
     } else {

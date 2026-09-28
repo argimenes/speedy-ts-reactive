@@ -23,13 +23,18 @@ export interface FeatureBlocks {
   bounds(key: NodeKey): { left: number; top: number } | undefined;
 }
 /** One mounted occurrence, not the module or the shared authored content. */
+export type { BlockMenuItem } from "../runtime/block-menu-types";
 export interface BlockRuntime {
+  /** Cumulative client pixels per local CSS unit for this occurrence. */
+  scale(): number;
+  openContextMenu(point?: { x: number; y: number }): void;
+  contextMenuOpen(): boolean;
   readonly nodeKey: NodeKey;
   /** Detached reactive read of this Block's authored state. */
   field(name: string): unknown;
   setField(name: string, value: unknown, label: string): void;
   removeAndFocusFallback(): void;
-  mountWidget(element: HTMLElement): Disposer;
+  mountWidget(element: HTMLElement, options?: { contextActions(): import("../runtime/block-menu-types").BlockMenuItem[] }): Disposer;
   /** Uses the existing Solid instance owner; nothing here is serialized. */
   own(dispose: Disposer): Disposer;
 }

@@ -1,4 +1,7 @@
 import { Show, createComponent, getOwner, onCleanup, runWithOwner } from "solid-js";
+import { useReactiveView } from "../reactive-editor/context";
+import { openBlockContextMenu } from "../runtime/open-block-context-menu";
+import type { BlockMenuItem } from "../runtime/block-menu-types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { BlockFeatureCapabilities, BlockRuntime, FeatureScope } from "../feature-api";
 
@@ -21,6 +24,8 @@ export function blockFeatureCapabilities(editor: ReactiveEditor, scope: FeatureS
   // Called inside each mounted view's Solid owner, never at type registration.
   const instanceRuntime = (key: string): BlockRuntime => {
     const owner = getOwner();
+    const { coordinates } = useReactiveView();
+    let widget: HTMLElement | undefined;
     if (!owner) throw new Error("Block applications require a mounted Solid owner");
     let mounted = true;
     onCleanup(() => { mounted = false; });
@@ -30,6 +35,14 @@ export function blockFeatureCapabilities(editor: ReactiveEditor, scope: FeatureS
     };
     const runtime: BlockRuntime = {
       nodeKey: key,
+      scale: () => coordinates?.scale() ?? 1,
+      contextMenuOpen: () => mounted && editor.overlays.overlays.some(item => item.ownerKey === key && item.viewType === "context-menu"),
+      openContextMenu(point) {
+        requireInstance();
+        const handle = editor.mounts.get(key);
+        if (!widget || handle?.root !== widget || !handle.contextActions) return;
+        openBlockContextMenu(editor.overlays, key, widget, point);
+      },
       field(name) { return detached(editor.node(key)?.payload[name]); },
       setField(name, value, label) { requireInstance(); editor.commands.setPayloadField(key, name, value, label); },
       removeAndFocusFallback() {
@@ -45,9 +58,23 @@ export function blockFeatureCapabilities(editor: ReactiveEditor, scope: FeatureS
         runWithOwner(owner, () => onCleanup(release));
         return release;
       },
-      mountWidget(element) {
-        requireInstance();
-        return runtime.own(editor.mounts.register(key, { root: element, focusElement: element, inputPolicy: "opaque-widget", focus: () => element.focus({ preventScroll: true }) }));
+      mountWidget(element, options) {
+        requireInstance(); widget = element;
+        let live = true;
+        const valid = () => { requireInstance(); if (!live || editor.mounts.get(key)?.root !== element) throw new Error("Widget mount is disposed"); };
+        const guard = (items: BlockMenuItem[]): BlockMenuItem[] => items.map(item => ({ ...item,
+          ...(item.run ? { run: () => { valid(); return item.run!(); } } : {}),
+          ...(item.input ? { input: { ...item.input, submit(value: string) { valid(); item.input!.submit(value); } } } : {}),
+          ...(item.children ? { children: guard(item.children) } : {}),
+        }));
+        const release = editor.mounts.register(key, { root: element, focusElement: element, inputPolicy: "opaque-widget", focus: () => element.focus({ preventScroll: true }),
+          ...(options ? { contextActions: () => { valid(); return guard(options.contextActions()); } } : {}),
+        });
+        return runtime.own(() => {
+          live = false;
+          for (const overlay of [...editor.overlays.overlays]) if (overlay.ownerKey === key && overlay.viewType === "context-menu") editor.overlays.close(overlay.key, false);
+          release(); if (widget === element) widget = undefined;
+        });
       },
     };
     return runtime;

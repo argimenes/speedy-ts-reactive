@@ -1,0 +1,25 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/rendering/floating-window-resize.test.tsx (3 tests) 152ms
+ ✓ src/runtime/features.test.ts (2 tests) 43ms
+ ✓ src/features/three-d-object/model.test.ts (3 tests) 256ms
+ ✓ src/application/feature-capabilities.test.tsx (2 tests) 245ms
+ ✓ src/application/spatial-document-preview.test.ts (3 tests) 755ms
+   ✓ uses bounded actual text/headings/images, shares a digest and refreshes only at desk boundaries 491ms
+ ✓ src/application/workspace-session.test.ts (13 tests) 1274ms
+   ✓ canonical workspace session > defaults off, preserves legacy layout and retains unavailable presentation preferences 461ms
+ ✓ src/application/spatial-actions.test.ts (18 tests) 1366ms
+   ✓ Spatial application boundary > defaults off; exposes independent availability across all four flag combinations 551ms
+ ✓ src/application/canvas-actions.test.tsx (6 tests) 893ms
+   ✓ Canvas object actions > creates a bank once, preserves authored app state across remount, and round-trips local/server identities and layout 555ms
+ ✓ src/application/workspace-presentation-view.test.tsx (6 tests) 1284ms
+   ✓ canonical presentation switching > falls back to the Window icon when the focused Canvas occurrence is minimized on Desktop 414ms
+   ✓ canonical presentation switching > keeps one editor/projection, shared content and undo across repeated switches; typing does not remount objects 321ms
+
+ Test Files  9 passed (9)
+      Tests  56 passed (56)
+   Start at  21:18:56
+   Duration  27.03s (transform 20.38s, setup 0ms, collect 89.18s, tests 6.27s, environment 55.73s, prepare 8.91s)
+

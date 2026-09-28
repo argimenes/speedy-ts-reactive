@@ -46,7 +46,7 @@ export function createSpatialActions(session: WorkspaceSession) {
           if (content) {
             retained.add(content.key); let cached = previews.get(content.key);
             if (!cached || !editing && cached.revision !== state.revision) {
-              cached = { revision: state.revision, value: spatialDocumentPreview(state, content, object.label) }; previews.set(content.key, cached);
+              cached = { revision: state.revision, value: spatialDocumentPreview(state, content, object.label, type => editor.registry.hasCapability(type, "spatial-document-compatible")) }; previews.set(content.key, cached);
             }
             object.preview = cached.value;
           }
@@ -72,7 +72,7 @@ export function createSpatialActions(session: WorkspaceSession) {
     const visit = (key: string): boolean => {
       if (keys.has(key)) return false; keys.add(key); const n = editor.node(key); if (!n) return false;
       if (key !== node!.key && ["document-window-block", "window-block", "portal-block"].includes(n.viewType)) return false;
-      if (editor.registry.hasCapability(n.viewType, "opaque-widget")) return false;
+      if (editor.registry.hasCapability(n.viewType, "opaque-widget") && !editor.registry.hasCapability(n.viewType, "spatial-document-compatible")) return false;
       return [...n.children, ...Object.values(n.ownedRelations)].every(visit);
     };
     if (!visit(node.key)) return;
