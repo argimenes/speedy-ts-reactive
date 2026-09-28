@@ -1,6 +1,6 @@
 # Spatial Milestone D — Interaction, recognition and restrained atmosphere
 
-Status: **complete, awaiting review**. Stop here; no broader Spatial work has begun.
+Status: **accepted**. The approved Spatial A–D programme is complete. Manual review confirms that corrected dragging is smooth and responsive. The accepted implementation baseline is **`b800bd3` (`Milestone D complete`)**. Preserve its implementation and architectural boundaries; broader Spatial work is not authorized.
 
 ## Accepted baseline and scope
 
@@ -31,7 +31,7 @@ The opt-in, drag-only probe records at most 600 samples, has no timers/observers
 
 **3. A propped grab should not be projected onto the floor.** A point above the desk acquires the wrong movement gain when its pointer is intersected with the desk plane. A representative perspective move of 80 px horizontally and −12 px vertically produced **38.1 px of grab-point slip** with the old floor-plane calculation. The controller now captures the actual hit height and intersects a fixed desk-parallel plane through that point. The same geometric test has error below **0.000001 CSS pixel** before desk clamping. Only horizontal desk position changes; this adds no lift, Euler controls or free 3D movement. At the desk boundary the existing constraint intentionally prevents further movement.
 
-Human mouse/trackpad ergonomics remain a review item. No manual improvement claim is substituted for the measured results.
+At implementation completion, human mouse/trackpad ergonomics remained a review item. Subsequent manual review confirmed smooth, responsive dragging, and D was accepted. The measurements above remain distinct from that manual evidence.
 
 ## Discoverability and orientation
 
@@ -86,7 +86,7 @@ Chrome **153.0.8010.53**, Node **22.12.0**, Apple M1/macOS were used. Drag profi
 
 The existing 250-paragraph / 25,000-character typing benchmark also passed real insertion, Backspace, split, undo/redo, content restoration and unrelated-cell stability. One final Desktop/Spatial pair recorded median handlers of **2.7 / 2.2 ms**, p95 **15.3 / 6.0 ms**, **zero repository snapshots** during ordinary typing and **zero Spatial scene frames**. These single runs are a functional/performance smoke check, not a controlled C→D timing comparison or a speedup claim. [Desktop output](./artifacts/spatial-d/typing-desktop.txt), [Spatial output](./artifacts/spatial-d/typing-spatial.txt). The Desktop harness retained a Node handle after all assertions and Chrome cleanup; that owned process was terminated before running Spatial separately. This did not affect the captured measurements.
 
-Safari and human-operated OS IME were not requalified in D; B's Safari automation limitation remains. Chrome composition, reduced motion and viewport/DPR checks were rerun through B. CDP zoom-equivalent testing is not represented as manual browser-menu zoom. Visual review inspected the captured page proportions, orientation and preview differences; sustained manual drag feel still needs the user's review.
+Safari and human-operated OS IME were not requalified in D; B's Safari automation limitation remains. Chrome composition, reduced motion and viewport/DPR checks were rerun through B. CDP zoom-equivalent testing is not represented as manual browser-menu zoom. Visual review inspected the captured page proportions, orientation and preview differences; subsequent user review confirmed smooth, responsive dragging.
 
 Reproduce with Node 22 and an opted-in Vite server on port 3000:
 
@@ -107,4 +107,4 @@ The preserved earlier traces are sequential investigation checkpoints; rerunning
 
 D needed only feature-local drag/representation changes and its narrow application preview adapter. Core continues to own authored storage, input/selection, measurement, focus and live Window behavior. No reusable general framework was justified.
 
-**Stop for review.** GraphView/GraphData spatial work, History extraction, Text Superposition and broader Spatial architecture have not begun.
+**Spatial A–D is complete and accepted.** Preserve the current implementation and boundaries while future directions are reviewed. HTML-in-Canvas remains a discussion only; no experiment is authorized. GraphView/GraphData spatial work, History extraction, Text Superposition and broader Spatial architecture have not begun.

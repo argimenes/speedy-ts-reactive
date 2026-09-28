@@ -74,7 +74,10 @@ from actual Document titles, text, headings and images. Previews refresh when en
 Spatial or returning to the desk; editing still uses the existing live DOM Window.
 D also adds static procedural wood/paper materials and Alpine exterior depth.
 The [D review gallery](./artifacts/spatial-d/index.html) includes both orientations
-and a drag-latency comparison. D is complete and awaiting review.
+and a drag-latency comparison. **Spatial A–D is complete and accepted**, including
+manual confirmation of smooth, responsive dragging. The accepted implementation
+baseline is `b800bd3` (`Milestone D complete`). Broader Spatial work remains
+unstarted while future directions are reviewed.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in
