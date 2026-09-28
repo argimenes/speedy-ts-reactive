@@ -18,6 +18,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Initial Document format arrangements and creation menu. */
+  documentFormats: boolean;
   threeDObjects: boolean;
   /** Block-relative presentation; disable to retain data with ordinary rendering. */
   anchorRelationships: boolean;
@@ -41,6 +43,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  documentFormats: true,
   threeDObjects: true,
   anchorRelationships: true,
   canvasWorkspace: false,

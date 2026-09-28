@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700" viewBox="0 0 600 700" preserveAspectRatio="none">
+  <defs>
+    <pattern id="vine" width="36" height="112" patternUnits="userSpaceOnUse">
+      <path d="M18 0C-8 32 44 66 18 112M18 24Q35 17 32 4M17 73Q0 61 4 48" fill="none" stroke="#857443" stroke-width="1.4"/>
+      <path d="M18 28Q37 29 30 12Q16 15 18 28M17 76Q0 78 5 60Q20 62 17 76" fill="#587b66" stroke="#897c46" stroke-width=".7"/>
+      <path d="M14 48Q3 31 10 29Q21 30 14 48M14 48Q31 34 32 44Q28 55 14 48M14 48Q20 67 9 63Q3 57 14 48" fill="#a34b46" stroke="#af914b" stroke-width=".7"/>
+      <circle cx="14" cy="48" r="3.1" fill="#d5ad50"/>
+      <path d="M23 93l4-7 4 7-4 7z" fill="#52728a"/>
+    </pattern>
+    <g id="rosette">
+      <path d="M0-18Q7-7 18 0Q7 7 0 18Q-7 7-18 0Q-7-7 0-18Z" fill="#41677b" stroke="#c7a252" stroke-width="2"/>
+      <path d="M0-11L11 0 0 11-11 0Z" fill="#a4473d" stroke="#dfc581"/>
+      <circle r="4" fill="#d8b557"/>
+    </g>
+  </defs>
+  <rect x="15" y="15" width="570" height="670" rx="2" fill="none" stroke="#9b7a38" stroke-width="2"/>
+  <rect x="21" y="21" width="558" height="658" fill="none" stroke="#b3944d" stroke-width=".7"/>
+  <rect x="57" y="49" width="486" height="602" fill="none" stroke="#9d7c37" stroke-width="1.2"/>
+  <rect x="27" y="40" width="30" height="620" fill="url(#vine)"/>
+  <g transform="translate(600 0) scale(-1 1)"><rect x="27" y="40" width="30" height="620" fill="url(#vine)"/></g>
+  <path d="M73 34H273M327 34H527M73 666H273M327 666H527" stroke="#a88941" stroke-width="2"/>
+  <path d="M98 34l8-5 8 5-8 5zM148 34l8-5 8 5-8 5zM198 34l8-5 8 5-8 5zM486 34l8-5 8 5-8 5zM436 34l8-5 8 5-8 5zM386 34l8-5 8 5-8 5z" fill="#738d70"/>
+  <use href="#rosette" x="38" y="34"/><use href="#rosette" x="562" y="34"/>
+  <use href="#rosette" x="38" y="666"/><use href="#rosette" x="562" y="666"/>
+  <use href="#rosette" x="300" y="34"/><use href="#rosette" x="300" y="666"/>
+</svg>

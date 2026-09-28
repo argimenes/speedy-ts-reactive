@@ -32,10 +32,10 @@ function many(editor: ReactiveEditor, types: string[], view: any, capabilities: 
   for (const type of types) editor.registry.register({ type, view, capabilities });
 }
 
-export function registerCoreViews(editor: ReactiveEditor): void {
+export function registerCoreViews(editor: ReactiveEditor, documentView = ContainerBlockView): void {
   registerTextSuperpositionCommands(editor);
   editor.registry.register({ type: "workspace-object-bank-block", view: WorkspaceObjectBankView, capabilities: ["container"] });
-  editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: ContainerBlockView, capabilities: ["container", "selectable"] });
+  editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: documentView, capabilities: ["container", "selectable"] });
   editor.registry.register({ type: "plain-text-block", view: PlainTextBlockView, capabilities: ["native-text", "container", "selectable"] });
   editor.registry.register({ type: "standoff-editor-block", view: StandoffEditorView, capabilities: ["inline-editor", "container", "selectable", "annotations"] });
   editor.registry.register({ type: "checkbox-block", view: CheckboxView, capabilities: ["control", "container", "selectable"] });

@@ -1,10 +1,10 @@
-import { createMemo, onCleanup, onMount } from "solid-js";
+import { Show, createMemo, onCleanup, onMount } from "solid-js";
 import type { BlockViewProps } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { ChildBlocks, RelationBlocks } from "./block-outlet";
 import { blockAppearance } from "./appearance";
 
-export function ContainerBlockView(props: BlockViewProps) {
+export function ContainerBlockView(props: BlockViewProps & { class?: string; contentClass?: string }) {
   const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const appearance = createMemo(() => blockAppearance(node()));
@@ -24,7 +24,7 @@ export function ContainerBlockView(props: BlockViewProps) {
   return (
     <section
       ref={root}
-      class={`abstract-block reactive-container-block ${appearance().classes.join(" ")}`}
+      class={`abstract-block reactive-container-block ${appearance().classes.join(" ")} ${props.class ?? ""}`}
       style={appearance().style}
       tabIndex={-1}
       data-block-id={(node()?.payload.id as string | undefined) ?? ""}
@@ -33,7 +33,7 @@ export function ContainerBlockView(props: BlockViewProps) {
       data-block-type={(node()?.payload.type as string | undefined) ?? node()?.viewType}
     >
       <RelationBlocks parentKey={props.nodeKey} />
-      <ChildBlocks parentKey={props.nodeKey} />
+      <Show when={props.contentClass} fallback={<ChildBlocks parentKey={props.nodeKey} />}><div class={props.contentClass}><ChildBlocks parentKey={props.nodeKey} /></div></Show>
     </section>
   );
 }

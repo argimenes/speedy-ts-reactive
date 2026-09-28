@@ -1,4 +1,6 @@
-import { Show, createSignal, onCleanup, onMount } from "solid-js";
+import { documentFormats, type DocumentFormat } from "../features/document-formats/model";
+import { SystemSubmenu } from "./codex-system-bar";
+import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
 import type { WorkspaceSession } from "../application/workspace-session";
 import { workspaceOpen } from "../application/workspace-open";
 import type { PlacementKey } from "../block-tree/types";
@@ -20,9 +22,9 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
     setDialog(undefined); setError("");
     queueMicrotask(() => { if (!lifetime.signal.aborted) actions.focus(placement); });
   };
-  const create = () => {
+  const create = (format: DocumentFormat = "page") => {
     if (!enabled()) return;
-    try { finish(actions.newDocument()); } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    try { finish(actions.newDocument(format)); } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   };
   const choose = async (location: DocumentLocation) => {
     if (busy()) return false;
@@ -55,7 +57,29 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
   });
   return {
     Buttons: (props: { menu?: boolean }) => <>
-      <button type="button" role={props.menu ? "menuitem" : undefined} disabled={!available() || busy()} onClick={create}>New Document</button>
+      <button type="button" role={props.menu ? "menuitem" : undefined} disabled={!available() || busy()} onClick={() => create()}>New Document</button>
+      <Show when={session.editor.features.documentFormats}>
+        <Show when={props.menu} fallback={
+          <label class="document-format-picker">Format
+            <select aria-label="New Document format" value="" disabled={!available() || busy()} onChange={event => {
+              const format = event.currentTarget.value as DocumentFormat;
+              if (format) create(format);
+              event.currentTarget.value = "";
+            }}>
+              <option value="">Create…</option>
+              <For each={documentFormats}>{item => <option value={item.id}>{item.label}</option>}</For>
+            </select>
+          </label>
+        }>
+          <SystemSubmenu label="New Document in Format">
+            <For each={documentFormats}>{item =>
+              <button type="button" role="menuitem" disabled={!available() || busy()} onClick={() => create(item.id)}>
+                {item.label}{item.id === "framed" ? " — Illuminated Manuscript" : ""}
+              </button>
+            }</For>
+          </SystemSubmenu>
+        </Show>
+      </Show>
       <button type="button" role={props.menu ? "menuitem" : undefined} disabled={!available() || busy()} onClick={() => open("document")}>Open Document from Server…</button>
       <button type="button" role={props.menu ? "menuitem" : undefined} disabled={!available() || busy()} onClick={() => open("image")}>Open Image…</button>
     </>,

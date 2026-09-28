@@ -1,0 +1,59 @@
+/* Format identity lives on the Document; only its containing surface is adapted.
+   Page and untagged Documents deliberately retain the existing layout. */
+.reactive-window > .reactive-window__content:has(> .reactive-window__document-body > .document-format) {
+  padding: 0;
+  background: #faf9f5;
+}
+.reactive-window__document-body:has(> .document-format) { height: 100%; }
+.document-format.document-format {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 32px 38px 64px;
+  align-content: start;
+  gap: 18px;
+  color: #343c39;
+  background: #faf9f5;
+  font: 17px/1.75 Georgia, 'Times New Roman', serif;
+  --document-heading-h3: 1.8rem;
+  --document-heading-h3-line-height: 1.3;
+}
+.document-format .reactive-standoff-block { border: 0; background: transparent; }
+.document-format .reactive-standoff-surface { background: transparent; border: 0; border-radius: 0; }
+.workspace-demo .document-format .reactive-standoff-flow { line-height: 1.75; }
+.document-format--simple.document-format { padding: 26px 30px; background: #fff; font-family: system-ui, sans-serif; font-size: 16px; gap: 12px; }
+.document-format--sticky-note.document-format { padding: 27px 25px 40px; background: linear-gradient(#f7dc79 0 17px, #fff1a8 17px, #fff4bc 100%); color: #504426; font-size: 19px; gap: 10px; box-shadow: inset 0 -14px 22px #bc92300d; }
+.reactive-window:has(> .reactive-window__content > .reactive-window__document-body > .document-format--sticky-note) > .reactive-window__header { background: #e6c86e; color: #504426; }
+.document-format--journal.document-format { background: linear-gradient(90deg, transparent 39px, #c8878740 39px 40px, transparent 40px), #fffcf2; padding: 34px 40px 64px 57px; gap: 24px; color: #344c55; }
+.document-format--journal > .reactive-generic-block { display: block; min-height: 360px; padding: 0; background: repeating-linear-gradient(to bottom, transparent 0 31px, #839ca636 31px 32px); }
+.workspace-demo .document-format.document-format--journal > .reactive-generic-block .reactive-standoff-surface { padding: 0; }
+.workspace-demo .document-format.document-format--journal > .reactive-generic-block .reactive-standoff-flow { line-height: 32px; min-height: 32px; }
+.document-format--diary.document-format { padding: 40px 46px 70px; background: linear-gradient(90deg, #bc737529 5px, transparent 5px), #fffafa; color: #564246; }
+.document-format--diary > .reactive-standoff-block:first-child { padding-bottom: 18px; border-bottom: 1px solid #cfacac; font-variant-numeric: oldstyle-nums; }
+.document-format--letter.document-format { padding: 40px 55px 70px; background: #fffef9; color: #3b3a35; gap: 25px; }
+.document-format--letter > .reactive-standoff-block:first-child { text-align: right; color: #75766a; font-size: .9em; }
+.document-format--letter > .reactive-standoff-block:nth-child(4) { min-height: 130px; }
+.document-format--letter > .reactive-standoff-block:last-child { font-style: italic; }
+.document-format--card.document-format { padding: 26px 32px 36px; background: linear-gradient(90deg, #be665a 6px, transparent 6px), #fffdf4; gap: 14px; font-size: 16px; --document-heading-h3: 1.4rem; }
+.document-format--card > .reactive-standoff-block:first-child { padding-bottom: 12px; border-bottom: 1px solid #bdafa3; }
+.document-format--notebook.document-format { padding: 18px 24px 50px 35px; background: linear-gradient(90deg, #658574 9px, #d4dfd6 9px 12px, transparent 12px), #fcfcf6; }
+.workspace-demo .document-format.document-format--notebook .reactive-tabs__labels { gap: 6px; border-bottom: 1px solid #a4b8a7; background: transparent; padding: 0 0 10px; }
+.workspace-demo .document-format.document-format--notebook .reactive-tabs__labels button { border: 1px solid #c5d1c5; border-radius: 5px 5px 0 0; background: #f2f4ec; color: #4a6457; padding: 8px 18px; }
+.workspace-demo .document-format.document-format--notebook .reactive-tabs__labels button[aria-selected='true'] { background: #476554; color: #fff; border-color: #476554; }
+.workspace-demo .document-format.document-format--notebook .reactive-tabs__panel { padding: 26px 4px; }
+.workspace-demo .document-format.document-format--notebook .reactive-tab-panel { display: grid; gap: 22px; }
+/* Fixed frame, native inner scrolling: no observers, duplicate content or input path. */
+.reactive-window__content:has(> .reactive-window__document-body > .document-format--framed) { overflow: hidden; }
+.reactive-window__document-body:has(> .document-format--framed) { height: 100%; min-height: 0; }
+.document-format--framed.document-format { height: 100%; min-height: 0; display: flex; padding: 48px 64px; overflow: hidden; background: #faf6e9; }
+.document-format__content { flex: 1; min-width: 0; min-height: 0; overflow: auto; scrollbar-gutter: stable; padding: 8px 12px 30px; display: flex; flex-direction: column; gap: 24px; overscroll-behavior: contain; }
+.document-format__content > * { flex-shrink: 0; }
+.document-template--illuminated-manuscript.document-format { color: #443b2c; padding: 0; border: 48px solid transparent; border-image: url('./illuminated-frame.svg') 60 / 48px stretch; background: radial-gradient(ellipse at 45% 35%, #fff7dc, #eedcb3); --document-heading-h3: 1.85rem; }
+.document-template--illuminated-manuscript .document-format__content > .reactive-standoff-block:first-child { color: #813c36; text-align: center; padding-bottom: 14px; border-bottom: 1px solid #b29751; }
+.document-template--illuminated-manuscript .document-format__content > .reactive-standoff-block:nth-child(2) .reactive-standoff-flow::first-letter { color: #943f37; font-size: 2.4em; font-weight: bold; }
+.document-format-picker { display: inline-flex; align-items: center; gap: 5px; }
+@container document-window (max-width: 480px) {
+  .document-format.document-format { padding-left: 24px; padding-right: 24px; }
+  .document-format--journal.document-format { background: #fffcf2; }
+  .document-format--framed.document-format { padding: 40px 42px; }
+  .document-template--illuminated-manuscript.document-format { padding: 0; border-width: 36px; border-image-width: 36px; }
+}

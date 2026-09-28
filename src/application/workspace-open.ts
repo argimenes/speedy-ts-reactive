@@ -1,3 +1,4 @@
+import { createFormattedDocument, documentFormatPresentation, type DocumentFormat } from "../features/document-formats/model";
 import { batch } from "solid-js";
 import { unwrap } from "solid-js/store";
 import type { ExistingBlockDto, PlacementKey } from "../block-tree/types";
@@ -18,10 +19,11 @@ export function workspaceOpen(session: WorkspaceSession) {
     position: { x: 24 + windows().length % 8 * 28, y: 24 + windows().length % 8 * 28 },
     size: document ? { w: 840, h: 620 } : { w: 480, h: 320 }, state: "normal", zIndex: Math.max(0, ...windows().map(n => Number((n.payload.metadata as any)?.zIndex) || 0)) + 1,
   });
-  const insert = (content: ExistingBlockDto, title: string): PlacementKey => {
+  const insert = (content: ExistingBlockDto, title: string, presentationDefaults?: { size: { w: number; h: number }; windowType: string }): PlacementKey => {
     const id = crypto.randomUUID(), isDocument = ["document-block", "main-list-block", "membrane-block"].includes(content.type!);
-    const metadata = { title, ...geometry(isDocument) };
-    const window: ExistingBlockDto = { id, type: isDocument ? "document-window-block" : "window-block", metadata, children: [content] };
+    const defaults = presentationDefaults ?? (editor.features.documentFormats ? documentFormatPresentation(content.metadata) : undefined);
+    const metadata = { title, ...geometry(isDocument), ...(defaults ? { size: defaults.size } : {}) };
+    const window: ExistingBlockDto = { id, type: defaults?.windowType ?? (isDocument ? "document-window-block" : "window-block"), metadata, children: [content] };
     const value = presentation.read(), canvas = presentation.active() === "canvas" ? value?.presentations.canvas : undefined;
     const objectId = `block:${id}`;
     const spatial = presentation.active() === "spatial";
@@ -115,7 +117,12 @@ export function workspaceOpen(session: WorkspaceSession) {
       editor.persistence.registerWorkspaceDocument(contentKey, id, location.folder, location.filename, location.filename, hash);
       return placement;
     },
-    newDocument() {
+    newDocument(format: DocumentFormat = "page") {
+      if (editor.features.documentFormats) {
+        const result = createFormattedDocument(format);
+        return insert(result.document, result.title, result);
+      }
+      if (format !== "page") throw new Error("Document formats are disabled.");
       const id = crypto.randomUUID();
       return insert({ id, type: "document-block", metadata: { documentId: id, folder: ".", filename: `${id}.json` }, children: [{ type: "standoff-editor-block", text: "" }] }, "Untitled document");
     },

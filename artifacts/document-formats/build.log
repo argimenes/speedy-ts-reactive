@@ -1,0 +1,36 @@
+vite v4.5.14 building for production...
+transforming...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+✓ 279 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.65 kB │ gzip:   0.39 kB
+dist/assets/text-count-worker-ff73449a.js       0.67 kB
+dist/assets/embedded-page-cf5e6448.html         0.97 kB │ gzip:   0.59 kB
+dist/assets/search.worker-15a72c52.js           1.62 kB
+dist/assets/illuminated-frame-1f5b302f.svg      1.95 kB │ gzip:   0.76 kB
+dist/assets/favicon-0e726a38.ico               15.09 kB
+dist/assets/durable.worker-8c222055.js         68.54 kB
+dist/assets/medieval-template-ca17e3d1.jpg    567.21 kB
+dist/assets/codex-system-logo-df3b53ac.png    617.04 kB
+dist/assets/green-aurora-ee5e459d.jpg       1,055.58 kB
+dist/assets/snow-aurora-d1710f1e.jpg        1,607.19 kB
+dist/assets/green-aurora-49091b22.mp4       2,277.51 kB
+dist/assets/rain-d5051878.mp4               3,956.79 kB
+dist/assets/clouds-cf2b2472.jpg             4,056.02 kB
+dist/assets/wood-2bc49664.jpg               6,049.97 kB
+dist/assets/view-d23d166e.css                   3.92 kB │ gzip:   1.28 kB
+dist/assets/index-174f0ebe.css                 91.03 kB │ gzip:  17.96 kB
+dist/assets/coffee-cup-a7801d1e.js              2.15 kB │ gzip:   1.14 kB │ map:     6.05 kB
+dist/assets/scene-runtime-d7f13c18.js           2.56 kB │ gzip:   1.39 kB │ map:     9.38 kB
+dist/assets/view-af536eb8.js                   31.98 kB │ gzip:  12.58 kB │ map:   104.45 kB
+dist/assets/index-421bdb36.js                  37.06 kB │ gzip:   9.30 kB │ map:    51.01 kB
+dist/assets/three.core-babdf777.js            209.77 kB │ gzip:  58.32 kB │ map: 1,897.20 kB
+dist/assets/three.module-37c5f25d.js          358.46 kB │ gzip:  87.65 kB │ map: 1,009.81 kB
+dist/assets/index-8bd09c10.js                 768.33 kB │ gzip: 231.07 kB │ map: 2,455.84 kB
+
+(!) Some chunks are larger than 500 kBs after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.07s

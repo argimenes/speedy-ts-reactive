@@ -1,0 +1,22 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/demo/codex-system-bar.test.tsx (4 tests) 584ms
+   ✓ Codex system bar > navigates a real submenu, skips disabled entries and restores parent focus with Escape/Left 450ms
+ ✓ src/application/workspace-open.test.tsx (9 tests) 773ms
+ ✓ src/application/document-formats.test.ts (3 tests) 1452ms
+   ✓ Document formats > creates and round-trips all formats with edited content in desktop 942ms
+   ✓ Document formats > creates and round-trips all formats with edited content in canvas 479ms
+ ✓ src/demo/application-startup.test.tsx (6 tests) 3380ms
+   ✓ main application workspace > opens server Documents directly in an empty desktop and preserves live edits on reopen 1006ms
+   ✓ main application workspace > opens server Documents directly in an empty canvas and preserves live edits on reopen 741ms
+   ✓ main application workspace > starts with an empty Desktop and exposes Canvas without a development opt-in 408ms
+   ✓ main application workspace > saves and reopens the initial workspace with its Document identity and Canvas layout 321ms
+   ✓ main application workspace > keeps the original sample behind the explicit demo link 812ms
+
+ Test Files  4 passed (4)
+      Tests  22 passed (22)
+   Start at  22:28:33
+   Duration  19.99s (transform 15.23s, setup 0ms, collect 35.98s, tests 6.19s, environment 8.09s, prepare 2.75s)
+
