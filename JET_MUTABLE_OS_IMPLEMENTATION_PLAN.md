@@ -1,12 +1,12 @@
 # Flint — revised implementation plan
 
-**Revision:** 29 September 2026, following the Stage A qualification report and `JET_FLINT_MARKDOWN_DUAL_SAVE_ARCHITECTURE_CORRECTION.md`.
+**Revision:** 29 September 2026, updated after acceptance of transient Stage A and review of the Stage B native/dual-save boundary.
 
-**Status:** architecture review for approval; implementation remains paused.
+**Status:** Stage A accepted. Consumed Markdown and dual-save approved conceptually. The [Stage B amendment](FLINT_STAGE_B_NATIVE_DUAL_SAVE_PLAN.md) is proposed for review before Stage B implementation; Stage C is not authorized.
 
 **Naming and supplied artwork:** Flint is the product name, following the supplied Flint app icon. Earlier Jet-named plan/report files and qualification identifiers remain as historical references; this revision does not rename implementation identifiers. Preserve the [supplied icon master](docs/assets/flint/flint-app-icon-master.png) unchanged. It establishes the flint-stone mark, dark background and FLINT wordmark; any small-icon derivatives belong to later UI integration, not this architecture review.
 
-This revision supersedes the original plan's persisted Document transclusions inside tabs and retained Markdown delimiter Cells. The [Stage A report](JET_STAGE_A_QUALIFICATION_REPORT.md) and [executable reproduction](src/application/jet-stage-a-proof.test.ts) remain valid historical evidence. No transient-view, Markdown or persistence implementation has been performed for this revision.
+This revision supersedes the original plan's persisted Document transclusions inside tabs and retained Markdown delimiter Cells. The [Stage A report](JET_STAGE_A_QUALIFICATION_REPORT.md) and [executable reproduction](src/application/jet-stage-a-proof.test.ts) remain valid historical evidence. The subsequent transient-view implementation is complete and accepted: see the [Flint Stage A qualification report](FLINT_STAGE_A_QUALIFICATION_REPORT.md). Markdown and dual-save remain unimplemented.
 
 ## 1. Recommendation and changed risk profile
 
@@ -19,7 +19,7 @@ These boundaries fit together cleanly. Opening or closing a tab does not change 
 
 **Recommend consumed syntax plus dual-save over retained syntax plus visibility modes.** This removes the proposed hidden-marker caret/geometry subsystem and the need to maintain both source delimiters and semantic annotations during normal editing. It introduces real persistence work: deterministic export, pair completion status, conflict detection and recovery. Those obligations should be visible prerequisites, not described as an existing free capability.
 
-There is no confirmed fundamental blocker to the application. Two gates remain: transient Document hosting/disposal, and a full-fidelity native-save path with honest dual-save semantics. Stage B is independent of the core application track; after Stage A passes, review whether to do B or continue the vault/context track.
+Transient Document hosting/disposal has passed Stage A. The remaining Stage B gates concern native resource fidelity/admission and honest paired-save semantics. The user has selected Stage B next; Stage C remains unstarted. The Stage B amendment makes the existing native compatibility review boundary explicit.
 
 ## 2. Existing architecture: reuse and actual gaps
 
@@ -29,8 +29,8 @@ The current repository uses Codex/Speedy names; no general rename is proposed. A
 | --- | --- | --- |
 | Window and tab composition | [core views](src/rendering/core-block-views.tsx), [Window application guide](docs/development/CREATING_WINDOW_APPLICATIONS.md) | Reuse Window, TabRow and Tab Blocks. No nested Document Window or general application framework. |
 | Native editing and formatting | [Document container](src/rendering/container-block-view.tsx), [standoff editor](src/rendering/standoff-editor-view.tsx), [style bar](src/rendering/document-style-bar.tsx) | Reuse ordinary editable DOM, annotations, selection and scoped formatting/status UI. |
-| Composite application hosting | [BlockRuntime](src/feature-api/index.ts), [adapter](src/application/feature-capabilities.tsx) | Existing `mountWidget` is opaque input. A composite host needs a bounded container mount and core-owned child/Document slot; it must not intercept nested editor input as an opaque widget. |
-| Multiple occurrences | [editor.createView](src/reactive-editor/editor.ts), [BlockTreeProjection](src/block-tree/projection.ts) | Existing scoped projections share the same repository/editor and produce occurrence keys. Promising basis for transient views; not yet a complete disposable application-facing host contract. |
+| Composite application hosting | [BlockRuntime](src/feature-api/index.ts), [adapter](src/application/feature-capabilities.tsx) | Opaque widgets retain `mountWidget`. Stage A added a bounded container application host and core-owned tab/Document slot through [DocumentApplicationCapabilities](src/feature-api/document-application.ts); nested native input remains ordinary. |
+| Multiple occurrences | [editor.createView](src/reactive-editor/editor.ts), [BlockTreeProjection](src/block-tree/projection.ts) | Scoped projections share one editor/repository with independent occurrence keys. Stage A qualified explicit disposal, source disappearance, focus/selection and toolbar scope. Preserve these platform corrections. |
 | Identity materialization | [workspace manifest](src/reactive-editor/workspace-manifest.ts) | Repeated Documents share content after load, but the first serialized occurrence becomes owned. Do not serialize additional Document occurrences for Flint tabs. |
 | References | [standoff schemas](src/rendering/standoff-styles.ts), [linked annotations](src/runtime/linked-annotations.ts), [clipboard](src/block-tree/clipboard.ts) | Reuse `codex/block-reference`, stable authored IDs and shared definitions. A tab's presentation target is distinct from a semantic reference annotation. |
 | Search | [TextSearch](src/runtime/text-search.ts) | Reuse cancellable matching and ranges; aggregate across vault member Documents because traversal stops at nested Document boundaries. |
@@ -49,7 +49,7 @@ The current repository uses Codex/Speedy names; no general rename is proposed. A
 | Vault membership, folders, storage association | Yes | Collection organization and mapping to physical artifacts. Membership is not Document identity and logical folder changes need not rename files. |
 | Tab descriptor versus rendered occurrence | Descriptor yes; occurrence no | Stable tab ID, target Document ID and optional view preferences are app state. NodeKeys, projection instances, mount registrations, DOM, focus and transient geometry are runtime state. |
 
-Proposed composition:
+Accepted Stage A composition (schematic):
 
 ```text
 Workspace
@@ -57,39 +57,39 @@ Workspace
 ├── existing object bank
 │   └── vault container — membership plus newly created canonical Documents
 └── WindowBlock
-    └── jet-application-block
+    └── flint-application-block
         └── TabRowBlock
-            ├── TabBlock { targetDocumentId: A }
+            ├── TabBlock { documentTarget: { version: 1, documentId: A } }
             │   └── runtime-only Document occurrence of A
-            └── TabBlock { targetDocumentId: B }
+            └── TabBlock { documentTarget: { version: 1, documentId: B } }
                 └── runtime-only Document occurrence of B
 ```
 
 The runtime-only child is **not** an authored child/reference placement. A semantic link such as a wiki reference also does not become a tab ownership edge. Do not conflate these three uses of “reference.”
 
-The tab DTO stores a versioned presentation-target field referencing the stable Document ID; its exact field name is an implementation detail to qualify. No Document body, private content key, source placement key or live projection is serialized under it. Existing Tab Blocks may need a bounded core-owned content slot; adding that slot does not imply a pane registry.
+The tab DTO stores `metadata.documentTarget: { version: 1, documentId }`, referencing the stable Document ID. No Document body, private content key, source placement key or live projection is serialized under it. Existing Tab Blocks consume a bounded core-owned content slot; this does not imply a pane registry.
 
-### Transient occurrence lifecycle to prove in Stage A
+### Qualified Stage A lifecycle to preserve
 
 1. Resolve the target ID against the canonical loaded Document catalog. Resolve ambiguity explicitly; never choose by title or “first occurrence.”
 2. Core creates a view rooted at the resolved source placement using the same editor/repository. Flint receives a restricted rendered slot and semantic actions, not editor/projection access.
 3. Mount only the active tab's content initially. Another Window may display the same canonical Document through its own occurrence; distinct mount keys prevent duplicate-registration collisions.
 4. Scope toolbar, selection, overlays, find/reveal and focus to the active occurrence. Store only safe optional bookmarks as presentation preferences, not ownership.
-5. On tab switch/close, unmount and dispose the occurrence; clear its focus/overlay owners and unregister it from editor projection/occurrence maps. `projection.dispose()` currently unsubscribes/unregisters, while the editor retains a projections map: explicit map cleanup is a required host responsibility to qualify.
-6. If the canonical source placement disappears or changes, stop rendering that occurrence before dereferencing it. Re-resolve only to a valid canonical target for the same ID or show unavailable. `createView` alone does not prove source-disappearance safety; its fixed root and subscription ordering need a test.
+5. On tab switch/close, unmount and dispose the occurrence; clear its focus/overlay owners and unregister it from editor projection/occurrence maps. `ReactiveEditor.disposeView` performs explicit map, selection, focus, overlay and mount-bookkeeping cleanup in addition to projection disposal.
+6. If the canonical source placement disappears or changes, stop rendering that occurrence before dereferencing it. Re-resolve only to a valid canonical target for the same ID or show unavailable. The qualified missing-root guard prevents a disappearing source from interrupting repository delivery; the host releases the occurrence and can resolve a fresh view after Undo.
 7. Closing a tab/Window removes presentation state only. It neither calls `unlink` on a Document nor removes its canonical owner. Reopen constructs a fresh occurrence from the persisted target ID.
 
 No ownership repair pass, tree-order workaround or new Workspace occurrence-role format is needed for these tabs. The old persisted-reference tests remain evidence for the rejected strategy; their observed inversion must not be “fixed” by weakening the new acceptance criteria.
 
 The vault remains Workspace-owned outside Flint's Window. Existing Documents are admitted by membership without reparenting. New ones may live in the existing object bank's vault container. Stage A does not introduce `.md` paths into this identity contract. Future storage associations resolve the same stable identity.
 
-## 4. What completed Stage A work remains valid
+## 4. Accepted Stage A baseline and platform observation
 
-Retain the [qualification report](JET_STAGE_A_QUALIFICATION_REPORT.md), five reproduction tests and the existing eight Workspace tests used alongside them. They establish live sharing/edit/rename, identity deduplication, conflict rejection, and the order-dependent ownership failure. They do not establish a completed shell, browser qualification or transient-view lifecycle.
+The [Flint qualification report](FLINT_STAGE_A_QUALIFICATION_REPORT.md) records the accepted production composition proof: 134 focused tests, 28 Chromium checks, independent occurrences, shared editing/history, scope/focus/disposal, source disappearance and local/server-format round-trip without tab-owned Document bodies. Retain the older [Jet report](JET_STAGE_A_QUALIFICATION_REPORT.md) and five reproduction tests as evidence for the rejected persisted-transclusion strategy, not a remaining requirement to implement it.
 
-There is no implemented production Flint shell, composite hosting adapter, Markdown scanner, retained-source association or concealed-syntax editor work to remove. Existing Show/Hide, Superposition, native geometry and annotation infrastructure remain unrelated features; do not delete or modify them because this plan no longer needs hidden Markdown markers.
+Stage A established the shell, container adapter, transient Document host and platform lifecycle corrections. No Markdown scanner, hidden-syntax model, new Workspace format or dual-save protocol was implemented. The distinction between identity, canonical ownership and transient presentation is now an invariant, not a speculative alternative.
 
-Stage A resumes only after approval of this revision. Replace its persisted-transclusion tab proof with the transient occurrence proof. Keep the Window composition, vault membership, shared Document editing, identity and save/reopen objectives. No dual-save implementation is necessary to pass A, and passing A does not approve a canonical-format migration.
+**Future observation, explicitly deferred:** transient Document occurrences may become a Mutable OS primitive serving Desktop, Canvas, Spatial Studio and application/document composition. Do not generalize the API or lift recursive application/Document-hosting restrictions in B. Existing lifecycle fixes remain core/platform behavior rather than Flint-specific branches.
 
 ## 5. Canonical storage: `.mutable.json` is a filename, not a fidelity guarantee
 
@@ -102,7 +102,7 @@ The distinction matters in this repository:
 - `codex-history-document` is an existing native Document envelope with resource/Block/placement identity, inline atoms, external references and definition-retention information. Its codec is a stronger reuse candidate than inventing a Flint format. However, its current envelope requires memoir identity and the Workspace open paths explicitly reject history-enrolled Documents. Do not enable History, forge a memoir, or claim this is already a drop-in Flint save format.
 - The older portable spike is explicitly isolated. The resource codec under `history/stage-c-gates` is reused by durable Document code, but its direct use as an ordinary history-independent save route has not been qualified. Preserve its validation/rejection behavior; do not treat unsupported values as permission to silently coerce them.
 
-**Bounded decision gate before the dual-save proof writes real data:** qualify reuse of the existing native resource encoding for an ordinary Document without requiring History enrollment. Check closed resource extraction from a Workspace, shared definitions, external target descriptors, inline images, unknown Blocks/properties, cyclic/shared authored structure where supported, identity and load admission. Copy canonical resources once; never include Flint's transient view in the resource snapshot.
+**Bounded decision gate, now specified as B1 in the [Stage B amendment](FLINT_STAGE_B_NATIVE_DUAL_SAVE_PLAN.md), before the dual-save proof writes real data:** qualify reuse of the existing native resource encoding for an ordinary Document without requiring History enrollment. Check closed resource extraction from a Workspace, shared definitions, external target descriptors, inline images, unknown Blocks/properties, cyclic/shared authored structure where supported, identity and load admission. Copy canonical resources once; never include Flint's transient view in the resource snapshot.
 
 If a small history-independent adapter/envelope admission is needed, return its concrete compatibility proposal for review before changing format/load routes. This is justified by full-fidelity canonical Document saving, **not** by preserving tab roles. Do not redesign the Workspace envelope to solve the old tab problem.
 
@@ -237,9 +237,9 @@ Export produces structured diagnostics alongside bytes. An expected documented d
 
 ## 10. Revised stages and independent tracks
 
-**A — Transient application composition and identity proof.** Resume only after this revision is approved. One Window/Flint shell, existing tabs, two canonical Documents, persistent target IDs and active transient occurrence. Prove editing/rename across views, focused toolbar, selection restoration, same-repository identity, occurrence disposal/source deletion and local/server save/reopen without tab Document duplication. No Markdown or native-format change. Stop for review.
+**A — Transient application composition and identity proof. Accepted.** Preserve the qualified canonical identity, independent view lifetime and shared editor/history invariants. No Workspace occurrence-role format change is required.
 
-**B — Markdown Import, Gesture Recognition & Dual-Save Projection Proof.** Optional next track after A, not a dependency for C. First settle the bounded native-resource codec/admission gate in §5. Then prove §9's four constructs and §7's pair protocol in an isolated writable destination. Include atomic conversion Undo/Redo, deterministic export, unsupported-native preservation, same-snapshot writes, failed second write, interrupted receipt, external edits/races and typing baseline. A subset-only canonical experiment must be labeled as such. Stop if full fidelity/admission needs substantial persistence/History work; return a separate proposal.
+**B — Native fidelity/admission, Markdown Import, Gesture Recognition & Dual-Save Projection Proof.** Selected next by the user. Review the [Stage B amendment](FLINT_STAGE_B_NATIVE_DUAL_SAVE_PLAN.md) before implementation. B1 isolates native extraction, value fidelity, history-independent envelope and graph admission, then returns its concrete compatibility result for review before production format/load-route changes. B2 follows acceptance of that native contract and qualifies the existing four Markdown constructs and paired-save protocol. Retain atomic conversion Undo/Redo, deterministic export, native-only preservation, same-snapshot writes, failure/recovery/divergence tests and the recognizer typing baseline. Stop for a concrete blocker rather than broadening persistence or History. Stage B completion returns for review before C.
 
 **C — Core knowledge-workspace application.** Can follow A without B: logical folder/membership operations, ordinary Document creation/admission, scoped search, native reference creation/navigation, properties and derived backlinks. Use normal native editing when Markdown gestures are unavailable. Closing/trashing membership never destroys canonical data in another owner. No implication of dual-save support until B is accepted.
 
@@ -251,13 +251,13 @@ New Flint capabilities remain default-on when implemented unless a later specifi
 
 ## 11. Revised qualification and removed work
 
-Retain focused tests for identity, transient view disposal, native text/selection, toolbar scope, linked definitions, copy/paste, structural commands and persistence. Stage A browser qualification must establish ordinary editing and independent occurrence lifetimes; there is no reason to wait for Markdown first.
+Retain focused tests for identity, transient view disposal, native text/selection, toolbar scope, linked definitions, copy/paste, structural commands and persistence. Keep Stage A browser qualification as regression evidence for ordinary editing and independent occurrence lifetimes.
 
 Stage B adds a small conversion/import/export corpus and a fault-injected save-state suite. Mandatory cases: native-only content survives canonical round-trip; export deterministic from the same snapshot; edits during saving remain dirty; two tabs save one resource; stale completions; second-file/receipt failure; external edits before and during publication; absent/colliding targets; import source untouched; subsequent load uses native data; corrupt native data does not silently fall back to `.md`. Run existing typing benchmarks for the recognizer integration, not for every shell styling change.
 
 **Remove from the plan:** retained delimiter Cells after conversion; source-to-annotation syntax associations; Hidden/Contextual/Visible switches; hidden-run boundary affinity; marker-specific navigation/deletion; mode-dependent clipboard rewriting; synthetic-source materialization; geometry invalidation for contextual reveal; and tests/benchmarks devoted solely to those mechanisms.
 
-**Retain:** existing core Show/Hide/Superposition behavior, ordinary standoff/selection/grapheme tests, atomic edit range remapping, IME discipline and central measurement. No general editor code was produced by Flint that needs salvaging. Parser source spans may exist transiently while planning a conversion/import, and immutable original-source provenance may support recovery; neither is a live retained-source syntax-association model.
+**Retain:** existing core Show/Hide/Superposition behavior, ordinary standoff/selection/grapheme tests, atomic edit range remapping, IME discipline and central measurement. Preserve Stage A's core lifecycle corrections; the Markdown work must not undo or special-case them. Parser source spans may exist transiently while planning a conversion/import, and immutable original-source provenance may support recovery; neither is a live retained-source syntax-association model.
 
 ## 12. Direct responses to the correction's seventeen questions
 
@@ -279,8 +279,10 @@ Stage B adds a small conversion/import/export corpus and a fault-injected save-s
 16. **Degradation:** readable text/typed placeholders with diagnostics; native serialization must still preserve canonical content (§9).
 17. **Syntax associations:** no persistent retained-source associations; only transient parser spans and optional immutable import provenance remain useful (§11).
 
-## 13. Decisions for review
+## 13. Current review boundary
 
-Approve the transient Document slot as the Stage A direction; consumed Markdown semantics as the replacement for visibility-mode editing; and dual-save as a shared, explicitly enrolled Document persistence policy. Keep the native codec/admission decision and the selected transport's conditional publication/recovery protocol as concrete Stage B prerequisites. Neither is permission for a broad persistence redesign.
+Stage A and the consumed-Markdown/dual-save direction are accepted. The user has selected Stage B and required plan review before implementation if amendment is necessary.
 
-**This revision changes the plan and preserves the supplied artwork only. Do not resume Stage A or begin Stage B until the revised plan is approved.**
+The [Stage B native/dual-save amendment](FLINT_STAGE_B_NATIVE_DUAL_SAVE_PLAN.md) is that review deliverable: it defines fidelity, the proposed history-independent resource envelope, targeted graph admission, compatibility limits and B1/B2 stopping points. It records the broader transient-occurrence observation without implementing it.
+
+**Stop for review of the Stage B amendment.** No Stage B code or file-format/load-route changes have been made in this planning pass. After amendment approval, perform the isolated B1 proof and return its native compatibility result at the existing §5 gate before enabling production paths or beginning paired-save work. Stage C remains outside the current work.
