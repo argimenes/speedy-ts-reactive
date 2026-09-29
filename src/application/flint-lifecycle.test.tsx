@@ -23,6 +23,18 @@ function setup(enabled = true, saved?: ExistingBlockDto) {
 }
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 describe("Flint composite transient hosting", () => {
+  it("ignores late image completion after a transient occurrence is disposed", async () => {
+    const f = setup(); await tick();
+    f.editor.commands.insertInlineImage(f.text().key, 0, { assetId: "late", src: "late.png", alt: "Late", status: "pending" });
+    const image = f.host.querySelector<HTMLImageElement>(".reactive-inline-image img")!;
+    const update = vi.spyOn(f.editor.commands, "updateInlineImage");
+    image.dispatchEvent(new Event("load")); expect(update).toHaveBeenCalledOnce();
+    f.tabs()[1].click(); await tick(); update.mockClear();
+    const before = f.editor.repository.snapshot();
+    image.dispatchEvent(new Event("load")); image.dispatchEvent(new Event("error"));
+    expect(update).not.toHaveBeenCalled(); expect(f.editor.repository.snapshot()).toEqual(before);
+    update.mockRestore();
+  });
   it("mounts one ordinary editor, restores selection across tab switches, and releases occurrence state", async () => {
     const f = setup(); await tick();
     expect(f.views()).toHaveLength(1); expect(f.tabs()).toHaveLength(2);

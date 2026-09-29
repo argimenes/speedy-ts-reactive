@@ -1,3 +1,4 @@
+import { documentRootPlacements } from "../block-tree/resource-registration";
 import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
@@ -13,12 +14,10 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
   const requireActive = () => { if (!scope.active()) throw new Error("Document application is disposed"); };
   const catalog = () => {
     const state = editor.repository.readState();
-    const owned = new Map<string, string[]>();
-    for (const placement of Object.values(state.placements)) if (placement.kind === "owned") owned.set(placement.contentKey, [...(owned.get(placement.contentKey) ?? []), placement.key]);
     return Object.values(state.contents).filter(c => c.viewType === "document-block").map(content => {
       const meta = content.payload.metadata as Record<string, unknown> | undefined;
       const id = String(meta?.documentId ?? content.payload.id ?? "");
-      const owners = owned.get(content.key) ?? [];
+      const owners = documentRootPlacements(state, content.key).map(p => p.key);
       return { id, title: String(meta?.title ?? "Untitled"), contentKey: content.key, placement: owners.length === 1 ? owners[0] : undefined };
     }).filter(d => d.id);
   };

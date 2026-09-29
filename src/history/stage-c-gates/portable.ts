@@ -20,7 +20,7 @@ interface Block {
   inline?: Array<{ kind: "text"; text: string } | { kind: "image"; properties: JsonObject }>;
 }
 export interface GateDocument {
-  format: "codex-portable-resource-gate"; version: 1;
+  format: "codex-portable-resource-gate"; version: 1 | 2;
   resourceId: string; root: Edge; blocks: Block[];
 }
 const own = (v: object, k: string) => Object.prototype.hasOwnProperty.call(v, k);
@@ -32,12 +32,13 @@ const canonicalFields = new Set(["key", "definitionOwnerKey", "viewType", "paylo
  * The default retains the existing History/gate JSON writer contract. */
 export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>, profile: "legacy" | "native" = "legacy"): GateDocument {
   validateResource(state as ResourceSnapshot);
+  requireValue(profile === "native" || state.version === 1, "owned resources require native profile");
   const value = (data: JsonObject) => (profile === "native" ? encodeAuthoredValue(data) : clone(data)) as JsonObject;
   const cells = new Set<string>();
   const edge = (key: string): Edge => {
     const p = state.placements[key];
     requireValue(p.kind !== "inline", "inline placement in structural slot");
-    if (p.target.kind === "external") return { placementId: p.placementId, kind: "reference", target: clone(p.target) as Edge["target"] };
+    if (p.target.kind === "external") return { placementId: p.placementId, kind: p.kind, target: clone(p.target) as Edge["target"] };
     const block = state.contents[p.target.contentKey];
     requireValue(identifier(block.payload.id), "structural placement targets non-authored content");
     return { placementId: p.placementId, kind: p.kind, target: { kind: "local", blockId: block.payload.id as string } };
@@ -80,7 +81,7 @@ export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>, profil
     blocks.push(block);
   }
   requireValue(Object.values(state.contents).every(c => !["text-cell", "image-cell"].includes(c.viewType) || cells.has(c.key)), "unrepresented Cell");
-  const output: GateDocument = { format: "codex-portable-resource-gate", version: 1,
+  const output: GateDocument = { format: "codex-portable-resource-gate", version: state.version,
     resourceId: state.resourceId, root: edge(state.rootPlacementKey), blocks };
   assertPortableJson(output);
   return output;
@@ -96,7 +97,7 @@ export function decodeGateDocument(document: GateDocument, profile: "legacy" | "
     requireValue(result && typeof result === "object" && !Array.isArray(result), "authored bag must be an object");
     return result as JsonObject;
   };
-  requireValue(document.format === "codex-portable-resource-gate" && document.version === 1 && identifier(document.resourceId), "unsupported envelope");
+  requireValue(document.format === "codex-portable-resource-gate" && (document.version === 1 || profile === "native" && document.version === 2) && identifier(document.resourceId), "unsupported envelope");
   const contents: Record<string, ContentRecord> = Object.create(null), placements: Record<string, ResourcePlacement> = Object.create(null);
   const keys = new Map<string, string>();
   for (const b of document.blocks) {
@@ -109,8 +110,8 @@ export function decodeGateDocument(document: GateDocument, profile: "legacy" | "
     const key = createPlacementKey();
     requireValue(p.kind === "owned" || p.kind === "reference", "invalid edge kind");
     if (p.target.kind === "external") {
-      requireValue(p.kind === "reference", "foreign owned edge");
-      placements[key] = { key, placementId: p.placementId, kind: "reference", target: clone(p.target) };
+      requireValue(p.kind === "reference" || document.version === 2 && profile === "native", "foreign owned edge");
+      placements[key] = { key, placementId: p.placementId, kind: p.kind, target: clone(p.target) };
     } else {
       requireValue(p.target.kind === "local" && keys.has(p.target.blockId), "missing owned definition");
       placements[key] = { key, placementId: p.placementId, kind: p.kind, target: { kind: "local", contentKey: keys.get(p.target.blockId)! } };
@@ -138,7 +139,7 @@ export function decodeGateDocument(document: GateDocument, profile: "legacy" | "
       }
     } else requireValue(b.inline === undefined, "unexpected inline content");
   }
-  const state: ResourceSnapshot = { format: "codex-resource-gate", version: 1, resourceId: document.resourceId,
+  const state: ResourceSnapshot = { format: "codex-resource-gate", version: document.version, resourceId: document.resourceId,
     rootPlacementKey: edge(document.root), revision: 0, contents, placements };
   validateResource(state);
   return freeze(state);

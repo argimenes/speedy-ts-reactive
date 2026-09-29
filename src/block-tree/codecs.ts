@@ -148,6 +148,7 @@ export function encodeBlock(
   const encode = (placementKey: PlacementKey): ExistingBlockDto => {
     const placement = state.placements[placementKey];
     if (!placement) throw new Error(`Cannot encode missing placement ${placementKey}`);
+    if (placement.resourceRegistration || placement.kind === "owned" && (placement.externalReference || placement.resolvedReference)) throw new LegacyExportLossError("Native resource retention/ownership cannot be written as a legacy tree");
     const content = state.contents[placement.contentKey];
     if (!content) throw new Error(`Cannot encode missing content ${placement.contentKey}`);
     if (active.has(content.key)) {

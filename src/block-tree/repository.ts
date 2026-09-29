@@ -4,6 +4,8 @@ import { inlineOwnerFor } from "./inline-plan";
 import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./split-plan";
 import { clone } from "./clone";
 import { UndoStorage, type StoredHistoryEntry } from "./undo-storage";
+import { isOwnedResourceTarget, validateResourceRegistrations } from "./resource-registration";
+import { resourceSource } from "./resource-identity";
 import { validateTarget } from "./external-reference";
 import { createCommitId } from "./ids";
 import { BlockIdentityIndex, PlacementIdentityIndex, type PlacementIdentityDelta } from "./identity";
@@ -131,6 +133,8 @@ export function validateRepository(state: RepositoryState): void {
     throw new ModelInvariantError("The root placement cannot have an owner");
   }
 
+  if (Object.values(state.placements).some(p => p.resourceRegistration || p.kind === "owned" && (p.externalReference || p.resolvedReference))) validateResourceRegistrations(state);
+
   const reachable = new Set<PlacementKey>();
   const visit = (placementKey: PlacementKey, ancestors: Set<ContentKey>) => {
     const placement = state.placements[placementKey];
@@ -138,21 +142,25 @@ export function validateRepository(state: RepositoryState): void {
     reachable.add(placementKey);
     if (placement.resolvedReference) {
       validateTarget(placement.resolvedReference);
-      if (placement.kind !== "reference" || placement.externalReference || placement.resolvedReference.kind !== "block" ||
+      if ((placement.kind !== "reference" && !(placement.kind === "owned" && isOwnedResourceTarget(placement.resolvedReference))) || placement.externalReference || placement.resolvedReference.kind !== "block" ||
           placement.resolvedReference.version.kind !== "unpinned" || placement.resolvedReference.source.scope === "unknown" ||
           state.contents[placement.contentKey]?.payload.id !== placement.resolvedReference.targetId) {
         throw new ModelInvariantError("Invalid live external-reference binding");
       }
     }
+    if (placement.kind === "owned" && placement.resolvedReference) {
+      const target = state.contents[placement.contentKey];
+      if (target?.viewType !== "document-block" || resourceSource(target)?.resourceId !== (placement.resolvedReference.source as { resourceId: string }).resourceId) throw new ModelInvariantError("Owned resource target is not its Document root");
+    }
     if (placement.externalReference !== undefined) {
-      if (placement.kind !== "reference" || placementKey === state.rootPlacementKey || state.contents[placement.contentKey]) {
+      if ((placement.kind !== "reference" && !(placement.kind === "owned" && isOwnedResourceTarget(placement.externalReference))) || placementKey === state.rootPlacementKey || state.contents[placement.contentKey]) {
         throw new ModelInvariantError("An external reference must have a distinct unresolved target and cannot be the root");
       }
       if (locations.get(placementKey)?.slot.kind === "inline-content") throw new ModelInvariantError("External references cannot impersonate inline Cells");
       validateTarget(placement.externalReference);
       return;
     }
-    if (ancestors.has(placement.contentKey) && placement.kind !== "reference") {
+    if (ancestors.has(placement.contentKey) && placement.kind !== "reference" && !placement.resolvedReference) {
       throw new ModelInvariantError(`Ownership cycle through ${placement.contentKey}`);
     }
     if (ancestors.has(placement.contentKey)) return;

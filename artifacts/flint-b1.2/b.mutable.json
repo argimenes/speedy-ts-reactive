@@ -1,0 +1,52 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource-b:placement:8dd325ed-36f6-4dc0-a6bf-2d2c20fbd2a9",
+            "target": {
+              "blockId": "b-text",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "b",
+        "properties": {
+          "metadata": {
+            "documentId": "resource-b"
+          }
+        },
+        "type": "document-block"
+      },
+      {
+        "id": "b-text",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Document b"
+          }
+        ],
+        "properties": {},
+        "type": "standoff-editor-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "resource-b",
+    "root": {
+      "kind": "owned",
+      "placementId": "resource-root:resource-b",
+      "target": {
+        "blockId": "b",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "resource-b",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

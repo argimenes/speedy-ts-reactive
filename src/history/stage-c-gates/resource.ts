@@ -1,5 +1,6 @@
 import type { ReadMeasure } from "../read-timing";
 /** G1 candidate only. Not a shipped schema or an editor repository. */
+import { isOwnedResourceTarget } from "../../block-tree/resource-registration";
 import { clone } from "../../block-tree/clone";
 import { equal, freeze, type DeepReadonly } from "../../block-tree/commit-capture";
 import type { ContentRecord, PlacementRecord, RepositoryState } from "../../block-tree/types";
@@ -10,10 +11,10 @@ import { externalDefinitionLink, externalAssetLink, validateTarget, type Externa
 export type { ExternalTarget } from "../../block-tree/external-reference";
 export type ResourcePlacement =
   | { key: string; placementId: string; target: { kind: "local"; contentKey: string }; kind: PlacementRecord["kind"] }
-  | { key: string; placementId: string; target: { kind: "external"; reference: ExternalTarget }; kind: "reference" };
+  | { key: string; placementId: string; target: { kind: "external"; reference: ExternalTarget }; kind: "reference" | "owned" };
 export interface ResourceSnapshot {
   format: "codex-resource-gate";
-  version: 1;
+  version: 1 | 2;
   resourceId: string;
   rootPlacementKey: string;
   revision: number;
@@ -35,7 +36,7 @@ function requireValid(ok: unknown, reason: string): asserts ok {
 const id = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 export function validateResource(state: ResourceSnapshot): void {
-  requireValid(state.format === "codex-resource-gate" && state.version === 1 && id(state.resourceId), "unsupported envelope");
+  requireValid(state.format === "codex-resource-gate" && (state.version === 1 || state.version === 2) && id(state.resourceId), "unsupported envelope");
   requireValid(Number.isSafeInteger(state.revision) && state.revision >= 0, "invalid local counter");
   const root = state.placements[state.rootPlacementKey];
   requireValid(root && root.kind === "owned" && root.target.kind === "local" &&
@@ -68,7 +69,7 @@ export function validateResource(state: ResourceSnapshot): void {
     assigned.add(p.placementId);
     requireValid(key === state.rootPlacementKey || slots.has(key), "detached edge");
     if (p.target.kind === "external") {
-      requireValid(p.kind === "reference", "external target must be explicit reference");
+      requireValid(p.kind === "reference" || state.version === 2 && p.kind === "owned" && isOwnedResourceTarget(p.target.reference), "external ownership requires resource schema 2 and a Document root target");
       validateTarget(p.target.reference);
       requireValid(p.target.reference.kind !== "block" || !authored.has(p.target.reference.targetId), "external Block identity conflicts with owned definition");
       requireValid(p.target.reference.source.scope !== "document" || p.target.reference.source.resourceId !== state.resourceId, "local target disguised as external");
@@ -97,13 +98,13 @@ export function projectOwned(state: RepositoryState, resourceId: string, evidenc
     requireValid(!p?.placementId || !binding || binding === p.placementId, "conflicting placement evidence");
     requireValid(p && placementId, "missing committed placement evidence");
     if (p.externalReference || p.resolvedReference) {
-      placements[key] = { key, placementId, kind: "reference", target: { kind: "external", reference: clone((p.externalReference ?? p.resolvedReference)!) } };
+      placements[key] = { key, placementId, kind: p.kind === "owned" ? "owned" : "reference", target: { kind: "external", reference: clone((p.externalReference ?? p.resolvedReference)!) } };
     } else if (evidence.contents.get(p.contentKey) === resourceId) {
       placements[key] = { key, placementId, kind: p.kind, target: { kind: "local", contentKey: p.contentKey } };
     } else {
       const reference = evidence.externalTargets.get(key);
-      requireValid(p.kind === "reference" && reference, "missing external ownership/provenance evidence");
-      placements[key] = { key, placementId, kind: "reference", target: { kind: "external", reference: clone(reference) } };
+      requireValid((p.kind === "reference" || p.kind === "owned" && reference && isOwnedResourceTarget(reference)) && reference, "missing external ownership/provenance evidence");
+      placements[key] = { key, placementId, kind: p.kind === "owned" ? "owned" : "reference", target: { kind: "external", reference: clone(reference) } };
     }
   };
   for (const [key, owner] of evidence.contents) {
@@ -114,7 +115,8 @@ export function projectOwned(state: RepositoryState, resourceId: string, evidenc
   const root = evidence.root;
   requireValid(evidence.contents.get(root.contentKey) === resourceId, "missing Document ownership evidence");
   placements[root.key] = { key: root.key, placementId: root.placementId, kind: "owned", target: { kind: "local", contentKey: root.contentKey } };
-  const result: ResourceSnapshot = { format: "codex-resource-gate", version: 1, resourceId, revision,
+  const version = Object.values(placements).some(p => p.kind === "owned" && p.target.kind === "external") ? 2 : 1;
+  const result: ResourceSnapshot = { format: "codex-resource-gate", version, resourceId, revision,
     rootPlacementKey: root.key, contents, placements };
   validateResource(result);
   return freeze(result);

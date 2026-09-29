@@ -1,3 +1,4 @@
+import { documentRootPlacements } from "../block-tree/resource-registration";
 import { clone } from "../block-tree/clone";
 import { linkedRegistry, resolveLinkedProperty, linkedDefinitionOwner, definitionProvenance } from "../block-tree/linked-annotations";
 import type { TextRangeSnapshot } from "./text-ranges";
@@ -91,7 +92,7 @@ export class LinkedAnnotations {
           if (field === "value" ? typeof action[field] !== "string" : !action[field] || typeof action[field] !== "object" || Array.isArray(action[field])) throw new Error("Invalid shared annotation settings");
           next[field] = clone(action[field]);
         }
-        const placements = Object.values(state.placements).filter(p => p.kind === "owned" && p.contentKey === owner.key);
+        const placements = documentRootPlacements(state, owner.key);
         if (placements.length !== 1) throw new Error("Missing or ambiguous linked definition owner placement");
         this.editor.commands.setPayloadField(placements[0].key, "linkedAnnotations", { ...clone(linkedRegistry(state, owner.key)), [id]: next });
       }

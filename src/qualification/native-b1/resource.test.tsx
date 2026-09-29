@@ -197,17 +197,15 @@ describe("B1 isolated canonical native proof", () => {
     // unknown Block instead of the native graph. Never use it for native input.
     expect(Object.values(wrong.state.contents).filter(c => c.viewType === "document-block")).toHaveLength(0);
   });
-  it("legacy tree export duplicates a native reference body and drops its edge role", () => {
+  it("registered native resources reject legacy export rather than dropping reference roles", () => {
     const f = host([doc()]);
     f.editor.commands.transclude(f.node("text").key, { kind: "at", parentKey: f.node("doc").key, index: 0 });
     const target = host(); admitNative(target.editor.repository, nativeBytes(capture(f)), target.bank);
-    const legacy = encodeDocument(target.editor.repository.snapshot(), capture(target).rootPlacementKey);
-    expect(legacy.children!.filter(c => c.id === "text")).toHaveLength(2);
-    expect(legacy.children!.filter(c => c.id === "text").every(c => !("kind" in c))).toBe(true);
+    expect(() => encodeDocument(target.editor.repository.snapshot(), capture(target).rootPlacementKey)).toThrow("legacy tree");
   });
 });
 
-describe("B1 compatibility findings after B1.1 (nested resources remain gated)", () => {
+describe("B1 compatibility findings after B1.2", () => {
   it.each(["main-list-block", "membrane-block"])("preserves exact authored alias %s alongside canonical runtime type", alias => {
     const original = doc(); original.type = alias;
     const f = host([original]);
@@ -238,10 +236,13 @@ describe("B1 compatibility findings after B1.1 (nested resources remain gated)",
     const paragraph = target.node("text"), property = (paragraph.payload.standoffProperties as any[])[0];
     expect(target.editor.linkedAnnotations.resolve(property, paragraph.contentKey).value).toBe("entity-poe");
   });
-  it("actual insert command accepts an owned nested Document that the resource validator rejects", () => {
+  it("actual insert command produces an owned nested Document captured at its resource boundary", () => {
     const f = host([doc()]);
     f.editor.commands.insert(createFormattedDocument("card").document, { kind: "at", parentKey: f.node("doc").key, index: 0 });
-    expect(() => capture(f)).toThrow("nested resource");
+    const captured = capture(f);
+    expect(captured.version).toBe(2);
+    expect(Object.values(captured.placements).some(p => p.kind === "owned" && p.target.kind === "external")).toBe(true);
+    expect(Object.values(captured.contents).filter(c => c.viewType === "document-block")).toHaveLength(1);
   });
   it("actual transclusion command captures a foreign dependency without copying its body", () => {
     const other = { id: "foreign-doc", type: "document-block", children: [{ id: "foreign-text", type: "standoff-editor-block", text: "Foreign" }] };

@@ -1,5 +1,7 @@
 # B1.1 — owned nested Documents (design only)
 
+**Subsequent decision:** accepted in principle. The bounded implementation and evidence are in the [B1.2 qualification report](FLINT_B12_OWNED_RESOURCE_QUALIFICATION_REPORT.md); the text below preserves the design as submitted for that decision.
+
 **Recommendation:** support the concept of **A owning resource B while B keeps its own resource identity and native serialization boundary**. Do not classify every nested Document as a transclusion. This is a proposal for review, not implemented semantics.
 
 There are three separate facts: which resource owns authored content, which resource owns another resource's lifetime, and which occurrence presents a resource. Stage A established that the third fact supplies no ownership. B1.1 preserves that distinction. An authored nested Document is not automatically equivalent to a Flint tab or another presentation occurrence.

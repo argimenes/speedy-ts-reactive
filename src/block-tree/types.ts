@@ -43,6 +43,9 @@ export interface PlacementRecord {
   placementId?: string;
   contentKey: ContentKey;
   kind: "owned" | "reference" | "inline";
+  /** Private object-bank retention of a native Document root. This reference
+   * is not semantic resource ownership and is not a presentation occurrence. */
+  resourceRegistration?: true;
   /** G1 candidate: explicit boundary. contentKey is a private unresolved symbol,
    * not a required local ContentRecord. Never synthesize a target Block. */
   externalReference?: ExternalTarget;

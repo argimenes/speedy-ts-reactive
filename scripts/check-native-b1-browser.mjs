@@ -85,9 +85,41 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    await evaluate('b1.repository.undo()');
    check('linked-definition edit undo restores exact native resource',await evaluate('b1.capture()'),beforeDefinitionEdit);
  }
+ if (process.env.NATIVE_B12 === '1') {
+   const files = Object.fromEntries(await Promise.all(['a','b','c'].map(async id => [id, await readFile(path.join(artifacts, id + '.mutable.json'), 'utf8')])));
+   await evaluate(`(async()=>{
+     const {resourceOwnership}=await import('/src/block-tree/resource-registration.ts');b1.ownership=()=>[...resourceOwnership(b1.repository.readState())];
+     b1.b=b1.native.admitNative(b1.repository,new TextEncoder().encode(${JSON.stringify(files.b)}),b1.bank.key);
+     b1.bViews=()=>b1.views().filter(p=>p.state.nodes[p.state.rootKey]?.payload.id==='b');
+     b1.bText=()=>Object.values(b1.bViews()[0].state.nodes).find(n=>n.payload.id==='b-text');
+     b1.openB=()=>{b1.editor.commandRegistry.execute('flint.open',{targetKey:b1.session.projection.state.rootKey,args:undefined});
+       for(const row of Object.values(b1.session.projection.state.nodes).filter(n=>n.viewType==='tab-row-block')) {
+         const target=row.children.find(k=>b1.editor.node(k)?.payload.metadata?.documentTarget?.documentId==='resource-b');
+         if(target)b1.editor.setViewChild(row.key,target);
+       }
+     };b1.openB();
+   })()`);
+   check('B opens in Flint before A with ownership unknown',await evaluate(`b1.bViews().length===1&&!b1.ownership().some(([id])=>id==='resource-b')&&!!b1.editor.mounts.get(b1.bText().key)`));
+   await evaluate(`(()=>{const n=b1.bText();b1.editor.focus.request(n.key);b1.editor.mounts.get(n.key).restoreInlineSelection({anchor:0,head:0});})()`);
+   await send('Input.insertText',{text:'Independent browser edit. '},sessionId);
+   check('independent B accepts ordinary native browser typing',await evaluate(`b1.native.nativeText(b1.native.captureNative(b1.repository.snapshot(),'resource-b')).includes('Independent browser edit. Document b')`));
+   const beforeB=await evaluate(`b1.native.nativeText(b1.native.captureNative(b1.repository.snapshot(),'resource-b'))`);
+   await evaluate('b1.repository.undo()');
+   check('independent B typing is undoable',await evaluate(`!b1.native.nativeText(b1.native.captureNative(b1.repository.snapshot(),'resource-b')).includes('Independent browser edit.')`));
+   await evaluate('b1.repository.redo();b1.openB()');
+   check('two Flint occurrences of B share one canonical content',await evaluate(`b1.bViews().length===2&&new Set(b1.bViews().map(v=>v.state.nodes[v.state.rootKey].contentKey)).size===1`));
+   await evaluate(`b1.native.admitNative(b1.repository,new TextEncoder().encode(${JSON.stringify(files.a)}),b1.bank.key);b1.native.admitNative(b1.repository,new TextEncoder().encode(${JSON.stringify(files.c)}),b1.bank.key)`);
+   check('reuniting A establishes only its authored ownership',await evaluate(`b1.ownership().find(([id])=>id==='resource-b')?.[1].owner==='resource-a'`));
+   check('reunion and C transclusion preserve independently edited B',await evaluate(`b1.native.nativeText(b1.native.captureNative(b1.repository.snapshot(),'resource-b'))`),beforeB);
+   check('C references B without acquiring ownership',await evaluate(`Object.values(b1.repository.state.placements).filter(p=>p.kind==='reference'&&p.resolvedReference?.targetId==='b').length===1`));
+   check('A re-save contains only A and its owned-resource edge',await evaluate(`(()=>{const r=b1.native.nativeEnvelope(b1.native.captureNative(b1.repository.snapshot(),'resource-a'));return r.document.version===2&&r.document.blocks.map(b=>b.id).join(',')==='a,a-text';})()`));
+   const screen=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'independent-b-editing.png'),Buffer.from(screen.data,'base64'));
+   await writeFile(path.join(artifacts,'b-browser-resaved.mutable.json'),beforeB);
+ }
  const saved=await evaluate('b1.capture()');
  check('re-save bytes decode without semantic change',await evaluate(`b1.native.nativeText(b1.native.decodeNative(new TextEncoder().encode(b1.capture())))`),saved);
  const shot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'native-editing.png'),Buffer.from(shot.data,'base64'));
+ if(errors.length) console.error(JSON.stringify({browserErrors:errors},null,2));
  check('no uncaught browser exceptions',errors.length,0);
  await writeFile(path.join(artifacts,'browser-resaved.mutable.json'),saved);
  await writeFile(path.join(artifacts,'native-browser-results.json'),JSON.stringify({passed:checks.length,checks,errors},null,2)+'\n');

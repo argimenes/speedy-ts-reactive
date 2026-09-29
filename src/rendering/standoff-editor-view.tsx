@@ -638,11 +638,15 @@ export function StandoffEditorView(props: BlockViewProps) {
                         alt={String(cell()?.payload.alt ?? "")}
                         width={cell()?.payload.width as number | undefined}
                         height={cell()?.payload.height as number | undefined}
-                        onLoad={() => {
+                        onLoad={event => {
+                          // A cached image can finish after its transient view is disposed.
+                          if (!event.currentTarget.isConnected || !editor.node(cellKey)) return;
                           editor.commands.updateInlineImage(cellKey, { status: "ready" });
                           scheduleMeasure();
                         }}
-                        onError={() => editor.commands.updateInlineImage(cellKey, { status: "failed" })}
+                        onError={event => {
+                          if (event.currentTarget.isConnected && editor.node(cellKey)) editor.commands.updateInlineImage(cellKey, { status: "failed" });
+                        }}
                       />
                     </span>
                   </Show>}>{property => <ProjectedAlternative

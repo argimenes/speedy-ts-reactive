@@ -243,7 +243,10 @@ export class TreeCommands {
       Object.values(content.ownedRelations).forEach(visit);
     }
     for (const placementKey of Object.keys(state.placements)) {
-      if (!reachablePlacements.has(placementKey)) delete state.placements[placementKey];
+      if (!reachablePlacements.has(placementKey)) {
+        if (state.placements[placementKey].resourceRegistration) throw new TreeCommandError("Resource registration removal requires an explicit lifetime decision");
+        delete state.placements[placementKey];
+      }
     }
     const usedContent = new Set(Object.values(state.placements).map((p) => p.contentKey));
     for (const contentKey of Object.keys(state.contents)) {
@@ -394,6 +397,8 @@ export class TreeCommands {
   move(key: NodeKey | PlacementKey, destination: Destination): void {
     const state = this.state();
     const sourceKey = this.placementKey(key, state);
+    const moving = state.placements[sourceKey];
+    if (moving.kind === "owned" && (moving.externalReference || moving.resolvedReference)) throw new TreeCommandError("Owned resource transfer requires an explicit ownership operation");
     if (sourceKey === state.rootPlacementKey) {
       throw new TreeCommandError("The root Block cannot be moved");
     }
@@ -443,6 +448,8 @@ export class TreeCommands {
     if (resolved === state.rootPlacementKey) {
       throw new TreeCommandError("The root Block cannot be removed");
     }
+    const removed = state.placements[resolved];
+    if (removed.kind === "owned" && (removed.externalReference || removed.resolvedReference)) throw new TreeCommandError("Owned resource removal requires an explicit lifetime decision");
     const location = deriveLocations(state).get(resolved);
     if (!location) return;
     const owner = state.contents[location.ownerContentKey];
@@ -473,6 +480,8 @@ export class TreeCommands {
   unwrap(key: NodeKey | PlacementKey): void {
     const state = this.state();
     const placementKey = this.placementKey(key, state);
+    const unwrapped = state.placements[placementKey];
+    if (unwrapped.resourceRegistration || unwrapped.kind === "owned" && (unwrapped.externalReference || unwrapped.resolvedReference)) throw new TreeCommandError("Cannot flatten a registered or owned resource");
     if (placementKey === state.rootPlacementKey) {
       throw new TreeCommandError("The root Block cannot be unwrapped");
     }

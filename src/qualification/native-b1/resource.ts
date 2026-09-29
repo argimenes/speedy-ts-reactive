@@ -5,6 +5,8 @@ import { freeze, type DeepReadonly } from "../../block-tree/commit-capture";
 import { externalDefinitionLink } from "../../block-tree/external-reference";
 import { linkedDefinitionOwner, definitionProvenance } from "../../block-tree/linked-annotations";
 import { resourceOwner, resourceSource, sameResource, findResource } from "../../block-tree/resource-identity";
+import { documentRootPlacements, resourceOwnership } from "../../block-tree/resource-registration";
+import type { ExternalTarget } from "../../block-tree/external-reference";
 import { viewTypeFor } from "../../block-tree/codecs";
 import type { CanonicalRepository } from "../../block-tree/repository";
 import type { ContentRecord, RepositoryState } from "../../block-tree/types";
@@ -27,9 +29,11 @@ export function captureNative(state: DeepReadonly<RepositoryState>, resourceId: 
   const documents = Object.values(state.contents).filter(c => c.viewType === "document-block" && identity(c) === resourceId);
   check(documents.length === 1, "missing or ambiguous canonical Document identity");
   const root = documents[0];
-  const owners = Object.values(state.placements).filter(p => !p.externalReference && p.kind === "owned" && p.contentKey === root.key);
-  check(owners.length === 1, "Document needs one canonical owned placement");
+  const owners = documentRootPlacements(state as RepositoryState, root.key);
+  resourceOwnership(state as RepositoryState);
+  check(owners.length === 1, "Document needs one canonical root or resource registration");
   const membership = new Map<string, string>(), visiting = new Set<string>();
+  const externalTargets = new Map<string, ExternalTarget>();
   const visit = (key: string) => {
     check(!visiting.has(key), "owned cycle");
     if (membership.has(key)) return;
@@ -38,7 +42,12 @@ export function captureNative(state: DeepReadonly<RepositoryState>, resourceId: 
     membership.set(key, resourceId); visiting.add(key);
     for (const slot of slots(c)) {
       const p = state.placements[slot]; check(p, "missing placement");
-      if (p.kind !== "reference") visit(p.contentKey);
+      if (p.externalReference) continue;
+      const child = state.contents[p.contentKey];
+      if (p.kind === "owned" && child?.viewType === "document-block" && child.key !== root.key) {
+        check(id(child.payload.id), "nested resource root lacks authored identity");
+        externalTargets.set(slot, { kind: "block", targetId: child.payload.id, source: resourceSource(child as ContentRecord)!, version: { kind: "unpinned" } });
+      } else if (p.kind !== "reference") visit(p.contentKey);
     }
     visiting.delete(key);
   };
@@ -47,7 +56,7 @@ export function captureNative(state: DeepReadonly<RepositoryState>, resourceId: 
   const localSlots = new Set([...membership.keys()].flatMap(key => slots(state.contents[key])));
   localSlots.add(owners[0].key);
   const ownerCounts = new Map<string, number>();
-  for (const p of Object.values(state.placements)) if (membership.has(p.contentKey) && p.kind !== "reference") {
+  for (const p of Object.values(state.placements)) if (membership.has(p.contentKey) && p.kind !== "reference" && !p.resolvedReference) {
     check(localSlots.has(p.key), "content has an owner outside this resource");
     ownerCounts.set(p.contentKey, (ownerCounts.get(p.contentKey) ?? 0) + 1);
   }
@@ -70,11 +79,14 @@ export function captureNative(state: DeepReadonly<RepositoryState>, resourceId: 
         p.resolvedReference.targetId === state.contents[p.contentKey]?.payload.id, "stale or ambiguous foreign binding provenance");
     }
   }
+  const parent = Object.values(state.contents).find(c => slots(c).includes(owners[0].key));
+  const nestedRoot = parent && resourceOwner(state as RepositoryState, parent.key)?.viewType === "document-block";
+  const rootPlacementId = nestedRoot ? `resource-root:${resourceId}` : durablePlacementId(owners[0], resourceId);
   const projected = clone(projectOwned(state as RepositoryState, resourceId, {
     contents: membership,
     placementIds: new Map(Object.values(state.placements).map(p => [p.key, durablePlacementId(p, resourceId)])),
-    externalTargets: new Map(), // No invented provenance for live cross-resource pointers.
-    root: { key: owners[0].key, contentKey: root.key, placementId: durablePlacementId(owners[0], resourceId) },
+    externalTargets, // Only actual authored nested ownership; reference provenance is never guessed.
+    root: { key: owners[0].key, contentKey: root.key, placementId: rootPlacementId },
   }, 0)) as ResourceSnapshot;
   for (const [key, properties] of dependencies) projected.contents[key].payload.standoffProperties = properties;
   validateResource(projected);
@@ -180,6 +192,8 @@ export function admitNative(repository: CanonicalRepository, bytes: Uint8Array, 
   const placements = new Set(Object.values(before.placements).map(p => p.placementId).filter(id));
   for (const c of Object.values(incoming.contents)) check(!before.contents[c.key] && (!id(c.payload.id) || !ids.has(c.payload.id)), "Block identity collision");
   for (const p of Object.values(incoming.placements)) check(!before.placements[p.key] && (!p.placementId || !placements.has(p.placementId)), "placement identity collision");
+  // Private retention role: no semantic owner is assigned by native admission.
+  incoming.placements[incoming.rootPlacementKey] = { ...incoming.placements[incoming.rootPlacementKey], kind: "reference", resourceRegistration: true };
   const updatedBank = { ...bank, children: [...bank.children, incoming.rootPlacementKey], wireChildren: "present" as const };
   // Bind only proven, already-loaded unpinned targets, at this explicit admission
   // boundary. No fetch, polling, observer, fallback identity or ownership transfer.
@@ -190,6 +204,7 @@ export function admitNative(repository: CanonicalRepository, bytes: Uint8Array, 
     const external = p.externalReference;
     if (!external || external.kind !== "block" || external.version.kind !== "unpinned" || external.source.scope === "unknown") continue;
     const owner = findResource(combined, external.source); if (!owner) continue;
+    if (p.kind === "owned") check(owner.payload.id === external.targetId, "owned target is not the Document resource root");
     const candidates = Object.values(combined.contents).filter(c => c.payload.id === external.targetId);
     check(candidates.length <= 1, "ambiguous external target identity");
     const target = candidates[0]; if (!target) continue;
