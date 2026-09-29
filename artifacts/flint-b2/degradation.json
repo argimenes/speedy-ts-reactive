@@ -1,0 +1,72 @@
+[
+  {
+    "blockId": "text",
+    "code": "image-projection",
+    "detail": "Image appearance/metadata is not fully represented; no assets copied"
+  },
+  {
+    "blockId": "text",
+    "code": "annotation-omitted",
+    "detail": "style/rainbow"
+  },
+  {
+    "blockId": "text",
+    "code": "authored-payload",
+    "detail": "Additional authored properties remain native-only"
+  },
+  {
+    "blockId": "text",
+    "code": "repeat-reference",
+    "detail": "Repeated/cyclic body represented once"
+  },
+  {
+    "blockId": "other",
+    "code": "annotation-omitted",
+    "detail": "codex/entity-reference"
+  },
+  {
+    "blockId": "other",
+    "code": "annotation-omitted",
+    "detail": "text/superposition"
+  },
+  {
+    "blockId": "other",
+    "code": "relation-layout",
+    "detail": "leftMargin"
+  },
+  {
+    "blockId": "e81f3657-88ac-4a6c-8510-c5abed0d329c",
+    "code": "block-fallback",
+    "detail": "left-margin-block"
+  },
+  {
+    "blockId": "35270d9e-7c8d-4ace-b894-09a6f78e64af",
+    "code": "block-style",
+    "detail": "Block presentation omitted"
+  },
+  {
+    "blockId": "other",
+    "code": "relation-layout",
+    "detail": "superposition:0260a5d2-3394-47d5-9c9b-66c69463665e"
+  },
+  {
+    "blockId": "0938779b-9055-4445-b16d-31c92b2ada63",
+    "code": "block-fallback",
+    "detail": "timer-block"
+  },
+  {
+    "blockId": "0938779b-9055-4445-b16d-31c92b2ada63",
+    "code": "authored-payload",
+    "detail": "Additional authored properties remain native-only"
+  },
+  {
+    "blockId": "b76cd267-0a98-4993-acaf-279f0301b807",
+    "code": "block-fallback",
+    "detail": "3d-object-block"
+  },
+  {
+    "blockId": "b76cd267-0a98-4993-acaf-279f0301b807",
+    "code": "authored-payload",
+    "detail": "Additional authored properties remain native-only"
+  }
+]

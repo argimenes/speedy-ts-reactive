@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.reactive.json",
+  "include": ["src/qualification/native-b1/**/*", "src/qualification/native-b2/**/*"]
+}
