@@ -55,6 +55,14 @@ function unpack(value: any): unknown {
     keys.add(pair[0]); return [pair[0], unpack(pair[1])];
   }));
 }
+/** Reuse the existing value grammar at an explicitly declared authored-value
+ * boundary. This does not change History's envelope or byte grammar. */
+export function encodeAuthoredValue(value: unknown): unknown { return pack(value, new Set()); }
+export function decodeAuthoredValue(value: unknown): unknown {
+  const result = unpack(structuredClone(value));
+  check(JSON.stringify(pack(result, new Set())) === JSON.stringify(value), "noncanonical or corrupt authored value");
+  return result;
+}
 export function encodeWire(value: unknown): string {
   return JSON.stringify({ format: "codex-history-value-spike", version: 1, value: pack(value, new Set()) });
 }

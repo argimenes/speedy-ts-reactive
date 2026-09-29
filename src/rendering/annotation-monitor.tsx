@@ -13,14 +13,14 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
   const node = () => editor.node(overlay.ownerKey);
   const source = node()?.payload.standoffProperties as Array<Record<string, unknown>> | undefined;
   const [items, setItems] = createSignal((overlay.annotationIndexes ?? []).filter(index => source?.[index]).map(index => ({ index, property: JSON.parse(JSON.stringify(source![index])) as Record<string, unknown> })));
-  const visible = () => items().filter(item => !editor.linkedAnnotations.resolve(item.property).isDeleted);
+  const visible = () => items().filter(item => !editor.linkedAnnotations.resolve(item.property, node()?.contentKey).isDeleted);
   const [active, setActive] = createSignal(0);
   const selected = () => visible()[Math.min(active(), visible().length - 1)];
-  const resolvedProperty = () => { const property = selected()?.property; return property && editor.linkedAnnotations.resolve(property); };
+  const resolvedProperty = () => { const property = selected()?.property; return property && editor.linkedAnnotations.resolve(property, node()?.contentKey); };
   const linkedDetails = createMemo(() => {
     const ids = new Set(visible().map(item => item.property.annotationId).filter((id): id is string => typeof id === "string"));
     return new Map([...ids].map(id => {
-      const segments = editor.linkedAnnotations.segments(id).map(segment => {
+      const segments = editor.linkedAnnotations.segments(id, visible().find(item => item.property.annotationId === id)?.property, node()?.contentKey).map(segment => {
         const state = editor.repository.state, content = state.contents[segment.contentKey];
         const text = content.inlineContent.slice(Number(segment.property.start), Number(segment.property.end) + 1)
           .map(key => String(state.contents[state.placements[key].contentKey].payload.text ?? "\uFFFC")).join("");
@@ -180,7 +180,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
           </tr>}</For>
         </tbody></table></div>
         <button type="button" onClick={() => {
-          try { editing = true; editor.linkedAnnotations.deleteAll(String(id())); close(); }
+          try { editing = true; editor.linkedAnnotations.deleteAll(String(id()), selected()?.property, node()?.contentKey); close(); }
           catch (error) { setError(error instanceof Error ? error.message : String(error)); }
           finally { editing = false; }
         }}>Delete whole linked annotation</button>

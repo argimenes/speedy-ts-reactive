@@ -24,7 +24,7 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     const snapshot = immutable({ key, contentKey: node.contentKey, placementKey: node.placementKey,
       version: editor.repository.state.contents[node.contentKey]?.inlineRevision ?? 0,
       cells: node.inlineContent.map(key => { const cell = editor.node(key); return { plain: cell?.viewType === "text-cell", text: String(cell?.payload.text ?? " ") }; }),
-      properties: ((Array.isArray(node.payload.standoffProperties) ? node.payload.standoffProperties : []) as Record<string, unknown>[]).filter(p => p && typeof p === "object" && !Array.isArray(p)).map(p => JSON.parse(JSON.stringify(editor.linkedAnnotations.resolve(p)))),
+      properties: ((Array.isArray(node.payload.standoffProperties) ? node.payload.standoffProperties : []) as Record<string, unknown>[]).filter(p => p && typeof p === "object" && !Array.isArray(p)).map(p => JSON.parse(JSON.stringify(editor.linkedAnnotations.resolve(p, node.contentKey)))),
     });
     texts.set(key, snapshot); return snapshot;
   };

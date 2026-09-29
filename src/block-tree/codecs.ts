@@ -21,7 +21,7 @@ function isBlockDto(value: unknown): value is ExistingBlockDto {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-function viewTypeFor(wireType: unknown): string {
+export function viewTypeFor(wireType: unknown): string {
   if (wireType === "main-list-block" || wireType === "membrane-block") {
     return "document-block";
   }

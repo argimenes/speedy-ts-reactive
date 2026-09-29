@@ -1,23 +1,63 @@
 import type { JsonObject, RepositoryState } from "./types";
 import { externalDefinitionLink } from "./external-reference";
+import { findResource, resourceOwner, resourceSource } from "./resource-identity";
+import type { ContentRecord } from "./types";
+import type { RepositoryOperation } from "./types";
 
 export type LinkedAnnotationRegistry = Record<string, JsonObject>;
-export function linkedRegistry(state: RepositoryState): LinkedAnnotationRegistry {
-  return state.contents[state.placements[state.rootPlacementKey].contentKey].payload.linkedAnnotations as LinkedAnnotationRegistry ?? {};
+export function linkedRegistry(state: RepositoryState, ownerKey = state.placements[state.rootPlacementKey].contentKey): LinkedAnnotationRegistry {
+  return state.contents[ownerKey]?.payload.linkedAnnotations as LinkedAnnotationRegistry ?? {};
 }
-export function resolveLinkedProperty(state: RepositoryState, property: JsonObject): JsonObject {
-  // An explicitly foreign definition cannot be replaced by a same-named local
-  // registry entry. Resolution of its owner is separate from this local helper.
+/** Local definitions use canonical resource context; explicit provenance wins.
+ * A legacy unqualified reference may use the old root registry only when no
+ * local definition exists. Capture makes that legacy root dependency explicit. */
+export function linkedDefinitionOwner(state: RepositoryState, property: JsonObject, contentKey?: string): ContentRecord | undefined {
+  if (typeof property.annotationId !== "string") return;
   const external = externalDefinitionLink(property);
   if (external) {
-    const root = state.contents[state.placements[state.rootPlacementKey].contentKey];
-    const metadata = root.payload.metadata as Record<string, unknown> | undefined;
-    const matchesOwner = external.source.scope === "workspace" && root.viewType === "workspace-block" && metadata?.workspaceId === external.source.resourceId ||
-      external.source.scope === "document" && root.viewType === "document-block" && metadata?.documentId === external.source.resourceId;
-    // This live helper may resolve an unpinned reference only against its known
-    // owner. Historical resource queries do not use this helper or fetch owners.
-    if (!matchesOwner || external.version.kind !== "unpinned") return property;
+    if (external.source.scope === "unknown" || external.version.kind !== "unpinned") return;
+    return findResource(state, external.source);
   }
-  const shared = typeof property.annotationId === "string" ? linkedRegistry(state)[property.annotationId] : undefined;
+  const local = contentKey ? resourceOwner(state, contentKey) : undefined;
+  if (local && Object.hasOwn(linkedRegistry(state, local.key), property.annotationId)) return local;
+  const root = state.contents[state.placements[state.rootPlacementKey].contentKey];
+  if (Object.hasOwn(linkedRegistry(state), property.annotationId)) return root;
+}
+export function definitionProvenance(owner: ContentRecord, annotationId: string) {
+  const source = resourceSource(owner);
+  if (!source) throw new Error("Linked definition needs a canonical resource owner");
+  return { format: "codex-external-definition-gate" as const, version: 1 as const,
+    target: { kind: "definition" as const, targetId: annotationId, source, version: { kind: "unpinned" as const } } };
+}
+export function resolveLinkedProperty(state: RepositoryState, property: JsonObject, contentKey?: string): JsonObject {
+  let owner: ContentRecord | undefined;
+  try { owner = linkedDefinitionOwner(state, property, contentKey); } catch { return property; } // unresolved/ambiguous is never a guessed value
+  const shared = owner && linkedRegistry(state, owner.key)[property.annotationId as string];
   return shared ? { ...property, ...shared, id: property.id, annotationId: property.annotationId, start: property.start, end: property.end, isDeleted: !!property.isDeleted || !!shared.isDeleted } : property;
+}
+
+/** A structural move changes the consumer's resource, not the definition's
+ * owner. Only known annotation links in the owned subtree need adjustment. */
+export function linkedSourcesForMove(state: RepositoryState, placementKey: string, destinationKey: string): RepositoryOperation[] {
+  if (state.placements[placementKey].kind !== "owned") return [];
+  const destination = resourceOwner(state, destinationKey), operations: RepositoryOperation[] = [], seen = new Set<string>();
+  const visit = (pk: string) => {
+    const p = state.placements[pk]; if (p.kind !== "owned") return;
+    const c = state.contents[p.contentKey];
+    if (seen.has(c.key) || c.viewType === "document-block") return; // no nested-resource ownership policy
+    seen.add(c.key);
+    if (destination && Array.isArray(c.payload.standoffProperties) && resourceOwner(state, c.key)?.key !== destination.key) {
+      const properties = c.payload.standoffProperties.map(property => {
+        const owner = linkedDefinitionOwner(state, property, c.key);
+        if (!owner) return property;
+        const result = { ...property };
+        if (owner.key === destination.key) delete result.externalDefinition;
+        else result.externalDefinition = definitionProvenance(owner, property.annotationId);
+        return result;
+      });
+      operations.push({ kind: "put-content", record: { ...c, payload: { ...c.payload, standoffProperties: properties } } });
+    }
+    for (const child of [...c.children, ...Object.values(c.ownedRelations)]) visit(child);
+  };
+  visit(placementKey); return operations;
 }

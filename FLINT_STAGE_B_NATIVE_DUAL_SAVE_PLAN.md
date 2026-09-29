@@ -1,6 +1,6 @@
 # Flint Stage B — native fidelity, admission and dual-save amendment
 
-**Status:** amendment approved; B1 isolated qualification completed with a **partial result, not a full-fidelity pass**. See the [B1 native qualification report](FLINT_B1_NATIVE_QUALIFICATION_REPORT.md). Production file-format/save/load routes remain unchanged. B2 has not begun.
+**Status:** B1's partial qualification result was accepted. The authorized B1.1 compatibility corrections are implemented and qualified; see the [B1.1 report](FLINT_B11_COMPATIBILITY_REPORT.md). Owned nested Documents remain [design-only and subject to review](FLINT_B11_OWNED_RESOURCE_DESIGN.md), so the full-fidelity gate is not yet satisfied. Production native Save/Open and B2 remain unstarted. The [B1 report](FLINT_B1_NATIVE_QUALIFICATION_REPORT.md) remains the historical baseline.
 
 This refines Stage B of the [approved implementation plan](JET_MUTABLE_OS_IMPLEMENTATION_PLAN.md), particularly its §5 native-codec/admission gate. The consumed-Markdown decision is retained. It does not reopen Stage A or authorize Stage C.
 
@@ -157,6 +157,6 @@ The exporter traverses captured native structure with bounded repeat/cycle handl
 | Pair persistence | Same-snapshot outputs, concurrent edits, stale completion, first/second/receipt failure, restart recovery, outside edits/races, missing targets and collisions, original import files untouched. |
 | Input/export | Four supported constructs, atomic Undo/Redo, deterministic bytes/escaping, native-feature degradation diagnostics, native selection/IME and focused browser/typing regression checks. |
 
-The amendment was approved and B1 has returned its [concrete native compatibility result](FLINT_B1_NATIVE_QUALIFICATION_REPORT.md). Stop at that review boundary before enabling production paths or beginning B2. The full-fidelity gate remains unmet: actual linked-definition ownership/resolution, image-paste values, nested Documents, foreign transclusions and legacy type compatibility require review. Do not declare these authored cases unsupported by definition to claim full fidelity or reconstruct core persistence to conceal them.
+The accepted partial B1 result led to the bounded [B1.1 compatibility phase](FLINT_B11_COMPATIBILITY_REPORT.md): resource-aware linked definitions, foreign transclusion provenance, authored values and exact legacy aliases now have implementation and qualification evidence. **Stop for B1.1 review before production native Save/Open or B2.** Owned nested Documents still require the [owned-resource design decision](FLINT_B11_OWNED_RESOURCE_DESIGN.md); retained-target resource deletion and other explicit limits remain in the report. Do not declare those authored cases unsupported by definition to claim full fidelity or reconstruct core persistence to conceal them.
 
 After the approved B2/input proof, return the complete Stage B result and stop again. **Stage C, unrestricted nested hosting, Canvas/Spatial host generalization, graph features and broad History/persistence redesign remain outside this authorization.**

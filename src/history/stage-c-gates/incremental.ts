@@ -84,7 +84,7 @@ export class IncrementalResourceCapture {
       if (!p) return null;
       const placementId = p.kind === "inline" ? `private-cell:${p.key}` : p.placementId;
       if (!placementId) throw new ProjectionBoundary("Missing semantic Placement identity");
-      if (p.externalReference) return { key: p.key, placementId, kind: "reference", target: { kind: "external", reference: p.externalReference } } as ResourcePlacement;
+      if (p.externalReference || p.resolvedReference) return { key: p.key, placementId, kind: "reference", target: { kind: "external", reference: (p.externalReference ?? p.resolvedReference)! } } as ResourcePlacement;
       if (!(before ? this.contents.has(p.contentKey) : ownsContent(p.contentKey))) throw new ProjectionBoundary("External target lacks a terminal descriptor");
       return { key: p.key, placementId, kind: p.kind, target: { kind: "local", contentKey: p.contentKey } };
     };

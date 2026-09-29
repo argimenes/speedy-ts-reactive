@@ -27,6 +27,11 @@ function setup() {
   const evidence: OwnershipEvidence = { contents: owners, placementIds, externalTargets,
     root: { key: "archive-root-A", placementId: "document-root-A", contentKey: contentKey("A") } };
   const external = commands.transclude(key("b"), { kind: "at", parentKey: key("A"), index: 1 });
+  // This fixture qualifies pre-provenance legacy pointers plus explicit pinned
+  // enrollment evidence. The current producer is separately tested by B1.1.
+  const legacy = clone(repository.readState().placements[external]);
+  delete legacy.resolvedReference;
+  repository.commit("Legacy pointer fixture", [{ kind: "put-placement", record: legacy }]);
   placementIds.set(external, "reference-X");
   externalTargets.set(external, { kind: "block", targetId: "b", source: { scope: "document", resourceId: "resource-B" },
     version: { kind: "revision", memoirId: "memoir-B", segmentId: "segment-B", revisionId: "commit-B" } });

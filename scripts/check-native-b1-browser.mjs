@@ -27,7 +27,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    return result.result.value;
  };
 
- const artifacts = 'artifacts/flint-b1'; await mkdir(artifacts, {recursive:true});
+ const artifacts = process.env.NATIVE_B1_ARTIFACTS ?? 'artifacts/flint-b1'; await mkdir(artifacts, {recursive:true});
  const input = await readFile(path.join(artifacts, 'rich.mutable.json'), 'utf8');
  const checks=[], errors=[];
  const check=(name,actual,expected=true)=>{assert.deepEqual(actual,expected,name);checks.push(name);};
@@ -61,18 +61,30 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  })()`);
  check('admission uses the actual WorkspaceSession repository',await evaluate('b1.editor.repository===b1.repository'));
  check('native Document mounts in a Flint transient tab',await evaluate(`b1.views().length===1&&!!b1.editor.mounts.get(b1.textNode().key)`));
- check('initial rich bytes match recaptured canonical resource',await evaluate('b1.capture()'),input);
+ const initial = await evaluate(`b1.native.nativeText(b1.native.decodeNative(new TextEncoder().encode(${JSON.stringify(input)})))`);
+ check('initial rich authored state matches recaptured canonical resource',await evaluate('b1.capture()'),initial);
  await evaluate(`(()=>{const n=b1.textNode(),m=b1.editor.mounts.get(n.key);b1.editor.focus.request(n.key);m.restoreInlineSelection({anchor:0,head:0});})()`);
  await send('Input.insertText',{text:'Browser native edit. '},sessionId);
  check('ordinary browser typing edits admitted native content',await evaluate(`b1.text().startsWith('Browser native edit. ')`));
  const edited=await evaluate('b1.capture()');
- await evaluate('b1.repository.undo()');check('undo retains original authored rich graph',await evaluate('b1.capture()'),input);
+ await evaluate('b1.repository.undo()');check('undo retains original authored rich graph',await evaluate('b1.capture()'),initial);
  await evaluate('b1.repository.redo()');check('redo and native re-save retain edited graph',await evaluate('b1.capture()'),edited);
  check('stale bytes cannot overwrite live edits',await evaluate(`(()=>{try{b1.native.admitNative(b1.repository,new TextEncoder().encode(${JSON.stringify(input)}),b1.bank.key);return false;}catch(e){return e.message.includes('disk/live resource conflict');}})()`));
  await evaluate(`b1.editor.commandRegistry.execute('flint.open',{targetKey:b1.session.projection.state.rootKey,args:undefined})`);
  check('second Flint Window shares canonical Document',await evaluate(`b1.views().length===2&&Object.values(b1.repository.state.contents).filter(c=>c.viewType==='document-block').length===1`));
  await evaluate(`(()=>{const n=Object.values(b1.views()[1].state.nodes).find(n=>n.payload.id==='text');b1.editor.commands.replaceInlineRange(n.key,0,0,'Shared ');})()`);
  check('second occurrence edits are visible in first',await evaluate(`b1.text().startsWith('Shared Browser native edit. ')`));
+ if(process.env.NATIVE_B11 === '1') {
+   await evaluate(`(()=>{const view=b1.views()[0];const other=Object.values(view.state.nodes).find(n=>n.payload.id==='other');
+     b1.linkedId=b1.editor.linkedAnnotations.createForSegments([{nodeKey:b1.textNode().key,start:0,end:3},{nodeKey:other.key,start:0,end:3}],'codex/entity-reference','browser-linked');})()`);
+   check('browser-created shared definition is Document-owned',await evaluate(`(()=>{const state=b1.repository.state,root=state.contents[state.placements[b1.admitted.placementKey].contentKey];return !!root.payload.linkedAnnotations[b1.linkedId]&&!state.contents[state.placements[state.rootPlacementKey].contentKey].payload.linkedAnnotations;})()`));
+   check('resource-local definition resolves through both live Windows',await evaluate(`b1.views().every(view=>{const n=Object.values(view.state.nodes).find(n=>n.payload.id==='text'),p=n.payload.standoffProperties.find(p=>p.annotationId===b1.linkedId);return b1.editor.linkedAnnotations.resolve(p,n.contentKey).value==='browser-linked';})`));
+   const beforeDefinitionEdit=await evaluate('b1.capture()');
+   await evaluate(`(()=>{const n=b1.textNode(),i=n.payload.standoffProperties.findIndex(p=>p.annotationId===b1.linkedId);b1.editor.linkedAnnotations.edit(n.key,i,n.payload.standoffProperties[i],{start:0,end:2,value:'updated-linked'});})()`);
+   check('editing a shared definition preserves one canonical value',await evaluate(`b1.views().every(view=>{const n=Object.values(view.state.nodes).find(n=>n.payload.id==='other'),p=n.payload.standoffProperties.find(p=>p.annotationId===b1.linkedId);return b1.editor.linkedAnnotations.resolve(p,n.contentKey).value==='updated-linked';})`));
+   await evaluate('b1.repository.undo()');
+   check('linked-definition edit undo restores exact native resource',await evaluate('b1.capture()'),beforeDefinitionEdit);
+ }
  const saved=await evaluate('b1.capture()');
  check('re-save bytes decode without semantic change',await evaluate(`b1.native.nativeText(b1.native.decodeNative(new TextEncoder().encode(b1.capture())))`),saved);
  const shot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'native-editing.png'),Buffer.from(shot.data,'base64'));

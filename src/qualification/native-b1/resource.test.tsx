@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { render } from "solid-js/web";
 import { ReactiveEditor } from "../../reactive-editor/editor";
 import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
@@ -89,8 +89,10 @@ describe("B1 isolated canonical native proof", () => {
     const reopened = host(); admitNative(reopened.editor.repository, edited, reopened.bank);
     expect(nativeBytes(capture(reopened))).toEqual(edited);
     if (process.env.B1_ARTIFACTS) {
-      writeFileSync("artifacts/flint-b1/rich.mutable.json", encoded);
-      writeFileSync("artifacts/flint-b1/rich-resaved.mutable.json", edited);
+      const folder = process.env.B1_ARTIFACTS === "1" ? "artifacts/flint-b1" : process.env.B1_ARTIFACTS;
+      mkdirSync(folder, { recursive: true });
+      writeFileSync(`${folder}/rich.mutable.json`, encoded);
+      writeFileSync(`${folder}/rich-resaved.mutable.json`, edited);
     }
   });
   it("capture semantics are identical with zero, one and multiple transient occurrences", () => {
@@ -205,45 +207,51 @@ describe("B1 isolated canonical native proof", () => {
   });
 });
 
-describe("B1 concrete fidelity blockers (expected rejection is NOT feature support)", () => {
-  it("legacy alias decoding leaves an authored type different from its canonical view type", () => {
-    const original = doc(); original.type = "main-list-block";
+describe("B1 compatibility findings after B1.1 (nested resources remain gated)", () => {
+  it.each(["main-list-block", "membrane-block"])("preserves exact authored alias %s alongside canonical runtime type", alias => {
+    const original = doc(); original.type = alias;
     const f = host([original]);
     expect(f.node("doc").viewType).toBe("document-block");
-    expect(() => nativeBytes(capture(f))).toThrow("authored type would be rewritten");
+    const target = host(); admitNative(target.editor.repository, nativeBytes(capture(f)), target.bank);
+    expect(target.node("doc").viewType).toBe("document-block"); expect(target.node("doc").payload.type).toBe(alias);
+    expect(semantics(capture(target))).toEqual(semantics(capture(f)));
   });
-  it.each([undefined, -0, NaN, Infinity, new Date("2026-09-29T00:00:00Z"), new Map([["a", 1]])])("repository payload accepts %s but current native value grammar cannot preserve it", value => {
+  it.each([new Date("2026-09-29T00:00:00Z"), new Map([["a", 1]])])("runtime object %s remains outside the authored value grammar", value => {
     const f = host([doc()]);
     f.editor.commands.setPayloadField(f.node("text").key, "authoredExtension", { value });
     expect(() => nativeBytes(capture(f))).toThrow();
   });
-  it("actual linked annotation producer writes Workspace-owned definitions with implicit provenance", () => {
+  it("actual linked annotation producer owns a same-Document definition locally", () => {
     const f = host([doc()]);
     const annotation = f.editor.linkedAnnotations.createForSegments(["text", "other"].map(id => ({ nodeKey: f.node(id).key, start: 0, end: 1 })), "codex/entity-reference", "entity-poe");
     const state = f.editor.repository.snapshot(), root = state.contents[state.placements[state.rootPlacementKey].contentKey];
-    expect((root.payload.linkedAnnotations as any)[annotation].value).toBe("entity-poe");
-    expect(f.node("doc").payload.linkedAnnotations).toBeUndefined();
-    expect(() => capture(f)).toThrow("lacks Document ownership or explicit foreign provenance");
+    expect(root.payload.linkedAnnotations).toBeUndefined();
+    expect((f.node("doc").payload.linkedAnnotations as any)[annotation].value).toBe("entity-poe");
+    expect(nativeText(decodeNative(nativeBytes(capture(f))))).toBe(nativeText(capture(f)));
   });
-  it("Document-owned linked registry can encode but cannot resolve after admission into Workspace", () => {
+  it("Document-owned linked registry resolves after admission into Workspace", () => {
     const editor = new ReactiveEditor(doc()); cleanups.push(() => editor.dispose());
     const view = editor.createView("single"), text = Object.values(view.state.nodes).find(n => n.payload.id === "text")!;
     editor.linkedAnnotations.createForSegments([{ nodeKey: text.key, start: 0, end: 1 }], "codex/entity-reference", "entity-poe");
     const encoded = nativeBytes(captureNative(editor.repository.snapshot(), "resource")), target = host();
-    expect(() => admitNative(target.editor.repository, encoded, target.bank)).toThrow("cannot resolve");
+    admitNative(target.editor.repository, encoded, target.bank);
+    const paragraph = target.node("text"), property = (paragraph.payload.standoffProperties as any[])[0];
+    expect(target.editor.linkedAnnotations.resolve(property, paragraph.contentKey).value).toBe("entity-poe");
   });
   it("actual insert command accepts an owned nested Document that the resource validator rejects", () => {
     const f = host([doc()]);
     f.editor.commands.insert(createFormattedDocument("card").document, { kind: "at", parentKey: f.node("doc").key, index: 0 });
     expect(() => capture(f)).toThrow("nested resource");
   });
-  it("actual transclusion command produces a cross-resource pointer without durable provenance", () => {
+  it("actual transclusion command captures a foreign dependency without copying its body", () => {
     const other = { id: "foreign-doc", type: "document-block", children: [{ id: "foreign-text", type: "standoff-editor-block", text: "Foreign" }] };
     const f = host([doc(), other]);
     f.editor.commands.transclude(f.node("foreign-text").key, { kind: "at", parentKey: f.node("doc").key, index: 0 });
-    expect(() => capture(f)).toThrow();
+    const saved = capture(f);
+    expect(Object.values(saved.contents).some(c => c.payload.id === "foreign-text")).toBe(false);
+    expect(Object.values(saved.placements).some(p => p.target.kind === "external" && p.target.reference.targetId === "foreign-text")).toBe(true);
   });
-  it("actual rich clipboard paste persists undefined dimensions, rejected by the portable value grammar", () => {
+  it("actual rich clipboard paste preserves own undefined dimensions through native bytes and admission", () => {
     const f = host([doc()]); registerApplicationViews(f.editor);
     const view = f.editor.createView("editing", f.node("doc").placementKey), hostElement = document.body.appendChild(document.createElement("div"));
     cleanups.push(render(() => <ReactiveTreeView editor={f.editor} projection={view} />, hostElement));
@@ -256,6 +264,10 @@ describe("B1 concrete fidelity blockers (expected rejection is NOT feature suppo
     mount.focusElement.dispatchEvent(event);
     const image = Object.values(f.editor.repository.state.contents).find(c => c.viewType === "image-cell")!;
     expect(image).toBeDefined(); expect(Object.hasOwn(image.payload, "width")).toBe(true); expect(image.payload.width).toBeUndefined();
-    expect(() => nativeBytes(capture(f))).toThrow();
+    const target = host(); admitNative(target.editor.repository, nativeBytes(capture(f)), target.bank);
+    const reopened = Object.values(target.editor.repository.state.contents).find(c => c.viewType === "image-cell")!;
+    expect(Object.hasOwn(reopened.payload, "width")).toBe(true); expect(reopened.payload.width).toBeUndefined();
+    expect(Object.hasOwn(reopened.payload, "height")).toBe(true);
+    expect(semantics(capture(target))).toEqual(semantics(capture(f)));
   });
 });

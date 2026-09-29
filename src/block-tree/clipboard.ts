@@ -3,7 +3,7 @@ import { createBlockId, createContentKey, createPlacementKey } from "./ids";
 import { isAuthoredBlock, readBlockId } from "./identity";
 import type { BlockCommitSubject } from "./commit-capture";
 import type { JsonObject, RepositoryState } from "./types";
-import { linkedRegistry, type LinkedAnnotationRegistry } from "./linked-annotations";
+import { linkedRegistry, linkedDefinitionOwner, type LinkedAnnotationRegistry } from "./linked-annotations";
 import { externalDefinitionLink } from "./external-reference";
 
 export interface BlockFragment {
@@ -60,7 +60,14 @@ export function captureBlocks(source: RepositoryState, roots: string[]): BlockFr
     delete content.payload.linkedAnnotations;
     const properties = content.payload.standoffProperties;
     if (Array.isArray(properties)) for (const property of properties) {
-      if (property?.annotationId && !externalDefinitionLink(property) && linkedRegistry(source)[property.annotationId]) definitions[property.annotationId] = clone(linkedRegistry(source)[property.annotationId]);
+      if (property?.annotationId && !externalDefinitionLink(property)) {
+        const owner = linkedDefinitionOwner(source, property, content.key);
+        if (owner) {
+          const definition = linkedRegistry(source, owner.key)[property.annotationId];
+          if (definitions[property.annotationId] && JSON.stringify(definitions[property.annotationId]) !== JSON.stringify(definition)) throw new Error("Ambiguous linked definitions in clipboard selection");
+          if (definition) definitions[property.annotationId] = clone(definition);
+        }
+      }
     }
   }
   return { state, roots: [...roots], linkedAnnotations: definitions };
@@ -118,6 +125,9 @@ export function cloneBlocks(fragment: BlockFragment, preserveIds = false): Block
   }
   state.contents = contents;
   state.placements = Object.fromEntries(Object.values(state.placements).map(placement => {
+    // A copied local body receives a new authored identity, not the source's
+    // external binding. Terminal foreign references continue to stay terminal.
+    delete placement.resolvedReference;
     if (placement.placementId !== undefined) placement.placementId = createBlockId();
     placement.key = placementKeys.get(placement.key)!;
     if (!placement.externalReference) placement.contentKey = contentKeys.get(placement.contentKey)!;

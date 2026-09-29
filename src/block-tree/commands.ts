@@ -3,7 +3,8 @@ import { type DeepReadonly } from "./commit-capture";
 import { clone } from "./clone";
 import { ownNewDefinitions } from "./definition-ownership";
 import { planCrossTextEdit, type CrossTextSegment } from "./cross-text-edit";
-import { linkedRegistry } from "./linked-annotations";
+import { linkedRegistry, linkedSourcesForMove } from "./linked-annotations";
+import { resourceOwner, resourceSource } from "./resource-identity";
 import { captureBlocks, cloneBlocks, remapKnownBlockReferences, type BlockFragment } from "./clipboard";
 import type { BlockCommitSubject, CommandDescriptor } from "./commit-capture";
 import { isAuthoredBlock, prepareNewBlockIdentities, readBlockId } from "./identity";
@@ -347,12 +348,13 @@ export class TreeCommands {
     const owner = this.updatedChildren(target.owner, children);
     const extra: RepositoryOperation[] = [];
     if (Object.keys(fragment.linkedAnnotations ?? {}).length) {
-      const registry = clone(linkedRegistry(state));
+      const resource = resourceOwner(state, target.owner.key);
+      const rootKey = resource?.key ?? state.placements[state.rootPlacementKey].contentKey;
+      const registry = clone(linkedRegistry(state, rootKey));
       for (const [id, definition] of Object.entries(fragment.linkedAnnotations!)) {
         if (registry[id] && JSON.stringify(registry[id]) !== JSON.stringify(definition)) throw new TreeCommandError("Conflicting linked annotation identity; copy the Blocks again");
         registry[id] = clone(definition);
       }
-      const rootKey = state.placements[state.rootPlacementKey].contentKey;
       if (owner.key === rootKey) owner.payload.linkedAnnotations = registry;
       else {
         const root = clone(state.contents[rootKey]); root.payload.linkedAnnotations = registry; root.revision++;
@@ -430,6 +432,7 @@ export class TreeCommands {
         record: this.updatedChildren(target.owner, destinationChildren),
       });
     }
+    operations.push(...linkedSourcesForMove(state, sourceKey, target.owner.key));
     this.publish("Move Block", operations, { commandId: "tree.move", subjects: [this.subject(state, sourceKey)] });
   }
 
@@ -759,12 +762,30 @@ export class TreeCommands {
     const source = state.placements[this.placementKey(sourceKey, state)];
     const target = this.resolveInsertion(destination, undefined, state);
     const placementKey = createPlacementKey();
+    let resolvedReference = source.resolvedReference;
+    let retainedSource: ContentRecord | undefined;
+    if (!source.externalReference) {
+      const owner = resourceOwner(state, source.contentKey), destinationOwner = resourceOwner(state, target.owner.key);
+      if (owner && destinationOwner && owner.key !== destinationOwner.key) {
+        const id = readBlockId(state.contents[source.contentKey]);
+        if (!id) throw new TreeCommandError("Foreign transclusion needs an authored target identity");
+        resolvedReference = { kind: "block", targetId: id, source: resourceSource(owner)!, version: { kind: "unpinned" } };
+        const content = state.contents[source.contentKey];
+        // Resource membership must outlive the source's last owned placement.
+        // Establish it in the authored reference command, never during Save.
+        if (owner.viewType === "document-block" && content !== owner && content.definitionOwnerKey === undefined) {
+          retainedSource = { ...clone(content), definitionOwnerKey: owner.key };
+        }
+      } else if (owner && destinationOwner) resolvedReference = undefined;
+    }
     const children = [...target.children];
     children.splice(target.index, 0, placementKey);
     this.publish("Transclude Block", [
+      ...(retainedSource ? [{ kind: "put-content" as const, record: retainedSource }] : []),
       {
         kind: "put-placement",
         record: { key: placementKey, contentKey: source.contentKey, kind: "reference",
+          ...(resolvedReference ? { resolvedReference: clone(resolvedReference) } : {}),
           ...(source.externalReference ? { externalReference: clone(source.externalReference) } : {}) },
       },
       { kind: "put-content", record: this.updatedChildren(target.owner, children) },

@@ -297,7 +297,7 @@ function ProjectedAlternative(props: { nodeKey: NodeKey; sourceIndex: number; so
   const node = () => projection.state.nodes[props.nodeKey];
   const runs = createMemo(() => compileCellStyleRuns(
     ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? [])
-      .map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
+      .map(property => editor.linkedAnnotations.resolve(property, node()?.contentKey) as StandoffAnnotation),
   ));
   return <span
     class="reactive-superposition-projection"
@@ -316,7 +316,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   const { editor, projection, coordinates } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const annotations = createMemo(
-    () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property) as StandoffAnnotation),
+    () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property, node()?.contentKey) as StandoffAnnotation),
   );
   const superpositions = createMemo(() => editor.features.textSuperposition ? textSuperpositions(node()) : []);
   const showHideRanges = createMemo(() => annotations().map((annotation, index) => ({ annotation, id: annotation.id ?? index }))

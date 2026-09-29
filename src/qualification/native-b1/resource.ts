@@ -3,6 +3,9 @@
 import { clone } from "../../block-tree/clone";
 import { freeze, type DeepReadonly } from "../../block-tree/commit-capture";
 import { externalDefinitionLink } from "../../block-tree/external-reference";
+import { linkedDefinitionOwner, definitionProvenance } from "../../block-tree/linked-annotations";
+import { resourceOwner, resourceSource, sameResource, findResource } from "../../block-tree/resource-identity";
+import { viewTypeFor } from "../../block-tree/codecs";
 import type { CanonicalRepository } from "../../block-tree/repository";
 import type { ContentRecord, RepositoryState } from "../../block-tree/types";
 import { assertPortableJson } from "../../block-tree/portable-spike/codec";
@@ -50,33 +53,47 @@ export function captureNative(state: DeepReadonly<RepositoryState>, resourceId: 
   }
   check([...ownerCounts.values()].every(count => count <= 1), "multiple canonical owners for one content record");
   // Implicit Workspace-root registries cannot silently become Document-owned.
-  const definitions = root.payload.linkedAnnotations as Record<string, unknown> | undefined;
+  const dependencies = new Map<string, unknown[]>();
   for (const key of membership.keys()) {
     const c = state.contents[key];
-    for (const property of Array.isArray(c.payload.standoffProperties) ? c.payload.standoffProperties : []) {
-      if (id(property.annotationId)) check(definitions?.[property.annotationId] || externalDefinitionLink(property),
-        `linked annotation ${property.annotationId} lacks Document ownership or explicit foreign provenance`);
+    if (Array.isArray(c.payload.standoffProperties)) dependencies.set(key, c.payload.standoffProperties.map(property => {
+      if (!id(property.annotationId) || externalDefinitionLink(property)) return clone(property);
+      const owner = linkedDefinitionOwner(state as RepositoryState, property, key);
+      check(owner, `linked annotation ${property.annotationId} lacks Document ownership or explicit foreign provenance`);
+      return owner.key === root.key ? clone(property) : { ...clone(property), externalDefinition: definitionProvenance(owner, property.annotationId) };
+    }));
+    for (const slot of slots(c)) {
+      const p = state.placements[slot];
+      if (!p.resolvedReference) continue;
+      const source = p.resolvedReference.source, owner = resourceOwner(state as RepositoryState, p.contentKey);
+      check(source.scope !== "unknown" && owner && sameResource(resourceSource(owner)!, source) &&
+        p.resolvedReference.targetId === state.contents[p.contentKey]?.payload.id, "stale or ambiguous foreign binding provenance");
     }
   }
-  return projectOwned(state as RepositoryState, resourceId, {
+  const projected = clone(projectOwned(state as RepositoryState, resourceId, {
     contents: membership,
     placementIds: new Map(Object.values(state.placements).map(p => [p.key, durablePlacementId(p, resourceId)])),
     externalTargets: new Map(), // No invented provenance for live cross-resource pointers.
     root: { key: owners[0].key, contentKey: root.key, placementId: durablePlacementId(owners[0], resourceId) },
-  }, 0);
+  }, 0)) as ResourceSnapshot;
+  for (const [key, properties] of dependencies) projected.contents[key].payload.standoffProperties = properties;
+  validateResource(projected);
+  return freeze(projected);
 }
 
 export interface NativeDocument {
   format: "mutable-document"; version: 1; resourceId: string;
+  /** Absent in original B1 files, whose authored bags used plain JSON. */
+  valueEncoding?: "codex-authored-value-v1";
   document: GateDocument;
   definitionOwnerBlockIds: string[];
 }
 export function nativeEnvelope(resource: DeepReadonly<ResourceSnapshot>): NativeDocument {
   for (const c of Object.values(resource.contents)) if (!["text-cell", "image-cell"].includes(c.viewType)) {
-    check(c.payload.type === c.viewType, "legacy/missing authored type would be rewritten by the resource codec");
+    check(typeof c.payload.type === "string" && viewTypeFor(c.payload.type) === c.viewType, "missing/mismatched authored type");
   }
-  return { format: "mutable-document", version: 1, resourceId: resource.resourceId,
-    document: encodeGateDocument(resource), definitionOwnerBlockIds: Object.values(resource.contents)
+  return { format: "mutable-document", version: 1, resourceId: resource.resourceId, valueEncoding: "codex-authored-value-v1",
+    document: encodeGateDocument(resource, "native"), definitionOwnerBlockIds: Object.values(resource.contents)
       .filter(c => c.definitionOwnerKey !== undefined).map(c => c.payload.id as string).sort() };
 }
 
@@ -104,7 +121,8 @@ function target(value: any) {
 export function decodeNative(bytes: Uint8Array): DeepReadonly<ResourceSnapshot> {
   const value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as NativeDocument;
   assertPortableJson(value);
-  fields(value, ["format", "version", "resourceId", "document", "definitionOwnerBlockIds"]);
+  fields(value, ["format", "version", "resourceId", "document", "definitionOwnerBlockIds", "valueEncoding"]);
+  check(value.valueEncoding === undefined || value.valueEncoding === "codex-authored-value-v1", "unsupported authored value encoding");
   check(value.format === "mutable-document" && value.version === 1 && id(value.resourceId), "unsupported native envelope/version");
   const doc = value.document;
   fields(doc, ["format", "version", "resourceId", "root", "blocks"]);
@@ -130,7 +148,7 @@ export function decodeNative(bytes: Uint8Array): DeepReadonly<ResourceSnapshot> 
   }
   check(Array.isArray(value.definitionOwnerBlockIds) && value.definitionOwnerBlockIds.every(id) &&
     new Set(value.definitionOwnerBlockIds).size === value.definitionOwnerBlockIds.length, "invalid retention membership");
-  const resource = clone(decodeGateDocument(doc)) as ResourceSnapshot;
+  const resource = clone(decodeGateDocument(doc, value.valueEncoding ? "native" : "legacy")) as ResourceSnapshot;
   const root = resource.placements[resource.rootPlacementKey]; check(root.target.kind === "local", "external root");
   const rootContent = resource.contents[root.target.contentKey];
   check(identity(rootContent) === value.resourceId, "root identity disagrees with resource identity");
@@ -151,9 +169,6 @@ export function admitNative(repository: CanonicalRepository, bytes: Uint8Array, 
   const resource = decodeNative(bytes), incoming = resourceToRepository(resource), before = repository.snapshot();
   const bank = before.contents[bankContentKey];
   check(bank?.viewType === "workspace-object-bank-block", "qualification admission requires the existing object bank");
-  const root = incoming.contents[incoming.placements[incoming.rootPlacementKey].contentKey];
-  check(!root.payload.linkedAnnotations || Object.keys(root.payload.linkedAnnotations as object).length === 0,
-    "Document-owned linked registry cannot resolve in the current shared-Workspace host");
   const existing = Object.values(before.contents).filter(c => c.viewType === "document-block" && identity(c) === resource.resourceId);
   if (existing.length) {
     check(existing.length === 1, "ambiguous existing resource identity");
@@ -166,9 +181,26 @@ export function admitNative(repository: CanonicalRepository, bytes: Uint8Array, 
   for (const c of Object.values(incoming.contents)) check(!before.contents[c.key] && (!id(c.payload.id) || !ids.has(c.payload.id)), "Block identity collision");
   for (const p of Object.values(incoming.placements)) check(!before.placements[p.key] && (!p.placementId || !placements.has(p.placementId)), "placement identity collision");
   const updatedBank = { ...bank, children: [...bank.children, incoming.rootPlacementKey], wireChildren: "present" as const };
+  // Bind only proven, already-loaded unpinned targets, at this explicit admission
+  // boundary. No fetch, polling, observer, fallback identity or ownership transfer.
+  const combined = { ...before, contents: { ...before.contents, ...incoming.contents, [bank.key]: updatedBank },
+    placements: { ...before.placements, ...incoming.placements }, revision: before.revision + 1 };
+  const bindings = [];
+  for (const p of Object.values(combined.placements)) {
+    const external = p.externalReference;
+    if (!external || external.kind !== "block" || external.version.kind !== "unpinned" || external.source.scope === "unknown") continue;
+    const owner = findResource(combined, external.source); if (!owner) continue;
+    const candidates = Object.values(combined.contents).filter(c => c.payload.id === external.targetId);
+    check(candidates.length <= 1, "ambiguous external target identity");
+    const target = candidates[0]; if (!target) continue;
+    check(resourceOwner(combined, target.key)?.key === owner.key, "external target owner mismatch");
+    const { externalReference: _external, ...record } = p;
+    bindings.push({ ...record, contentKey: target.key, resolvedReference: clone(external) });
+  }
   repository.commit("B1 admit native Document", [
     ...Object.values(incoming.contents).map(record => ({ kind: "put-content" as const, record })),
     ...Object.values(incoming.placements).map(record => ({ kind: "put-placement" as const, record })),
+    ...bindings.map(record => ({ kind: "put-placement" as const, record })),
     { kind: "put-content", record: updatedBank },
   ]);
   return { placementKey: incoming.rootPlacementKey, reused: false };

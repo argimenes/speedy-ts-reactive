@@ -96,8 +96,8 @@ export function projectOwned(state: RepositoryState, resourceId: string, evidenc
     const placementId = p?.kind === "inline" ? binding ?? `private-cell:${key}` : p?.placementId ?? binding;
     requireValid(!p?.placementId || !binding || binding === p.placementId, "conflicting placement evidence");
     requireValid(p && placementId, "missing committed placement evidence");
-    if (p.externalReference) {
-      placements[key] = { key, placementId, kind: "reference", target: { kind: "external", reference: clone(p.externalReference) } };
+    if (p.externalReference || p.resolvedReference) {
+      placements[key] = { key, placementId, kind: "reference", target: { kind: "external", reference: clone((p.externalReference ?? p.resolvedReference)!) } };
     } else if (evidence.contents.get(p.contentKey) === resourceId) {
       placements[key] = { key, placementId, kind: p.kind, target: { kind: "local", contentKey: p.contentKey } };
     } else {

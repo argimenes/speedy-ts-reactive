@@ -46,6 +46,10 @@ export interface PlacementRecord {
   /** G1 candidate: explicit boundary. contentKey is a private unresolved symbol,
    * not a required local ContentRecord. Never synthesize a target Block. */
   externalReference?: ExternalTarget;
+  /** Same external-target semantics with a currently loaded live binding.
+   * contentKey is runtime-only; native capture writes the target descriptor.
+   * Mutually exclusive with the terminal/unresolved externalReference. */
+  resolvedReference?: ExternalTarget;
 }
 
 export interface RepositoryState {

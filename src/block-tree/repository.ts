@@ -136,6 +136,14 @@ export function validateRepository(state: RepositoryState): void {
     const placement = state.placements[placementKey];
     if (!placement) throw new ModelInvariantError(`Missing placement ${placementKey}`);
     reachable.add(placementKey);
+    if (placement.resolvedReference) {
+      validateTarget(placement.resolvedReference);
+      if (placement.kind !== "reference" || placement.externalReference || placement.resolvedReference.kind !== "block" ||
+          placement.resolvedReference.version.kind !== "unpinned" || placement.resolvedReference.source.scope === "unknown" ||
+          state.contents[placement.contentKey]?.payload.id !== placement.resolvedReference.targetId) {
+        throw new ModelInvariantError("Invalid live external-reference binding");
+      }
+    }
     if (placement.externalReference !== undefined) {
       if (placement.kind !== "reference" || placementKey === state.rootPlacementKey || state.contents[placement.contentKey]) {
         throw new ModelInvariantError("An external reference must have a distinct unresolved target and cannot be the root");

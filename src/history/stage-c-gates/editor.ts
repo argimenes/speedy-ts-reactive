@@ -72,7 +72,8 @@ export function openGateWorkspace(initial: RepositoryState, resources: ReadonlyM
       if (p.externalReference || resourceFor.get(p.contentKey) === sourceId) continue;
       const reference = evidence.externalTargets.get(pk);
       if (p.kind !== "reference" || !reference) throw new Error("Missing external ownership evidence");
-      state.placements[pk] = { ...p, contentKey: createContentKey(), externalReference: clone(reference) };
+      const { resolvedReference: _binding, ...terminal } = p;
+      state.placements[pk] = { ...terminal, contentKey: createContentKey(), externalReference: clone(reference) };
     }
   }
   const repository = new CanonicalRepository(state, { enforceBlockIdentity: true });

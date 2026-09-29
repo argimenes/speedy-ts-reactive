@@ -23,9 +23,9 @@ export function durablePlacementId(p: DeepReadonly<PlacementRecord>, resourceId:
 }
 function projectPlacement(p: DeepReadonly<PlacementRecord>, resourceId: string): ResourcePlacement {
   const base = { key: p.key, placementId: durablePlacementId(p, resourceId) };
-  if (p.externalReference) {
+  if (p.externalReference || p.resolvedReference) {
     check(p.kind === "reference", "external edge must be a reference");
-    return { ...base, kind: "reference", target: { kind: "external", reference: clone(p.externalReference) } };
+    return { ...base, kind: "reference", target: { kind: "external", reference: clone((p.externalReference ?? p.resolvedReference)!) } };
   }
   return { ...base, kind: p.kind, target: { kind: "local", contentKey: p.contentKey } };
 }

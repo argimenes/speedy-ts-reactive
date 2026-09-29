@@ -4,6 +4,8 @@ import { freeze, type DeepReadonly } from "../../block-tree/commit-capture";
 import { createContentKey, createPlacementKey } from "../../block-tree/ids";
 import { assertPortableJson } from "../../block-tree/portable-spike/codec";
 import type { ContentRecord, JsonObject } from "../../block-tree/types";
+import { viewTypeFor } from "../../block-tree/codecs";
+import { encodeAuthoredValue, decodeAuthoredValue } from "../preplan-spike/wire";
 import { validateResource, type ExternalTarget, type ResourcePlacement, type ResourceSnapshot } from "./resource";
 
 interface Edge {
@@ -26,8 +28,11 @@ function requireValue(ok: unknown, reason: string): asserts ok { if (!ok) throw 
 const identifier = (v: unknown) => typeof v === "string" && v.trim().length > 0;
 const canonicalFields = new Set(["key", "definitionOwnerKey", "viewType", "payload", "children", "inlineContent", "inlineRevision", "inlineKind", "ownedRelations", "opaqueRelations", "wireChildren", "wireRelation", "revision"]);
 
-export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>): GateDocument {
+/** Native profile preserves authored aliases and uses the declared value grammar.
+ * The default retains the existing History/gate JSON writer contract. */
+export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>, profile: "legacy" | "native" = "legacy"): GateDocument {
   validateResource(state as ResourceSnapshot);
+  const value = (data: JsonObject) => (profile === "native" ? encodeAuthoredValue(data) : clone(data)) as JsonObject;
   const cells = new Set<string>();
   const edge = (key: string): Edge => {
     const p = state.placements[key];
@@ -44,11 +49,13 @@ export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>): GateD
     const properties = clone(c.payload) as JsonObject;
     delete properties.id; delete properties.type;
     requireValue(!["children", "relation"].some(k => own(properties, k)), "ambiguous structural authority");
-    const block: Block = { id: c.payload.id as string, type: c.viewType, properties };
+    const authoredType = profile === "native" ? c.payload.type ?? c.viewType : c.viewType;
+    requireValue(typeof authoredType === "string" && viewTypeFor(authoredType) === c.viewType, "authored type and canonical type disagree");
+    const block: Block = { id: c.payload.id as string, type: authoredType, properties: value(properties) };
     if (c.children.length || c.wireChildren === "present") block.children = c.children.map(edge);
     else if (c.wireChildren === "null") block.children = null;
     if (Object.keys(c.ownedRelations).length || Object.keys(c.opaqueRelations).length || c.wireRelation === "present") {
-      block.relations = { owned: Object.fromEntries(Object.entries(c.ownedRelations).map(([name, key]) => [name, edge(key)])), opaque: clone(c.opaqueRelations) };
+      block.relations = { owned: Object.fromEntries(Object.entries(c.ownedRelations).map(([name, key]) => [name, edge(key)])), opaque: value(c.opaqueRelations) };
     } else if (c.wireRelation === "null") block.relations = null;
     if (c.inlineKind === "standoff") {
       requireValue(c.viewType === "standoff-editor-block" && !own(properties, "text"), "unsupported inline host");
@@ -66,7 +73,7 @@ export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>): GateD
           else block.inline.push({ kind: "text", text: cell.payload.text });
         } else {
           requireValue(cell.viewType === "image-cell", "unsupported atom");
-          block.inline.push({ kind: "image", properties: clone(cell.payload) });
+          block.inline.push({ kind: "image", properties: value(cell.payload) });
         }
       }
     } else requireValue(!c.inlineContent.length, "unrepresented inline content");
@@ -82,14 +89,20 @@ export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>): GateD
 const record = (key: string, viewType: string, payload: JsonObject): ContentRecord => ({ key, viewType, payload,
   children: [], inlineContent: [], inlineRevision: 0, revision: 0, ownedRelations: {}, opaqueRelations: {}, wireChildren: "omitted", wireRelation: "omitted" });
 
-export function decodeGateDocument(document: GateDocument): DeepReadonly<ResourceSnapshot> {
+export function decodeGateDocument(document: GateDocument, profile: "legacy" | "native" = "legacy"): DeepReadonly<ResourceSnapshot> {
   assertPortableJson(document);
+  const value = (data: JsonObject): JsonObject => {
+    const result = profile === "native" ? decodeAuthoredValue(data) : clone(data);
+    requireValue(result && typeof result === "object" && !Array.isArray(result), "authored bag must be an object");
+    return result as JsonObject;
+  };
   requireValue(document.format === "codex-portable-resource-gate" && document.version === 1 && identifier(document.resourceId), "unsupported envelope");
   const contents: Record<string, ContentRecord> = Object.create(null), placements: Record<string, ResourcePlacement> = Object.create(null);
   const keys = new Map<string, string>();
   for (const b of document.blocks) {
     requireValue(identifier(b.id) && identifier(b.type) && !keys.has(b.id) && !["text-cell", "image-cell", "workspace-block"].includes(b.type), "invalid/duplicate Block definition");
-    requireValue(b.properties && typeof b.properties === "object" && !Array.isArray(b.properties) && !["id", "type", "children", "relation"].some(k => own(b.properties, k)), "reserved Block properties");
+    const properties = value(b.properties);
+    requireValue(!["id", "type", "children", "relation"].some(k => own(properties, k)), "reserved Block properties");
     keys.set(b.id, createContentKey());
   }
   const edge = (p: Edge): string => {
@@ -105,12 +118,13 @@ export function decodeGateDocument(document: GateDocument): DeepReadonly<Resourc
     return key;
   };
   for (const b of document.blocks) {
-    const key = keys.get(b.id)!, c = record(key, b.type, { ...clone(b.properties), id: b.id, type: b.type }); contents[key] = c;
+    const properties = value(b.properties);
+    const key = keys.get(b.id)!, c = record(key, viewTypeFor(b.type), { ...properties, id: b.id, type: b.type }); contents[key] = c;
     c.children = (b.children ?? []).map(edge); c.wireChildren = !own(b, "children") ? "omitted" : b.children === null ? "null" : "present";
     c.ownedRelations = Object.fromEntries(Object.entries(b.relations?.owned ?? {}).map(([name, p]) => [name, edge(p)]));
-    c.opaqueRelations = clone(b.relations?.opaque ?? {}); c.wireRelation = !own(b, "relations") ? "omitted" : b.relations === null ? "null" : "present";
+    c.opaqueRelations = value(b.relations?.opaque ?? {}); c.wireRelation = !own(b, "relations") ? "omitted" : b.relations === null ? "null" : "present";
     if (b.type === "standoff-editor-block") {
-      requireValue(Array.isArray(b.inline) && !own(b.properties, "text"), "missing inline authority"); c.inlineKind = "standoff";
+      requireValue(Array.isArray(b.inline) && !own(properties, "text"), "missing inline authority"); c.inlineKind = "standoff";
       const atom = (type: string, payload: JsonObject) => {
         const ck = createContentKey(), pk = createPlacementKey(); contents[ck] = record(ck, type, payload);
         placements[pk] = { key: pk, placementId: `private-cell:${pk}`, kind: "inline", target: { kind: "local", contentKey: ck } };
@@ -120,7 +134,7 @@ export function decodeGateDocument(document: GateDocument): DeepReadonly<Resourc
         if (span.kind === "text") {
           requireValue(typeof span.text === "string" && span.text.length, "invalid text span");
           for (const text of span.text) atom("text-cell", { text });
-        } else { requireValue(span.kind === "image", "unsupported inline span"); atom("image-cell", clone(span.properties)); }
+        } else { requireValue(span.kind === "image", "unsupported inline span"); atom("image-cell", value(span.properties)); }
       }
     } else requireValue(b.inline === undefined, "unexpected inline content");
   }
