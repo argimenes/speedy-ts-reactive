@@ -1,6 +1,6 @@
 # Flint Stage B — native fidelity, admission and dual-save amendment
 
-**Status:** proposed amendment for review, following acceptance of Stage A. No Stage B implementation or file-format change has begun.
+**Status:** amendment approved; B1 isolated qualification completed with a **partial result, not a full-fidelity pass**. See the [B1 native qualification report](FLINT_B1_NATIVE_QUALIFICATION_REPORT.md). Production file-format/save/load routes remain unchanged. B2 has not begun.
 
 This refines Stage B of the [approved implementation plan](JET_MUTABLE_OS_IMPLEMENTATION_PLAN.md), particularly its §5 native-codec/admission gate. The consumed-Markdown decision is retained. It does not reopen Stage A or authorize Stage C.
 
@@ -157,6 +157,6 @@ The exporter traverses captured native structure with bounded repeat/cycle handl
 | Pair persistence | Same-snapshot outputs, concurrent edits, stale completion, first/second/receipt failure, restart recovery, outside edits/races, missing targets and collisions, original import files untouched. |
 | Input/export | Four supported constructs, atomic Undo/Redo, deterministic bytes/escaping, native-feature degradation diagnostics, native selection/IME and focused browser/typing regression checks. |
 
-Stop at this amendment review now. After approval, perform B1 and return its concrete native compatibility result before enabling production paths or beginning B2. Stop sooner for unprovable ownership, lossy values, unsupported resource boundaries or an admission requirement that entails substantial core reconstruction. Report those failures rather than declaring them unsupported by definition to claim full fidelity.
+The amendment was approved and B1 has returned its [concrete native compatibility result](FLINT_B1_NATIVE_QUALIFICATION_REPORT.md). Stop at that review boundary before enabling production paths or beginning B2. The full-fidelity gate remains unmet: actual linked-definition ownership/resolution, image-paste values, nested Documents, foreign transclusions and legacy type compatibility require review. Do not declare these authored cases unsupported by definition to claim full fidelity or reconstruct core persistence to conceal them.
 
 After the approved B2/input proof, return the complete Stage B result and stop again. **Stage C, unrestricted nested hosting, Canvas/Spatial host generalization, graph features and broad History/persistence redesign remain outside this authorization.**

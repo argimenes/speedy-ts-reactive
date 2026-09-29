@@ -1,0 +1,295 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "id": "01469eea-caa6-4ef2-a29a-bf555cb42cd6",
+        "properties": {
+          "blockProperties": [
+            {
+              "metadata": {
+                "height": 130,
+                "min-width": 110,
+                "width": 130
+              },
+              "type": "block/size"
+            },
+            {
+              "metadata": {
+                "position": "fixed",
+                "x": 18,
+                "y": 32
+              },
+              "type": "block/position"
+            }
+          ],
+          "timer": {
+            "durationSeconds": 300,
+            "mode": "idle",
+            "remainingMilliseconds": 300000
+          }
+        },
+        "type": "timer-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:a0baf7c5-e901-4498-83e4-b5fb713ce612",
+            "target": {
+              "blockId": "e4e8805e-d4fd-4b7a-acb5-3b7929dbe559",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "10be6f83-ce0a-47f6-abe0-4f875f3d1021",
+        "properties": {
+          "blockProperties": [
+            {
+              "type": "block/marginalia/left"
+            }
+          ]
+        },
+        "type": "left-margin-block"
+      },
+      {
+        "id": "80c20306-14c6-4426-8166-d11c5c2e9812",
+        "properties": {
+          "blockProperties": [
+            {
+              "metadata": {
+                "height": 280,
+                "width": 280
+              },
+              "type": "block/size"
+            }
+          ],
+          "object3D": {
+            "autoRotate": false,
+            "lighting": "neutral",
+            "scene": "coffee-cup",
+            "settings": {
+              "coffeeStain": false,
+              "steam": true
+            },
+            "version": 1,
+            "view": {
+              "azimuth": 45,
+              "elevation": 25
+            }
+          }
+        },
+        "type": "3d-object-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "reference",
+            "placementId": "legacy:resource:placement:18b15306-0d4f-4cca-84c7-31f4ad942c88",
+            "target": {
+              "blockId": "text",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:c1bd4217-b9ee-4ce2-97ab-0d1f73a364bf",
+            "target": {
+              "blockId": "text",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:3bd2e9e8-8ea4-404d-a9ac-6dbe48e03b49",
+            "target": {
+              "blockId": "other",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:14719f64-0f95-45de-b1c0-113ba3db3f89",
+            "target": {
+              "blockId": "01469eea-caa6-4ef2-a29a-bf555cb42cd6",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:00ea2588-7496-41ad-aeae-1f8d2dfd0c18",
+            "target": {
+              "blockId": "80c20306-14c6-4426-8166-d11c5c2e9812",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "doc",
+        "properties": {
+          "metadata": {
+            "documentId": "resource",
+            "filename": "example.mutable.json",
+            "folder": "."
+          }
+        },
+        "type": "document-block"
+      },
+      {
+        "children": [],
+        "id": "e4e8805e-d4fd-4b7a-acb5-3b7929dbe559",
+        "inline": [],
+        "properties": {
+          "blockProperties": [
+            {
+              "type": "block/alignment",
+              "value": "left"
+            },
+            {
+              "type": "block/font/size/three-quarters"
+            }
+          ],
+          "standoffProperties": []
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": [],
+        "id": "f75a2031-7933-4707-8ef1-bd85fa993259",
+        "inline": [],
+        "properties": {
+          "blockProperties": [],
+          "standoffProperties": []
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "id": "other",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Another paragraph"
+          }
+        ],
+        "properties": {
+          "metadata": {
+            "anchor": {
+              "blockId": "text",
+              "offset": {
+                "x": 120,
+                "y": -12
+              },
+              "version": 1
+            }
+          },
+          "standoffProperties": [
+            {
+              "end": 2,
+              "id": "8a9b37b0-fe7c-4d7d-822b-e3a45f9c012d",
+              "metadata": {
+                "name": "Poe"
+              },
+              "start": 0,
+              "type": "codex/entity-reference",
+              "value": "entity-poe"
+            },
+            {
+              "active": "source",
+              "alternatives": [
+                "superposition:9a86ac4f-e6cc-4464-af15-e39fb43ab30c"
+              ],
+              "end": 6,
+              "id": "9a86ac4f-e6cc-4464-af15-e39fb43ab30c",
+              "start": 4,
+              "type": "text/superposition",
+              "visible": true
+            }
+          ]
+        },
+        "relations": {
+          "opaque": {},
+          "owned": {
+            "leftMargin": {
+              "kind": "owned",
+              "placementId": "legacy:resource:placement:2e4fc6ef-99b1-4fe5-a6e3-7c638d4e352e",
+              "target": {
+                "blockId": "10be6f83-ce0a-47f6-abe0-4f875f3d1021",
+                "kind": "local"
+              }
+            },
+            "superposition:9a86ac4f-e6cc-4464-af15-e39fb43ab30c": {
+              "kind": "owned",
+              "placementId": "legacy:resource:placement:504a045e-c921-4c08-bc9d-6e88b7c97dd2",
+              "target": {
+                "blockId": "f75a2031-7933-4707-8ef1-bd85fa993259",
+                "kind": "local"
+              }
+            }
+          }
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": null,
+        "id": "text",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Edited A😀"
+          },
+          {
+            "kind": "image",
+            "properties": {
+              "alt": "Native image",
+              "assetId": "asset",
+              "height": 30,
+              "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2240%22%20height%3D%2230%22%3E%3Crect%20width%3D%2240%22%20height%3D%2230%22%20fill%3D%22teal%22%2F%3E%3C%2Fsvg%3E",
+              "status": "ready",
+              "width": 40
+            }
+          },
+          {
+            "kind": "text",
+            "text": "é漢\nSecond line"
+          }
+        ],
+        "properties": {
+          "futureFeature": {
+            "object": {
+              "unknown": [
+                null,
+                false,
+                42,
+                "kept"
+              ]
+            },
+            "version": 99
+          },
+          "standoffProperties": [
+            {
+              "end": 11,
+              "id": "aac0956a-3ab7-4cd1-b281-007cec19b7d0",
+              "start": 10,
+              "type": "style/rainbow"
+            }
+          ]
+        },
+        "relations": null,
+        "type": "standoff-editor-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "resource",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:resource:placement:1c23221d-caa6-4f66-9d18-a21f2a9f4fed",
+      "target": {
+        "blockId": "doc",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "resource",
+  "version": 1
+}
