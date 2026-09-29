@@ -73,6 +73,8 @@ export class OverlayService {
       });
     } else if (restoreFocus && overlay.returnFocusKey && this.mounts.get(overlay.returnFocusKey)) {
       queueMicrotask(() => {
+        // Its transient host may have closed after this return was queued.
+        if (!this.mounts.get(overlay.returnFocusKey!)) return;
         this.focus.request(overlay.returnFocusKey!, { reason: "closed-panel", caret: overlay.returnSelection });
         if (overlay.returnInlineSelection) this.mounts.get(overlay.returnFocusKey!)?.restoreInlineSelection?.(overlay.returnInlineSelection);
       });

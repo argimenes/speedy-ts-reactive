@@ -172,6 +172,7 @@ export class ReactiveEditor {
     viewId: ViewId = createViewId(),
     rootPlacementKey: PlacementKey = this.repository.state.rootPlacementKey,
   ): BlockTreeProjection {
+    if (this.projections.has(viewId)) throw new Error(`View already exists: ${viewId}`);
     const projection = new BlockTreeProjection(
       this.repository,
       viewId,
@@ -180,6 +181,27 @@ export class ReactiveEditor {
     );
     this.projections.set(viewId, projection);
     return projection;
+  }
+
+  /** End a transient view without changing its canonical placements/content. */
+  disposeView(projection: BlockTreeProjection): void {
+    if (this.projections.get(projection.viewId) !== projection) return;
+    const keys = new Set(projection.occurrenceKeys());
+    if (this.find.state.scope && keys.has(this.find.state.scope.rootKey)) this.find.close(false);
+    const operation = this.currentTextOperation.active();
+    if (operation && [...keys].some(key => operation.owns(key))) operation.cancel();
+    const cross = this.crossText.range();
+    if (cross && (keys.has(cross.anchor.occurrenceKey) || keys.has(cross.head.occurrenceKey))) this.crossText.clear();
+    for (const overlay of [...this.overlays.overlays]) if (keys.has(overlay.ownerKey)) this.overlays.close(overlay.key, false);
+    if (this.blockSelection.state.viewId === projection.viewId) this.blockSelection.clear();
+    for (const key of keys) {
+      this.focus.clearRemoved(key);
+      this.selections.removeOccurrence(key);
+      this.mounts.releaseOccurrence(key);
+      this.setViewChild(key, undefined);
+    }
+    projection.dispose();
+    this.projections.delete(projection.viewId);
   }
 
   installGateway(document: Document): () => void {

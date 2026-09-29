@@ -54,6 +54,7 @@ export class FocusService {
   clearRemoved(nodeKey: NodeKey): void {
     if (this.pending?.nodeKey === nodeKey) this.pending = undefined;
     if (this.state.focusedKey === nodeKey) this.setState("focusedKey", undefined);
+    if (this.state.lastFocusedKey === nodeKey) this.setState("lastFocusedKey", undefined);
   }
 
   private applyPending(): void {

@@ -33,6 +33,7 @@ export class MountRegistry {
   private generations = new Map<NodeKey, number>();
   private subscribers = new Set<MountSubscriber>();
   private selections = new Map<NodeKey, NativeTextSelection>();
+  private inlineSelections = new Map<NodeKey, { anchor: number; head: number }>();
 
   register(
     nodeKey: NodeKey,
@@ -50,6 +51,8 @@ export class MountRegistry {
       if (this.byNode.get(nodeKey)?.generation !== generation) return;
       const selection = mounted.captureSelection?.();
       if (selection) this.selections.set(nodeKey, selection);
+      const inline = mounted.captureInlineSelection?.();
+      if (inline) this.inlineSelections.set(nodeKey, inline);
       this.byNode.delete(nodeKey);
       this.byElement.delete(mounted.root);
       this.byElement.delete(mounted.focusElement);
@@ -71,6 +74,20 @@ export class MountRegistry {
 
   selection(nodeKey: NodeKey): NativeTextSelection | undefined {
     return this.selections.get(nodeKey);
+  }
+  inlineSelection(nodeKey: NodeKey) { return this.inlineSelections.get(nodeKey); }
+
+  /** Final occurrence disposal, unlike an ordinary unmount/remount. */
+  releaseOccurrence(nodeKey: NodeKey): void {
+    const handle = this.byNode.get(nodeKey);
+    if (handle) {
+      this.byElement.delete(handle.root);
+      this.byElement.delete(handle.focusElement);
+    }
+    this.byNode.delete(nodeKey);
+    this.generations.delete(nodeKey);
+    this.selections.delete(nodeKey);
+    this.inlineSelections.delete(nodeKey);
   }
 
   resolveEvent(event: Event): { nodeKey: NodeKey; handle: MountHandle } | undefined {

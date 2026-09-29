@@ -1,0 +1,18 @@
+.flint-application { color: #dbe1e5; background: #151a20; min-height: 100%; }
+.flint-application__header { display: flex; align-items: center; gap: 18px; padding: 12px 16px; border-bottom: 1px solid #39414a; }
+.flint-application__header strong { font: 25px Georgia, serif; color: #eee2cf; }
+.flint-application__header span { flex: 1; color: #aab4c2; }
+.flint-application__body { display: flex; min-height: 440px; }
+.flint-application__vault { flex: 0 0 180px; padding: 12px; border-right: 1px solid #39414a; }
+.flint-application__vault h2 { font-size: 15px; }
+.flint-application__vault button, .flint-application__vault input { box-sizing: border-box; width: 100%; margin-bottom: 7px; text-align: left; }
+.flint-application__vault input { background: #242b33; color: #dbe1e5; border: 1px solid #485260; padding: 5px; }
+.flint-application__editor { min-width: 0; flex: 1; }
+.flint-application .reactive-tabs__labels { padding: 8px; }
+.flint-application .reactive-tabs__labels button[aria-selected="true"] { outline: 2px solid #8599af; }
+.reactive-document-occurrence { color: #242424; background: #fffdf8; }
+.reactive-document-occurrence__content { padding: 18px 30px; min-height: 340px; }
+@media(max-width: 650px) { .flint-application__vault { flex-basis: 120px; } .reactive-document-occurrence__content { padding: 12px; } }
+.flint-application .reactive-tabs__labels { background: #1c232b; }
+.flint-application .reactive-tabs__labels button { color: #dbe1e5; background: #242b33; }
+.flint-application .reactive-tabs__labels button[aria-selected="true"] { color: #eee2cf; background: #35414e; }

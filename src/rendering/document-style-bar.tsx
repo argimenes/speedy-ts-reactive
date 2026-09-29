@@ -90,6 +90,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const annotate = (type: string, value?: string) => {
     const operation = editor.currentTextOperation.annotationOperation();
     if (operation) {
+      if (operation.annotationTargets()?.some(range => !inScope(range.nodeKey))) { setNotice("The text selection belongs to another document."); return; }
       try {
         const finalRange = operation.annotationTargets()?.at(-1);
         operation.apply(type, value, effectDefaults[type] ?? {});

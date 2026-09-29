@@ -1,4 +1,5 @@
 import { createWindowPresentation } from "./window-presentation";
+import { useDocumentTabHost, tabDocumentTarget } from "./document-tab-context";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
 import { Dynamic, Portal } from "solid-js/web";
 import { unwrap } from "solid-js/store";
@@ -141,6 +142,7 @@ export function CheckboxView(props: BlockViewProps) {
 
 export function TabRowView(props: BlockViewProps) {
   const { editor, projection } = useReactiveView();
+  const documents = useDocumentTabHost();
   const node = () => projection.state.nodes[props.nodeKey];
   const initial = node()?.children.find((key) => Boolean(projection.state.nodes[key]?.payload.metadata && (projection.state.nodes[key].payload.metadata as any).active)) ?? node()?.children[0];
   const [active, setActive] = createSignal<NodeKey | undefined>(initial);
@@ -165,7 +167,8 @@ export function TabRowView(props: BlockViewProps) {
           {(key, index) => {
             const child = () => projection.state.nodes[key];
             const metadata = () => child()?.payload.metadata as Record<string, unknown> | undefined;
-            return <button type="button" role="tab" data-context-target={key} aria-selected={active() === key} onClick={() => { editor.setViewChild(props.nodeKey, key); setActive(key); const target = child()?.children[0] ?? key; editor.focus.request(target, { reason: "activate-tab" }); }}>{String(metadata()?.name ?? metadata()?.text ?? `Tab ${index() + 1}`)}</button>;
+            const title = () => { const id = tabDocumentTarget(metadata()); return (id && documents?.title(id)) || metadata()?.name || metadata()?.text || `Tab ${index() + 1}`; };
+            return <button type="button" role="tab" data-context-target={key} aria-selected={active() === key} onClick={() => { editor.setViewChild(props.nodeKey, key); setActive(key); if (!tabDocumentTarget(metadata())) { const target = child()?.children[0] ?? key; editor.focus.request(target, { reason: "activate-tab" }); } }}>{String(title())}</button>;
           }}
         </For>
       </div>
@@ -351,10 +354,12 @@ export function CanvasPreviewView(props: BlockViewProps) {
 
 export function TabPanelView(props: BlockViewProps) {
   const { projection } = useReactiveView();
+  const documents = useDocumentTabHost();
   const node = () => projection.state.nodes[props.nodeKey];
+  const target = () => tabDocumentTarget(node()?.payload.metadata);
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
-  return <div ref={root} class="abstract-block reactive-tab-panel" tabIndex={-1} {...data(props.nodeKey, node)}><ChildBlocks parentKey={props.nodeKey} /></div>;
+  return <div ref={root} class="abstract-block reactive-tab-panel" tabIndex={-1} {...data(props.nodeKey, node)}><Show when={target()} fallback={<ChildBlocks parentKey={props.nodeKey} />} keyed>{id => documents ? <Dynamic component={documents.view} documentId={id} tabKey={props.nodeKey} /> : <p>Document view unavailable. Open this Document through its owning application.</p>}</Show></div>;
 }
 
 export function ImageView(props: BlockViewProps) {
@@ -568,7 +573,8 @@ export function WindowView(props: BlockViewProps) {
     }
     return seen;
   };
-  const contains = (target?: NodeKey) => !!target && subtreeKeys().has(target);
+  // A transient Document is physically hosted here without an authored child edge.
+  const contains = (target?: NodeKey) => !!target && (subtreeKeys().has(target) || !!editor.mounts.get(target)?.root && root.contains(editor.mounts.get(target)!.root));
   const clampIconPosition = (next: { x: number; y: number }) => {
     if (!minimized()) return next;
     const current = position(), rect = root.getBoundingClientRect();
@@ -640,6 +646,8 @@ export function WindowView(props: BlockViewProps) {
     commitMetadata({ state: "normal" }, "Restore Window");
     const saved = returnFocus; returnFocus = undefined;
     queueMicrotask(() => {
+      const focused = editor.focus.state.focusedKey, mounted = focused && editor.mounts.get(focused);
+      if (mounted && root.contains(mounted.root) && ["native-text", "standoff"].includes(mounted.inputPolicy)) return;
       if (saved && editor.node(saved.key)) {
         editor.focus.request(saved.key, { reason: "restore-window", ...(saved.native ? { caret: saved.native } : {}) });
         if (saved.inline) queueMicrotask(() => editor.mounts.get(saved.key)?.restoreInlineSelection?.(saved.inline!));

@@ -35,6 +35,11 @@ export class BlockTreeProjection {
     this.setState = setState;
     this.register(initial);
     this.unsubscribe = repository.subscribeChanges((change) => {
+      if (!repository.state.placements[this.rootPlacementKey]) {
+        this.unregister();
+        this.setState(reconcile({ rootKey: this.state.rootKey, nodes: {}, revision: repository.state.revision }));
+        return;
+      }
       if (change.childrenOwner) {
         this.updateChildren(change.childrenOwner);
         return;
@@ -248,6 +253,9 @@ export class BlockTreeProjection {
     const key = this.placementNodes.get(placementKey)?.values().next().value;
     return key ? this.state.nodes[key] : undefined;
   }
+
+  /** Includes removed nodes so a disposable host can release occurrence-local state. */
+  occurrenceKeys(): readonly NodeKey[] { return [...this.routeKeys.values()]; }
 
   dispose(): void {
     this.unsubscribe();
