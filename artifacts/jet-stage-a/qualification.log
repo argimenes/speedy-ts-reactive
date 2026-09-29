@@ -1,0 +1,12 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/reactive-editor/local-workspace.test.ts (4 tests) 65ms
+ ✓ src/reactive-editor/workspace-manifest.test.ts (4 tests) 70ms
+ ✓ src/application/jet-stage-a-proof.test.ts (5 tests) 259ms
+
+ Test Files  3 passed (3)
+      Tests  13 passed (13)
+   Start at  15:27:51
+   Duration  2.84s (transform 1.09s, setup 0ms, collect 3.29s, tests 393ms, environment 3.27s, prepare 263ms)
+

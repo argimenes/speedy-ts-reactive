@@ -1,265 +1,286 @@
-# Jet — Mutable OS implementation plan
+# Flint — revised implementation plan
 
-**Status:** proposed for review; planning only.  
-**Basis:** `JET_MUTABLE_OS_PLANNING_BRIEF.md`, supplied Jet mockup, and audit of the current reactive implementation on 29 September 2026.  
-**Scope:** a Window-hosted knowledge application assembled from existing Blocks and services, plus a bounded Markdown editing experiment. No feature implementation is authorized by this document.
+**Revision:** 29 September 2026, following the Stage A qualification report and `JET_FLINT_MARKDOWN_DUAL_SAVE_ARCHITECTURE_CORRECTION.md`.
 
-## 1. Recommendation
+**Status:** architecture review for approval; implementation remains paused.
 
-Build Jet around one existing Mutable repository/editor and ordinary Documents. Reuse core Windows, tab rows/panels, text editing, standoff annotations, structural commands, identity materialization and persistence. Keep the vault navigation, three-column layout, document-opening policy and contextual panel selection in Jet.
+**Naming and supplied artwork:** Flint is the product name, following the supplied Flint app icon. Earlier Jet-named plan/report files and qualification identifiers remain as historical references; this revision does not rename implementation identifiers. Preserve the [supplied icon master](docs/assets/flint/flint-app-icon-master.png) unchanged. It establishes the flint-stone mark, dark background and FLINT wordmark; any small-icon derivatives belong to later UI integration, not this architecture review.
 
-Two proofs must precede the full application:
+This revision supersedes the original plan's persisted Document transclusions inside tabs and retained Markdown delimiter Cells. The [Stage A report](JET_STAGE_A_QUALIFICATION_REPORT.md) and [executable reproduction](src/application/jet-stage-a-proof.test.ts) remain valid historical evidence. No transient-view, Markdown or persistence implementation has been performed for this revision.
 
-1. Render a canonical Document through a tab reference, edit it, close the tab/application and save/reopen without copying, moving or losing its data.
-2. Qualify inline Markdown syntax visibility against real browser editing. Existing concealment is useful evidence, but does **not** establish a complete syntax-aware caret/selection contract.
+## 1. Recommendation and changed risk profile
 
-The audit also found that a reactive `GraphViewBlock` and a universal `ApplicationBlock` do not currently exist. Do not present these as ready-made capabilities. Add one Jet application Block and, if the graph stage is approved, one small reusable graph-view Block. Do not introduce an application framework or graph database.
+Adopt two distinct boundaries:
 
-Use a `jet` feature flag **enabled by default** when implementation is approved, following the user's standing policy. Markdown visibility remains subject to its qualification gate; a failed proof must be reported rather than silently shipping an incomplete Contextual mode.
+1. **Persistent Document identity/content/ownership → transient presentation occurrences.** A tab stores which Document it displays. Its live content is a disposable view of that canonical Document and contributes no ownership edge.
+2. **Canonical native Document → generated Markdown projection.** Completed Markdown gestures are consumed into ordinary text, standoff and Blocks. Markdown is reconstructed at import/export boundaries, including every successful save of a dual-save Document.
 
-### Are there any showstoppers?
+These boundaries fit together cleanly. Opening or closing a tab does not change Document content or generate a save of that content. Saving the Document serializes its native resource once and generates one Markdown projection, regardless of how many tabs or Windows display it. A Workspace saves presentation state and vault membership, not duplicate tab-owned Document subtrees.
 
-No confirmed showstopper was found for the Window-hosted vault, tabs, native Documents, properties, links and backlinks. This is a source audit, not a successful execution of the proposed proofs.
+**Recommend consumed syntax plus dual-save over retained syntax plus visibility modes.** This removes the proposed hidden-marker caret/geometry subsystem and the need to maintain both source delimiters and semantic annotations during normal editing. It introduces real persistence work: deterministic export, pair completion status, conflict detection and recovery. Those obligations should be visible prerequisites, not described as an existing free capability.
 
-**Contextual Markdown is the potential blocker:** if correct concealed-syntax editing requires a replacement selection engine or substantial core reconstruction, stop that track and review scope. Jet's knowledge-workspace track can proceed independently after an explicit decision; a Visible-only prototype would not satisfy the Contextual requirement.
+There is no confirmed fundamental blocker to the application. Two gates remain: transient Document hosting/disposal, and a full-fidelity native-save path with honest dual-save semantics. Stage B is independent of the core application track; after Stage A passes, review whether to do B or continue the vault/context track.
 
-**Whole-Document tab persistence is a prerequisite:** references and identity materialization exist, but ownership, shared definitions and the actual save paths must be qualified together. Failure of that proof blocks the proposed tab strategy until a bounded alternative is demonstrated.
+## 2. Existing architecture: reuse and actual gaps
 
-The composite application host, live backlink projection and generic graph view are missing capabilities with concrete bounded proposals, not fundamental blockers. Their scope should remain visible during review.
+The current repository uses Codex/Speedy names; no general rename is proposed. Active reactive code, rather than legacy class names, determines available capabilities.
 
-## 2. Repository audit: what exists and what does not
-
-The repository still uses Codex/Speedy names. “Mutable” below describes the requested product architecture; no broad rename is proposed. Active reactive code is the authority. Classes and services under legacy `src/blocks`, `src/components` and `src/library/original` are not automatically usable in the current application.
-
-| Jet concern | Current evidence | Recommended use / actual gap |
+| Need | Current implementation | Consequence |
 | --- | --- | --- |
-| Window host | [WindowView](src/rendering/core-block-views.tsx), [Window application guide](docs/development/CREATING_WINDOW_APPLICATIONS.md) | Reuse `window-block` movement, resizing, focus and authored geometry. Put Jet controls inside its content. No nested document Windows. Canonical Window has no implemented maximize control; mockup window buttons are not a mandate to add one. |
-| Application lifetime | [BlockRuntime](src/feature-api/index.ts), [capability adapter](src/application/feature-capabilities.tsx) | Existing hosted Block applications own fields and disposal. However, `mountWidget` installs **opaque-widget** input policy and exposes no child-rendering capability. A composite application containing live editors needs a narrow host-owned child slot and container mount; it cannot simply wrap its editors in an opaque widget. |
-| Tabs | `TabRowView` / `TabPanelView` in [core views](src/rendering/core-block-views.tsx) | Registered `tab-row-block`, `tab-block` and document aliases; active panel mounts through `BlockOutlet`. Reuse them. Per-tab close controls, activation notification and robust text-focus restoration need a bounded adaptation, not new tab state alongside existing tab state. |
-| Documents | [core registration](src/rendering/register-core-views.ts), [Document container](src/rendering/container-block-view.tsx) | Ordinary `document-block`, existing standoff/plain text and optional Document formats. Formatting bars are currently attached to Document Window hosts; Jet must reuse a core-rendered, active-document-scoped toolbar rather than nest a Window or invent formatting commands. |
-| Shared content | [commands](src/block-tree/commands.ts), [projection](src/block-tree/projection.ts), [identity](src/block-tree/identity.test.ts) | `transclude` adds a reference placement pointing to the same content key; `unlink` removes a reference. Projections distinguish occurrences and detect cycles. Prove whole-Document use in Jet and persistence before relying on it. |
-| Persisted Document identity | [workspace manifest/materialization](src/reactive-editor/workspace-manifest.ts), [workspace opening](src/application/workspace-open.ts) | Stable Document identities, repeated-document materialization and conflicting-identity rejection already exist. Reuse their supported save/load paths. Do not persist private NodeKeys/content keys as public links. |
-| Document reference UI | [DocumentReferenceView](src/rendering/document-reference-view.tsx) | This is an **unavailable-document placeholder with Retry/Relink**, not a live transclusion renderer. Live tabs should use reference placements, not this placeholder as an embedding API. |
-| References and annotations | [standoff schemas](src/rendering/standoff-styles.ts), [linked annotations](src/runtime/linked-annotations.ts), [clipboard remapping](src/block-tree/clipboard.ts) | `codex/block-reference` already carries a Block ID in `value`, has an underline effect, and is recognized by identity remapping/history. Generic linked annotations share definition identity across segments. Document title lookup, link activation and unresolved/ambiguous target UX are missing application behavior. |
-| Backlink queries | [historical index](src/history/index.ts), [historical queries](src/history/query.ts), linked annotation segment lookup | Relationship extraction precedents exist, but no ready-made live Vault backlink service was found. Historical indexes are tied to exact historical state; Jet must not enable History or misuse a historical index as its live store. |
-| Graph | [legacy Graph data helper](src/library/graph.ts), graph endpoints in [server](server/index.ts), [active registration](src/rendering/register-core-views.ts) | Legacy graph data and server entity graphs exist. No registered reactive GraphData/GraphView Block was found. Neither legacy database endpoints nor old graph viewers constitute a ready live Document graph. |
-| Search | [TextSearch](src/runtime/text-search.ts), [worker/matching](src/runtime/search-worker.ts) | Existing cancellable, revision-aware text matching, context and reveal ranges. Traversal stops at nested Document boundaries. A Vault query must enumerate member Documents and aggregate/deduplicate results; searching the Jet root is insufficient. |
-| Properties | Authored metadata, block/standoff properties; [annotation contributions](src/runtime/annotation-contributions.ts), [Entity property UI](src/features/entity-references/property-details.tsx) | Storage/commands exist; there is no general ready-made Document property sheet. Entity details are feature-specific. A small typed Document property form can use existing metadata commands without copying Entity UI or adding YAML storage. |
-| Storage browser | [document browser](src/demo/document-browser.tsx), [document store](server/document-store.ts) | List/load/save JSON and existing local Workspace operations. The document-store router is not a complete folder/document CRUD filesystem service. V1 logical folders avoid requiring one. |
-| Syntax concealment | [StandoffEditorView](src/rendering/standoff-editor-view.tsx), [Show/Hide](src/runtime/show-hide-projection.ts), [CSS](src/index.css) | Existing `style/show-hide` conceals Cells with `display:none`; Superposition also has specialized hidden-source rendering. Neither proves arbitrary Markdown syntax editing. Reuse lessons, not their feature-specific policy. |
+| Window and tab composition | [core views](src/rendering/core-block-views.tsx), [Window application guide](docs/development/CREATING_WINDOW_APPLICATIONS.md) | Reuse Window, TabRow and Tab Blocks. No nested Document Window or general application framework. |
+| Native editing and formatting | [Document container](src/rendering/container-block-view.tsx), [standoff editor](src/rendering/standoff-editor-view.tsx), [style bar](src/rendering/document-style-bar.tsx) | Reuse ordinary editable DOM, annotations, selection and scoped formatting/status UI. |
+| Composite application hosting | [BlockRuntime](src/feature-api/index.ts), [adapter](src/application/feature-capabilities.tsx) | Existing `mountWidget` is opaque input. A composite host needs a bounded container mount and core-owned child/Document slot; it must not intercept nested editor input as an opaque widget. |
+| Multiple occurrences | [editor.createView](src/reactive-editor/editor.ts), [BlockTreeProjection](src/block-tree/projection.ts) | Existing scoped projections share the same repository/editor and produce occurrence keys. Promising basis for transient views; not yet a complete disposable application-facing host contract. |
+| Identity materialization | [workspace manifest](src/reactive-editor/workspace-manifest.ts) | Repeated Documents share content after load, but the first serialized occurrence becomes owned. Do not serialize additional Document occurrences for Flint tabs. |
+| References | [standoff schemas](src/rendering/standoff-styles.ts), [linked annotations](src/runtime/linked-annotations.ts), [clipboard](src/block-tree/clipboard.ts) | Reuse `codex/block-reference`, stable authored IDs and shared definitions. A tab's presentation target is distinct from a semantic reference annotation. |
+| Search | [TextSearch](src/runtime/text-search.ts) | Reuse cancellable matching and ranges; aggregate across vault member Documents because traversal stops at nested Document boundaries. |
+| Backlinks and graph | [historical reference extraction](src/history/index.ts), [legacy Graph helper](src/library/graph.ts) | No ready live Vault backlink service or registered reactive GraphView Block. Derive a shared, rebuildable relationship projection; later add a small generic graph renderer. No graph database. |
+| File operations | [PersistenceService](src/reactive-editor/persistence.ts), [document store](server/document-store.ts), [workspace store](server/workspace-store.ts), [browser JSON files](src/demo/browser-json-file.ts) | Existing JSON loading, staged writes, local single-file handles and server Workspace bundles. No coordinated native/Markdown pair API, projection receipts or Markdown conflict workflow. |
+| Native formats | [tree codec](src/block-tree/codecs.ts), [extended repository codec](src/block-tree/extended-codec.ts), [durable native document](src/history/durable-core.ts), [resource codec](src/history/stage-c-gates/portable.ts) | Distinguish filename, codec, resource scope and History integration. See §5; none should be silently substituted for a qualified dual-save document path. |
 
-### Structural vocabulary audit
+## 3. Persistent identity, ownership, membership and transient views
 
-| Markdown input | Actual reusable representation | V1 policy |
+### Four identities, four responsibilities
+
+| Concept | Persisted? | Meaning |
 | --- | --- | --- |
-| `# ` through `###### ` | Standoff text Block + existing `block/font/size` heading properties | Existing heading tokens are h1–h4; support those first. Leave h5/h6 literal unless a specific heading extension is approved. |
-| `> ` | Existing `container-block` with text children and a small quote presentation property | No registered QuoteBlock found. Prefer one reusable quote treatment over a new Block type solely for Jet. |
-| `- ` / `* ` list gestures | `indented-list-block` with ordinary text children | Existing list is a generic container with `role=list`, not a complete Markdown list-item engine. Prove continuation/outdent/empty-item exit. Ordered/task/nested lists are deferred unless the existing behavior makes a small addition straightforward. |
-| Fenced code | `code-mirror-block` | Current reactive view is a textarea fallback explicitly awaiting CodeMirror migration. Reuse that honest capability; do not promise syntax highlighting. |
-| Pipe tables | `table-block` → `table-row-block` → `table-cell-block` → text Blocks; grid aliases also exist | Convert a complete simple header/separator/body construct on explicit conversion or a safe completion boundary. Do not repeatedly restructure an incomplete table during typing. |
-| `![alt](url)` | `image-block` or existing inline image support | Initially a standalone image Block, with existing URL validation and ordinary alt metadata. No attachment subsystem. |
+| Document/resource ID and authored Block IDs | Yes | Stable identity of canonical content and semantic link targets; independent of title/path. Existing `documentId` and root Block ID need not be equal. |
+| Canonical ownership/definitions | Yes, through the native model's supported storage | Where authored content belongs. Presentation does not create or relocate that ownership. |
+| Vault membership, folders, storage association | Yes | Collection organization and mapping to physical artifacts. Membership is not Document identity and logical folder changes need not rename files. |
+| Tab descriptor versus rendered occurrence | Descriptor yes; occurrence no | Stable tab ID, target Document ID and optional view preferences are app state. NodeKeys, projection instances, mount registrations, DOM, focus and transient geometry are runtime state. |
 
-## 3. Application composition and ownership
-
-Proposed logical structure:
+Proposed composition:
 
 ```text
 Workspace
-├── existing canonical Document owners (remain in place)
-├── existing workspace-object-bank-block
-│   └── container-block — Jet vault record / newly created Documents
-│       └── DocumentBlocks created in this vault
+├── existing canonical Document owners — unchanged
+├── existing object bank
+│   └── vault container — membership plus newly created canonical Documents
 └── WindowBlock
     └── jet-application-block
-        ├── Vault navigation (Jet UI over membership metadata)
-        ├── TabRowBlock
-        │   ├── TabBlock → reference placement → canonical Document A
-        │   └── TabBlock → reference placement → canonical Document B
-        └── Context UI + optional generic GraphViewBlock
+        └── TabRowBlock
+            ├── TabBlock { targetDocumentId: A }
+            │   └── runtime-only Document occurrence of A
+            └── TabBlock { targetDocumentId: B }
+                └── runtime-only Document occurrence of B
 ```
 
-This diagram distinguishes structural Blocks from UI regions; every button, breadcrumb and backlink row need not become an authored Block. The vault container remains owned by the Workspace, outside the application Window. Closing a Window therefore cannot make its Documents unreachable. The existing object bank also supplies a core access path if Jet is unavailable; it is not a hidden duplicate editor. Reuse the one existing bank rather than inventing another bank ownership rule.
+The runtime-only child is **not** an authored child/reference placement. A semantic link such as a wiki reference also does not become a tab ownership edge. Do not conflate these three uses of “reference.”
 
-For existing Documents, vault membership is an association by stable identity. Adding membership or opening a tab must not change their existing parent. Newly created Documents may be owned by the vault container. There must be one canonical content record per loaded Document identity, even if Desktop and Jet display different occurrences.
+The tab DTO stores a versioned presentation-target field referencing the stable Document ID; its exact field name is an implementation detail to qualify. No Document body, private content key, source placement key or live projection is serialized under it. Existing Tab Blocks may need a bounded core-owned content slot; adding that slot does not imply a pane registry.
 
-**Recommended V1 vault:** one logical collection in the current loaded Workspace. Store a small versioned membership/folder record on the ordinary vault container: vault ID; folders with stable ID, parent ID and name; member Document IDs and folder IDs; and soft-deleted membership. Titles remain on the Documents, not duplicated as independent catalog truth. Open/active tab identity and UI widths are application state; do not put them inside Document content.
+### Transient occurrence lifecycle to prove in Stage A
 
-Create/rename/select/search operate on these loaded members. “Delete” initially means undoable removal to the vault's trash, preserving the underlying Document and other occurrences. Empty folders may be removed; nonempty folders must first have members moved or restored. Permanent deletion of server files and bulk recursive deletion are outside V1. The mockup's Recent/Starred/Home affordances may be omitted until they have defined behavior.
+1. Resolve the target ID against the canonical loaded Document catalog. Resolve ambiguity explicitly; never choose by title or “first occurrence.”
+2. Core creates a view rooted at the resolved source placement using the same editor/repository. Flint receives a restricted rendered slot and semantic actions, not editor/projection access.
+3. Mount only the active tab's content initially. Another Window may display the same canonical Document through its own occurrence; distinct mount keys prevent duplicate-registration collisions.
+4. Scope toolbar, selection, overlays, find/reveal and focus to the active occurrence. Store only safe optional bookmarks as presentation preferences, not ownership.
+5. On tab switch/close, unmount and dispose the occurrence; clear its focus/overlay owners and unregister it from editor projection/occurrence maps. `projection.dispose()` currently unsubscribes/unregisters, while the editor retains a projections map: explicit map cleanup is a required host responsibility to qualify.
+6. If the canonical source placement disappears or changes, stop rendering that occurrence before dereferencing it. Re-resolve only to a valid canonical target for the same ID or show unavailable. `createView` alone does not prove source-disappearance safety; its fixed root and subscription ordering need a test.
+7. Closing a tab/Window removes presentation state only. It neither calls `unlink` on a Document nor removes its canonical owner. Reopen constructs a fresh occurrence from the persisted target ID.
 
-### Document tabs and persistence
+No ownership repair pass, tree-order workaround or new Workspace occurrence-role format is needed for these tabs. The old persisted-reference tests remain evidence for the rejected strategy; their observed inversion must not be “fixed” by weakening the new acceptance criteria.
 
-Use authored `TabBlock` wrappers with reference placements for the initial proof. A tab ID is distinct from its target Document ID; open deduplicates by target identity within that Jet instance. Closing removes the tab/reference, never its canonical owner. Tab title is derived from Document title; if the existing tab renderer needs `metadata.name`, treat it as a synchronized display cache, not a second title authority.
+The vault remains Workspace-owned outside Flint's Window. Existing Documents are admitted by membership without reparenting. New ones may live in the existing object bank's vault container. Stage A does not introduce `.md` paths into this identity contract. Future storage associations resolve the same stable identity.
 
-Existing reference commands are a promising mechanism, **not proof that every save path is suitable**. Test both local Workspace materialization and server Workspace manifests for repeated Documents, identity conflicts and linked definitions. The legacy tree format can expand repeated content; standalone exports have loss constraints. Do not route Jet through the portable-codec spike or change the Workspace format opportunistically. If tab references cannot round-trip through the supported path, stop at the proof gate and report the exact failure. A transient host-rendered occurrence slot is the fallback to evaluate, not permission to introduce a second editor/repository.
+## 4. What completed Stage A work remains valid
 
-Lifecycle tests must cover closing the whole Window, deleting its source owner, restoring undo, and opening the same Document elsewhere. Structural editing of shared/transcluded content has existing restrictions; preserve them and report their user-visible limits rather than quietly detaching a copy.
+Retain the [qualification report](JET_STAGE_A_QUALIFICATION_REPORT.md), five reproduction tests and the existing eight Workspace tests used alongside them. They establish live sharing/edit/rename, identity deduplication, conflict rejection, and the order-dependent ownership failure. They do not establish a completed shell, browser qualification or transient-view lifecycle.
 
-### Small capability additions
+There is no implemented production Flint shell, composite hosting adapter, Markdown scanner, retained-source association or concealed-syntax editor work to remove. Existing Show/Hide, Superposition, native geometry and annotation infrastructure remain unrelated features; do not delete or modify them because this plan no longer needs hidden Markdown markers.
 
-Keep these as application adapters capturing core privately:
+Stage A resumes only after approval of this revision. Replace its persisted-transclusion tab proof with the transient occurrence proof. Keep the Window composition, vault membership, shared Document editing, identity and save/reopen objectives. No dual-save implementation is necessary to pass A, and passing A does not approve a canonical-format migration.
 
-- Vault catalog snapshot and bounded create/rename/membership/trash operations, restricted to this vault.
-- Open/select/close a Document tab by stable ID; active Document accessor and focus/reveal action.
-- A core-rendered child slot for the application's declared tab/graph children, and a **container** mount for the composite application. No arbitrary Block/DOM lookup API or opaque-widget ancestor intercepting Document input.
-- A core-rendered formatting/status area scoped to the active Document, preserving existing target/range capture and toolbar commands.
-- Read-only reference/search projections and existing property mutation commands.
+## 5. Canonical storage: `.mutable.json` is a filename, not a fidelity guarantee
 
-Jet receives no `ReactiveEditor`, repository escape hatch, global service locator or unrestricted parent traversal. Native controls retain native input; child editors retain their ordinary mounts. These additions are concrete host composition needs, not speculative registry entries. Fixed three-column CSS with collapsible side panels suffices; arbitrary pane splitting is deferred.
+**Recommendation:** a native Document resource is authoritative in memory; its qualified native serialization is authoritative on disk. Use `.mutable.json` as the naming convention for newly opted-in dual-save artifacts. Do not make the generated `.md`, an entity graph database, or Flint's tab metadata authoritative.
 
-## 4. References, backlinks, graph, properties and search
+The distinction matters in this repository:
 
-### Native document links
+- Ordinary Document/Workspace Save uses the legacy nested Block DTO. It preserves much ordinary authored metadata, but expands shared occurrences, cannot encode cycles, and rejects inline images in its normal loss-preventing path. A filename change cannot turn it into a universal full-fidelity format.
+- `ExtendedRepositoryDto` preserves explicit repository graph records in a raw state envelope, including internal keys. It is useful for internal checkpoints and comparative proofs, but is not a reviewed portable, single-Document resource contract. Ordinary JSON serialization also cannot represent every possible JavaScript value faithfully.
+- `codex-history-document` is an existing native Document envelope with resource/Block/placement identity, inline atoms, external references and definition-retention information. Its codec is a stronger reuse candidate than inventing a Flint format. However, its current envelope requires memoir identity and the Workspace open paths explicitly reject history-enrolled Documents. Do not enable History, forge a memoir, or claim this is already a drop-in Flint save format.
+- The older portable spike is explicitly isolated. The resource codec under `history/stage-c-gates` is reused by durable Document code, but its direct use as an ordinary history-independent save route has not been qualified. Preserve its validation/rejection behavior; do not treat unsupported values as permission to silently coerce them.
 
-Prefer the existing `codex/block-reference` annotation: `value` is the target Document root's **authored Block ID**. Where `metadata.documentId` differs from root Block ID, resolve through an explicit identity mapping; never assume equality. Optional source/resource metadata must follow the existing external-target conventions when needed, without treating experimental external-resolution gates as a completed loader.
+**Bounded decision gate before the dual-save proof writes real data:** qualify reuse of the existing native resource encoding for an ordinary Document without requiring History enrollment. Check closed resource extraction from a Workspace, shared definitions, external target descriptors, inline images, unknown Blocks/properties, cyclic/shared authored structure where supported, identity and load admission. Copy canonical resources once; never include Flint's transient view in the resource snapshot.
 
-`[[The Raven]]` is lookup notation. On completion, resolve against vault members: unique match binds; ambiguous titles require a choice; missing targets remain visibly unresolved literal notation with an explicit resolve/create action. No automatic arbitrary choice and no silent creation on every incomplete token. Rename preserves the bound ID. Existing visible link text may remain as authored; a tooltip can show the current target title. Editing that label does not silently retarget a resolved reference.
+If a small history-independent adapter/envelope admission is needed, return its concrete compatibility proposal for review before changing format/load routes. This is justified by full-fidelity canonical Document saving, **not** by preserving tab roles. Do not redesign the Workspace envelope to solve the old tab problem.
 
-Single-Block references can be ordinary local standoff properties. Shared multi-segment references use the existing linked annotation definition mechanism only when required. Reuse range validation, stale-revision rejection, authored annotation IDs and known-reference clipboard remapping. A `codex/block-reference` underline alone does not supply click navigation; add bounded reference activation with clear keyboard access and preserve ordinary text selection.
+A preliminary dual-save experiment may use ordinary JSON-safe text/table fixtures and the existing codec, clearly labeled a **subset proof**. It must not be promoted as satisfying the full-fidelity promise for all Mutable content. Unsupported canonical serialization is a hard save error, distinct from a successful but limited Markdown export.
 
-### Derived relationship projection
+Existing `.json` Documents continue to load through their current route; no automatic bulk conversion or destructive renaming. Mixed legacy/native resources and legacy Workspace snapshots need a defined supported boundary. Until native resource admission is qualified, an incompatible Workspace save must fail visibly rather than fall back through the tree codec. This remains a real dependency for releasing dual-save, not for completing transient Stage A.
 
-Build a disposable, rebuildable live projection from canonical member Documents' non-deleted semantic annotations, resolving linked definitions. Deduplicate canonical content and mention identities so tab/Desktop occurrences do not multiply backlinks. Presentation reference placements used to open tabs are **not** wiki-link edges.
+## 6. File association, import and subsequent loads
 
-Each result carries source Document ID, source Block/annotation identity, target Block ID, context and revision evidence. Resolve a current occurrence when navigating; after edits revalidate the range, revealing the source Block if precise text is stale. Preserve dangling links when a target is removed from the vault or unavailable. Keep “outside this vault” distinct from “deleted/unresolved.”
+### Association
 
-Start with a bounded on-demand scan for the loaded vault and cache by relevant revisions. Recompute changed source Documents and affected linked definitions using existing repository change notifications where practical. Do not serialize a backlink index or rescan all Documents for every caret movement. Backlinks and Graph consume this same projection. Reuse/extract a small pure reference iterator if warranted; do not import historical index lifecycles into Jet.
+Use a Document-scoped storage association owned by the persistence adapter: Document/resource ID, canonical location, Markdown location, export profile/version, and save/provenance state. Store portable relative locations and stable IDs; never browser handles or session keys in authored JSON. Browser capabilities may be retained separately by the host.
 
-### Graph gap and minimal response
+New dual-save pairs can use `poe-raven.mutable.json` and `poe-raven.md`. Resolve name collisions explicitly, including case/Unicode-normalization collisions. The path is a locator, not identity. Titles and logical vault folder membership can change without renaming either file. File relocation is an explicit operation updating the association.
 
-A minimal **generic** `graph-view-block` is justified if Graph is included: immutable node/edge snapshot, active node ID, selection callback, accessible node buttons/list fallback, and a deterministic local-neighborhood SVG layout. No physics engine, graph editor, graph persistence or database. Jet supplies Document nodes/reference edges and handles navigation; the renderer must know nothing about Jet titles, vaults or Markdown. The first graph shows the active Document and bounded neighbors, with a disclosed limit. It is not an all-vault analytics engine.
+Semantic Document links retain authored target IDs. Export resolves these against a captured target-to-path mapping. Use a documented wiki-link export profile, with disambiguated stable path stems and a label when needed, e.g. `[[poe-raven|The Raven]]`; this does not add title-alias lookup as a product feature. A conventional relative Markdown link can be an alternative profile later. Export label/path escaping and collision rules must be deterministic. Unavailable/out-of-vault targets retain readable text plus a disclosed unresolved-target marker; never bind a link by a coincidentally matching title.
 
-A separate GraphDataBlock is unnecessary while the graph is derived. Legacy `Graph` shapes may inform a neutral node/edge type, but importing the legacy object graph or SurrealDB does not save meaningful work here.
+Keep generated path stems stable by default so ordinary target renames do not require rewriting every source file. Explicit path/profile changes invalidate affected projections; their freshness depends on the captured export mapping as well as source Document content.
 
-### Properties and search
+### Safe first Markdown import
 
-Expose title and a small chosen set of ordinary metadata fields using typed native controls and existing commands. Show unsupported properties read-only and preserve them. The Entity panel is not a generic property form; no YAML/frontmatter storage is added.
+Default to **copy import into a new managed Mutable/dual-save destination**. Read original files without modifying them. Preserve original bytes/source location/hash as import provenance or in the untouched source directory. If the user selects an overlapping destination, require an explicit migration choice and collision/backup plan; do not overwrite an original vault as a side effect of opening a note.
 
-Search titles directly, and reuse `TextSearch` per canonical member Document for text/context. Inactive tabs need not mount an editor to search their canonical content/projection. Use one aggregate request cancellation/generation token, a disclosed result limit and revision revalidation. Opening a hit activates the Document then reveals the current Block/range. Search is limited to the loaded vault; do not promise full-disk indexing or silently load an entire server store.
+Import in two passes for a small selected collection: allocate target Document IDs/path mappings, then parse supported content and resolve internal references against that mapping. Ambiguous or missing wiki links remain literal/unresolved until explicitly resolved. Preserve unsupported constructs as literal text or code with a diagnostic instead of discarding them or pretending conversion was lossless. Do not execute imported HTML or fetch remote media automatically as part of parsing.
 
-## 5. Hybrid Markdown: representation and correctness contract
+Opening/importing `.md` materializes a new native Document in memory. Completion of the first save creates the canonical artifact and generated projection at the chosen destination. Import success and pair-save success are separate statuses; interrupted saving must not imply a canonical file exists.
 
-### Recommended proof representation
+### Subsequent load
 
-Keep recognized inline delimiters as ordinary authored Cells, with a small versioned syntax association linking their ranges to the existing semantic annotation ID. Semantic standoff properties remain authoritative for formatting/references. Syntax associations describe one supported textual spelling and the delimiter/auxiliary-source runs; they are not a second independently editable AST or document model.
+Load an associated valid canonical file through its declared codec. Verify its resource identity before resolving tabs. Inspect projection provenance for status only; do not rebuild the Document from `.md` because that file is newer. If canonical data is corrupt/unavailable, offer explicit recovery/import into a new Document, not a silent fallback that discards native semantics. If two canonical files claim the same identity with different content, retain existing conflict rejection.
 
-For a URL link, association includes label, punctuation and URL-source runs. For a wiki link, its semantic annotation stores the resolved stable target, independent of displayed title. Initially recognize only a bounded subset: `**bold**`, `*italic*`, `~~strike~~`, `[label](url)` and `[[title]]`, with defined escaping and conservative handling of unmatched/nested constructs. Explicitly exclude CommonMark completeness. Unsupported/ambiguous syntax remains literal, and unsupported Mutable semantics remain fully usable.
+## 7. Dual-save orchestration and failure semantics
 
-Why retain Cells for the proof: existing persistence, undo and offset/range machinery can preserve actual typed source, and disabling Jet leaves readable syntax plus native annotations. Synthetic generated delimiters could avoid hidden authored characters but would require new editable synthetic positions and materialization rules; that is not a cheaper assumption. If the retained-Cell approach needs extensive core changes, report the blocker rather than switching to a second editor.
+The guarantee is scoped to **Documents opted into dual-save**: a successful Save means both canonical content and generated Markdown describe the same captured Document revision. Enabling Flint does not silently change every existing application's save behavior. Once a Document is enrolled, however, saving it from Desktop, Flint or a Workspace must honor that policy through shared persistence orchestration; it cannot be a Flint-only button hook.
 
-### One transaction, one authority
+Separate Document Save from presentation-only Workspace Save. Saving tab selection/Window geometry does not regenerate Document Markdown. A Workspace save that writes enrolled Documents coordinates their pair results and reports incomplete ones; it must not bypass the pair path via today's direct bundle writer. Deduplicate by resource ID, not open occurrences.
 
-- Markdown-first: on a supported completion trigger, validate the current Block revision and atomically update text, semantic properties and syntax associations. Incomplete text remains ordinary text.
-- Mutable-first: the ordinary semantic formatting command is authoritative. For representable ranges in a Jet-enabled Document, an explicit bounded adapter associates/inserts delimiters in that same undo transaction. Do not maintain agreement through asynchronous reciprocal observers.
-- Visible delimiter edits: reconcile only affected owned syntax associations. Changing a valid spelling updates its mapped semantics; breaking/removing its delimiter pair removes that association and its specifically owned formatting in the same transaction. Preserve unrelated/manual annotations, including overlapping ones. Invalid intermediate strings remain literal; do not repeatedly “repair” the user's typing.
-- Bound link labels remain labels through rename/edit. Retargeting is an explicit link edit or a newly completed unresolved token, not a title-based rewrite of all links.
-- For overlaps or formatting without a safe Markdown spelling, retain Mutable semantics and decline synthetic source generation. Do not flatten annotations or downgrade Blocks to fit Markdown.
-- Undo/redo restores the complete source/semantic/syntax change, including marker offsets. Pasting/cloning remaps association IDs only for copied semantic properties, using the existing narrow remapping approach.
+### One captured generation
 
-A small deterministic per-text-Block scanner is sufficient. Scan changed Blocks at completion/paste/formatting boundaries; no full-document parser on caret movement, background reparsing loop or general event middleware. The exact command integration is a proof item: current core commands must be able to publish one compound change without a second history entry or recursion. Composition input bypasses recognition until commit.
+1. Capture an immutable, resource-scoped snapshot plus link-path/export-profile dependencies. Allocate a save generation. Validate the canonical encoder and export before changing final files.
+2. Produce canonical bytes and deterministic UTF-8 Markdown bytes from that same capture. Normalize generated line endings; hash the actual emitted bytes. Do not read a changing live DOM or generate from whichever tab has focus.
+3. Preflight both destinations, expected prior canonical version/hash, and the current Markdown bytes against the last accepted baseline. A new destination uses create-only semantics. A previously existing unknown file is a conflict, not an assumed output slot.
+4. Stage both outputs. Publish canonical first, then Markdown, then confirm the pair. Keep enough durable intent/receipt evidence to recover a partial publication. Serialize saves per canonical Document across its occurrences and reject stale completions.
+5. Report pair completion only after both outputs and their identity/generation evidence verify. If the user has typed since capture, that newer state remains dirty; completion of generation N cannot mark N+1 saved.
 
-### Visibility is a general editor problem
-
-Current inline content is decoded by Unicode code point (`[...text]`), standoff endpoints are inclusive, and editing ranges are commonly half-open. Native text offsets are UTF-16; grapheme boundaries protect user-visible movement. `pointBoundary`, `restoreBoundary`, `inlinePointAt`, `inlineBoundary`, clipboard extraction and measurement all participate. Several paths index `flow.children` or derive positions from child text lengths. Hiding text can leave invisible stops even when child indices still exist.
-
-Show/Hide and Superposition already use `display:none` in specific cases. They do **not** establish Markdown deletion, clipboard or boundary-affinity semantics. CSS-only concealment is therefore not an accepted implementation.
-
-Prove a small paragraph-local mapping of model boundaries to navigable visible boundaries, with explicit leading/trailing affinity at each concealed run. Preserve model Cell indices and immutable measurement fragments; do not insert an independent selection engine or duplicate measurement observers. Core owns boundary conversion, selection normalization, hit-testing and measurement scheduling; Markdown owns which syntax runs should be visible.
-
-| Concern | Required behavior for the proof |
+| Outcome | Required status / action |
 | --- | --- |
-| Hidden | Suppress only owned syntax runs, not arbitrary literal punctuation. Snap/skip invisible stops deterministically. |
-| Contextual (preferred default) | Reveal the associated construct when the caret enters its semantic/source region; conceal on leaving. Keep affected syntax revealed throughout noncollapsed selection/drag and composition to avoid changing geometry under an active gesture. |
-| Visible | All retained source Cells are ordinary editable text, with semantic formatting still represented by native annotations. |
-| Mode switch | Update per-occurrence presentation state and affected inline runs; preserve model selection/affinity. No Document reconstruction, reparsing or authored history entry. |
-| Arrows and mouse | Navigate graphemes, map hits near collapsed markers to a defined boundary, and support forward/backward selections across Blocks. No invisible trap or jump to a neighboring annotation. |
-| Delete/Backspace | In Visible mode, delimiter edits are literal source edits followed by reconciliation. In Hidden/Contextual content editing, delete the visible character/grapheme first; clean empty constructs atomically. Never accidentally delete invisible markers instead of the intended character. |
-| Clipboard | Default plain text is semantic visible content consistently across modes; rich Mutable copy preserves supported semantics/identity. An explicit Copy Markdown emits supported source notation. Existing clipboard currently copies model Cells, so this needs a scoped change—not a CSS side effect. Partial selections must not emit orphan owned delimiters. |
-| IME/native controls | Freeze relevant syntax visibility and defer recognition during composition. Preserve composition offsets; menus, property inputs and search fields remain native controls. |
-| Annotations/SVG | Keep authored semantic offsets stable through edits and map measurement to rendered fragments. Reuse centralized scheduling and suppress marker-only geometry; verify selected text, Grouping and one Entity annotation. |
-| Disposal/absence | Removing the feature restores ordinary full source rendering; text and annotations survive. No stale selection callback, parser job or effect remains. |
+| Encoding/export or preflight fails | No pair success. Preserve existing files; explain canonical unsupported content versus Markdown conflict/error. |
+| Canonical publication fails | Save failed; do not publish a new Markdown file claiming to represent a saved canonical revision. |
+| Canonical published; Markdown publication fails | **Canonical saved; Markdown pending.** Retain recoverable generation and retry action; no ordinary “Saved” indicator. |
+| Both published; completion receipt interrupted | Re-read and verify intent and both artifacts; reconstruct completion when hashes agree. Do not trust a stale UI acknowledgment. |
+| Markdown differs from the expected baseline | **External Markdown changes.** Block replacement until an explicit resolution; do not roll back a safely published canonical file to hide partial progress. |
+| Both verified, with export limitations | **Saved**, with visible projection limitations. Markdown is current for the declared profile; canonical content remains full-fidelity. |
 
-Plain typing outside a recognized construct should take the existing fast path apart from a cheap enabled/trigger check. Visibility changes belong to the mounted occurrence, not shared authored Document state; two views may use different modes without rewriting each other's text.
+V1 may block a later save generation while an earlier pair is pending/conflicted, while continuing to allow editing in memory. Retry uses the frozen failed generation; a superseding save requires an explicit state transition, not accidental reuse of a newer editor snapshot.
 
-If safe clipboard/selection integration turns into a broad layout or selection rewrite, stop. A Visible-only editing prototype is a useful review artifact, but changing the requested default requires review; it must not be reported as successful Contextual editing.
+### Durable provenance without a circular “saved” claim
 
-## 6. Visual interpretation of the mockup
+A possible **conceptual**, not yet approved wire representation consists of:
 
-Use the mockup's charcoal surfaces, warm reading text, restrained blue links, fine panel borders, clear document tabs and compact peripheral information. Retain the three-region hierarchy and generous central reading area. Treat the Raven illustration as content in an existing Image Block; acquiring matching artwork is not an architecture prerequisite.
+- Canonical projection intent: resource ID, generation, target path, exporter/profile version, semantic-source digest, desired Markdown byte hash and accepted prior Markdown hash (or create-only absence).
+- A confirmed pair receipt in adapter-owned durable bookkeeping: generation, canonical artifact hash, Markdown hash and locations, written only after verification.
 
-Use existing core Window chrome and Jet's own small header/content toolbar. Breadcrumbs derive from logical vault membership, not a claimed disk path. Backlinks and Properties can be right-panel tabs; Graph can be a bounded region below them. Collapse side regions at narrow widths, keeping navigation accessible. Do not duplicate inactive editors for previews. The mockup's fabricated timestamps, backlink counts, word counts and graph nodes must be replaced by real values or omitted.
+The semantic-source digest excludes projection bookkeeping/timestamps and volatile view state, preventing self-referential hashing. A canonical file written before Markdown must describe an **intent**, not falsely advance a `lastExportHash` that claims completion. A confirmed receipt's hash is the divergence baseline; intent plus actual bytes permits crash recovery if receipt publication was interrupted. A narrowly scoped sidecar/managed-store record is a proposal to qualify, not a new general persistence service.
 
-A dark Jet shell should not overwrite authored colors/themes in existing Documents. Begin with normal live Document rendering inside the shell, then qualify a narrowly scoped inherited reading palette. Existing explicit Document format themes remain authoritative. No general theme engine or application-header framework is needed.
+### Transport limitations and concurrent writers
 
-## 7. Staged implementation and stopping points
+Existing single-file temp/rename handling and Workspace staging/rollback are useful precedents. They do not provide an atomic two-file transaction, a cross-process lock or compare-and-swap against arbitrary external editors. Hashing a file and later renaming over it leaves a race.
 
-Each milestone is independently reviewable. Approval of this plan should not be treated as permission to bypass a failed prerequisite.
+The first save proof should use an explicitly writable managed test store, preserving the application's current public read-only setting. The adapter must serialize cooperating writers and prove conditional publication **with preservation of displaced bytes**, or publish to a fresh destination and report conflict when safe replacement is unavailable. Plain check-then-overwrite is insufficient. Test an external modification between preflight and publication. Do not advertise universal race-free replacement on arbitrary filesystems; if the chosen adapter cannot protect external content, keep that case blocked or use a new-version output path rather than silently overwriting it.
 
-### A — Application composition and identity proof
+Browser single-file JSON handles/downloads are not yet a paired-file capability. A managed two-file/directory capability needs a later explicit adapter. Without it, offer an explicit export/package or ordinary non-enrolled save; never report two unverified browser downloads as a completed dual-save. This proof does not introduce filesystem-compatible Obsidian behavior.
 
-One ordinary Window, one Jet application Block, one declared tab-row slot, two existing Documents and vault membership outside Window ownership. Implement only the necessary composite host/container capability. Exercise open/edit/close/reopen, same Document in another view, rename, duplicate identity rejection, local/server-manifest round-trip and unknown-feature preservation. Audit toolbar scope and selection restoration.
+## 8. External Markdown divergence and recovery
 
-**Acceptance:** one canonical Document per identity; no reparent/copy on open; no loss on Window close; no nested Window; no editor passed to Jet; no opaque-widget interception of text. **Stop for review** if reference persistence or composite mounting requires substantial core changes.
+Compare exact file bytes with the recorded accepted hash; timestamps are informational only. A missing expected file, changed location or unexpected newly created file is also a state to resolve. On normal load, verify canonical identity first and keep it authoritative even when Markdown changed.
 
-### B — Markdown inline architecture proof
+Provide these explicit workflows:
 
-Start with bold and one wiki reference in an ordinary live Document. Prove transactional recognition and Mutable-first formatting, retained-source association, all three visibility modes and the boundary/clipboard/IME contract above. Include manual delimiter damage, undo and feature disablement. This is the highest-risk milestone; avoid building all parser cases before the mechanism is sound.
+- **Compare:** show the external file and a newly generated projection/diff. Distinguish representation differences from a claim of semantic merge.
+- **Import changes:** V1 imports into a **new candidate Document**, preserving the external bytes and original native Document. Let the user review/copy or deliberately adopt it; do not replace rich canonical content with a lossy Markdown parse under the original identity.
+- **Keep Mutable version:** after explicit choice, preserve the externally changed bytes as a conflict copy/version and generate from canonical content. Recheck the file at publication; consent concerning one observed hash does not authorize overwriting a later edit.
+- **Save elsewhere / cancel:** retain the unresolved state without data loss.
 
-**Acceptance:** Contextual editing is reliable in real browsers; toggles do not parse/rebuild Documents; ordinary typing retains its path. Compare the existing typing benchmark before/after in ordinary and active Markdown contexts. **Stop for review before broadening**; report a concrete blocker if a general selection rewrite would be needed.
+No automatic bidirectional merge or file watcher that imports Markdown into the live Document. An external file identical to the desired output may be reconciled by byte verification, but a filename/title match alone is never proof of common identity.
 
-### C — Useful vault, native references and context
+## 9. Markdown input, import and export semantics
 
-Add logical folders and membership CRUD/trash, existing-Document admission, title/text search, stable wiki lookup/navigation, property form and derived backlinks. Complete bounded tab close/title/focus behavior. Ensure all asynchronous results reject stale context and all scoped services dispose when Jet closes. No filesystem compatibility layer.
+### Consumed gestures
 
-**Acceptance:** a small real collection is usable; rename preserves links; closing/deleting a presentation cannot delete shared data; links and search reveal the right current occurrence; backlink counts exclude duplicated presentation occurrences. Review the working shell against the supplied mockup.
+On a supported, complete and unambiguous construct, plan the text/structural replacement and native annotation together. Remove syntax, create ordinary semantics and put the caret at a defined resulting boundary in **one conversion transaction**. Only the active text Block and affected native structure are involved; no hidden characters, secondary text model or per-keystroke Document reconstruction.
 
-### D — Generic graph and structural Markdown subset
+For a gesture-created bold span, deleting `**` must remap existing annotations using the existing range-edit commands before adding `style/bold`. Wiki references resolve a unique stable target before consuming; unresolved/ambiguous input stays literal until a user choice. Existing toolbar Bold simply creates native Bold: it does not insert Markdown back into the editor.
 
-Add the reusable graph-view Block over the same relationship projection. Extend proven inline recognition to the remaining supported cases. Add headings, quote treatment, basic unordered lists, textarea code Blocks, simple table conversion and standalone images using existing structural commands. Each structural conversion must be one undoable transaction with a predictable caret destination. Table conversion waits for complete syntax or explicit action.
+Recognition runs on a few completion triggers and explicit conversion/paste-import actions, not a general input middleware chain. Composition remains ordinary native input; defer recognition until committed composition and stable selection, never convert during an IME session. Ordinary pasted text remains ordinary by default; offer explicit Markdown import/paste rather than surprising broad conversions. Code Blocks, escaped punctuation, incomplete tokens and native form fields bypass recognition.
 
-**Acceptance:** graph nodes navigate; graph/backlinks agree; structural constructs are real editable Blocks; unsupported constructs stay literal and richer Mutable Blocks survive. Defer a construct rather than invent a new subsystem to claim Markdown completeness.
+### Undo/redo contract
 
-### E — Visual integration and bounded release review
+The logical state immediately before conversion contains the completed literal construct. One Undo of conversion restores that literal text, previous annotations/structure and a sensible caret; Redo consumes it again. The recognizer must not immediately reconvert an Undo-restored construct. Trigger only on a fresh user completion/conversion action and suppress replay-triggered recognition. Do not merge conversion into a prior arbitrary typing history group or require separate delimiter-removal and annotation Undos.
 
-Apply the dark-shell composition, responsive side panels and realistic content. Run focused end-to-end use, feature removal/disablement and persistence checks. Provide center/side-panel screenshots and a reproducible Contextual editing sequence. Document remaining format/Markdown limits. Stop for review; no plugin ecosystem, pane framework or full source view follows automatically.
+How the existing input commit and compound tree commands expose this transaction boundary is a small proof item. Structural conversions must also move/split children and restore selection in one conversion transaction. Grapheme/UTF-16-to-Cell mapping and annotation maintenance still matter during edits, but there is no persistent visible/model offset divergence to solve.
 
-## 8. Proportionate qualification
+### First proof subset
 
-Reuse existing tests rather than building a parallel harness:
+| Construct | Native mapping / proof |
+| --- | --- |
+| `**bold**` | Ordinary text + `style/bold`; typed conversion, toolbar equivalence, import and export. |
+| `[[Document]]` | Text + `codex/block-reference` with target authored root ID and Document-ID mapping; unique resolution, rename stability, deterministic export path/label. |
+| `# Heading` | Existing standoff text Block with h1 font-size structural property; consume the prefix on a defined trigger. No new heading Block. |
+| Simple pipe table | Existing table → row → cell → text Blocks; explicit import/export of rectangular plain-text cells and a header separator. If header-row intent lacks an existing field, propose minimal reusable table metadata; never silently reinterpret all native first rows as headers. |
 
-- Ownership/identity/undo: `src/block-tree/block-tree.test.ts`, `identity.test.ts`, `definition-ownership.test.ts`, and Workspace manifest/opening suites. Add a small Jet fixture for tab unlink versus canonical ownership and repeated-Document persistence.
-- Input risk gate: focused standoff editor, grapheme, cross-Block selection, Grouping, clipboard and linked-annotation suites. Add table-driven cases for supported marker boundaries and reconciliation, including combining characters and emoji.
-- Browser gate: native typing/caret, arrow navigation, pointer selection across collapsed markers/Blocks, both selection directions, Delete/Backspace, undo/redo, composition, copy/paste and menu/search/property focus. Use Chromium plus one independent browser engine for syntax visibility; record simulated versus real IME evidence honestly. Existing benchmark baseline for input-path changes only.
-- Application integration: open the same Document from Jet and Desktop, switch tabs, rename a target, soft-delete membership, navigate a stale backlink/search hit, save/reopen, close the Window, and disable/remove Jet while preserving content. One inexpensive Canvas-scale smoke check for the live host is sufficient; no new Spatial programme.
-- Structural conversions: a few representative complete/incomplete constructs, undo and correct focus destination. Graph test covers projection agreement, node activation and empty/dangling states, not force-layout matrices.
+A small parser/importer and deterministic serializer for this declared subset are enough. Use explicit escaping and keep unsupported nesting/literals intact. They may share lexical helpers, but import and export operate on native values—not an authoritative Markdown AST. Test export/import semantic equivalence only for the supported subset; original whitespace/delimiter spelling is not preserved by design.
 
-Physical removal should remove the Jet feature and assembly registration in a disposable copy. Core Documents must remain reachable in their existing owners/object bank; unknown Jet UI data must round-trip. If the generic syntax mapper remains, it must have no provider and no effect on ordinary editing. Removing Graph independently must preserve its unknown authored state and leave text editing functional.
+Later small additions may include italic, strike, URL links, basic unordered lists, quote treatment, textarea-backed code Blocks and standalone images. Reuse audited real types: h1–h4 exist; no registered QuoteBlock/ListItemBlock or migrated reactive CodeMirror was established. Defer CommonMark completeness, complex nesting/tables, arbitrary HTML, YAML/frontmatter, aliases, attachments management, source-mode switching and full-source round-trip.
 
-## 9. Direct answers to the brief's fourteen questions
+### Deterministic projection and explicit degradation
 
-1. **Existing Blocks/services:** the audit table in §2 identifies active implementations and legacy-only precedents for every region.
-2. **New Block types:** `jet-application-block`; a small generic `graph-view-block` if Graph proceeds. No new Document/editor type, universal ApplicationBlock hierarchy or GraphDataBlock is required. Quote styling can use an existing container.
-3. **Documents inside tabs:** reference placements appear suitable, with canonical ownership outside tabs; §3 and milestone A make identity/persistence a proof rather than an assumption.
-4. **Document references:** reuse `codex/block-reference` with authored root Block ID and explicit Document-ID mapping; title notation resolves once and does not become identity.
-5. **Backlinks:** derivable from canonical semantic annotations, but a live Vault query/projection is missing. Use a rebuildable revision-aware cache, not a stored Jet index/database.
-6. **GraphView consumption:** no active GraphViewBlock exists. A generic bounded renderer can consume the derived reference projection directly; no separate graph data authority.
-7. **Inline syntax/standoff relationship:** native semantics are authoritative; retained source Cells have associated owned syntax ranges, maintained atomically.
-8. **Safe concealment:** not established by current CSS hiding. It requires the focused boundary-affinity/caret/clipboard proof.
-9. **Local/reactive visibility:** yes as the target design—per-occurrence mode plus affected-run state—but qualification must demonstrate it without reparsing or tree reconstruction.
-10. **Manual delimiter edits:** reconcile the affected owned association and its semantics in one transaction; preserve unrelated formatting, unmatched literal text and stable link targets.
-11. **Structural mappings:** §2 lists actual heading/container/list/code/table/image capabilities and their limits; do not assume QuoteBlock/ListItemBlock or a migrated CodeMirror exists.
-12. **Smallest recognizer:** one deterministic per-text-Block scanner for a declared inline subset and small structural completion recognizers. No full Markdown AST, parser ecosystem or CommonMark promise.
-13. **Postpone:** all explicit brief exclusions, rich filesystem CRUD, arbitrary pane splits, full Markdown source round-trip, complex graph layout, advanced lists/tables, theme/plugin compatibility and broad Window chrome work.
-14. **Tests:** §8 concentrates qualification on the two real risks—identity/ownership and syntax-aware editing—with smaller application and structural smoke tests.
+Define fixed traversal, escaping, newline and annotation-precedence rules. Overlapping annotations that cannot nest safely must either be split into deterministic representable runs or emit plain text with a limitation; canonical annotations remain intact. Persist no generated Markdown syntax inside canonical text.
 
-## 10. Decisions recommended for approval
+| Native content | Initial Markdown projection policy |
+| --- | --- |
+| Supported text/styles/headings/references/simple tables | Emit the declared syntax with deterministic escaping and path resolution. |
+| Unsupported inline visual/standoff effects | Preserve text; omit purely visual effect; report meaningful semantic losses. |
+| Rich/irregular tables | Preserve cell text in a labeled row/cell fallback or readable list; report table degradation. Do not silently drop embedded content. |
+| Graph, 3D or hosted applications | Emit a readable typed placeholder with stable Block ID and a usable link only when a valid target locator exists. Never imply a live widget was exported. |
+| Images/assets | Emit an available portable URL/path and alt text; otherwise alt/placeholder plus missing-asset diagnostic. No unrequested asset copying/network acquisition. |
+| Margins, frames and presentation geometry | Preserve meaningful authored side content in labeled sections; omit layout/decoration. Transient tabs and app chrome are not Document content. |
+| Unknown Blocks/properties | Preserve known text/children conservatively, identify unsupported content and retain all data in canonical storage. |
+| Shared/cyclic authored structures | Use a bounded deterministic traversal with explicit repeat/reference markers; never duplicate infinitely. Canonical fidelity is assessed separately. |
 
-1. One loaded-Workspace logical vault for V1, with canonical Documents outside the application Window and membership deletion distinct from data destruction.
-2. Existing reference placements inside existing tab Blocks, contingent on the identity/persistence proof; never copy or move Documents merely to open them.
-3. One composite Jet Block with narrowly injected child/editor-host capabilities, not an opaque widget containing editors and not a generalized application framework.
-4. Existing `codex/block-reference` semantics; one derived live relationship projection shared by backlinks and a minimal generic graph view.
-5. Retained inline source Cells plus syntax associations for the Markdown proof; Mutable semantics remain authoritative and changes are atomic.
-6. Contextual as the intended default only after the browser gate; a failed gate requires review, not a hidden fallback or larger editor rewrite.
-7. Fixed/collapsible three-region layout and a dark shell; no arbitrary pane splitting or demand to reproduce every mockup affordance.
-8. Stage-by-stage review, default-on Jet once approved for implementation, and no persistence redesign, History extraction or unrelated Spatial work within this programme.
+Export produces structured diagnostics alongside bytes. An expected documented degradation can complete a save with a warning; an exporter crash or inability to encode the canonical artifact cannot. No policy may silently constrain native editing to Markdown's expressive subset.
 
-**No feature code, runtime configuration or application behavior was changed during this planning pass.**
+## 10. Revised stages and independent tracks
+
+**A — Transient application composition and identity proof.** Resume only after this revision is approved. One Window/Flint shell, existing tabs, two canonical Documents, persistent target IDs and active transient occurrence. Prove editing/rename across views, focused toolbar, selection restoration, same-repository identity, occurrence disposal/source deletion and local/server save/reopen without tab Document duplication. No Markdown or native-format change. Stop for review.
+
+**B — Markdown Import, Gesture Recognition & Dual-Save Projection Proof.** Optional next track after A, not a dependency for C. First settle the bounded native-resource codec/admission gate in §5. Then prove §9's four constructs and §7's pair protocol in an isolated writable destination. Include atomic conversion Undo/Redo, deterministic export, unsupported-native preservation, same-snapshot writes, failed second write, interrupted receipt, external edits/races and typing baseline. A subset-only canonical experiment must be labeled as such. Stop if full fidelity/admission needs substantial persistence/History work; return a separate proposal.
+
+**C — Core knowledge-workspace application.** Can follow A without B: logical folder/membership operations, ordinary Document creation/admission, scoped search, native reference creation/navigation, properties and derived backlinks. Use normal native editing when Markdown gestures are unavailable. Closing/trashing membership never destroys canonical data in another owner. No implication of dual-save support until B is accepted.
+
+**D — Bounded extensions.** Generic graph view over the shared reference projection may follow C independently of Markdown. Extend Markdown gestures/import/export only after B passes, through the already audited Block mappings. No universal graph/layout/parser subsystem.
+
+**E — Integrated visual and release review.** Dark shell and three-region composition from the supplied mockup, the supplied Flint icon/branding, narrow-width controls, real content/status, removal/disablement and persistence evidence. When dual-save is enabled, every UI route must use the enrolled Document save policy. Stop for review; no automatic follow-on work.
+
+New Flint capabilities remain default-on when implemented unless a later specification says otherwise. Dual-save enrollment is an explicit storage policy for a chosen destination, not a hidden feature flag or automatic overwrite policy for existing Markdown vaults. Existing feature defaults, History enrollment and server read-only settings remain unchanged.
+
+## 11. Revised qualification and removed work
+
+Retain focused tests for identity, transient view disposal, native text/selection, toolbar scope, linked definitions, copy/paste, structural commands and persistence. Stage A browser qualification must establish ordinary editing and independent occurrence lifetimes; there is no reason to wait for Markdown first.
+
+Stage B adds a small conversion/import/export corpus and a fault-injected save-state suite. Mandatory cases: native-only content survives canonical round-trip; export deterministic from the same snapshot; edits during saving remain dirty; two tabs save one resource; stale completions; second-file/receipt failure; external edits before and during publication; absent/colliding targets; import source untouched; subsequent load uses native data; corrupt native data does not silently fall back to `.md`. Run existing typing benchmarks for the recognizer integration, not for every shell styling change.
+
+**Remove from the plan:** retained delimiter Cells after conversion; source-to-annotation syntax associations; Hidden/Contextual/Visible switches; hidden-run boundary affinity; marker-specific navigation/deletion; mode-dependent clipboard rewriting; synthetic-source materialization; geometry invalidation for contextual reveal; and tests/benchmarks devoted solely to those mechanisms.
+
+**Retain:** existing core Show/Hide/Superposition behavior, ordinary standoff/selection/grapheme tests, atomic edit range remapping, IME discipline and central measurement. No general editor code was produced by Flint that needs salvaging. Parser source spans may exist transiently while planning a conversion/import, and immutable original-source provenance may support recovery; neither is a live retained-source syntax-association model.
+
+## 12. Direct responses to the correction's seventeen questions
+
+1. **Stage A impact:** changes tab strategy and defines a future Document save boundary; A does not depend on implementing dual-save (§3–4).
+2. **Retained work:** keep qualification evidence/core sharing tests; replace their proposed tab strategy. No hidden-syntax implementation exists (§4).
+3. **Canonical representation:** prefer native Document resource serialization named `.mutable.json`; qualify reuse of current native codecs rather than treating legacy tree JSON or a database as a universal authority (§5).
+4. **Markdown association:** Document-scoped storage association, stable IDs and paired locators/provenance; never title/path as identity (§6).
+5. **First-load conversion:** copy import into a new destination, allocate IDs then resolve references, preserve unsupported source and original files (§6).
+6. **Subsequent loads:** canonical-native first, with explicit recovery for missing/corrupt data; never routine reparsing of the shadow (§6).
+7. **Safe orchestration:** one frozen generation, validated outputs, staged publication, visible partial states and confirmed pair completion (§7).
+8. **Divergence:** exact emitted/current byte hashes plus generation, codec/profile and path mapping; timestamps alone are insufficient (§7–8).
+9. **External modifications:** compare, candidate import, explicitly keep canonical with conflict preservation, or save elsewhere; no automatic merge (§8).
+10. **Original vault safety:** copy import is the default; in-place migration needs explicit destination/backup decisions (§6).
+11. **Consumption:** transactional native text/annotation/Block conversion on bounded triggers, deferred through composition (§9).
+12. **Undo/redo:** one conversion step returns completed literal input; replay cannot retrigger recognition (§9).
+13. **Minimal importer/exporter:** deterministic subset parser plus native semantic serializer, not a Markdown document engine (§9).
+14. **Removed complexity:** all persistent hidden-syntax and associated visibility machinery (§11).
+15. **First syntax:** bold, one stable wiki reference, h1, simple table import/export; broader Markdown deferred (§9).
+16. **Degradation:** readable text/typed placeholders with diagnostics; native serialization must still preserve canonical content (§9).
+17. **Syntax associations:** no persistent retained-source associations; only transient parser spans and optional immutable import provenance remain useful (§11).
+
+## 13. Decisions for review
+
+Approve the transient Document slot as the Stage A direction; consumed Markdown semantics as the replacement for visibility-mode editing; and dual-save as a shared, explicitly enrolled Document persistence policy. Keep the native codec/admission decision and the selected transport's conditional publication/recovery protocol as concrete Stage B prerequisites. Neither is permission for a broad persistence redesign.
+
+**This revision changes the plan and preserves the supplied artwork only. Do not resume Stage A or begin Stage B until the revised plan is approved.**
