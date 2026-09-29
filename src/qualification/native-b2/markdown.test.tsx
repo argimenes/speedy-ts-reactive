@@ -29,16 +29,25 @@ function host(text = "", extra: any = {}) {
   return { editor, projection, root, node, mount, value, type };
 }
 describe("B2 consumed Markdown", () => {
+  it("reports rich table cells instead of silently flattening their semantics", () => {
+    const dto = importMarkdown("| A | B |\n| --- | --- |\n| x | y |").document;
+    const paragraph = dto.children![0].children![0].children![0].children![0];
+    paragraph.blockProperties = [{ id: "heading", type: "block/font/size", value: "h1" }];
+    const resource = capture(dto), before = nativeText(resource), projection = exportMarkdown(resource);
+    expect(projection.diagnostics.some(d => d.code === "table-fallback")).toBe(true);
+    expect(projection.text).toContain("# A");
+    expect(nativeText(resource)).toBe(before);
+  });
   it("imports/exports the four constructs using native text, annotations, h1 and rectangular tables", () => {
     const source = "# Heading\n\nA **bold** word and [[Poe]].\n\n| Name | Value |\n| --- | --- |\n| x | y |\n";
     const imported = importMarkdown(source, targets), r = capture(imported.document), before = nativeText(r);
-    expect(exportMarkdown(r, targets).text).toBe(source);
+    expect(exportMarkdown(r, targets).text).toBe(source.replace("[[Poe]].", "[[Poe]]\\."));
     expect(nativeText(r)).toBe(before);
     expect(imported.document.children![1].text).toBe("A bold word and Poe.");
     expect((imported.document.children![1].standoffProperties as any[]).map(p => p.type)).toEqual(["style/bold", "codex/block-reference"]);
     expect(imported.document.children![2]).toMatchObject({ type: "table-block", metadata: { headerRows: 1 } });
     const again = importMarkdown(exportMarkdown(r, targets).text, targets);
-    expect(exportMarkdown(capture(again.document), targets).text).toBe(source);
+    expect(exportMarkdown(capture(again.document), targets).text).toBe(source.replace("[[Poe]].", "[[Poe]]\\."));
   });
   it("ambiguous/unresolved wiki and unsupported tables/code remain literal", () => {
     expect(resolveWiki("Poe", [...targets, { ...targets[0], documentId: "other" }])).toBeUndefined();

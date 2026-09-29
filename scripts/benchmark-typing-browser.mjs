@@ -63,6 +63,11 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
      dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}), host);
    }
    editor.installGateway(document);
+   let stopMarkdown = () => {};
+   if (${JSON.stringify(process.env.BENCHMARK_MARKDOWN ?? "")} === '1') {
+     const {installMarkdownExperiment}=await import('/src/qualification/native-b2/input.ts');
+     stopMarkdown=installMarkdownExperiment(editor,document,()=>true,()=>[]);
+   }
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
    const study=host.querySelector('.workspace-spatial');const sceneFramesBefore=Number(study?.dataset.frames??0);
    const flows = host.querySelectorAll('[contenteditable=true]');
@@ -87,9 +92,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
      await new Promise(resolve=>requestAnimationFrame(resolve));
    }
    const restored=flow.textContent===before;
-   window.typingBench={editor,projection,host,flow,dispose,caret,midpoint,before,originalCell,unrelated};
+   window.typingBench={editor,projection,host,flow,dispose,stopMarkdown,caret,midpoint,before,originalCell,unrelated};
    samples.sort((a,b)=>a-b);
-   return {presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
+   return {markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
  })()`);
  console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
  const before = await evaluate('window.typingBench.before');
@@ -162,7 +167,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  })()`);
  console.log(JSON.stringify({boundaries},null,2));
  for (const result of boundaries) { assert.equal(result.added,true); assert.equal(result.focusCorrect,true); assert.equal(result.restored,true); assert.equal(result.unrelatedCellStable,true); }
- await evaluate('window.typingBench.dispose();window.typingBench.editor.dispose();window.typingBench.host.remove()');
+ await evaluate('window.typingBench.stopMarkdown();window.typingBench.dispose();window.typingBench.editor.dispose();window.typingBench.host.remove()');
 } finally {
   // Finish the CDP close handshake before killing Chrome. Otherwise Node's
   // WebSocket can retain a closing socket after all assertions have finished.
@@ -178,3 +183,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
   }
   await rm(profile, { recursive: true, force: true });
 }
+
+// CDP/undici may retain a closing socket after Chrome has exited. All assertions
+// and artifact writes above are awaited; failures never reach this success exit.
+process.exit(0);

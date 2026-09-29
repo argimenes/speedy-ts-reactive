@@ -53,6 +53,9 @@ export function installMarkdownExperiment(editor: ReactiveEditor, document: Docu
     const resolved = editor.mounts.resolveEvent(event), key = resolved?.nodeKey;
     if (!key || resolved.handle.inputPolicy !== "standoff" || resolved.handle.composing || editor.selections.sets[key]?.items.length > 1 || editor.crossText.range()) return;
     const node = editor.node(key); if (!node) return;
+    // Ordinary word spaces cannot complete our sole heading gesture. Avoid
+    // resource ancestry lookup and scheduling on that common typing path.
+    if (input.data === " " && (node.inlineContent.length !== 2 || editor.node(node.inlineContent[0])?.payload.text !== "#")) return;
     const owner = resourceOwner(editor.repository.readState(), node.contentKey), source = owner && resourceSource(owner);
     if (source?.scope !== "document" || !enrolled(source.resourceId)) return;
     const revision = editor.repository.state.revision;

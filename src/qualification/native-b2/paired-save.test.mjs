@@ -119,6 +119,9 @@ it("serializes cooperating writers and rejects stale completion attribution", as
   expect(await new ManagedPair(f.options).save(generation(f))).toMatchObject({ phase: "failed", conflict: true }); resume.release(); expect((await saving).phase).toBe("saved");
   const stale = new ResourcePair(f.editor.repository, f.resourceId, { save: async () => ({ phase: "saved", generation: "wrong" }), recover: async () => ({ phase: "failed" }) }, () => []);
   expect(await stale.save()).toMatchObject({ phase: "failed", error: "Stale save completion", dirty: true });
+  stale.adapter.recover = async () => ({ phase: "saved", generation: "another-wrong-generation", native: nativeText(f.capture()) });
+  expect(await stale.recover()).toMatchObject({ phase: "failed", error: "Stale save completion", dirty: true });
+  expect(stale.dirty).toBe(true);
 });
 it("owned dependencies must be located; A's pair never recursively generates B Markdown", async () => {
   const f = await host("artifacts/flint-b1.2/a.mutable.json"); expect((await f.pair.save()).error).toContain("Required owned resource unavailable");
@@ -132,4 +135,29 @@ it("changed recovery staging or corrupt native data never triggers Markdown reco
   const pending = await f.pair.save(); await fs.writeFile(path.join(f.store.home, pending.generation, "native"), "corrupt");
   expect(await new ManagedPair(f.options).recover()).toMatchObject({ conflict: true, error: "Captured generation bytes changed" });
   expect(nativeText(decodeNative(await f.native()))).toBe(nativeText(f.capture()));
+});
+
+it.each(["after-native", "after-markdown", "after-receipt"])("recovers after actual writer-process death at %s with the OS lock released", async stage => {
+  const { spawn, execFile } = await import("node:child_process"), { promisify } = await import("node:util");
+  const f = await host(), buildDir = await fs.mkdtemp(path.join(process.cwd(), ".b2-crash-")); cleanup.push(() => fs.rm(buildDir, { recursive: true, force: true }));
+  const script = path.join(buildDir, "worker.mjs"), request = path.join(buildDir, "request.json");
+  await fs.writeFile(request, JSON.stringify({ options: f.options, generation: generation(f), stage }));
+  const entry = path.join(buildDir, "entry.mjs");
+  await fs.writeFile(entry, `import {ManagedPair} from ${JSON.stringify(path.join(process.cwd(), 'src/qualification/native-b2/managed-pair.mjs'))}; import {readFileSync} from 'node:fs'; const r=JSON.parse(readFileSync(process.argv[2],'utf8')); const store=new ManagedPair({...r.options,fault:async stage=>{if(stage===r.stage)process.kill(process.pid,'SIGKILL')}}); await store.save(r.generation);`);
+  await promisify(execFile)(process.execPath, ["--input-type=module", "-e", "import {build} from 'esbuild'; await build({entryPoints:[process.argv[1]],bundle:true,platform:'node',format:'esm',external:['fs-ext'],outfile:process.argv[2],logLevel:'silent'})", entry, script], { cwd: process.cwd() });
+  const exited = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [script, request], { stdio: ["ignore", "ignore", "pipe"] }); let errors = "";
+    child.stderr.on("data", data => errors += data); child.on("error", reject); child.on("exit", (code, signal) => resolve({ code, signal, errors }));
+  });
+  expect(exited).toMatchObject({ code: null, signal: "SIGKILL", errors: "" });
+  const result = await new ManagedPair(f.options).recover(); expect(result.phase).toBe("saved");
+  expect((await f.native()).toString()).toBe(nativeText(f.capture())); expect((await f.markdown()).toString()).toBe(exportMarkdown(f.capture()).text);
+});
+it("receipt interruption followed by an outside edit remains conflicted; native still admits independently", async () => {
+  const f = await host(); f.store.fault = async stage => { if (stage === "after-receipt") await fs.writeFile(f.store.file("markdown"), "outside after receipt"); };
+  expect(await f.pair.save()).toMatchObject({ phase: "canonical-saved-markdown-pending", conflict: true });
+  expect((await new ManagedPair(f.options).recover()).phase).not.toBe("saved");
+  expect(decodeNative(await f.native()).resourceId).toBe(f.resourceId);
+  const original = nativeText(f.capture()); admitMarkdown(f.editor.repository, f.bank, (await f.markdown()).toString());
+  expect(nativeText(f.capture())).toBe(original); expect((await f.markdown()).toString()).toBe("outside after receipt");
 });

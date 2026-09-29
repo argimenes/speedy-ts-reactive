@@ -7,14 +7,14 @@ Another paragraph
 
 [leftMargin]
 
-[left-margin-block: e81f3657-88ac-4a6c-8510-c5abed0d329c]
+[left\-margin\-block: e81f3657\-88ac\-4a6c\-8510\-c5abed0d329c]
 
 
 
-[superposition:0260a5d2-3394-47d5-9c9b-66c69463665e]
+[superposition:0260a5d2\-3394\-47d5\-9c9b\-66c69463665e]
 
 
 
-[timer-block: 0938779b-9055-4445-b16d-31c92b2ada63]
+[timer\-block: 0938779b\-9055\-4445\-b16d\-31c92b2ada63]
 
-[3d-object-block: b76cd267-0a98-4993-acaf-279f0301b807]
+[3d\-object\-block: b76cd267\-0a98\-4993\-acaf\-279f0301b807]

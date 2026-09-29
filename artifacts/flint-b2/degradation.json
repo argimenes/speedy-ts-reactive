@@ -50,6 +50,11 @@
     "detail": "superposition:0260a5d2-3394-47d5-9c9b-66c69463665e"
   },
   {
+    "blockId": "other",
+    "code": "native-metadata",
+    "detail": "Metadata is not fully represented by this Markdown profile"
+  },
+  {
     "blockId": "0938779b-9055-4445-b16d-31c92b2ada63",
     "code": "block-fallback",
     "detail": "timer-block"
@@ -68,5 +73,10 @@
     "blockId": "b76cd267-0a98-4993-acaf-279f0301b807",
     "code": "authored-payload",
     "detail": "Additional authored properties remain native-only"
+  },
+  {
+    "blockId": "doc",
+    "code": "native-metadata",
+    "detail": "Metadata is not fully represented by this Markdown profile"
   }
 ]

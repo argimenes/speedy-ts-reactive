@@ -15,11 +15,12 @@ const read = async file => { try { return await fs.readFile(file); } catch (e) {
 const syncDir = async dir => { const file = await fs.open(dir, "r"); try { await file.sync(); } finally { await file.close(); } };
 async function durableWrite(file, data, exclusive = true) { const f = await fs.open(file, exclusive ? "wx" : "w"); try { await f.writeFile(data); await f.sync(); } finally { await f.close(); } }
 const fail = (message, conflict = false) => Object.assign(new Error(message), { conflict });
-const fields = (value, keys) => value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every(k => keys.includes(k));
+const validGeneration = value => typeof value === "string" && /^[a-zA-Z0-9-]+$/.test(value);
+const fields = (value, keys) => value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === keys.length && Object.keys(value).every(k => keys.includes(k));
 
 export class ManagedPair {
   constructor({ root, resourceId, nativeName, markdownName, locations = new Map(), fault = async () => {} }) {
-    if (![nativeName, markdownName].every(n => typeof n === "string" && /^[^./\\][^/\\]*$/.test(n)) || nativeName === markdownName || !nativeName.endsWith(".mutable.json") || !markdownName.endsWith(".md")) throw Error("Invalid pair locations");
+    if (![nativeName, markdownName].every(n => typeof n === "string" && !n.includes("\0") && /^[^./\\][^/\\]*$/.test(n)) || nativeName === markdownName || !nativeName.endsWith(".mutable.json") || !markdownName.endsWith(".md")) throw Error("Invalid pair locations");
     this.root = root; this.resourceId = resourceId; this.nativeName = nativeName; this.markdownName = markdownName;
     this.locations = new Map(locations); this.fault = fault;
     this.home = path.join(root, `.mutable-pair-${hash(resourceId)}`);
@@ -34,7 +35,7 @@ export class ManagedPair {
   async receipt() {
     const raw = await read(path.join(this.home, "receipt.json")); if (!raw) return;
     const r = JSON.parse(raw);
-    if (!fields(r, ["version", "resourceId", "generation", "nativeHash", "markdownHash", "nativeName", "markdownName"]) || r.version !== 1 || r.resourceId !== this.resourceId || r.nativeName !== this.nativeName || r.markdownName !== this.markdownName || ![r.nativeHash, r.markdownHash].every(h => /^[0-9a-f]{64}$/.test(h))) throw fail("Invalid pair receipt", true);
+    if (!fields(r, ["version", "resourceId", "generation", "nativeHash", "markdownHash", "nativeName", "markdownName"]) || r.version !== 1 || !validGeneration(r.generation) || r.resourceId !== this.resourceId || r.nativeName !== this.nativeName || r.markdownName !== this.markdownName || ![r.nativeHash, r.markdownHash].every(h => /^[0-9a-f]{64}$/.test(h))) throw fail("Invalid pair receipt", true);
     return r;
   }
   async dependencies(native) {
@@ -65,7 +66,7 @@ export class ManagedPair {
     return this.lock(async () => {
       try {
         if (await read(path.join(this.home, "pending.json"))) throw fail("Recover the pending generation first", true);
-        if (generation.resourceId !== this.resourceId || !/^[a-zA-Z0-9-]+$/.test(generation.generation)) throw fail("Wrong save identity/generation");
+        if (generation.resourceId !== this.resourceId || !validGeneration(generation.generation)) throw fail("Wrong save identity/generation");
         await this.dependencies(generation.native);
         const prior = await this.receipt();
         const expected = { native: prior?.nativeHash ?? null, markdown: acceptMarkdownHash ?? prior?.markdownHash ?? null };
@@ -83,7 +84,7 @@ export class ManagedPair {
   async pending() {
     const raw = await read(path.join(this.home, "pending.json")); if (!raw) return;
     const p = JSON.parse(raw);
-    if (!fields(p, ["version", "generation"]) || p.version !== 1 || !/^[a-zA-Z0-9-]+$/.test(p.generation)) throw fail("Invalid pending record", true);
+    if (!fields(p, ["version", "generation"]) || p.version !== 1 || !validGeneration(p.generation)) throw fail("Invalid pending record", true);
     const intent = JSON.parse(await fs.readFile(path.join(this.home, p.generation, "intent.json")));
     if (!fields(intent, ["version", "resourceId", "generation", "nativeName", "markdownName", "profile", "nativeHash", "markdownHash", "expected"]) || intent.version !== 1 || intent.resourceId !== this.resourceId || intent.generation !== p.generation || intent.nativeName !== this.nativeName || intent.markdownName !== this.markdownName || !fields(intent.expected, ["native", "markdown"]) || ![intent.nativeHash, intent.markdownHash, ...Object.values(intent.expected)].every(h => h === null || /^[0-9a-f]{64}$/.test(h))) throw fail("Invalid pair intent", true);
     return intent;
@@ -141,6 +142,7 @@ export class ManagedPair {
       const receipt = { version: 1, resourceId: this.resourceId, generation: intent.generation, nativeName: this.nativeName, markdownName: this.markdownName, nativeHash: intent.nativeHash, markdownHash: intent.markdownHash };
       const temp = path.join(this.home, `receipt-${randomUUID()}`); await durableWrite(temp, JSON.stringify(receipt)); await fs.rename(temp, path.join(this.home, "receipt.json")); await syncDir(this.home);
       await this.fault("after-receipt", { intent });
+      for (const kind of ["native", "markdown"]) { await this.displaced(intent, kind); if (!sameHash(await read(this.file(kind)), intent[kind + "Hash"])) throw fail(`External ${kind} changes after receipt`, true); }
       await fs.unlink(path.join(this.home, "pending.json")); await syncDir(this.home);
       return { phase: "saved", generation: intent.generation, native: native.toString() };
     } catch (error) {

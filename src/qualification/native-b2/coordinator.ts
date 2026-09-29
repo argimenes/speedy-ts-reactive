@@ -43,18 +43,14 @@ export class ResourcePair {
   }
   recover(): Promise<PairResult> {
     if (this.inFlight) return this.inFlight;
-    return this.run(async () => {
-      const recovered = await this.adapter.recover();
-      if (recovered.phase === "saved" && recovered.native) this.savedNative = recovered.native;
-      return recovered;
-    }, this.pending?.native, this.pending?.generation);
+    return this.run(() => this.adapter.recover(), this.pending?.native, this.pending?.generation);
   }
-  private run(action: () => Promise<PairResult>, native?: string, expectedGeneration?: string) {
+  private run(action: () => Promise<PairResult & { native?: string }>, native?: string, expectedGeneration?: string) {
     this.inFlight = (async () => {
-      let result: PairResult;
+      let result: PairResult & { native?: string };
       try { result = await action(); } catch (error) { result = { phase: "failed", error: String(error), generation: expectedGeneration }; }
-      if (expectedGeneration && result.generation && result.generation !== expectedGeneration) result = { phase: "failed", error: "Stale save completion", generation: expectedGeneration };
-      if (result.phase === "saved") { if (native) this.savedNative = native; this.pending = undefined; }
+      if (expectedGeneration && (result.phase === "saved" || result.generation) && result.generation !== expectedGeneration) result = { phase: "failed", error: "Stale save completion", generation: expectedGeneration };
+      if (result.phase === "saved") { if (native ?? result.native) this.savedNative = native ?? result.native; this.pending = undefined; }
       // Preflight/encoding rejection has no durable generation to recover.
       if (result.phase === "failed" && !result.generation) this.pending = undefined;
       return this.result = { ...result, dirty: this.dirty };

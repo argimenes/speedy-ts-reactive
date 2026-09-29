@@ -9,8 +9,8 @@ import type { CanonicalRepository } from "../../block-tree/repository";
 export const PROFILE = "mutable-markdown-subset-v1";
 export interface LinkTarget { documentId: string; blockId: string; title: string; path: string }
 export interface Diagnostic { blockId?: string; code: string; detail: string }
-export const escapeText = (text: string) => text.replace(/[\\`*_[\]{}<>#!|~]/g, "\\$&");
-const unescapeText = (text: string) => text.replace(/\\([\\`*_[\]{}<>#!|~])/g, "$1");
+export const escapeText = (text: string) => text.replace(/[\\`*_[\]{}<>#!|~&+.=-]/g, "\\$&");
+const unescapeText = (text: string) => text.replace(/\\([\\`*_[\]{}<>#!|~&+.=-])/g, "$1");
 export function resolveWiki(label: string, targets: readonly LinkTarget[]): LinkTarget | undefined {
   const matches = targets.filter(t => t.title === label || t.path === label);
   return matches.length === 1 ? matches[0] : undefined;
@@ -19,7 +19,8 @@ export function inlineMarkdown(source: string, targets: readonly LinkTarget[]) {
   let text = ""; const properties: JsonObject[] = [];
   for (let i = 0; i < source.length;) {
     if (source[i] === "\\" && i + 1 < source.length) { text += unescapeText(source.slice(i, i + 2)); i += 2; continue; }
-    const bold = /^\*\*([^*\n]+)\*\*/.exec(source.slice(i));
+    const candidate = /^\*\*([^*\n\[\]`]+)\*\*/.exec(source.slice(i));
+    const bold = candidate && source[i - 1] !== "*" && source[i + candidate[0].length] !== "*" ? candidate : undefined;
     const wiki = /^\[\[([^\[\]|\n]+)\]\]/.exec(source.slice(i));
     const target = wiki && resolveWiki(wiki[1], targets);
     if (bold || target && wiki) {
@@ -139,11 +140,17 @@ export function exportMarkdown(resource: DeepReadonly<ResourceSnapshot>, targets
       const rows = c.children.map(pk => local(pk));
       const grid = rows.map(row => row?.viewType === "table-row-block" ? row.children.map(pk => local(pk)).map(cell => cell?.viewType === "table-cell-block" && cell.children.length === 1 ? local(cell.children[0]) : undefined) : []);
       const width = grid[0]?.length;
-      const simple = (c.payload.metadata as any)?.headerRows === 1 && width && grid.every(row => row.length === width && row.every(cell => cell?.viewType === "standoff-editor-block" && !cell.children.length && !Object.keys(cell.ownedRelations).length && !(cell.payload.standoffProperties as any[])?.length && !plain(cell.key).includes("\n") && cell.inlineContent.every(pk => local(pk)?.viewType === "text-cell")));
+      const plainPayload = (node: typeof c | undefined) => node && !Object.keys(node.ownedRelations).length && !Object.keys(node.opaqueRelations).length && Object.entries(node.payload).every(([k, v]) => ["id", "type", "text"].includes(k) || v == null || (typeof v === "object" && !Object.keys(v).length));
+      const simple = (c.payload.metadata as any)?.headerRows === 1 && width && rows.every(row => plainPayload(row) && !row!.inlineContent.length && row!.children.every(pk => { const cell = local(pk); return plainPayload(cell) && !cell!.inlineContent.length; })) && grid.every(row => row.length === width && row.every(cell => cell?.viewType === "standoff-editor-block" && plainPayload(cell) && !cell.children.length && !plain(cell.key).includes("\n") && cell.inlineContent.every(pk => { const atom = local(pk); return atom?.viewType === "text-cell" && plainPayload(atom); })));
       if (simple) {
         const lines = grid.map(row => `| ${row.map(cell => escapeText(plain(cell!.key))).join(" | ")} |`);
         lines.splice(1, 0, `| ${Array(width).fill("---").join(" | ")} |`); text = lines.join("\n");
       } else { warn(c.payload.id, "table-fallback", "No qualified rectangular plain-text header table; native rows/cells retained below"); text = "[Table]\n\n" + children(); }
+    } else if (c.viewType === "image-block") {
+      const meta = c.payload.metadata as any, src = String(meta?.url ?? c.payload.filename ?? ""), alt = escapeText(String(meta?.alt ?? "Image"));
+      warn(c.payload.id, "image-projection", "Image layout/metadata remains native-only; assets are not copied");
+      text = /^(https?:|\.\.?\/)/.test(src) && !/[\s()<>]/.test(src) ? `![${alt}](${src})` : `[Image: ${alt}]`;
+      if (c.children.length) text += "\n\n" + children();
     } else {
       warn(c.payload.id, "block-fallback", c.viewType); text = `[${escapeText(c.viewType)}: ${escapeText(String(c.payload.id ?? ""))}]`;
       if (typeof c.payload.text === "string") text += "\n\n" + escapeText(c.payload.text);
@@ -151,6 +158,7 @@ export function exportMarkdown(resource: DeepReadonly<ResourceSnapshot>, targets
     }
     for (const [name, pk] of Object.entries(c.ownedRelations)) { warn(c.payload.id, "relation-layout", name); text += `\n\n[${escapeText(name)}]\n\n${visit(pk)}`; }
     if (Object.keys(c.opaqueRelations).length) warn(c.payload.id, "opaque-relations", "Opaque authored relations remain native-only");
+    if (c.payload.metadata && Object.keys(c.payload.metadata as object).some(k => !["documentId", "headerRows"].includes(k))) warn(c.payload.id, "native-metadata", "Metadata is not fully represented by this Markdown profile");
     const known = new Set(["id", "type", "metadata", "standoffProperties", "blockProperties", "linkedAnnotations", "text"]);
     if (Object.keys(c.payload).some(k => !known.has(k))) warn(c.payload.id, "authored-payload", "Additional authored properties remain native-only");
     return text;
