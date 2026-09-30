@@ -1,6 +1,6 @@
 # Flint Stage B — native fidelity, admission and dual-save amendment
 
-**Status:** Stage A, B1.1, B1.2 and B2 are accepted. The approved bounded native Save/Open integration is implemented and [qualified for review](FLINT_NATIVE_PRODUCTION_QUALIFICATION_REPORT.md). Native routes default on subject to the existing server read-only policy. Workspace persistence remains guarded; Stage C has not begun.
+**Status:** Stage A, Stage B and the [native Save/Open production qualification](FLINT_NATIVE_PRODUCTION_QUALIFICATION_REPORT.md) are accepted and complete. Native routes default on subject to the existing server read-only policy. Workspace persistence remains guarded. The [Stage C implementation plan](FLINT_STAGE_C_IMPLEMENTATION_PLAN.md) is proposed for review; no Stage C implementation is authorized.
 
 This refines Stage B of the [approved implementation plan](JET_MUTABLE_OS_IMPLEMENTATION_PLAN.md), particularly its §5 native-codec/admission gate. The consumed-Markdown decision is retained. It does not reopen Stage A or authorize Stage C.
 
