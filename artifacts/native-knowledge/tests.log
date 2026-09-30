@@ -1,0 +1,61 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ❯ src/qualification/native-knowledge/index.test.ts (11 tests | 2 failed) 2277ms
+   ✓ extracts canonical identity, tags, text and typed facts with no editor/repository admission or native changes 385ms
+   ✓ replaces one contribution without stale tags, incoming edges or entity aggregates 360ms
+   × uses native Cell boundaries across inline images and richer actual native producer fixtures 15ms
+     → expected false to be true // Object.is equality
+   × suppresses saved contribution immediately, defers capture, follows Undo/Redo and cannot resurrect stale disk on disposal 280ms
+     → expected "snapshot" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st snapshot call:
+
+    Array []
+
+
+Number of calls: 1
+
+   ✓ drops stale overlay extraction and keeps disappeared/ambiguous loaded sources suppressed 369ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/qualification/native-knowledge/index.test.ts > uses native Cell boundaries across inline images and richer actual native producer fixtures
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/qualification/native-knowledge/index.test.ts:34:60
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/qualification/native-knowledge/index.test.ts > suppresses saved contribution immediately, defers capture, follows Undo/Redo and cannot resurrect stale disk on disposal
+AssertionError: expected "snapshot" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st snapshot call:
+
+    Array []
+
+
+Number of calls: 1
+
+ ❯ src/qualification/native-knowledge/index.test.ts:53:105
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  22:28:46
+   Duration  3.91s (transform 326ms, setup 0ms, collect 599ms, tests 2.28s, environment 561ms, prepare 100ms)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/native-knowledge/test-results.json

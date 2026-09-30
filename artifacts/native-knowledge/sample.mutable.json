@@ -1,0 +1,315 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource-1:placement:a0b6916b-fe4f-419f-8c1f-85cf27bdf9c9",
+            "target": {
+              "blockId": "resource-1-margin-text",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "resource-1-margin",
+        "properties": {},
+        "type": "left-margin-block"
+      },
+      {
+        "id": "resource-1-margin-text",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "A margin observation."
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 7,
+              "id": "resource-1-rainbow",
+              "start": 2,
+              "type": "style/rainbow"
+            }
+          ]
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "id": "resource-1-p0",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. "
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 7,
+              "id": "resource-1-bold0",
+              "start": 0,
+              "type": "style/bold"
+            },
+            {
+              "end": 14,
+              "id": "resource-1-italic0",
+              "start": 3,
+              "type": "style/italics"
+            },
+            {
+              "end": 15,
+              "id": "resource-1-link0",
+              "metadata": {
+                "documentId": "resource-2"
+              },
+              "start": 9,
+              "type": "codex/block-reference",
+              "value": "resource-2-root"
+            },
+            {
+              "annotationId": "resource-1-linked",
+              "end": 7,
+              "id": "resource-1-segment0",
+              "start": 0
+            }
+          ]
+        },
+        "relations": {
+          "opaque": {},
+          "owned": {
+            "leftMargin": {
+              "kind": "owned",
+              "placementId": "legacy:resource-1:placement:cf8a95cf-0ece-444b-abe9-04af538bbf68",
+              "target": {
+                "blockId": "resource-1-margin",
+                "kind": "local"
+              }
+            }
+          }
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "id": "resource-1-p1",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. "
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 7,
+              "id": "resource-1-bold1",
+              "start": 0,
+              "type": "style/bold"
+            },
+            {
+              "end": 14,
+              "id": "resource-1-italic1",
+              "start": 3,
+              "type": "style/italics"
+            },
+            {
+              "end": 15,
+              "id": "resource-1-link1",
+              "metadata": {
+                "documentId": "resource-8"
+              },
+              "start": 9,
+              "type": "codex/block-reference",
+              "value": "resource-8-root"
+            },
+            {
+              "annotationId": "resource-1-linked",
+              "end": 7,
+              "id": "resource-1-segment1",
+              "start": 0
+            }
+          ]
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "id": "resource-1-p2",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. "
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 7,
+              "id": "resource-1-bold2",
+              "start": 0,
+              "type": "style/bold"
+            },
+            {
+              "end": 14,
+              "id": "resource-1-italic2",
+              "start": 3,
+              "type": "style/italics"
+            },
+            {
+              "end": 15,
+              "id": "resource-1-link2",
+              "metadata": {
+                "documentId": "resource-2"
+              },
+              "start": 9,
+              "type": "codex/block-reference",
+              "value": "resource-2-root"
+            },
+            {
+              "end": 7,
+              "id": "resource-1-entity2",
+              "start": 0,
+              "type": "codex/entity-reference",
+              "value": "entity-1"
+            }
+          ]
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "id": "resource-1-p3",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. "
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 7,
+              "id": "resource-1-bold3",
+              "start": 0,
+              "type": "style/bold"
+            },
+            {
+              "end": 14,
+              "id": "resource-1-italic3",
+              "start": 3,
+              "type": "style/italics"
+            },
+            {
+              "end": 15,
+              "id": "resource-1-link3",
+              "metadata": {
+                "documentId": "resource-8"
+              },
+              "start": 9,
+              "type": "codex/block-reference",
+              "value": "resource-8-root"
+            },
+            {
+              "end": 7,
+              "id": "resource-1-entity3",
+              "start": 0,
+              "type": "codex/entity-reference",
+              "value": "entity-1"
+            }
+          ]
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource-1:placement:06f1bba1-4ef2-4315-9470-3f15c2494f44",
+            "target": {
+              "blockId": "resource-1-p0",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource-1:placement:a2c1f13b-607c-4981-8201-80c3cfcccc00",
+            "target": {
+              "blockId": "resource-1-p1",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource-1:placement:eec0fc63-5d14-4713-b31d-e02e5d440196",
+            "target": {
+              "blockId": "resource-1-p2",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource-1:placement:2adc787c-c73b-4e2d-9f7c-cd56741e0149",
+            "target": {
+              "blockId": "resource-1-p3",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "resource-1-root",
+        "properties": {
+          "futureFeature": {
+            "nested": {
+              "keep": true
+            },
+            "notFinite": {
+              "$codexHistoryValue": [
+                "number",
+                "NaN"
+              ]
+            },
+            "undefinedValue": {
+              "$codexHistoryValue": [
+                "undefined"
+              ]
+            }
+          },
+          "linkedAnnotations": {
+            "resource-1-linked": {
+              "attributes": {},
+              "id": "resource-1-linked",
+              "metadata": {
+                "entityName": "Leonardo"
+              },
+              "type": "codex/entity-reference",
+              "value": "entity-1"
+            }
+          },
+          "metadata": {
+            "documentId": "resource-1",
+            "tags": [
+              "research",
+              "topic-1"
+            ],
+            "title": "Research resource-1"
+          }
+        },
+        "type": "document-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "resource-1",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:resource-1:placement:f36331a1-048d-455c-b43d-c7f16ca50101",
+      "target": {
+        "blockId": "resource-1-root",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "resource-1",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}
