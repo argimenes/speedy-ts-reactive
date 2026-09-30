@@ -25,3 +25,24 @@
 .flint-files__compare { display: flex; flex-wrap: wrap; gap: 8px; }
 .flint-files__compare label { flex: 1; flex-direction: column; align-items: stretch; }
 .flint-files__compare textarea { min-height: 140px; width: 100%; }
+.flint-application__vault { flex-basis: 230px; min-width: 180px; max-height: 650px; overflow: auto; }
+.flint-vault-controls { font-size: 13px; overflow-wrap: anywhere; }
+.flint-vault-controls label, .flint-properties label { display: block; margin: 8px 0; }
+.flint-vault-controls select, .flint-properties input, .flint-properties textarea { width: 100%; box-sizing: border-box; background: #242b33; color: #dbe1e5; border: 1px solid #687584; padding: 5px; }
+.flint-vault-controls details { margin: 8px 0; }
+.flint-vault-controls summary { cursor: pointer; }
+.flint-tree-folder .flint-tree-folder { margin-left: 10px; border-left: 1px solid #485260; padding-left: 5px; }
+.flint-tree-folder summary button { width: auto; }
+.flint-tree-document small { display: block; color: #aab4c2; }
+.flint-tree-folder button[aria-pressed="true"] { outline: 1px solid #8599af; }
+.flint-properties { flex: 0 0 180px; padding: 12px; border-left: 1px solid #39414a; font-size: 13px; overflow-wrap: anywhere; }
+.flint-properties h2 { font-size: 15px; }
+.flint-properties textarea { min-height: 75px; }
+.flint-properties dd { margin: 4px 0 12px; color: #aab4c2; }
+.flint-application button:disabled { opacity: .5; cursor: not-allowed; }
+@media(max-width: 750px) { .flint-application__body { flex-wrap: wrap; } .flint-properties { flex-basis: 100%; } }
+.flint-vault-controls p, .flint-properties p { margin: 8px 0; line-height: 1.35; }
+.flint-properties h2 { margin: 0 0 12px; }
+.flint-vault-controls > button, .flint-vault-controls details > button, .flint-properties > button { border: 1px solid #485260; border-radius: 3px; padding: 5px 8px; background: #242b33; }
+.flint-vault-controls button:hover:not(:disabled), .flint-properties button:hover:not(:disabled) { background: #35414e; }
+.flint-vault-controls button:focus-visible, .flint-properties button:focus-visible { outline: 2px solid #99bedf; outline-offset: 1px; }

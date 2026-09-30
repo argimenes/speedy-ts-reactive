@@ -1,0 +1,29 @@
+{
+  "passed": 23,
+  "checks": [
+    "admission uses the actual WorkspaceSession repository",
+    "native Document mounts in a Flint transient tab",
+    "initial rich authored state matches recaptured canonical resource",
+    "ordinary browser typing edits admitted native content",
+    "undo retains original authored rich graph",
+    "redo and native re-save retain edited graph",
+    "stale bytes cannot overwrite live edits",
+    "second Flint Window shares canonical Document",
+    "second occurrence edits are visible in first",
+    "browser-created shared definition is Document-owned",
+    "resource-local definition resolves through both live Windows",
+    "editing a shared definition preserves one canonical value",
+    "linked-definition edit undo restores exact native resource",
+    "B opens in Flint before A with ownership unknown",
+    "independent B accepts ordinary native browser typing",
+    "independent B typing is undoable",
+    "two Flint occurrences of B share one canonical content",
+    "reuniting A establishes only its authored ownership",
+    "reunion and C transclusion preserve independently edited B",
+    "C references B without acquiring ownership",
+    "A re-save contains only A and its owned-resource edge",
+    "re-save bytes decode without semantic change",
+    "no uncaught browser exceptions"
+  ],
+  "errors": []
+}

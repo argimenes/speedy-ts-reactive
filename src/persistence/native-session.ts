@@ -25,6 +25,8 @@ export interface VaultRelocation {
 export class NativeDocumentSession {
   private bindings = new Map<string, Binding>();
   private changed = createSignal(0);
+  // Tree observers must not rebuild for ordinary content/status changes.
+  private storageChanged = createSignal(0);
   private disposed = false;
   private notice = '';
   private candidates = new Set<string>();
@@ -43,8 +45,14 @@ export class NativeDocumentSession {
     ownNativeSession(editor.repository, () => { this.disposed = true; stop(); window.removeEventListener('beforeunload', warn); });
   }
   private touch() { this.changed[1](v => v + 1); }
+  private touchStorage() { this.storageChanged[1](v => v + 1); }
   status(id?: string) { this.changed[0](); const b = id && this.bindings.get(id); return b ? b.message : this.notice || 'Native Documents save individually; Workspace saving remains guarded.'; }
-  location(id?: string) { this.changed[0](); const b = id && this.bindings.get(id); return b ? { ...b.location } : undefined; }
+  location(id?: string) { this.storageChanged[0](); const b = id && this.bindings.get(id); return b ? { ...b.location } : undefined; }
+  trackCandidate(id: string) {
+    captureNative(this.editor.repository.snapshot(),id);
+    markNativeBinding(this.editor.repository,id);this.candidates.add(id);this.touch();
+  }
+  isCandidate(id: string) { this.changed[0]();return this.candidates.has(id); }
   private targets(): LinkTarget[] {
     return Object.values(this.editor.repository.readState().contents).filter(c => c.viewType === 'document-block').map(c => {
       const m = c.payload.metadata as any; const id = String(m?.documentId ?? c.payload.id), binding = this.bindings.get(id);
@@ -81,6 +89,10 @@ export class NativeDocumentSession {
     this.relocations.set(input.operationId, {request: captured, bindings});
     return this.runRelocation(input.operationId, false);
   }
+  pendingVaultRelocations(vault: string) {
+    this.storageChanged[0]();
+    return [...this.relocations].filter(([,value]) => value.request.vault === vault).map(([operationId]) => operationId);
+  }
   async recoverRelocation(operationId: string) {
     if (!this.relocations.has(operationId)) {
       const result=await request('vault/recover',{operationId});
@@ -97,7 +109,7 @@ export class NativeDocumentSession {
       if(b.relocationWork) return b.relocationWork;
       b.relocation=operationId; b.busy=true; b.message='Relocation pending';
     }
-    this.touch();
+    this.touchStorage(); this.touch();
     const work=(async()=>{
       try {
         const result=await request(recovery?'vault/recover':'vault/relocate',recovery?{operationId}:record.request);
@@ -129,7 +141,7 @@ export class NativeDocumentSession {
         throw error;
       } finally {
         for(const x of record.bindings){const b=this.bindings.get(x.id)!;b.busy=false;b.relocationWork=undefined;}
-        record.work=undefined;this.touch();
+        record.work=undefined;this.touchStorage();this.touch();
       }
     })();
     record.work=work;
@@ -186,7 +198,7 @@ export class NativeDocumentSession {
         const data=await request('save',{location:binding.location,generation:binding.pending,baseline:binding.baseline,dependencies:this.dependencies(id),acceptMarkdownHash:binding.comparedHash});return complete(data);
       }
     },()=>this.targets());
-    this.bindings.set(id,binding);markNativeBinding(this.editor.repository,id);return binding;
+    this.bindings.set(id,binding);markNativeBinding(this.editor.repository,id);this.touchStorage();return binding;
   }
   private async operate(id: string, recovery: boolean) {
     const b=this.bindings.get(id);if(!b)throw new Error('Choose a native Save destination first');
@@ -207,7 +219,7 @@ export class NativeDocumentSession {
     // A rejected first destination has no durable binding to relocate.
     if(location && !sameLocation(b.location,location) && b.baseline.nativeHash===null && !b.pending) {
       if(!location.filename.endsWith('.mutable.json'))throw new Error('Choose a .mutable.json destination');
-      b.location={...location};
+      b.location={...location};this.touchStorage();
     }
     return this.operate(id,false);
   }

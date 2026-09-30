@@ -1,0 +1,22 @@
+{
+  "passed": 16,
+  "checks": [
+    "Open Vault reconstructs real nested directories without admission",
+    "Create directory writes a real folder",
+    "New Document creates native pair in selected physical directory",
+    "title and tags save as native metadata without renaming the pair",
+    "two Flint Windows independently host the same canonical Document",
+    "loaded tag filter crosses the physical hierarchy",
+    "continued native typing survives relocation in both occurrences",
+    "relocation updates both physical trees and the binding without a new save generation",
+    "unsaved typing was not included in relocation",
+    "next Save publishes edits to relocated destination",
+    "directory move preserves title and updates both Windows",
+    "Refresh discovers an external folder without catalog metadata",
+    "visible recovery resumes durable relocation after server process death",
+    "explicit Markdown import saves a distinct native resource and preserves source",
+    "fresh repository and restarted server reconstruct hierarchy, identity, native text and properties",
+    "no uncaught browser exceptions"
+  ],
+  "errors": []
+}

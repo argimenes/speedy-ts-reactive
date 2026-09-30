@@ -1,0 +1,20 @@
+{
+  "passed": 14,
+  "checks": [
+    "Markdown import mounts ordinary native Blocks including a table",
+    "native typing consumes completed bold delimiters",
+    "one conversion Undo restores complete literal",
+    "Undo does not immediately reconvert",
+    "Redo restores native semantics",
+    "wiki conversion resolves stable Document/root identity",
+    "h1 gesture consumes prefix and applies existing block style",
+    "IME completes as ordinary literal text",
+    "native controls retain literal typing",
+    "two Flint occurrences share converted canonical content",
+    "closing all Flint Windows does not cancel the resource-owned save",
+    "captured Markdown and native both precede newer edits",
+    "reopening preserves newer canonical edits",
+    "no uncaught browser exceptions"
+  ],
+  "errors": []
+}

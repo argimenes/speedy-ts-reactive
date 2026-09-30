@@ -1,0 +1,49 @@
+{
+  "date": "2026-09-30",
+  "stage": "C1b",
+  "status": "qualified; stop for review before C2",
+  "automated": {
+    "files": 44,
+    "passed": 435,
+    "failed": 0
+  },
+  "browsers": {
+    "c1b": {
+      "passed": 16,
+      "errors": [],
+      "evidence": "browser/browser-results.json"
+    },
+    "stageA": {
+      "passed": 28,
+      "errors": [],
+      "evidence": "stage-a-browser/browser-results.json"
+    },
+    "nativeB1B11B12": {
+      "passed": 23,
+      "errors": [],
+      "evidence": "b1-browser/native-browser-results.json"
+    },
+    "b2": {
+      "passed": 14,
+      "errors": [],
+      "evidence": "b2-browser/browser-results.json"
+    },
+    "production": {
+      "passed": 13,
+      "errors": [],
+      "evidence": "production-regression/browser-results.json"
+    }
+  },
+  "browserChecks": 94,
+  "typecheck": "passed",
+  "build": "passed",
+  "ordinaryTyping": "Existing tree rows retained; no repository snapshot (mounted UI assertion)",
+  "qualificationNote": "A parallel B1 screenshot capture timed out; its complete isolated rerun passed.",
+  "boundaries": [
+    "Native identity is independent of filesystem path",
+    "No Workspace persistence or hierarchy catalog",
+    "Opened-Document tag coverage only",
+    "No automatic external rebinding",
+    "No C2 implementation"
+  ]
+}

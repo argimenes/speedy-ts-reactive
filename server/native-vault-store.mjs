@@ -92,6 +92,7 @@ export class NativeVaultStore {
  async discover(vault='.',{signal}={}) {
   signal?.throwIfAborted();
   relative(vault);const base=await this.resolve(vault);if(!(await fs.stat(base)).isDirectory())fail('Vault must be a directory',400);
+  vault=path.relative(this.root,await fs.realpath(base)).split(path.sep).join('/')||'.';
   const folders=[],documents=[],markdown=[],other=[],diagnostics=[];let count=0;
   const walk=async dir=>{signal?.throwIfAborted();let entries;try{entries=await fs.readdir(await this.resolve(dir),{withFileTypes:true});}catch(e){diagnostics.push({path:dir,message:e.message});return;}
    for(const e of entries.sort((a,b)=>a.name.localeCompare(b.name))){signal?.throwIfAborted();if(++count>LIMIT){diagnostics.push({path:dir,message:'Vault scan limit reached'});return;}if(e.name.startsWith('.mutable-'))continue;

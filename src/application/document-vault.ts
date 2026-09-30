@@ -1,0 +1,101 @@
+import { createSignal } from 'solid-js';
+import type { NativeDocumentSession, VaultRelocation } from '../persistence/native-session';
+export type VaultLocation = {folder: string; filename: string};
+type Baseline = VaultRelocation['baselines'][number]['baseline'];
+export interface VaultDiscovery {
+  vault: string; folders: string[];
+  documents: Array<{location: VaultLocation; resourceId: string; title: string; state: string; baseline?: Baseline}>;
+  markdown: string[]; diagnostics: Array<{path?: string; resourceId?: string; message: string}>;
+  operations: Array<{operationId: string; phase: string}>; readOnly: boolean; complete: boolean;
+}
+export const vaultPath = (location: VaultLocation) => location.folder === '.' ? location.filename : `${location.folder}/${location.filename}`;
+export const vaultContains = (root: string, value: string) => root === '.' || value === root || value.startsWith(root + '/');
+export function vaultRoot(value: string) {
+  const parts=value.trim().split('/').filter(p=>p!=='.'&&p!=='');
+  if(value.trim().startsWith('/') || /[\\\0]/.test(value) || parts.includes('..'))throw new Error('Choose a relative directory inside the managed store');
+  return parts.join('/')||'.';
+}
+export function vaultLeaf(value: string) {
+  if(!value.trim()||value!==value.trim()||/[\/\\\0]/.test(value)||value.startsWith('.'))throw new Error('Choose a filename or directory name without separators');
+  return value;
+}
+/** Feature-owned, disposable tree read model. No authored membership or persistent catalog. */
+export function createDocumentVaults(native: NativeDocumentSession) {
+  const entries=new Map<string,VaultLease>();
+  let disposed=false;
+  function check(root: string) {
+    if(disposed)throw new Error('Document vault host disposed');
+    for(const key of entries.keys())if(key!==root&&(vaultContains(key,root)||vaultContains(root,key)))throw new Error('An overlapping vault is already open. Use the same root or close that vault first.');
+  }
+  class VaultLease {
+    users=0;
+    private snapshotSignal=createSignal<VaultDiscovery>();
+    private busySignal=createSignal(false);
+    private noticeSignal=createSignal('');
+    private refreshWork?:Promise<void>;
+    private controller?:AbortController;
+    private alive=true;
+    constructor(readonly root:string,initial:VaultDiscovery){this.snapshotSignal[1](initial);}
+    snapshot=()=>this.snapshotSignal[0]()!;
+    busy=()=>this.busySignal[0]();
+    notice=()=>this.noticeSignal[0]();
+    operations=()=>{
+      const rows=new Map(this.snapshot().operations.map(o=>[o.operationId,o]));
+      for(const operationId of native.pendingVaultRelocations(this.root))rows.set(operationId,{operationId,phase:'pending'});
+      return [...rows.values()];
+    };
+    async refresh() {
+      if(!this.alive)return;
+      if(this.refreshWork)return this.refreshWork;
+      this.controller=new AbortController();
+      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive)this.snapshotSignal[1](value);}catch(e){if(this.alive){this.noticeSignal[1](String(e));throw e;}}finally{this.refreshWork=undefined;}})();
+      return this.refreshWork;
+    }
+    requireDirectory(folder:string) {
+      if(!this.alive)throw new Error('Vault closed');
+      if(folder!==this.root&&!this.snapshot().folders.includes(folder))throw new Error('Choose an existing directory in this vault');
+    }
+    requireFile(loc:VaultLocation) {
+      if(!this.snapshot().complete)throw new Error('Resolve incomplete vault discovery before opening a Document');
+      this.requireDirectory(loc.folder);vaultLeaf(loc.filename);
+      const rows=this.snapshot().documents.filter(d=>vaultPath(d.location)===vaultPath(loc));
+      if(rows.length!==1||rows[0].state==='ambiguous')throw new Error('Document missing or ambiguous; refresh the vault');return rows[0];
+    }
+    async mutate<T>(action:()=>Promise<T>) {
+      if(!this.alive)throw new Error('Vault closed');
+      if(this.busy())throw new Error('A vault operation is already active');
+      if(this.snapshot().readOnly)throw new Error('This vault is read-only');
+      this.busySignal[1](true);this.noticeSignal[1]('');
+      try{await this.refresh();if(this.snapshot().readOnly)throw new Error('This vault is read-only');const result=await action();return result;}catch(e){this.noticeSignal[1](String(e));throw e;}
+      finally {try{if(this.alive){await this.refreshWork?.catch(()=>{});await this.refresh().catch(()=>{});}}finally{this.busySignal[1](false);}}
+    }
+    async relocate(kind:'pair'|'directory',source:string,destination:string) {
+      return this.mutate(async()=>{
+        const scan=this.snapshot();
+        if(!scan.complete)throw new Error('Resolve incomplete or ambiguous vault discovery before relocation');
+        if(!vaultContains(this.root,source)||!vaultContains(this.root,destination))throw new Error('Cross-vault moves are not supported');
+        const resources=scan.documents.filter(d=>kind==='pair'?vaultPath(d.location)===source:vaultContains(source,vaultPath(d.location)));
+        if(resources.some(d=>!d.baseline))throw new Error('Resource baseline unavailable');
+        const result=await native.relocateVault({operationId:crypto.randomUUID(),vault:this.root,kind,source,destination,baselines:resources.map(d=>({resourceId:d.resourceId,baseline:d.baseline!}))});
+        this.noticeSignal[1](result.phase==='relocated'?'Relocated. Existing Markdown links may retain the previous path.':`Relocation pending: ${result.error??'Recover the recorded operation'}`);
+        return result;
+      });
+    }
+    async recover(operationId:string) {
+      return this.mutate(async()=>{const result=await native.recoverRelocation(operationId);this.noticeSignal[1](result.phase==='relocated'?'Recovery complete. Open the destination explicitly if it is not already bound.':`Recovery pending: ${result.error}`);return result;});
+    }
+    release(){if(--this.users===0){this.alive=false;this.controller?.abort();entries.delete(this.root);}}
+    dispose(){this.alive=false;this.controller?.abort();}
+  }
+  return {
+    async acquire(input:string, signal?:AbortSignal):Promise<VaultLease> {
+      signal?.throwIfAborted();
+      const root=vaultRoot(input);check(root);
+      let entry=entries.get(root);
+      if(!entry){const scan:VaultDiscovery=await native.discoverVault(root,signal);signal?.throwIfAborted();check(scan.vault);entry=entries.get(scan.vault);if(!entry){entry=new VaultLease(scan.vault,scan);entries.set(scan.vault,entry);}}
+      entry.users++;return entry;
+    },
+    dispose(){disposed=true;for(const e of entries.values())e.dispose();entries.clear();},
+  };
+}
+export type DocumentVaultLease = Awaited<ReturnType<ReturnType<typeof createDocumentVaults>['acquire']>>;
