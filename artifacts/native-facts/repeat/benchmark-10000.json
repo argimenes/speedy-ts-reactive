@@ -1,0 +1,277 @@
+{
+  "profile": "native-knowledge-investigation-1",
+  "size": 10000,
+  "environment": {
+    "node": "v22.12.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M1",
+    "logicalCpus": 8,
+    "systemMemoryBytes": 8589934592
+  },
+  "method": "Fresh process; generated files already in OS cache; sequential safe reads; lightweight validated witness reader; 5ms event-loop heartbeat; explicit GC retained-heap samples; no mounted editors or resource admission",
+  "fixture": {
+    "paragraphs": 4,
+    "charactersPerParagraph": 306,
+    "logicalMentions": 7,
+    "documentReferences": 4,
+    "entityMentions": 3,
+    "annotationSegments": 17,
+    "blocks": 7
+  },
+  "fixtureGenerationMs": 4786.911,
+  "metrics": {
+    "discoveryMs": 269.545,
+    "readHashMs": 5047.808,
+    "validationMs": 12712.062,
+    "factsMs": 1865.205,
+    "insertMs": 86.703,
+    "totalMs": 20084.449,
+    "nativeBytes": 96519060,
+    "peakHeap": 333844752,
+    "files": 10000
+  },
+  "totals": {
+    "resources": 10000,
+    "blocks": 70000,
+    "annotations": 170000,
+    "mentions": 70000,
+    "documentReferences": 40000,
+    "entityMentions": 30000,
+    "characters": 12450000
+  },
+  "memory": {
+    "baselineHeap": 4823200,
+    "retainedHeap": 297153768,
+    "retainedHeapDelta": 292330568,
+    "baselineRss": 65765376,
+    "retainedRss": 404258816,
+    "processPeakRssKiB": 420848
+  },
+  "scheduling": {
+    "medianMs": 0.42,
+    "p95Ms": 1.281,
+    "maxMs": 46.51,
+    "samples": 3694
+  },
+  "queries": {
+    "backlinks": {
+      "medianMs": 0.001,
+      "p95Ms": 0.001,
+      "maxMs": 0.036,
+      "samples": 1000
+    },
+    "entityMentions": {
+      "medianMs": 0.001,
+      "p95Ms": 0.002,
+      "maxMs": 0.152,
+      "samples": 1000
+    },
+    "entitySources": {
+      "medianMs": 0.026,
+      "p95Ms": 0.03,
+      "maxMs": 0.845,
+      "samples": 1000
+    },
+    "tag": {
+      "medianMs": 0.001,
+      "p95Ms": 0.002,
+      "maxMs": 0.005,
+      "samples": 1000
+    },
+    "traversal": {
+      "medianMs": 0.009,
+      "p95Ms": 0.011,
+      "maxMs": 0.803,
+      "samples": 1000
+    }
+  },
+  "ranges": {
+    "medianMs": 0.003,
+    "p95Ms": 0.005,
+    "maxMs": 0.107,
+    "samples": 1000,
+    "example": [
+      {
+        "blockId": "resource-0-p0",
+        "start": 3,
+        "end": 8
+      },
+      {
+        "blockId": "resource-0-p1",
+        "start": 3,
+        "end": 8
+      },
+      {
+        "blockId": "resource-0-p2",
+        "start": 3,
+        "end": 8
+      },
+      {
+        "blockId": "resource-0-p3",
+        "start": 3,
+        "end": 8
+      }
+    ]
+  },
+  "fullText": {
+    "ms": 3022.505,
+    "sources": 50000,
+    "error": "Error: Search exceeds the worker's 50,000-candidate memory budget. Narrow the scope or query."
+  },
+  "incremental": {
+    "medianMs": 1.865,
+    "p95Ms": 2.541,
+    "maxMs": 2.541,
+    "samples": 5
+  },
+  "examples": {
+    "resource": "resource-0",
+    "root": "resource-0-root",
+    "tagCount": 500,
+    "backlinkCount": 4,
+    "entityMentionCount": 600,
+    "entitySourceCount": 200,
+    "traversal": {
+      "ids": [
+        "resource-0",
+        "resource-1",
+        "resource-7",
+        "resource-2",
+        "resource-8",
+        "resource-14",
+        "resource-3",
+        "resource-9",
+        "resource-15",
+        "resource-21"
+      ],
+      "edges": [
+        [
+          "resource-0",
+          "resource-1",
+          "[\"resource-0\",\"resource-0-p0\",\"resource-0-link0\"]"
+        ],
+        [
+          "resource-0",
+          "resource-7",
+          "[\"resource-0\",\"resource-0-p1\",\"resource-0-link1\"]"
+        ],
+        [
+          "resource-0",
+          "resource-1",
+          "[\"resource-0\",\"resource-0-p2\",\"resource-0-link2\"]"
+        ],
+        [
+          "resource-0",
+          "resource-7",
+          "[\"resource-0\",\"resource-0-p3\",\"resource-0-link3\"]"
+        ],
+        [
+          "resource-1",
+          "resource-2",
+          "[\"resource-1\",\"resource-1-p0\",\"resource-1-link0\"]"
+        ],
+        [
+          "resource-1",
+          "resource-8",
+          "[\"resource-1\",\"resource-1-p1\",\"resource-1-link1\"]"
+        ],
+        [
+          "resource-1",
+          "resource-2",
+          "[\"resource-1\",\"resource-1-p2\",\"resource-1-link2\"]"
+        ],
+        [
+          "resource-1",
+          "resource-8",
+          "[\"resource-1\",\"resource-1-p3\",\"resource-1-link3\"]"
+        ],
+        [
+          "resource-7",
+          "resource-8",
+          "[\"resource-7\",\"resource-7-p0\",\"resource-7-link0\"]"
+        ],
+        [
+          "resource-7",
+          "resource-14",
+          "[\"resource-7\",\"resource-7-p1\",\"resource-7-link1\"]"
+        ],
+        [
+          "resource-7",
+          "resource-8",
+          "[\"resource-7\",\"resource-7-p2\",\"resource-7-link2\"]"
+        ],
+        [
+          "resource-7",
+          "resource-14",
+          "[\"resource-7\",\"resource-7-p3\",\"resource-7-link3\"]"
+        ],
+        [
+          "resource-2",
+          "resource-3",
+          "[\"resource-2\",\"resource-2-p0\",\"resource-2-link0\"]"
+        ],
+        [
+          "resource-2",
+          "resource-9",
+          "[\"resource-2\",\"resource-2-p1\",\"resource-2-link1\"]"
+        ],
+        [
+          "resource-2",
+          "resource-3",
+          "[\"resource-2\",\"resource-2-p2\",\"resource-2-link2\"]"
+        ],
+        [
+          "resource-2",
+          "resource-9",
+          "[\"resource-2\",\"resource-2-p3\",\"resource-2-link3\"]"
+        ],
+        [
+          "resource-8",
+          "resource-9",
+          "[\"resource-8\",\"resource-8-p0\",\"resource-8-link0\"]"
+        ],
+        [
+          "resource-8",
+          "resource-15",
+          "[\"resource-8\",\"resource-8-p1\",\"resource-8-link1\"]"
+        ],
+        [
+          "resource-8",
+          "resource-9",
+          "[\"resource-8\",\"resource-8-p2\",\"resource-8-link2\"]"
+        ],
+        [
+          "resource-8",
+          "resource-15",
+          "[\"resource-8\",\"resource-8-p3\",\"resource-8-link3\"]"
+        ],
+        [
+          "resource-14",
+          "resource-15",
+          "[\"resource-14\",\"resource-14-p0\",\"resource-14-link0\"]"
+        ],
+        [
+          "resource-14",
+          "resource-21",
+          "[\"resource-14\",\"resource-14-p1\",\"resource-14-link1\"]"
+        ],
+        [
+          "resource-14",
+          "resource-15",
+          "[\"resource-14\",\"resource-14-p2\",\"resource-14-link2\"]"
+        ],
+        [
+          "resource-14",
+          "resource-21",
+          "[\"resource-14\",\"resource-14-p3\",\"resource-14-link3\"]"
+        ]
+      ],
+      "unresolved": 0,
+      "examined": 24,
+      "truncated": false,
+      "revision": 10005
+    }
+  },
+  "diagnostics": []
+}

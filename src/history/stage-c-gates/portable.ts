@@ -90,6 +90,11 @@ export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>, profil
 const record = (key: string, viewType: string, payload: JsonObject): ContentRecord => ({ key, viewType, payload,
   children: [], inlineContent: [], inlineRevision: 0, revision: 0, ownedRelations: {}, opaqueRelations: {}, wireChildren: "omitted", wireRelation: "omitted" });
 
+/** Shared native text-atom grammar; one Unicode code point becomes one Cell. */
+export function validateNativeTextSpan(text: unknown): asserts text is string {
+  requireValue(typeof text === "string" && text.length, "invalid text span");
+}
+
 export function decodeGateDocument(document: GateDocument, profile: "legacy" | "native" = "legacy"): DeepReadonly<ResourceSnapshot> {
   assertPortableJson(document);
   const value = (data: JsonObject): JsonObject => {
@@ -133,7 +138,7 @@ export function decodeGateDocument(document: GateDocument, profile: "legacy" | "
       };
       for (const span of b.inline!) {
         if (span.kind === "text") {
-          requireValue(typeof span.text === "string" && span.text.length, "invalid text span");
+          validateNativeTextSpan(span.text);
           for (const text of span.text) atom("text-cell", { text });
         } else { requireValue(span.kind === "image", "unsupported inline span"); atom("image-cell", value(span.properties)); }
       }

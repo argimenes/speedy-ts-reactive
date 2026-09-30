@@ -21,8 +21,14 @@ export interface Facts {
  id:string;rootBlockId:string;location:string;generation:string;title:string;tags:string[];
  blocks:BlockFact[];annotations:AnnotationFact[];mentions:Mention[];diagnostics:string[];
 }
+/** Qualification-only inline reader. Never used by native admission/save. */
+export interface InlineFacts {
+ length:number; text:Omit<SearchSource,'contentKey'|'version'>;
+ snippet(start:number,end:number):string;
+}
+export type InlineReader=(blockId:string,signal?:AbortSignal)=>Promise<InlineFacts>;
 export const decode = decodeNative;
-export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:string,generation:string,signal?:AbortSignal):Promise<Facts> {
+export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:string,generation:string,signal?:AbortSignal,inlineReader?:InlineReader):Promise<Facts> {
  signal?.throwIfAborted();
  const state=resourceToRepository(resource),root=state.contents[state.placements[state.rootPlacementKey].contentKey];
  const metadata=root.payload.metadata as Record<string,unknown>|undefined;
@@ -41,8 +47,10 @@ export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:s
   if(p.kind==='reference')continue; // inspect canonical owned content once, never occurrence multiplicity
   const c=state.contents[p.contentKey];if(!c||seen.has(c.key))continue;seen.add(c.key);
   const blockId=String(c.payload.id),block:BlockFact={id:blockId,type:c.viewType};facts.blocks.push(block);
+  let inline:InlineFacts|undefined;
   if(c.inlineKind==='standoff') {
-   const {contentKey:_,version:__,...text}=await canonicalSearchSource(state,c.key,0,signal,2000000);block.text=text;
+   if(inlineReader){inline=await inlineReader(blockId,signal);block.text=inline.text;}
+   else {const {contentKey:_,version:__,...text}=await canonicalSearchSource(state,c.key,0,signal,2000000);block.text=text;}
   }
   for(const raw of Array.isArray(c.payload.standoffProperties)?c.payload.standoffProperties:[]) {
    if(++properties>10000)throw Error('Annotation budget exceeded');
@@ -51,7 +59,7 @@ export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:s
    if(raw.annotationId&&(!owner||owner.key!==root.key)){facts.diagnostics.push('Foreign/unresolved linked definition');continue;}
    const a=resolveLinkedProperty(state,raw,c.key);
    if(a.isDeleted||a.clientOnly)continue;
-   if(c.inlineKind!=='standoff'||typeof raw.id!=='string'||!raw.id||typeof a.type!=='string'||!a.type||typeof a.start!=='number'||typeof a.end!=='number'||!Number.isInteger(a.start)||!Number.isInteger(a.end)||a.start<0||a.end<a.start||a.end>=c.inlineContent.length){facts.diagnostics.push('Unsupported annotation identity/range');continue;}
+   if(c.inlineKind!=='standoff'||typeof raw.id!=='string'||!raw.id||typeof a.type!=='string'||!a.type||typeof a.start!=='number'||typeof a.end!=='number'||!Number.isInteger(a.start)||!Number.isInteger(a.end)||a.start<0||a.end<a.start||a.end>=(inline?.length??c.inlineContent.length)){facts.diagnostics.push('Unsupported annotation identity/range');continue;}
    const segmentId=JSON.stringify([resource.resourceId,blockId,raw.id]);
    const logicalId=JSON.stringify([resource.resourceId,raw.annotationId?'linked':blockId,raw.annotationId??raw.id]);
    if(localIds.has(segmentId)){bad.add(logicalId);groups.delete(logicalId);facts.diagnostics.push('Duplicate segment identity');continue;}localIds.add(segmentId);
@@ -64,7 +72,7 @@ export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:s
    if(bad.has(logicalId))continue;
    let mention=groups.get(logicalId);
    if(mention&&(mention.kind!==kind||mention.targetId!==a.value||mention.targetResourceId!==(kind==='document'?docId:undefined))){groups.delete(logicalId);bad.add(logicalId);facts.diagnostics.push('Conflicting linked mention');continue;}
-   const text=c.inlineContent.slice(a.start,a.end+1).map(key=>{const cell=state.contents[state.placements[key].contentKey];return cell.viewType==='text-cell'?String(cell.payload.text):'[inline object]';}).join('');
+   const text=inline?inline.snippet(a.start,a.end+1):c.inlineContent.slice(a.start,a.end+1).map(key=>{const cell=state.contents[state.placements[key].contentKey];return cell.viewType==='text-cell'?String(cell.payload.text):'[inline object]';}).join('');
    if(!mention){mention={id:logicalId,kind,targetId:a.value,targetResourceId:kind==='document'?docId:undefined,ranges:[],text:'',annotationIds:[],definition};groups.set(logicalId,mention);}
    mention.ranges.push({blockId,start:a.start,end:a.end+1});mention.annotationIds.push(segmentId);mention.text+=(mention.text?'\n':'')+text;
   }

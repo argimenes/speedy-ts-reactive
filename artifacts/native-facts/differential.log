@@ -1,0 +1,18 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/qualification/native-knowledge/lightweight.test.ts (36 tests) 17393ms
+   ✓ matches every fact in 24 seeded native fixtures with distinct resource/root IDs 3096ms
+   ✓ matches actual native feature producers and historical value profiles 396ms
+   ✓ matches unsupported values, linked mention provenance, deleted/client-only and duplicate IDs 690ms
+   ✓ retains external ownership/reference and unplaced-definition validation 359ms
+   ✓ matches explicit annotation-budget failure and cancellation 2595ms
+   ✓ matches traversal truncation without claiming complete coverage 8414ms
+   ✓ preserves duplicate suppression even if the duplicate would exceed facts budgets 841ms
+
+ Test Files  1 passed (1)
+      Tests  36 passed (36)
+   Start at  07:44:34
+   Duration  18.96s (transform 284ms, setup 0ms, collect 383ms, tests 17.39s, environment 552ms, prepare 105ms)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/native-facts/differential-results.json

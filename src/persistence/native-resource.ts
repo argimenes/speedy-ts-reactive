@@ -129,7 +129,8 @@ function target(value: any) {
   fields(value.source, value.source?.scope === "unknown" ? ["scope"] : ["scope", "resourceId"]);
   fields(value.version, value.version?.kind === "unpinned" ? ["kind"] : ["kind", "memoirId", "segmentId", "revisionId"]);
 }
-export function decodeNative(bytes: Uint8Array): DeepReadonly<ResourceSnapshot> {
+/** Parse reserved wire shape only; callers still require semantic resource validation. */
+export function parseNativeEnvelope(bytes: Uint8Array): NativeDocument {
   const value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as NativeDocument;
   assertPortableJson(value);
   fields(value, ["format", "version", "resourceId", "document", "definitionOwnerBlockIds", "valueEncoding"]);
@@ -159,6 +160,11 @@ export function decodeNative(bytes: Uint8Array): DeepReadonly<ResourceSnapshot> 
   }
   check(Array.isArray(value.definitionOwnerBlockIds) && value.definitionOwnerBlockIds.every(id) &&
     new Set(value.definitionOwnerBlockIds).size === value.definitionOwnerBlockIds.length, "invalid retention membership");
+  return value;
+}
+
+export function decodeNative(bytes: Uint8Array): DeepReadonly<ResourceSnapshot> {
+  const value = parseNativeEnvelope(bytes), doc = value.document;
   const resource = clone(decodeGateDocument(doc, value.valueEncoding ? "native" : "legacy")) as ResourceSnapshot;
   const root = resource.placements[resource.rootPlacementKey]; check(root.target.kind === "local", "external root");
   const rootContent = resource.contents[root.target.contentKey];

@@ -1,0 +1,57 @@
+{
+  "method": "5ms timer; one sample per case; Node event-loop surrogate, not browser input latency. Worker timing includes startup and input transfer; return is a small summary, not the full facts payload.",
+  "ordinaryBytes": 9493,
+  "heavyBytes": 1667562,
+  "results": [
+    {
+      "label": "full decoder: ordinary note",
+      "elapsedMs": 102.602667,
+      "timerSamples": 3,
+      "p95DelayMs": 102.22545799999997,
+      "maxDelayMs": 102.22545799999997,
+      "result": {
+        "blocks": 7
+      }
+    },
+    {
+      "label": "light reader: ordinary note",
+      "elapsedMs": 3.3869170000000395,
+      "timerSamples": 3,
+      "p95DelayMs": 3.010667000000012,
+      "maxDelayMs": 3.010667000000012,
+      "result": {
+        "blocks": 7
+      }
+    },
+    {
+      "label": "light reader: 10,001 Block input on caller thread",
+      "elapsedMs": 1399.933917,
+      "timerSamples": 43,
+      "p95DelayMs": 0.6545840000001135,
+      "maxDelayMs": 1201.601542,
+      "result": {
+        "blocks": 10000,
+        "diagnostics": [
+          "Block budget reached"
+        ]
+      }
+    },
+    {
+      "label": "light reader: same input in disposable Node worker",
+      "elapsedMs": 1441.408625,
+      "timerSamples": 260,
+      "p95DelayMs": 0.721791999999823,
+      "maxDelayMs": 4.05379199999993,
+      "result": {
+        "blocks": 10000,
+        "diagnostics": [
+          "Block budget reached"
+        ],
+        "timings": {
+          "validationMs": 1011.648375,
+          "factsMs": 249.41491600000018
+        }
+      }
+    }
+  ]
+}

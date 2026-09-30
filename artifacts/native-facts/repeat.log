@@ -1,0 +1,22 @@
+Index 1000: 100 decoded
+Index 1000: 200 decoded
+Index 1000: 300 decoded
+Index 1000: 400 decoded
+Index 1000: 500 decoded
+Index 1000: 600 decoded
+Index 1000: 700 decoded
+Index 1000: 800 decoded
+Index 1000: 900 decoded
+Index 1000: 1000 decoded
+{"size":1000,"totalMs":1996.508,"validationMs":1326.963,"factsMs":205.302,"heapMiB":28.558,"incremental":{"medianMs":1.985,"p95Ms":2.628,"maxMs":2.628,"samples":5}}
+Index 10000: 1000 decoded
+Index 10000: 2000 decoded
+Index 10000: 3000 decoded
+Index 10000: 4000 decoded
+Index 10000: 5000 decoded
+Index 10000: 6000 decoded
+Index 10000: 7000 decoded
+Index 10000: 8000 decoded
+Index 10000: 9000 decoded
+Index 10000: 10000 decoded
+{"size":10000,"totalMs":20084.449,"validationMs":12712.062,"factsMs":1865.205,"heapMiB":278.788,"incremental":{"medianMs":1.865,"p95Ms":2.541,"maxMs":2.541,"samples":5}}

@@ -1,0 +1,24 @@
+Index 100: 100 decoded
+{"size":100,"totalMs":223.464,"validationMs":144.891,"factsMs":24.782,"heapMiB":3.26,"incremental":{"medianMs":2.033,"p95Ms":2.568,"maxMs":2.568,"samples":5}}
+Index 1000: 100 decoded
+Index 1000: 200 decoded
+Index 1000: 300 decoded
+Index 1000: 400 decoded
+Index 1000: 500 decoded
+Index 1000: 600 decoded
+Index 1000: 700 decoded
+Index 1000: 800 decoded
+Index 1000: 900 decoded
+Index 1000: 1000 decoded
+{"size":1000,"totalMs":2176.276,"validationMs":1449.594,"factsMs":212.118,"heapMiB":28.492,"incremental":{"medianMs":1.971,"p95Ms":2.453,"maxMs":2.453,"samples":5}}
+Index 10000: 1000 decoded
+Index 10000: 2000 decoded
+Index 10000: 3000 decoded
+Index 10000: 4000 decoded
+Index 10000: 5000 decoded
+Index 10000: 6000 decoded
+Index 10000: 7000 decoded
+Index 10000: 8000 decoded
+Index 10000: 9000 decoded
+Index 10000: 10000 decoded
+{"size":10000,"totalMs":21610.788,"validationMs":13435.419,"factsMs":1939.025,"heapMiB":278.786,"incremental":{"medianMs":2.032,"p95Ms":3.385,"maxMs":3.385,"samples":5}}

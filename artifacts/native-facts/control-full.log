@@ -1,0 +1,2 @@
+Index 100: 100 decoded
+{"size":100,"totalMs":9206.601,"decodeMs":8258.99,"extractMs":827.613,"heapMiB":6.166,"incremental":{"medianMs":80.534,"p95Ms":91.371,"maxMs":91.371,"samples":5}}

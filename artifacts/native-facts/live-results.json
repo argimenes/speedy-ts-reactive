@@ -1,0 +1,80 @@
+{
+  "method": "Three sequential captures per fixture; fixture construction excluded. Same read-only canonical shared state. No proposed production round-trip through native bytes.",
+  "samples": [
+    {
+      "loadedResources": 1,
+      "contentRecords": 1254,
+      "placementRecords": 1254,
+      "rows": [
+        {
+          "captureMs": 41.702292,
+          "factsMs": 9.052458999999999,
+          "encodeMs": 7.711250000000007,
+          "lightweightMs": 3.7469580000000065
+        },
+        {
+          "captureMs": 27.736499999999978,
+          "factsMs": 7.502499999999998,
+          "encodeMs": 6.751459000000011,
+          "lightweightMs": 3.1486249999999814
+        },
+        {
+          "captureMs": 31.496417000000008,
+          "factsMs": 7.6152909999999565,
+          "encodeMs": 7.588999999999999,
+          "lightweightMs": 2.3605420000000095
+        }
+      ]
+    },
+    {
+      "loadedResources": 10,
+      "contentRecords": 12522,
+      "placementRecords": 12522,
+      "rows": [
+        {
+          "captureMs": 94.23991699999988,
+          "factsMs": 8.941916999999876,
+          "encodeMs": 6.0841250000000855,
+          "lightweightMs": 2.015957999999955
+        },
+        {
+          "captureMs": 69.62654100000009,
+          "factsMs": 7.191624999999931,
+          "encodeMs": 6.450833999999986,
+          "lightweightMs": 1.901582999999846
+        },
+        {
+          "captureMs": 65.00725000000011,
+          "factsMs": 8.35920800000008,
+          "encodeMs": 4.540917000000036,
+          "lightweightMs": 1.8513750000001892
+        }
+      ]
+    },
+    {
+      "loadedResources": 100,
+      "contentRecords": 125202,
+      "placementRecords": 125202,
+      "rows": [
+        {
+          "captureMs": 1028.396917,
+          "factsMs": 7.403000000000247,
+          "encodeMs": 4.901708999999755,
+          "lightweightMs": 2.0136249999995925
+        },
+        {
+          "captureMs": 781.9227499999997,
+          "factsMs": 8.418749999998909,
+          "encodeMs": 6.178916999999274,
+          "lightweightMs": 1.735500000000684
+        },
+        {
+          "captureMs": 757.2457080000004,
+          "factsMs": 7.428083000000697,
+          "encodeMs": 5.6979170000013255,
+          "lightweightMs": 1.657333999999537
+        }
+      ]
+    }
+  ]
+}
