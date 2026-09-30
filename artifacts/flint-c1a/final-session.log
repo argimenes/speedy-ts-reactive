@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/persistence/native-session.test.ts (5 tests) 565ms
+ ✓ src/persistence/native-vault-session.test.ts (7 tests) 1521ms
+   ✓ changes only the resource binding with zero occurrences and rejects automatic same-ID adoption by another session 684ms
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  14:50:30
+   Duration  3.24s (transform 431ms, setup 0ms, collect 1.64s, tests 2.09s, environment 875ms, prepare 123ms)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/flint-c1a/final-session-results.json

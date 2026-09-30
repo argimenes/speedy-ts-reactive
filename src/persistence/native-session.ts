@@ -5,25 +5,32 @@ import { admitNative, captureNative, decodeNative, nativeText } from './native-r
 import { admitMarkdown, type LinkTarget } from './markdown';
 import { enrollPair, type PairGeneration, type PairResult, type ResourcePair } from './resource-pair';
 import { markNativeBinding, ownNativeSession } from './native-bindings';
-type Baseline = { nativeHash: string | null; markdownHash: string | null; generation: string | null };
-type Binding = { location: DocumentLocation; baseline: Baseline; pair: ResourcePair; pending?: PairGeneration; message: string; comparedHash?: string; busy: boolean; members: Set<string> };
+type Baseline = { nativeHash: string | null; markdownHash: string | null; generation: string | null; locationRevision?: string };
+type Binding = { location: DocumentLocation; baseline: Baseline; pair: ResourcePair; pending?: PairGeneration; message: string; comparedHash?: string; busy: boolean; relocation?: string; relocationWork?: Promise<unknown>; members: Set<string> };
 const sessions = new WeakMap<ReactiveEditor, NativeDocumentSession>();
 export function nativeDocumentSession(editor: ReactiveEditor) {
   let service = sessions.get(editor); if (!service) sessions.set(editor, service = new NativeDocumentSession(editor)); return service;
 }
-async function request(action: string, body?: unknown) {
-  const response = await fetch(`/api/native/${action}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+async function request(action: string, body?: unknown, signal?: AbortSignal) {
+  const response = await fetch(`/api/native/${action}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal } : { signal });
   const json = await response.json(); if (!response.ok || !json.Success) throw Object.assign(new Error(json.Error ?? 'Native store request failed'), {status:response.status,preflight:json.PublicationStarted===false}); return json.Data;
 }
 const sameLocation = (a: DocumentLocation, b: DocumentLocation) => a.folder === b.folder && a.filename === b.filename;
+/** C1a storage capability; no Flint UI or authored vault membership. */
+export interface VaultRelocation {
+  operationId: string; vault: string; kind: 'pair' | 'directory'; source: string; destination: string;
+  baselines: Array<{resourceId: string; baseline: Baseline}>;
+  dependencies?: Array<{resourceId: string; location: DocumentLocation}>;
+}
 export class NativeDocumentSession {
   private bindings = new Map<string, Binding>();
   private changed = createSignal(0);
   private disposed = false;
   private notice = '';
   private candidates = new Set<string>();
+  private relocations = new Map<string, { request: VaultRelocation; work?: Promise<unknown>; bindings: Array<{ id: string; baseline: Baseline; location: DocumentLocation }> }>();
   constructor(private editor: ReactiveEditor) {
-    const warn = (event: BeforeUnloadEvent) => { if (this.candidates.size || [...this.bindings.values()].some(b => b.pending || b.pair.dirty)) { event.preventDefault(); event.returnValue = ''; } };
+    const warn = (event: BeforeUnloadEvent) => { if (this.candidates.size || this.relocations.size || [...this.bindings.values()].some(b => b.pending || b.relocation || b.pair.dirty)) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', warn);
     const stop = editor.repository.subscribeChanges(change => {
       for (const [id,b] of this.bindings) {
@@ -54,6 +61,81 @@ export class NativeDocumentSession {
     return [...known].filter(([resourceId]) => resourceId !== id).map(([resourceId,location]) => ({ resourceId, location }));
   }
   async list(folder: string) { return (await request(`list?${new URLSearchParams({folder})}`)).files as string[]; }
+  async discoverVault(vault: string, signal?: AbortSignal) { return request('vault/discover', {vault}, signal); }
+  async createVaultDirectory(vault: string, directory: string) { return request('vault/mkdir', {vault, directory}); }
+  async relocateVault(input: VaultRelocation) {
+    if (this.relocations.has(input.operationId)) {
+      if(JSON.stringify(this.relocations.get(input.operationId)!.request)!==JSON.stringify(input))throw new Error('Relocation retry differs from original request');
+      return this.recoverRelocation(input.operationId);
+    }
+    const bindings: Array<{id: string; baseline: Baseline; location: DocumentLocation}> = [];
+    for (const item of input.baselines) {
+      const b = this.bindings.get(item.resourceId); if (!b) continue;
+      if (b.busy || b.pending || b.relocation) throw new Error('Finish or recover the resource operation before relocation');
+      const boundPath=b.location.folder && b.location.folder!=='.'?`${b.location.folder}/${b.location.filename}`:b.location.filename;
+      if(input.kind==='pair'?boundPath!==input.source:!boundPath.startsWith(input.source+'/'))throw new Error('Relocation source differs from the live binding; explicit reconciliation required');
+      if (JSON.stringify(b.baseline) !== JSON.stringify(item.baseline)) throw new Error('Vault scan cannot refresh a stale editor baseline');
+      bindings.push({id: item.resourceId, baseline: {...b.baseline}, location: {...b.location}});
+    }
+    const captured = structuredClone(input);
+    this.relocations.set(input.operationId, {request: captured, bindings});
+    return this.runRelocation(input.operationId, false);
+  }
+  async recoverRelocation(operationId: string) {
+    if (!this.relocations.has(operationId)) {
+      const result=await request('vault/recover',{operationId});
+      this.notice=result.phase==='relocated'?'Relocation recovered. Explicitly Open the destination; existing bindings were not adopted.':`Relocation pending: ${result.error??'Review required'}`;
+      this.touch();return result;
+    }
+    return this.runRelocation(operationId, true);
+  }
+  private async runRelocation(operationId: string, recovery: boolean) {
+    const record = this.relocations.get(operationId)!;
+    if(record.work)return record.work;
+    for (const x of record.bindings) {
+      const b=this.bindings.get(x.id)!;
+      if(b.relocationWork) return b.relocationWork;
+      b.relocation=operationId; b.busy=true; b.message='Relocation pending';
+    }
+    this.touch();
+    const work=(async()=>{
+      try {
+        const result=await request(recovery?'vault/recover':'vault/relocate',recovery?{operationId}:record.request);
+        if(this.disposed)return result;
+        if(result.phase==='relocated') {
+          for(const x of record.bindings) {
+            const b=this.bindings.get(x.id)!;
+            const moved=result.bindings.find((v:any)=>v.resourceId===x.id);
+            if(!moved || JSON.stringify(b.baseline)!==JSON.stringify(x.baseline) || !sameLocation(b.location,x.location)) throw new Error('Relocation completion does not match the caller binding');
+            if(moved.baseline.nativeHash!==x.baseline.nativeHash || moved.baseline.markdownHash!==x.baseline.markdownHash || moved.baseline.generation!==x.baseline.generation) throw new Error('Relocation changed the captured content baseline');
+          }
+          for(const x of record.bindings) {
+            const b=this.bindings.get(x.id)!, moved=result.bindings.find((v:any)=>v.resourceId===x.id);
+            b.location={...moved.location}; b.baseline={...moved.baseline}; b.relocation=undefined;
+            b.message=b.pair.dirty?'Relocated — newer/unsaved edits remain':'Relocated native Document and Markdown';
+            const sources=Object.values(this.editor.repository.readState().contents).filter(c=>c.viewType==='document-block' && String((c.payload.metadata as any)?.documentId??c.payload.id)===x.id);
+            if(sources.length===1)this.editor.persistence.registerWorkspaceDocument(sources[0].key,x.id,b.location.folder,b.location.filename);
+          }
+          this.relocations.delete(operationId);
+        } else for(const x of record.bindings)this.bindings.get(x.id)!.message=`Relocation pending: ${result.error??'Recovery required'}`;
+        return result;
+      } catch(error) {
+        if((error as any).preflight && !recovery) {
+          // The route explicitly rejected preparation; no server relocation was started.
+          for(const x of record.bindings)this.bindings.get(x.id)!.relocation=undefined;
+          this.relocations.delete(operationId);
+        }
+        for(const x of record.bindings)this.bindings.get(x.id)!.message=`Relocation blocked or outcome unknown: ${String(error)}`;
+        throw error;
+      } finally {
+        for(const x of record.bindings){const b=this.bindings.get(x.id)!;b.busy=false;b.relocationWork=undefined;}
+        record.work=undefined;this.touch();
+      }
+    })();
+    record.work=work;
+    for(const x of record.bindings)this.bindings.get(x.id)!.relocationWork=work;
+    return work;
+  }
   private bank() {
     const state=this.editor.repository.readState(),root=state.contents[state.placements[state.rootPlacementKey].contentKey];
     const banks=root.children.map(k=>state.contents[state.placements[k].contentKey]).filter(c=>c.viewType==='workspace-object-bank-block');
@@ -108,6 +190,8 @@ export class NativeDocumentSession {
   }
   private async operate(id: string, recovery: boolean) {
     const b=this.bindings.get(id);if(!b)throw new Error('Choose a native Save destination first');
+    if(b.relocationWork)await b.relocationWork;
+    if(b.relocation)throw new Error('Recover pending relocation before Save');
     if(b.busy)return;b.busy=true;b.message=recovery?'Recovering captured generation…':'Saving native Document and Markdown…';this.touch();
     try {const r=await (recovery?b.pair.recover():b.pair.save(b.comparedHash));
       const labels={saved:'Saved native Document and Markdown',failed:'Save blocked','canonical-saved-markdown-pending':'Canonical saved; Markdown pending','confirmation-pending':'Confirmation pending'};
@@ -130,7 +214,7 @@ export class NativeDocumentSession {
   async recover(id: string | undefined, location: DocumentLocation) {
     if(id&&this.bindings.get(id)?.pending)return this.operate(id,true);
     const data=await request('open',{location});if(data.kind!=='native'||!data.pending)throw new Error('No pending generation at this location');
-    const result=await request('recover',{location,resourceId:data.resourceId,generation:data.pending.generation,dependencies:this.dependencies(data.resourceId)});
+    const result=await request('recover',{location,resourceId:data.resourceId,generation:data.pending.generation,dependencies:this.dependencies(data.resourceId),baseline:data.baseline});
     this.notice=result.result.phase==='saved'?'Recovery complete. Open the native file again.':`Recovery blocked: ${result.result.error}`;this.touch();
   }
   async compare(id: string) {

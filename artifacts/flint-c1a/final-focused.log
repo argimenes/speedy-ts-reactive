@@ -1,0 +1,30 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/persistence/native-session.test.ts (5 tests) 812ms
+   ✓ does not refresh a stale client baseline after a rejected Save or Open 334ms
+ ✓ server/native-document-store.test.mjs (12 tests) 1628ms
+   ✓ recovers a partial publication after restart and blocks conflicting partial Markdown 307ms
+ ✓ src/persistence/native-vault-session.test.ts (7 tests) 2100ms
+   ✓ changes only the resource binding with zero occurrences and rejects automatic same-ID adoption by another session 778ms
+   ✓ retains edits and shared identity across two occurrences and their disposal during relocation 367ms
+ ✓ server/native-vault-restart.test.mjs (10 tests) 5164ms
+   ✓ recovers from actual SIGKILL at relocation-intent through real routes 892ms
+   ✓ recovers from actual SIGKILL at relocation-after-0 through real routes 557ms
+   ✓ recovers from actual SIGKILL at relocation-after-1 through real routes 500ms
+   ✓ recovers from actual SIGKILL at relocation-after-2 through real routes 514ms
+   ✓ recovers from actual SIGKILL at relocation-receipt-displaced through real routes 489ms
+   ✓ recovers from actual SIGKILL at relocation-before-complete through real routes 527ms
+   ✓ recovers from actual SIGKILL at relocation-complete through real routes 462ms
+   ✓ recovers nonempty directory movement after server death and refuses external interference on recovery 371ms
+   ✓ serializes a concurrent Save against a pending relocation across server processes 428ms
+   ✓ finishes a directory move after actual server death and reopens its unchanged native identity 422ms
+ ✓ server/native-vault-store.test.mjs (44 tests) 5421ms
+   ✓ moves an enrolled pair without changing bytes, identity or save generation; saves at new binding 679ms
+
+ Test Files  5 passed (5)
+      Tests  78 passed (78)
+   Start at  14:55:09
+   Duration  7.24s (transform 706ms, setup 0ms, collect 3.69s, tests 15.12s, environment 2.90s, prepare 418ms)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/flint-c1a/final-focused-results.json

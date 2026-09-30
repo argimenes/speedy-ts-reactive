@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'vite';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-const artifacts='artifacts/flint-native-production';await mkdir(artifacts,{recursive:true});
+const artifacts=process.env.PROOF_ARTIFACTS??'artifacts/flint-native-production';await mkdir(artifacts,{recursive:true});
 const storeRoot=await mkdtemp(path.join(tmpdir(),'flint-native-store-'));
 await writeFile(path.join(storeRoot,'rich.mutable.json'),await readFile('artifacts/flint-b1.2/rich.mutable.json'));
 await writeFile(path.join(storeRoot,'standalone.md'),'# Imported\n\n**native bold**');

@@ -1,0 +1,12 @@
+{
+  "runs": [
+    "qualification-results.json",
+    "final-focused-results.json",
+    "final-session-results.json",
+    "final-binding-results.json"
+  ],
+  "verifiedTestCasesAcrossRuns": 420,
+  "passed": 420,
+  "failed": 0,
+  "newC1aChecks": 62
+}
