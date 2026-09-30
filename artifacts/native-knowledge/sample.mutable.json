@@ -6,7 +6,7 @@
         "children": [
           {
             "kind": "owned",
-            "placementId": "legacy:resource-1:placement:a0b6916b-fe4f-419f-8c1f-85cf27bdf9c9",
+            "placementId": "legacy:resource-1:placement:10228572-b374-4462-a84e-3363cd5b77ad",
             "target": {
               "blockId": "resource-1-margin-text",
               "kind": "local"
@@ -82,7 +82,7 @@
           "owned": {
             "leftMargin": {
               "kind": "owned",
-              "placementId": "legacy:resource-1:placement:cf8a95cf-0ece-444b-abe9-04af538bbf68",
+              "placementId": "legacy:resource-1:placement:8a27c6dd-8c3c-4f5f-ae40-cdf9de134e98",
               "target": {
                 "blockId": "resource-1-margin",
                 "kind": "local"
@@ -224,7 +224,7 @@
         "children": [
           {
             "kind": "owned",
-            "placementId": "legacy:resource-1:placement:06f1bba1-4ef2-4315-9470-3f15c2494f44",
+            "placementId": "legacy:resource-1:placement:47d5e795-68b5-40cc-b5e8-aa32c9cd05cc",
             "target": {
               "blockId": "resource-1-p0",
               "kind": "local"
@@ -232,7 +232,7 @@
           },
           {
             "kind": "owned",
-            "placementId": "legacy:resource-1:placement:a2c1f13b-607c-4981-8201-80c3cfcccc00",
+            "placementId": "legacy:resource-1:placement:166fa9ea-44f8-4d13-91b1-a2f8ceaca6cf",
             "target": {
               "blockId": "resource-1-p1",
               "kind": "local"
@@ -240,7 +240,7 @@
           },
           {
             "kind": "owned",
-            "placementId": "legacy:resource-1:placement:eec0fc63-5d14-4713-b31d-e02e5d440196",
+            "placementId": "legacy:resource-1:placement:72ce2564-363a-4691-b093-a857139fed8d",
             "target": {
               "blockId": "resource-1-p2",
               "kind": "local"
@@ -248,7 +248,7 @@
           },
           {
             "kind": "owned",
-            "placementId": "legacy:resource-1:placement:2adc787c-c73b-4e2d-9f7c-cd56741e0149",
+            "placementId": "legacy:resource-1:placement:14f6b5e7-79a8-483d-90e7-3f2c35e63fa4",
             "target": {
               "blockId": "resource-1-p3",
               "kind": "local"
@@ -300,7 +300,7 @@
     "resourceId": "resource-1",
     "root": {
       "kind": "owned",
-      "placementId": "legacy:resource-1:placement:f36331a1-048d-455c-b43d-c7f16ca50101",
+      "placementId": "legacy:resource-1:placement:3e804c5e-586b-4b4e-b393-0f3e1d93b6c1",
       "target": {
         "blockId": "resource-1-root",
         "kind": "local"

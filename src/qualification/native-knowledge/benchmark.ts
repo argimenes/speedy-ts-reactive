@@ -19,9 +19,12 @@ try{
  const queries={backlinks:measure(()=>index.backlinks('resource-0')),entityMentions:measure(()=>index.entityMentions('entity-0')),entitySources:measure(()=>index.entitySources('entity-0')),tag:measure(()=>[...(index.tags.get('topic-0')??[])]),traversal:measure(()=>index.traverse('resource-0',3,250,1000))};
  const example=index.effective.get('resource-0')!;const overlap=()=>example.annotations.filter(a=>a.type==='style/bold').flatMap(a=>example.annotations.filter(b=>b.type==='style/italics'&&a.blockId===b.blockId&&a.start<b.end&&b.start<a.end).map(b=>({blockId:a.blockId,start:Math.max(a.start,b.start),end:Math.min(a.end,b.end)})));
  const ranges={...measure(overlap),example:overlap()};
- // Whole-vault exact matcher: independent from adjacency lookups; no index/FTS speed claim.
+ // Whole-vault exact matcher: 1,000 per source and existing 50,000 candidate guard.
+ // A budget rejection is a measured result, not a reason to lose rebuild measurements.
  const sources=[...index.effective.values()].flatMap(f=>f.blocks.filter(b=>b.text).map(b=>({contentKey:JSON.stringify([f.id,b.id]),version:0,...b.text!})));
- const searchStart=performance.now(),search=matchSources(sources,'connected research',{},1000),fullText={ms:round(performance.now()-searchStart),sources:sources.length,returned:search.reduce((n,r)=>n+r.matches.length,0),truncated:search.some(r=>r.truncated)};
+ const searchStart=performance.now();let fullText;
+ try{const search=matchSources(sources,'connected research',{},1000);fullText={ms:round(performance.now()-searchStart),sources:sources.length,returned:search.reduce((n,r)=>n+r.matches.length,0),truncated:search.some(r=>r.truncated)};}
+ catch(error){fullText={ms:round(performance.now()-searchStart),sources:sources.length,error:String(error)};}
  const changed=fixtureText(0,size).replace('Research resource-0','Changed research title');const file=path.join(root,example.location);await fs.writeFile(file,changed);
  const incremental=[];for(let i=0;i<5;i++){const t=performance.now(),read=await readNative(root,example.location),facts=await extract(decode(read.bytes),example.location,read.hash);index.putSaved(facts);incremental.push(performance.now()-t);}
  if(index.effective.get('resource-0')?.title!=='Changed research title'||index.backlinks('resource-0').length!==4)throw Error('Incremental/query mismatch');

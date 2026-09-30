@@ -33,10 +33,10 @@ export class KnowledgeIndex {
  entitySources(id:string){return [...new Set(this.entityMentions(id).map(h=>h.sourceId))];}
  traverse(start:string,maxHops=3,maxNodes=250,maxEdges=1000){
   if(!Number.isSafeInteger(maxHops)||maxHops<0||!Number.isSafeInteger(maxNodes)||maxNodes<1||!Number.isSafeInteger(maxEdges)||maxEdges<1)throw Error('Invalid traversal budget');
-  const seen=new Set<string>(),queue:Array<[string,number]>=[],edges:Array<[string,string,string]>=[];let unresolved=0,truncated=false;
+  const seen=new Set<string>(),queue:Array<[string,number]>=[],edges:Array<[string,string,string]>=[];let unresolved=0,examined=0,truncated=false;
   if(this.effective.has(start)){seen.add(start);queue.push([start,0]);}
-  loop:for(let i=0;i<queue.length;i++){const[id,depth]=queue[i];if(depth===maxHops)continue;for(const hit of this.outgoing.get(id)??[]){if(edges.length===maxEdges){truncated=true;break loop;}const to=this.target(hit);if(!to){unresolved++;continue;}if(!seen.has(to)&&seen.size===maxNodes){truncated=true;break loop;}edges.push([id,to,hit.mention.id]);if(!seen.has(to)){seen.add(to);queue.push([to,depth+1]);}}}
-  return {ids:[...seen],edges,unresolved,truncated,revision:this.revision};
+  loop:for(let i=0;i<queue.length;i++){const[id,depth]=queue[i];if(depth===maxHops)continue;for(const hit of this.outgoing.get(id)??[]){if(examined===maxEdges){truncated=true;break loop;}examined++;const to=this.target(hit);if(!to){unresolved++;continue;}if(!seen.has(to)&&seen.size===maxNodes){truncated=true;break loop;}edges.push([id,to,hit.mention.id]);if(!seen.has(to)){seen.add(to);queue.push([to,depth+1]);}}}
+  return {ids:[...seen],edges,unresolved,examined,truncated,revision:this.revision};
  }
  coverage(){return {resources:this.effective.size,ambiguous:[...this.ambiguous],suppressed:[...this.overlays].filter(([,v])=>!v).map(([id])=>id),diagnostics:[...this.effective.values()].flatMap(f=>f.diagnostics.map(d=>`${f.id}: ${d}`))};}
 }

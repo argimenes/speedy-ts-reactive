@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {decode,extract,PROFILE} from './extract';
 import {KnowledgeIndex} from './index';
 export const nativeName=(name:string)=>name.endsWith('.ink')||name.endsWith('.mutable.json');
+/** Earlier stem.md collision probe only. The later .ink.md recommendation is report-only. */
 export const markdownName=(name:string)=>name.replace(/\.(ink|mutable\.json)$/,'.md');
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 export interface FileEvidence {path:string;size:number;mtimeMs:number;hash?:string;resourceId?:string;profile:string}

@@ -1,6 +1,6 @@
 {
   "profile": "native-knowledge-investigation-1",
-  "size": 100,
+  "size": 1000,
   "environment": {
     "node": "v22.12.0",
     "platform": "darwin",
@@ -19,71 +19,71 @@
     "annotationSegments": 17,
     "blocks": 7
   },
-  "fixtureGenerationMs": 64.833,
+  "fixtureGenerationMs": 771.592,
   "metrics": {
-    "discoveryMs": 5.166,
-    "readHashMs": 86.88,
-    "decodeMs": 7431.569,
-    "extractMs": 737.407,
-    "insertMs": 1.808,
-    "totalMs": 8269.906,
-    "nativeBytes": 954450,
-    "peakHeap": 83709944,
-    "files": 100
+    "discoveryMs": 30.357,
+    "readHashMs": 1483.934,
+    "decodeMs": 80138,
+    "extractMs": 8270.975,
+    "insertMs": 21.289,
+    "totalMs": 89980.471,
+    "nativeBytes": 9597960,
+    "peakHeap": 354069600,
+    "files": 1000
   },
   "totals": {
-    "resources": 100,
-    "blocks": 700,
-    "annotations": 1700,
-    "mentions": 700,
-    "documentReferences": 400,
-    "entityMentions": 300,
-    "characters": 124500
+    "resources": 1000,
+    "blocks": 7000,
+    "annotations": 17000,
+    "mentions": 7000,
+    "documentReferences": 4000,
+    "entityMentions": 3000,
+    "characters": 1245000
   },
   "memory": {
-    "baselineHeap": 4661688,
-    "retainedHeap": 11127144,
-    "retainedHeapDelta": 6465456,
-    "baselineRss": 72876032,
-    "retainedRss": 189202432,
-    "processPeakRssKiB": 191744
+    "baselineHeap": 4719896,
+    "retainedHeap": 70464248,
+    "retainedHeapDelta": 65744352,
+    "baselineRss": 66469888,
+    "retainedRss": 320765952,
+    "processPeakRssKiB": 381280
   },
   "queries": {
     "backlinks": {
       "medianMs": 0.001,
       "p95Ms": 0.001,
-      "maxMs": 0.022,
+      "maxMs": 0.026,
       "samples": 1000
     },
     "entityMentions": {
       "medianMs": 0,
       "p95Ms": 0,
-      "maxMs": 0.032,
+      "maxMs": 0.01,
       "samples": 1000
     },
     "entitySources": {
-      "medianMs": 0.001,
-      "p95Ms": 0.001,
-      "maxMs": 0.007,
+      "medianMs": 0.002,
+      "p95Ms": 0.002,
+      "maxMs": 0.564,
       "samples": 1000
     },
     "tag": {
       "medianMs": 0,
       "p95Ms": 0,
-      "maxMs": 0.042,
+      "maxMs": 0.018,
       "samples": 1000
     },
     "traversal": {
-      "medianMs": 0.008,
-      "p95Ms": 0.008,
-      "maxMs": 0.041,
+      "medianMs": 0.009,
+      "p95Ms": 0.009,
+      "maxMs": 0.091,
       "samples": 1000
     }
   },
   "ranges": {
     "medianMs": 0.003,
     "p95Ms": 0.004,
-    "maxMs": 0.077,
+    "maxMs": 0.075,
     "samples": 1000,
     "example": [
       {
@@ -109,24 +109,24 @@
     ]
   },
   "fullText": {
-    "ms": 71.512,
-    "sources": 500,
-    "returned": 1200,
+    "ms": 672.598,
+    "sources": 5000,
+    "returned": 12000,
     "truncated": false
   },
   "incremental": {
-    "medianMs": 87.146,
-    "p95Ms": 101.454,
-    "maxMs": 101.454,
+    "medianMs": 83.477,
+    "p95Ms": 87.145,
+    "maxMs": 87.145,
     "samples": 5
   },
   "examples": {
     "resource": "resource-0",
     "root": "resource-0-root",
-    "tagCount": 5,
+    "tagCount": 50,
     "backlinkCount": 4,
-    "entityMentionCount": 6,
-    "entitySourceCount": 2,
+    "entityMentionCount": 60,
+    "entitySourceCount": 20,
     "traversal": {
       "ids": [
         "resource-0",
@@ -265,7 +265,7 @@
       "unresolved": 0,
       "examined": 24,
       "truncated": false,
-      "revision": 105
+      "revision": 1005
     }
   },
   "diagnostics": []

@@ -1,7 +1,7 @@
 import {decodeDocument} from '../../block-tree/codecs';
 import {captureNative,nativeText} from '../../persistence/native-resource';
 const sentence='Leonardo studied light, mountains and water. A🧭B é 漢字: observations become connected research notes. ';
-const text=sentence.repeat(3); // ~280 native Cells per paragraph, not empty metadata shells
+const text=sentence.repeat(3); // 306 native Cells per paragraph, not empty metadata shells
 const dto={id:'@self@-root',type:'document-block',metadata:{documentId:'@self@',title:'Research @self@',tags:['research','topic-@topic@']},
  linkedAnnotations:{'@self@-linked':{id:'@self@-linked',type:'codex/entity-reference',value:'entity-@entity@',metadata:{entityName:'Leonardo'},attributes:{}}},
  children:Array.from({length:4},(_,p)=>({id:`@self@-p${p}`,type:'standoff-editor-block',text,standoffProperties:[

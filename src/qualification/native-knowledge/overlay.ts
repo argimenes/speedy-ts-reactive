@@ -15,7 +15,7 @@ export function liveOverlay(index:KnowledgeIndex,repository:CanonicalRepository,
   }catch(e){if(!disposed&&request===serial){index.overlay(id,null);error=String(e);}}})();return pending;
  };
  const invalidate=()=>{serial++;controller?.abort();index.overlay(id,null);clearTimeout(timer);timer=setTimeout(()=>void flush(),delay);};
- const stop=repository.subscribeChanges(change=>{const keys=change.inlineOwner?[change.inlineOwner]:[...change.previousContents.keys()];if(!members||keys.some(k=>members!.has(k)))invalidate();});
+ const stop=repository.subscribeChanges(change=>{const keys=change.inlineOwner?[change.inlineOwner]:[...change.previousContents.keys()];if(!members||!index.effective.has(id)||keys.some(k=>members!.has(k)))invalidate();});
  invalidate();
  return {flush,get error(){return error;},get pending(){return pending;},dispose(){disposed=true;serial++;clearTimeout(timer);controller?.abort();stop();index.overlay(id,null);}};
 }

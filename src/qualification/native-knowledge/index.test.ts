@@ -1,6 +1,7 @@
 import {it,expect,vi} from 'vitest';
 import {promises as fs} from 'node:fs';import path from 'node:path';import os from 'node:os';
 import {fixtureText} from './fixture';import {decode,extract} from './extract';import {KnowledgeIndex} from './index';import {rebuild,readNative} from './files';import {liveOverlay} from './overlay';
+import {TreeCommands} from '../../block-tree/commands';import {BlockTreeProjection} from '../../block-tree/projection';import {OccurrenceIndex} from '../../block-tree/occurrences';
 import {CanonicalRepository} from '../../block-tree/repository';import {resourceToRepository} from '../../history/durable-core';import * as native from '../../persistence/native-resource';
 const bytes=(text:string)=>new TextEncoder().encode(text);
 const facts=async(i=0,n=3)=>extract(decode(bytes(fixtureText(i,n))),`folder/${i}.ink`,`hash-${i}`);
@@ -31,7 +32,7 @@ it('does not cross owned-external resource boundaries or resolve foreign definit
 });
 it('uses native Cell boundaries across inline images and richer actual native producer fixtures',async()=>{
  const original=await fs.readFile('artifacts/flint-b1.2/rich.mutable.json'),resource=decode(original),before=native.nativeText(resource),f=await extract(resource,'rich.ink','hash');
- expect(f.blocks.some(b=>b.type==='three-d-object-block')).toBe(true);expect(f.blocks.some(b=>b.text&&b.text.runs.length>1)).toBe(true);expect(f.annotations.some(a=>a.type==='codex/entity-reference')).toBe(true);expect(native.nativeText(resource)).toBe(before);
+ expect(f.blocks.some(b=>b.type==='3d-object-block')).toBe(true);expect(f.blocks.some(b=>b.text&&b.text.runs.length>1)).toBe(true);expect(f.annotations.some(a=>a.type==='codex/entity-reference')).toBe(true);expect(native.nativeText(resource)).toBe(before);
 });
 it('reads mixed native suffixes but never Markdown; hides internal paths and diagnoses symlinks',async()=>temp(async root=>{
  await fs.mkdir(path.join(root,'nested'));await fs.mkdir(path.join(root,'.mutable'));await fs.mkdir(path.join(root,'.mutable-pair-old'));
@@ -47,16 +48,31 @@ it('cancels rebuild and reports corrupt files without admitting guessed facts',a
 }));
 it('suppresses saved contribution immediately, defers capture, follows Undo/Redo and cannot resurrect stale disk on disposal',async()=>{
  const index=new KnowledgeIndex(),f=await facts(0);index.putSaved(f);const repository=new CanonicalRepository(resourceToRepository(decode(bytes(fixtureText(0,3)))));
- const before=repository.snapshot(),snap=vi.spyOn(repository,'snapshot'),capture=vi.spyOn(native,'captureNative');const overlay=liveOverlay(index,repository,f.id,f.location,1000);
+ const before=native.nativeText(native.captureNative(repository.readState(),f.id)),snap=vi.spyOn(repository,'snapshot'),capture=vi.spyOn(native,'captureNative');const overlay=liveOverlay(index,repository,f.id,f.location,1000);
  try{expect(index.effective.has(f.id)).toBe(false);await overlay.flush();capture.mockClear();const root=Object.values(repository.readState().contents).find(c=>c.viewType==='document-block')!;
   repository.commit('Title edit',[{kind:'put-content',record:{...root,payload:{...root.payload,metadata:{...(root.payload.metadata as any),title:'Unsaved live title'}}}}]);
-  expect(index.effective.has(f.id)).toBe(false);expect(capture).not.toHaveBeenCalled();expect(snap).not.toHaveBeenCalled();await overlay.flush();expect(index.effective.get(f.id)?.title).toBe('Unsaved live title');expect(index.saved.get(f.id)?.title).toBe(f.title);
+  expect(index.effective.has(f.id)).toBe(false);expect(capture).not.toHaveBeenCalled();expect(snap).toHaveBeenCalledTimes(1);/* General metadata commits already snapshot; the overlay adds no capture. */await overlay.flush();expect(index.effective.get(f.id)?.title).toBe('Unsaved live title');expect(index.saved.get(f.id)?.title).toBe(f.title);
   repository.undo();await overlay.flush();expect(index.effective.get(f.id)?.title).toBe(f.title);repository.redo();await overlay.flush();expect(index.effective.get(f.id)?.title).toBe('Unsaved live title');
-  repository.undo();await overlay.flush();snap.mockRestore();expect(repository.snapshot().contents).toEqual(before.contents);
+  repository.undo();await overlay.flush();snap.mockRestore();expect(native.nativeText(native.captureNative(repository.readState(),f.id))).toBe(before);
  }finally{capture.mockRestore();snap.mockRestore();overlay.dispose();}expect(index.effective.has(f.id)).toBe(false);expect(index.coverage().suppressed).toContain(f.id);
 });
 it('drops stale overlay extraction and keeps disappeared/ambiguous loaded sources suppressed',async()=>{
  const index=new KnowledgeIndex(),f=await facts(0);index.putSaved(f);const repository=new CanonicalRepository(resourceToRepository(decode(bytes(fixtureText(0,3))))),overlay=liveOverlay(index,repository,f.id,f.location,1000);
  try{const old=overlay.flush();const root=Object.values(repository.readState().contents).find(c=>c.viewType==='document-block')!;repository.commit('Source identity no longer present',[{kind:'put-content',record:{...root,payload:{...root.payload,metadata:{documentId:'another'}}}}]);await old;await overlay.flush();expect(index.effective.has(f.id)).toBe(false);expect(overlay.error).toMatch(/missing or ambiguous/);repository.undo();await overlay.flush();expect(index.effective.has(f.id)).toBe(true);index.rejectIdentity(f.id);await overlay.flush();expect(index.effective.has(f.id)).toBe(false);
  }finally{overlay.dispose();}
+});
+
+it('keeps inline typing free of snapshots and synchronous overlay capture',async()=>{
+ const index=new KnowledgeIndex(),f=await facts(0);index.putSaved(f);
+ const repository=new CanonicalRepository(resourceToRepository(decode(bytes(fixtureText(0,3))))),occurrences=new OccurrenceIndex(),projection=new BlockTreeProjection(repository,'proof',occurrences),commands=new TreeCommands(repository,key=>occurrences.resolve(key));
+ const overlay=liveOverlay(index,repository,f.id,f.location,1000);await overlay.flush();
+ const snap=vi.spyOn(repository,'snapshot'),capture=vi.spyOn(native,'captureNative');
+ try{const key=projection.state.nodes[projection.state.rootKey].children[0];commands.replaceInlineRange(key,0,0,'Typed ');
+  expect(snap).not.toHaveBeenCalled();expect(capture).not.toHaveBeenCalled();expect(index.effective.has(f.id)).toBe(false);
+  await overlay.flush();expect(index.effective.get(f.id)?.blocks.some(b=>b.text?.runs.some(r=>r.text.startsWith('Typed ')))).toBe(true);
+ }finally{snap.mockRestore();capture.mockRestore();overlay.dispose();projection.dispose();}
+});
+it('bounds examined edges including unresolved targets',async()=>{
+ const index=new KnowledgeIndex(),f=await facts(0);for(const m of f.mentions)if(m.kind==='document')m.targetResourceId='missing';index.putSaved(f);
+ const result=index.traverse(f.id,3,250,2);expect(result.unresolved).toBe(2);expect(result.examined).toBe(2);expect(result.truncated).toBe(true);
 });
