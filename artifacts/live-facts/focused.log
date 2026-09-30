@@ -1,0 +1,23 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/qualification/native-knowledge/live-observer.test.ts (15 tests) 7511ms
+   ✓ matches complete Facts for canonical fixtures and actual rich native producers 468ms
+   ✓ observes changed native text/annotations and Undo/Redo without capture or snapshots 1041ms
+   ✓ revalidates metadata/structural changes instead of reusing an inline proof 644ms
+   ✓ rejects cancellation, stale completion, disappearing identity and disposed observation 750ms
+   ✓ retains binding/discovery/pending and ambiguity eligibility guards 369ms
+   ✓ applies the same explicit opaque-host profile to reference and live observation 348ms
+   ✓ matches retained definitions, margins, reference cycles and graph-2 owned-external boundaries 385ms
+   ✓ rejects shared Cells even when the inline-edit hint preserves the structural proof 388ms
+   ✓ rechecks authored Block identities even on payload-only inline hints 394ms
+   ✓ does not mutate canonical content, revision or history and checks binding changes at completion 483ms
+   ✓ reports missing definitions and rejects annotation-budget excess without publishing partial facts 693ms
+   ✓ does not absorb a locally loaded owned child Document into its owner contribution 632ms
+   ✓ matches legacy Workspace definition provenance without adopting it as Document-owned 356ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  08:24:01
+   Duration  10.23s (transform 640ms, setup 0ms, collect 1.03s, tests 7.51s, environment 1.18s, prepare 152ms)
+

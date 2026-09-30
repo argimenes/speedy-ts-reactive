@@ -5,6 +5,7 @@ import {resolveLinkedProperty, linkedDefinitionOwner} from '../../block-tree/lin
 import {canonicalSearchSource} from '../../runtime/canonical-search-source';
 import type {SearchSource} from '../../runtime/search-matching';
 import type {ResourceSnapshot} from '../../history/stage-c-gates/resource';
+import type {RepositoryState} from '../../block-tree/types';
 import type {DeepReadonly} from '../../block-tree/commit-capture';
 export const PROFILE='native-knowledge-investigation-1';
 export interface AnnotationFact {
@@ -28,11 +29,19 @@ export interface InlineFacts {
 }
 export type InlineReader=(blockId:string,signal?:AbortSignal)=>Promise<InlineFacts>;
 export const decode = decodeNative;
-export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:string,generation:string,signal?:AbortSignal,inlineReader?:InlineReader):Promise<Facts> {
- signal?.throwIfAborted();
- const state=resourceToRepository(resource),root=state.contents[state.placements[state.rootPlacementKey].contentKey];
+export interface ObservationPolicy {
+ check?:()=>void; opaque?:(type:string)=>boolean;
+ timings?:{textMs:number;annotationsMs:number};
+}
+export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:string,generation:string,signal?:AbortSignal,inlineReader?:InlineReader,policy?:ObservationPolicy):Promise<Facts> {
+ return collectFacts(resourceToRepository(resource),resource.resourceId,location,generation,signal,inlineReader,policy);
+}
+/** Qualification-only observer. State may be borrowed; check rejects changed revisions at yields. */
+export async function collectFacts(state:RepositoryState,resourceId:string,location:string,generation:string,signal?:AbortSignal,inlineReader?:InlineReader,policy?:ObservationPolicy):Promise<Facts> {
+ signal?.throwIfAborted();policy?.check?.();
+ const root=state.contents[state.placements[state.rootPlacementKey].contentKey];
  const metadata=root.payload.metadata as Record<string,unknown>|undefined;
- const facts:Facts={id:resource.resourceId,rootBlockId:String(root.payload.id),location,generation,title:typeof metadata?.title==='string'?metadata.title:'',tags:[],blocks:[],annotations:[],mentions:[],diagnostics:[]};
+ const facts:Facts={id:resourceId,rootBlockId:String(root.payload.id),location,generation,title:typeof metadata?.title==='string'?metadata.title:'',tags:[],blocks:[],annotations:[],mentions:[],diagnostics:[]};
  if(metadata?.tags!==undefined) {
   if(Array.isArray(metadata.tags)&&metadata.tags.every(t=>typeof t==='string'))facts.tags=[...new Set(metadata.tags as string[])];
   else facts.diagnostics.push('Unsupported tags payload');
@@ -41,29 +50,32 @@ export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:s
  let visits=0,properties=0;
  while(queue.length) {
   if(++visits>10000){facts.diagnostics.push('Block budget reached');break;}
-  if(visits%64===0){await new Promise(r=>setTimeout(r,0));signal?.throwIfAborted();}
+  if(visits%64===0){await new Promise(r=>setTimeout(r,0));signal?.throwIfAborted();policy?.check?.();}
   const p=state.placements[queue.pop()!];if(!p){facts.diagnostics.push('Missing placement');continue;}
   if(p.externalReference||p.resolvedReference){facts.diagnostics.push('External resource body not expanded');continue;}
   if(p.kind==='reference')continue; // inspect canonical owned content once, never occurrence multiplicity
   const c=state.contents[p.contentKey];if(!c||seen.has(c.key))continue;seen.add(c.key);
   const blockId=String(c.payload.id),block:BlockFact={id:blockId,type:c.viewType};facts.blocks.push(block);
-  let inline:InlineFacts|undefined;
+  if(policy?.opaque?.(c.viewType)||policy?.opaque&&c.viewType.endsWith('-application-block')){facts.diagnostics.push(`Unsupported hosted content (${c.viewType}) omitted.`);continue;}
+  let inline:InlineFacts|undefined;const textStart=performance.now();
   if(c.inlineKind==='standoff') {
    if(inlineReader){inline=await inlineReader(blockId,signal);block.text=inline.text;}
    else {const {contentKey:_,version:__,...text}=await canonicalSearchSource(state,c.key,0,signal,2000000);block.text=text;}
   }
+  policy?.check?.();if(policy?.timings)policy.timings.textMs+=performance.now()-textStart;const annotationStart=performance.now();
   for(const raw of Array.isArray(c.payload.standoffProperties)?c.payload.standoffProperties:[]) {
    if(++properties>10000)throw Error('Annotation budget exceeded');
+   if(policy&&properties%128===0){await new Promise(r=>setTimeout(r,0));signal?.throwIfAborted();policy.check?.();}
    if(!raw||typeof raw!=='object'){facts.diagnostics.push('Malformed annotation');continue;}
    let owner;try{owner=linkedDefinitionOwner(state,raw,c.key);}catch{facts.diagnostics.push('Ambiguous linked definition');continue;}
    if(raw.annotationId&&(!owner||owner.key!==root.key)){facts.diagnostics.push('Foreign/unresolved linked definition');continue;}
    const a=resolveLinkedProperty(state,raw,c.key);
    if(a.isDeleted||a.clientOnly)continue;
    if(c.inlineKind!=='standoff'||typeof raw.id!=='string'||!raw.id||typeof a.type!=='string'||!a.type||typeof a.start!=='number'||typeof a.end!=='number'||!Number.isInteger(a.start)||!Number.isInteger(a.end)||a.start<0||a.end<a.start||a.end>=(inline?.length??c.inlineContent.length)){facts.diagnostics.push('Unsupported annotation identity/range');continue;}
-   const segmentId=JSON.stringify([resource.resourceId,blockId,raw.id]);
-   const logicalId=JSON.stringify([resource.resourceId,raw.annotationId?'linked':blockId,raw.annotationId??raw.id]);
+   const segmentId=JSON.stringify([resourceId,blockId,raw.id]);
+   const logicalId=JSON.stringify([resourceId,raw.annotationId?'linked':blockId,raw.annotationId??raw.id]);
    if(localIds.has(segmentId)){bad.add(logicalId);groups.delete(logicalId);facts.diagnostics.push('Duplicate segment identity');continue;}localIds.add(segmentId);
-   const definition=raw.annotationId?{resourceId:resource.resourceId,blockId:String(owner!.payload.id),annotationId:String(raw.annotationId)}:undefined;
+   const definition=raw.annotationId?{resourceId:resourceId,blockId:String(owner!.payload.id),annotationId:String(raw.annotationId)}:undefined;
    facts.annotations.push({id:segmentId,logicalId,blockId,type:a.type,start:a.start,end:a.end+1,value:structuredClone(a.value),definition});
    if(!['codex/block-reference','codex/entity-reference'].includes(a.type))continue;
    if(typeof a.value!=='string'||!a.value){facts.diagnostics.push('Unsupported reference value');continue;}
@@ -76,7 +88,8 @@ export async function extract(resource:DeepReadonly<ResourceSnapshot>,location:s
    if(!mention){mention={id:logicalId,kind,targetId:a.value,targetResourceId:kind==='document'?docId:undefined,ranges:[],text:'',annotationIds:[],definition};groups.set(logicalId,mention);}
    mention.ranges.push({blockId,start:a.start,end:a.end+1});mention.annotationIds.push(segmentId);mention.text+=(mention.text?'\n':'')+text;
   }
+  if(policy?.timings)policy.timings.annotationsMs+=performance.now()-annotationStart;
   queue.push(...[...c.children,...Object.entries(c.ownedRelations).sort(([a],[b])=>a.localeCompare(b)).map(([,v])=>v)].reverse());
  }
- facts.annotations=facts.annotations.filter(a=>!bad.has(a.logicalId));facts.mentions=[...groups.values()];facts.diagnostics=[...new Set(facts.diagnostics)];signal?.throwIfAborted();return facts;
+ facts.annotations=facts.annotations.filter(a=>!bad.has(a.logicalId));facts.mentions=[...groups.values()];facts.diagnostics=[...new Set(facts.diagnostics)];signal?.throwIfAborted();policy?.check?.();return facts;
 }

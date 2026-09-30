@@ -1,0 +1,23 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/qualification/native-knowledge/live-overlay.test.ts (2 tests) 3417ms
+   ✓ suppresses immediately, rejects stale completions and never falls back on disposal 625ms
+   ✓ supports ten independently registered canonical resources without mounting them 2790ms
+ ✓ src/qualification/native-knowledge/live-observer.test.ts (12 tests) 5492ms
+   ✓ matches complete Facts for canonical fixtures and actual rich native producers 341ms
+   ✓ observes changed native text/annotations and Undo/Redo without capture or snapshots 805ms
+   ✓ revalidates metadata/structural changes instead of reusing an inline proof 434ms
+   ✓ rejects cancellation, stale completion, disappearing identity and disposed observation 603ms
+   ✓ retains binding/discovery/pending and ambiguity eligibility guards 302ms
+   ✓ matches Entity/Document separation, tagged unknown values, inline images and foreign definitions 476ms
+   ✓ applies the same explicit opaque-host profile to reference and live observation 516ms
+   ✓ matches retained definitions, margins, reference cycles and graph-2 owned-external boundaries 423ms
+   ✓ does not mutate canonical content, revision or history and checks binding changes at completion 387ms
+   ✓ reports missing definitions and rejects annotation-budget excess without publishing partial facts 624ms
+
+ Test Files  2 passed (2)
+      Tests  14 passed (14)
+   Start at  08:20:39
+   Duration  7.38s (transform 476ms, setup 0ms, collect 1.20s, tests 8.91s, environment 1.63s, prepare 213ms)
+

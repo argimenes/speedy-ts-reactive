@@ -1,7 +1,7 @@
 /** Qualification only. Text-free validation witness is PRIVATE and must never be saved/admitted. */
 import {decodeNative,parseNativeEnvelope} from '../../persistence/native-resource';
 import {validateNativeTextSpan} from '../../history/stage-c-gates/portable';
-import {extract,type InlineFacts} from './extract';
+import {extract,type InlineFacts,type ObservationPolicy} from './extract';
 import type {TextRun} from '../../runtime/search-matching';
 type Span = {kind:'text';text:string}|{kind:'image';properties:unknown};
 
@@ -41,12 +41,12 @@ export function prepareLightweightFacts(bytes:Uint8Array,signal?:AbortSignal){
  const witness=decodeNative(new TextEncoder().encode(JSON.stringify({...envelope,document})));
  const validationMs=performance.now()-start;signal?.throwIfAborted();
  // No partial ResourceSnapshot escapes: only validated identity and a facts closure.
- return {resourceId:witness.resourceId,validationMs,async materialize(location:string,generation:string,signal?:AbortSignal){
-  const factsStart=performance.now();const facts=await extract(witness,location,generation,signal,(id,s)=>inlineFacts(spans.get(id)??[],s));
+ return {resourceId:witness.resourceId,validationMs,async materialize(location:string,generation:string,signal?:AbortSignal,policy?:ObservationPolicy){
+  const factsStart=performance.now();const facts=await extract(witness,location,generation,signal,(id,s)=>inlineFacts(spans.get(id)??[],s),policy);
   return {facts,timings:{validationMs,factsMs:performance.now()-factsStart}};
  }};
 }
 
-export async function lightweightFacts(bytes:Uint8Array,location:string,generation:string,signal?:AbortSignal){
- return prepareLightweightFacts(bytes,signal).materialize(location,generation,signal);
+export async function lightweightFacts(bytes:Uint8Array,location:string,generation:string,signal?:AbortSignal,policy?:ObservationPolicy){
+ return prepareLightweightFacts(bytes,signal).materialize(location,generation,signal,policy);
 }
