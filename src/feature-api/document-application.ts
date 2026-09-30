@@ -11,6 +11,7 @@ export interface DocumentApplicationInstance {
   tabs: Component;
   vault?: ApplicationVault;
   knowledge?: ApplicationKnowledge;
+  backlinks?: import("./backlinks").ApplicationBacklinks;
   properties(): ApplicationDocumentProperties | undefined;
   setProperties(id: string, value: {title: string; tags: readonly string[]}): void;
   files?: {

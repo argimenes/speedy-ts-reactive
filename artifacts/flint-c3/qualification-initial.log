@@ -1,0 +1,279 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/block-tree/portable-spike/codec.test.ts (31 tests) 273ms
+ ✓ src/block-tree/block-tree.test.ts (18 tests) 113ms
+ ✓ src/rendering/standoff-editor-view.test.tsx (23 tests) 2313ms
+   ✓ StandoffEditorView > creates and reuses the current block's left margin and focuses its text 316ms
+ ✓ src/rendering/cross-block-selection.test.tsx (16 tests) 3117ms
+   ✓ experimental cross-Block text selection > replaces via beforeinput and pastes plain multiline text atomically 352ms
+   ✓ experimental cross-Block text selection > applies all ordinary styles and colours locally with atomic history and persistence 981ms
+ ✓ src/rendering/annotation-monitor.test.tsx (14 tests) 2442ms
+   ✓ annotation monitor > distinguishes the current range from a cross-Block annotation and shows other text ranges 878ms
+ ✓ src/qualification/native-b1/resource.test.tsx (28 tests) 3748ms
+   ✓ B1 isolated canonical native proof > rich producers: capture, UTF-8 bytes, fresh decode, shared-host admission, editing, undo/redo and re-save 1131ms
+ ✓ src/history/stage-c-gates/resource.test.ts (9 tests) 282ms
+ ✓ src/qualification/native-b1/compatibility.test.ts (13 tests) 2823ms
+   ✓ B1.1 resource-aware definitions > keeps definitions in their canonical Document through native reopen, edit/delete and shared-occurrence undo 640ms
+   ✓ B1.1 durable foreign transclusions > retains live editing, saves only a descriptor, and rebinds either admission order in one shared repository 594ms
+ ✓ src/features/entity-references/entity-candidates.test.ts (11 tests) 1830ms
+   ✓ entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 1263ms
+ ✓ src/qualification/native-b1/owned-resources.test.ts (10 tests) 1669ms
+   ✓ B1.2 owned resources and non-owning storage > rejects duplicate or mislocated registrations and ownership conflicts in reverse load order 307ms
+ ✓ server/native-vault-store.test.mjs (44 tests) 17505ms
+   ✓ discovers real nested/empty directories, confirmed pairs and standalone Markdown without admitting Documents 499ms
+   ✓ moves an enrolled pair without changing bytes, identity or save generation; saves at new binding 1085ms
+   ✓ renames a pair in the same directory while retaining every historical generation 345ms
+   ✓ creates real directories exclusively and never invents a membership file 640ms
+   ✓ recovers after relocation-intent without generating new content 686ms
+   ✓ recovers after relocation-after-0 without generating new content 369ms
+   ✓ recovers after relocation-after-1 without generating new content 387ms
+   ✓ recovers after relocation-after-2 without generating new content 413ms
+   ✓ recovers after relocation-receipt-displaced without generating new content 452ms
+   ✓ recovers after relocation-receipt without generating new content 644ms
+   ✓ recovers after relocation-before-complete without generating new content 836ms
+   ✓ recovers after relocation-complete without generating new content 643ms
+   ✓ fences stale locations and rename-away-and-back even with identical content hashes 1370ms
+   ✓ preserves late native writes through open handles at relocation-after-0 511ms
+   ✓ preserves late native writes through open handles at relocation-before-complete 303ms
+   ✓ does not overwrite an external file created in a destination between pair steps 301ms
+   ✓ native primitive refuses existing files, empty directories and source parent symlinks 345ms
+   ✓ preserves an externally replaced source inode caught after preflight 506ms
+   ✓ does not follow a destination parent replaced by a symlink after preflight 357ms
+   ✓ external source deletion leaves an explicit pending conflict and never invents replacement content 310ms
+   ✓ does not confirm a relocated owner whose required owned resource disappeared 539ms
+   ✓ moves an owner and owned resource as independent pairs without altering their generations or Markdown 750ms
+   ✓ retains multiple immutable save generations through pair rename 627ms
+   ✓ never substitutes fresh filesystem signatures for the caller reviewed content hashes 314ms
+ ✓ src/application/flint-lifecycle.test.tsx (13 tests) 6945ms
+   ✓ Flint composite transient hosting > ignores late image completion after a transient occurrence is disposed 1263ms
+   ✓ Flint composite transient hosting > mounts one ordinary editor, restores selection across tab switches, and releases occurrence state 1426ms
+   ✓ Flint composite transient hosting > restores occurrence-local cross-Block selection and drops stale bookmarks after edits elsewhere 549ms
+   ✓ Flint composite transient hosting > prevents a different Window toolbar from applying another occurrence's grouped selection 303ms
+   ✓ Flint composite transient hosting > owns Entity panel focus and cancels asynchronous work when its tab disappears 660ms
+   ✓ Flint composite transient hosting > round-trips launched Windows with the unchanged server bundle and one object bank 381ms
+   ✓ Flint composite transient hosting > does not leak the application's Document slot into authored tabs inside its Document 310ms
+   ✓ Flint composite transient hosting > closes/reopens tabs without deleting canonical Documents; disablement retains their data 310ms
+   ✓ Flint composite transient hosting > keeps two application Windows independent while editing shared content and renaming tabs 664ms
+ ✓ src/qualification/native-b2/paired-save.test.mjs (22 tests) 8248ms
+   ✓ writes a rich same-generation pair without simplifying native semantics; zero views suffice 371ms
+   ✓ captures once for two occurrences, survives their closure, and keeps newer edits dirty 397ms
+   ✓ recovers exact frozen generation after before-native interruption 499ms
+   ✓ recovers exact frozen generation after before-markdown interruption 347ms
+   ✓ recovers exact frozen generation after before-receipt interruption 307ms
+   ✓ preflight blocks unknown/external Markdown; explicit Keep Mutable preserves the accepted bytes 339ms
+   ✓ preserves raced native bytes displaced between preflight and publication 492ms
+   ✓ preserves raced markdown bytes displaced between preflight and publication 677ms
+   ✓ a path recreated during publication wins; it is never overwritten 453ms
+   ✓ writes through an already-open displaced inode are preserved and detected 454ms
+   ✓ serializes cooperating writers and rejects stale completion attribution 317ms
+   ✓ owned dependencies must be located; A's pair never recursively generates B Markdown 321ms
+   ✓ recovers after actual writer-process death at after-native with the OS lock released 646ms
+   ✓ recovers after actual writer-process death at after-markdown with the OS lock released 716ms
+   ✓ recovers after actual writer-process death at after-receipt with the OS lock released 894ms
+ ✓ server/workspace-store.test.ts (7 tests) 518ms
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 1749ms
+   ✓ entity candidate review > binds a manually checked match and closes despite incomplete document coverage 649ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (7 tests) 1728ms
+   ✓ document entity listing > loads summaries, sorts every column and previews property ranges without document changes 638ms
+ ✓ src/runtime/text-search.test.ts (11 tests) 1843ms
+   ✓ scoped text search > does no search or snapshots synchronously on edit; only rematches dirty content 1336ms
+ ✓ src/application/flint-vault.test.tsx (13 tests) 15771ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 2773ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 2400ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 1521ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 1071ms
+   ✓ exposes read-only storage, preserves ordinary editing, and cannot bypass it through Files 642ms
+   ✓ refresh discovers external changes without rebinding or replacing loaded dirty content; ambiguous identities stay unavailable 917ms
+   ✓ preserves unknown authored payloads and incompatible tags, and reports missing owned-resource dependencies 835ms
+   ✓ retains the selected vault across minimize/restore, with no serialized membership or root path 609ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 1069ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 1269ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 1007ms
+   ✓ relocates a Document containing a native external reference without rewriting its target or saved generation 871ms
+   ✓ reports a vanished location without discarding the live Document or adopting an external same-ID move 781ms
+ ✓ src/application/canonical-backlinks.test.ts (10 tests) 640ms
+ ✓ server/native-document-store.test.mjs (12 tests) 3727ms
+   ✓ saves/reopens rich native bytes through actual routes and preserves identity across a file rename 516ms
+   ✓ rejects a stale second editor even though the durable server receipt advanced 691ms
+   ✓ recovers a partial publication after restart and blocks conflicting partial Markdown 565ms
+   ✓ uses native authority even with newer Markdown and exposes Markdown only as import text 303ms
+   ✓ Compare / Keep Mutable requires an exact reviewed external hash and preserves the displaced bytes 343ms
+   ✓ never attaches a newer file baseline to older bytes returned by Open 362ms
+ ✓ src/history/preplan-spike/preplan.test.ts (15 tests) 2092ms
+   ✓ pre-plan history wire value experiment > replays wire checkpoints and every compact revision through structure, rich edits and undo 1302ms
+ ✓ src/qualification/native-b2/markdown.test.tsx (11 tests) 1940ms
+   ✓ B2 consumed Markdown > consumes **bold* with one conversion Undo/Redo 968ms
+ ✓ src/features/entity-references/search-view.test.tsx (4 tests) 1982ms
+   ✓ entity search overlay > seeds the query, searches existing API, commits local reference/name metadata and undoes atomically 908ms
+   ✓ entity search overlay > debounces changes, rejects stale responses, supports alias options and displays server failures 622ms
+ ❯ src/application/flint-knowledge.test.tsx (12 tests | 1 failed) 28197ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 2739ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 2002ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 2138ms
+   × creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 3377ms
+     → References in this Document enabled: expected true to be false // Object.is equality
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 1450ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 1305ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 930ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 1623ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 7926ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 1981ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 1144ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 1578ms
+ ✓ server/document-store.test.ts (7 tests) 915ms
+   ✓ document store HTTP routes > lists immediate folders and JSON documents, including root and empty folders 311ms
+ ✓ src/application/jet-stage-a-proof.test.ts (5 tests) 504ms
+ ✓ src/application/flint-backlinks.test.tsx (2 tests) 10226ms
+   ✓ follows a live backlink in the invoking Window and refreshes reference removal/Undo without authoring navigation 6842ms
+   ✓ refreshes title and binding labels, preserves no-tab source and reports unopened coverage 3383ms
+ ✓ src/history/stage-c-gates/ownership-lifetime.test.ts (4 tests) 747ms
+   ✓ Stage C G1 retained definition lifetime > opens B's unplaced rich definition without synthetic structural occurrences 376ms
+ ✓ src/application/flint-transient-proof.test.ts (5 tests) 1167ms
+   ✓ Flint transient occurrence gate > shares canonical content with independent occurrence keys and no extra placements 418ms
+   ✓ Flint transient occurrence gate > preserves target IDs and canonical ownership through server persistence, regardless of tab-first order 437ms
+ ✓ src/history/stage-c-gates/definitions.test.ts (3 tests) 226ms
+ ✓ src/persistence/native-vault-session.test.ts (8 tests) 9767ms
+   ✓ changes only the resource binding with zero occurrences and rejects automatic same-ID adoption by another session 1667ms
+   ✓ retains edits and shared identity across two occurrences and their disposal during relocation 865ms
+   ✓ queues Save behind relocation so it uses the confirmed new binding 734ms
+   ✓ recovers an uncertain response through the same resource-owned operation 836ms
+   ✓ a newer discovery result cannot replace a stale live baseline to authorize relocation 1620ms
+   ✓ a fresh session can recover a recorded operation without adopting any live binding 1860ms
+   ✓ passes query cancellation through the real discovery transport 1060ms
+   ✓ cannot use relocation to adopt an externally moved same-ID pair with unchanged hashes 1116ms
+ ✓ src/history/stage-c-gates/query.test.ts (3 tests) 151ms
+ ✓ src/reactive-editor/workspace-manifest.test.ts (4 tests) 211ms
+ ✓ src/history/stage-c-gates/portable.test.ts (4 tests) 335ms
+ ✓ src/qualification/native-b1/owned-resource-files.test.mjs (9 tests) 1271ms
+   ✓ publishes B before A, reopens both native files, and never embeds B in A 558ms
+ ✓ src/history/durable-core.test.ts (6 tests) 23411ms
+   ✓ persistent single Document shared contracts > admits and exactly reopens a 25,000-character Document above the temporary 8 MiB state limit within measured durable bounds 22779ms
+ ✓ src/block-tree/compact-changes.test.ts (9 tests) 30142ms
+   ✓ compact exact capture > replays margins, linked definitions, shared placements, inline images, joins, pruning and root replacement 373ms
+   ✓ compact exact capture > matches full capture and every live revision through text, structure and undo 1032ms
+   ✓ compact exact capture > copies only changed sequence keys for 5600 character typing and undo 6887ms
+   ✓ compact exact capture > copies only changed sequence keys for 25000 character typing and undo 21640ms
+ ✓ src/reactive-editor/local-workspace.test.ts (4 tests) 124ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 766ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 703ms
+ ✓ src/persistence/native-session.test.ts (5 tests) 2224ms
+   ✓ opens canonically without an occurrence, saves/reopens, and blocks tree/extended/Workspace bypasses 613ms
+   ✓ does not refresh a stale client baseline after a rejected Save or Open 1057ms
+ ✓ src/features/flint/backlinks-view.test.tsx (3 tests) 419ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 1292ms
+   ✓ entity property details contribution > groups the horizontal columns, exposes a readonly annotation ID and displays populated entity details 601ms
+   ✓ entity property details contribution > shows honest fallbacks for missing IDs/names and ignores a mismatched entity cache 680ms
+ ✓ src/features/entity-references/document-entities.test.ts (2 tests) 227ms
+ ✓ src/application/document-vault.test.ts (2 tests) 15ms
+ ✓ src/history/stage-c-gates/cost-scheduler.test.ts (5 tests) 6090ms
+   ✓ G3 lossless fixed-target scheduler > preserves all indices and original deadlines after repeated pauses (seed 1) 559ms
+   ✓ G3 lossless fixed-target scheduler > preserves all indices and original deadlines after repeated pauses (seed 17) 686ms
+   ✓ G3 lossless fixed-target scheduler > preserves all indices and original deadlines after repeated pauses (seed 391) 520ms
+   ✓ G3 lossless fixed-target scheduler > keeps separate real command commits and every undo/redo intermediate state during catch-up 4320ms
+ ✓ src/runtime/linked-annotations.test.ts (1 test) 84ms
+ ✓ src/qualification/native-b1/server.test.mjs (1 test) 8ms
+ ✓ src/history/stage-c-gates/incremental.test.ts (4 tests) 35550ms
+   ✓ G3 incremental owned capture > matches the independent projection after every mixed edit, copy, detach, structural operation and ordinary undo/redo 3026ms
+   ✓ G3 incremental owned capture > keeps single-character packets edit-sized and ignores large foreign state 31942ms
+   ✓ G3 incremental owned capture > checks every state in a deterministic randomized typing/branch trace without retired-key growth 573ms
+ ❯ server/native-vault-restart.test.mjs (10 tests | 2 failed) 15314ms
+   ✓ recovers from actual SIGKILL at relocation-intent through real routes 3341ms
+   ✓ recovers from actual SIGKILL at relocation-after-0 through real routes 1654ms
+   ✓ recovers from actual SIGKILL at relocation-after-1 through real routes 2061ms
+   ✓ recovers from actual SIGKILL at relocation-after-2 through real routes 3533ms
+   ✓ recovers from actual SIGKILL at relocation-receipt-displaced through real routes 1349ms
+   ✓ recovers from actual SIGKILL at relocation-before-complete through real routes 1159ms
+   ✓ recovers from actual SIGKILL at relocation-complete through real routes 1008ms
+   ✓ recovers nonempty directory movement after server death and refuses external interference on recovery 747ms
+   × serializes a concurrent Save against a pending relocation across server processes 371ms
+     → node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/native-document-store.mjs' imported from /Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/c1a-test-host.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:932:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/native-document-store.mjs'
+}
+
+Node.js v22.12.0
+
+   × finishes a directory move after actual server death and reopens its unchanged native identity 88ms
+     → node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/native-document-store.mjs' imported from /Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/c1a-test-host.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:932:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/native-document-store.mjs'
+}
+
+Node.js v22.12.0
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/native-vault-restart.test.mjs > serializes a concurrent Save against a pending relocation across server processes
+ FAIL  server/native-vault-restart.test.mjs > finishes a directory move after actual server death and reopens its unchanged native identity
+Error: node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/native-document-store.mjs' imported from /Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/c1a-test-host.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:932:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1056:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:654:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:603:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:586:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:242:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/native-document-store.mjs'
+}
+
+Node.js v22.12.0
+
+ ❯ Socket.<anonymous> server/native-vault-restart.test.mjs:14:162
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/application/flint-knowledge.test.tsx > creates, follows and removes native references with Undo/Redo; target titles and paths are not identity
+AssertionError: References in this Document enabled: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ click src/application/flint-knowledge.test.tsx:24:111
+
+ ❯ src/application/flint-knowledge.test.tsx:77:254
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ Test Files  2 failed | 47 passed (49)
+      Tests  3 failed | 470 passed (473)
+   Start at  20:06:26
+   Duration  71.13s (transform 19.17s, setup 0ms, collect 88.01s, tests 252.68s, environment 87.37s, prepare 12.45s)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/flint-c3/qualification-results.json

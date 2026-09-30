@@ -3,6 +3,7 @@
 // Optional: CHROME_BIN, BENCHMARK_URL and BENCHMARK_DOCUMENT_URL (read-only API
 // loadDocumentJson URL). A supplied document benchmarks its longest paragraph.
 // BENCHMARK_PRESENTATION=desktop|spatial optionally hosts the same fixture in a Window.
+// BENCHMARK_BACKLINKS=1 adds the real C3 panel/service over an in-memory bound fixture.
 // Requires Node 22+ (WebSocket).
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -19,8 +20,8 @@ const endpoint = await new Promise((resolve, reject) => {
 });
 socket = new WebSocket(endpoint); await new Promise(resolve => socket.addEventListener('open', resolve, {once:true}));
 let id = 0; const pending = new Map();
-socket.addEventListener('message', event => { const result = JSON.parse(event.data); if(result.id && pending.has(result.id)) { const p = pending.get(result.id); pending.delete(result.id); result.error ? p.reject(new Error(JSON.stringify(result.error))) : p.resolve(result.result); }});
-const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => { const requestId = ++id; pending.set(requestId,{resolve,reject}); socket.send(JSON.stringify({id:requestId,method,params,...(sessionId ? {sessionId} : {})})); });
+socket.addEventListener('message', event => { const result = JSON.parse(event.data); if(result.id && pending.has(result.id)) { const p = pending.get(result.id); pending.delete(result.id); clearTimeout(p.timer); result.error ? p.reject(new Error(JSON.stringify(result.error))) : p.resolve(result.result); }});
+const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => { const requestId = ++id; const timer=setTimeout(()=>{pending.delete(requestId);reject(new Error('CDP timed out: '+method));},30000); pending.set(requestId,{resolve,reject,timer}); socket.send(JSON.stringify({id:requestId,method,params,...(sessionId ? {sessionId} : {})})); });
  const {targetId} = await send('Target.createTarget',{url:'about:blank'}); const {sessionId} = await send('Target.attachToTarget',{targetId,flatten:true});
  const evaluate = async expression => {
    const result = await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},sessionId);
@@ -41,7 +42,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    const host = document.createElement('div'); document.body.append(host);
    host.style.cssText = 'position:fixed;inset:0;overflow:auto;background:white;z-index:99999';
    const documentUrl = ${JSON.stringify(process.env.BENCHMARK_DOCUMENT_URL ?? "")};
-   const dto = documentUrl ? (await (await fetch(documentUrl)).json()).Data.document : {type:'document-block',children:Array.from({length:250},(_,i)=>({id:'bench-'+i,type:'standoff-editor-block',text:'x'.repeat(100),standoffProperties:[{type:'style/bold',start:40,end:60}]}))};
+   const dto = documentUrl ? (await (await fetch(documentUrl)).json()).Data.document : {id:'typing-benchmark-document',type:'document-block',children:Array.from({length:250},(_,i)=>({id:'bench-'+i,type:'standoff-editor-block',text:'x'.repeat(100),standoffProperties:[{type:'style/bold',start:40,end:60}]}))};
    const presentation = ${JSON.stringify(process.env.BENCHMARK_PRESENTATION ?? "")};
    let editor, projection, dispose;
    if (presentation) {
@@ -69,6 +70,22 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
      stopMarkdown=installMarkdownExperiment(editor,document,()=>true,()=>[]);
    }
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+   let stopBacklinks = () => {};
+   if (${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')}) {
+     const {CanonicalBacklinks}=await import('/src/application/canonical-backlinks.ts');
+     const {BacklinksPanel}=await import('/src/features/flint/backlinks-view.tsx');
+     const root=Object.values(editor.repository.readState().contents).find(c=>c.viewType==='document-block');
+     const id=root.payload.metadata?.documentId??root.payload.id;
+     const location={folder:'benchmark',filename:'document.mutable.json'};
+     const scan={vault:'benchmark',folders:['benchmark'],documents:[{resourceId:id,title:'Benchmark',location,state:'paired'}],markdown:[],diagnostics:[],operations:[],readOnly:true,complete:true};
+     const vault={root:'benchmark',snapshot:()=>scan,signature:()=>JSON.stringify(scan),refresh:async()=>{}};
+     const service=new CanonicalBacklinks(editor.repository,{location:()=>location,pendingVaultRelocations:()=>[]},()=>vault);
+     const query={vault:'benchmark',target:{documentId:id,blockId:root.payload.id}};
+     const panel=document.createElement('aside');panel.style.cssText='position:fixed;right:0;top:0;width:200px;background:white';host.append(panel);
+     const stop=render(()=>createComponent(BacklinksPanel,{backlinks:{service,target:()=>query,follow:async()=>{}}}),panel);
+     await service.query(query);await new Promise(r=>setTimeout(r,200));
+     stopBacklinks=()=>{stop();service.dispose();panel.remove()};
+   }
    const study=host.querySelector('.workspace-spatial');const sceneFramesBefore=Number(study?.dataset.frames??0);
    const flows = host.querySelectorAll('[contenteditable=true]');
    const flow=documentUrl ? [...flows].sort((a,b)=>b.textContent.length-a.textContent.length)[0] : flows[0];
@@ -92,9 +109,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
      await new Promise(resolve=>requestAnimationFrame(resolve));
    }
    const restored=flow.textContent===before;
-   window.typingBench={editor,projection,host,flow,dispose,stopMarkdown,caret,midpoint,before,originalCell,unrelated};
+   window.typingBench={editor,projection,host,flow,dispose:()=>{stopBacklinks();dispose();},stopMarkdown,caret,midpoint,before,originalCell,unrelated};
    samples.sort((a,b)=>a-b);
-   return {markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
+   return {backlinks:${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')},markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
  })()`);
  console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
  const before = await evaluate('window.typingBench.before');
@@ -181,7 +198,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
     chrome.kill('SIGKILL');
     await exited;
   }
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
 
 // CDP/undici may retain a closing socket after Chrome has exited. All assertions

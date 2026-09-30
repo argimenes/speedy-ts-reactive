@@ -1,6 +1,6 @@
 # Flint Stage C implementation plan
 
-**Architecture accepted. Stage A, Stage B and native Save/Open production integration are complete. C1a and C1b are accepted. C2 was separately authorized and is implemented and qualified for review: see the [C2 qualification report](FLINT_C2_QUALIFICATION_REPORT.md). C3 remains unimplemented and separately gated.**
+**Architecture accepted. Stage A, Stage B and native Save/Open production integration are complete. C1a and C1b are accepted. C2 and the SurrealDB infrastructure review are accepted. C3 is implemented; see the [C3 qualification report](FLINT_C3_QUALIFICATION_REPORT.md) for the integrated Stage C review gate. No later stage is authorized.**
 
 Stage C makes Flint a knowledge workspace over canonical Documents: browse and organize a real managed directory, create Documents, edit native tags/properties, find passages, create/follow native references and see backlinks. Stage A supplies independent transient occurrences; Stage B supplies native fidelity and resource-owned Save/Open. The editor remains ordinary Codex.
 
@@ -90,7 +90,7 @@ Stop if querying unmounted canonical content requires a second editor, persisten
 
 ## C3 Derived backlinks and integrated qualification
 
-Preimplementation inspection: [existing Node/SurrealDB infrastructure review](FLINT_SURREALDB_INFRASTRUCTURE_REVIEW.md). The legacy Entity/text index is not a current native-reference backend; the review recommends retaining the bounded canonical default below. C3 remains unimplemented and awaiting review.
+Preimplementation inspection: [existing Node/SurrealDB infrastructure review](FLINT_SURREALDB_INFRASTRUCTURE_REVIEW.md). The legacy Entity/text index is not a current native-reference backend; the review recommends retaining the bounded canonical default below. The review is accepted. C3 uses the bounded canonical service below; it does not modify, repair, migrate or reindex SurrealDB.
 
 Deliver a narrow, read-only backlinks service and a Flint Backlinks view that consumes it through the application capabilities. The contract asks which authored references point to a stable Document/Block target within an explicit vault scope. It must not expose standoff storage, repository traversal or a database query language to Flint. Stage C exercises Document targets; it does not add a broader Block-navigation UI.
 
@@ -114,6 +114,10 @@ Complete one real-browser workflow: create two Documents in real subdirectories,
 
 ## Approval and completion boundary
 
-Current boundary: **review C2 → approve C3 → Stage C review**. C1a and C1b are accepted; C2 implementation and qualification are complete. These are bounded gates within Stage C, not permission to start later roadmap stages. Each report should identify implementation changes, qualification results and any unmet scope assumptions. New Stage C features default on when implemented, under the existing feature conventions.
+Current boundary: **C3 implementation and integrated qualification → Stage C review**. C1a, C1b and C2 are accepted; C3 implementation and qualification are recorded in its report. These are bounded gates within Stage C, not permission to start later roadmap stages. Each report should identify implementation changes, qualification results and any unmet scope assumptions. New Stage C features default on when implemented, under the existing feature conventions.
 
-Stage C is complete when the bounded filesystem-vault workflow works through ordinary native editing, with useful search/references/backlinks and honest persistence/scope limits. Keep the accepted remaining persistence boundaries as future work: native Workspace round-trip, cross-vault/cross-filesystem relocation, archive cleanup, synchronization, broader Markdown and additional platform durability. Graph visualization belongs to a later roadmap stage. C1a infrastructure and C1b vault UI/native properties are accepted. C2 search/reference navigation is implemented and qualified. Their reports retain the supported-host behavior and conservative rejection boundaries. Stop for C2 review before C3.
+Stage C is complete when the bounded filesystem-vault workflow works through ordinary native editing, with useful search/references/backlinks and honest persistence/scope limits. Keep the accepted remaining persistence boundaries as future work: native Workspace round-trip, cross-vault/cross-filesystem relocation, archive cleanup, synchronization, broader Markdown and additional platform durability. Graph visualization belongs to a later roadmap stage. C1a infrastructure and C1b vault UI/native properties are accepted. C2 search/reference navigation is accepted. C3 backlinks and integrated qualification are complete for review. Their reports retain the supported-host behavior and conservative rejection boundaries. Stop for Stage C review.
+
+## Separate future work: native-derived SurrealDB ingestion
+
+Begin from the accepted [infrastructure review](FLINT_SURREALDB_INFRASTRUCTURE_REVIEW.md), not the assumption that legacy Text/Entity rows already represent native references. A future adapter must establish canonical resource/Block identity, generation and freshness evidence (including unsaved state), deletion/reconciliation, native Cell boundaries, linked-definition provenance and deterministic relationship identity. It may satisfy the current backlinks service contract only while declaring truthful coverage and rejecting stale navigation. SurrealDB remains derived and rebuildable; canonical identity, ownership, persistence binding, save generation and live unsaved state remain authoritative outside it. No ingestion, migration, repair, bulk reindexing or cleanup is included in C3.

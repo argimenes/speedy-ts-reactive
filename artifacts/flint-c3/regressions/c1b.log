@@ -1,0 +1,33 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:64020) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+8:13:06 PM [vite] http proxy error at /api/native/vault/relocate:
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:536:25)
+    at Socket.emit (node:events:536:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+8:13:06 PM [vite] http proxy error at /api/native/vault/discover:
+Error: connect ECONNREFUSED 127.0.0.1:54604
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16)
+{
+  "passed": 16,
+  "checks": [
+    "Open Vault reconstructs real nested directories without admission",
+    "Create directory writes a real folder",
+    "New Document creates native pair in selected physical directory",
+    "title and tags save as native metadata without renaming the pair",
+    "two Flint Windows independently host the same canonical Document",
+    "loaded tag filter crosses the physical hierarchy",
+    "continued native typing survives relocation in both occurrences",
+    "relocation updates both physical trees and the binding without a new save generation",
+    "unsaved typing was not included in relocation",
+    "next Save publishes edits to relocated destination",
+    "directory move preserves title and updates both Windows",
+    "Refresh discovers an external folder without catalog metadata",
+    "visible recovery resumes durable relocation after server process death",
+    "explicit Markdown import saves a distinct native resource and preserves source",
+    "fresh repository and restarted server reconstruct hierarchy, identity, native text and properties",
+    "no uncaught browser exceptions"
+  ]
+}

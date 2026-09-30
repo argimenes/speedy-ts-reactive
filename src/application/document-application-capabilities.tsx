@@ -1,4 +1,6 @@
-import { VaultKnowledge } from "./vault-knowledge";
+import { CanonicalBacklinks } from "./canonical-backlinks";
+import type { ApplicationBacklinks } from "../feature-api/backlinks";
+import { VaultKnowledge, type KnowledgeHost } from "./vault-knowledge";
 import { revealMatch } from "../runtime/reveal-match";
 import type { BlockTreeProjection } from "../block-tree/projection";
 import { createDocumentVaults, vaultPath, vaultLeaf, vaultContains, type DocumentVaultLease, type VaultLocation } from "./document-vault";
@@ -176,7 +178,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         async recoverOperation(id) { const v = lease(); if (!v.operations().some(o => o.operationId === id && o.phase === 'pending')) throw new Error('Refresh to find a pending operation'); await v.recover(id); },
         async recoverNative(location) { const v = lease(), row = v.requireFile(location); await v.mutate(() => native.recover(row.resourceId, location)); },
       } : undefined;
-      const knowledge = native ? new VaultKnowledge(editor, native, {
+      const knowledgeHost: KnowledgeHost = {
         vault: lease, guard,
         active: () => { const key = activeTab(), documentId = activeId(), projection = key && liveViews.get(key); return documentId && projection ? {documentId, projection} : undefined; },
         async navigate(target, passage, current) {
@@ -199,8 +201,18 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           if(range.coordinate==='cell'&&mount?.restoreInlineSelection){mount.restoreInlineSelection({anchor:range.start,head:range.end});editor.selections.setPrimary(node.key,node.contentKey,node.viewId,range.start,range.end);}
           else if(mount?.restoreSelection)mount.restoreSelection({start:range.start,end:range.end,direction:'forward'});
         },
-      }) : undefined;
-      onCleanup(()=>knowledge?.dispose());
+      };
+      const knowledge = native ? new VaultKnowledge(editor, native, knowledgeHost) : undefined;
+      const backlinkService = native ? new CanonicalBacklinks(editor.repository, native, lease, type => editor.registry.hasCapability(type, 'opaque-widget')) : undefined;
+      const backlinks: ApplicationBacklinks | undefined = backlinkService ? {
+        service: backlinkService,
+        target() { const v = selectedVault(), id = activeId(), doc = id && resolve(id); if (!v || !doc || !id) return; return {vault: v.root, target: {documentId: id, blockId: String(editor.repository.state.contents[doc.contentKey].payload.id)}}; },
+        async follow(result, mention, signal) {
+          guard(); const resolved = await backlinkService.resolve(result, mention, signal); guard();
+          await knowledgeHost.navigate(resolved.target, resolved.passage, () => !signal?.aborted && backlinkService.current(result));
+        },
+      } : undefined;
+      onCleanup(()=>{ knowledge?.dispose(); backlinkService?.dispose(); });
       onMount(() => { const root = vaultRoots.get(props.nodeKey); if (root && vault) void vault.open(root).catch(() => { vaultRoots.delete(props.nodeKey); }); });
       const files = native ? {
         list: (folder: string) => { selectedVault()?.requireDirectory(folder); return native.list(folder); },
@@ -222,7 +234,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       } : undefined;
       return <div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
-          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge,
+          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, backlinks,
           setProperties(id, value) {
             guard(); const doc = resolve(id); if (!doc?.placement) throw new Error('Document unavailable');
             if (tagsOf(id) === undefined) throw new Error('Existing tags payload is incompatible; it has been preserved');

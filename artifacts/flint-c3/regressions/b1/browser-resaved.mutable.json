@@ -1,0 +1,319 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "id": "0938779b-9055-4445-b16d-31c92b2ada63",
+        "properties": {
+          "blockProperties": [
+            {
+              "metadata": {
+                "height": 130,
+                "min-width": 110,
+                "width": 130
+              },
+              "type": "block/size"
+            },
+            {
+              "metadata": {
+                "position": "fixed",
+                "x": 18,
+                "y": 32
+              },
+              "type": "block/position"
+            }
+          ],
+          "timer": {
+            "durationSeconds": 300,
+            "mode": "idle",
+            "remainingMilliseconds": 300000
+          }
+        },
+        "type": "timer-block"
+      },
+      {
+        "children": [],
+        "id": "35270d9e-7c8d-4ace-b894-09a6f78e64af",
+        "inline": [],
+        "properties": {
+          "blockProperties": [
+            {
+              "type": "block/alignment",
+              "value": "left"
+            },
+            {
+              "type": "block/font/size/three-quarters"
+            }
+          ],
+          "standoffProperties": []
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": [],
+        "id": "5eefd7c8-29d3-42d1-b3c7-ddf9d14528c6",
+        "inline": [],
+        "properties": {
+          "blockProperties": [],
+          "standoffProperties": []
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "id": "b76cd267-0a98-4993-acaf-279f0301b807",
+        "properties": {
+          "blockProperties": [
+            {
+              "metadata": {
+                "height": 280,
+                "width": 280
+              },
+              "type": "block/size"
+            }
+          ],
+          "object3D": {
+            "autoRotate": false,
+            "lighting": "neutral",
+            "scene": "coffee-cup",
+            "settings": {
+              "coffeeStain": false,
+              "steam": true
+            },
+            "version": 1,
+            "view": {
+              "azimuth": 45,
+              "elevation": 25
+            }
+          }
+        },
+        "type": "3d-object-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "reference",
+            "placementId": "legacy:resource:placement:11640806-867b-4a95-a4f1-657ea6977942",
+            "target": {
+              "blockId": "text",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:93129466-715d-499b-babc-2c3b9756f04f",
+            "target": {
+              "blockId": "text",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:e53dc5bb-6989-4475-ab55-2b7091f4b6e1",
+            "target": {
+              "blockId": "other",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:ad60a2c6-33ba-44fc-89f7-b4fb83f5dd23",
+            "target": {
+              "blockId": "0938779b-9055-4445-b16d-31c92b2ada63",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:3ec732e9-5f2b-4325-bab4-26c4f0f127c9",
+            "target": {
+              "blockId": "b76cd267-0a98-4993-acaf-279f0301b807",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "doc",
+        "properties": {
+          "linkedAnnotations": {
+            "ef81e64c-eb9e-4270-be51-21518fc315fb": {
+              "attributes": {},
+              "id": "ef81e64c-eb9e-4270-be51-21518fc315fb",
+              "metadata": {},
+              "type": "codex/entity-reference",
+              "value": "browser-linked"
+            }
+          },
+          "metadata": {
+            "documentId": "resource",
+            "filename": "example.mutable.json",
+            "folder": "."
+          }
+        },
+        "type": "document-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource:placement:8420817d-5def-478f-975c-47fcbd4002d9",
+            "target": {
+              "blockId": "35270d9e-7c8d-4ace-b894-09a6f78e64af",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "e81f3657-88ac-4a6c-8510-c5abed0d329c",
+        "properties": {
+          "blockProperties": [
+            {
+              "type": "block/marginalia/left"
+            }
+          ]
+        },
+        "type": "left-margin-block"
+      },
+      {
+        "id": "other",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Another paragraph"
+          }
+        ],
+        "properties": {
+          "metadata": {
+            "anchor": {
+              "blockId": "text",
+              "offset": {
+                "x": 120,
+                "y": -12
+              },
+              "version": 1
+            }
+          },
+          "standoffProperties": [
+            {
+              "end": 2,
+              "id": "486ef590-39f0-43d3-ad97-db7d3d54791c",
+              "metadata": {
+                "name": "Poe"
+              },
+              "start": 0,
+              "type": "codex/entity-reference",
+              "value": "entity-poe"
+            },
+            {
+              "active": "source",
+              "alternatives": [
+                "superposition:0260a5d2-3394-47d5-9c9b-66c69463665e"
+              ],
+              "end": 6,
+              "id": "0260a5d2-3394-47d5-9c9b-66c69463665e",
+              "start": 4,
+              "type": "text/superposition",
+              "visible": true
+            },
+            {
+              "annotationId": "ef81e64c-eb9e-4270-be51-21518fc315fb",
+              "end": 2,
+              "id": "5d458654-585b-49d4-a34a-d07a00af6ee9",
+              "start": 0,
+              "type": "codex/entity-reference"
+            }
+          ]
+        },
+        "relations": {
+          "opaque": {},
+          "owned": {
+            "leftMargin": {
+              "kind": "owned",
+              "placementId": "legacy:resource:placement:1efae4a5-376a-41e6-8112-26d4bdc44b47",
+              "target": {
+                "blockId": "e81f3657-88ac-4a6c-8510-c5abed0d329c",
+                "kind": "local"
+              }
+            },
+            "superposition:0260a5d2-3394-47d5-9c9b-66c69463665e": {
+              "kind": "owned",
+              "placementId": "legacy:resource:placement:e1d7e2c1-43d2-4baf-902b-a9cfcd63d8c9",
+              "target": {
+                "blockId": "5eefd7c8-29d3-42d1-b3c7-ddf9d14528c6",
+                "kind": "local"
+              }
+            }
+          }
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": null,
+        "id": "text",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Shared Browser native edit. A😀"
+          },
+          {
+            "kind": "image",
+            "properties": {
+              "alt": "Native image",
+              "assetId": "asset",
+              "height": 30,
+              "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2240%22%20height%3D%2230%22%3E%3Crect%20width%3D%2240%22%20height%3D%2230%22%20fill%3D%22teal%22%2F%3E%3C%2Fsvg%3E",
+              "status": "ready",
+              "width": 40
+            }
+          },
+          {
+            "kind": "text",
+            "text": "é漢\nSecond line"
+          }
+        ],
+        "properties": {
+          "futureFeature": {
+            "object": {
+              "unknown": [
+                null,
+                false,
+                42,
+                "kept"
+              ]
+            },
+            "version": 99
+          },
+          "standoffProperties": [
+            {
+              "end": 32,
+              "id": "e917c6cd-d56a-4b90-8428-1f3aa194e97b",
+              "start": 31,
+              "type": "style/rainbow"
+            },
+            {
+              "annotationId": "ef81e64c-eb9e-4270-be51-21518fc315fb",
+              "end": 2,
+              "id": "5e618098-7199-4ad0-96bd-fa34237b6053",
+              "start": 0,
+              "type": "codex/entity-reference"
+            }
+          ]
+        },
+        "relations": null,
+        "type": "standoff-editor-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "resource",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:resource:placement:e3fdd77f-3382-49ed-bdf3-769beddce1dd",
+      "target": {
+        "blockId": "doc",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "resource",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

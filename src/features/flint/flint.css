@@ -54,3 +54,9 @@
 .flint-knowledge small, .flint-search-hit span, .flint-search-hit strong { display: block; overflow-wrap: anywhere; }
 .flint-knowledge small { color: #aab4c2; margin: 4px 0; }
 .flint-knowledge [role="dialog"] { padding: 8px; border: 1px solid #99bedf; }
+.flint-backlinks { margin-top: 12px; border-top: 1px solid #485260; font-size: 13px; }
+.flint-backlinks p { margin: 8px 0; line-height: 1.35; overflow-wrap: anywhere; }
+.flint-backlinks button { border: 1px solid #485260; border-radius: 3px; padding: 6px; background: #242b33; }
+.flint-backlinks button:focus-visible { outline: 2px solid #99bedf; }
+.flint-backlink strong, .flint-backlink small, .flint-backlink span { display: block; overflow-wrap: anywhere; }
+.flint-backlink small { color: #aab4c2; margin: 4px 0; }

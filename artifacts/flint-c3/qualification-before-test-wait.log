@@ -1,0 +1,136 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/rendering/standoff-editor-view.test.tsx (23 tests) 693ms
+ ✓ src/qualification/native-b1/resource.test.tsx (28 tests) 1406ms
+   ✓ B1 isolated canonical native proof > rich producers: capture, UTF-8 bytes, fresh decode, shared-host admission, editing, undo/redo and re-save 646ms
+ ✓ src/application/flint-vault.test.tsx (13 tests) 5782ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 1097ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 837ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 476ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 390ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 490ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 470ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 518ms
+   ✓ relocates a Document containing a native external reference without rewriting its target or saved generation 304ms
+   ✓ reports a vanished location without discarding the live Document or adopting an external same-ID move 323ms
+ ❯ src/application/flint-knowledge.test.tsx (12 tests | 1 failed) 9992ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 1422ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 877ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 613ms
+   × creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 2078ms
+     → References in this Document enabled: expected true to be false // Object.is equality
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 544ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 433ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 415ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 653ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 1501ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 636ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 343ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 475ms
+ ✓ src/block-tree/portable-spike/codec.test.ts (31 tests) 109ms
+ ✓ src/rendering/cross-block-selection.test.tsx (16 tests) 944ms
+ ✓ src/block-tree/block-tree.test.ts (18 tests) 39ms
+ ✓ src/rendering/annotation-monitor.test.tsx (14 tests) 447ms
+ ✓ server/native-vault-store.test.mjs (44 tests) 6864ms
+   ✓ moves an enrolled pair without changing bytes, identity or save generation; saves at new binding 533ms
+   ✓ moves an owner and owned resource as independent pairs without altering their generations or Markdown 613ms
+   ✓ cancels a directory query without any storage or authored mutation 308ms
+ ✓ src/qualification/native-b2/paired-save.test.mjs (22 tests) 3828ms
+   ✓ writes through an already-open displaced inode are preserved and detected 330ms
+   ✓ recovers after actual writer-process death at after-native with the OS lock released 340ms
+   ✓ recovers after actual writer-process death at after-markdown with the OS lock released 311ms
+   ✓ recovers after actual writer-process death at after-receipt with the OS lock released 336ms
+ ✓ src/qualification/native-b1/compatibility.test.ts (13 tests) 1098ms
+   ✓ B1.1 durable foreign transclusions > retains live editing, saves only a descriptor, and rebinds either admission order in one shared repository 300ms
+ ✓ src/application/flint-lifecycle.test.tsx (13 tests) 2718ms
+   ✓ Flint composite transient hosting > mounts one ordinary editor, restores selection across tab switches, and releases occurrence state 398ms
+   ✓ Flint composite transient hosting > owns Entity panel focus and cancels asynchronous work when its tab disappears 438ms
+ ✓ src/history/stage-c-gates/resource.test.ts (9 tests) 86ms
+ ✓ src/features/entity-references/entity-candidates.test.ts (11 tests) 1558ms
+   ✓ entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 851ms
+ ✓ src/qualification/native-b1/owned-resources.test.ts (10 tests) 551ms
+ ✓ server/workspace-store.test.ts (7 tests) 183ms
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 536ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (7 tests) 738ms
+ ✓ server/native-document-store.test.mjs (12 tests) 1922ms
+   ✓ saves/reopens rich native bytes through actual routes and preserves identity across a file rename 489ms
+ ✓ src/runtime/text-search.test.ts (11 tests) 590ms
+   ✓ scoped text search > does no search or snapshots synchronously on edit; only rematches dirty content 431ms
+ ✓ src/application/canonical-backlinks.test.ts (10 tests) 188ms
+ ✓ src/application/flint-backlinks.test.tsx (2 tests) 4941ms
+   ✓ follows a live backlink in the invoking Window and refreshes reference removal/Undo without authoring navigation 2608ms
+   ✓ refreshes title and binding labels, preserves no-tab source and reports unopened coverage 2333ms
+ ✓ src/history/preplan-spike/preplan.test.ts (15 tests) 642ms
+   ✓ pre-plan history wire value experiment > replays wire checkpoints and every compact revision through structure, rich edits and undo 372ms
+ ✓ src/block-tree/compact-changes.test.ts (9 tests) 7877ms
+   ✓ compact exact capture > copies only changed sequence keys for 5600 character typing and undo 794ms
+   ✓ compact exact capture > copies only changed sequence keys for 25000 character typing and undo 6791ms
+ ✓ src/qualification/native-b2/markdown.test.tsx (11 tests) 458ms
+ ✓ src/history/durable-core.test.ts (6 tests) 7017ms
+   ✓ persistent single Document shared contracts > admits and exactly reopens a 25,000-character Document above the temporary 8 MiB state limit within measured durable bounds 6897ms
+ ✓ src/features/entity-references/search-view.test.tsx (4 tests) 451ms
+ ✓ src/history/stage-c-gates/incremental.test.ts (4 tests) 11827ms
+   ✓ G3 incremental owned capture > matches the independent projection after every mixed edit, copy, detach, structural operation and ordinary undo/redo 313ms
+   ✓ G3 incremental owned capture > keeps single-character packets edit-sized and ignores large foreign state 11196ms
+   ✓ G3 incremental owned capture > checks every state in a deterministic randomized typing/branch trace without retired-key growth 312ms
+ ✓ server/document-store.test.ts (7 tests) 189ms
+ ✓ src/application/jet-stage-a-proof.test.ts (5 tests) 182ms
+ ✓ src/application/flint-transient-proof.test.ts (5 tests) 105ms
+ ✓ src/history/stage-c-gates/ownership-lifetime.test.ts (4 tests) 48ms
+ ✓ src/persistence/native-vault-session.test.ts (8 tests) 2318ms
+   ✓ changes only the resource binding with zero occurrences and rejects automatic same-ID adoption by another session 802ms
+   ✓ retains edits and shared identity across two occurrences and their disposal during relocation 489ms
+ ✓ src/history/stage-c-gates/definitions.test.ts (3 tests) 30ms
+ ✓ src/history/stage-c-gates/query.test.ts (3 tests) 30ms
+ ✓ src/reactive-editor/workspace-manifest.test.ts (4 tests) 53ms
+ ✓ src/qualification/native-b1/owned-resource-files.test.mjs (9 tests) 693ms
+ ✓ src/history/stage-c-gates/portable.test.ts (4 tests) 41ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 449ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 425ms
+ ✓ src/reactive-editor/local-workspace.test.ts (4 tests) 38ms
+ ✓ src/persistence/native-session.test.ts (5 tests) 658ms
+ ✓ server/native-vault-restart.test.mjs (10 tests) 7264ms
+   ✓ recovers from actual SIGKILL at relocation-intent through real routes 1664ms
+   ✓ recovers from actual SIGKILL at relocation-after-0 through real routes 808ms
+   ✓ recovers from actual SIGKILL at relocation-after-1 through real routes 684ms
+   ✓ recovers from actual SIGKILL at relocation-after-2 through real routes 604ms
+   ✓ recovers from actual SIGKILL at relocation-receipt-displaced through real routes 668ms
+   ✓ recovers from actual SIGKILL at relocation-before-complete through real routes 681ms
+   ✓ recovers from actual SIGKILL at relocation-complete through real routes 618ms
+   ✓ recovers nonempty directory movement after server death and refuses external interference on recovery 484ms
+   ✓ serializes a concurrent Save against a pending relocation across server processes 532ms
+   ✓ finishes a directory move after actual server death and reopens its unchanged native identity 519ms
+ ✓ src/history/stage-c-gates/cost-scheduler.test.ts (5 tests) 1101ms
+   ✓ G3 lossless fixed-target scheduler > keeps separate real command commits and every undo/redo intermediate state during catch-up 774ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 145ms
+ ✓ src/features/flint/backlinks-view.test.tsx (3 tests) 345ms
+ ✓ src/features/entity-references/document-entities.test.ts (2 tests) 47ms
+ ✓ src/application/document-vault.test.ts (2 tests) 7ms
+ ✓ src/runtime/linked-annotations.test.ts (1 test) 21ms
+ ✓ src/qualification/native-b1/server.test.mjs (1 test) 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/application/flint-knowledge.test.tsx > creates, follows and removes native references with Undo/Redo; target titles and paths are not identity
+AssertionError: References in this Document enabled: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ click src/application/flint-knowledge.test.tsx:24:111
+
+ ❯ src/application/flint-knowledge.test.tsx:77:254
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 48 passed (49)
+      Tests  1 failed | 472 passed (473)
+   Start at  20:09:21
+   Duration  70.47s (transform 4.75s, setup 0ms, collect 16.68s, tests 87.25s, environment 23.06s, prepare 3.24s)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/flint-c3/qualification-results.json
