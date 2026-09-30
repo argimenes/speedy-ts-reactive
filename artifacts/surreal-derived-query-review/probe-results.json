@@ -1,0 +1,76 @@
+{
+  "scope": "Unmodified server/index.ts indexing functions, installed SurrealDB embedded mem engine; no live database inspected or changed",
+  "checks": [
+    {
+      "name": "Document key is root Block ID, not canonical resource ID",
+      "actual": [
+        "Document:⟨root-block⟩"
+      ]
+    },
+    {
+      "name": "Document row omits linked definition registry",
+      "actual": false
+    },
+    {
+      "name": "TextBlock has no assigned documentId",
+      "actual": false
+    },
+    {
+      "name": "TextBlock keeps raw native-reference payload but does not index it",
+      "actual": true
+    },
+    {
+      "name": "Only entity-reference StandoffProperty is indexed",
+      "actual": 1
+    },
+    {
+      "name": "Current all-text code-point slice handles non-BMP emoji",
+      "actual": "🧭"
+    },
+    {
+      "name": "Owned margin relation is not traversed",
+      "actual": 1
+    },
+    {
+      "name": "Second save duplicates mention edges",
+      "actual": 2
+    },
+    {
+      "name": "Retarget leaves old and new Agent edges",
+      "actual": [
+        "Agent:⟨agent-a⟩",
+        "Agent:⟨agent-a⟩",
+        "Agent:⟨agent-b⟩"
+      ]
+    },
+    {
+      "name": "Deleted annotation leaves old StandoffProperty",
+      "actual": 1
+    },
+    {
+      "name": "Deleted annotation leaves old relationship rows",
+      "actual": 3
+    },
+    {
+      "name": "Removed Block leaves stale TextBlock",
+      "actual": 1
+    },
+    {
+      "name": "Children traversal crosses nested Document boundary",
+      "actual": 2
+    },
+    {
+      "name": "Nested Document linked definition is not resolved",
+      "actual": 1
+    },
+    {
+      "name": "One local linked mention produces two property records",
+      "actual": 3
+    },
+    {
+      "name": "Flattened mention records omit annotationId",
+      "actual": true
+    }
+  ],
+  "passed": 16
+}

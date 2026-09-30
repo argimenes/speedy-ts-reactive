@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ server/entity-search.test.ts (3 tests) 226ms
+ ✓ server/document-store.test.ts (7 tests) 347ms
+ ✓ server/workspace-store.test.ts (7 tests) 343ms
+
+ Test Files  3 passed (3)
+      Tests  17 passed (17)
+   Start at  19:00:47
+   Duration  2.10s (transform 349ms, setup 0ms, collect 784ms, tests 916ms, environment 2.35s, prepare 451ms)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/surreal-derived-query-review/regressions.json

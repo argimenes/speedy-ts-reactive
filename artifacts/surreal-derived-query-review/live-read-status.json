@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-09-30T09:02:09.111Z",
+  "requests": [
+    {
+      "endpoint": "/api/findAgentsByNameJson?search=__codex_infrastructure_inspection_no_match__&byPartial=false",
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "success": true,
+      "count": 0
+    },
+    {
+      "endpoint": "/api/native/list?folder=.",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "json": false
+    }
+  ],
+  "scope": "Read-only existing localhost:3002 requests. Its running code/version was not established; no direct persistent DB connection or table inventory."
+}

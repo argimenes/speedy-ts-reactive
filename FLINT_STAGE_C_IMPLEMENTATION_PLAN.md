@@ -90,6 +90,8 @@ Stop if querying unmounted canonical content requires a second editor, persisten
 
 ## C3 Derived backlinks and integrated qualification
 
+Preimplementation inspection: [existing Node/SurrealDB infrastructure review](FLINT_SURREALDB_INFRASTRUCTURE_REVIEW.md). The legacy Entity/text index is not a current native-reference backend; the review recommends retaining the bounded canonical default below. C3 remains unimplemented and awaiting review.
+
 Deliver a narrow, read-only backlinks service and a Flint Backlinks view that consumes it through the application capabilities. The contract asks which authored references point to a stable Document/Block target within an explicit vault scope. It must not expose standoff storage, repository traversal or a database query language to Flint. Stage C exercises Document targets; it does not add a broader Block-navigation UI.
 
 The minimal contract supplies:
