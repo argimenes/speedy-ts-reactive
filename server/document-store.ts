@@ -13,6 +13,7 @@ export function validateDocument(value: unknown): asserts value is Record<string
     throw new StoreError(400, "The file is not a Block document.");
   }
   const block = value as Record<string, any>;
+  if (block.format === "mutable-document") throw new StoreError(400, "Native resources require the native Document route.");
   if (block.children != null) {
     if (!Array.isArray(block.children)) throw new StoreError(400, "Document children must be an array.");
     block.children.forEach(validateDocument);
@@ -98,6 +99,7 @@ export function createDocumentStoreRouter(options: {
       if (options.readOnly) throw new StoreError(403, "Server Documents are read-only in the public hosted version. Save to a Local JSON file instead.");
       const { root, target } = await directory(req.body?.folder ?? "data");
       const filepath = path.join(target, filename(req.body?.filename));
+      if (/\.mutable\.json$/i.test(filepath)) throw new StoreError(409, "Native destinations require paired resource Save.");
       validateDocument(req.body?.document);
       // Check existing symlinks as well as the parent before writing.
       try { inside(root, await fs.realpath(filepath)); }

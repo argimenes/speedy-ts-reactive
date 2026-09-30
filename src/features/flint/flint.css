@@ -16,3 +16,12 @@
 .flint-application .reactive-tabs__labels { background: #1c232b; }
 .flint-application .reactive-tabs__labels button { color: #dbe1e5; background: #242b33; }
 .flint-application .reactive-tabs__labels button[aria-selected="true"] { color: #eee2cf; background: #35414e; }
+
+.flint-files { padding: 6px 16px; border-bottom: 1px solid #39414a; font-size: 13px; }
+.flint-files p { margin: 5px 0; }
+.flint-files label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 8px 4px 0; }
+.flint-files button, .flint-files select { margin: 4px; }
+.flint-files input, .flint-files textarea, .flint-files select { background: #242b33; color: #dbe1e5; border: 1px solid #687584; }
+.flint-files__compare { display: flex; flex-wrap: wrap; gap: 8px; }
+.flint-files__compare label { flex: 1; flex-direction: column; align-items: stretch; }
+.flint-files__compare textarea { min-height: 140px; width: 100%; }

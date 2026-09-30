@@ -1,3 +1,4 @@
+import { assertLegacySaveAllowed, disposeNativeSession } from "../persistence/native-bindings";
 import { createStore } from "solid-js/store";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { decodeDocument, decodeWorkspace } from "../block-tree/codecs";
@@ -102,6 +103,7 @@ export class PersistenceService {
   }
 
   dispose(): void {
+    disposeNativeSession(this.editor.repository);
     this.disposed = true; this.captures = new WeakSet(); this.workspacePresentation = undefined;
     this.setState({ requestToken: this.state.requestToken + 1, saving: false });
   }
@@ -196,6 +198,7 @@ export class PersistenceService {
     const token = this.state.requestToken + 1;
     this.setState({ saving: true, error: undefined, warning: undefined, status: undefined, requestToken: token });
     try {
+      assertLegacySaveAllowed(this.editor.repository);
       const pendingHistorySave = this.editor.blockHistory.savePersistent(filename, folder, options.createOnly);
       if (pendingHistorySave) {
         const persistent = await pendingHistorySave;
@@ -297,6 +300,7 @@ export class PersistenceService {
   }
 
   async saveExtendedRepository(filename: string): Promise<boolean> {
+    try { assertLegacySaveAllowed(this.editor.repository); } catch (error) { this.setState({ error: String(error), saving: false }); return false; }
     const revision = this.editor.repository.state.revision;
     const token = this.state.requestToken + 1;
     this.setState({ saving: true, error: undefined, requestToken: token });

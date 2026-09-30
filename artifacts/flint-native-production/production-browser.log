@@ -1,0 +1,27 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:18741) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+9:00:15 AM [vite] http proxy error at /api/native/save:
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:536:25)
+    at Socket.emit (node:events:536:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+{
+  "passed": 13,
+  "checks": [
+    "real server listing offers native resources and explicit Markdown import",
+    "native admission retains one canonical resource",
+    "two Flint Windows share native content through independent occurrences",
+    "UI Save writes native and readable Markdown through production route",
+    "Workspace tree Save remains guarded",
+    "closing all Windows does not cancel save; newer edits stay dirty",
+    "saved generation excludes edits made during publication",
+    "fresh Open restores native authored state without Markdown reconstruction",
+    "save after actual server restart uses the persisted binding evidence",
+    "UI retry recovers after actual server death during partial publication",
+    "explicit Markdown import creates a separate native candidate",
+    "imported candidate saves natively without changing source Markdown",
+    "no uncaught browser exceptions"
+  ]
+}

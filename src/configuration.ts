@@ -20,6 +20,8 @@
 export type FeatureFlags = Readonly<{
   /** Composite Document application; transient tabs share canonical content. */
   flint: boolean;
+  /** Per-resource native/Markdown persistence through the managed server store. */
+  nativeDocumentPersistence: boolean;
   /** Initial Document format arrangements and creation menu. */
   documentFormats: boolean;
   threeDObjects: boolean;
@@ -46,6 +48,7 @@ export type FeatureFlags = Readonly<{
 
 export const featureFlags: FeatureFlags = Object.freeze({
   flint: true,
+  nativeDocumentPersistence: true,
   documentFormats: true,
   threeDObjects: true,
   anchorRelationships: true,

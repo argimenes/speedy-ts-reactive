@@ -9,6 +9,16 @@ export interface DocumentApplicationInstance {
   renameDocument(id: string, title: string): void;
   closeActiveTab(): void;
   tabs: Component;
+  files?: {
+    list(folder: string): Promise<string[]>;
+    open(location: {folder: string; filename: string}, importMarkdown?: boolean): Promise<void>;
+    save(location: {folder: string; filename: string}): Promise<void>;
+    recover(location: {folder: string; filename: string}): Promise<void>;
+    compare(): Promise<{external: string; generated: string}>;
+    keepMutable(): Promise<void>;
+    status(): string;
+    location(): {folder: string; filename: string} | undefined;
+  };
 }
 export interface DocumentApplicationCapabilities {
   register(definition: {

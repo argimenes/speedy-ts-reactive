@@ -1,0 +1,70 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:resource-c:placement:f2c1f1db-3c8d-4cae-920d-0932443402a5",
+            "target": {
+              "blockId": "c-text",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "reference",
+            "placementId": "legacy:resource-c:placement:04d4908c-8f6d-49d2-bcd0-c0df91b8ffc7",
+            "target": {
+              "kind": "external",
+              "reference": {
+                "kind": "block",
+                "source": {
+                  "resourceId": "resource-b",
+                  "scope": "document"
+                },
+                "targetId": "b",
+                "version": {
+                  "kind": "unpinned"
+                }
+              }
+            }
+          }
+        ],
+        "id": "c",
+        "properties": {
+          "metadata": {
+            "documentId": "resource-c"
+          }
+        },
+        "type": "document-block"
+      },
+      {
+        "id": "c-text",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Document c"
+          }
+        ],
+        "properties": {},
+        "type": "standoff-editor-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "resource-c",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:resource-c:placement:33165d57-1bd4-4934-a2cd-45867e6d5207",
+      "target": {
+        "blockId": "c",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "resource-c",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

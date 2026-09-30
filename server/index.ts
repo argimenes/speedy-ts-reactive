@@ -7,6 +7,7 @@ import fs from "fs";
 import { RecordId, Surreal } from "surrealdb";
 import { surrealdbNodeEngines } from "@surrealdb/node";
 import type { IBlockDto, StandoffEditorBlockDto, BlockType, IndexedBlock } from "./types";
+import { createNativeDocumentStoreRouter } from "./native-document-store.mjs";
 import { createDocumentStoreRouter } from "./document-store.js";
 import { createHistoryService } from "./history-router.js";
 import { createEntitySearchRouter } from "./entity-search.js";
@@ -270,6 +271,7 @@ app.use((req, res, next) => {
 
 const documentHistory = createHistoryService({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath) });
 app.use("/api/history", documentHistory.router);
+if (featureFlags.nativeDocumentPersistence) app.use("/api/native", createNativeDocumentStoreRouter({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath), readOnly: publicHostedVersion }));
 app.use("/api", createDocumentStoreRouter({
   readOnly: publicHostedVersion,
   history: documentHistory,

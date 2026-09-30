@@ -1,3 +1,4 @@
+import { assertLegacySaveAllowed } from "../persistence/native-bindings";
 import { WindowPresentation } from "../runtime/window-presentation";
 import { BlockPresentation } from "../runtime/block-presentation";
 import { PanelContributions } from "../runtime/panel-contributions";
@@ -328,14 +329,17 @@ export class ReactiveEditor {
   }
 
   encodeDocument(): ExistingBlockDto {
+    assertLegacySaveAllowed(this.repository);
     return encodeDocument(this.repository.snapshot(), undefined, this.focusBookmarks());
   }
 
   encodeDocumentAt(rootPlacementKey: PlacementKey): ExistingBlockDto {
+    assertLegacySaveAllowed(this.repository);
     return encodeDocument(this.repository.snapshot(), rootPlacementKey, this.focusBookmarks());
   }
 
   encodeWorkspace(snapshot = this.repository.snapshot()): ExistingBlockDto {
+    assertLegacySaveAllowed(this.repository);
     return encodeWorkspace(snapshot, undefined, this.focusBookmarks());
   }
 

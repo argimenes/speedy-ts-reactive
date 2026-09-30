@@ -27,7 +27,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    return result.result.value;
  };
 
- const artifacts='artifacts/flint-b2'; await mkdir(artifacts,{recursive:true});
+ const artifacts=process.env.NATIVE_B2_ARTIFACTS??'artifacts/flint-b2'; await mkdir(artifacts,{recursive:true});
  const checks=[], errors=[]; const check=(name,value,expected=true)=>{assert.deepEqual(value,expected,name);checks.push(name)};
  socket.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails)});
  await send('Runtime.enable',{},sessionId);

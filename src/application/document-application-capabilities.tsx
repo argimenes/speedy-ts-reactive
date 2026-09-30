@@ -1,3 +1,4 @@
+import { nativeDocumentSession } from "../persistence/native-session";
 import { documentRootPlacements } from "../block-tree/resource-registration";
 import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { Dynamic } from "solid-js/web";
@@ -68,10 +69,10 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         }</Show>;
       };
       const tabs = () => <DocumentTabContext.Provider value={{ title: id => resolve(id)?.title, view: Target }}><ChildBlocks parentKey={props.nodeKey} /></DocumentTabContext.Provider>;
-      return <div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
-        <Dynamic component={definition.view} application={{
-          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs,
-          openDocument(id: string) {
+      const native = editor.features.nativeDocumentPersistence ? nativeDocumentSession(editor) : undefined;
+      const activeId = () => { const key = activeTab(); return key && tabDocumentTarget(editor.node(key)?.payload.metadata); };
+      const requireId = () => { const id = activeId(); if (!id || !resolve(id)) throw new Error("Select an available Document tab"); return id; };
+      const openDocument = (id: string) => {
             guard(); const doc = resolve(id), r = row(); if (!doc?.placement || !r) return;
             let target = r.children.find(k => tabDocumentTarget(editor.node(k)?.payload.metadata) === id);
             if (!target) {
@@ -79,7 +80,28 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
               target = editor.nodeForPlacementInView(placement, r.viewId)?.key;
             }
             if (target) editor.setViewChild(r.key, target);
-          },
+          };
+      const files = native ? {
+        list: (folder: string) => native.list(folder),
+        async open(location: {folder: string; filename: string}, importMarkdown = false) {
+          guard(); const id = await native.open(location, importMarkdown); guard();
+          const owner = vault(); if (!owner) throw new Error('Flint membership unavailable');
+          const key = Object.values(editor.repository.state.placements).find(p => p.contentKey === owner.key)?.key;
+          if (!key) throw new Error('Flint membership placement unavailable');
+          const meta = owner.payload.metadata as any;
+          if (!meta.members.includes(id)) editor.commands.setPayloadField(key, 'metadata', {...meta, members: [...meta.members, id]}, 'Add Document to Flint');
+          openDocument(id);
+        },
+        async save(location: {folder: string; filename: string}) { guard(); await native.save(requireId(), location); },
+        async recover(location: {folder: string; filename: string}) { guard(); await native.recover(activeId(), location); },
+        compare() { guard(); return native.compare(requireId()); },
+        async keepMutable() { guard(); await native.keepMutable(requireId()); },
+        status: () => native.status(activeId()), location: () => native.location(activeId()),
+      } : undefined;
+      return <div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
+        <Dynamic component={definition.view} application={{
+          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files,
+          openDocument,
           renameDocument(id: string, title: string) {
             guard(); const doc = resolve(id); if (!doc?.placement || !title.trim()) return;
             const content = editor.repository.state.contents[doc.contentKey];
