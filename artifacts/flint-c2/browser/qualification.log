@@ -1,0 +1,25 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:51334) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+search evidence { hits: 1, unopened: true, views: 2, before: 2 }
+{
+  "passed": 16,
+  "checks": [
+    "real worker searches unmounted native Unicode text and reports unopened coverage",
+    "search and passage navigation do not change canonical state or History",
+    "keyboard Escape cancels picker and restores native selection",
+    "real pointer picker consumes a native selection into a stable reference",
+    "reference creation Undo removes the native annotation",
+    "reference target survives authored title change and pair relocation",
+    "two Windows do not duplicate canonical search results",
+    "result uses invoking Window occurrence and preserves the other Window",
+    "same reference follows through the second Window",
+    "edits immediately disable stale result actions",
+    "Undo does not resurrect an old query token",
+    "reopened reference reports its unopened target explicitly",
+    "native Save/Open plus restarted server preserves the canonical reference and relocated target",
+    "reference removal Undo restores the same mention",
+    "real external removal rejects activation without a mount or canonical mutation",
+    "no uncaught browser exceptions"
+  ]
+}

@@ -1,16 +1,18 @@
+import { VaultKnowledge } from "./vault-knowledge";
+import { revealMatch } from "../runtime/reveal-match";
+import type { BlockTreeProjection } from "../block-tree/projection";
 import { createDocumentVaults, vaultPath, vaultLeaf, vaultContains, type DocumentVaultLease, type VaultLocation } from "./document-vault";
 import { createFormattedDocument, readDocumentFormat } from "../features/document-formats/model";
 import type { ApplicationVault } from "../feature-api/document-application";
 import { nativeDocumentSession } from "../persistence/native-session";
 import { documentRootPlacements } from "../block-tree/resource-registration";
-import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { Show, For, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { FeatureScope } from "../feature-api";
 import type { DocumentApplicationCapabilities } from "../feature-api/document-application";
 import type { ExistingBlockDto } from "../block-tree/types";
-import { ChildBlocks } from "../rendering/block-outlet";
-import { DocumentTabContext, tabDocumentTarget } from "../rendering/document-tab-context";
+import { tabDocumentTarget } from "../rendering/document-tab-context";
 import { TransientDocumentView, type DocumentViewBookmark } from "../rendering/transient-document-view";
 
 /** Private host adapter. No repository/editor access crosses into the application. */
@@ -32,12 +34,15 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
     scope.own(() => vaults?.dispose());
     const vaultRoots = new Map<string, string>();
     scope.own(() => vaultRoots.clear());
+    // Search/reference navigation is presentation state: no authored tab insert or History event.
+    const navigationTabs = new Map<string, { tabs: Map<string, string>; active?: string }>();
+    scope.own(() => navigationTabs.clear());
     const viewBookmarks = new Map<string, { placement: string; tabs: Map<string, DocumentViewBookmark> }>();
     scope.own(() => viewBookmarks.clear());
     scope.own(editor.repository.subscribeChanges(change => {
       if (change.inlineOwner || change.split || change.childrenOwner) return;
-      for (const [key, value] of viewBookmarks) if (!editor.repository.state.placements[value.placement]) { viewBookmarks.delete(key); vaultRoots.delete(key); }
-      scope.defer(() => { for (const value of viewBookmarks.values()) for (const key of value.tabs.keys()) if (!editor.node(key)) value.tabs.delete(key); });
+      for (const [key, value] of viewBookmarks) if (!editor.repository.state.placements[value.placement]) { viewBookmarks.delete(key); vaultRoots.delete(key); navigationTabs.delete(key); }
+      scope.defer(() => { for (const [owner, value] of viewBookmarks) for (const key of value.tabs.keys()) if (!editor.node(key) && !navigationTabs.get(owner)?.tabs.has(key)) value.tabs.delete(key); });
     }));
     const Instance = (props: { nodeKey: string }) => {
       // Stage A hosts a Window application, never an application recursively inside a Document.
@@ -54,31 +59,39 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const row = () => editor.node(props.nodeKey)?.children.map(key => editor.node(key)).find(n => n?.viewType === "tab-row-block");
       const bookmarks = viewBookmarks.get(props.nodeKey)?.tabs ?? new Map<string, DocumentViewBookmark>();
       viewBookmarks.set(props.nodeKey, { placement: editor.node(props.nodeKey)!.placementKey, tabs: bookmarks });
-      const activeTab = () => { const r = row(); return r && (editor.viewChildren[r.key] ?? r.children.find(k => (editor.node(k)?.payload.metadata as any)?.active) ?? r.children[0]); };
+      const navigation = navigationTabs.get(props.nodeKey) ?? {tabs: new Map<string, string>()};
+      navigationTabs.set(props.nodeKey, navigation);
+      const [navigationRevision, setNavigationRevision] = createSignal(0);
+      const liveViews = new Map<string, BlockTreeProjection>();
+      const activeTab = () => { navigationRevision(); if(navigation.active && navigation.tabs.has(navigation.active)) return navigation.active; const r = row(); return r && (editor.viewChildren[r.key] ?? r.children.find(k => (editor.node(k)?.payload.metadata as any)?.active) ?? r.children[0]); };
       let root!: HTMLDivElement, mounted = true;
       const guard = () => { requireActive(); if (!mounted || !editor.node(props.nodeKey)) throw new Error("Document application instance is disposed"); };
       onMount(() => {
         const release = editor.mounts.register(props.nodeKey, { root, focusElement: root, inputPolicy: "container", focus: () => root.focus({ preventScroll: true }) });
         onCleanup(release);
       });
-      onCleanup(() => { mounted = false; if (!editor.node(props.nodeKey)) viewBookmarks.delete(props.nodeKey); });
+      onCleanup(() => { mounted = false; if (!editor.node(props.nodeKey)) { viewBookmarks.delete(props.nodeKey); navigationTabs.delete(props.nodeKey); } });
       const Target = (target: { documentId: string; tabKey: string }) => {
         const placement = () => resolve(target.documentId)?.placement;
         return <Show when={placement()} keyed fallback={<p role="status">Document unavailable: {target.documentId}. Its canonical source is missing or ambiguous.</p>}>{source =>
-          <TransientDocumentView editor={editor} placement={source} bookmark={() => bookmarks.get(target.tabKey)} remember={value => bookmarks.set(target.tabKey, value)} />
+          <TransientDocumentView editor={editor} placement={source} onProjection={view => { liveViews.set(target.tabKey, view); return () => { if(liveViews.get(target.tabKey)===view) liveViews.delete(target.tabKey); }; }} bookmark={() => bookmarks.get(target.tabKey)} remember={value => bookmarks.set(target.tabKey, value)} />
         }</Show>;
       };
-      const tabs = () => <DocumentTabContext.Provider value={{ title: id => resolve(id)?.title, view: Target }}><ChildBlocks parentKey={props.nodeKey} /></DocumentTabContext.Provider>;
-      const activeId = () => { const key = activeTab(); return key && tabDocumentTarget(editor.node(key)?.payload.metadata); };
+      const tabId = (key: string) => navigation.tabs.get(key) ?? tabDocumentTarget(editor.node(key)?.payload.metadata);
+      const chooseTab = (key: string) => { navigation.active = navigation.tabs.has(key) ? key : undefined; setNavigationRevision(n => n+1); const r = row(); if(r && !navigation.active) editor.setViewChild(r.key,key); };
+      const tabKeys = createMemo(() => { navigationRevision(); return [...(row()?.children ?? []),...navigation.tabs.keys()]; });
+      const tabs = () => <div class="reactive-tabs"><div class="reactive-tabs__labels" role="tablist"><For each={tabKeys()}>{key => <button type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{resolve(tabId(key)??'')?.title ?? String((editor.node(key)?.payload.metadata as any)?.name ?? 'Unavailable Document')}</button>}</For></div><For each={tabKeys()}>{key=><Show when={activeTab()===key}><div class="reactive-tabs__panel" role="tabpanel"><Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show></div></Show>}</For></div>;
+      const activeId = () => { const key = activeTab(); return key && tabId(key); };
       const requireId = () => { const id = activeId(); if (!id || !resolve(id)) throw new Error("Select an available Document tab"); return id; };
-      const openDocument = (id: string) => {
+      const openDocument = (id: string, transient = false) => {
             guard(); const doc = resolve(id), r = row(); if (!doc?.placement || !r) return;
-            let target = r.children.find(k => tabDocumentTarget(editor.node(k)?.payload.metadata) === id);
+            let target = tabKeys().find(k => tabId(k) === id);
+            if(!target && transient) { target = 'navigation:'+crypto.randomUUID(); navigation.tabs.set(target,id); setNavigationRevision(n=>n+1); }
             if (!target) {
               const placement = editor.commands.insert({ id: crypto.randomUUID(), type: "tab-block", metadata: { name: doc.title, documentTarget: { version: 1, documentId: id } } }, { kind: "at", parentKey: r.key, index: r.children.length });
               target = editor.nodeForPlacementInView(placement, r.viewId)?.key;
             }
-            if (target) editor.setViewChild(r.key, target);
+            if (target) chooseTab(target);
           };
       const [selectedVault, setSelectedVault] = createSignal<DocumentVaultLease>();
       let opening = 0, openQuery: AbortController | undefined;
@@ -163,6 +176,31 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         async recoverOperation(id) { const v = lease(); if (!v.operations().some(o => o.operationId === id && o.phase === 'pending')) throw new Error('Refresh to find a pending operation'); await v.recover(id); },
         async recoverNative(location) { const v = lease(), row = v.requireFile(location); await v.mutate(() => native.recover(row.resourceId, location)); },
       } : undefined;
+      const knowledge = native ? new VaultKnowledge(editor, native, {
+        vault: lease, guard,
+        active: () => { const key = activeTab(), documentId = activeId(), projection = key && liveViews.get(key); return documentId && projection ? {documentId, projection} : undefined; },
+        async navigate(target, passage, current) {
+          guard(); if(!current()) throw new Error('Navigation is stale');
+          // Resolve only this application instance's occurrence, never a global first match.
+          openDocument(target.documentId, true);
+          await new Promise(resolve=>setTimeout(resolve,0));
+          guard(); if(!current()||activeId()!==target.documentId) throw new Error('Navigation was superseded');
+          const view=liveViews.get(activeTab()!); if(!view) throw new Error('Document occurrence is unavailable');
+          const nodes=Object.values(view.state.nodes);
+          const candidates=passage?nodes.filter(n=>n.contentKey===passage.contentKey&&n.payload.id===passage.blockId):nodes.filter(n=>n.payload.id===target.blockId);
+          if(candidates.length!==1)throw new Error('Block identity is missing or ambiguous in this occurrence');
+          const node=passage?candidates[0]:nodes.find(n=>['standoff-editor-block','text-block','plain-text-block'].includes(n.viewType)&&editor.blockQueries.ancestorPath(n.key).filter(a=>a.viewType==='document-block').at(-1)?.key===view.state.rootKey)??candidates[0];
+          const range={nodeKey:node.key,contentKey:node.contentKey,placementKey:node.placementKey,version:editor.repository.state.contents[node.contentKey].inlineRevision,start:passage?.start??0,end:passage?.end??0,coordinate:passage?.coordinate??'cell' as const};
+          const stillCurrent=()=>mounted&&current()&&liveViews.get(activeTab()!)===view&&activeId()===target.documentId;
+          const revealed=await revealMatch(editor,{id:'flint-navigation',text:'',context:'',captures:[],ranges:[range],path:editor.blockQueries.ancestorPath(node.key).map(n=>n.key),breadcrumb:'',capabilities:{highlight:false,reveal:true,annotate:false,replace:false}},stillCurrent);
+          if(!revealed||!stillCurrent())throw new Error('Passage is stale or cannot currently be revealed');
+          editor.focus.request(node.key,{reason:'flint-navigation'});
+          const mount=editor.mounts.get(node.key);
+          if(range.coordinate==='cell'&&mount?.restoreInlineSelection){mount.restoreInlineSelection({anchor:range.start,head:range.end});editor.selections.setPrimary(node.key,node.contentKey,node.viewId,range.start,range.end);}
+          else if(mount?.restoreSelection)mount.restoreSelection({start:range.start,end:range.end,direction:'forward'});
+        },
+      }) : undefined;
+      onCleanup(()=>knowledge?.dispose());
       onMount(() => { const root = vaultRoots.get(props.nodeKey); if (root && vault) void vault.open(root).catch(() => { vaultRoots.delete(props.nodeKey); }); });
       const files = native ? {
         list: (folder: string) => { selectedVault()?.requireDirectory(folder); return native.list(folder); },
@@ -184,7 +222,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       } : undefined;
       return <div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
-          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties,
+          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge,
           setProperties(id, value) {
             guard(); const doc = resolve(id); if (!doc?.placement) throw new Error('Document unavailable');
             if (tagsOf(id) === undefined) throw new Error('Existing tags payload is incompatible; it has been preserved');
@@ -200,7 +238,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
             const content = editor.repository.readState().contents[doc.contentKey];
             editor.commands.setPayloadField(doc.placement, "metadata", { ...(content.payload.metadata as object), title: title.trim() }, "Rename Document");
           },
-          closeActiveTab() { guard(); const key = activeTab(); if (key) { editor.commands.remove(key); bookmarks.delete(key); const r = row(); if (r) editor.setViewChild(r.key, r.children[0]); } },
+          closeActiveTab() { guard(); const key = activeTab(); if (key) { if(navigation.tabs.has(key)){navigation.tabs.delete(key);navigation.active=undefined;setNavigationRevision(n=>n+1);}else editor.commands.remove(key); bookmarks.delete(key); const r = row(); if (r) editor.setViewChild(r.key, r.children[0]); } },
         }} />
       </div>;
     };

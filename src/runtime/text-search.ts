@@ -1,3 +1,4 @@
+import { canonicalSearchSource } from "./canonical-search-source";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { BlockNode } from "../block-tree/types";
 import type { SearchOptions, SearchSource, SourceMatches } from "./search-matching";
@@ -72,22 +73,7 @@ export class TextSearch {
     const state = this.editor.repository.readState(), content = state.contents[node.contentKey];
     const version = this.epochs.get(content.key) ?? 0;
     const cached = this.sources.get(content.key); if (cached?.version === version) return cached;
-    const result: SearchSource = { contentKey: content.key, version, coordinate: content.inlineKind === "standoff" ? "cell" : "utf16", runs: [] };
-    if (content.inlineKind !== "standoff") result.runs.push({ text: String(content.payload.text ?? "") });
-    else {
-      let text = "", boundaries: number[] = [0];
-      for (let index = 0; index < content.inlineContent.length; index++) {
-        if (index && index % 2048 === 0) { await new Promise(resolve => setTimeout(resolve, 0)); if (signal?.aborted) throw new DOMException("Search cancelled", "AbortError"); }
-        const cell = state.contents[state.placements[content.inlineContent[index]]?.contentKey];
-        if (cell?.viewType === "text-cell") {
-          const part = String(cell.payload.text ?? "");
-          boundaries[text.length] = index;
-          for (let i = 1; i < part.length; i++) boundaries[text.length + i] = -1;
-          text += part; boundaries[text.length] = index + 1;
-        } else { result.runs.push({ text, boundaries }); text = ""; boundaries = [index + 1]; }
-      }
-      result.runs.push({ text, boundaries });
-    }
+    const result = await canonicalSearchSource(state, content.key, version, signal);
     if ((this.epochs.get(content.key) ?? 0) !== version) throw new DOMException("Document changed; search again.", "AbortError");
     this.sources.set(content.key, result); return result;
   }

@@ -18,11 +18,13 @@ export interface DocumentViewBookmark {
 /** No authored edge or secondary repository. Caller unmounts on source invalidation. */
 export function TransientDocumentView(props: {
   editor: ReactiveEditor; placement: PlacementKey;
+  onProjection?(projection: import("../block-tree/projection").BlockTreeProjection): () => void;
   bookmark(): DocumentViewBookmark | undefined;
   remember(value: DocumentViewBookmark): void;
 }) {
   const editor = props.editor, parent = useReactiveView();
   const projection = editor.createView(undefined, props.placement);
+  const releaseProjection = props.onProjection?.(projection);
   let live = true;
   let lastTextKey: string | undefined;
   createEffect(() => {
@@ -74,6 +76,7 @@ export function TransientDocumentView(props: {
         props.remember({ placement: node.placementKey, version: content.revision, inline, native: (mount && mount.captureSelection?.()) || editor.mounts.selection(node.key), ...(anchor && head ? { cross: { anchor, head } } : {}) });
       }
     }
+    releaseProjection?.();
     editor.disposeView(projection);
   });
   return <ReactiveViewProvider editor={editor} projection={projection} coordinates={parent.coordinates}>

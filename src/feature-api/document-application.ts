@@ -10,6 +10,7 @@ export interface DocumentApplicationInstance {
   closeActiveTab(): void;
   tabs: Component;
   vault?: ApplicationVault;
+  knowledge?: ApplicationKnowledge;
   properties(): ApplicationDocumentProperties | undefined;
   setProperties(id: string, value: {title: string; tags: readonly string[]}): void;
   files?: {
@@ -58,4 +59,23 @@ export interface ApplicationVault {
   relocateDirectory(source: string, destination: string): Promise<void>;
   recoverOperation(operationId: string): Promise<void>;
   recoverNative(location: {folder: string; filename: string}): Promise<void>;
+}
+
+
+export interface DocumentTarget { documentId: string; blockId: string; title: string; location: string }
+export interface VaultSearchHit extends DocumentTarget { id: string; kind: 'title' | 'text'; snippet: string; start: number; end: number }
+export interface VaultSearchResults { token: string; hits: readonly VaultSearchHit[]; diagnostics: readonly string[]; available: number; discovered: number; complete: boolean }
+export interface NativeReferenceItem { id: string; label: string; target?: DocumentTarget; diagnostic?: string; removable: boolean }
+export interface ApplicationKnowledge {
+  search(query: string): Promise<VaultSearchResults>;
+  cancel(): void;
+  current(token: string): boolean;
+  activate(hitId: string): Promise<void>;
+  selection(): string;
+  cancelPicker(): void;
+  picker(selection: string): Promise<{targets: readonly DocumentTarget[]; diagnostics: readonly string[]}>;
+  createReference(selection: string, target: DocumentTarget): Promise<void>;
+  references(): Promise<{token: string; items: readonly NativeReferenceItem[]; diagnostics: readonly string[]}>;
+  followReference(id: string): Promise<void>;
+  removeReference(id: string): void;
 }

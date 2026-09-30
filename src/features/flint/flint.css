@@ -46,3 +46,11 @@
 .flint-vault-controls > button, .flint-vault-controls details > button, .flint-properties > button { border: 1px solid #485260; border-radius: 3px; padding: 5px 8px; background: #242b33; }
 .flint-vault-controls button:hover:not(:disabled), .flint-properties button:hover:not(:disabled) { background: #35414e; }
 .flint-vault-controls button:focus-visible, .flint-properties button:focus-visible { outline: 2px solid #99bedf; outline-offset: 1px; }
+.flint-knowledge { margin-top: 18px; border-top: 1px solid #485260; padding-top: 12px; font-size: 13px; }
+.flint-knowledge h2 { margin: 12px 0 8px; }
+.flint-knowledge p { margin: 8px 0; line-height: 1.35; overflow-wrap: anywhere; }
+.flint-knowledge button { border: 1px solid #485260; padding: 6px; background: #242b33; border-radius: 3px; }
+.flint-knowledge button:focus-visible { outline: 2px solid #99bedf; }
+.flint-knowledge small, .flint-search-hit span, .flint-search-hit strong { display: block; overflow-wrap: anywhere; }
+.flint-knowledge small { color: #aab4c2; margin: 4px 0; }
+.flint-knowledge [role="dialog"] { padding: 8px; border: 1px solid #99bedf; }

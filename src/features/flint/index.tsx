@@ -2,6 +2,7 @@ import { For, Show, createSignal } from "solid-js";
 import type { CodexFeature, FeatureScope } from "../../feature-api";
 import type { DocumentApplicationCapabilities, DocumentApplicationInstance } from "../../feature-api/document-application";
 import "./flint.css";
+import { KnowledgeView } from "./knowledge-view";
 import { VaultView, DocumentProperties } from "./vault-view";
 
 function FlintView(props: { application: DocumentApplicationInstance }) {
@@ -34,7 +35,7 @@ function FlintView(props: { application: DocumentApplicationInstance }) {
     <div class="flint-application__body">
       <nav class="flint-application__vault" aria-label="Flint Documents"><Show when={app.vault}><VaultView vault={app.vault!}/></Show><Show when={!app.vault?.state()}><h2>Open Documents</h2>
         <For each={app.documents()}>{doc => <div><button type="button" onClick={() => app.openDocument(doc.id)}>{doc.title}</button><input aria-label={`Rename ${doc.title}`} value={doc.title} onChange={e => { const title = e.currentTarget.value.trim(); if (title) app.renameDocument(doc.id, title); }} /></div>}</For>
-      </Show></nav>
+      </Show><Show when={app.vault?.state()&&app.knowledge}><KnowledgeView knowledge={app.knowledge!}/></Show></nav>
       <main class="flint-application__editor"><app.tabs /></main><DocumentProperties application={app}/>
     </div>
   </div>;

@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js';
+import { batch, createSignal } from 'solid-js';
 import type { NativeDocumentSession, VaultRelocation } from '../persistence/native-session';
 export type VaultLocation = {folder: string; filename: string};
 type Baseline = VaultRelocation['baselines'][number]['baseline'];
@@ -35,8 +35,11 @@ export function createDocumentVaults(native: NativeDocumentSession) {
     private refreshWork?:Promise<void>;
     private controller?:AbortController;
     private alive=true;
-    constructor(readonly root:string,initial:VaultDiscovery){this.snapshotSignal[1](initial);}
+    private signatureSignal=createSignal('');
+    private update(value:VaultDiscovery){batch(()=>{this.snapshotSignal[1](value);this.signatureSignal[1](JSON.stringify(value));});}
+    constructor(readonly root:string,initial:VaultDiscovery){this.update(initial);}
     snapshot=()=>this.snapshotSignal[0]()!;
+    signature=()=>this.signatureSignal[0]();
     busy=()=>this.busySignal[0]();
     notice=()=>this.noticeSignal[0]();
     operations=()=>{
@@ -48,7 +51,7 @@ export function createDocumentVaults(native: NativeDocumentSession) {
       if(!this.alive)return;
       if(this.refreshWork)return this.refreshWork;
       this.controller=new AbortController();
-      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive)this.snapshotSignal[1](value);}catch(e){if(this.alive){this.noticeSignal[1](String(e));throw e;}}finally{this.refreshWork=undefined;}})();
+      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive)this.update(value);}catch(e){if(this.alive){this.noticeSignal[1](String(e));throw e;}}finally{this.refreshWork=undefined;}})();
       return this.refreshWork;
     }
     requireDirectory(folder:string) {
