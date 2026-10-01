@@ -1,0 +1,102 @@
+{
+  "size": 1000,
+  "environment": {
+    "node": "v22.12.0",
+    "cpu": "Apple M1"
+  },
+  "method": "Fresh process; warm OS files; raised total extraction budget only. One worker, serialized requests. Derived Map publication is a qualification sink, not a product index. Heartbeat is Node scheduling, not browser input.",
+  "worker": {
+    "elapsedMs": 3958.713333,
+    "heartbeat": {
+      "samples": 727,
+      "p95": 1.6892499999999018,
+      "max": 26.399832999999944
+    },
+    "result": {
+      "resources": 1000
+    }
+  },
+  "totals": {
+    "readHashMs": 290.29175400000537,
+    "validationMs": 1538.9047579999967,
+    "factsMs": 236.9801929999942,
+    "encodeMs": 659.6377839999942,
+    "workerMs": 2488.802685000003,
+    "roundTripMs": 2662.2267190000043,
+    "publicationMs": 947.1308849999926,
+    "wireBytes": 14912100,
+    "workerHeapPeak": 21459648,
+    "serverHeapPeak": 38843424
+  },
+  "control": {
+    "elapsedMs": 1908.1892080000007,
+    "heartbeat": {
+      "samples": 340,
+      "p95": 1.8902499999994689,
+      "max": 16.318459000000075
+    },
+    "result": {
+      "validationMs": 1424.7252910000016,
+      "factsMs": 226.36578199998348
+    }
+  },
+  "discovery": [
+    {
+      "worker": false,
+      "elapsedMs": 83855.1235,
+      "heartbeat": {
+        "samples": 1083,
+        "p95": 104.23320800000147,
+        "max": 447.00900000000547
+      },
+      "result": {
+        "resources": 1000,
+        "complete": true
+      },
+      "readMs": 1578.2495430000008,
+      "inspectMs": 0,
+      "validationMs": 0
+    },
+    {
+      "worker": true,
+      "elapsedMs": 2631.7841659999976,
+      "heartbeat": {
+        "samples": 521,
+        "p95": 0.9972920000000158,
+        "max": 2.897666000004392
+      },
+      "result": {
+        "resources": 1000,
+        "complete": true
+      },
+      "readMs": 599.8167720009369,
+      "inspectMs": 1644.2742929998349,
+      "validationMs": 1477.6764750000293
+    }
+  ],
+  "memory": {
+    "initial": {
+      "rss": 75218944,
+      "heapTotal": 22593536,
+      "heapUsed": 5001392,
+      "external": 2377805,
+      "arrayBuffers": 16623
+    },
+    "retained": {
+      "rss": 172163072,
+      "heapTotal": 66633728,
+      "heapUsed": 31698648,
+      "external": 2250050,
+      "arrayBuffers": 26212
+    },
+    "released": {
+      "rss": 129957888,
+      "heapTotal": 45662208,
+      "heapUsed": 5376216,
+      "external": 2088440,
+      "arrayBuffers": 16623
+    },
+    "workerHeapPeak": 21459648,
+    "processPeakRssKiB": 203360
+  }
+}

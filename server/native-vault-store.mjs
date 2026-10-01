@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { ManagedPair, hash, nativeFlock } from '../src/persistence/managed-pair.mjs';
+import { nativeKnowledgeJobs } from './native-knowledge-jobs';
 import { decodeNative } from '../src/persistence/native-resource';
 const exec=promisify(execFile), MAX=20*1024*1024, LIMIT=10000;
 const fail=(message,status=409)=>{throw Object.assign(new Error(message),{status,conflict:status===409});};
@@ -19,10 +20,15 @@ const filename=l=>{if(!l||typeof l.folder!=='string'||typeof l.filename!=='strin
 const operationId=id=>{if(typeof id!=='string'||! /^[a-zA-Z0-9-]{1,100}$/.test(id))fail('Invalid relocation operation ID',400);return id;};
 const absent=async p=>{try{await fs.lstat(p);return false;}catch(e){if(e.code==='ENOENT')return true;throw e;}};
 export class NativeVaultStore {
- constructor({root,readOnly=false,fault=async()=>{},helper}={}) {
+ constructor({root,readOnly=false,fault=async()=>{},helper,inspect,nativeDiscoveryWorker=true}={}) {
   this.root=path.resolve(root);
   try {if(lstatSync(root).isSymbolicLink())fail('Unsafe managed root',400);this.root=realpathSync(root);}catch(e){if(e.code!=='ENOENT')throw e;}
   this.readOnly=readOnly;this.fault=fault;
+  // Internal rollback/test seam only; no request can choose a weaker inspector.
+  this.inspect=inspect??(nativeDiscoveryWorker?((bytes,signal)=>nativeKnowledgeJobs.run('inspect',bytes,{signal})):async bytes=>{
+   const r=decodeNative(bytes),root=r.contents[r.placements[r.rootPlacementKey].target.contentKey];
+   return {inspection:{resourceId:r.resourceId,rootBlockId:String(root.payload.id),title:String(root?.payload.metadata?.title??'')},byteHash:hash(bytes)};
+  });
   const sibling=path.join(path.dirname(fileURLToPath(import.meta.url)),'native-path-move');
   this.helper=helper??(existsSync(sibling)?sibling:path.join(path.dirname(fileURLToPath(import.meta.url)),'../dist/server/native-path-move'));
  }
@@ -38,6 +44,11 @@ export class NativeVaultStore {
   let file;try{file=await this.resolve(p);}catch(e){if(optional&&e.code==='ENOENT')return;throw e;}
   let h;try{h=await fs.open(file,C.O_RDONLY|C.O_NOFOLLOW);const s=await h.stat();if(!s.isFile()||s.size>MAX)fail('Expected bounded regular file',400);return await h.readFile();}
   catch(e){if(optional&&e.code==='ENOENT')return;throw e;}finally{await h?.close();}
+ }
+ async stamp(p,kind='file') {
+  const s=await fs.lstat(await this.resolve(p),{bigint:true});
+  if(s.isSymbolicLink()||(kind==='directory'?!s.isDirectory():!s.isFile()||s.size>BigInt(MAX)))fail('Expected bounded regular file',400);
+  return [s.dev,s.ino,s.size,s.mtimeNs,s.ctimeNs].join(':');
  }
  async write(p,data) {
   const file=await this.resolve(p,{missing:true}), h=await fs.open(file,C.O_WRONLY|C.O_CREAT|C.O_EXCL|C.O_NOFOLLOW,0o600);
@@ -93,22 +104,36 @@ export class NativeVaultStore {
   signal?.throwIfAborted();
   relative(vault);const base=await this.resolve(vault);if(!(await fs.stat(base)).isDirectory())fail('Vault must be a directory',400);
   vault=path.relative(this.root,await fs.realpath(base)).split(path.sep).join('/')||'.';
-  const folders=[],documents=[],markdown=[],other=[],diagnostics=[];let count=0;
-  const walk=async dir=>{signal?.throwIfAborted();let entries;try{entries=await fs.readdir(await this.resolve(dir),{withFileTypes:true});}catch(e){diagnostics.push({path:dir,message:e.message});return;}
+  const folders=[],documents=[],markdown=[],other=[],diagnostics=[],uninspected=[],inspected=[],directories=[];let count=0;
+  const walk=async dir=>{signal?.throwIfAborted();let entries;try{directories.push({path:dir,stamp:await this.stamp(dir,'directory')});entries=await fs.readdir(await this.resolve(dir),{withFileTypes:true});}catch(e){diagnostics.push({path:dir,message:e.message});return;}
    for(const e of entries.sort((a,b)=>a.name.localeCompare(b.name))){signal?.throwIfAborted();if(++count>LIMIT){diagnostics.push({path:dir,message:'Vault scan limit reached'});return;}if(e.name.startsWith('.mutable-'))continue;
     const p=join(dir,e.name);if(e.isSymbolicLink()){diagnostics.push({path:p,message:'Symlink excluded'});continue;}
     if(e.isDirectory()){folders.push(p);await walk(p);}else if(e.isFile()&&e.name.endsWith('.mutable.json')){
-     try{const bytes=await this.read(p),resource=decodeNative(bytes);let info;try{info=await this.baseline(p,resource.resourceId);}catch(e){diagnostics.push({path:p,message:e.message});}
-      const root=resource.contents[resource.placements[resource.rootPlacementKey].target.contentKey];
-      documents.push({location:location(p),resourceId:resource.resourceId,title:String(root?.payload.metadata?.title??''),state:info?.pending?'pending':!info?.receipt?'unenrolled':info.receipt.nativeHash===info.baseline.nativeHash&&info.receipt.markdownHash===info.baseline.markdownHash?'paired':'changed',baseline:info?.baseline});
-     }catch(e){diagnostics.push({path:p,message:e.message});}
+     try{const stamp=await this.stamp(p),bytes=await this.read(p),byteHash=hash(bytes),result=await this.inspect(bytes,signal);signal?.throwIfAborted();
+      if(typeof result?.inspection?.resourceId!=='string'||!result.inspection.resourceId||!result.inspection.rootBlockId||typeof result.inspection.rootBlockId!=='string'||typeof result.inspection.title!=='string'||result.byteHash!==byteHash)throw Error('Incomplete or stale native inspection');
+      const resource=result.inspection;let info;try{info=await this.baseline(p,resource.resourceId);}catch(e){diagnostics.push({path:p,message:e.message});}
+      // Inspection cannot authorize a later, different file. Re-read through the
+      // same confinement guard after worker/baseline work; failures remain unknown.
+      if(await this.stamp(p)!==stamp||hash(await this.read(p))!==byteHash||info&&info.baseline.nativeHash!==byteHash)throw Error('Native bytes changed during inspection');
+      documents.push({location:location(p),resourceId:resource.resourceId,title:resource.title,state:info?.pending?'pending':!info?.receipt?'unenrolled':info.receipt.nativeHash===info.baseline.nativeHash&&info.receipt.markdownHash===info.baseline.markdownHash?'paired':'changed',baseline:info?.baseline});
+      inspected.push({path:p,stamp,byteHash,info,row:documents.at(-1)});
+     }catch(e){uninspected.push(p);diagnostics.push({path:p,message:e.message});}
     }else if(e.isFile()&&e.name.endsWith('.md'))markdown.push(p);else other.push(p);
    }
-  };await walk(vault);
+  };await walk(vault);signal?.throwIfAborted();
+  // A worker yield may let an already inspected file or enumerated directory
+  // change. Revalidate this scan's read evidence before treating it as complete.
+  for(const item of inspected){signal?.throwIfAborted();try{
+   const latest=item.info?await this.baseline(item.path,item.row.resourceId):undefined;
+   if(await this.stamp(item.path)!==item.stamp||(latest?.baseline.nativeHash??hash(await this.read(item.path)))!==item.byteHash)throw Error('Native candidate changed before discovery publication');
+   if(item.info&&!equal({baseline:item.info.baseline,receipt:item.info.receipt,pending:item.info.pending},{baseline:latest.baseline,receipt:latest.receipt,pending:latest.pending}))throw Error('Pair evidence changed before discovery publication');
+  }catch(e){uninspected.push(item.path);diagnostics.push({path:item.path,message:e.message});documents.splice(documents.indexOf(item.row),1);}}
   const ids=new Map();for(const d of documents){const a=ids.get(d.resourceId)??[];a.push(d);ids.set(d.resourceId,a);}for(const [id,rows]of ids)if(rows.length>1){rows.forEach(d=>d.state='ambiguous');diagnostics.push({resourceId:id,message:'Duplicate canonical identity'});}
   const paired=new Set(documents.filter(d=>d.state==='paired').map(d=>filename(d.location).replace(/\.mutable\.json$/,'.md')));
   let operations=[];try{operations=(await this.records()).filter(r=>inside(vault,r.intent.source)||inside(vault,r.intent.destination)||inside(r.intent.source,vault)||inside(r.intent.destination,vault)).map(r=>({operationId:r.intent.operationId,phase:r.done?'relocated':'pending'}));}catch(e){diagnostics.push({path:'.mutable-relocations',message:e.message});}
-  return {vault,folders,documents,markdown:markdown.filter(p=>!paired.has(p)),other,diagnostics,complete:!diagnostics.length,operations,readOnly:this.readOnly};
+  for(const dir of directories){signal?.throwIfAborted();try{if(await this.stamp(dir.path,'directory')!==dir.stamp)throw Error('Directory changed during discovery');}catch(e){diagnostics.push({path:dir.path,message:e.message});}}
+  signal?.throwIfAborted();
+  return {vault,folders,documents,markdown:markdown.filter(p=>!paired.has(p)),other,diagnostics,uninspected,complete:!diagnostics.length,operations,readOnly:this.readOnly};
  }
  async signature(p) {
   let count=0;const entries=[];

@@ -1,0 +1,70 @@
+{
+  "size": 10000,
+  "environment": {
+    "node": "v22.12.0",
+    "cpu": "Apple M1"
+  },
+  "method": "Fresh process; warm OS files; raised total extraction budget only. One worker, serialized requests. Derived Map publication is a qualification sink, not a product index. Heartbeat is Node scheduling, not browser input.",
+  "worker": {
+    "elapsedMs": 53857.360541,
+    "heartbeat": {
+      "samples": 9268,
+      "p95": 2.421707999998034,
+      "max": 355.23620800000026
+    },
+    "result": {
+      "resources": 10000
+    }
+  },
+  "totals": {
+    "readHashMs": 5175.54761500003,
+    "validationMs": 20477.129380000144,
+    "factsMs": 3035.0210260000313,
+    "encodeMs": 9249.753900000222,
+    "workerMs": 33419.57118599977,
+    "roundTripMs": 35996.522125000076,
+    "publicationMs": 12053.813834000037,
+    "wireBytes": 151119000,
+    "workerHeapPeak": 30000472,
+    "serverHeapPeak": 270343824
+  },
+  "control": {
+    "elapsedMs": 19180.72304199999,
+    "heartbeat": {
+      "samples": 3480,
+      "p95": 1.8331250000046566,
+      "max": 13.326499999995576
+    },
+    "result": {
+      "validationMs": 14381.251165000118,
+      "factsMs": 2115.6012300000875
+    }
+  },
+  "discovery": [],
+  "memory": {
+    "initial": {
+      "rss": 67092480,
+      "heapTotal": 22855680,
+      "heapUsed": 5098936,
+      "external": 2268854,
+      "arrayBuffers": 16623
+    },
+    "retained": {
+      "rss": 399245312,
+      "heapTotal": 309854208,
+      "heapUsed": 270663856,
+      "external": 2124628,
+      "arrayBuffers": 103455
+    },
+    "released": {
+      "rss": 353484800,
+      "heapTotal": 64012288,
+      "heapUsed": 4785824,
+      "external": 2084429,
+      "arrayBuffers": 16623
+    },
+    "workerHeapPeak": 30000472,
+    "processPeakRssKiB": 390192
+  },
+  "discoveryNote": "Not a managed 10,000-resource startup measurement; production directory budget unchanged."
+}

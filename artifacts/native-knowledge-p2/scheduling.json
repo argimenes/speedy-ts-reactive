@@ -1,0 +1,100 @@
+{
+  "method": "10,001 plain-text Blocks plus root; three discovery repetitions; 5ms server timer; source bytes constant; complete ready discovery required. Large Facts remains explicitly partial at its unchanged 10,000-Block budget.",
+  "bytes": 1667562,
+  "rows": [
+    {
+      "label": "legacy discovery 0",
+      "ms": 544.4345000000001,
+      "maxHeartbeatDelay": 532.83075,
+      "result": {
+        "complete": true,
+        "resourceId": "resource-0"
+      }
+    },
+    {
+      "label": "legacy discovery 1",
+      "ms": 495.72849999999994,
+      "maxHeartbeatDelay": 486.0697080000001,
+      "result": {
+        "complete": true,
+        "resourceId": "resource-0"
+      }
+    },
+    {
+      "label": "legacy discovery 2",
+      "ms": 473.64175,
+      "maxHeartbeatDelay": 464.4737499999999,
+      "result": {
+        "complete": true,
+        "resourceId": "resource-0"
+      }
+    },
+    {
+      "label": "worker discovery 0",
+      "ms": 719.600958,
+      "maxHeartbeatDelay": 0.9568750000000819,
+      "result": {
+        "complete": true,
+        "resourceId": "resource-0"
+      }
+    },
+    {
+      "label": "worker discovery 1",
+      "ms": 635.620167,
+      "maxHeartbeatDelay": 0.8569579999998496,
+      "result": {
+        "complete": true,
+        "resourceId": "resource-0"
+      }
+    },
+    {
+      "label": "worker discovery 2",
+      "ms": 560.4352909999998,
+      "maxHeartbeatDelay": 2.8879579999997986,
+      "result": {
+        "complete": true,
+        "resourceId": "resource-0"
+      }
+    },
+    {
+      "label": "worker large Facts incl transport + server decode",
+      "ms": 834.8169999999996,
+      "maxHeartbeatDelay": 11.289332999999715,
+      "result": {
+        "blocks": 10000,
+        "diagnostics": [
+          "Block budget reached"
+        ],
+        "timings": {
+          "hashMs": 0.8057499999999891,
+          "validationMs": 556.739834,
+          "factsMs": 254.7483339999999,
+          "encodeMs": 5.017291000000114,
+          "workerMs": 817.6504169999998,
+          "queueMs": 0.013082999999824096,
+          "roundTripMs": 818.0602089999998
+        },
+        "publicationMs": 14.33441700000003,
+        "wireBytes": 1039049,
+        "workerHeap": 64568144
+      }
+    },
+    {
+      "label": "abort synchronous large inspection + worker recreation",
+      "ms": 42.389374999999745,
+      "maxHeartbeatDelay": 1.2508749999997235,
+      "result": {
+        "error": "Native inspection cancelled",
+        "abortObservedMs": 11.045416999999361,
+        "recreated": "resource-1"
+      }
+    }
+  ],
+  "memory": {
+    "rss": 239566848,
+    "heapTotal": 143851520,
+    "heapUsed": 110780912,
+    "external": 11474158,
+    "arrayBuffers": 9403575
+  }
+}

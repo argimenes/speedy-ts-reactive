@@ -15,7 +15,9 @@
     "benchmark:history": "node scripts/benchmark-history.mjs",
     "benchmark:typing:browser": "node scripts/benchmark-typing-browser.mjs",
     "start": "node ./dist/server/index.js",
-    "dev:server": "nodemon dist/server/index.js"
+    "dev:server": "nodemon dist/server/index.js",
+    "pretest": "node scripts/build-native-knowledge-worker.mjs",
+    "pretest:watch": "node scripts/build-native-knowledge-worker.mjs"
   },
   "license": "MIT",
   "devDependencies": {

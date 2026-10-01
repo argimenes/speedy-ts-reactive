@@ -15,6 +15,7 @@
   },
   "include": [
     "src/feature-api/**/*",
+    "src/knowledge/**/*",
     "src/application/**/*",
     "src/features/**/*",
     "src/index.tsx",

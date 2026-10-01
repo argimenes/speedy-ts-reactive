@@ -1,0 +1,66 @@
+{
+  "method": "Chrome isolated JSON transport + production grammar decode + retained-array sink; no background provider, canonical repository or browser index. HTTP file serving excludes native discovery/extraction (measured separately).",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "results": [
+    {
+      "name": "sample",
+      "count": 100,
+      "transferMs": 70.80000001192093,
+      "decodeMs": 11.699999988079071,
+      "publicationMs": 0,
+      "maxGap": 2
+    },
+    {
+      "name": "large",
+      "count": 1,
+      "transferMs": 11.5,
+      "decodeMs": 7.399999976158142,
+      "publicationMs": 0,
+      "maxGap": 8.099999994039536
+    }
+  ],
+  "server": {
+    "serverJSONMs": 8.581537999999455,
+    "serverMemoryBefore": {
+      "rss": 60899328,
+      "heapTotal": 12648448,
+      "heapUsed": 8372704,
+      "external": 4133936,
+      "arrayBuffers": 726308
+    },
+    "serverMemoryAfter": {
+      "rss": 61030400,
+      "heapTotal": 22740992,
+      "heapUsed": 15496624,
+      "external": 3658613,
+      "arrayBuffers": 220376
+    },
+    "serverHeapPeak": 15356080
+  },
+  "memory": {
+    "before": {
+      "usedSize": 447460,
+      "totalSize": 1048576,
+      "embedderHeapUsedSize": 290512,
+      "backingStorageSize": 8027
+    },
+    "retained": {
+      "usedSize": 3579288,
+      "totalSize": 4718592,
+      "embedderHeapUsedSize": 325280,
+      "backingStorageSize": 8031
+    },
+    "released": {
+      "usedSize": 508148,
+      "totalSize": 1572864,
+      "embedderHeapUsedSize": 325280,
+      "backingStorageSize": 8031
+    }
+  }
+}

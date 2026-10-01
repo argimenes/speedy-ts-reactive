@@ -1,0 +1,7 @@
+import {build} from 'esbuild';import {mkdtemp,rm,readFile} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {spawn} from 'node:child_process';
+await import('./build-native-knowledge-worker.mjs');
+const temp=await mkdtemp(path.join(os.tmpdir(),'native-p2-run-'));
+try{
+ const file=path.join(temp,'benchmark.mjs');await build({entryPoints:[process.env.P2_SCHEDULING?'src/qualification/native-knowledge/p2-scheduling.ts':'src/qualification/native-knowledge/p2-benchmark.ts'],outfile:file,bundle:true,platform:'node',format:'esm',target:'node22',external:['fs-ext'],plugins:[{name:'qualification-hash-meter',setup(b){b.onLoad({filter:/src\/persistence\/managed-pair\.mjs$/},async args=>({contents:(await readFile(args.path,'utf8')).replace('export const hash = value => createHash("sha256").update(value).digest("hex");','export const hash = value => {const start=performance.now();const out=createHash("sha256").update(value).digest("hex");globalThis.__p2HashMs=(globalThis.__p2HashMs??0)+performance.now()-start;return out;};'),loader:'js',resolveDir:path.dirname(args.path)}));}}],banner:{js:"import {createRequire as _createRequire} from 'node:module';const require=_createRequire(process.cwd()+'/package.json');"}});
+ for(const size of process.argv.slice(2).length?process.argv.slice(2):['100','1000','10000']){const c=spawn(process.execPath,['--expose-gc',file,size],{stdio:'inherit'});if(await new Promise(r=>c.once('exit',r))!==0)throw Error('P2 benchmark failed');}
+}finally{await rm(temp,{recursive:true,force:true});}

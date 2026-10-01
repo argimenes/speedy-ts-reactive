@@ -1,0 +1,14 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ server/native-knowledge.test.ts (32 tests) 3927ms
+   ✓ changed and pending paired resources at after-native are ineligible and reads never update pair evidence 463ms
+   ✓ changed and pending paired resources at before-receipt are ineligible and reads never update pair evidence 534ms
+   ✓ Facts text-budget exhaustion leaves valid identity inspection available and never emits partial success 1435ms
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  17:03:40
+   Duration  4.51s (transform 199ms, setup 0ms, collect 412ms, tests 3.93s, environment 0ms, prepare 35ms)
+
+JSON report written to /Users/iianneill/Documents/GitHub/speedy-ts-reactive/artifacts/native-knowledge-p2/final-focused-tests.json
