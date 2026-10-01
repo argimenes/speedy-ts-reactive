@@ -1,0 +1,33 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ❯ src/block-tree/commit-capture.test.ts (10 tests | 1 failed) 441ms
+   × repository commit results > never snapshots, serializes or enumerates the whole graph for strict captured typing and Enter 180ms
+     → expected true to be false // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/block-tree/commit-capture.test.ts > repository commit results > never snapshots, serializes or enumerates the whole graph for strict captured typing and Enter
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/block-tree/commit-capture.test.ts:249:149
+    247|       expect(stringify.mock.calls.some(([value]) => value === state ||…
+    248|         (value && typeof value === "object" && "contents" in value && …
+    249|       for (const enumerator of enumerators) expect(enumerator.mock.cal…
+       |                                                                                                                                                     ^
+    250|       expect(s.events).toHaveLength(9);
+    251|       expect(s.errors).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  14:37:05
+   Duration  1.87s (transform 242ms, setup 0ms, collect 284ms, tests 441ms, environment 575ms, prepare 148ms)
+

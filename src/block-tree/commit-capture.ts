@@ -52,7 +52,7 @@ export interface RepositoryCommitResult {
   commands: CommandDescriptor[];
   inputIntent?: InputIntent;
 }
-export interface RepositoryOptions { enforceBlockIdentity?: boolean }
+export interface RepositoryOptions { enforceBlockIdentity?: boolean; /** Isolated semantic qualification; no production consumer. */ qualifyResourceBoundary?: boolean }
 
 export interface PreparedCommitCapture {
   revision: number;

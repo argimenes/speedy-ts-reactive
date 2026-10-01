@@ -19,7 +19,7 @@ const parentStructure = (record: ContentRecord) => {
 export function emptyParagraphParentFor(
   state: RepositoryState,
   operations: RepositoryOperation[],
-  references: ReadonlyMap<string, number>,
+  references: Pick<ReadonlyMap<string, number>, "get">,
 ): string | undefined {
   if (operations.length !== 3) return;
   const edges = operations.filter(op => op.kind === "put-placement" || op.kind === "remove-placement");
@@ -53,7 +53,7 @@ export function emptyParagraphParentFor(
 export function splitChangeFor(
   state: RepositoryState,
   operations: RepositoryOperation[],
-  references: ReadonlyMap<string, number>,
+  references: Pick<ReadonlyMap<string, number>, "get">,
 ): SplitChange | undefined {
   if (operations.length !== 4) return;
   const edge = operations.filter(op => op.kind === "put-placement" || op.kind === "remove-placement");

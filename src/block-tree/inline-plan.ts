@@ -13,7 +13,7 @@ export function isTextLeaf(content: ContentRecord | undefined): content is Conte
 export function inlineOwnerFor(
   state: RepositoryState,
   operations: RepositoryOperation[],
-  references: ReadonlyMap<string, number>,
+  references: Pick<ReadonlyMap<string, number>, "get">,
 ): string | undefined {
   const contents = new Map<string, RepositoryOperation>();
   const placements = new Map<string, RepositoryOperation>();

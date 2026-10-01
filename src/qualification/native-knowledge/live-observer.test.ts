@@ -1,9 +1,11 @@
-import {it,expect,vi} from 'vitest';import {promises as fs} from 'node:fs';
-import {LiveFactsObserver} from './live-adapter';import {liveFixture} from './live-fixture';
+import {it,expect,vi,describe} from 'vitest';import {promises as fs} from 'node:fs';
+import {LiveFactsObserver} from './live-adapter';import {liveFixture as fixture} from './live-fixture';
 import {captureNative} from '../../persistence/native-resource';import * as native from '../../persistence/native-resource';
 import {extract} from './extract';import {lightweightFacts} from './lightweight';import {fixtureText} from './fixture';
 import {OccurrenceIndex} from '../../block-tree/occurrences';import {BlockTreeProjection} from '../../block-tree/projection';import {TreeCommands} from '../../block-tree/commands';
-export function editing(f:ReturnType<typeof liveFixture>){const occurrences=new OccurrenceIndex(),projection=new BlockTreeProjection(f.repository,'live-proof',occurrences),commands=new TreeCommands(f.repository,key=>occurrences.resolve(key));const key=Object.values(projection.state.nodes).find(n=>n.viewType==='standoff-editor-block')!.key;return{projection,commands,key};}
+describe.each([false,true])('repository boundary qualification=%s',qualified=>{
+const liveFixture=(count=1,first?:Uint8Array)=>fixture(count,first,{qualifyResourceBoundary:qualified});
+function editing(f:ReturnType<typeof liveFixture>){const occurrences=new OccurrenceIndex(),projection=new BlockTreeProjection(f.repository,'live-proof',occurrences),commands=new TreeCommands(f.repository,key=>occurrences.resolve(key));const key=Object.values(projection.state.nodes).find(n=>n.viewType==='standoff-editor-block')!.key;return{projection,commands,key};}
 async function equivalent(f:ReturnType<typeof liveFixture>,observer:LiveFactsObserver){const actual=await observer.observe(f.id,'same');const expected=await extract(captureNative(f.repository.readState(),f.id),actual.facts.location,'same',undefined,undefined,{opaque:f.scope.opaque});expect(actual.facts).toEqual(expected);return actual;}
 it('matches complete Facts for canonical fixtures and actual rich native producers',async()=>{
  for(const file of [undefined,'artifacts/flint-b1.2/rich.mutable.json','artifacts/flint-b2/consumed.mutable.json','artifacts/flint-c3/browser/source.mutable.json']){
@@ -73,4 +75,6 @@ it('rejects retained content that also has a structural owner outside the Docume
 it('matches legacy Workspace definition provenance without adopting it as Document-owned',async()=>{
  const f=liveFixture(),o=new LiveFactsObserver(f.repository,f.scope),s=f.repository.readState(),workspace=s.contents[s.placements[s.rootPlacementKey].contentKey],p=Object.values(s.contents).find(c=>c.payload.id==='resource-0-p0')!;
  try{f.repository.commit('Workspace definition',[{kind:'put-content',record:{...workspace,payload:{...workspace.payload,linkedAnnotations:{legacy:{id:'legacy',type:'codex/entity-reference',value:'foreign'}}}}},{kind:'put-content',record:{...p,payload:{...p.payload,standoffProperties:[{id:'legacy-segment',annotationId:'legacy',start:0,end:4}]}}}]);const r=await equivalent(f,o);expect(r.facts.diagnostics).toContain('Foreign/unresolved linked definition');expect(r.facts.mentions.some(m=>m.targetId==='foreign')).toBe(false);}finally{o.dispose();}
+});
+
 });

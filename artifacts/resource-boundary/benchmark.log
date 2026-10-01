@@ -1,0 +1,33 @@
+baseline 1: constructed
+baseline 1: target-structure complete
+baseline 1: unrelated-structure complete
+baseline 1: finished
+qualified 1: constructed
+qualified 1: target-structure complete
+qualified 1: unrelated-structure complete
+qualified 1: finished
+baseline 10: constructed
+baseline 10: target-structure complete
+baseline 10: unrelated-structure complete
+baseline 10: finished
+qualified 10: constructed
+qualified 10: target-structure complete
+qualified 10: unrelated-structure complete
+qualified 10: finished
+baseline 100: constructed
+baseline 100: target-structure complete
+baseline 100: unrelated-structure complete
+baseline 100: finished
+qualified 100: constructed
+qualified 100: target-structure complete
+qualified 100: unrelated-structure complete
+qualified 100: finished
+baseline 300: constructed
+baseline 150: constructed
+baseline 150: target-structure complete
+baseline 150: unrelated-structure complete
+baseline 150: finished
+qualified 150: constructed
+qualified 150: target-structure complete
+qualified 150: unrelated-structure complete
+qualified 150: finished

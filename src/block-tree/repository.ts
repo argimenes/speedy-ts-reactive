@@ -4,7 +4,9 @@ import { inlineOwnerFor } from "./inline-plan";
 import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./split-plan";
 import { clone } from "./clone";
 import { UndoStorage, type StoredHistoryEntry } from "./undo-storage";
-import { isOwnedResourceTarget, validateResourceRegistrations } from "./resource-registration";
+import { isOwnedResourceTarget, validateResourceRegistrations, resourceOwnership } from "./resource-registration";
+import { ReferenceBookkeeping } from "./reference-bookkeeping";
+import { ResourceBoundaryBookkeeping, preservesResourceOwnership, type BoundaryValidation, type BoundaryToken } from "./resource-boundary";
 import { resourceSource } from "./resource-identity";
 import { validateTarget } from "./external-reference";
 import { createCommitId } from "./ids";
@@ -76,10 +78,11 @@ function inverseFor(state: RepositoryState, operation: RepositoryOperation): Rep
   }
 }
 
-export function deriveLocations(state: RepositoryState): Map<PlacementKey, Location> {
+export function deriveLocations(state: RepositoryState, observe?: (c: ContentRecord) => void): Map<PlacementKey, Location> {
   const locations = new Map<PlacementKey, Location>();
 
   for (const content of Object.values(state.contents)) {
+    observe?.(content);
     content.children.forEach((childKey, index) => {
       if (locations.has(childKey)) {
         throw new ModelInvariantError(`Placement ${childKey} has more than one owner`);
@@ -116,7 +119,7 @@ export function deriveLocations(state: RepositoryState): Map<PlacementKey, Locat
   return locations;
 }
 
-export function validateRepository(state: RepositoryState): void {
+export function validateRepository(state: RepositoryState, boundary?: BoundaryValidation): void {
   new PlacementIdentityIndex(state);
   if (!state.placements[state.rootPlacementKey]) {
     throw new ModelInvariantError(`Missing root placement ${state.rootPlacementKey}`);
@@ -133,7 +136,12 @@ export function validateRepository(state: RepositoryState): void {
     throw new ModelInvariantError("The root placement cannot have an owner");
   }
 
-  if (Object.values(state.placements).some(p => p.resourceRegistration || p.kind === "owned" && (p.externalReference || p.resolvedReference))) validateResourceRegistrations(state);
+  if (Object.values(state.placements).some(p => p.resourceRegistration || p.kind === "owned" && (p.externalReference || p.resolvedReference))) {
+    validateResourceRegistrations(state);
+    if (boundary) delete boundary.error; // Reuse the existing ownership check, not a second pass.
+  } else if (boundary) {
+    try { resourceOwnership(state); delete boundary.error; } catch (e) { boundary.error = String(e); }
+  }
 
   const reachable = new Set<PlacementKey>();
   const visit = (placementKey: PlacementKey, ancestors: Set<ContentKey>) => {
@@ -195,6 +203,7 @@ export function validateRepository(state: RepositoryState): void {
 export function planOperations(
   source: RepositoryState,
   operations: RepositoryOperation[],
+  boundary?: BoundaryValidation,
 ): { next: RepositoryState; inverse: RepositoryOperation[] } {
   const next = clone(source);
   const inverse: RepositoryOperation[] = [];
@@ -202,7 +211,7 @@ export function planOperations(
     inverse.unshift(inverseFor(next, operation));
     applyOperation(next, operation);
   }
-  validateRepository(next);
+  validateRepository(next, boundary);
   return { next, inverse };
 }
 
@@ -234,7 +243,8 @@ export class CanonicalRepository {
   private beforeSubscribers = new Set<RepositorySubscriber>();
   private changeSubscribers = new Set<(change: RepositoryChange) => void>();
   private beforeChangeSubscribers = new Set<(label: string) => void>();
-  private references = new Map<ContentKey, number>();
+  private references: ReferenceBookkeeping;
+  private boundary?: ResourceBoundaryBookkeeping;
   private locations = new Map<PlacementKey, Location>();
   private undoStack: StoredHistoryEntry[] = [];
   private redoStack: StoredHistoryEntry[] = [];
@@ -246,7 +256,10 @@ export class CanonicalRepository {
   private deliveringCommit = false;
 
   constructor(initial: RepositoryState, options: RepositoryOptions = {}) {
-    validateRepository(initial);
+    const validation: BoundaryValidation | undefined = options.qualifyResourceBoundary ? {} : undefined;
+    validateRepository(initial, validation);
+    this.references = new ReferenceBookkeeping(!!validation);
+    if (validation) { this.boundary = new ResourceBoundaryBookkeeping(this.references); this.boundary.validation = validation; }
     this.placementIdentity = new PlacementIdentityIndex(initial);
     if (options.enforceBlockIdentity) this.identity = new BlockIdentityIndex(initial);
     const [state, setState] = createStore(clone(initial));
@@ -263,11 +276,18 @@ export class CanonicalRepository {
 
   locationOf(key: PlacementKey): Location | undefined { return this.locations.get(key); }
 
+  /** Provisional qualification API; ordinary repositories do not enable it. */
+  get qualifiesResourceBoundary(): boolean { return !!this.boundary; }
+  readCanonicalResourceBoundary(id: string) { if (!this.boundary) throw Error("Boundary qualification not enabled"); return this.boundary.read(this.readState(), id); }
+  isBoundaryCurrent(token: BoundaryToken): boolean { return this.boundary?.isCurrent(this.readState(), token) ?? false; }
+  incomingOwnedPlacements(token: BoundaryToken, key: string) { if (!this.boundary) throw Error("Boundary qualification not enabled"); return this.boundary.incoming(this.readState(), token, key, pk => this.locationOf(pk)); }
+
   private rebuildReferences(): void {
-    this.locations = deriveLocations(this.readState());
+    this.boundary?.clear();
+    this.locations = deriveLocations(this.readState(), this.boundary && (c => this.boundary!.add(c)));
     this.references.clear();
     for (const placement of Object.values(this.readState().placements)) {
-      this.references.set(placement.contentKey, this.contentReferenceCount(placement.contentKey) + 1);
+      this.references.add(placement);
     }
   }
 
@@ -372,7 +392,8 @@ export class CanonicalRepository {
     const current = this.snapshot();
     for (const subscriber of this.beforeChangeSubscribers) subscriber(label);
     for (const subscriber of this.beforeSubscribers) subscriber(current, label);
-    const { next, inverse } = planOperations(current, operations);
+    const validation: BoundaryValidation | undefined = this.boundary ? {} : undefined;
+    const { next, inverse } = planOperations(current, operations, validation);
     for (const [key, content] of Object.entries(next.contents)) {
       const previous = current.contents[key];
       if (!previous) continue;
@@ -396,6 +417,7 @@ export class CanonicalRepository {
     batch(() => {
       this.setState(reconcile(next));
       this.rebuildReferences();
+      if (this.boundary) this.boundary.validation = validation!;
       if (identityDelta) this.identity!.acceptCommit(identityDelta);
       this.placementIdentity.acceptCommit(placementDelta);
       if (recordHistory) {
@@ -414,6 +436,10 @@ export class CanonicalRepository {
     const inverse = operations.map((operation) => inverseFor(current, operation)).reverse();
     const previousContents = new Map<ContentKey, ContentRecord | undefined>();
     const prepared = clone(operations);
+    // Unknown fast-route semantics do not trigger a global scan on the input path.
+    // They invalidate query eligibility until a later full admitted validation.
+    let boundarySafe = true;
+    if (this.boundary) { try { boundarySafe = preservesResourceOwnership(current, prepared); } catch { boundarySafe = false; } }
     for (const operation of prepared) {
       if (operation.kind !== "put-content" && operation.kind !== "remove-content") continue;
       const key = operation.kind === "put-content" ? operation.record.key : operation.key;
@@ -434,6 +460,7 @@ export class CanonicalRepository {
       // between two owners, and operation ordering must not erase their new home.
       for (const previous of previousContents.values()) {
         if (!previous) continue;
+        this.boundary?.remove(previous);
         for (const key of [...previous.children, ...previous.inlineContent, ...Object.values(previous.ownedRelations)]) this.locations.delete(key);
       }
       for (const operation of prepared) {
@@ -441,15 +468,12 @@ export class CanonicalRepository {
           case "put-content": this.setState("contents", operation.record.key, reconcile(operation.record)); break;
           case "remove-content": this.setState("contents", operation.key, undefined); break;
           case "put-placement": {
-            const key = operation.record.contentKey;
-            this.references.set(key, this.contentReferenceCount(key) + 1);
+            this.references.add(operation.record);
             this.setState("placements", operation.record.key, operation.record);
             break;
           }
           case "remove-placement": {
-            const key = current.placements[operation.key].contentKey;
-            const count = this.contentReferenceCount(key) - 1;
-            if (count) this.references.set(key, count); else this.references.delete(key);
+            this.references.remove(current.placements[operation.key]);
             this.setState("placements", operation.key, undefined);
             break;
           }
@@ -458,11 +482,13 @@ export class CanonicalRepository {
       for (const key of previousContents.keys()) {
         const content = current.contents[key];
         if (!content) continue;
+        this.boundary?.add(content);
         content.children.forEach((key, index) => this.locations.set(key, { ownerContentKey: content.key, slot: { kind: "children" }, index }));
         content.inlineContent.forEach((key, index) => this.locations.set(key, { ownerContentKey: content.key, slot: { kind: "inline-content" }, index }));
         for (const [name, key] of Object.entries(content.ownedRelations)) this.locations.set(key, { ownerContentKey: content.key, slot: { kind: "relation", name } });
       }
       this.setState("revision", current.revision + 1);
+      if (this.boundary && !boundarySafe) this.boundary.validation = {error: "Unclassified fast mutation: resource ownership requires full admitted validation"};
       if (identityDelta) this.identity!.acceptCommit(identityDelta);
       if (placementDelta) this.placementIdentity.acceptCommit(placementDelta);
       if (recordHistory) {

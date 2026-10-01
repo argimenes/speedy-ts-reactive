@@ -1,0 +1,1 @@
+Excluded from qualification: benchmark crossed a client pause/sleep interval. Construction wall time includes suspension; run was terminated before completion. Larger completed gate uses 150 resources.

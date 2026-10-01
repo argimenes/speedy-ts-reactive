@@ -1,0 +1,27 @@
+{
+  "mode": "baseline",
+  "count": 300,
+  "contents": 375602,
+  "placements": 375602,
+  "rows": [
+    {
+      "phase": "construction",
+      "elapsedMs": 7366772.112625,
+      "enumerations": 611,
+      "enumeratedRecords": 229492822,
+      "rebuildMs": 111536.6473340001,
+      "retainedRepositoryBytes": 397871744
+    },
+    {
+      "phase": "first-read",
+      "elapsedMs": 3793.707917000167,
+      "enumerations": 18,
+      "enumeratedRecords": 4140386,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1252
+      }
+    }
+  ]
+}

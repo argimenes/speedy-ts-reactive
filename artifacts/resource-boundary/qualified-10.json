@@ -1,0 +1,876 @@
+{
+  "mode": "qualified",
+  "count": 10,
+  "contents": 12522,
+  "placements": 12522,
+  "rows": [
+    {
+      "phase": "construction",
+      "elapsedMs": 776.3124579999999,
+      "enumerations": 31,
+      "enumeratedRecords": 388182,
+      "rebuildMs": 45.03791700000011,
+      "retainedRepositoryBytes": 13894424
+    },
+    {
+      "phase": "first-read",
+      "elapsedMs": 4.939124999999876,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 0
+        },
+        "visits": {
+          "contents": 2504,
+          "placements": 2503,
+          "incoming": 1251,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "target-structure",
+      "elapsedMs": 512.1927920000003,
+      "enumerations": 31,
+      "enumeratedRecords": 388182,
+      "rebuildMs": 18.568874999999935
+    },
+    {
+      "phase": "target-structure-read",
+      "elapsedMs": 2.813415999999961,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 1
+        },
+        "visits": {
+          "contents": 2504,
+          "placements": 2503,
+          "incoming": 1251,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "target-structure-combined",
+      "elapsedMs": 515.0062080000002
+    },
+    {
+      "phase": "unrelated-structure",
+      "elapsedMs": 514.838667,
+      "enumerations": 31,
+      "enumeratedRecords": 388182,
+      "rebuildMs": 17.11287500000026
+    },
+    {
+      "phase": "unrelated-structure-read",
+      "elapsedMs": 3.670875000000251,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 2
+        },
+        "visits": {
+          "contents": 2504,
+          "placements": 2503,
+          "incoming": 1251,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "unrelated-structure-combined",
+      "elapsedMs": 518.5095420000002
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.169582999999875,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.4317080000000715,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.222124999999778,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.3892499999997199,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.177375000000211,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0834169999998267,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0625840000002427,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.4332500000000437,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9688750000000255,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.1867080000001806,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.1831669999996848,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0178750000000036,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9962079999995694,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.6427499999999782,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.8270419999998921,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.5384579999999914,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.1950830000000678,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.031500000000051,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9989580000001297,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.3729169999996884,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2478750000000218,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2081250000001091,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.1111659999996846,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.800583999999617,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.5016669999999976,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.5125419999999394,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2705839999998716,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.38025000000016,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2937919999999394,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2246249999998327,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2069580000002134,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2985419999999976,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.453791999999794,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.400250000000142,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.4994160000001102,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.329917000000023,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.306583000000046,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.498667000000296,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.7962910000001102,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.0501249999997526,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-typing-read",
+      "elapsedMs": 3.1494579999998678,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 47
+        },
+        "visits": {
+          "contents": 2594,
+          "placements": 2593,
+          "incoming": 1296,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 5.246791999999914,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 2.9724590000000717,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 48
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 2.2005000000003747,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 2.6157499999999345,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 49
+        },
+        "visits": {
+          "contents": 2594,
+          "placements": 2593,
+          "incoming": 1296,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.4849169999997684,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 2.8033750000004147,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 50
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 2.962082999999893,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 2.860208000000057,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 51
+        },
+        "visits": {
+          "contents": 2594,
+          "placements": 2593,
+          "incoming": 1296,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.88550000000032,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 2.9382080000000315,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 52
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.6208750000000691,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 2.48495899999989,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 53
+        },
+        "visits": {
+          "contents": 2594,
+          "placements": 2593,
+          "incoming": 1296,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 3.2079170000001795,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 2.925166999999874,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 54
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.9011250000003201,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 8.849625000000287,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 55
+        },
+        "visits": {
+          "contents": 2594,
+          "placements": 2593,
+          "incoming": 1296,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 3.1857500000000982,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 2.850750000000062,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 56
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.5889579999998205,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 2.3381250000002183,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 57
+        },
+        "visits": {
+          "contents": 2594,
+          "placements": 2593,
+          "incoming": 1296,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.9008750000002692,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 2.396792000000005,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 58
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.3308750000001055,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.38304199999993216,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 2.5331249999999272,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 60
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.23508400000037,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.3410839999996824,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 4.730125000000044,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 62
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.3660420000001068,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.733791999999994,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 2.517207999999755,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 64
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.45770900000024994,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.43287499999996726,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 2.1357920000000377,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:cd69f1e8-7a6b-45d7-863b-38a7ad72e08e",
+        "rootPlacementKey": "placement:8425511c-043a-4d9c-ba6a-fa47d0cabfbc",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 66
+        },
+        "visits": {
+          "contents": 2596,
+          "placements": 2595,
+          "incoming": 1297,
+          "wholeStateEnumerations": 0
+        }
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.23250000000007276,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    }
+  ]
+}

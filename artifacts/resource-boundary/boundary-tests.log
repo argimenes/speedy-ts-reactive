@@ -1,0 +1,15 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/qualification/native-knowledge/boundary.test.ts (12 tests) 3806ms
+   ✓ returns ready cold evidence without enumerating either repository dictionary 450ms
+   ✓ matches general target and unrelated structure and expires every old token 864ms
+   ✓ retains unplaced definitions, rejects outside ownership and tracks retention changes 983ms
+   ✓ preserves nested Document boundaries and registration as non-owning retention 545ms
+   ✓ rejects resource ownership cycles and duplicate claims without expiring admitted tokens; reference cycles remain legal 919ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  08:50:45
+   Duration  5.22s (transform 270ms, setup 0ms, collect 441ms, tests 3.81s, environment 567ms, prepare 71ms)
+

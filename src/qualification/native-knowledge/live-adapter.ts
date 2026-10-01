@@ -26,6 +26,9 @@ export class LiveFactsObserver {
   const scan=this.scope.snapshot(),rows=scan.documents.filter(d=>d.resourceId===id),binding=this.scope.binding(id);
   if(!scan.complete||rows.length!==1||!binding||!vaultContains(this.scope.root,vaultPath(rows[0].location))||vaultPath(binding)!==vaultPath(rows[0].location)||!['paired','unenrolled'].includes(rows[0].state))throw Error('Live source unavailable or ambiguous');
   const location=vaultPath(binding),selectionMs=performance.now()-started;let t=performance.now(),proof=this.proofs.get(id);const proofReused=!!proof;
+  const boundary=this.repository.qualifiesResourceBoundary?this.repository.readCanonicalResourceBoundary(id):undefined;
+  if(boundary&&boundary.status!=='ready')throw Error(boundary.reason);
+  if(boundary?.status==='ready')proof={root:boundary.rootContentKey,placement:boundary.rootPlacementKey,retained:[...boundary.retainedDefinitionKeys],owners:new Map(),epoch:this.epoch};
   if(!proof){
    const root=findResource(state,{scope:'document',resourceId:id});if(!root)throw Error('Missing canonical identity');
    const roots=documentRootPlacements(state,root.key);if(roots.length!==1)throw Error('Ambiguous canonical root');
@@ -66,7 +69,8 @@ export class LiveFactsObserver {
    if(c.viewType!=='text-cell'&&c.viewType!=='image-cell'){
     const blockId=c.payload.id;if(typeof blockId!=='string'||!blockId.trim()||blockIds.has(blockId))throw Error('Missing or duplicate canonical Block identity');blockIds.add(blockId);
    }
-   if(c.viewType==='text-cell'||c.viewType==='image-cell'){
+   if(boundary?.status==='ready')incoming=this.repository.incomingOwnedPlacements(boundary.token,key).map(p=>p.placementKey);
+   else if(c.viewType==='text-cell'||c.viewType==='image-cell'){
     if(this.repository.contentReferenceCount(key)===1)continue;
     incoming=Object.values(state.placements).filter(p=>p.contentKey===key&&p.kind!=='reference'&&!p.externalReference&&!p.resolvedReference).map(p=>p.key);
    }

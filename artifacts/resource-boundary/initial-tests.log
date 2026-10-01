@@ -1,0 +1,46 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/block-tree/inline-performance.test.ts (14 tests) 7047ms
+   ✓ incremental inline editing (capture=false) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 1138ms
+   ✓ incremental inline editing (capture=false) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 2154ms
+   ✓ incremental inline editing (capture=true) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 1028ms
+   ✓ incremental inline editing (capture=true) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 2192ms
+ ✓ src/qualification/native-knowledge/live-observer.test.ts (30 tests) 11038ms
+   ✓ repository boundary qualification=false > matches complete Facts for canonical fixtures and actual rich native producers 348ms
+   ✓ repository boundary qualification=false > observes changed native text/annotations and Undo/Redo without capture or snapshots 671ms
+   ✓ repository boundary qualification=false > revalidates metadata/structural changes instead of reusing an inline proof 486ms
+   ✓ repository boundary qualification=false > rejects cancellation, stale completion, disappearing identity and disposed observation 487ms
+   ✓ repository boundary qualification=false > matches retained definitions, margins, reference cycles and graph-2 owned-external boundaries 429ms
+   ✓ repository boundary qualification=false > rejects shared Cells even when the inline-edit hint preserves the structural proof 303ms
+   ✓ repository boundary qualification=false > rechecks authored Block identities even on payload-only inline hints 354ms
+   ✓ repository boundary qualification=false > does not mutate canonical content, revision or history and checks binding changes at completion 507ms
+   ✓ repository boundary qualification=false > reports missing definitions and rejects annotation-budget excess without publishing partial facts 423ms
+   ✓ repository boundary qualification=false > does not absorb a locally loaded owned child Document into its owner contribution 698ms
+   ✓ repository boundary qualification=false > matches legacy Workspace definition provenance without adopting it as Document-owned 428ms
+   ✓ repository boundary qualification=true > matches complete Facts for canonical fixtures and actual rich native producers 387ms
+   ✓ repository boundary qualification=true > observes changed native text/annotations and Undo/Redo without capture or snapshots 678ms
+   ✓ repository boundary qualification=true > revalidates metadata/structural changes instead of reusing an inline proof 458ms
+   ✓ repository boundary qualification=true > rejects cancellation, stale completion, disappearing identity and disposed observation 384ms
+   ✓ repository boundary qualification=true > does not mutate canonical content, revision or history and checks binding changes at completion 384ms
+   ✓ repository boundary qualification=true > reports missing definitions and rejects annotation-budget excess without publishing partial facts 355ms
+   ✓ repository boundary qualification=true > does not absorb a locally loaded owned child Document into its owner contribution 398ms
+ ✓ src/block-tree/split-performance.test.ts (12 tests) 14218ms
+   ✓ incremental paragraph splitting (capture=false) > inserts empty siblings across shared parent views without touching existing paragraphs 1033ms
+   ✓ incremental paragraph splitting (capture=false) > rejects a nonempty or detached paragraph from the empty insertion fast path 893ms
+   ✓ incremental paragraph splitting (capture=false) > splits and restores annotations and Cell identities without snapshots, including redo and another split 1726ms
+   ✓ incremental paragraph splitting (capture=false) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 2447ms
+   ✓ incremental paragraph splitting (capture=false) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 1101ms
+   ✓ incremental paragraph splitting (capture=false) > falls back safely for inline atoms and maintains indexes for the next plain-text split 1517ms
+   ✓ incremental paragraph splitting (capture=true) > inserts empty siblings across shared parent views without touching existing paragraphs 652ms
+   ✓ incremental paragraph splitting (capture=true) > rejects a nonempty or detached paragraph from the empty insertion fast path 701ms
+   ✓ incremental paragraph splitting (capture=true) > splits and restores annotations and Cell identities without snapshots, including redo and another split 1053ms
+   ✓ incremental paragraph splitting (capture=true) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 1334ms
+   ✓ incremental paragraph splitting (capture=true) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 657ms
+   ✓ incremental paragraph splitting (capture=true) > falls back safely for inline atoms and maintains indexes for the next plain-text split 1102ms
+
+ Test Files  3 passed (3)
+      Tests  56 passed (56)
+   Start at  08:47:44
+   Duration  16.32s (transform 878ms, setup 0ms, collect 2.17s, tests 32.30s, environment 2.18s, prepare 507ms)
+

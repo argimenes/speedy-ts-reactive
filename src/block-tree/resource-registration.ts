@@ -9,7 +9,13 @@ export function isOwnedResourceTarget(target: ExternalTarget): boolean {
 
 /** A registration selects a canonical mount root, never a semantic owner. */
 export function documentRootPlacements(state: RepositoryState, contentKey: string): PlacementRecord[] {
-  const placements = Object.values(state.placements).filter(p => !p.externalReference && p.contentKey === contentKey);
+  return selectDocumentRootPlacements(Object.values(state.placements), contentKey);
+}
+
+/** Pure root precedence shared by enumeration and maintained incoming evidence.
+ * Callers must supply complete candidates; registration never establishes ownership. */
+export function selectDocumentRootPlacements(candidates: readonly PlacementRecord[], contentKey: string): PlacementRecord[] {
+  const placements = candidates.filter(p => !p.externalReference && p.contentKey === contentKey);
   const registered = placements.filter(p => p.resourceRegistration);
   return registered.length ? registered : placements.filter(p => p.kind === "owned");
 }
