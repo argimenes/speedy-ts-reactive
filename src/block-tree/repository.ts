@@ -6,7 +6,7 @@ import { clone } from "./clone";
 import { UndoStorage, type StoredHistoryEntry } from "./undo-storage";
 import { isOwnedResourceTarget, validateResourceRegistrations, resourceOwnership } from "./resource-registration";
 import { ReferenceBookkeeping } from "./reference-bookkeeping";
-import { ResourceBoundaryBookkeeping, preservesResourceOwnership, type BoundaryValidation, type BoundaryToken } from "./resource-boundary";
+import { ResourceBoundaryBookkeeping, preservesResourceOwnership, type BoundaryValidation, type CanonicalResourceBoundaryToken, type CanonicalResourceBoundaryResult, type CooperativeBoundaryOptions } from "./resource-boundary";
 import { resourceSource } from "./resource-identity";
 import { validateTarget } from "./external-reference";
 import { createCommitId } from "./ids";
@@ -256,7 +256,7 @@ export class CanonicalRepository {
   private deliveringCommit = false;
 
   constructor(initial: RepositoryState, options: RepositoryOptions = {}) {
-    const validation: BoundaryValidation | undefined = options.qualifyResourceBoundary ? {} : undefined;
+    const validation: BoundaryValidation | undefined = options.resourceBoundaryEvidence !== false ? {} : undefined;
     validateRepository(initial, validation);
     this.references = new ReferenceBookkeeping(!!validation);
     if (validation) { this.boundary = new ResourceBoundaryBookkeeping(this.references); this.boundary.validation = validation; }
@@ -276,11 +276,20 @@ export class CanonicalRepository {
 
   locationOf(key: PlacementKey): Location | undefined { return this.locations.get(key); }
 
-  /** Provisional qualification API; ordinary repositories do not enable it. */
-  get qualifiesResourceBoundary(): boolean { return !!this.boundary; }
-  readCanonicalResourceBoundary(id: string) { if (!this.boundary) throw Error("Boundary qualification not enabled"); return this.boundary.read(this.readState(), id); }
-  isBoundaryCurrent(token: BoundaryToken): boolean { return this.boundary?.isCurrent(this.readState(), token) ?? false; }
-  incomingOwnedPlacements(token: BoundaryToken, key: string) { if (!this.boundary) throw Error("Boundary qualification not enabled"); return this.boundary.incoming(this.readState(), token, key, pk => this.locationOf(pk)); }
+  /** Read-only repository semantics, independent of any consumer or persistence policy. */
+  get hasResourceBoundaryEvidence(): boolean { return !!this.boundary; }
+  readCanonicalResourceBoundary(id: string): CanonicalResourceBoundaryResult {
+    return this.boundary?.read(this.readState(), id) ?? Object.freeze({status: 'unavailable', reason: 'Resource boundary evidence disabled'});
+  }
+  async readCanonicalResourceBoundaryCooperative(id: string, options: CooperativeBoundaryOptions = {}): Promise<CanonicalResourceBoundaryResult> {
+    options.signal?.throwIfAborted();
+    return this.boundary ? this.boundary.readCooperative(this.readState(), id, options) : this.readCanonicalResourceBoundary(id);
+  }
+  isBoundaryCurrent(token: CanonicalResourceBoundaryToken): boolean { return this.boundary?.isCurrent(this.readState(), token) ?? false; }
+  incomingOwnedPlacements(token: CanonicalResourceBoundaryToken, key: string) {
+    if (!this.boundary) throw Error('Resource boundary evidence disabled');
+    return this.boundary.incoming(this.readState(), token, key, pk => this.locationOf(pk));
+  }
 
   private rebuildReferences(): void {
     this.boundary?.clear();

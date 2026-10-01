@@ -1,5 +1,5 @@
 import type { PlacementRecord } from './types';
-// Qualification enrichment of the existing reference map, not a parallel adjacency map.
+// Incoming evidence enriches the existing reference map, not a parallel adjacency map.
 // Numeric entries retain the ordinary repository path. Single witnesses avoid a Set per Cell.
 type Keys = string | Set<string> | undefined;
 type Evidence = { count: number; owners: Keys; registrations: Keys };
@@ -8,7 +8,7 @@ const remove = (keys: Keys, key: string): Keys => {
  if(typeof keys === 'string')return keys === key ? undefined : keys;
  if(!keys)return;keys.delete(key);return keys.size === 1 ? keys.values().next().value : keys.size ? keys : undefined;
 };
-const list = (keys: Keys): string[] => keys === undefined ? [] : typeof keys === 'string' ? [keys] : [...keys];
+function* iterate(keys: Keys): IterableIterator<string> { if (typeof keys === 'string') yield keys; else if (keys) yield* keys; }
 export class ReferenceBookkeeping {
  private entries = new Map<string, number | Evidence>();
  constructor(readonly enriched = false) {}
@@ -26,6 +26,6 @@ export class ReferenceBookkeeping {
   if(typeof old==='number'){if(old===1)this.entries.delete(p.contentKey);else this.entries.set(p.contentKey,old-1);return;}
   old.count--;old.owners=remove(old.owners,p.key);old.registrations=remove(old.registrations,p.key);if(!old.count)this.entries.delete(p.contentKey);
  }
- owned(key:string){const e=this.entries.get(key);return typeof e==='object'?list(e.owners):[];}
- registrations(key:string){const e=this.entries.get(key);return typeof e==='object'?list(e.registrations):[];}
+ ownedKeys(key:string){const e=this.entries.get(key);return iterate(typeof e==='object'?e.owners:undefined);}
+ registrationKeys(key:string){const e=this.entries.get(key);return iterate(typeof e==='object'?e.registrations:undefined);}
 }

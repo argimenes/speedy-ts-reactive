@@ -1,0 +1,667 @@
+{
+  "mode": "baseline",
+  "count": 100,
+  "contents": 125202,
+  "placements": 125202,
+  "rows": [
+    {
+      "phase": "construction",
+      "elapsedMs": 17368.31125,
+      "enumerations": 211,
+      "enumeratedRecords": 26417622,
+      "rebuildMs": 239.04508400000122,
+      "retainedRepositoryBytes": 126098672
+    },
+    {
+      "phase": "first-read",
+      "elapsedMs": 1186.9378340000003,
+      "enumerations": 18,
+      "enumeratedRecords": 1385986,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1252
+      }
+    },
+    {
+      "phase": "target-structure",
+      "elapsedMs": 18254.856499999998,
+      "enumerations": 211,
+      "enumeratedRecords": 26417622,
+      "rebuildMs": 226.7070409999942
+    },
+    {
+      "phase": "target-structure-read",
+      "elapsedMs": 1147.5290830000013,
+      "enumerations": 18,
+      "enumeratedRecords": 1385986,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1252
+      }
+    },
+    {
+      "phase": "target-structure-combined",
+      "elapsedMs": 19402.385583
+    },
+    {
+      "phase": "unrelated-structure",
+      "elapsedMs": 18543.764333,
+      "enumerations": 211,
+      "enumeratedRecords": 26417622,
+      "rebuildMs": 205.10008300000482
+    },
+    {
+      "phase": "unrelated-structure-read",
+      "elapsedMs": 967.9800000000105,
+      "enumerations": 18,
+      "enumeratedRecords": 1385986,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1252
+      }
+    },
+    {
+      "phase": "unrelated-structure-combined",
+      "elapsedMs": 19511.74433300001
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9117090000072494,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2295000000012806,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8790840000001481,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.066832999989856,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8850830000010319,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8106659999903059,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7806249999994179,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8057079999998678,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8285000000032596,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.812208000003011,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8222500000119908,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8031670000054874,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7935830000060378,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 3.953458000003593,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8937079999886919,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7669170000008307,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7547500000073342,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7529999999969732,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0146660000027623,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8031659999978729,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7546670000010636,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.743625000002794,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7844999999942956,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7844159999949625,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.790207999991253,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7799999999988358,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7978749999892898,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7661660000012489,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7692080000124406,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 3.0665829999925336,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8203340000036405,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.7887500000069849,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.993625000002794,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.856207999997423,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8083330000081332,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.823791999995592,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8206670000072336,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8206669999926817,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8131670000002487,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.8794999999954598,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-typing-read",
+      "elapsedMs": 952.8200829999987,
+      "enumerations": 18,
+      "enumeratedRecords": 1386796,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1297
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.952000000004773,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 975.3480419999978,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.6671659999992698,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 910.1152920000022,
+      "enumerations": 18,
+      "enumeratedRecords": 1386796,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1297
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.0800840000010794,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 966.9118330000056,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.4324580000102287,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 1030.054999999993,
+      "enumerations": 18,
+      "enumeratedRecords": 1386796,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1297
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.2377919999998994,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 1184.117916999996,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 6.20975000000908,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 1159.3176670000103,
+      "enumerations": 18,
+      "enumeratedRecords": 1386796,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1297
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 1.8957089999894379,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 954.8960829999996,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.307249999998021,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 934.8242089999985,
+      "enumerations": 18,
+      "enumeratedRecords": 1386796,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1297
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.393833000009181,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 933.834124999994,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.2648750000080327,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 926.8418749999983,
+      "enumerations": 18,
+      "enumeratedRecords": 1386796,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1297
+      }
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.905709000013303,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 950.2512089999946,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.3349999999918509,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.33345800000824966,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 1014.3655419999996,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.40249999999650754,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.3852080000069691,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 1156.6534580000007,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.5526669999962905,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.4858749999984866,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 1224.885374999998,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.5149589999928139,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.3824170000007143,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 1292.7861249999987,
+      "enumerations": 18,
+      "enumeratedRecords": 1386814,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "members": 1298
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.2842079999973066,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    }
+  ]
+}

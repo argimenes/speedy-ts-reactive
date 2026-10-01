@@ -1,0 +1,84 @@
+[
+  {
+    "profile": "25000-cells",
+    "round": 0,
+    "constructionMs": 298.399417,
+    "syncMs": 74.18616700000001,
+    "cooperativeMs": 518.066208,
+    "slices": 390,
+    "maxSliceMs": 0.6464160000000447,
+    "ticks": 390,
+    "maxHeartbeatGapMs": 1.8422089999999116,
+    "status": "ready"
+  },
+  {
+    "profile": "25000-cells",
+    "round": 1,
+    "constructionMs": 298.399417,
+    "syncMs": 50.52600000000007,
+    "cooperativeMs": 545.4217080000001,
+    "slices": 390,
+    "maxSliceMs": 0.8587500000001,
+    "ticks": 390,
+    "maxHeartbeatGapMs": 5.672249999999849,
+    "status": "ready"
+  },
+  {
+    "profile": "25000-cells",
+    "round": 2,
+    "constructionMs": 298.399417,
+    "syncMs": 46.12683300000003,
+    "cooperativeMs": 642.011792,
+    "slices": 393,
+    "maxSliceMs": 8.47995899999978,
+    "ticks": 393,
+    "maxHeartbeatGapMs": 30.71033299999999,
+    "status": "ready"
+  },
+  {
+    "profile": "25000-cells",
+    "phase": "released-audit-scratch",
+    "retainedHeapDelta": -3797944
+  },
+  {
+    "profile": "10001-blocks",
+    "round": 0,
+    "constructionMs": 137.40387500000043,
+    "syncMs": 34.49800000000005,
+    "cooperativeMs": 201.1512499999999,
+    "slices": 156,
+    "maxSliceMs": 0.7234580000003916,
+    "ticks": 156,
+    "maxHeartbeatGapMs": 1.8938750000002074,
+    "status": "ready"
+  },
+  {
+    "profile": "10001-blocks",
+    "round": 1,
+    "constructionMs": 137.40387500000043,
+    "syncMs": 12.541124999999738,
+    "cooperativeMs": 202.24245800000017,
+    "slices": 156,
+    "maxSliceMs": 0.5667910000001939,
+    "ticks": 156,
+    "maxHeartbeatGapMs": 1.7721660000001975,
+    "status": "ready"
+  },
+  {
+    "profile": "10001-blocks",
+    "round": 2,
+    "constructionMs": 137.40387500000043,
+    "syncMs": 11.937249999999949,
+    "cooperativeMs": 202.47758300000032,
+    "slices": 156,
+    "maxSliceMs": 0.5414999999998145,
+    "ticks": 156,
+    "maxHeartbeatGapMs": 1.6947500000001128,
+    "status": "ready"
+  },
+  {
+    "profile": "10001-blocks",
+    "phase": "released-audit-scratch",
+    "retainedHeapDelta": -1541504
+  }
+]

@@ -4,7 +4,7 @@ import {captureNative} from '../../persistence/native-resource';import * as nati
 import {extract} from './extract';import {lightweightFacts} from './lightweight';import {fixtureText} from './fixture';
 import {OccurrenceIndex} from '../../block-tree/occurrences';import {BlockTreeProjection} from '../../block-tree/projection';import {TreeCommands} from '../../block-tree/commands';
 describe.each([false,true])('repository boundary qualification=%s',qualified=>{
-const liveFixture=(count=1,first?:Uint8Array)=>fixture(count,first,{qualifyResourceBoundary:qualified});
+const liveFixture=(count=1,first?:Uint8Array)=>fixture(count,first,{resourceBoundaryEvidence:qualified});
 function editing(f:ReturnType<typeof liveFixture>){const occurrences=new OccurrenceIndex(),projection=new BlockTreeProjection(f.repository,'live-proof',occurrences),commands=new TreeCommands(f.repository,key=>occurrences.resolve(key));const key=Object.values(projection.state.nodes).find(n=>n.viewType==='standoff-editor-block')!.key;return{projection,commands,key};}
 async function equivalent(f:ReturnType<typeof liveFixture>,observer:LiveFactsObserver){const actual=await observer.observe(f.id,'same');const expected=await extract(captureNative(f.repository.readState(),f.id),actual.facts.location,'same',undefined,undefined,{opaque:f.scope.opaque});expect(actual.facts).toEqual(expected);return actual;}
 it('matches complete Facts for canonical fixtures and actual rich native producers',async()=>{

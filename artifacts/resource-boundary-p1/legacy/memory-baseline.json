@@ -1,0 +1,12 @@
+{
+  "mode": "baseline",
+  "count": 30,
+  "records": 37562,
+  "constructionMs": 638.2010829999999,
+  "initialHeap": 5481608,
+  "withInput": 79644736,
+  "withoutInput": 50115824,
+  "retainedWithInput": 74163128,
+  "retainedWithoutInput": 44634216,
+  "inputCollected": true
+}

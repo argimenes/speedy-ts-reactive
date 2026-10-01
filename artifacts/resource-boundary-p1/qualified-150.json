@@ -1,0 +1,920 @@
+{
+  "mode": "qualified",
+  "count": 150,
+  "contents": 187802,
+  "placements": 187802,
+  "rows": [
+    {
+      "phase": "construction",
+      "elapsedMs": 43180.9675,
+      "enumerations": 311,
+      "enumeratedRecords": 58406422,
+      "rebuildMs": 534.3057919999992,
+      "retainedRepositoryBytes": 207259416
+    },
+    {
+      "phase": "first-read",
+      "elapsedMs": 5.366833000000042,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 0
+        }
+      },
+      "visits": {
+        "contents": 2504,
+        "placements": 2503,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "first-cooperative-read",
+      "elapsedMs": 29.386290999995254,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "visits": {
+        "contents": 2504,
+        "placements": 2503,
+        "enumerations": 0
+      },
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 0
+        }
+      }
+    },
+    {
+      "phase": "target-structure",
+      "elapsedMs": 50095.058833,
+      "enumerations": 311,
+      "enumeratedRecords": 58406422,
+      "rebuildMs": 354.4212499999994
+    },
+    {
+      "phase": "target-structure-read",
+      "elapsedMs": 3.7252080000034766,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 1
+        }
+      },
+      "visits": {
+        "contents": 2504,
+        "placements": 2503,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "target-structure-cooperative-read",
+      "elapsedMs": 24.234542000005604,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "visits": {
+        "contents": 2504,
+        "placements": 2503,
+        "enumerations": 0
+      },
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 1
+        }
+      }
+    },
+    {
+      "phase": "target-structure-combined",
+      "elapsedMs": 50098.784041000006
+    },
+    {
+      "phase": "unrelated-structure",
+      "elapsedMs": 47667.61837499999,
+      "enumerations": 311,
+      "enumeratedRecords": 58406422,
+      "rebuildMs": 1113.3962089999986
+    },
+    {
+      "phase": "unrelated-structure-read",
+      "elapsedMs": 6.194041000009747,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 2
+        }
+      },
+      "visits": {
+        "contents": 2504,
+        "placements": 2503,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "unrelated-structure-cooperative-read",
+      "elapsedMs": 27.813374999997905,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "visits": {
+        "contents": 2504,
+        "placements": 2503,
+        "enumerations": 0
+      },
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 2
+        }
+      }
+    },
+    {
+      "phase": "unrelated-structure-combined",
+      "elapsedMs": 47673.812416
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0141250000160653,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2437080000236165,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9743750000197906,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0519999999960419,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9990000000107102,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9279580000147689,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.031875000015134,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9898749999993015,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9370829999970738,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.2525000000023283,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.631667000008747,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.749500000005355,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.5105420000036247,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.6682089999958407,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.697708000021521,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0169999999925494,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9705419999954756,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9732080000103451,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9515419999952428,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 2.1163329999835696,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.38491600000998,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.7896250000048894,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0067920000001322,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9572919999773148,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9542499999806751,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 0.9450000000069849,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.015499999979511,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.1363750000018626,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.0431249999965075,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.1259589999972377,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.110541000001831,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2537500000034925,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.2451249999867287,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.552957999985665,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 3.3723750000062864,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.6407919999910519,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.3949160000192933,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.3614169999782462,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.364040999993449,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "typing",
+      "elapsedMs": 1.5191669999912847,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-typing-read",
+      "elapsedMs": 4.178708999999799,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 47
+        }
+      },
+      "visits": {
+        "contents": 2594,
+        "placements": 2593,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 4.800374999991618,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 3.767374999995809,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 48
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 2.296958999999333,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 4.412291999993613,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 49
+        }
+      },
+      "visits": {
+        "contents": 2594,
+        "placements": 2593,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 3.034958000003826,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 6.093709000007948,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 50
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.7823330000101123,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 4.979167000012239,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 51
+        }
+      },
+      "visits": {
+        "contents": 2594,
+        "placements": 2593,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.199916999990819,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 7.8162500000034925,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 52
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 1.8847079999977723,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 3.431332999985898,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 53
+        }
+      },
+      "visits": {
+        "contents": 2594,
+        "placements": 2593,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 2.2678329999907874,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 4.0982919999805745,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 54
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 3.0196669999859296,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 6.619749999983469,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 55
+        }
+      },
+      "visits": {
+        "contents": 2594,
+        "placements": 2593,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "split",
+      "elapsedMs": 4.147124999988591,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-split-read",
+      "elapsedMs": 7.533332999999402,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 56
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "join-undo",
+      "elapsedMs": 4.311416999989888,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-join-read",
+      "elapsedMs": 3.579875000024913,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 57
+        }
+      },
+      "visits": {
+        "contents": 2594,
+        "placements": 2593,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 1.2732499999983702,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 5.352125000004889,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 58
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.4547090000123717,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.7762499999953434,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 6.5665830000070855,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 60
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.3881660000188276,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.6174999999930151,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 5.135167000000365,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 62
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 1.0175420000159647,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 1.135707999987062,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 5.058791999996174,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 64
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.7007919999887235,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "empty-paragraph",
+      "elapsedMs": 0.6824999999953434,
+      "enumerations": 2,
+      "enumeratedRecords": 2,
+      "rebuildMs": 0
+    },
+    {
+      "phase": "after-empty-read",
+      "elapsedMs": 4.724667000002228,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0,
+      "result": {
+        "status": "ready",
+        "rootContentKey": "content:494e920c-32ab-489f-aae6-42135eee9d16",
+        "rootPlacementKey": "placement:0f444a2d-90ec-42c3-823b-ba6a99fde53b",
+        "retainedDefinitionKeys": [],
+        "token": {
+          "revision": 66
+        }
+      },
+      "visits": {
+        "contents": 2596,
+        "placements": 2595,
+        "enumerations": 0
+      }
+    },
+    {
+      "phase": "empty-undo",
+      "elapsedMs": 0.5244579999998678,
+      "enumerations": 0,
+      "enumeratedRecords": 0,
+      "rebuildMs": 0
+    }
+  ]
+}

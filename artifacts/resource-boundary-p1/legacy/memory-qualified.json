@@ -1,0 +1,12 @@
+{
+  "mode": "qualified",
+  "count": 30,
+  "records": 37562,
+  "constructionMs": 1056.9930000000004,
+  "initialHeap": 5507184,
+  "withInput": 89016040,
+  "withoutInput": 51974256,
+  "retainedWithInput": 83508856,
+  "retainedWithoutInput": 46467072,
+  "inputCollected": true
+}

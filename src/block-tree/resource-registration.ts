@@ -15,9 +15,20 @@ export function documentRootPlacements(state: RepositoryState, contentKey: strin
 /** Pure root precedence shared by enumeration and maintained incoming evidence.
  * Callers must supply complete candidates; registration never establishes ownership. */
 export function selectDocumentRootPlacements(candidates: readonly PlacementRecord[], contentKey: string): PlacementRecord[] {
-  const placements = candidates.filter(p => !p.externalReference && p.contentKey === contentKey);
-  const registered = placements.filter(p => p.resourceRegistration);
-  return registered.length ? registered : placements.filter(p => p.kind === "owned");
+  const registered: PlacementRecord[] = [], owned: PlacementRecord[] = [];
+  for (const p of candidates) {
+    const role = documentRootRole(p, contentKey);
+    if (role === 'registration') registered.push(p);
+    else if (role === 'owned') owned.push(p);
+  }
+  return registered.length ? registered : owned;
+}
+
+/** Shared root predicate; precedence belongs to the complete candidate set. */
+export function documentRootRole(p: PlacementRecord, contentKey: string): 'registration' | 'owned' | undefined {
+  if (p.externalReference || p.contentKey !== contentKey) return;
+  if (p.resourceRegistration) return 'registration';
+  if (p.kind === 'owned') return 'owned';
 }
 
 /** Derived evidence only. An absent entry means owner UNKNOWN, not unowned. */

@@ -52,7 +52,12 @@ export interface RepositoryCommitResult {
   commands: CommandDescriptor[];
   inputIntent?: InputIntent;
 }
-export interface RepositoryOptions { enforceBlockIdentity?: boolean; /** Isolated semantic qualification; no production consumer. */ qualifyResourceBoundary?: boolean }
+export interface RepositoryOptions {
+  enforceBlockIdentity?: boolean;
+  /** Repository-semantic evidence, enabled by default. False retains count-only
+   * bookkeeping for compatibility/rollback; cannot be changed after construction. */
+  resourceBoundaryEvidence?: boolean;
+}
 
 export interface PreparedCommitCapture {
   revision: number;

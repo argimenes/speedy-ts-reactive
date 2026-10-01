@@ -1,0 +1,10 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/block-tree/resource-boundary.test.ts (13 tests) 525ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  15:29:36
+   Duration  3.27s (transform 470ms, setup 0ms, collect 656ms, tests 525ms, environment 1.00s, prepare 175ms)
+
