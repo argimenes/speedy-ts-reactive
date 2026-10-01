@@ -1,0 +1,76 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "id": "df2a7706-f7c4-46c5-801b-ce7e2c79a1e0",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "See the mountain study."
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 2,
+              "id": "83ad08dc-8889-460c-921e-0d39b9fd5734",
+              "metadata": {
+                "documentId": "15c726e9-34aa-4ed9-9418-6ef275aaa0eb"
+              },
+              "start": 0,
+              "type": "codex/block-reference",
+              "value": "15c726e9-34aa-4ed9-9418-6ef275aaa0eb"
+            }
+          ]
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:f9e7c6f3-95ff-467c-a12e-83bf3ae7f041:placement:d8c0de98-27ed-4f94-b5c8-1ad3b81a7370",
+            "target": {
+              "blockId": "df2a7706-f7c4-46c5-801b-ce7e2c79a1e0",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "f9e7c6f3-95ff-467c-a12e-83bf3ae7f041",
+        "properties": {
+          "metadata": {
+            "documentFormat": {
+              "format": "page",
+              "template": "blank",
+              "theme": "default",
+              "version": 1
+            },
+            "documentId": "f9e7c6f3-95ff-467c-a12e-83bf3ae7f041",
+            "tags": [
+              "alpine",
+              "reading"
+            ],
+            "title": "Reading journal"
+          }
+        },
+        "type": "document-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "f9e7c6f3-95ff-467c-a12e-83bf3ae7f041",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:f9e7c6f3-95ff-467c-a12e-83bf3ae7f041:placement:ab6a2dad-203f-49ef-9761-65e171718c33",
+      "target": {
+        "blockId": "f9e7c6f3-95ff-467c-a12e-83bf3ae7f041",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "f9e7c6f3-95ff-467c-a12e-83bf3ae7f041",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

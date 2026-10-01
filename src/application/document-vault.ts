@@ -34,9 +34,11 @@ export function createDocumentVaults(native: NativeDocumentSession) {
     private noticeSignal=createSignal('');
     private refreshWork?:Promise<void>;
     private controller?:AbortController;
-    private alive=true;
+    private alive=true;private listeners=new Set<()=>void>();
+    subscribe(listener:()=>void){this.listeners.add(listener);return ()=>{this.listeners.delete(listener);};}
+    private notify(){for(const listener of this.listeners)listener();}
     private signatureSignal=createSignal('');
-    private update(value:VaultDiscovery){batch(()=>{this.snapshotSignal[1](value);this.signatureSignal[1](JSON.stringify(value));});}
+    private update(value:VaultDiscovery){batch(()=>{this.snapshotSignal[1](value);this.signatureSignal[1](JSON.stringify(value));});this.notify();}
     constructor(readonly root:string,initial:VaultDiscovery){this.update(initial);}
     snapshot=()=>this.snapshotSignal[0]()!;
     signature=()=>this.signatureSignal[0]();
@@ -51,7 +53,7 @@ export function createDocumentVaults(native: NativeDocumentSession) {
       if(!this.alive)return;
       if(this.refreshWork)return this.refreshWork;
       this.controller=new AbortController();
-      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive)this.update(value);}catch(e){if(this.alive){this.noticeSignal[1](String(e));throw e;}}finally{this.refreshWork=undefined;}})();
+      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive)this.update(value);}catch(e){if(this.alive){this.noticeSignal[1](String(e));this.update({...this.snapshot(),complete:false,diagnostics:[...this.snapshot().diagnostics,{message:'Discovery refresh failed: '+String(e)}]});throw e;}}finally{this.refreshWork=undefined;}})();
       return this.refreshWork;
     }
     requireDirectory(folder:string) {
@@ -87,8 +89,9 @@ export function createDocumentVaults(native: NativeDocumentSession) {
     async recover(operationId:string) {
       return this.mutate(async()=>{const result=await native.recoverRelocation(operationId);this.noticeSignal[1](result.phase==='relocated'?'Recovery complete. Open the destination explicitly if it is not already bound.':`Recovery pending: ${result.error}`);return result;});
     }
-    release(){if(--this.users===0){this.alive=false;this.controller?.abort();entries.delete(this.root);}}
-    dispose(){this.alive=false;this.controller?.abort();}
+    release(){if(--this.users===0){this.alive=false;this.controller?.abort();this.notify();this.listeners.clear();entries.delete(this.root);}}
+    isAlive=()=>this.alive;
+    dispose(){this.alive=false;this.controller?.abort();this.notify();this.listeners.clear();}
   }
   return {
     async acquire(input:string, signal?:AbortSignal):Promise<VaultLease> {

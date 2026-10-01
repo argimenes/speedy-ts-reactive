@@ -27,7 +27,10 @@ export class NativeDocumentSession {
   private changed = createSignal(0);
   // Tree observers must not rebuild for ordinary content/status changes.
   private storageChanged = createSignal(0);
-  private disposed = false;
+  private disposed = false;private knowledgeEpoch=0;private opening=0;private knowledgeListeners=new Set<()=>void>();
+  subscribeKnowledge(listener:()=>void){this.knowledgeListeners.add(listener);return ()=>{this.knowledgeListeners.delete(listener);};}
+  private notifyKnowledge(){this.knowledgeEpoch++;for(const listener of this.knowledgeListeners)listener();}
+  knowledgeEvidence(id:string){const b=this.bindings.get(id);return Object.freeze({epoch:this.knowledgeEpoch,closed:this.disposed,admitting:this.opening>0,pending:!!(b?.busy||b?.pending||b?.relocation||this.relocations.size),location:b?Object.freeze({...b.location}):undefined,byteHash:b?.baseline.nativeHash});}
   private notice = '';
   private candidates = new Set<string>();
   private relocations = new Map<string, { request: VaultRelocation; work?: Promise<unknown>; bindings: Array<{ id: string; baseline: Baseline; location: DocumentLocation }> }>();
@@ -42,10 +45,10 @@ export class NativeDocumentSession {
       }
       this.touch();
     });
-    ownNativeSession(editor.repository, () => { this.disposed = true; stop(); window.removeEventListener('beforeunload', warn); });
+    ownNativeSession(editor.repository, () => { this.disposed = true;this.notifyKnowledge();this.knowledgeListeners.clear(); stop(); window.removeEventListener('beforeunload', warn); });
   }
   private touch() { this.changed[1](v => v + 1); }
-  private touchStorage() { this.storageChanged[1](v => v + 1); }
+  private touchStorage() { this.storageChanged[1](v => v + 1);this.notifyKnowledge(); }
   status(id?: string) { this.changed[0](); const b = id && this.bindings.get(id); return b ? b.message : this.notice || 'Native Documents save individually; Workspace saving remains guarded.'; }
   location(id?: string) { this.storageChanged[0](); const b = id && this.bindings.get(id); return b ? { ...b.location } : undefined; }
   trackCandidate(id: string) {
@@ -94,6 +97,9 @@ export class NativeDocumentSession {
     return [...this.relocations].filter(([,value]) => value.request.vault === vault).map(([operationId]) => operationId);
   }
   async recoverRelocation(operationId: string) {
+    this.opening++;this.notifyKnowledge();try{return await this.recoverRelocationWork(operationId);}finally{this.opening--;this.notifyKnowledge();}
+  }
+  private async recoverRelocationWork(operationId:string){
     if (!this.relocations.has(operationId)) {
       const result=await request('vault/recover',{operationId});
       this.notice=result.phase==='relocated'?'Relocation recovered. Explicitly Open the destination; existing bindings were not adopted.':`Relocation pending: ${result.error??'Review required'}`;
@@ -154,6 +160,9 @@ export class NativeDocumentSession {
     if(banks.length!==1)throw new Error('Native Open requires one existing workspace object bank');return banks[0].key;
   }
   async open(location: DocumentLocation, importText = false) {
+    this.opening++;this.notifyKnowledge();try{return await this.openResource(location,importText);}finally{this.opening--;this.notifyKnowledge();}
+  }
+  private async openResource(location: DocumentLocation, importText: boolean) {
     const data = await request('open',{location}); if(this.disposed)throw new Error('Document session closed');
     if(data.kind === 'markdown') {
       if(!importText)throw new Error('Choose Import Markdown to create a new native candidate');
@@ -186,7 +195,7 @@ export class NativeDocumentSession {
     };
     binding.pair=enrollPair(this.editor.repository,id,{
       save: async generation => {
-        binding.pending=generation as PairGeneration;
+        binding.pending=generation as PairGeneration;this.notifyKnowledge();
         try { const data=await request('save',{location:binding.location,generation,baseline:binding.baseline,dependencies:this.dependencies(id),acceptMarkdownHash:binding.comparedHash});
           const r=complete(data);if(r.phase==='failed'&&!r.generation)binding.pending=undefined;return r;
         }catch(error){if((error as any).preflight){binding.pending=undefined;return {phase:'failed',error:String(error)};}return {phase:'failed',generation:generation.generation,error:`Save outcome unknown or rejected: ${String(error)}. Use Retry / Recover.`};}
@@ -204,13 +213,13 @@ export class NativeDocumentSession {
     const b=this.bindings.get(id);if(!b)throw new Error('Choose a native Save destination first');
     if(b.relocationWork)await b.relocationWork;
     if(b.relocation)throw new Error('Recover pending relocation before Save');
-    if(b.busy)return;b.busy=true;b.message=recovery?'Recovering captured generation…':'Saving native Document and Markdown…';this.touch();
+    if(b.busy)return;b.busy=true;b.message=recovery?'Recovering captured generation…':'Saving native Document and Markdown…';this.notifyKnowledge();this.touch();
     try {const r=await (recovery?b.pair.recover():b.pair.save(b.comparedHash));
       const labels={saved:'Saved native Document and Markdown',failed:'Save blocked','canonical-saved-markdown-pending':'Canonical saved; Markdown pending','confirmation-pending':'Confirmation pending'};
       b.message=labels[r.phase]+(r.dirty?' — newer/unsaved edits remain':'')+(r.error?`: ${r.error}`:'');
       if(r.phase==='saved')b.comparedHash=undefined;
       return r;
-    }finally{b.busy=false;this.touch();}
+    }finally{b.busy=false;this.notifyKnowledge();this.touch();}
   }
   async save(id: string, location?: DocumentLocation) {
     if(this.editor.blockHistory.state.storage==='persistent')throw new Error('Native pair integration does not migrate persistent History enrollment');
@@ -224,6 +233,9 @@ export class NativeDocumentSession {
     return this.operate(id,false);
   }
   async recover(id: string | undefined, location: DocumentLocation) {
+    this.opening++;this.notifyKnowledge();try{return await this.recoverWork(id,location);}finally{this.opening--;this.notifyKnowledge();}
+  }
+  private async recoverWork(id:string|undefined,location:DocumentLocation){
     if(id&&this.bindings.get(id)?.pending)return this.operate(id,true);
     const data=await request('open',{location});if(data.kind!=='native'||!data.pending)throw new Error('No pending generation at this location');
     const result=await request('recover',{location,resourceId:data.resourceId,generation:data.pending.generation,dependencies:this.dependencies(data.resourceId),baseline:data.baseline});

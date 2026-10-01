@@ -1,0 +1,14 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/knowledge/session.test.ts (36 tests) 4087ms
+   ✓ repeated editing and cleanup retains one current generation; repository replacement owns fresh evidence 430ms
+ ✓ src/knowledge/live-observer.test.ts (18 tests) 1875ms
+ ✓ src/application/native-knowledge-scope.test.ts (1 test) 188ms
+ ✓ src/application/document-vault.test.ts (3 tests) 5ms
+
+ Test Files  4 passed (4)
+      Tests  58 passed (58)
+   Start at  18:01:31
+   Duration  8.62s (transform 477ms, setup 0ms, collect 888ms, tests 6.16s, environment 1.04s, prepare 124ms)
+

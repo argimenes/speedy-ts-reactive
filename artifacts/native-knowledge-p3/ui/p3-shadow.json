@@ -1,0 +1,167 @@
+{
+  "checkResult": {
+    "one": 1,
+    "two": 1,
+    "coverage": {
+      "complete": true,
+      "resources": [
+        {
+          "id": "f9e7c6f3-95ff-467c-a12e-83bf3ae7f041",
+          "state": "live-ready"
+        },
+        {
+          "id": "15c726e9-34aa-4ed9-9418-6ef275aaa0eb",
+          "state": "live-ready"
+        }
+      ],
+      "retainedBytes": 11816
+    },
+    "metrics": {
+      "invalidations": 9,
+      "invalidationMs": 0.09999999403953552,
+      "maxInvalidationMs": 0.09999999403953552,
+      "boundaryMs": 1.4999999701976776,
+      "observationMs": 1.600000023841858,
+      "indexingMs": 0.8000000417232513,
+      "cleanupMs": 0.19999998807907104,
+      "savedMs": 0,
+      "queryMs": 0.19999998807907104,
+      "observations": 14,
+      "savedReads": 0,
+      "maxObservationSliceMs": 0.5
+    }
+  },
+  "closeOne": {
+    "facts": 2,
+    "bytes": 11816
+  },
+  "typing": [
+    {
+      "round": 0,
+      "enabled": false,
+      "medianMs": 0.4000000059604645,
+      "maxMs": 1.9000000059604645,
+      "deferredMs": 0.10000002384185791
+    },
+    {
+      "round": 0,
+      "enabled": true,
+      "medianMs": 0.4000000059604645,
+      "maxMs": 1.800000011920929,
+      "deferredMs": 1.5,
+      "sync": {
+        "invalidations": 96,
+        "invalidationMs": 0.10000002384185791,
+        "maxInvalidationMs": 0.10000002384185791,
+        "boundaryMs": 0.09999999403953552,
+        "observationMs": 0.09999999403953552,
+        "indexingMs": 0.09999999403953552,
+        "cleanupMs": 0,
+        "savedMs": 0,
+        "queryMs": 0,
+        "observations": 2,
+        "savedReads": 0,
+        "maxObservationSliceMs": 0
+      },
+      "after": {
+        "invalidations": 96,
+        "invalidationMs": 0.10000002384185791,
+        "maxInvalidationMs": 0.10000002384185791,
+        "boundaryMs": 0.29999998211860657,
+        "observationMs": 0.20000001788139343,
+        "indexingMs": 0.09999999403953552,
+        "cleanupMs": 0.19999998807907104,
+        "savedMs": 0,
+        "queryMs": 0,
+        "observations": 4,
+        "savedReads": 0,
+        "maxObservationSliceMs": 0
+      }
+    },
+    {
+      "round": 1,
+      "enabled": true,
+      "medianMs": 0.4000000059604645,
+      "maxMs": 2.2000000178813934,
+      "deferredMs": 2.2000000178813934,
+      "sync": {
+        "invalidations": 96,
+        "invalidationMs": 0.4999999701976776,
+        "maxInvalidationMs": 0.09999999403953552,
+        "boundaryMs": 0.09999999403953552,
+        "observationMs": 0,
+        "indexingMs": 0,
+        "cleanupMs": 0,
+        "savedMs": 0,
+        "queryMs": 0,
+        "observations": 2,
+        "savedReads": 0,
+        "maxObservationSliceMs": 0
+      },
+      "after": {
+        "invalidations": 96,
+        "invalidationMs": 0.4999999701976776,
+        "maxInvalidationMs": 0.09999999403953552,
+        "boundaryMs": 0.19999998807907104,
+        "observationMs": 0.20000001788139343,
+        "indexingMs": 0,
+        "cleanupMs": 0.30000001192092896,
+        "savedMs": 0,
+        "queryMs": 0,
+        "observations": 4,
+        "savedReads": 0,
+        "maxObservationSliceMs": 0.09999999403953552
+      }
+    },
+    {
+      "round": 1,
+      "enabled": false,
+      "medianMs": 0.5,
+      "maxMs": 0.7000000178813934,
+      "deferredMs": 0
+    },
+    {
+      "round": 2,
+      "enabled": false,
+      "medianMs": 0.30000001192092896,
+      "maxMs": 0.5,
+      "deferredMs": 0
+    },
+    {
+      "round": 2,
+      "enabled": true,
+      "medianMs": 0.3999999761581421,
+      "maxMs": 0.5,
+      "deferredMs": 3,
+      "sync": {
+        "invalidations": 96,
+        "invalidationMs": 0,
+        "maxInvalidationMs": 0,
+        "boundaryMs": 0.09999999403953552,
+        "observationMs": 0.09999999403953552,
+        "indexingMs": 0.09999999403953552,
+        "cleanupMs": 0,
+        "savedMs": 0,
+        "queryMs": 0,
+        "observations": 2,
+        "savedReads": 0,
+        "maxObservationSliceMs": 0.09999999403953552
+      },
+      "after": {
+        "invalidations": 96,
+        "invalidationMs": 0,
+        "maxInvalidationMs": 0,
+        "boundaryMs": 0.19999998807907104,
+        "observationMs": 0.19999998807907104,
+        "indexingMs": 0.20000001788139343,
+        "cleanupMs": 0.5,
+        "savedMs": 0,
+        "queryMs": 0,
+        "observations": 4,
+        "savedReads": 0,
+        "maxObservationSliceMs": 0.09999999403953552
+      }
+    }
+  ],
+  "released": 0
+}

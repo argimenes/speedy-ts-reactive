@@ -1,0 +1,307 @@
+{
+  "inputs": {
+    "count": 150,
+    "fixtureMs": 7137.300000011921,
+    "results": [
+      {
+        "round": 0,
+        "mode": "none",
+        "enabled": false,
+        "constructionMs": 22018.5,
+        "medianMs": 0.5999999940395355,
+        "maxMs": 3.800000011920929,
+        "queryMs": 0
+      },
+      {
+        "round": 0,
+        "mode": "none",
+        "enabled": true,
+        "constructionMs": 20215.70000001788,
+        "medianMs": 0.5,
+        "maxMs": 5.699999988079071,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 0.7999999821186066,
+          "maxInvalidationMs": 0.10000002384185791,
+          "boundaryMs": 356.7000003159046,
+          "observationMs": 78.5999998152256,
+          "indexingMs": 87.7999999821186,
+          "cleanupMs": 0.29999998211860657,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 1.0999999940395355
+        },
+        "queryMs": 0
+      },
+      {
+        "round": 0,
+        "mode": "search",
+        "enabled": false,
+        "constructionMs": 19807.59999999404,
+        "medianMs": 0.5,
+        "maxMs": 6.800000011920929,
+        "queryMs": 0
+      },
+      {
+        "round": 0,
+        "mode": "search",
+        "enabled": true,
+        "constructionMs": 20060.19999998808,
+        "medianMs": 0.5999999940395355,
+        "maxMs": 5.4000000059604645,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 2.0000000298023224,
+          "maxInvalidationMs": 1.2000000178813934,
+          "boundaryMs": 403.0999997854233,
+          "observationMs": 103.50000014901161,
+          "indexingMs": 86.80000016093254,
+          "cleanupMs": 0.30000001192092896,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 0.9000000059604645
+        },
+        "queryMs": 10.199999988079071
+      },
+      {
+        "round": 0,
+        "mode": "backlinks",
+        "enabled": false,
+        "constructionMs": 18978.40000000596,
+        "medianMs": 0.5,
+        "maxMs": 3.9000000059604645,
+        "queryMs": 0
+      },
+      {
+        "round": 0,
+        "mode": "backlinks",
+        "enabled": true,
+        "constructionMs": 19653.69999998808,
+        "medianMs": 0.5,
+        "maxMs": 3.4000000059604645,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 1,
+          "maxInvalidationMs": 0.699999988079071,
+          "boundaryMs": 346.3999999463558,
+          "observationMs": 72.20000010728836,
+          "indexingMs": 84.8000001013279,
+          "cleanupMs": 0.19999998807907104,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 0.800000011920929
+        },
+        "queryMs": 1.5
+      },
+      {
+        "round": 1,
+        "mode": "none",
+        "enabled": true,
+        "constructionMs": 19150.90000000596,
+        "medianMs": 0.5,
+        "maxMs": 4.199999988079071,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 0.6999999582767487,
+          "maxInvalidationMs": 0.09999999403953552,
+          "boundaryMs": 289.6000000536442,
+          "observationMs": 60.29999974370003,
+          "indexingMs": 84.8000001013279,
+          "cleanupMs": 0.20000001788139343,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 0.20000001788139343
+        },
+        "queryMs": 0
+      },
+      {
+        "round": 1,
+        "mode": "none",
+        "enabled": false,
+        "constructionMs": 18592.30000001192,
+        "medianMs": 0.5,
+        "maxMs": 3.600000023841858,
+        "queryMs": 0
+      },
+      {
+        "round": 1,
+        "mode": "search",
+        "enabled": true,
+        "constructionMs": 18808.90000000596,
+        "medianMs": 0.5,
+        "maxMs": 4.9000000059604645,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 1.2000000178813934,
+          "maxInvalidationMs": 0.6000000238418579,
+          "boundaryMs": 333.3999999463558,
+          "observationMs": 66.00000017881393,
+          "indexingMs": 86.79999992251396,
+          "cleanupMs": 0.19999998807907104,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 0.20000001788139343
+        },
+        "queryMs": 0.10000002384185791
+      },
+      {
+        "round": 1,
+        "mode": "search",
+        "enabled": false,
+        "constructionMs": 19645.59999999404,
+        "medianMs": 0.5,
+        "maxMs": 4,
+        "queryMs": 0
+      },
+      {
+        "round": 1,
+        "mode": "backlinks",
+        "enabled": true,
+        "constructionMs": 19684,
+        "medianMs": 0.5,
+        "maxMs": 4.5999999940395355,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 17.200000017881393,
+          "maxInvalidationMs": 16.30000001192093,
+          "boundaryMs": 359.3999999165535,
+          "observationMs": 85.09999969601631,
+          "indexingMs": 88.00000023841858,
+          "cleanupMs": 0.6000000238418579,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 0.5
+        },
+        "queryMs": 0.6000000238418579
+      },
+      {
+        "round": 1,
+        "mode": "backlinks",
+        "enabled": false,
+        "constructionMs": 19663.5,
+        "medianMs": 0.5,
+        "maxMs": 5.199999988079071,
+        "queryMs": 0
+      },
+      {
+        "round": 2,
+        "mode": "none",
+        "enabled": false,
+        "constructionMs": 19018.5,
+        "medianMs": 0.5,
+        "maxMs": 5.5999999940395355,
+        "queryMs": 0
+      },
+      {
+        "round": 2,
+        "mode": "none",
+        "enabled": true,
+        "constructionMs": 19070.59999999404,
+        "medianMs": 0.5,
+        "maxMs": 3.300000011920929,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 1.7000000178813934,
+          "maxInvalidationMs": 1.2000000178813934,
+          "boundaryMs": 327,
+          "observationMs": 69.00000002980232,
+          "indexingMs": 82.90000003576279,
+          "cleanupMs": 0.19999998807907104,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 0.30000001192092896
+        },
+        "queryMs": 0
+      },
+      {
+        "round": 2,
+        "mode": "search",
+        "enabled": false,
+        "constructionMs": 18450,
+        "medianMs": 0.5,
+        "maxMs": 5.9000000059604645,
+        "queryMs": 0
+      },
+      {
+        "round": 2,
+        "mode": "search",
+        "enabled": true,
+        "constructionMs": 18849.20000001788,
+        "medianMs": 0.5,
+        "maxMs": 3.5,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 0.4000000059604645,
+          "maxInvalidationMs": 0.10000002384185791,
+          "boundaryMs": 313.2000001370907,
+          "observationMs": 62.69999995827675,
+          "indexingMs": 84.2999999821186,
+          "cleanupMs": 0.19999998807907104,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 0.4000000059604645
+        },
+        "queryMs": 0.5
+      },
+      {
+        "round": 2,
+        "mode": "backlinks",
+        "enabled": false,
+        "constructionMs": 18913.90000000596,
+        "medianMs": 0.5,
+        "maxMs": 4.0999999940395355,
+        "queryMs": 0
+      },
+      {
+        "round": 2,
+        "mode": "backlinks",
+        "enabled": true,
+        "constructionMs": 19383.59999999404,
+        "medianMs": 0.5,
+        "maxMs": 4.4000000059604645,
+        "metrics": {
+          "invalidations": 301,
+          "invalidationMs": 2.5000000298023224,
+          "maxInvalidationMs": 1.699999988079071,
+          "boundaryMs": 315.2000001370907,
+          "observationMs": 66.10000026226044,
+          "indexingMs": 82.59999969601631,
+          "cleanupMs": 0.5000000298023224,
+          "savedMs": 0,
+          "queryMs": 0,
+          "observations": 150,
+          "savedReads": 0,
+          "maxObservationSliceMs": 1.0999999940395355
+        },
+        "queryMs": 0.5
+      }
+    ]
+  },
+  "budget": {
+    "requested": 10000,
+    "published": 2563,
+    "reason": "Error: Knowledge retained-Facts memory budget exceeded",
+    "budget": 268435456,
+    "retainedBytes": 268341660,
+    "elapsedMs": 1643.300000011921,
+    "cleanupMs": 9.5,
+    "released": 0,
+    "providerTasks": []
+  }
+}

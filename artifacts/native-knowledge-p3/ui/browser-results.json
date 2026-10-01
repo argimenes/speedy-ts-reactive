@@ -1,0 +1,24 @@
+{
+  "passed": 18,
+  "checks": [
+    "native reference in a different real directory produces one backlink",
+    "pair/folder relocation and title changes refresh labels while preserving reference identity",
+    "source remains loaded without a mounted occurrence",
+    "canonical search finds the unmounted source without mounting it",
+    "P3 two Window leases share two canonical live contributions",
+    "backlink follows source mention in invoking Window without moving the other Window",
+    "backlink query/navigation creates no canonical mutation or History event",
+    "reference removal and Undo/Redo update the other Window backlinks",
+    "Refresh reconstructs external directory changes without a hierarchy catalog",
+    "closing one panel leaves the other consumer active",
+    "P3 shadow native backlink agrees in both consumers",
+    "P3 second query lease agrees",
+    "P3 independent query close retains both canonical resources",
+    "P3 shadow cleanup releases every contribution",
+    "fresh reopen reports unopened sources rather than claiming complete absence",
+    "reopened source retains native title/tags and the new physical binding",
+    "native files rebuild the same backlink after restart with keyboard activation and source focus",
+    "no uncaught browser exceptions"
+  ],
+  "errors": []
+}

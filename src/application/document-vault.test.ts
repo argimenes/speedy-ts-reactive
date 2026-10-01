@@ -14,3 +14,8 @@ it('does not admit an aborted discovery and confines client paths before any req
  const native={discoverVault:vi.fn(async(root:string)=>scan(root))};const vaults=createDocumentVaults(native as unknown as NativeDocumentSession),c=new AbortController();c.abort();await expect(vaults.acquire('vault',c.signal)).rejects.toMatchObject({name:'AbortError'});expect(native.discoverVault).not.toHaveBeenCalled();
  for(const value of ['/tmp','../vault','vault/../x','vault\\x'])expect(()=>vaultRoot(value)).toThrow();vaults.dispose();
 });
+it('publishes uncertainty on failed refresh and notifies closure without replacing known rows with absence',async()=>{
+ const initial={...scan('vault'),documents:[{resourceId:'a',location:{folder:'vault',filename:'a.mutable.json'},state:'paired'}]};
+ const native={discoverVault:vi.fn(async()=>initial)};const vaults=createDocumentVaults(native as unknown as NativeDocumentSession),lease=await vaults.acquire('vault'),listener=vi.fn();lease.subscribe(listener);
+ native.discoverVault.mockRejectedValue(Error('worker cancelled'));await expect(lease.refresh()).rejects.toThrow();expect(lease.snapshot().complete).toBe(false);expect(lease.snapshot().documents).toEqual(initial.documents);expect(listener).toHaveBeenCalledTimes(1);lease.release();expect(listener).toHaveBeenCalledTimes(2);expect(lease.isAlive()).toBe(false);vaults.dispose();
+});

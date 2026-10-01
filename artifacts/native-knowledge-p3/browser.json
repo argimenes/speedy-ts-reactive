@@ -1,0 +1,3548 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "method": "Vite browser; real canonical repository + TreeCommands. Search is prepared Facts input; backlinks actual ephemeral lookup. Actual mounted Flint Windows/panels covered in separate UI shadow gate.",
+  "resources": [
+    {
+      "count": 1,
+      "base": {
+        "usedSize": 3084860,
+        "totalSize": 4194304,
+        "embedderHeapUsedSize": 435488,
+        "backingStorageSize": 2612680
+      },
+      "setup": {
+        "constructionMs": 75.09999999403954
+      },
+      "repository": {
+        "usedSize": 4114672,
+        "totalSize": 4980736,
+        "embedderHeapUsedSize": 435488,
+        "backingStorageSize": 2612692
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 7.299999982118607,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 2.7000000178813934,
+            "observationMs": 2.0999999940395355,
+            "indexingMs": 1.199999988079071,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5999999940395355
+          },
+          "coverage": {
+            "complete": true,
+            "resources": [
+              {
+                "id": "resource-0",
+                "state": "live-ready"
+              }
+            ],
+            "retainedBytes": 104696
+          },
+          "facts": 1
+        },
+        "elapsedMs": 38.099999994039536,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.700000017881393,
+        "maxFrameGapMs": 16.700000000000045,
+        "frames": 3
+      },
+      "retained": {
+        "usedSize": 4314712,
+        "totalSize": 4980736,
+        "embedderHeapUsedSize": 434192,
+        "backingStorageSize": 2612719
+      },
+      "inputs": [
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.6000000238418579,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.7000000178813934,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 2,
+            "observationMs": 0.800000011920929,
+            "indexingMs": 0.9000000059604645,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 3.300000011920929,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 3.899999976158142,
+            "observationMs": 1.300000011920929,
+            "indexingMs": 1.600000023841858,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 2.5999999940395355,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.9000000059604645,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000004172325134,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 1.4000000059604645,
+            "observationMs": 0.5999999940395355,
+            "indexingMs": 0.800000011920929,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 2.9000000059604645,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 1,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000004172325134,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 2.7999999821186066,
+            "observationMs": 0.9999999701976776,
+            "indexingMs": 1.5000000298023224,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.7000000178813934,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 0.7999999821186066,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.20000004768371582,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 1.5,
+            "observationMs": 0.800000011920929,
+            "indexingMs": 0.5999999940395355,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          },
+          "refreshMs": 2.5999999940395355,
+          "queryMs": 0.19999998807907104,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.20000004768371582,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 2.899999976158142,
+            "observationMs": 1.2000000178813934,
+            "indexingMs": 1.199999988079071,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          }
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 0.699999988079071,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 1.5999999940395355,
+            "observationMs": 0.4000000059604645,
+            "indexingMs": 0.699999988079071,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.10000002384185791
+          },
+          "refreshMs": 13,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 7.4000000059604645,
+            "observationMs": 1.0999999940395355,
+            "indexingMs": 1.2999999821186066,
+            "cleanupMs": 0.10000002384185791,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 0.9000000059604645,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 1,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 1.4000000059604645,
+            "observationMs": 0.5999999940395355,
+            "indexingMs": 0.6000000238418579,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          },
+          "refreshMs": 2.7000000178813934,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 1,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 2.9000000059604645,
+            "observationMs": 0.9999999701976776,
+            "indexingMs": 1.2000000476837158,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 1,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.699999988079071,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 1.4000000059604645,
+            "observationMs": 0.5,
+            "indexingMs": 0.5999999940395355,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.10000002384185791
+          },
+          "refreshMs": 2.5,
+          "queryMs": 0,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 2.699999988079071,
+            "observationMs": 1,
+            "indexingMs": 1.2000000178813934,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.7999999821186066,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.5,
+          "maxMs": 5.699999988079071,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.9000000059604645,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.10000002384185791,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 1.4000000059604645,
+            "observationMs": 0.7000000178813934,
+            "indexingMs": 0.5,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 2.5,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.10000002384185791,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 2.7000000178813934,
+            "observationMs": 1.2000000178813934,
+            "indexingMs": 1.0999999940395355,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.9000000059604645,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 1.5,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 1.2999999821186066,
+            "observationMs": 0.5,
+            "indexingMs": 0.5,
+            "cleanupMs": 0.10000002384185791,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.10000002384185791
+          },
+          "refreshMs": 2.699999988079071,
+          "queryMs": 0,
+          "resultCount": 1,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 2.699999988079071,
+            "observationMs": 0.9000000059604645,
+            "indexingMs": 1.199999988079071,
+            "cleanupMs": 0.10000002384185791,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.10000002384185791
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 1.100000023841858,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.5,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 1.5,
+            "observationMs": 0.5,
+            "indexingMs": 0.5999999940395355,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.10000002384185791
+          },
+          "refreshMs": 2.9000000059604645,
+          "queryMs": 0,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 2.9000000059604645,
+            "observationMs": 0.9000000059604645,
+            "indexingMs": 1.199999988079071,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          }
+        }
+      ],
+      "sharing": {
+        "facts": 1,
+        "additionalObservation": 0
+      },
+      "churn": {
+        "result": {
+          "retainedBytes": 104694,
+          "maxRetainedBytes": 104694,
+          "metrics": {
+            "invalidations": 151,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 22.800000071525574,
+            "observationMs": 7,
+            "indexingMs": 9.800000011920929,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 17,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        "elapsedMs": 72.30000001192093,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.699999988079071,
+        "maxFrameGapMs": 16.700000000000045,
+        "frames": 6
+      },
+      "release": {
+        "usedSize": 16535700,
+        "totalSize": 18350080,
+        "embedderHeapUsedSize": 684920,
+        "backingStorageSize": 2700739
+      },
+      "disposed": {
+        "usedSize": 3858012,
+        "totalSize": 5767168,
+        "embedderHeapUsedSize": 435360,
+        "backingStorageSize": 2612719
+      }
+    },
+    {
+      "count": 10,
+      "base": {
+        "usedSize": 3858012,
+        "totalSize": 4456448,
+        "embedderHeapUsedSize": 435360,
+        "backingStorageSize": 2612719
+      },
+      "setup": {
+        "constructionMs": 706.0999999940395
+      },
+      "repository": {
+        "usedSize": 13087632,
+        "totalSize": 14417920,
+        "embedderHeapUsedSize": 435360,
+        "backingStorageSize": 2612719
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 44.30000001192093,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 27.899999976158142,
+            "observationMs": 8.300000101327896,
+            "indexingMs": 7.099999934434891,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "coverage": {
+            "complete": true,
+            "resources": [
+              {
+                "id": "resource-0",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-1",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-2",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-3",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-4",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-5",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-6",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-7",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-8",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-9",
+                "state": "live-ready"
+              }
+            ],
+            "retainedBytes": 1046960
+          },
+          "facts": 10
+        },
+        "elapsedMs": 75.19999998807907,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.700000017881393,
+        "maxFrameGapMs": 16.700000000000273,
+        "frames": 6
+      },
+      "retained": {
+        "usedSize": 12196200,
+        "totalSize": 13107200,
+        "embedderHeapUsedSize": 682680,
+        "backingStorageSize": 2612719
+      },
+      "inputs": [
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.9000000059604645,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.800000011920929,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.5,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 23.199999928474426,
+            "observationMs": 8.500000029802322,
+            "indexingMs": 6.9000000059604645,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "refreshMs": 27.799999982118607,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.5,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 39.99999997019768,
+            "observationMs": 13.400000035762787,
+            "indexingMs": 12.399999976158142,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 3,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.7000000178813934,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.4000000059604645,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 17.400000005960464,
+            "observationMs": 6.899999976158142,
+            "indexingMs": 5.5999999940395355,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 27,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 10,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.4000000059604645,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 33.30000001192093,
+            "observationMs": 11.799999982118607,
+            "indexingMs": 11,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.8999999761581421,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.800000011920929,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 14.199999988079071,
+            "observationMs": 4.400000035762787,
+            "indexingMs": 5.399999976158142,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 24.899999976158142,
+          "queryMs": 0.10000002384185791,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 28.500000029802322,
+            "observationMs": 9.200000017881393,
+            "indexingMs": 10.699999958276749,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0.10000002384185791,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.5999999940395355,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 13.400000005960464,
+            "observationMs": 3.9999999701976776,
+            "indexingMs": 5.4000000059604645,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          },
+          "refreshMs": 25.900000005960464,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 28.10000005364418,
+            "observationMs": 8.799999922513962,
+            "indexingMs": 11.000000029802322,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.7000000178813934,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.9000000059604645,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 13.399999976158142,
+            "observationMs": 4.200000047683716,
+            "indexingMs": 5.4000000059604645,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 22.399999976158142,
+          "queryMs": 0,
+          "resultCount": 10,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 26.30000001192093,
+            "observationMs": 8.200000017881393,
+            "indexingMs": 10.799999982118607,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.9000000059604645,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 1,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 13.700000047683716,
+            "observationMs": 4.199999958276749,
+            "indexingMs": 5.9000000059604645,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.19999998807907104
+          },
+          "refreshMs": 24.100000023841858,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 27.400000035762787,
+            "observationMs": 8.500000029802322,
+            "indexingMs": 11.599999964237213,
+            "cleanupMs": 0.20000001788139343,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.9000000059604645,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 0.9000000059604645,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 1,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 17.099999994039536,
+            "observationMs": 5.9000000059604645,
+            "indexingMs": 5.600000023841858,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 23.899999976158142,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 30.700000017881393,
+            "observationMs": 9.999999970197678,
+            "indexingMs": 10.700000017881393,
+            "cleanupMs": 0.29999998211860657,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 0.5999999940395355,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.30000001192092896,
+          "maxMs": 0.699999988079071,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 12.899999976158142,
+            "observationMs": 4.200000017881393,
+            "indexingMs": 5.5999999940395355,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 23.900000005960464,
+          "queryMs": 0,
+          "resultCount": 10,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 26.69999998807907,
+            "observationMs": 7.900000035762787,
+            "indexingMs": 10.999999970197678,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 0.800000011920929,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.3999999761581421,
+          "maxMs": 0.7999999821186066,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 13.5,
+            "observationMs": 4.5,
+            "indexingMs": 6.199999988079071,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 22.80000001192093,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 26.400000035762787,
+            "observationMs": 8.499999940395355,
+            "indexingMs": 11.700000047683716,
+            "cleanupMs": 0.19999998807907104,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        }
+      ],
+      "sharing": {
+        "facts": 10,
+        "additionalObservation": 0
+      },
+      "churn": {
+        "result": {
+          "retainedBytes": 1046958,
+          "maxRetainedBytes": 1046958,
+          "metrics": {
+            "invalidations": 151,
+            "invalidationMs": 0.20000001788139343,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 236.00000008940697,
+            "observationMs": 76.09999963641167,
+            "indexingMs": 96.20000013709068,
+            "cleanupMs": 1.9000000655651093,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 170,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        "elapsedMs": 404.69999998807907,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 6,
+        "maxFrameGapMs": 16.700000000000728,
+        "frames": 25
+      },
+      "release": {
+        "usedSize": 24149288,
+        "totalSize": 25919488,
+        "embedderHeapUsedSize": 667424,
+        "backingStorageSize": 2700739
+      },
+      "disposed": {
+        "usedSize": 3950772,
+        "totalSize": 5505024,
+        "embedderHeapUsedSize": 447360,
+        "backingStorageSize": 2612719
+      }
+    },
+    {
+      "count": 100,
+      "base": {
+        "usedSize": 3950772,
+        "totalSize": 4718592,
+        "embedderHeapUsedSize": 447360,
+        "backingStorageSize": 2612719
+      },
+      "setup": {
+        "constructionMs": 14327.59999999404
+      },
+      "repository": {
+        "usedSize": 93754016,
+        "totalSize": 107544576,
+        "embedderHeapUsedSize": 447128,
+        "backingStorageSize": 2612719
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 399.59999999403954,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 268.4999998807907,
+            "observationMs": 67.00000011920929,
+            "indexingMs": 60.199999928474426,
+            "cleanupMs": 0.5000000298023224,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "coverage": {
+            "complete": true,
+            "resources": [
+              {
+                "id": "resource-0",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-1",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-2",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-3",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-4",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-5",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-6",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-7",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-8",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-9",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-10",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-11",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-12",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-13",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-14",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-15",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-16",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-17",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-18",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-19",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-20",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-21",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-22",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-23",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-24",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-25",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-26",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-27",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-28",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-29",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-30",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-31",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-32",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-33",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-34",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-35",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-36",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-37",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-38",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-39",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-40",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-41",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-42",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-43",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-44",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-45",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-46",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-47",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-48",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-49",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-50",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-51",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-52",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-53",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-54",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-55",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-56",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-57",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-58",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-59",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-60",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-61",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-62",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-63",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-64",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-65",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-66",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-67",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-68",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-69",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-70",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-71",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-72",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-73",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-74",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-75",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-76",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-77",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-78",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-79",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-80",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-81",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-82",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-83",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-84",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-85",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-86",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-87",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-88",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-89",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-90",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-91",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-92",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-93",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-94",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-95",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-96",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-97",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-98",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-99",
+                "state": "live-ready"
+              }
+            ],
+            "retainedBytes": 10506280
+          },
+          "facts": 100
+        },
+        "elapsedMs": 430.59999999403954,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.9000000059604645,
+        "maxFrameGapMs": 16.700000000000728,
+        "frames": 27
+      },
+      "retained": {
+        "usedSize": 84720828,
+        "totalSize": 91553792,
+        "embedderHeapUsedSize": 711648,
+        "backingStorageSize": 2612719
+      },
+      "inputs": [
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.5999999940395355,
+          "maxMs": 9.099999994039536,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.6000000238418579,
+          "maxMs": 1.2000000178813934,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 208.00000002980232,
+            "observationMs": 58.199999898672104,
+            "indexingMs": 60.000000059604645,
+            "cleanupMs": 0.19999998807907104,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "refreshMs": 350.09999999403954,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 423.80000004172325,
+            "observationMs": 125.09999996423721,
+            "indexingMs": 121.69999998807907,
+            "cleanupMs": 1.7999999821186066,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.800000011920929,
+          "maxMs": 2,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 5.4000000059604645,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 189.19999992847443,
+            "observationMs": 50.999999940395355,
+            "indexingMs": 57.900000125169754,
+            "cleanupMs": 0.20000001788139343,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "refreshMs": 300.69999998807907,
+          "queryMs": 0,
+          "resultCount": 100,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 377.39999997615814,
+            "observationMs": 101.79999995231628,
+            "indexingMs": 114.60000005364418,
+            "cleanupMs": 1.7000000476837158,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.5999999940395355,
+          "maxMs": 1.100000023841858,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.7999999821186066,
+          "maxMs": 1.2000000178813934,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 189.200000166893,
+            "observationMs": 49.399999886751175,
+            "indexingMs": 56.699999928474426,
+            "cleanupMs": 0.20000004768371582,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 301.7999999821186,
+          "queryMs": 0,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 379.90000009536743,
+            "observationMs": 100,
+            "indexingMs": 114.29999989271164,
+            "cleanupMs": 1.0999999940395355,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.9000000059604645,
+          "maxMs": 4.699999988079071,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.4000000059604645,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 196.00000017881393,
+            "observationMs": 53.800000071525574,
+            "indexingMs": 58.49999988079071,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "refreshMs": 310.7999999821186,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.4000000059604645,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 391.6000002026558,
+            "observationMs": 106.20000007748604,
+            "indexingMs": 117.69999974966049,
+            "cleanupMs": 0.5999999940395355,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.5,
+          "maxMs": 1,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.7000000178813934,
+          "maxMs": 1.5999999940395355,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.4999999701976776,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 197.90000000596046,
+            "observationMs": 54.79999992251396,
+            "indexingMs": 58.20000007748604,
+            "cleanupMs": 0.10000002384185791,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "refreshMs": 306.5,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 100,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.4999999701976776,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 392.0000000298023,
+            "observationMs": 105.89999985694885,
+            "indexingMs": 115.90000009536743,
+            "cleanupMs": 1.0999999940395355,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.9000000059604645,
+          "maxMs": 1.7000000178813934,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 1.0999999940395355,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.3999999761581421,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 187.80000001192093,
+            "observationMs": 49.400000154972076,
+            "indexingMs": 57.199999898672104,
+            "cleanupMs": 0.29999998211860657,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "refreshMs": 296.09999999403954,
+          "queryMs": 0,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.3999999761581421,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 374.7000001370907,
+            "observationMs": 98.00000020861626,
+            "indexingMs": 114.69999980926514,
+            "cleanupMs": 1.6999999284744263,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.5999999940395355,
+          "maxMs": 1.4000000059604645,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.800000011920929,
+          "maxMs": 1.5,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.4000000059604645,
+          "maxMs": 5.100000023841858,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 176.39999994635582,
+            "observationMs": 43.70000010728836,
+            "indexingMs": 56.39999994635582,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 286.7999999821186,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.29999998211860657,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 355.49999991059303,
+            "observationMs": 92.10000011324883,
+            "indexingMs": 112.59999993443489,
+            "cleanupMs": 0.30000001192092896,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.5999999940395355,
+          "maxMs": 1.300000011920929,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.7000000178813934,
+          "maxMs": 1.300000011920929,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 179.19999995827675,
+            "observationMs": 45.800000101327896,
+            "indexingMs": 55.80000001192093,
+            "cleanupMs": 0.3999999761581421,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.29999998211860657
+          },
+          "refreshMs": 406,
+          "queryMs": 0,
+          "resultCount": 100,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 417.80000016093254,
+            "observationMs": 99.6000000834465,
+            "indexingMs": 159.79999986290932,
+            "cleanupMs": 1,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.7999999821186066
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.800000011920929,
+          "maxMs": 3.5999999940395355,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.5,
+          "maxMs": 1.100000023841858,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 183.39999994635582,
+            "observationMs": 47.79999992251396,
+            "indexingMs": 57.400000154972076,
+            "cleanupMs": 0.10000002384185791,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "refreshMs": 297.5,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 370.8999998867512,
+            "observationMs": 98.99999994039536,
+            "indexingMs": 113.80000007152557,
+            "cleanupMs": 0.8000000715255737,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          }
+        }
+      ],
+      "sharing": {
+        "facts": 100,
+        "additionalObservation": 0
+      },
+      "churn": {
+        "result": {
+          "retainedBytes": 10506278,
+          "maxRetainedBytes": 10506278,
+          "metrics": {
+            "invalidations": 151,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 3155.299999654293,
+            "observationMs": 815.8999997973442,
+            "indexingMs": 965.2000004947186,
+            "cleanupMs": 17.400000125169754,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 1700,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          }
+        },
+        "elapsedMs": 4447.4000000059605,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 6,
+        "maxFrameGapMs": 16.80000000000291,
+        "frames": 268
+      },
+      "release": {
+        "usedSize": 96928964,
+        "totalSize": 102039552,
+        "embedderHeapUsedSize": 753296,
+        "backingStorageSize": 2700754
+      },
+      "disposed": {
+        "usedSize": 3984028,
+        "totalSize": 6291456,
+        "embedderHeapUsedSize": 524232,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "count": 150,
+      "base": {
+        "usedSize": 3984028,
+        "totalSize": 4718592,
+        "embedderHeapUsedSize": 524232,
+        "backingStorageSize": 2612734
+      },
+      "setup": {
+        "constructionMs": 30356.90000000596
+      },
+      "repository": {
+        "usedSize": 143611608,
+        "totalSize": 168886272,
+        "embedderHeapUsedSize": 524232,
+        "backingStorageSize": 2612734
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 535.0999999940395,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 348.00000005960464,
+            "observationMs": 83.80000013113022,
+            "indexingMs": 95.69999986886978,
+            "cleanupMs": 0.3999999761581421,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "coverage": {
+            "complete": true,
+            "resources": [
+              {
+                "id": "resource-0",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-1",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-2",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-3",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-4",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-5",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-6",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-7",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-8",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-9",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-10",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-11",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-12",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-13",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-14",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-15",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-16",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-17",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-18",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-19",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-20",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-21",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-22",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-23",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-24",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-25",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-26",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-27",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-28",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-29",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-30",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-31",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-32",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-33",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-34",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-35",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-36",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-37",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-38",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-39",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-40",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-41",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-42",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-43",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-44",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-45",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-46",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-47",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-48",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-49",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-50",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-51",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-52",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-53",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-54",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-55",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-56",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-57",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-58",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-59",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-60",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-61",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-62",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-63",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-64",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-65",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-66",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-67",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-68",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-69",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-70",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-71",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-72",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-73",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-74",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-75",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-76",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-77",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-78",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-79",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-80",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-81",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-82",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-83",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-84",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-85",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-86",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-87",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-88",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-89",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-90",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-91",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-92",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-93",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-94",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-95",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-96",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-97",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-98",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-99",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-100",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-101",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-102",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-103",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-104",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-105",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-106",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-107",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-108",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-109",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-110",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-111",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-112",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-113",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-114",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-115",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-116",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-117",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-118",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-119",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-120",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-121",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-122",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-123",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-124",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-125",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-126",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-127",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-128",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-129",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-130",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-131",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-132",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-133",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-134",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-135",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-136",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-137",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-138",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-139",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-140",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-141",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-142",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-143",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-144",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-145",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-146",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-147",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-148",
+                "state": "live-ready"
+              },
+              {
+                "id": "resource-149",
+                "state": "live-ready"
+              }
+            ],
+            "retainedBytes": 15781080
+          },
+          "facts": 150
+        },
+        "elapsedMs": 566.6999999880791,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.699999988079071,
+        "maxFrameGapMs": 16.799999999995634,
+        "frames": 34
+      },
+      "retained": {
+        "usedSize": 130080696,
+        "totalSize": 148176896,
+        "embedderHeapUsedSize": 459328,
+        "backingStorageSize": 2612734
+      },
+      "inputs": [
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.5,
+          "maxMs": 1.2000000178813934,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 0.5999999940395355,
+          "maxMs": 6.199999988079071,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 298.49999991059303,
+            "observationMs": 83.70000010728836,
+            "indexingMs": 101.59999978542328,
+            "cleanupMs": 0.8000000417232513,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5999999940395355
+          },
+          "refreshMs": 427.7000000178814,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.30000001192092896,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 556.6999998390675,
+            "observationMs": 154.0000002682209,
+            "indexingMs": 191.2999997138977,
+            "cleanupMs": 3.3999999463558197,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5999999940395355
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 0.5,
+          "maxMs": 1,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 0.699999988079071,
+          "maxMs": 1.5,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.4999999701976776,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 250.20000007748604,
+            "observationMs": 67.59999984502792,
+            "indexingMs": 86.60000011324883,
+            "cleanupMs": 0.20000001788139343,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 400.90000000596046,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 150,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.4999999701976776,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 496.8000000715256,
+            "observationMs": 130.49999976158142,
+            "indexingMs": 172.200000166893,
+            "cleanupMs": 1.5999999940395355,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 0,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.9000000059604645,
+          "maxMs": 1.5,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 0,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 1.199999988079071,
+          "maxMs": 3,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.699999988079071,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 268.69999998807907,
+            "observationMs": 74.89999994635582,
+            "indexingMs": 93.39999997615814,
+            "cleanupMs": 0.29999998211860657,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5
+          },
+          "refreshMs": 436.09999999403954,
+          "queryMs": 0.19999998807907104,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.699999988079071,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 531.8999999761581,
+            "observationMs": 151.19999977946281,
+            "indexingMs": 180.40000024437904,
+            "cleanupMs": 2.3999999463558197,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5
+          }
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 1.4000000059604645,
+          "maxMs": 3.5,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.9000000953674316,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 288.5,
+            "observationMs": 93,
+            "indexingMs": 98.49999982118607,
+            "cleanupMs": 0.7000000476837158,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5
+          },
+          "refreshMs": 447.80000001192093,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.9000000953674316,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 555.2000001370907,
+            "observationMs": 176.00000008940697,
+            "indexingMs": 188.19999966025352,
+            "cleanupMs": 2.1000000834465027,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 1.5,
+          "maxMs": 4.300000011920929,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 1.800000011920929,
+          "maxMs": 2.5,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.5999999940395355,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 245.50000008940697,
+            "observationMs": 65.90000033378601,
+            "indexingMs": 85.99999964237213,
+            "cleanupMs": 0.4999999701976776,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "refreshMs": 409.59999999403954,
+          "queryMs": 0,
+          "resultCount": 150,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.5999999940395355,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 497.80000019073486,
+            "observationMs": 131.0000002682209,
+            "indexingMs": 171.39999958872795,
+            "cleanupMs": 1.9999999701976776,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 2.0999999940395355,
+          "maxMs": 7.0999999940395355,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 1,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 0.5,
+          "maxMs": 1.2000000178813934,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 257.10000002384186,
+            "observationMs": 65.90000006556511,
+            "indexingMs": 87.19999992847443,
+            "cleanupMs": 0.30000001192092896,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.7999999821186066
+          },
+          "refreshMs": 406.2000000178814,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.19999998807907104,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 507.59999990463257,
+            "observationMs": 129.70000034570694,
+            "indexingMs": 173.799999833107,
+            "cleanupMs": 1.600000023841858,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.7999999821186066
+          }
+        },
+        {
+          "round": 1,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 0.699999988079071,
+          "maxMs": 1.2999999821186066,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "none",
+          "medianMs": 0.800000011920929,
+          "maxMs": 1.2000000178813934,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "none",
+          "medianMs": 1.0999999940395355,
+          "maxMs": 2.9000000059604645,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.3999999761581421,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 251.49999997019768,
+            "observationMs": 65.90000006556511,
+            "indexingMs": 86.30000007152557,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 417,
+          "queryMs": 0,
+          "resultCount": 0,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.3999999761581421,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 506.7000001370907,
+            "observationMs": 134.4000000655651,
+            "indexingMs": 173.10000002384186,
+            "cleanupMs": 1.8999999165534973,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "search",
+          "medianMs": 1.2999999821186066,
+          "maxMs": 2.100000023841858,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "search",
+          "medianMs": 1.5,
+          "maxMs": 2,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.5999999642372131,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 251.39999988675117,
+            "observationMs": 67.10000011324883,
+            "indexingMs": 86.09999999403954,
+            "cleanupMs": 0.4000000059604645,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.29999998211860657
+          },
+          "refreshMs": 400.7000000178814,
+          "queryMs": 0,
+          "resultCount": 150,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.5999999642372131,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 497.00000008940697,
+            "observationMs": 130.40000021457672,
+            "indexingMs": 170.8999997973442,
+            "cleanupMs": 2.1999999582767487,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          }
+        },
+        {
+          "round": 2,
+          "enabled": false,
+          "query": "backlinks",
+          "medianMs": 1.699999988079071,
+          "maxMs": 2.800000011920929,
+          "refreshMs": 0,
+          "queryMs": 0,
+          "resultCount": 0
+        },
+        {
+          "round": 2,
+          "enabled": true,
+          "query": "backlinks",
+          "medianMs": 2,
+          "maxMs": 3.2000000178813934,
+          "synchronous": {
+            "invalidations": 136,
+            "invalidationMs": 0.5,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 235.09999999403954,
+            "observationMs": 59.09999993443489,
+            "indexingMs": 84.70000013709068,
+            "cleanupMs": 0.29999998211860657,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.20000001788139343
+          },
+          "refreshMs": 423,
+          "queryMs": 0.09999999403953552,
+          "resultCount": 4,
+          "metrics": {
+            "invalidations": 136,
+            "invalidationMs": 0.5,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 489.60000002384186,
+            "observationMs": 135.6000000834465,
+            "indexingMs": 170.20000010728836,
+            "cleanupMs": 1.8999999463558197,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5
+          }
+        }
+      ],
+      "sharing": {
+        "facts": 150,
+        "additionalObservation": 0
+      },
+      "churn": {
+        "result": {
+          "retainedBytes": 15781078,
+          "maxRetainedBytes": 15781078,
+          "metrics": {
+            "invalidations": 151,
+            "invalidationMs": 0.5,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 4239.300000071526,
+            "observationMs": 1166.5999996960163,
+            "indexingMs": 1591.2000002861023,
+            "cleanupMs": 24.999999791383743,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 2550,
+            "savedReads": 0,
+            "maxObservationSliceMs": 5.5
+          }
+        },
+        "elapsedMs": 6348.9000000059605,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 30.700000017881393,
+        "maxFrameGapMs": 16.80000000000291,
+        "frames": 382
+      },
+      "release": {
+        "usedSize": 143368156,
+        "totalSize": 154206208,
+        "embedderHeapUsedSize": 714424,
+        "backingStorageSize": 2700754
+      },
+      "disposed": {
+        "usedSize": 3994376,
+        "totalSize": 5505024,
+        "embedderHeapUsedSize": 498992,
+        "backingStorageSize": 2612734
+      }
+    }
+  ],
+  "heavy": [
+    {
+      "kind": "cells",
+      "cold": {
+        "result": {
+          "elapsedMs": 266.09999999403954,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 187.09999999403954,
+            "observationMs": 57.30000001192093,
+            "indexingMs": 21.5,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.699999988079071
+          },
+          "coverage": {
+            "complete": true,
+            "resources": [
+              {
+                "id": "resource-0",
+                "state": "live-ready"
+              }
+            ],
+            "retainedBytes": 3137398
+          },
+          "facts": 1
+        },
+        "elapsedMs": 297.30000001192093,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.9000000059604645,
+        "maxFrameGapMs": 16.79999999998836,
+        "frames": 19
+      },
+      "replacement": {
+        "result": {
+          "rounds": [
+            181.09999999403954,
+            159.09999999403954,
+            155,
+            157.5
+          ],
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 96.90000000596046,
+            "observationMs": 40.400000005960464,
+            "indexingMs": 20.19999998807907,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.6000000238418579
+          }
+        },
+        "elapsedMs": 684,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.700000017881393,
+        "maxFrameGapMs": 16.80000000000291,
+        "frames": 41
+      },
+      "baseline": {
+        "result": [
+          82.30000001192093,
+          82.59999999403954,
+          82.59999999403954,
+          75.80000001192093
+        ],
+        "elapsedMs": 356.39999997615814,
+        "longTasks": [
+          82,
+          82,
+          82,
+          75
+        ],
+        "maxHeartbeatGapMs": 84.09999999403954,
+        "maxFrameGapMs": 66.69999999999709,
+        "frames": 10
+      },
+      "memory": {
+        "usedSize": 40079384,
+        "totalSize": 42745856,
+        "embedderHeapUsedSize": 668520,
+        "backingStorageSize": 2612878
+      },
+      "released": {
+        "usedSize": 4009520,
+        "totalSize": 5767168,
+        "embedderHeapUsedSize": 580488,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "kind": "blocks",
+      "cold": {
+        "result": {
+          "elapsedMs": 104.19999998807907,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 23.900000005960464,
+            "observationMs": 43,
+            "indexingMs": 36.400000005960464,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 8
+          },
+          "coverage": {
+            "complete": false,
+            "resources": [
+              {
+                "id": "resource-0",
+                "state": "live-incomplete"
+              }
+            ],
+            "retainedBytes": 8272542
+          },
+          "facts": 1
+        },
+        "elapsedMs": 135.39999997615814,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 10.699999988079071,
+        "maxFrameGapMs": 16.70000000001164,
+        "frames": 9
+      },
+      "replacement": {
+        "result": {
+          "rounds": [
+            99,
+            92.59999999403954,
+            89.90000000596046,
+            92.7999999821186
+          ],
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 18.099999994039536,
+            "observationMs": 38.70000001788139,
+            "indexingMs": 35.89999997615814,
+            "cleanupMs": 0,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 6.5999999940395355
+          }
+        },
+        "elapsedMs": 405.2999999821186,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 11.099999994039536,
+        "maxFrameGapMs": 16.70000000001164,
+        "frames": 24
+      },
+      "baseline": {
+        "result": [
+          1.2000000178813934,
+          0.699999988079071,
+          0.5999999940395355,
+          0.7000000178813934
+        ],
+        "elapsedMs": 34.099999994039536,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.699999988079071,
+        "maxFrameGapMs": 16.69999999999709,
+        "frames": 2
+      },
+      "memory": {
+        "usedSize": 12738192,
+        "totalSize": 13860864,
+        "embedderHeapUsedSize": 715944,
+        "backingStorageSize": 2612878
+      },
+      "released": {
+        "usedSize": 4047432,
+        "totalSize": 5242880,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    }
+  ],
+  "lifecycle": [
+    {
+      "cycle": 0,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11540004,
+        "totalSize": 13107200,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "cycle": 1,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11628672,
+        "totalSize": 12058624,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "cycle": 2,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11630016,
+        "totalSize": 12058624,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "cycle": 3,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11630660,
+        "totalSize": 12058624,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "cycle": 4,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11630856,
+        "totalSize": 12058624,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "cycle": 5,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11633608,
+        "totalSize": 12058624,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "cycle": 6,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11635464,
+        "totalSize": 12058624,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    },
+    {
+      "cycle": 7,
+      "bytes": 1046960,
+      "released": 0,
+      "memory": {
+        "usedSize": 11633680,
+        "totalSize": 12058624,
+        "embedderHeapUsedSize": 467824,
+        "backingStorageSize": 2612734
+      }
+    }
+  ],
+  "lifecycleReleased": {
+    "usedSize": 4042860,
+    "totalSize": 5242880,
+    "embedderHeapUsedSize": 467824,
+    "backingStorageSize": 2612734
+  },
+  "handback": {
+    "suppressed": 0,
+    "savedState": "saved-ready",
+    "suppressedAgain": 0,
+    "liveState": "live-ready"
+  },
+  "budget": {
+    "result": {
+      "requested": 10000,
+      "published": 2563,
+      "reason": "Error: Knowledge retained-Facts memory budget exceeded",
+      "budget": 268435456,
+      "retainedBytes": 268341660,
+      "elapsedMs": 1589.0999999940395,
+      "cleanupMs": 10.400000005960464,
+      "released": 0
+    },
+    "elapsedMs": 1703.4000000059605,
+    "longTasks": [
+      67
+    ],
+    "maxHeartbeatGapMs": 68.60000002384186,
+    "maxFrameGapMs": 50,
+    "frames": 101
+  },
+  "legacy": [
+    {
+      "hold": false,
+      "baseline": {
+        "usedSize": 4081656,
+        "totalSize": 6029312,
+        "embedderHeapUsedSize": 468680,
+        "backingStorageSize": 2612734
+      },
+      "retained": {
+        "usedSize": 94012716,
+        "totalSize": 105971712,
+        "embedderHeapUsedSize": 469504,
+        "backingStorageSize": 2612888
+      },
+      "inputRetained": false,
+      "dropped": {
+        "usedSize": 94012716,
+        "totalSize": 99680256,
+        "embedderHeapUsedSize": 469504,
+        "backingStorageSize": 2612888
+      },
+      "afterDrop": false,
+      "released": {
+        "usedSize": 4200036,
+        "totalSize": 6029312,
+        "embedderHeapUsedSize": 468944,
+        "backingStorageSize": 2612852
+      }
+    },
+    {
+      "hold": true,
+      "baseline": {
+        "usedSize": 4200036,
+        "totalSize": 4718592,
+        "embedderHeapUsedSize": 468944,
+        "backingStorageSize": 2612852
+      },
+      "retained": {
+        "usedSize": 142880896,
+        "totalSize": 161579008,
+        "embedderHeapUsedSize": 469504,
+        "backingStorageSize": 2612888
+      },
+      "inputRetained": true,
+      "dropped": {
+        "usedSize": 94054524,
+        "totalSize": 103088128,
+        "embedderHeapUsedSize": 469504,
+        "backingStorageSize": 2612888
+      },
+      "afterDrop": false,
+      "released": {
+        "usedSize": 4212168,
+        "totalSize": 6029312,
+        "embedderHeapUsedSize": 468944,
+        "backingStorageSize": 2612852
+      }
+    }
+  ]
+}
