@@ -180,6 +180,19 @@ export class CanonicalBacklinks implements BacklinksService {
   async resolve(result: BacklinksResult, mention: BacklinkMention, signal?: AbortSignal) {
     const stamp = this.evidence.get(result); if (!stamp || !result.mentions.includes(mention)) throw new Error('Backlink result expired');
     this.require(stamp, signal); await stamp.vault.refresh(); this.require(stamp, signal);
+    return this.resolveAt(stamp,result,mention,signal);
+  }
+  /** Host-only revalidation for a derived provider. This does not subscribe or query. */
+  async resolveDerived(result: BacklinksResult, mention: BacklinkMention, current: () => boolean, signal?: AbortSignal) {
+    if (!result.mentions.includes(mention) || !current()) throw Error('Backlink result expired');
+    const vault=this.vault(), stamp={vault,signature:vault.signature(),revision:this.repository.state.revision};
+    this.require(stamp,signal); await vault.refresh(); this.require(stamp,signal);
+    if (!current()) throw Error('Backlinks are stale. Refresh before navigating.');
+    const value=await this.resolveAt(stamp,result,mention,signal);
+    if (!current()) throw Error('Backlinks are stale. Refresh before navigating.');
+    return value;
+  }
+  private async resolveAt(stamp:Stamp, result:BacklinksResult, mention:BacklinkMention, signal?:AbortSignal) {
     const sources = this.scope(stamp.vault).sources, source = sources.find(s => s.documentId === mention.source.documentId && s.blockId === mention.source.blockId && s.location === mention.source.location);
     if (!source) throw new Error('Backlink source disappeared or moved');
     const entry = await this.scan(source, stamp, signal ?? new AbortController().signal);

@@ -30,6 +30,8 @@ export class NativeDocumentSession {
   private disposed = false;private knowledgeEpoch=0;private opening=0;private knowledgeListeners=new Set<()=>void>();
   subscribeKnowledge(listener:()=>void){this.knowledgeListeners.add(listener);return ()=>{this.knowledgeListeners.delete(listener);};}
   private notifyKnowledge(){this.knowledgeEpoch++;for(const listener of this.knowledgeListeners)listener();}
+  /** Read-only existing bindings, for scope coverage diagnostics. No capture or enrollment. */
+  knowledgeBindings(){return Object.freeze([...this.bindings].map(([resourceId,b])=>Object.freeze({resourceId,location:Object.freeze({...b.location})})));}
   knowledgeEvidence(id:string){const b=this.bindings.get(id);return Object.freeze({epoch:this.knowledgeEpoch,closed:this.disposed,admitting:this.opening>0,pending:!!(b?.busy||b?.pending||b?.relocation||this.relocations.size),location:b?Object.freeze({...b.location}):undefined,byteHash:b?.baseline.nativeHash});}
   private notice = '';
   private candidates = new Set<string>();

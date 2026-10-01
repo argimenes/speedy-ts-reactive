@@ -1,0 +1,1035 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "method": "Fresh repositories at equal edit counts; production Facts/legacy adapters and actual Flint search/backlinks panels. Synthetic read-only vault scope; full UI/server navigation qualified separately. TreeCommands measures synchronous native input path. Construction and deferred refresh reported separately.",
+  "resources": [
+    {
+      "count": 1,
+      "enabled": false,
+      "base": {
+        "usedSize": 3390712,
+        "totalSize": 4194304,
+        "embedderHeapUsedSize": 454168,
+        "backingStorageSize": 2951801
+      },
+      "setup": {
+        "fixtureMs": 151.2999999821186,
+        "constructionMs": 56.5
+      },
+      "repository": {
+        "usedSize": 4821548,
+        "totalSize": 5767168,
+        "embedderHeapUsedSize": 648048,
+        "backingStorageSize": 2952677
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 351.30000001192093,
+          "mentions": 4
+        },
+        "elapsedMs": 382.2999999821186,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.800000011920929,
+        "maxFrameGapMs": 16.799999999999955,
+        "frames": 23
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 34.19999998807907,
+          "hits": 12
+        },
+        "elapsedMs": 76.40000000596046,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 41,
+        "maxFrameGapMs": 33.29999999999973,
+        "frames": 4
+      },
+      "sharing": {
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 5004532,
+        "totalSize": 5767168,
+        "embedderHeapUsedSize": 746216,
+        "backingStorageSize": 2953651
+      },
+      "input": {
+        "result": {
+          "medianMs": 1.5,
+          "maxMs": 5.699999988079071,
+          "refreshMs": 0,
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 916.6999999880791,
+        "longTasks": [
+          163
+        ],
+        "maxHeartbeatGapMs": 166.40000000596046,
+        "maxFrameGapMs": 150,
+        "frames": 47
+      },
+      "cancel": {
+        "elapsedMs": 0.09999999403953552,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 0.6000000238418579
+      },
+      "disposed": {
+        "usedSize": 6058036,
+        "totalSize": 7602176,
+        "embedderHeapUsedSize": 954928,
+        "backingStorageSize": 2958018
+      }
+    },
+    {
+      "count": 1,
+      "enabled": true,
+      "base": {
+        "usedSize": 6021772,
+        "totalSize": 6553600,
+        "embedderHeapUsedSize": 520512,
+        "backingStorageSize": 2958018
+      },
+      "setup": {
+        "fixtureMs": 106.09999999403954,
+        "constructionMs": 48
+      },
+      "repository": {
+        "usedSize": 7932496,
+        "totalSize": 10223616,
+        "embedderHeapUsedSize": 685680,
+        "backingStorageSize": 2958028
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 351.5,
+          "mentions": 4,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0.10000002384185791,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 40.5,
+            "observationMs": 6.5999999940395355,
+            "indexingMs": 4.5999999940395355,
+            "cleanupMs": 0.5000000298023224,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 2
+          },
+          "retainedBytes": 109404
+        },
+        "elapsedMs": 382.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 6.4000000059604645,
+        "maxFrameGapMs": 16.700000000000273,
+        "frames": 24
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 33.10000002384186,
+          "hits": 12
+        },
+        "elapsedMs": 64.10000002384186,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 6.4000000059604645,
+        "maxFrameGapMs": 16.699999999999818,
+        "frames": 4
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 109404,
+        "bytesAfter": 109404,
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 7207080,
+        "totalSize": 7864320,
+        "embedderHeapUsedSize": 776400,
+        "backingStorageSize": 2958525
+      },
+      "input": {
+        "result": {
+          "medianMs": 0.7999999821186066,
+          "maxMs": 5,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 1.0999999940395355,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 43.599999994039536,
+            "observationMs": 8.300000011920929,
+            "indexingMs": 6.0999999940395355,
+            "cleanupMs": 0.7000000476837158,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 2
+          },
+          "refreshMs": 8.199999988079071,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 1.0999999940395355,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 46.79999998211861,
+            "observationMs": 9.500000029802322,
+            "indexingMs": 7.899999976158142,
+            "cleanupMs": 0.7000000476837158,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 3,
+            "savedReads": 0,
+            "maxObservationSliceMs": 2
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 851.5,
+        "longTasks": [
+          85
+        ],
+        "maxHeartbeatGapMs": 85.7000000178814,
+        "maxFrameGapMs": 83.30000000000018,
+        "frames": 48
+      },
+      "cancel": {
+        "elapsedMs": 0.20000001788139343,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 1,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 7815260,
+        "totalSize": 8912896,
+        "embedderHeapUsedSize": 961056,
+        "backingStorageSize": 2962845
+      }
+    },
+    {
+      "count": 10,
+      "enabled": false,
+      "base": {
+        "usedSize": 6388184,
+        "totalSize": 7077888,
+        "embedderHeapUsedSize": 526256,
+        "backingStorageSize": 2958038
+      },
+      "setup": {
+        "fixtureMs": 1744.300000011921,
+        "constructionMs": 582.2999999821186
+      },
+      "repository": {
+        "usedSize": 18370944,
+        "totalSize": 20267008,
+        "embedderHeapUsedSize": 1048488,
+        "backingStorageSize": 2958038
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 350.89999997615814,
+          "mentions": 4
+        },
+        "elapsedMs": 382,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 40.69999998807907,
+        "maxFrameGapMs": 33.399999999999636,
+        "frames": 23
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 67.90000000596046,
+          "hits": 120
+        },
+        "elapsedMs": 99.2000000178814,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 47,
+        "maxFrameGapMs": 33.20000000000073,
+        "frames": 5
+      },
+      "sharing": {
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 17255892,
+        "totalSize": 17809408,
+        "embedderHeapUsedSize": 1807104,
+        "backingStorageSize": 2963621
+      },
+      "input": {
+        "result": {
+          "medianMs": 0.7999999821186066,
+          "maxMs": 3.5,
+          "refreshMs": 0,
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 944.5,
+        "longTasks": [
+          59,
+          91,
+          118,
+          122
+        ],
+        "maxHeartbeatGapMs": 245.40000000596046,
+        "maxFrameGapMs": 116.70000000000073,
+        "frames": 38
+      },
+      "cancel": {
+        "elapsedMs": 0.19999998807907104,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 1.5
+      },
+      "disposed": {
+        "usedSize": 17849476,
+        "totalSize": 19873792,
+        "embedderHeapUsedSize": 2178536,
+        "backingStorageSize": 2968207
+      }
+    },
+    {
+      "count": 10,
+      "enabled": true,
+      "base": {
+        "usedSize": 6630072,
+        "totalSize": 8388608,
+        "embedderHeapUsedSize": 587880,
+        "backingStorageSize": 2958038
+      },
+      "setup": {
+        "fixtureMs": 1185.0999999940395,
+        "constructionMs": 529.5999999940395
+      },
+      "repository": {
+        "usedSize": 15725344,
+        "totalSize": 18350080,
+        "embedderHeapUsedSize": 1018728,
+        "backingStorageSize": 2958038
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 426.59999999403954,
+          "mentions": 4,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 1.0999999940395355,
+            "maxInvalidationMs": 1.0999999940395355,
+            "boundaryMs": 108,
+            "observationMs": 27.599999994039536,
+            "indexingMs": 23.599999994039536,
+            "cleanupMs": 0.20000001788139343,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.699999988079071
+          },
+          "retainedBytes": 1094040
+        },
+        "elapsedMs": 457.2000000178814,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 6,
+        "maxFrameGapMs": 16.799999999999272,
+        "frames": 29
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 137.40000000596046,
+          "hits": 120
+        },
+        "elapsedMs": 167.90000000596046,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 17,
+        "maxFrameGapMs": 16.700000000000728,
+        "frames": 10
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 1094040,
+        "bytesAfter": 1094040,
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 15187196,
+        "totalSize": 16515072,
+        "embedderHeapUsedSize": 1815600,
+        "backingStorageSize": 2963246
+      },
+      "input": {
+        "result": {
+          "medianMs": 1.4000000059604645,
+          "maxMs": 5.5,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 2.6000000536441803,
+            "maxInvalidationMs": 1.0999999940395355,
+            "boundaryMs": 156.89999997615814,
+            "observationMs": 48.900000005960464,
+            "indexingMs": 40.50000002980232,
+            "cleanupMs": 0.5999999940395355,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.699999988079071
+          },
+          "refreshMs": 86.90000000596046,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 2.6000000536441803,
+            "maxInvalidationMs": 1.0999999940395355,
+            "boundaryMs": 202.49999997019768,
+            "observationMs": 68.30000007152557,
+            "indexingMs": 56.5,
+            "cleanupMs": 0.9000000059604645,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 30,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.699999988079071
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 1086.7000000178814,
+        "longTasks": [
+          155
+        ],
+        "maxHeartbeatGapMs": 155.90000000596046,
+        "maxFrameGapMs": 133.3000000000011,
+        "frames": 58
+      },
+      "cancel": {
+        "elapsedMs": 0,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 1.2000000178813934,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 15932748,
+        "totalSize": 17793024,
+        "embedderHeapUsedSize": 2104768,
+        "backingStorageSize": 2967670
+      }
+    },
+    {
+      "count": 100,
+      "enabled": false,
+      "base": {
+        "usedSize": 6670548,
+        "totalSize": 8650752,
+        "embedderHeapUsedSize": 537736,
+        "backingStorageSize": 2958038
+      },
+      "setup": {
+        "fixtureMs": 9114.800000011921,
+        "constructionMs": 17625.40000000596
+      },
+      "repository": {
+        "usedSize": 120025276,
+        "totalSize": 136134656,
+        "embedderHeapUsedSize": 1214952,
+        "backingStorageSize": 2958053
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 7718.299999982119,
+          "mentions": 0
+        },
+        "elapsedMs": 7749.5,
+        "longTasks": [
+          457,
+          268,
+          330,
+          342,
+          197,
+          191,
+          189,
+          190,
+          187,
+          199,
+          205,
+          197,
+          197,
+          200,
+          198,
+          192,
+          190,
+          189,
+          206,
+          201,
+          195,
+          212,
+          211,
+          217,
+          256,
+          212,
+          208,
+          226,
+          223,
+          214,
+          205,
+          202,
+          201,
+          219
+        ],
+        "maxHeartbeatGapMs": 729.5,
+        "maxFrameGapMs": 433.40000000000146,
+        "frames": 78
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 5294.299999982119,
+          "hits": 1000
+        },
+        "elapsedMs": 5340.0999999940395,
+        "longTasks": [
+          5111
+        ],
+        "maxHeartbeatGapMs": 5112.799999982119,
+        "maxFrameGapMs": 5099.800000000003,
+        "frames": 11
+      },
+      "sharing": {
+        "mentions": [
+          0,
+          0
+        ]
+      },
+      "retained": {
+        "usedSize": 109864104,
+        "totalSize": 114900992,
+        "embedderHeapUsedSize": 10222632,
+        "backingStorageSize": 3003865
+      },
+      "input": {
+        "result": {
+          "medianMs": 1.2999999821186066,
+          "maxMs": 11.400000005960464,
+          "refreshMs": 0,
+          "mentions": [
+            0,
+            4
+          ]
+        },
+        "elapsedMs": 40954.90000000596,
+        "longTasks": [
+          5469,
+          5256,
+          216,
+          205,
+          231,
+          200,
+          203,
+          205,
+          201,
+          192,
+          188,
+          191,
+          189,
+          188,
+          188,
+          196,
+          418,
+          326,
+          220,
+          207,
+          207,
+          189,
+          189,
+          189,
+          190,
+          197,
+          188,
+          188,
+          187,
+          185,
+          194,
+          186,
+          186,
+          196,
+          200,
+          202,
+          204,
+          203,
+          201,
+          201,
+          202,
+          200,
+          202,
+          201,
+          202,
+          202,
+          202,
+          202,
+          143,
+          5099,
+          5055,
+          206,
+          186,
+          189,
+          187,
+          188,
+          186,
+          185,
+          187,
+          186,
+          186,
+          186,
+          188,
+          189,
+          187,
+          187,
+          185,
+          187,
+          187,
+          197,
+          198,
+          200,
+          199,
+          195,
+          198,
+          204,
+          199,
+          200,
+          226,
+          228,
+          274,
+          321,
+          288,
+          223,
+          199,
+          200,
+          200,
+          200,
+          207,
+          202,
+          231,
+          203,
+          202,
+          200,
+          203,
+          204
+        ],
+        "maxHeartbeatGapMs": 10729.699999988079,
+        "maxFrameGapMs": 5449.800000000003,
+        "frames": 245
+      },
+      "cancel": {
+        "elapsedMs": 0.20000001788139343,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 6.9000000059604645
+      },
+      "disposed": {
+        "usedSize": 110824220,
+        "totalSize": 113852416,
+        "embedderHeapUsedSize": 11195896,
+        "backingStorageSize": 3008411
+      }
+    },
+    {
+      "count": 100,
+      "enabled": true,
+      "base": {
+        "usedSize": 6828608,
+        "totalSize": 8126464,
+        "embedderHeapUsedSize": 798096,
+        "backingStorageSize": 2958151
+      },
+      "setup": {
+        "fixtureMs": 7049.200000017881,
+        "constructionMs": 11449.199999988079
+      },
+      "repository": {
+        "usedSize": 96526080,
+        "totalSize": 109117440,
+        "embedderHeapUsedSize": 1633504,
+        "backingStorageSize": 2958151
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 851.5,
+          "mentions": 4,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 314.8999999165535,
+            "observationMs": 83.99999994039536,
+            "indexingMs": 98.10000011324883,
+            "cleanupMs": 0.19999998807907104,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "retainedBytes": 10977080
+        },
+        "elapsedMs": 882,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.800000011920929,
+        "maxFrameGapMs": 16.800000000017462,
+        "frames": 53
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 111.09999999403954,
+          "hits": 1000
+        },
+        "elapsedMs": 141.80000001192093,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 59.80000001192093,
+        "maxFrameGapMs": 50,
+        "frames": 6
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 10977080,
+        "bytesAfter": 10977080,
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 89597200,
+        "totalSize": 93126656,
+        "embedderHeapUsedSize": 10372664,
+        "backingStorageSize": 3001615
+      },
+      "input": {
+        "result": {
+          "medianMs": 0.7999999821186066,
+          "maxMs": 2.2000000178813934,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 0.7000000476837158,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 595,
+            "observationMs": 173.89999988675117,
+            "indexingMs": 201.60000011324883,
+            "cleanupMs": 2.1999999582767487,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5999999940395355
+          },
+          "refreshMs": 442.40000000596046,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 0.7000000476837158,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 849.4999998807907,
+            "observationMs": 255.7999999821186,
+            "indexingMs": 300.2000002563,
+            "cleanupMs": 3.6999999582767487,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5999999940395355
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 1772.5,
+        "longTasks": [
+          84
+        ],
+        "maxHeartbeatGapMs": 86.2000000178814,
+        "maxFrameGapMs": 66.69999999998254,
+        "frames": 103
+      },
+      "cancel": {
+        "elapsedMs": 0.20000001788139343,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 10.799999982118607,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 91962300,
+        "totalSize": 94961664,
+        "embedderHeapUsedSize": 11417800,
+        "backingStorageSize": 3006039
+      }
+    },
+    {
+      "count": 150,
+      "enabled": false,
+      "base": {
+        "usedSize": 6899412,
+        "totalSize": 8650752,
+        "embedderHeapUsedSize": 768984,
+        "backingStorageSize": 2958151
+      },
+      "setup": {
+        "fixtureMs": 10887.5,
+        "constructionMs": 31488.70000001788
+      },
+      "repository": {
+        "usedSize": 182418032,
+        "totalSize": 215891968,
+        "embedderHeapUsedSize": 1248808,
+        "backingStorageSize": 2958151
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 351.59999999403954,
+          "mentions": 0
+        },
+        "elapsedMs": 382.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 23.799999982118607,
+        "maxFrameGapMs": 16.79999999998836,
+        "frames": 24
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 13865.40000000596,
+          "hits": 1000
+        },
+        "elapsedMs": 13896.199999988079,
+        "longTasks": [
+          13727
+        ],
+        "maxHeartbeatGapMs": 13729.899999976158,
+        "maxFrameGapMs": 13716,
+        "frames": 10
+      },
+      "sharing": {
+        "mentions": [
+          0,
+          0
+        ]
+      },
+      "retained": {
+        "usedSize": 166361552,
+        "totalSize": 179912704,
+        "embedderHeapUsedSize": 10299096,
+        "backingStorageSize": 3003857
+      },
+      "input": {
+        "result": {
+          "medianMs": 1.2000000178813934,
+          "maxMs": 2.5,
+          "refreshMs": 0,
+          "mentions": [
+            0,
+            0
+          ]
+        },
+        "elapsedMs": 57970,
+        "longTasks": [
+          13614,
+          13010,
+          412,
+          333,
+          332,
+          327,
+          320,
+          322,
+          126,
+          13647,
+          12886,
+          326,
+          323,
+          324,
+          323,
+          328,
+          345
+        ],
+        "maxHeartbeatGapMs": 26637.5,
+        "maxFrameGapMs": 13632.800000000017,
+        "frames": 62
+      },
+      "cancel": {
+        "elapsedMs": 0,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 5
+      },
+      "disposed": {
+        "usedSize": 165472436,
+        "totalSize": 172048384,
+        "embedderHeapUsedSize": 11340752,
+        "backingStorageSize": 3008177
+      }
+    },
+    {
+      "count": 150,
+      "enabled": true,
+      "base": {
+        "usedSize": 6960360,
+        "totalSize": 8388608,
+        "embedderHeapUsedSize": 678968,
+        "backingStorageSize": 2958143
+      },
+      "setup": {
+        "fixtureMs": 11159.09999999404,
+        "constructionMs": 33272.5
+      },
+      "repository": {
+        "usedSize": 146515344,
+        "totalSize": 185925632,
+        "embedderHeapUsedSize": 1605048,
+        "backingStorageSize": 2958143
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 1136.0999999940395,
+          "mentions": 4,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 2.5,
+            "maxInvalidationMs": 2.5,
+            "boundaryMs": 488.50000008940697,
+            "observationMs": 136.30000016093254,
+            "indexingMs": 166.0999999344349,
+            "cleanupMs": 3.699999988079071,
+            "savedMs": 0,
+            "queryMs": 0.10000002384185791,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.7000000178813934
+          },
+          "retainedBytes": 16487280
+        },
+        "elapsedMs": 1167.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 6.0999999940395355,
+        "maxFrameGapMs": 16.79999999998836,
+        "frames": 71
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 133.7000000178814,
+          "hits": 1000
+        },
+        "elapsedMs": 185.59999999403954,
+        "longTasks": [
+          51
+        ],
+        "maxHeartbeatGapMs": 52.29999998211861,
+        "maxFrameGapMs": 50,
+        "frames": 10
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 16487280,
+        "bytesAfter": 16487280,
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 135137992,
+        "totalSize": 154468352,
+        "embedderHeapUsedSize": 10384496,
+        "backingStorageSize": 3001507
+      },
+      "input": {
+        "result": {
+          "medianMs": 0.800000011920929,
+          "maxMs": 1.899999976158142,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 3.3000000417232513,
+            "maxInvalidationMs": 2.5,
+            "boundaryMs": 932.3000002801418,
+            "observationMs": 301.1000001132488,
+            "indexingMs": 350.00000017881393,
+            "cleanupMs": 7.599999845027924,
+            "savedMs": 0,
+            "queryMs": 1.2000000178813934,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.7000000178813934
+          },
+          "refreshMs": 744.1999999880791,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 3.3000000417232513,
+            "maxInvalidationMs": 2.5,
+            "boundaryMs": 1348.7000002264977,
+            "observationMs": 444.5000002682209,
+            "indexingMs": 521.4000000357628,
+            "cleanupMs": 10.599999874830246,
+            "savedMs": 0,
+            "queryMs": 1.6000000536441803,
+            "observations": 450,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.7000000178813934
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 2408.699999988079,
+        "longTasks": [
+          89
+        ],
+        "maxHeartbeatGapMs": 91.90000000596046,
+        "maxFrameGapMs": 66.70000000001164,
+        "frames": 142
+      },
+      "cancel": {
+        "elapsedMs": 0.20000001788139343,
+        "cancelled": true
+      },
+      "release": {
+        "elapsedMs": 7.600000023841858,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 136255284,
+        "totalSize": 145817600,
+        "embedderHeapUsedSize": 11400320,
+        "backingStorageSize": 3005827
+      }
+    }
+  ]
+}

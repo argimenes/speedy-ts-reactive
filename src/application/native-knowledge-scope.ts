@@ -5,9 +5,9 @@ import type { DocumentVaultLease } from './document-vault';
 import type { ExtractionPolicy } from '../knowledge/policy';
 import { decodeFacts } from '../knowledge/transport';
 import type { DiscoveryRow, VerifiedSaved } from '../knowledge/contribution-state';
-/** Explicit P3 composition. Current Flint C2/C3 do not call this factory.
+/** Shared host composition; Flint uses it only with nativeKnowledge enabled.
  * Host/Workspace lifecycle owns this object, not a tab, Window or projection. */
-export function createNativeKnowledgeHost(repository: BoundaryRepository, native: Pick<NativeDocumentSession, 'knowledgeEvidence' | 'subscribeKnowledge'>, policy: {
+export function createNativeKnowledgeHost(repository: BoundaryRepository, native: Pick<NativeDocumentSession, 'knowledgeEvidence' | 'subscribeKnowledge'> & Partial<Pick<NativeDocumentSession, 'knowledgeBindings'>>, policy: {
     read(): ExtractionPolicy;
     subscribe(listener: () => void): () => void;
 }, options: ConstructorParameters<typeof NativeKnowledgeHost>[1] = {}) {
@@ -16,6 +16,7 @@ export function createNativeKnowledgeHost(repository: BoundaryRepository, native
         void host.dispose(); });
     return {
         host,
+        bindings: () => native.knowledgeBindings?.() ?? [],
         acquire(vault: DocumentVaultLease) {
             return host.acquire({ root: vault.root, snapshot: () => vault.isAlive() ? vault.snapshot() : { ...vault.snapshot(), complete: false }, native: id => native.knowledgeEvidence(id), policy: () => policy.read(),
                 subscribe(listener) { const a = vault.subscribe(listener), b = native.subscribeKnowledge(listener), c = policy.subscribe(listener); return () => { a(); b(); c(); }; },

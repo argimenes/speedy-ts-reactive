@@ -22,6 +22,8 @@ export type FeatureFlags = Readonly<{
   flint: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
   nativeDocumentPersistence: boolean;
+  /** P4 qualification opt-in. Default rollout requires separate review. */
+  nativeKnowledge: boolean;
   /** Initial Document format arrangements and creation menu. */
   documentFormats: boolean;
   threeDObjects: boolean;
@@ -49,6 +51,7 @@ export type FeatureFlags = Readonly<{
 export const featureFlags: FeatureFlags = Object.freeze({
   flint: true,
   nativeDocumentPersistence: true,
+  nativeKnowledge: false,
   documentFormats: true,
   threeDObjects: true,
   anchorRelationships: true,

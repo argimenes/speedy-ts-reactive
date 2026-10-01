@@ -38,7 +38,7 @@ export function createDocumentVaults(native: NativeDocumentSession) {
     subscribe(listener:()=>void){this.listeners.add(listener);return ()=>{this.listeners.delete(listener);};}
     private notify(){for(const listener of this.listeners)listener();}
     private signatureSignal=createSignal('');
-    private update(value:VaultDiscovery){batch(()=>{this.snapshotSignal[1](value);this.signatureSignal[1](JSON.stringify(value));});this.notify();}
+    private update(value:VaultDiscovery){const signature=JSON.stringify(value);if(signature===this.signature())return;batch(()=>{this.snapshotSignal[1](value);this.signatureSignal[1](signature);});this.notify();}
     constructor(readonly root:string,initial:VaultDiscovery){this.update(initial);}
     snapshot=()=>this.snapshotSignal[0]()!;
     signature=()=>this.signatureSignal[0]();

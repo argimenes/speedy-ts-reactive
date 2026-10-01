@@ -22,6 +22,14 @@ interface Scope extends IndexScope {
 }
 /** One host/repository subscription; jobs belong to resource slots, never views. */
 export class NativeKnowledgeHost {
+    private listeners = new Set<() => void>();
+    private notification?: ReturnType<typeof setTimeout>;
+    /** Coalesced deferred notification; input invalidation remains scalar work. */
+    subscribe(listener: () => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
+    private notify() {
+        if (this.notification || this.closed) return;
+        this.notification = setTimeout(() => { this.notification = undefined; for (const listener of this.listeners) listener(); }, 0);
+    }
     private completedEpoch = -1;
     private disposal?: Promise<void>;
     private retiredScopes = new Set<Scope>();
@@ -40,6 +48,7 @@ export class NativeKnowledgeHost {
     readonly metrics = { invalidations: 0, invalidationMs: 0, maxInvalidationMs: 0, boundaryMs: 0, observationMs: 0, indexingMs: 0, cleanupMs: 0, savedMs: 0, queryMs: 0, observations: 0, savedReads: 0, maxObservationSliceMs: 0 };
     private pause: YieldControl;
     constructor(private repository: BoundaryRepository, private options: {
+        loadedOnly?: boolean;
         debounceMs?: number;
         factsBudget?: number;
         maxResources?: number;
@@ -55,6 +64,7 @@ export class NativeKnowledgeHost {
             return;
         const start = performance.now();
         this.epoch++;
+        this.notify();
         if (structural)
             this.structuralEpoch++;
         this.active?.abort();
@@ -90,15 +100,16 @@ export class NativeKnowledgeHost {
         const check = () => { if (released || !owned.alive)
             throw Error('Knowledge lease closed'); };
         return {
-            requestSaved: (id: string) => { check(); let s = owned.slots.get(id); if (!s) {
+            generation: () => { check(); const epoch=this.epoch, version=owned.epoch; return () => { check(); if(epoch!==this.epoch || version!==owned.epoch) throw Error('Stale Knowledge query generation'); }; },
+            requestSaved: (id: string) => { check(); if (this.options.loadedOnly) throw Error('Saved coverage is disabled'); let s = owned.slots.get(id); if (!s) {
                 if (this.resourceSlots >= (this.options.maxResources ?? 10000))
                     throw Error('Knowledge resource queue budget exceeded');
                 owned.slots.set(id, s = this.empty());
                 this.resourceSlots++;
             } s.savedWanted = true; this.invalidate(); },
             coverage: () => { check(); return { complete: !this.lastError && !owned.coverageError && owned.completedEpoch === this.epoch && owned.port.snapshot().complete && [...owned.slots.values()].every(s => !!s.entry && this.index.eligible(s.entry) && !s.entry.facts.diagnostics.length), diagnostic: owned.coverageError ?? this.lastError, resources: [...owned.slots].map(([id, s]) => ({ id, state: s.entry && this.index.eligible(s.entry) ? s.state : 'unavailable', error: s.error ?? (s.entry && !this.index.eligible(s.entry) ? 'Observation pending' : undefined) })), retainedBytes: this.index.retainedBytes }; },
-            prepare: async (signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.prepare(owned, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; return { ...r, current: () => { check(); r.current(); } }; },
-            backlinks: async (id: string, signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.backlinks(owned, id, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; return { ...r, current: () => { check(); r.current(); } }; },
+            prepare: async (signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.prepare(owned, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
+            backlinks: async (id: string, signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.backlinks(owned, id, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
             release: () => { if (released)
                 return; released = true; if (--owned.users)
                 return; this.index.closeScope(owned); this.retiredScopes.add(owned); owned.epoch++; owned.stop(); this.resourceSlots -= owned.slots.size; this.scopes.delete(port.root); this.invalidate(); if (!this.scopes.size) {
@@ -193,6 +204,7 @@ export class NativeKnowledgeHost {
                                 slot.state = observed.facts.diagnostics.length ? 'live-incomplete' : 'live-ready';
                             }
                             else if (boundary.status === 'missing') {
+                                if (this.options.loadedOnly) throw Error('unopened canonical resource; loaded-only coverage');
                                 // A saved-only contribution may survive a classified unrelated inline edit,
                                 // but never a structural/scope change or canonical-to-saved transition.
                                 if (slot.authority === 'saved' && slot.entry && slot.structuralEpoch === this.structuralEpoch && slot.scopeEpoch === scope.epoch) {
@@ -274,7 +286,7 @@ export class NativeKnowledgeHost {
     dispose(): Promise<void> { if (this.disposal)
         return this.disposal; return this.disposal = this.disposeWork(); }
     private async disposeWork() { if (this.closed)
-        return; this.closed = true; this.epoch++; clearTimeout(this.timer); this.active?.abort(); this.stop?.(); this.stop = undefined; for (const scope of this.scopes.values()) {
+        return; this.closed = true; this.epoch++; clearTimeout(this.timer); clearTimeout(this.notification); this.listeners.clear(); this.active?.abort(); this.stop?.(); this.stop = undefined; for (const scope of this.scopes.values()) {
         this.index.closeScope(scope);
         this.retiredScopes.add(scope);
         scope.stop();

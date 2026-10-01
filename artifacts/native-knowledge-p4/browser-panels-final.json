@@ -1,0 +1,584 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "method": "Fresh repositories at equal edit counts; production Facts/legacy adapters and actual Flint search/backlinks panels. Synthetic read-only vault scope; full UI/server navigation qualified separately. TreeCommands measures synchronous native input path. Construction and deferred refresh reported separately.",
+  "resources": [
+    {
+      "count": 1,
+      "round": 0,
+      "enabled": true,
+      "base": {
+        "usedSize": 3393188,
+        "totalSize": 4456448,
+        "embedderHeapUsedSize": 454168,
+        "backingStorageSize": 2956313
+      },
+      "setup": {
+        "fixtureMs": 139,
+        "constructionMs": 54
+      },
+      "repository": {
+        "usedSize": 5287044,
+        "totalSize": 6291456,
+        "embedderHeapUsedSize": 810920,
+        "backingStorageSize": 2956927
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 366.69999998807907,
+          "mentions": 4,
+          "panelStatus": "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 1/1 Documents available. Loaded vault coverage complete.Research resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B é",
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0.09999999403953552,
+            "maxInvalidationMs": 0.09999999403953552,
+            "boundaryMs": 7,
+            "observationMs": 5.5,
+            "indexingMs": 3,
+            "cleanupMs": 0.20000001788139343,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 1,
+            "savedReads": 0,
+            "maxObservationSliceMs": 1.300000011920929
+          },
+          "retainedBytes": 106808
+        },
+        "elapsedMs": 397.90000000596046,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 23,
+        "maxFrameGapMs": 16.800000000000182,
+        "frames": 24
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 34.5,
+          "hits": 12
+        },
+        "elapsedMs": 100.5,
+        "longTasks": [
+          61
+        ],
+        "maxHeartbeatGapMs": 64.09999999403954,
+        "maxFrameGapMs": 50,
+        "frames": 4
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 106808,
+        "bytesAfter": 106808,
+        "panelStatus": [
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 1/1 Documents available. Loaded vault coverage complete.Research resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B é",
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 1/1 Documents available. Loaded vault coverage complete.Research resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B éResearch resource-0vault/resource-0.mutable.json · resource-0Leonardo studied light, mountains and water. A🧭B é"
+        ],
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 5056660,
+        "totalSize": 6029312,
+        "embedderHeapUsedSize": 748448,
+        "backingStorageSize": 2958189
+      },
+      "input": {
+        "result": {
+          "medianMs": 0.800000011920929,
+          "maxMs": 6.5,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 0.4000000059604645,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 12.199999988079071,
+            "observationMs": 8.200000017881393,
+            "indexingMs": 5.199999988079071,
+            "cleanupMs": 0.30000001192092896,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 2,
+            "savedReads": 0,
+            "maxObservationSliceMs": 1.300000011920929
+          },
+          "refreshMs": 7.299999982118607,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 0.4000000059604645,
+            "maxInvalidationMs": 0.10000002384185791,
+            "boundaryMs": 15.300000011920929,
+            "observationMs": 9.200000017881393,
+            "indexingMs": 6.499999970197678,
+            "cleanupMs": 0.4000000059604645,
+            "savedMs": 0,
+            "queryMs": 0.29999998211860657,
+            "observations": 3,
+            "savedReads": 0,
+            "maxObservationSliceMs": 1.300000011920929
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 882.5,
+        "longTasks": [
+          88
+        ],
+        "maxHeartbeatGapMs": 88.89999997615814,
+        "maxFrameGapMs": 83.30000000000018,
+        "frames": 49
+      },
+      "cancel": {
+        "elapsedMs": 0.10000002384185791,
+        "cancelled": true
+      },
+      "lifetime": {
+        "expiredFactsRetained": false,
+        "oldResultCurrent": false
+      },
+      "release": {
+        "elapsedMs": 1.0999999940395355,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 6016908,
+        "totalSize": 6553600,
+        "embedderHeapUsedSize": 523016,
+        "backingStorageSize": 2962600
+      }
+    },
+    {
+      "count": 10,
+      "round": 0,
+      "enabled": true,
+      "base": {
+        "usedSize": 6016908,
+        "totalSize": 6553600,
+        "embedderHeapUsedSize": 523016,
+        "backingStorageSize": 2962600
+      },
+      "setup": {
+        "fixtureMs": 734.4000000059605,
+        "constructionMs": 263.59999999403954
+      },
+      "repository": {
+        "usedSize": 15431192,
+        "totalSize": 16777216,
+        "embedderHeapUsedSize": 1055456,
+        "backingStorageSize": 2962600
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 416.30000001192093,
+          "mentions": 4,
+          "panelStatus": "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 10/10 Documents available. Loaded vault coverage complete.Research resource-3vault/resource-3.mutable.json · resource-3Leonardo studied light, mountains and water. A🧭B éResearch resource-3vault/resource-3.mutable.json · resource-3Leonardo studied light, mountains and water. A🧭B éResearch resource-9vault/resource-9.mutable.json · resource-9Leonardo studied light, mountains and water. A🧭B éResearch resource-9vault/resource-9.mutable.json · resource-9Leonardo studied light, mountains and water. A🧭B é",
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 1,
+            "maxInvalidationMs": 1,
+            "boundaryMs": 41.09999996423721,
+            "observationMs": 13.300000011920929,
+            "indexingMs": 12.200000047683716,
+            "cleanupMs": 0.09999999403953552,
+            "savedMs": 0,
+            "queryMs": 0.09999999403953552,
+            "observations": 10,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.30000001192092896
+          },
+          "retainedBytes": 1068080
+        },
+        "elapsedMs": 447.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.799999982118607,
+        "maxFrameGapMs": 16.800000000000182,
+        "frames": 27
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 32.400000005960464,
+          "hits": 120
+        },
+        "elapsedMs": 63,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 16.599999994039536,
+        "maxFrameGapMs": 16.699999999999818,
+        "frames": 4
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 1068080,
+        "bytesAfter": 1068080,
+        "panelStatus": [
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 10/10 Documents available. Loaded vault coverage complete.Research resource-3vault/resource-3.mutable.json · resource-3Leonardo studied light, mountains and water. A🧭B éResearch resource-3vault/resource-3.mutable.json · resource-3Leonardo studied light, mountains and water. A🧭B éResearch resource-9vault/resource-9.mutable.json · resource-9Leonardo studied light, mountains and water. A🧭B éResearch resource-9vault/resource-9.mutable.json · resource-9Leonardo studied light, mountains and water. A🧭B é",
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 10/10 Documents available. Loaded vault coverage complete.Research resource-3vault/resource-3.mutable.json · resource-3Leonardo studied light, mountains and water. A🧭B éResearch resource-3vault/resource-3.mutable.json · resource-3Leonardo studied light, mountains and water. A🧭B éResearch resource-9vault/resource-9.mutable.json · resource-9Leonardo studied light, mountains and water. A🧭B éResearch resource-9vault/resource-9.mutable.json · resource-9Leonardo studied light, mountains and water. A🧭B é"
+        ],
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 14712868,
+        "totalSize": 15728640,
+        "embedderHeapUsedSize": 1806016,
+        "backingStorageSize": 2967808
+      },
+      "input": {
+        "result": {
+          "medianMs": 0.7000000178813934,
+          "maxMs": 3.5999999940395355,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 1.9000000059604645,
+            "maxInvalidationMs": 1,
+            "boundaryMs": 71.7999999821186,
+            "observationMs": 24.200000017881393,
+            "indexingMs": 23.80000004172325,
+            "cleanupMs": 0.699999988079071,
+            "savedMs": 0,
+            "queryMs": 0.19999998807907104,
+            "observations": 20,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "refreshMs": 47.70000001788139,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 1.9000000059604645,
+            "maxInvalidationMs": 1,
+            "boundaryMs": 98.40000000596046,
+            "observationMs": 32.900000005960464,
+            "indexingMs": 33.5,
+            "cleanupMs": 0.800000011920929,
+            "savedMs": 0,
+            "queryMs": 0.29999998211860657,
+            "observations": 30,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 937.0999999940395,
+        "longTasks": [
+          80
+        ],
+        "maxHeartbeatGapMs": 81.09999999403954,
+        "maxFrameGapMs": 66.69999999999982,
+        "frames": 54
+      },
+      "cancel": {
+        "elapsedMs": 0.19999998807907104,
+        "cancelled": true
+      },
+      "lifetime": {
+        "expiredFactsRetained": false,
+        "oldResultCurrent": false
+      },
+      "release": {
+        "elapsedMs": 0.9000000059604645,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 6232668,
+        "totalSize": 8126464,
+        "embedderHeapUsedSize": 527912,
+        "backingStorageSize": 2962600
+      }
+    },
+    {
+      "count": 100,
+      "round": 0,
+      "enabled": true,
+      "base": {
+        "usedSize": 6232668,
+        "totalSize": 6815744,
+        "embedderHeapUsedSize": 527912,
+        "backingStorageSize": 2962600
+      },
+      "setup": {
+        "fixtureMs": 7667.4000000059605,
+        "constructionMs": 12322.59999999404
+      },
+      "repository": {
+        "usedSize": 96226212,
+        "totalSize": 112787456,
+        "embedderHeapUsedSize": 1305456,
+        "backingStorageSize": 2962600
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 871.1999999880791,
+          "mentions": 4,
+          "panelStatus": "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 100/100 Documents available. Loaded vault coverage complete.Research resource-93vault/resource-93.mutable.json · resource-93Leonardo studied light, mountains and water. A🧭B éResearch resource-93vault/resource-93.mutable.json · resource-93Leonardo studied light, mountains and water. A🧭B éResearch resource-99vault/resource-99.mutable.json · resource-99Leonardo studied light, mountains and water. A🧭B éResearch resource-99vault/resource-99.mutable.json · resource-99Leonardo studied light, mountains and water. A🧭B é",
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 1,
+            "maxInvalidationMs": 1,
+            "boundaryMs": 331.7999999523163,
+            "observationMs": 92.59999999403954,
+            "indexingMs": 98.59999990463257,
+            "cleanupMs": 0.30000001192092896,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 100,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "retainedBytes": 10717480
+        },
+        "elapsedMs": 901.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.800000011920929,
+        "maxFrameGapMs": 16.799999999999272,
+        "frames": 54
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 120.60000002384186,
+          "hits": 1000
+        },
+        "elapsedMs": 151.7000000178814,
+        "longTasks": [
+          55
+        ],
+        "maxHeartbeatGapMs": 65.10000002384186,
+        "maxFrameGapMs": 50,
+        "frames": 7
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 10717480,
+        "bytesAfter": 10717480,
+        "panelStatus": [
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 100/100 Documents available. Loaded vault coverage complete.Research resource-93vault/resource-93.mutable.json · resource-93Leonardo studied light, mountains and water. A🧭B éResearch resource-93vault/resource-93.mutable.json · resource-93Leonardo studied light, mountains and water. A🧭B éResearch resource-99vault/resource-99.mutable.json · resource-99Leonardo studied light, mountains and water. A🧭B éResearch resource-99vault/resource-99.mutable.json · resource-99Leonardo studied light, mountains and water. A🧭B é",
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 100/100 Documents available. Loaded vault coverage complete.Research resource-93vault/resource-93.mutable.json · resource-93Leonardo studied light, mountains and water. A🧭B éResearch resource-93vault/resource-93.mutable.json · resource-93Leonardo studied light, mountains and water. A🧭B éResearch resource-99vault/resource-99.mutable.json · resource-99Leonardo studied light, mountains and water. A🧭B éResearch resource-99vault/resource-99.mutable.json · resource-99Leonardo studied light, mountains and water. A🧭B é"
+        ],
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 89043784,
+        "totalSize": 97058816,
+        "embedderHeapUsedSize": 10229848,
+        "backingStorageSize": 3006121
+      },
+      "input": {
+        "result": {
+          "medianMs": 1.4000000059604645,
+          "maxMs": 2.4000000059604645,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 1.699999988079071,
+            "maxInvalidationMs": 1,
+            "boundaryMs": 694.999999910593,
+            "observationMs": 228.5999999642372,
+            "indexingMs": 233.20000010728836,
+            "cleanupMs": 2.2999999821186066,
+            "savedMs": 0,
+            "queryMs": 0.6000000238418579,
+            "observations": 200,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5
+          },
+          "refreshMs": 450.09999999403954,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 1.699999988079071,
+            "maxInvalidationMs": 1,
+            "boundaryMs": 953,
+            "observationMs": 312.9999998807907,
+            "indexingMs": 332.8000002205372,
+            "cleanupMs": 3.700000047683716,
+            "savedMs": 0,
+            "queryMs": 0.8000000715255737,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.5
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 2018,
+        "longTasks": [
+          143
+        ],
+        "maxHeartbeatGapMs": 143.40000000596046,
+        "maxFrameGapMs": 133.29999999999927,
+        "frames": 113
+      },
+      "cancel": {
+        "elapsedMs": 0.10000002384185791,
+        "cancelled": true
+      },
+      "lifetime": {
+        "expiredFactsRetained": false,
+        "oldResultCurrent": false
+      },
+      "release": {
+        "elapsedMs": 6,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 6393544,
+        "totalSize": 8126464,
+        "embedderHeapUsedSize": 534064,
+        "backingStorageSize": 2962672
+      }
+    },
+    {
+      "count": 150,
+      "round": 0,
+      "enabled": true,
+      "base": {
+        "usedSize": 6340640,
+        "totalSize": 6815744,
+        "embedderHeapUsedSize": 534064,
+        "backingStorageSize": 2962672
+      },
+      "setup": {
+        "fixtureMs": 10616.5,
+        "constructionMs": 29012.399999976158
+      },
+      "repository": {
+        "usedSize": 145910824,
+        "totalSize": 179109888,
+        "embedderHeapUsedSize": 1476280,
+        "backingStorageSize": 2962672
+      },
+      "cold": {
+        "result": {
+          "elapsedMs": 1100.9000000059605,
+          "mentions": 4,
+          "panelStatus": "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 150/150 Documents available. Loaded vault coverage complete.Research resource-143vault/resource-143.mutable.json · resource-143Leonardo studied light, mountains and water. A🧭B éResearch resource-143vault/resource-143.mutable.json · resource-143Leonardo studied light, mountains and water. A🧭B éResearch resource-149vault/resource-149.mutable.json · resource-149Leonardo studied light, mountains and water. A🧭B éResearch resource-149vault/resource-149.mutable.json · resource-149Leonardo studied light, mountains and water. A🧭B é",
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 1.800000011920929,
+            "maxInvalidationMs": 1.800000011920929,
+            "boundaryMs": 479.200000166893,
+            "observationMs": 128.69999992847443,
+            "indexingMs": 148.5999999642372,
+            "cleanupMs": 3.399999976158142,
+            "savedMs": 0,
+            "queryMs": 0,
+            "observations": 150,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "retainedBytes": 16097880
+        },
+        "elapsedMs": 1132,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 8.5,
+        "maxFrameGapMs": 16.80000000000291,
+        "frames": 68
+      },
+      "search": {
+        "result": {
+          "elapsedMs": 151.5,
+          "hits": 1000
+        },
+        "elapsedMs": 181.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 60,
+        "maxFrameGapMs": 50,
+        "frames": 9
+      },
+      "sharing": {
+        "additionalObservations": 0,
+        "bytesBefore": 16097880,
+        "bytesAfter": 16097880,
+        "panelStatus": [
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 150/150 Documents available. Loaded vault coverage complete.Research resource-143vault/resource-143.mutable.json · resource-143Leonardo studied light, mountains and water. A🧭B éResearch resource-143vault/resource-143.mutable.json · resource-143Leonardo studied light, mountains and water. A🧭B éResearch resource-149vault/resource-149.mutable.json · resource-149Leonardo studied light, mountains and water. A🧭B éResearch resource-149vault/resource-149.mutable.json · resource-149Leonardo studied light, mountains and water. A🧭B é",
+          "BacklinksRefresh backlinks4 backlinks to Research resource-0 · 150/150 Documents available. Loaded vault coverage complete.Research resource-143vault/resource-143.mutable.json · resource-143Leonardo studied light, mountains and water. A🧭B éResearch resource-143vault/resource-143.mutable.json · resource-143Leonardo studied light, mountains and water. A🧭B éResearch resource-149vault/resource-149.mutable.json · resource-149Leonardo studied light, mountains and water. A🧭B éResearch resource-149vault/resource-149.mutable.json · resource-149Leonardo studied light, mountains and water. A🧭B é"
+        ],
+        "mentions": [
+          4,
+          4
+        ]
+      },
+      "retained": {
+        "usedSize": 134484116,
+        "totalSize": 147914752,
+        "embedderHeapUsedSize": 10235832,
+        "backingStorageSize": 3006140
+      },
+      "input": {
+        "result": {
+          "medianMs": 1.2000000178813934,
+          "maxMs": 2.100000023841858,
+          "synchronous": {
+            "invalidations": 121,
+            "invalidationMs": 2.0000000298023224,
+            "maxInvalidationMs": 1.800000011920929,
+            "boundaryMs": 878.7999999821186,
+            "observationMs": 262.2999998629093,
+            "indexingMs": 295.2000000476837,
+            "cleanupMs": 5.699999958276749,
+            "savedMs": 0,
+            "queryMs": 0.4999999701976776,
+            "observations": 300,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "refreshMs": 630.9000000059605,
+          "metrics": {
+            "invalidations": 121,
+            "invalidationMs": 2.0000000298023224,
+            "maxInvalidationMs": 1.800000011920929,
+            "boundaryMs": 1243.499999910593,
+            "observationMs": 373.799999833107,
+            "indexingMs": 438.6000000834465,
+            "cleanupMs": 7.800000011920929,
+            "savedMs": 0,
+            "queryMs": 0.8999999463558197,
+            "observations": 450,
+            "savedReads": 0,
+            "maxObservationSliceMs": 0.4000000059604645
+          },
+          "mentions": [
+            4,
+            4
+          ]
+        },
+        "elapsedMs": 2221.800000011921,
+        "longTasks": [
+          128
+        ],
+        "maxHeartbeatGapMs": 129.30000001192093,
+        "maxFrameGapMs": 116.70000000001164,
+        "frames": 127
+      },
+      "cancel": {
+        "elapsedMs": 0,
+        "cancelled": true
+      },
+      "lifetime": {
+        "expiredFactsRetained": false,
+        "oldResultCurrent": false
+      },
+      "release": {
+        "elapsedMs": 6.5,
+        "retainedBytes": 0
+      },
+      "disposed": {
+        "usedSize": 6405752,
+        "totalSize": 8912896,
+        "embedderHeapUsedSize": 538840,
+        "backingStorageSize": 2962672
+      }
+    }
+  ]
+}

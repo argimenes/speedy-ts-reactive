@@ -15,7 +15,7 @@ let backend,port;
 const startBackend=async()=>{backend=spawn(process.execPath,['scripts/native-production-test-host.mjs'],{env:{...process.env,PROOF_ROOT:storeRoot,PROOF_PORT:String(port??0)},stdio:['ignore','pipe','inherit']});
 port=await new Promise((resolve,reject)=>{backend.stdout.once('data',b=>resolve(JSON.parse(b.toString()).port));backend.once('error',reject);backend.once('exit',code=>reject(new Error('Qualification server exited before startup: '+code)));});};
 await startBackend();process.env.PORT=String(port);
-const vite=await createServer({server:{host:'127.0.0.1',port:0}});await vite.listen();
+const vite=await createServer({server:{host:'127.0.0.1',port:0,hmr:false}});await vite.listen();
 const appUrl=`http://127.0.0.1:${vite.httpServer.address().port}`;
 const control=(name)=>fetch(`http://127.0.0.1:${port}/__proof/${name}`,{method:name==='status'?'GET':'POST'});
 const profile = await mkdtemp(path.join(tmpdir(), 'speedy-flint-check-'));
@@ -51,7 +51,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const codec=await import('/src/persistence/native-resource.ts');
  const source=await(await fetch('/src/rendering/reactive-tree-view.tsx')).text();const {render,createComponent}=await import(source.split('"').find(p=>p.includes('/solid-js_web.js')));
  const host=document.createElement('div');host.className='workspace-demo workspace-demo--canonical';host.style.cssText='position:fixed;inset:40px 0 0;z-index:9000;background:#eee;overflow:auto';document.body.append(host);
- const make=()=>new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{publicHostedVersion:false}});
+ const make=()=>new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{publicHostedVersion:false,nativeKnowledge:${process.env.P4_FACTS==='1'}}});
  const setup=()=>{const session=make(),editor=session.editor;editor.commandRegistry.execute('flint.open',{targetKey:session.projection.state.rootKey,args:undefined});const dispose=render(()=>createComponent(WorkspacePresentationView,{session}),host);editor.installGateway(document);return {session,editor,dispose}};
  window.proof={host,setup,...setup(),nativeDocumentSession,codec};
  proof.click=text=>{const button=[...host.querySelectorAll('button')].find(b=>b.textContent===text);if(!button)throw Error('Missing '+text);button.click()};

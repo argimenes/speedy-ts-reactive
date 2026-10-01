@@ -1,0 +1,22 @@
+
+> speedy-ts-reactive@0.0.0 pretest
+> node scripts/build-native-knowledge-worker.mjs
+
+
+> speedy-ts-reactive@0.0.0 test
+> vitest run src/features/flint/query-results.test.tsx src/features/flint/backlinks-view.test.tsx src/application/facts-query-provider.test.ts --maxWorkers=1 --minWorkers=1 --testTimeout=15000
+
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/application/facts-query-provider.test.ts (33 tests) 3552ms
+   ✓ preserves the 1,000 mention and search passage budgets 2591ms
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/features/flint/backlinks-view.test.tsx (3 tests) 385ms
+ ✓ src/features/flint/query-results.test.tsx (1 test) 49ms
+
+ Test Files  3 passed (3)
+      Tests  37 passed (37)
+   Start at  19:16:24
+   Duration  13.40s (transform 2.73s, setup 0ms, collect 3.67s, tests 3.99s, environment 4.20s, prepare 385ms)
+

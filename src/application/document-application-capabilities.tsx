@@ -1,3 +1,6 @@
+import { createNativeKnowledgeHost } from './native-knowledge-scope';
+import { FactsQueryProvider } from './facts-query-provider';
+import { FactsBacklinks } from './facts-backlinks';
 import { CanonicalBacklinks } from "./canonical-backlinks";
 import type { ApplicationBacklinks } from "../feature-api/backlinks";
 import { VaultKnowledge, type KnowledgeHost } from "./vault-knowledge";
@@ -8,7 +11,7 @@ import { createFormattedDocument, readDocumentFormat } from "../features/documen
 import type { ApplicationVault } from "../feature-api/document-application";
 import { nativeDocumentSession } from "../persistence/native-session";
 import { documentRootPlacements } from "../block-tree/resource-registration";
-import { Show, For, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { Show, For, createMemo, createSignal, createEffect, untrack, onCleanup, onMount } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { FeatureScope } from "../feature-api";
@@ -32,6 +35,11 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
   return { register(definition) {
     requireActive();
     const native = editor.features.nativeDocumentPersistence ? nativeDocumentSession(editor) : undefined;
+    const factsHost = native && editor.features.nativeKnowledge ? createNativeKnowledgeHost(editor.repository, native, {
+      read: () => ({version: 1, opaqueTypes: editor.registry.typesWithCapability('opaque-widget')}),
+      subscribe: listener => editor.registry.subscribe(listener),
+    }, {loadedOnly: true}) : undefined;
+    scope.own(() => { void factsHost?.dispose(); });
     const vaults = native ? createDocumentVaults(native) : undefined;
     scope.own(() => vaults?.dispose());
     const vaultRoots = new Map<string, string>();
@@ -189,7 +197,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           guard(); if(!current()||activeId()!==target.documentId) throw new Error('Navigation was superseded');
           const view=liveViews.get(activeTab()!); if(!view) throw new Error('Document occurrence is unavailable');
           const nodes=Object.values(view.state.nodes);
-          const candidates=passage?nodes.filter(n=>n.contentKey===passage.contentKey&&n.payload.id===passage.blockId):nodes.filter(n=>n.payload.id===target.blockId);
+          const candidates=passage?nodes.filter(n=>(passage.contentKey===undefined||n.contentKey===passage.contentKey)&&n.payload.id===passage.blockId&&editor.blockQueries.ancestorPath(n.key).filter(a=>a.viewType==='document-block').at(-1)?.key===view.state.rootKey):nodes.filter(n=>n.payload.id===target.blockId);
           if(candidates.length!==1)throw new Error('Block identity is missing or ambiguous in this occurrence');
           const node=passage?candidates[0]:nodes.find(n=>['standoff-editor-block','text-block','plain-text-block'].includes(n.viewType)&&editor.blockQueries.ancestorPath(n.key).filter(a=>a.viewType==='document-block').at(-1)?.key===view.state.rootKey)??candidates[0];
           const range={nodeKey:node.key,contentKey:node.contentKey,placementKey:node.placementKey,version:editor.repository.state.contents[node.contentKey].inlineRevision,start:passage?.start??0,end:passage?.end??0,coordinate:passage?.coordinate??'cell' as const};
@@ -202,17 +210,22 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           else if(mount?.restoreSelection)mount.restoreSelection({start:range.start,end:range.end,direction:'forward'});
         },
       };
-      const knowledge = native ? new VaultKnowledge(editor, native, knowledgeHost) : undefined;
-      const backlinkService = native ? new CanonicalBacklinks(editor.repository, native, lease, type => editor.registry.hasCapability(type, 'opaque-widget')) : undefined;
+      const facts = factsHost ? new FactsQueryProvider(factsHost) : undefined;
+      createEffect(() => { const vault=selectedVault(); untrack(() => facts?.use(vault)); });
+      const knowledge = native ? new VaultKnowledge(editor, native, knowledgeHost, undefined, facts) : undefined;
+      // In Facts mode the legacy reader is used only for host-side activation validation.
+      // It has no subscriptions, cached query scans or parallel background query path.
+      const canonical = native ? new CanonicalBacklinks(editor.repository, native, lease, type => editor.registry.hasCapability(type, 'opaque-widget')) : undefined;
+      const backlinkService = facts ? new FactsBacklinks(facts, lease) : canonical;
       const backlinks: ApplicationBacklinks | undefined = backlinkService ? {
         service: backlinkService,
         target() { const v = selectedVault(), id = activeId(), doc = id && resolve(id); if (!v || !doc || !id) return; return {vault: v.root, target: {documentId: id, blockId: String(editor.repository.state.contents[doc.contentKey].payload.id)}}; },
         async follow(result, mention, signal) {
-          guard(); const resolved = await backlinkService.resolve(result, mention, signal); guard();
+          guard(); const resolved = await (facts ? canonical!.resolveDerived(result, mention, () => backlinkService.current(result), signal) : canonical!.resolve(result, mention, signal)); guard();
           await knowledgeHost.navigate(resolved.target, resolved.passage, () => !signal?.aborted && backlinkService.current(result));
         },
       } : undefined;
-      onCleanup(()=>{ knowledge?.dispose(); backlinkService?.dispose(); });
+      onCleanup(()=>{ knowledge?.dispose(); backlinkService?.dispose(); canonical?.dispose(); facts?.dispose(); });
       onMount(() => { const root = vaultRoots.get(props.nodeKey); if (root && vault) void vault.open(root).catch(() => { vaultRoots.delete(props.nodeKey); }); });
       const files = native ? {
         list: (folder: string) => { selectedVault()?.requireDirectory(folder); return native.list(folder); },

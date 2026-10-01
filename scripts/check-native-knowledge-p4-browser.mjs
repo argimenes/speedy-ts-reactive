@@ -1,0 +1,25 @@
+// Isolated browser P4 adapter/panel controls. Product C2/C3 UI is qualified separately.
+import {createServer} from 'vite';import {spawn} from 'node:child_process';import {mkdtemp,rm,mkdir,writeFile} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';
+const out='artifacts/native-knowledge-p4';await mkdir(out,{recursive:true});
+const vite=await createServer({server:{host:'127.0.0.1',port:0,hmr:false}});await vite.listen();
+const profile=await mkdtemp(path.join(os.tmpdir(),'native-p4-browser-')),chrome=spawn(process.env.CHROME_BIN??'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',['--headless=new','--no-first-run','--disable-background-timer-throttling','--disable-renderer-backgrounding','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank']);let socket;
+try{
+ const endpoint=await new Promise((resolve,reject)=>{let log='';chrome.stderr.on('data',b=>{log+=b;const m=log.match(/DevTools listening on (ws:\/\/[^\s]+)/);if(m)resolve(m[1]);});chrome.once('error',reject);setTimeout(()=>reject(Error('Chrome timeout')),15000).unref();});
+ socket=new WebSocket(endpoint);await new Promise(r=>socket.addEventListener('open',r,{once:true}));let id=0;const pending=new Map();socket.addEventListener('message',e=>{const v=JSON.parse(e.data),p=pending.get(v.id);if(p){pending.delete(v.id);v.error?p.reject(Error(JSON.stringify(v.error))):p.resolve(v.result);}});
+ const send=(method,params={},sessionId)=>new Promise((resolve,reject)=>{const n=++id,timer=setTimeout(()=>{pending.delete(n);reject(Error('CDP timeout: '+method));},120000);pending.set(n,{resolve:v=>{clearTimeout(timer);resolve(v)},reject:e=>{clearTimeout(timer);reject(e)}});socket.send(JSON.stringify({id:n,method,params,...(sessionId?{sessionId}:{})}));});
+ const {targetId}=await send('Target.createTarget',{url:'about:blank'}),{sessionId}=await send('Target.attachToTarget',{targetId,flatten:true});
+ const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true},sessionId);if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
+ const heap=async()=>{await send('HeapProfiler.collectGarbage',{},sessionId);return await send('Runtime.getHeapUsage',{},sessionId);};
+ await send('Page.navigate',{url:`http://127.0.0.1:${vite.httpServer.address().port}/src/qualification/native-knowledge/p3.html`},sessionId);for(let attempt=0;;attempt++){await new Promise(r=>setTimeout(r,50));if(await evaluate("document.readyState==='complete'&&location.pathname.endsWith('/p3.html')"))break;if(attempt>100)throw Error('Qualification page did not load');}await evaluate(`import('/src/qualification/native-knowledge/p4-browser.tsx').then(m=>{window.control=m})`);
+ await send('Page.bringToFront',{},sessionId);
+ const report={browser:await send('Browser.getVersion'),method:'Fresh repositories at equal edit counts; production Facts/legacy adapters and actual Flint search/backlinks panels. Synthetic read-only vault scope; full UI/server navigation qualified separately. TreeCommands measures synchronous native input path. Construction and deferred refresh reported separately.',resources:[]};
+ for(const count of (process.env.P4_COUNTS??'1,10,100,150').split(',').map(Number))for(let round=0;round<Number(process.env.P4_ROUNDS??1);round++)for(const enabled of (process.env.P4_MODES??'false,true').split(',').map(v=>v==='true')){
+  console.log('P4 count '+count+' enabled '+enabled);const base=await heap();
+  const setup=await evaluate(`control.setup(${count},${enabled}).then(f=>{window.fixture=f;return {fixtureMs:f.fixtureMs,constructionMs:f.constructionMs}})`),repository=await heap();
+  const cold=await evaluate('control.observeHeartbeat(()=>fixture.cold())'),search=await evaluate('control.observeHeartbeat(()=>fixture.search())'),sharing=await evaluate('fixture.sharing()'),retained=await heap();
+  const warmSearch=[];if(process.env.P4_WARM)for(let i=0;i<3;i++)warmSearch.push(await evaluate('control.observeHeartbeat(()=>fixture.search())'));
+  const input=await evaluate('control.observeHeartbeat(()=>fixture.input())'),cancel=await evaluate('fixture.cancel()');let lifetime;if(enabled){await evaluate('fixture.lifetime().then(v=>{window.lifetime=v})');await heap();lifetime=await evaluate('({expiredFactsRetained:!!window.lifetime.weak.deref(),oldResultCurrent:window.lifetime.current()})');await evaluate('window.lifetime=null');}const release=await evaluate('fixture.release()');await evaluate('window.fixture=null');const disposed=await heap();
+  report.resources.push({count,round,enabled,base,setup,repository,cold,search,sharing,retained,warmSearch,input,cancel,lifetime,release,disposed});await writeFile(out+'/'+(process.env.P4_OUTPUT??'browser-panels.json'),JSON.stringify(report,null,2));
+ }
+ console.log('P4 adapter/panel controls complete');
+}finally{socket?.close();chrome.kill('SIGTERM');await vite.close();await rm(profile,{recursive:true,force:true,maxRetries:4,retryDelay:250});}

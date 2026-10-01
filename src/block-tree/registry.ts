@@ -3,6 +3,12 @@ import type { BlockTypeRegistration, CommandDefinition, CommandContext } from ".
 export class BlockRegistry {
   private registrations = new Map<string, BlockTypeRegistration>();
   private owners = new Map<string, string>();
+  private listeners = new Set<() => void>();
+  subscribe(listener: () => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
+  typesWithCapability(capability: string): string[] {
+    return [...this.registrations.keys(), ...this.aliases.keys()].filter(type => this.hasCapability(type, capability));
+  }
+  private notify() { for (const listener of this.listeners) listener(); }
   private aliases = new Map<string, string>();
 
   register(registration: BlockTypeRegistration, owner = "legacy"): () => void {
@@ -14,6 +20,7 @@ export class BlockRegistry {
     this.registrations.set(registration.type, registration);
     this.owners.set(registration.type, owner);
     for (const alias of registration.aliases ?? []) this.aliases.set(alias, registration.type);
+    this.notify();
     let active = true;
     return () => {
       if (!active) return;
@@ -21,6 +28,7 @@ export class BlockRegistry {
       this.registrations.delete(registration.type);
       this.owners.delete(registration.type);
       for (const alias of registration.aliases ?? []) this.aliases.delete(alias);
+      this.notify();
     };
   }
 

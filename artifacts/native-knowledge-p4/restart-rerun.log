@@ -1,0 +1,20 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ server/native-vault-restart.test.mjs (10 tests) 6836ms
+   ✓ recovers from actual SIGKILL at relocation-intent through real routes 1173ms
+   ✓ recovers from actual SIGKILL at relocation-after-0 through real routes 621ms
+   ✓ recovers from actual SIGKILL at relocation-after-1 through real routes 620ms
+   ✓ recovers from actual SIGKILL at relocation-after-2 through real routes 646ms
+   ✓ recovers from actual SIGKILL at relocation-receipt-displaced through real routes 647ms
+   ✓ recovers from actual SIGKILL at relocation-before-complete through real routes 761ms
+   ✓ recovers from actual SIGKILL at relocation-complete through real routes 646ms
+   ✓ recovers nonempty directory movement after server death and refuses external interference on recovery 534ms
+   ✓ serializes a concurrent Save against a pending relocation across server processes 572ms
+   ✓ finishes a directory move after actual server death and reopens its unchanged native identity 614ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  19:25:00
+   Duration  9.22s (transform 408ms, setup 0ms, collect 1.49s, tests 6.84s, environment 613ms, prepare 69ms)
+

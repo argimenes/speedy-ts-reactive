@@ -1,3 +1,4 @@
+import {QueryResults} from './query-results';
 import { For, Show, createSignal, onCleanup } from 'solid-js';
 import type { ApplicationKnowledge, DocumentTarget, NativeReferenceItem, VaultSearchResults } from '../../feature-api/document-application';
 
@@ -17,7 +18,7 @@ export function KnowledgeView(props:{knowledge:ApplicationKnowledge}) {
     <Show when={results()}>{result=><div><p role="status">{result().hits.length} results · {result().available}/{result().discovered} Documents available. {result().complete?'Loaded vault coverage complete.':'Incomplete coverage.'}</p>
       <Show when={!api.current(result().token)}><p role="status">Results are stale. Search again.</p></Show>
       <For each={result().diagnostics}>{d=><p>{d}</p>}</For>
-      <For each={result().hits}>{hit=><button class="flint-search-hit" data-search-document={hit.documentId} data-search-block={hit.blockId} disabled={acting()||!api.current(result().token)} onClick={()=>void act(()=>api.activate(hit.id))}><strong>{hit.title}</strong><small>{hit.location} · {hit.kind} · {hit.documentId}</small><span>{hit.snippet}</span></button>}</For>
+      <QueryResults each={result().hits}>{hit=><button class="flint-search-hit" data-search-document={hit.documentId} data-search-block={hit.blockId} disabled={acting()||!api.current(result().token)} onClick={()=>void act(()=>api.activate(hit.id))}><strong>{hit.title}</strong><small>{hit.location} · {hit.kind} · {hit.documentId}</small><span>{hit.snippet}</span></button>}</QueryResults>
     </div>}</Show>
     <h2>Document references</h2>
     <button onPointerDown={e=>e.preventDefault()} disabled={acting()} onClick={()=>void act(async()=>{const selection=api.selection();const value=await api.picker(selection);if(live)setPicker({selection,...value});})}>Link selected text</button>

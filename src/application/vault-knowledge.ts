@@ -1,3 +1,4 @@
+import type { FactsQueryProvider } from './facts-query-provider';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { NativeDocumentSession } from '../persistence/native-session';
 import type { DocumentVaultLease } from './document-vault';
@@ -13,8 +14,8 @@ import type { SearchSource } from '../runtime/search-matching';
 import type { ApplicationKnowledge, DocumentTarget, NativeReferenceItem, VaultSearchHit, VaultSearchResults } from '../feature-api/document-application';
 
 type Source = DocumentTarget & {contentKey:string; placement:string};
-type Stamp = {vault:DocumentVaultLease; signature:string; revision:number};
-type Passage = {contentKey:string; blockId:string; start:number; end:number; coordinate:'cell'|'utf16'};
+type Stamp = {derivedCurrent?:()=>void; vault:DocumentVaultLease; signature:string; revision:number};
+type Passage = {contentKey?:string; blockId:string; start:number; end:number; coordinate:'cell'|'utf16'};
 type Selection = Stamp & {id:string; viewId:string; ranges:TextRangeSnapshot[]};
 type Reference = Stamp & {source:Source; contentKey:string; property:JsonObject; index:number; target?:DocumentTarget; removable:boolean};
 export interface KnowledgeHost {
@@ -35,10 +36,11 @@ export class VaultKnowledge implements ApplicationKnowledge {
   private hits=new Map<string,{stamp:Stamp; target:DocumentTarget; passage?:Passage}>();
   private selections=new Map<string,Selection>();
   private mentions=new Map<string,Reference>();
-  constructor(private editor:ReactiveEditor,private native:NativeDocumentSession,private host:KnowledgeHost,private runner:SearchRunner=runSearchWorker) {}
+  constructor(private editor:ReactiveEditor,private native:NativeDocumentSession,private host:KnowledgeHost,private runner:SearchRunner=runSearchWorker, private derived?:FactsQueryProvider) {}
   private stamp(vault:DocumentVaultLease):Stamp {return {vault,signature:vault.signature(),revision:this.editor.repository.state.revision};}
   private valid(stamp:Stamp) {
-    return this.live && this.host.vault()===stamp.vault && stamp.signature===stamp.vault.signature() && stamp.revision===this.editor.repository.state.revision && !this.native.pendingVaultRelocations(stamp.vault.root).length;
+    if (!(this.live && this.host.vault()===stamp.vault && stamp.signature===stamp.vault.signature() && stamp.revision===this.editor.repository.state.revision && !this.native.pendingVaultRelocations(stamp.vault.root).length)) return false;
+    try {stamp.derivedCurrent?.();return true;} catch {return false;}
   }
   private require(stamp:Stamp) {this.host.guard();if(!this.valid(stamp))throw new Error('This query or selection is stale. Search or select again.');}
   current=(token:string)=>{try {const s=this.batches.get(token);return !!s&&this.valid(s)&&(token!==this.referenceToken||this.host.active()?.documentId===this.referenceDocument);}catch{return false;}};
@@ -79,13 +81,25 @@ export class VaultKnowledge implements ApplicationKnowledge {
   search=async(query:string):Promise<VaultSearchResults>=>{
     this.host.guard();this.cancel();const controller=new AbortController();this.controller=controller;
     const vault=this.host.vault();await vault.refresh();controller.signal.throwIfAborted();
-    const stamp=this.stamp(vault),token=crypto.randomUUID(),scope=this.scope(vault),diagnostics=scope.diagnostics;
+    const stamp=this.stamp(vault),token=crypto.randomUUID(),scope=this.derived?undefined:this.scope(vault),diagnostics=scope?.diagnostics??[];
     const stop=this.editor.repository.subscribeChanges(()=>controller.abort());
     const timeout=setTimeout(()=>controller.abort(),15000);
     try {
       if(query.length>256)throw new Error('Search text is limited to 256 characters');
+      if(this.derived){
+        const result=await this.derived.search(vault,query,controller.signal,this.runner);this.require(stamp);controller.signal.throwIfAborted();
+        stamp.derivedCurrent=result.current;
+        const hits=result.hits.map(value=>{
+          const id=crypto.randomUUID(),{target,coordinate, ...rest}=value;
+          this.hits.set(id,{stamp,target,passage:value.kind==='text'?{blockId:value.blockId,start:value.start,end:value.end,coordinate}:undefined});
+          return Object.freeze({id,...target,...rest});
+        });
+        this.searchToken=token;this.batches.set(token,stamp);
+        return Object.freeze({token,hits:Object.freeze(hits),diagnostics:Object.freeze(result.diagnostics),available:result.sources.length,discovered:result.discovered,complete:!result.diagnostics.length});
+      }
+
       const inputs:SearchSource[]=[],locators=new Map<string,{target:Source;content?:ContentRecord}>();let cells=0,units=0,blocks=0;
-      if(query.trim())outer:for(const doc of scope.sources){
+      if(query.trim())outer:for(const doc of scope!.sources){
         this.require(stamp);controller.signal.throwIfAborted();
         if(doc.title.length>10000)diagnostics.push(`${doc.title.slice(0,40)}: title truncated to 10,000 characters.`);
         const titleKey=`title:${doc.contentKey}`;inputs.push({contentKey:titleKey,version:stamp.revision,coordinate:'utf16',runs:[{text:doc.title.slice(0,10000)}]});locators.set(titleKey,{target:doc});
@@ -108,7 +122,7 @@ export class VaultKnowledge implements ApplicationKnowledge {
           this.hits.set(id,{stamp,target:locator.target,passage:c?{contentKey:c.key,blockId:String(c.payload.id),start:match.start,end:match.end,coordinate:c.inlineKind==='standoff'?'cell':'utf16'}:undefined});
         }
       }
-      this.searchToken=token;this.batches.set(token,stamp);return Object.freeze({token,hits:Object.freeze(hits),diagnostics:Object.freeze([...new Set(diagnostics)]),available:scope.sources.length,discovered:scope.discovered,complete:diagnostics.length===0});
+      this.searchToken=token;this.batches.set(token,stamp);return Object.freeze({token,hits:Object.freeze(hits),diagnostics:Object.freeze([...new Set(diagnostics)]),available:scope!.sources.length,discovered:scope!.discovered,complete:diagnostics.length===0});
     } finally {clearTimeout(timeout);stop();}
   };
   private async refresh(stamp:Stamp){this.require(stamp);await stamp.vault.refresh();this.require(stamp);}

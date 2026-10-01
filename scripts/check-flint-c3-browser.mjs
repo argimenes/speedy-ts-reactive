@@ -15,7 +15,7 @@ let backend,port;
 const startBackend=async()=>{backend=spawn(process.execPath,['scripts/native-production-test-host.mjs'],{env:{...process.env,PROOF_ROOT:storeRoot,PROOF_PORT:String(port??0)},stdio:['ignore','pipe','inherit']});
 port=await new Promise((resolve,reject)=>{backend.stdout.once('data',b=>resolve(JSON.parse(b.toString()).port));backend.once('error',reject);backend.once('exit',code=>reject(new Error('Qualification server exited before startup: '+code)));});};
 await startBackend();process.env.PORT=String(port);
-const vite=await createServer({server:{host:'127.0.0.1',port:0}});await vite.listen();
+const vite=await createServer({server:{host:'127.0.0.1',port:0,hmr:false}});await vite.listen();
 const appUrl=`http://127.0.0.1:${vite.httpServer.address().port}`;
 const control=(name)=>fetch(`http://127.0.0.1:${port}/__proof/${name}`,{method:name==='status'?'GET':'POST'});
 const profile = await mkdtemp(path.join(tmpdir(), 'speedy-flint-check-'));
@@ -51,7 +51,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const codec=await import('/src/persistence/native-resource.ts');
  const source=await(await fetch('/src/rendering/reactive-tree-view.tsx')).text();const {render,createComponent}=await import(source.split('"').find(p=>p.includes('/solid-js_web.js')));
  const host=document.createElement('div');host.className='workspace-demo workspace-demo--canonical';host.style.cssText='position:fixed;inset:40px 0 0;z-index:9000;background:#eee;overflow:auto';document.body.append(host);
- const make=()=>new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{publicHostedVersion:false}});
+ const make=()=>new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{publicHostedVersion:false,nativeKnowledge:${process.env.P4_FACTS==='1'}}});
  const setup=()=>{const session=make(),editor=session.editor;editor.commandRegistry.execute('flint.open',{targetKey:session.projection.state.rootKey,args:undefined});const dispose=render(()=>createComponent(WorkspacePresentationView,{session}),host);editor.installGateway(document);return {session,editor,dispose}};
  window.proof={host,setup,...setup(),nativeDocumentSession,codec};
  proof.click=text=>{const button=[...host.querySelectorAll('button')].find(b=>b.textContent===text);if(!button)throw Error('Missing '+text);button.click()};
@@ -98,6 +98,19 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('backlink follows source mention in invoking Window without moving the other Window',await evaluate(`proof.one.querySelector('[data-flint-property="id"]').textContent===proof.targetId`));
  check('backlink query/navigation creates no canonical mutation or History event',await evaluate('proof.before===JSON.stringify(proof.editor.repository.snapshot())&&proof.history===0'));await evaluate('proof.stopHistory()');
  await click('References in this Document');await wait(`!!proof.win.querySelector('.flint-reference')&&!proof.win.querySelector('.flint-reference button:last-child').disabled`);await click('Remove reference');await wait(`proof.one.querySelectorAll('.flint-backlink').length===0`);await evaluate('proof.editor.repository.undo()');await wait(`proof.one.querySelectorAll('.flint-backlink').length===1`);await evaluate('proof.editor.repository.redo()');await wait(`proof.one.querySelectorAll('.flint-backlink').length===0`);await evaluate('proof.editor.repository.undo()');await wait(`proof.one.querySelectorAll('.flint-backlink').length===1`);
+ if(process.env.P4_FACTS==='1'){
+  await evaluate(`proof.focused=proof.editor.node(proof.editor.focus.state.focusedKey);proof.focusSource=()=>{const n=proof.focused;proof.editor.focus.request(n.key);proof.editor.mounts.get(n.key).restoreInlineSelection({anchor:0,head:3});return proof.editor.mounts.get(n.key)};proof.focusSource()`);
+  await evaluate(`(()=>{const m=proof.focusSource();m.focusElement.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,ctrlKey:true,button:0,pointerId:11}));m.focusElement.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,ctrlKey:true,pointerId:11,clientX:20}));m.restoreInlineSelection({anchor:0,head:3});m.focusElement.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,ctrlKey:true,button:0,pointerId:11}));})()`);
+  await evaluate('new Promise(r=>setTimeout(r,50))');
+  check('Grouping retains invoking occurrence scope with Facts panels active',await evaluate('proof.editor.currentTextOperation.annotationOperation()?.annotationTargets()?.[0].nodeKey===proof.focused.key'));
+  await evaluate('proof.editor.currentTextOperation.active()?.cancel();proof.editor.focus.request(proof.focused.key);proof.editor.mounts.get(proof.focused.key).restoreInlineSelection({anchor:0,head:0})');
+  await send('Input.imeSetComposition',{text:'日本',selectionStart:2,selectionEnd:2},sessionId);
+  await send('Input.insertText',{text:'日本'},sessionId);
+  check('IME commits native text while Facts panels observe',await evaluate(`proof.editor.repository.state.contents[proof.focused.contentKey].inlineContent.slice(0,2).map(k=>proof.editor.repository.state.contents[proof.editor.repository.state.placements[k].contentKey].payload.text).join('')==='日本'`));
+  await wait(`proof.one.querySelectorAll('.flint-backlink').length===1&&!proof.one.querySelector('.flint-backlink').disabled`);
+  await evaluate('proof.editor.repository.undo()');
+  await wait(`proof.one.querySelectorAll('.flint-backlink').length===1&&!proof.one.querySelector('.flint-backlink').disabled`);
+ }
  check('reference removal and Undo/Redo update the other Window backlinks',true);await click('Save Document');await wait(`proof.win.textContent.includes('Saved native Document and Markdown')`);await ready();
  await mkdir(path.join(storeRoot,'vault/External'));await click('Refresh');await ready();check('Refresh reconstructs external directory changes without a hierarchy catalog',await evaluate(`proof.one.textContent.includes('External')&&proof.two.textContent.includes('External')`));
  await click('Close backlinks');check('closing one panel leaves the other consumer active',await evaluate(`!proof.two.querySelector('[aria-label="Document backlinks"]')&&!!proof.one.querySelector('[aria-label="Document backlinks"]')`));
