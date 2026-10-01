@@ -12,6 +12,7 @@ import { materializeLocalWorkspace } from '../reactive-editor/workspace-manifest
 import { registerApplicationViews } from './features';
 import { ReactiveTreeView } from '../rendering/reactive-tree-view';
 import { nativeDocumentSession } from '../persistence/native-session';
+import { fixtureText } from '../qualification/native-knowledge/fixture';
 import { captureNative, nativeText } from '../persistence/native-resource';
 execFileSync(process.execPath,['scripts/build-relocation-helper.mjs']);
 const disposers:Array<()=>any>=[], actualFetch=globalThis.fetch;
@@ -125,4 +126,27 @@ it('reports a vanished location without discarding the live Document or adopting
  await fs.rename(path.join(f.root,'vault/note.mutable.json'),path.join(f.root,'externally-moved.mutable.json'));click(a,'Refresh');await wait(()=>expect(a.querySelector('.flint-properties')?.textContent).toContain('Location missing or moved'));
  expect(f.service.location(id)?.filename).toBe('note.mutable.json');expect((a.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('Still here');expect(a.querySelector('[contenteditable="true"]')).toBeTruthy();expect(nativeText(captureNative(f.editor.repository.snapshot(),id))).toContain('Still here');
  await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));await fs.rename(path.join(f.root,'externally-moved.mutable.json'),path.join(f.root,'vault/externally-moved.mutable.json'));click(a,'Refresh');await wait(()=>expect(a.querySelector('.flint-properties')?.textContent).toContain('Location unverified'));expect(f.service.location(id)?.filename).toBe('note.mutable.json');
+},15000);
+
+it('derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates',async()=>{
+ const f=await fixture(),a=f.windows()[0];
+ for(let i=0;i<40;i++)await fs.writeFile(path.join(f.root,'vault',i+'.mutable.json'),fixtureText(i,40));
+ const locations=vi.spyOn(f.service,'location');await open(a);
+ // The old per-control derivation performed thousands of 40-row passes here.
+ expect(locations.mock.calls.length).toBeLessThan(40*20);
+ const rows=[...a.querySelectorAll<HTMLButtonElement>('.flint-tree-document > button')];expect(rows).toHaveLength(40);
+ const untouched=rows.find(r=>r.getAttribute('aria-label')==='Open vault/1.mutable.json')!;
+ const folder=a.querySelector('details.flint-tree-folder')!;
+ rows.find(r=>r.getAttribute('aria-label')==='Open vault/0.mutable.json')!.click();
+ await wait(()=>expect(idOf(a)).toBe('resource-0'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
+ expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')).toBe(untouched);
+ expect(a.querySelector('details.flint-tree-folder')).toBe(folder);
+ field(a,'Document title','Changed live title');click(a,'Apply properties');
+ expect(a.querySelector('[aria-label="Open vault/0.mutable.json"]')?.textContent).toContain('Changed live title');
+ expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')).toBe(untouched);
+ await fs.writeFile(path.join(f.root,'vault/added.md'),'Independent source');click(a,'Refresh');
+ await wait(()=>expect(a.querySelector('[aria-label="Markdown source"]')?.textContent).toContain('added.md'));
+ expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')).toBe(untouched);
+ expect(a.querySelector('details.flint-tree-folder')).toBe(folder);
+ locations.mockRestore();
 },15000);

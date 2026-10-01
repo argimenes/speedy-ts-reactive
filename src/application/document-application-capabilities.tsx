@@ -134,19 +134,25 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         v.requireDirectory(destination.folder); vaultLeaf(destination.filename);
         if (!destination.filename.endsWith('.mutable.json')) throw new Error('Choose a .mutable.json filename');
       };
+      const vaultState = createMemo<ReturnType<ApplicationVault['state']>>(function deriveVaultState(previous) {
+        revision(); const v = selectedVault(); if (!v || !native) return;
+        const scan = v.snapshot();
+        // Presentation identity only: retain equal rows across equivalent discovery,
+        // binding/status and repository publications. Never reuse storage evidence.
+        const previousRows = new Map(previous?.documents.map(d => [vaultPath(d.location), d]));
+        return { root: v.root, folders: scan.folders, markdown: scan.markdown.filter(p => !scan.documents.some(d => vaultPath(d.location).replace(/\.mutable\.json$/, '.md') === p)), readOnly: scan.readOnly, complete: scan.complete,
+          busy: v.busy(), notice: v.notice(), operations: v.operations(),
+          diagnostics: scan.diagnostics.map(d => `${d.path ?? d.resourceId ?? ''}: ${d.message}`),
+          documents: scan.documents.map(d => {
+            const bound = native.location(d.resourceId), loaded = !!resolve(d.resourceId) && !!bound && vaultPath(bound) === vaultPath(d.location) && d.state !== 'ambiguous';
+            const row = { id: d.resourceId, location: d.location, state: d.state, loaded, title: loaded ? resolve(d.resourceId)!.title : d.title || d.location.filename,
+              tags: loaded ? tagsOf(d.resourceId) ?? [] : [] };
+            const old = previousRows.get(vaultPath(row.location));
+            return old && old.id === row.id && old.state === row.state && old.loaded === row.loaded && old.title === row.title && old.tags.length === row.tags.length && old.tags.every((tag, i) => tag === row.tags[i]) ? old : row;
+          }) };
+      });
       const vault: ApplicationVault | undefined = native && vaults ? {
-        state() {
-          revision(); const v = selectedVault(); if (!v) return;
-          const scan = v.snapshot();
-          return { root: v.root, folders: scan.folders, markdown: scan.markdown.filter(p => !scan.documents.some(d => vaultPath(d.location).replace(/\.mutable\.json$/, '.md') === p)), readOnly: scan.readOnly, complete: scan.complete,
-            busy: v.busy(), notice: v.notice(), operations: v.operations(),
-            diagnostics: scan.diagnostics.map(d => `${d.path ?? d.resourceId ?? ''}: ${d.message}`),
-            documents: scan.documents.map(d => {
-              const bound = native.location(d.resourceId), loaded = !!resolve(d.resourceId) && !!bound && vaultPath(bound) === vaultPath(d.location) && d.state !== 'ambiguous';
-              return { id: d.resourceId, location: d.location, state: d.state, loaded, title: loaded ? resolve(d.resourceId)!.title : d.title || d.location.filename,
-                tags: loaded ? tagsOf(d.resourceId) ?? [] : [] };
-            }) };
-        },
+        state: vaultState,
         async open(root) {
           guard(); openQuery?.abort(); openQuery = new AbortController();
           const request = ++opening, next = await vaults.acquire(root, openQuery.signal);

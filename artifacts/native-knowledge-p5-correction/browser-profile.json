@@ -1,0 +1,1129 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "method": "Real default-on loaded Facts composition, saved coverage explicitly enabled, actual managed server routes and Flint UI. Qualification-only Vite transform exposes read-only host measurements.",
+  "resources": [
+    {
+      "count": 100,
+      "discovery": {
+        "result": {
+          "discoveryMs": 984.1000000238419,
+          "state": {
+            "resources": 0,
+            "complete": false,
+            "bytes": 0,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0,
+              "observationMs": 0,
+              "indexingMs": 0,
+              "cleanupMs": 0,
+              "savedMs": 0,
+              "scopeMs": 0,
+              "queryMs": 0,
+              "observations": 0,
+              "savedReads": 0,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 0,
+              "requests": 0,
+              "transportMs": 0,
+              "decodeMs": 0,
+              "workerMs": 0,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 0,
+              "bytes": 0,
+              "fenceMs": 0,
+              "readHashMs": 0,
+              "workerHeapPeak": 0,
+              "serverHeapPeak": 0
+            },
+            "bindings": 0
+          }
+        },
+        "elapsedMs": 1015.6999999880791,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 34.099999994039536,
+        "maxFrameGapMs": 33.30000000000018,
+        "frames": 61
+      },
+      "partial": {
+        "result": {
+          "elapsedMs": 852.6000000238419,
+          "state": {
+            "resources": 2,
+            "complete": false,
+            "bytes": 211076,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0.699999988079071,
+              "observationMs": 0,
+              "indexingMs": 4.300000011920929,
+              "cleanupMs": 0.09999999403953552,
+              "savedMs": 156.89999997615814,
+              "scopeMs": 654.1000000238419,
+              "queryMs": 0,
+              "observations": 0,
+              "savedReads": 3,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 609.6355000000003,
+              "requests": 2,
+              "transportMs": 783.5999999940395,
+              "decodeMs": 1.5,
+              "workerMs": 84.25266900000497,
+              "queueMs": 0.6595429999906628,
+              "validationMs": 57.904585000000225,
+              "factsMs": 21.524459000003844,
+              "bytes": 519568,
+              "fenceMs": 19.880793000000267,
+              "readHashMs": 23.54754100000173,
+              "workerHeapPeak": 12678832,
+              "serverHeapPeak": 12131496
+            },
+            "bindings": 0
+          },
+          "query": {
+            "elapsedMs": 328,
+            "hits": 24,
+            "status": "24 results · 2/100 Documents available. Incomplete coverage; zero results do not establish absence."
+          }
+        },
+        "elapsedMs": 1210.7000000178814,
+        "longTasks": [
+          171
+        ],
+        "maxHeartbeatGapMs": 174.39999997615814,
+        "maxFrameGapMs": 166.59999999999945,
+        "frames": 65
+      },
+      "initialComplete": {
+        "result": {
+          "elapsedMs": 209.7999999821186,
+          "state": {
+            "resources": 100,
+            "complete": true,
+            "bytes": 10591020,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0.9999999701976776,
+              "observationMs": 0,
+              "indexingMs": 147.4000000357628,
+              "cleanupMs": 0.20000001788139343,
+              "savedMs": 591.099999755621,
+              "scopeMs": 654.1000000238419,
+              "queryMs": 0.30000001192092896,
+              "observations": 0,
+              "savedReads": 100,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 609.6355000000003,
+              "requests": 5,
+              "transportMs": 1201.9999999701977,
+              "decodeMs": 13.299999803304672,
+              "workerMs": 231.6865050000015,
+              "queueMs": 2.309960999980831,
+              "validationMs": 167.4429209999853,
+              "factsMs": 50.87803900000472,
+              "bytes": 1623515,
+              "fenceMs": 67.43791899999633,
+              "readHashMs": 76.08812099998613,
+              "workerHeapPeak": 13531000,
+              "serverHeapPeak": 14713896
+            },
+            "bindings": 0
+          }
+        },
+        "elapsedMs": 240.59999999403954,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.800000011920929,
+        "maxFrameGapMs": 16.700000000000728,
+        "frames": 15
+      },
+      "coldSearch": {
+        "result": {
+          "elapsedMs": 126.30000001192093,
+          "hits": 1000,
+          "status": "1000 results · 100/100 Documents available. Incomplete coverage; zero results do not establish absence."
+        },
+        "elapsedMs": 157.60000002384186,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 40.69999998807907,
+        "maxFrameGapMs": 33.20000000000073,
+        "frames": 8
+      },
+      "warmSearch": [
+        {
+          "result": {
+            "elapsedMs": 104.19999998807907,
+            "hits": 1000,
+            "status": "1000 results · 100/100 Documents available. Incomplete coverage; zero results do not establish absence."
+          },
+          "elapsedMs": 134.5,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 39.099999994039536,
+          "maxFrameGapMs": 33.30000000000109,
+          "frames": 7
+        },
+        {
+          "result": {
+            "elapsedMs": 120.40000000596046,
+            "hits": 1000,
+            "status": "1000 results · 100/100 Documents available. Incomplete coverage; zero results do not establish absence."
+          },
+          "elapsedMs": 151.5,
+          "longTasks": [
+            56
+          ],
+          "maxHeartbeatGapMs": 59.30000001192093,
+          "maxFrameGapMs": 50,
+          "frames": 7
+        },
+        {
+          "result": {
+            "elapsedMs": 154.69999998807907,
+            "hits": 1000,
+            "status": "1000 results · 100/100 Documents available. Incomplete coverage; zero results do not establish absence."
+          },
+          "elapsedMs": 185.59999999403954,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 47.599999994039536,
+          "maxFrameGapMs": 33.30000000000109,
+          "frames": 9
+        }
+      ],
+      "sharing": {
+        "elapsedMs": 225.90000000596046,
+        "before": {
+          "resources": 100,
+          "complete": true,
+          "bytes": 10591020,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 0.9999999701976776,
+            "observationMs": 0,
+            "indexingMs": 147.4000000357628,
+            "cleanupMs": 0.20000001788139343,
+            "savedMs": 591.099999755621,
+            "scopeMs": 654.1000000238419,
+            "queryMs": 0.8999999761581421,
+            "observations": 0,
+            "savedReads": 100,
+            "maxObservationSliceMs": 0
+          },
+          "saved": {
+            "discoveryMs": 609.6355000000003,
+            "requests": 5,
+            "transportMs": 1201.9999999701977,
+            "decodeMs": 13.299999803304672,
+            "workerMs": 231.6865050000015,
+            "queueMs": 2.309960999980831,
+            "validationMs": 167.4429209999853,
+            "factsMs": 50.87803900000472,
+            "bytes": 1623515,
+            "fenceMs": 67.43791899999633,
+            "readHashMs": 76.08812099998613,
+            "workerHeapPeak": 13531000,
+            "serverHeapPeak": 14713896
+          },
+          "bindings": 0
+        },
+        "after": {
+          "resources": 100,
+          "complete": true,
+          "bytes": 10591020,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 0.9999999701976776,
+            "observationMs": 0,
+            "indexingMs": 147.4000000357628,
+            "cleanupMs": 0.20000001788139343,
+            "savedMs": 591.099999755621,
+            "scopeMs": 654.1000000238419,
+            "queryMs": 0.8999999761581421,
+            "observations": 0,
+            "savedReads": 100,
+            "maxObservationSliceMs": 0
+          },
+          "saved": {
+            "discoveryMs": 609.6355000000003,
+            "requests": 5,
+            "transportMs": 1201.9999999701977,
+            "decodeMs": 13.299999803304672,
+            "workerMs": 231.6865050000015,
+            "queueMs": 2.309960999980831,
+            "validationMs": 167.4429209999853,
+            "factsMs": 50.87803900000472,
+            "bytes": 1623515,
+            "fenceMs": 67.43791899999633,
+            "readHashMs": 76.08812099998613,
+            "workerHeapPeak": 13531000,
+            "serverHeapPeak": 14713896
+          },
+          "bindings": 0
+        }
+      },
+      "activation": {
+        "result": {
+          "elapsedMs": 3908,
+          "phases": [
+            {
+              "label": "discovery.refresh",
+              "start": 9724.700000017881,
+              "ms": 459.2999999821186
+            },
+            {
+              "label": "native.request.open",
+              "start": 10186.300000011921,
+              "ms": 313.69999998807907
+            },
+            {
+              "label": "native.request.vault/discover",
+              "start": 10500.700000017881,
+              "ms": 466.7999999821186
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 10500.700000017881,
+              "ms": 466.90000000596046
+            },
+            {
+              "label": "native.decode",
+              "start": 10968,
+              "ms": 87.7000000178814
+            },
+            {
+              "label": "native.decode",
+              "start": 11056.100000023842,
+              "ms": 76.2999999821186
+            },
+            {
+              "label": "vault.derive",
+              "start": 11243.90000000596,
+              "ms": 3
+            },
+            {
+              "label": "vault.derive",
+              "start": 11247.40000000596,
+              "ms": 2
+            },
+            {
+              "label": "repository.publication",
+              "start": 11162.800000011921,
+              "ms": 96.09999999403954
+            },
+            {
+              "label": "repository.commit",
+              "start": 11141.100000023842,
+              "ms": 117.7999999821186
+            },
+            {
+              "label": "native.admission",
+              "start": 11056,
+              "ms": 202.90000000596046
+            },
+            {
+              "label": "vault.derive",
+              "start": 11302.300000011921,
+              "ms": 0.4000000059604645
+            },
+            {
+              "label": "vault.derive",
+              "start": 11303.200000017881,
+              "ms": 0.09999999403953552
+            },
+            {
+              "label": "native.bind",
+              "start": 11259,
+              "ms": 45.30000001192093
+            },
+            {
+              "label": "native.openResource",
+              "start": 10186.100000023842,
+              "ms": 1127
+            },
+            {
+              "label": "native.openVerified",
+              "start": 10185.300000011921,
+              "ms": 1127.800000011921
+            },
+            {
+              "label": "activation.prepare",
+              "start": 9724.300000011921,
+              "ms": 1588.9000000059605
+            },
+            {
+              "label": "navigation.observeLive",
+              "start": 11313.200000017881,
+              "ms": 91.69999998807907
+            },
+            {
+              "label": "navigation.runSearchWorker",
+              "start": 11404.90000000596,
+              "ms": 67.80000001192093
+            },
+            {
+              "label": "occurrence.construct",
+              "start": 11480.90000000596,
+              "ms": 207.80000001192093
+            },
+            {
+              "label": "occurrence.open",
+              "start": 11473.5,
+              "ms": 288.40000000596046
+            },
+            {
+              "label": "native.request.vault/discover",
+              "start": 11772,
+              "ms": 606.2000000178814
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 11772,
+              "ms": 606.4000000059605
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 11799.90000000596,
+              "ms": 578.5
+            },
+            {
+              "label": "native.request.open",
+              "start": 12378.5,
+              "ms": 112.5
+            },
+            {
+              "label": "native.verifySelected",
+              "start": 12378.40000000596,
+              "ms": 112.80000001192093
+            },
+            {
+              "label": "navigation.revealMatch",
+              "start": 12494.300000011921,
+              "ms": 1.800000011920929
+            },
+            {
+              "label": "native.request.vault/discover",
+              "start": 12496.100000023842,
+              "ms": 986.5
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 12496.100000023842,
+              "ms": 986.7999999821186
+            },
+            {
+              "label": "native.request.open",
+              "start": 13482.90000000596,
+              "ms": 127.30000001192093
+            },
+            {
+              "label": "native.verifySelected",
+              "start": 13482.90000000596,
+              "ms": 127.5
+            },
+            {
+              "label": "navigation.editor.focus.request",
+              "start": 13610.5,
+              "ms": 3.100000023841858
+            },
+            {
+              "label": "navigation.mount.restoreInlineSelection",
+              "start": 13613.600000023842,
+              "ms": 1.199999988079071
+            },
+            {
+              "label": "navigation",
+              "start": 11473.100000023842,
+              "ms": 2142.0999999940395
+            },
+            {
+              "label": "activation.live-validation-and-navigation",
+              "start": 9724,
+              "ms": 3891.2000000178814
+            }
+          ],
+          "rows": {
+            "before": 100,
+            "retained": 99
+          },
+          "before": {
+            "resources": 100,
+            "complete": true,
+            "bytes": 10591020,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0.9999999701976776,
+              "observationMs": 0,
+              "indexingMs": 147.4000000357628,
+              "cleanupMs": 0.20000001788139343,
+              "savedMs": 591.099999755621,
+              "scopeMs": 654.1000000238419,
+              "queryMs": 1.0999999642372131,
+              "observations": 0,
+              "savedReads": 100,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 609.6355000000003,
+              "requests": 5,
+              "transportMs": 1201.9999999701977,
+              "decodeMs": 13.299999803304672,
+              "workerMs": 231.6865050000015,
+              "queueMs": 2.309960999980831,
+              "validationMs": 167.4429209999853,
+              "factsMs": 50.87803900000472,
+              "bytes": 1623515,
+              "fenceMs": 67.43791899999633,
+              "readHashMs": 76.08812099998613,
+              "workerHeapPeak": 13531000,
+              "serverHeapPeak": 14713896
+            },
+            "bindings": 0
+          },
+          "after": {
+            "resources": 65,
+            "complete": false,
+            "bytes": 10592290,
+            "metrics": {
+              "invalidations": 5,
+              "invalidationMs": 0.09999999403953552,
+              "maxInvalidationMs": 0.09999999403953552,
+              "boundaryMs": 8.400000005960464,
+              "observationMs": 3.899999976158142,
+              "indexingMs": 241.80000013113022,
+              "cleanupMs": 1.2999999821186066,
+              "savedMs": 1057.3999997079372,
+              "scopeMs": 1562.1000000238419,
+              "queryMs": 1.0999999642372131,
+              "observations": 1,
+              "savedReads": 164,
+              "maxObservationSliceMs": 0.6000000238418579
+            },
+            "saved": {
+              "discoveryMs": 1497.2296669999996,
+              "requests": 9,
+              "transportMs": 2578.6999999284744,
+              "decodeMs": 23.099999755620956,
+              "workerMs": 380.29229499999747,
+              "queueMs": 58.34050199997546,
+              "validationMs": 283.4762539999974,
+              "factsMs": 74.00158200001715,
+              "bytes": 2662560,
+              "fenceMs": 112.15250199999173,
+              "readHashMs": 235.33258299998306,
+              "workerHeapPeak": 17990744,
+              "serverHeapPeak": 32272272
+            },
+            "bindings": 1
+          },
+          "id": "resource-0",
+          "otherBefore": [
+            "41346706-50a8-4da3-a78a-644b2cec8559"
+          ],
+          "otherAfter": [
+            "41346706-50a8-4da3-a78a-644b2cec8559"
+          ],
+          "selection": {
+            "anchor": 24,
+            "head": 33
+          },
+          "message": "onResearch resource-84vault-100/84.mutable.json · text · resource-84Leonardo studied light, mountains and water. A🧭B é 漢字: observationDocument referencesLink selected textReferences in this Document"
+        },
+        "elapsedMs": 4278.9000000059605,
+        "longTasks": [
+          86,
+          346,
+          60,
+          300
+        ],
+        "maxHeartbeatGapMs": 411.39999997615814,
+        "maxFrameGapMs": 400,
+        "frames": 213
+      },
+      "release": {
+        "elapsedMs": 44.099999994039536,
+        "bytes": 0
+      }
+    },
+    {
+      "count": 1000,
+      "discovery": {
+        "result": {
+          "discoveryMs": 4339.5999999940395,
+          "state": {
+            "resources": 0,
+            "complete": false,
+            "bytes": 0,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0,
+              "observationMs": 0,
+              "indexingMs": 0,
+              "cleanupMs": 0,
+              "savedMs": 0,
+              "scopeMs": 0,
+              "queryMs": 0,
+              "observations": 0,
+              "savedReads": 0,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 0,
+              "requests": 0,
+              "transportMs": 0,
+              "decodeMs": 0,
+              "workerMs": 0,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 0,
+              "bytes": 0,
+              "fenceMs": 0,
+              "readHashMs": 0,
+              "workerHeapPeak": 0,
+              "serverHeapPeak": 0
+            },
+            "bindings": 0
+          }
+        },
+        "elapsedMs": 4370.700000017881,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 44.099999994039536,
+        "maxFrameGapMs": 33.20000000000073,
+        "frames": 263
+      },
+      "partial": {
+        "result": {
+          "elapsedMs": 6076.199999988079,
+          "state": {
+            "resources": 5,
+            "complete": false,
+            "bytes": 529706,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 1.4000000059604645,
+              "observationMs": 0,
+              "indexingMs": 13.199999988079071,
+              "cleanupMs": 0.09999999403953552,
+              "savedMs": 625.8000000119209,
+              "scopeMs": 5423.5,
+              "queryMs": 0,
+              "observations": 0,
+              "savedReads": 6,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 5399.672083000001,
+              "requests": 2,
+              "transportMs": 6037.9000000059605,
+              "decodeMs": 2.0999999940395355,
+              "workerMs": 182.18958599999678,
+              "queueMs": 0.8557930000024498,
+              "validationMs": 147.98008299999492,
+              "factsMs": 25.449336000001495,
+              "bytes": 525400,
+              "fenceMs": 301.2895419999986,
+              "readHashMs": 68.76412700000583,
+              "workerHeapPeak": 21015768,
+              "serverHeapPeak": 28085752
+            },
+            "bindings": 0
+          },
+          "query": {
+            "elapsedMs": 120.2000000178814,
+            "hits": 60,
+            "status": "60 results · 5/1000 Documents available. Incomplete coverage; zero results do not establish absence."
+          }
+        },
+        "elapsedMs": 6227.4000000059605,
+        "longTasks": [
+          53
+        ],
+        "maxHeartbeatGapMs": 55.599999994039536,
+        "maxFrameGapMs": 50,
+        "frames": 372
+      },
+      "initialComplete": {
+        "result": {
+          "elapsedMs": 12498.899999976158,
+          "state": {
+            "resources": 1000,
+            "complete": true,
+            "bytes": 106306200,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 6.700000166893005,
+              "observationMs": 0,
+              "indexingMs": 1308.5000003874302,
+              "cleanupMs": 3.600000023841858,
+              "savedMs": 11912,
+              "scopeMs": 5423.5,
+              "queryMs": 0.5999999940395355,
+              "observations": 0,
+              "savedReads": 1000,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 5399.672083000001,
+              "requests": 33,
+              "transportMs": 17131.699999839067,
+              "decodeMs": 127.50000002980232,
+              "workerMs": 2605.1759549999806,
+              "queueMs": 15.197460000028514,
+              "validationMs": 2082.485212000014,
+              "factsMs": 351.2568449999271,
+              "bytes": 16432274,
+              "fenceMs": 7031.3276260000275,
+              "readHashMs": 1119.4650519998686,
+              "workerHeapPeak": 27512528,
+              "serverHeapPeak": 32928512
+            },
+            "bindings": 0
+          }
+        },
+        "elapsedMs": 12530.700000017881,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 14,
+        "maxFrameGapMs": 16.80000000000291,
+        "frames": 752
+      },
+      "coldSearch": {
+        "result": {
+          "elapsedMs": 206.2000000178814,
+          "hits": 1000,
+          "status": "1000 results · 200/1000 Documents available. Incomplete coverage; zero results do not establish absence."
+        },
+        "elapsedMs": 236.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 40.400000005960464,
+        "maxFrameGapMs": 33.30000000000291,
+        "frames": 13
+      },
+      "warmSearch": [
+        {
+          "result": {
+            "elapsedMs": 208.59999999403954,
+            "hits": 1000,
+            "status": "1000 results · 200/1000 Documents available. Incomplete coverage; zero results do not establish absence."
+          },
+          "elapsedMs": 239.5,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 31.200000017881393,
+          "maxFrameGapMs": 16.80000000000291,
+          "frames": 15
+        },
+        {
+          "result": {
+            "elapsedMs": 136.59999999403954,
+            "hits": 1000,
+            "status": "1000 results · 200/1000 Documents available. Incomplete coverage; zero results do not establish absence."
+          },
+          "elapsedMs": 167,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 45.900000005960464,
+          "maxFrameGapMs": 33.30000000000291,
+          "frames": 9
+        },
+        {
+          "result": {
+            "elapsedMs": 138.2999999821186,
+            "hits": 1000,
+            "status": "1000 results · 200/1000 Documents available. Incomplete coverage; zero results do not establish absence."
+          },
+          "elapsedMs": 169.09999999403954,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 37.30000001192093,
+          "maxFrameGapMs": 16.700000000004366,
+          "frames": 10
+        }
+      ],
+      "sharing": {
+        "elapsedMs": 238.7000000178814,
+        "before": {
+          "resources": 1000,
+          "complete": true,
+          "bytes": 106306200,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 6.700000166893005,
+            "observationMs": 0,
+            "indexingMs": 1308.5000003874302,
+            "cleanupMs": 3.600000023841858,
+            "savedMs": 11912,
+            "scopeMs": 5423.5,
+            "queryMs": 32.99999997019768,
+            "observations": 0,
+            "savedReads": 1000,
+            "maxObservationSliceMs": 0
+          },
+          "saved": {
+            "discoveryMs": 5399.672083000001,
+            "requests": 33,
+            "transportMs": 17131.699999839067,
+            "decodeMs": 127.50000002980232,
+            "workerMs": 2605.1759549999806,
+            "queueMs": 15.197460000028514,
+            "validationMs": 2082.485212000014,
+            "factsMs": 351.2568449999271,
+            "bytes": 16432274,
+            "fenceMs": 7031.3276260000275,
+            "readHashMs": 1119.4650519998686,
+            "workerHeapPeak": 27512528,
+            "serverHeapPeak": 32928512
+          },
+          "bindings": 0
+        },
+        "after": {
+          "resources": 1000,
+          "complete": true,
+          "bytes": 106306200,
+          "metrics": {
+            "invalidations": 1,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 6.700000166893005,
+            "observationMs": 0,
+            "indexingMs": 1308.5000003874302,
+            "cleanupMs": 3.600000023841858,
+            "savedMs": 11912,
+            "scopeMs": 5423.5,
+            "queryMs": 32.99999997019768,
+            "observations": 0,
+            "savedReads": 1000,
+            "maxObservationSliceMs": 0
+          },
+          "saved": {
+            "discoveryMs": 5399.672083000001,
+            "requests": 33,
+            "transportMs": 17131.699999839067,
+            "decodeMs": 127.50000002980232,
+            "workerMs": 2605.1759549999806,
+            "queueMs": 15.197460000028514,
+            "validationMs": 2082.485212000014,
+            "factsMs": 351.2568449999271,
+            "bytes": 16432274,
+            "fenceMs": 7031.3276260000275,
+            "readHashMs": 1119.4650519998686,
+            "workerHeapPeak": 27512528,
+            "serverHeapPeak": 32928512
+          },
+          "bindings": 0
+        }
+      },
+      "activation": {
+        "result": {
+          "elapsedMs": 17110.20000001788,
+          "phases": [
+            {
+              "label": "discovery.refresh",
+              "start": 39531.20000001788,
+              "ms": 3240.2999999821186
+            },
+            {
+              "label": "native.request.open",
+              "start": 42778.30000001192,
+              "ms": 107.69999998807907
+            },
+            {
+              "label": "native.request.vault/discover",
+              "start": 42886.20000001788,
+              "ms": 3697.2999999821186
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 42886.20000001788,
+              "ms": 3698.5
+            },
+            {
+              "label": "native.decode",
+              "start": 46584.80000001192,
+              "ms": 110.5
+            },
+            {
+              "label": "native.decode",
+              "start": 46695.60000002384,
+              "ms": 87
+            },
+            {
+              "label": "vault.derive",
+              "start": 46901.70000001788,
+              "ms": 4.4000000059604645
+            },
+            {
+              "label": "vault.derive",
+              "start": 46906.40000000596,
+              "ms": 3.5999999940395355
+            },
+            {
+              "label": "repository.publication",
+              "start": 46813.20000001788,
+              "ms": 117
+            },
+            {
+              "label": "repository.commit",
+              "start": 46794,
+              "ms": 136.2000000178814
+            },
+            {
+              "label": "native.admission",
+              "start": 46695.5,
+              "ms": 234.80000001192093
+            },
+            {
+              "label": "vault.derive",
+              "start": 47006.60000002384,
+              "ms": 1.7999999821186066
+            },
+            {
+              "label": "vault.derive",
+              "start": 47010.20000001788,
+              "ms": 1.5
+            },
+            {
+              "label": "native.bind",
+              "start": 46930.30000001192,
+              "ms": 91
+            },
+            {
+              "label": "native.openResource",
+              "start": 42778.10000002384,
+              "ms": 4261.399999976158
+            },
+            {
+              "label": "native.openVerified",
+              "start": 42777.40000000596,
+              "ms": 4262.300000011921
+            },
+            {
+              "label": "activation.prepare",
+              "start": 39531.10000002384,
+              "ms": 7508.799999982119
+            },
+            {
+              "label": "navigation.observeLive",
+              "start": 47039.90000000596,
+              "ms": 153.7000000178814
+            },
+            {
+              "label": "navigation.runSearchWorker",
+              "start": 47194.60000002384,
+              "ms": 18.19999998807907
+            },
+            {
+              "label": "occurrence.construct",
+              "start": 47215.30000001192,
+              "ms": 69.40000000596046
+            },
+            {
+              "label": "occurrence.open",
+              "start": 47212.90000000596,
+              "ms": 79.5
+            },
+            {
+              "label": "native.request.vault/discover",
+              "start": 47296.10000002384,
+              "ms": 4366.699999988079
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 47296.10000002384,
+              "ms": 4368.299999982119
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 47307,
+              "ms": 4357.4000000059605
+            },
+            {
+              "label": "native.request.open",
+              "start": 51664.5,
+              "ms": 124.10000002384186
+            },
+            {
+              "label": "native.verifySelected",
+              "start": 51664.5,
+              "ms": 124.30000001192093
+            },
+            {
+              "label": "navigation.revealMatch",
+              "start": 51796.5,
+              "ms": 3.2000000178813934
+            },
+            {
+              "label": "native.request.vault/discover",
+              "start": 51799.80000001192,
+              "ms": 4728.5999999940395
+            },
+            {
+              "label": "discovery.refresh",
+              "start": 51799.80000001192,
+              "ms": 4729.9000000059605
+            },
+            {
+              "label": "native.request.open",
+              "start": 56529.70000001788,
+              "ms": 85.5
+            },
+            {
+              "label": "native.verifySelected",
+              "start": 56529.70000001788,
+              "ms": 85.69999998807907
+            },
+            {
+              "label": "navigation.editor.focus.request",
+              "start": 56615.5,
+              "ms": 1.4000000059604645
+            },
+            {
+              "label": "navigation.mount.restoreInlineSelection",
+              "start": 56616.90000000596,
+              "ms": 1.2000000178813934
+            },
+            {
+              "label": "navigation",
+              "start": 47212.90000000596,
+              "ms": 9405.300000011921
+            },
+            {
+              "label": "activation.live-validation-and-navigation",
+              "start": 39531.10000002384,
+              "ms": 17087.09999999404
+            }
+          ],
+          "rows": {
+            "before": 1000,
+            "retained": 999
+          },
+          "before": {
+            "resources": 1000,
+            "complete": true,
+            "bytes": 106306200,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 6.700000166893005,
+              "observationMs": 0,
+              "indexingMs": 1308.5000003874302,
+              "cleanupMs": 3.600000023841858,
+              "savedMs": 11912,
+              "scopeMs": 5423.5,
+              "queryMs": 36.09999996423721,
+              "observations": 0,
+              "savedReads": 1000,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 5399.672083000001,
+              "requests": 33,
+              "transportMs": 17131.699999839067,
+              "decodeMs": 127.50000002980232,
+              "workerMs": 2605.1759549999806,
+              "queueMs": 15.197460000028514,
+              "validationMs": 2082.485212000014,
+              "factsMs": 351.2568449999271,
+              "bytes": 16432274,
+              "fenceMs": 7031.3276260000275,
+              "readHashMs": 1119.4650519998686,
+              "workerHeapPeak": 27512528,
+              "serverHeapPeak": 32928512
+            },
+            "bindings": 0
+          },
+          "after": {
+            "resources": 321,
+            "complete": false,
+            "bytes": 106307470,
+            "metrics": {
+              "invalidations": 5,
+              "invalidationMs": 0.4000000059604645,
+              "maxInvalidationMs": 0.30000001192092896,
+              "boundaryMs": 21.600000232458115,
+              "observationMs": 1.5999999940395355,
+              "indexingMs": 1746.7000003755093,
+              "cleanupMs": 9.700000077486038,
+              "savedMs": 15786.200000196695,
+              "scopeMs": 10182,
+              "queryMs": 36.09999996423721,
+              "observations": 1,
+              "savedReads": 1320,
+              "maxObservationSliceMs": 0.29999998211860657
+            },
+            "saved": {
+              "discoveryMs": 10151.241125000004,
+              "requests": 45,
+              "transportMs": 25736.899999797344,
+              "decodeMs": 168.60000029206276,
+              "workerMs": 3308.0031529999214,
+              "queueMs": 308.79858800012516,
+              "validationMs": 2646.026871000038,
+              "factsMs": 446.87187699989227,
+              "bytes": 21690304,
+              "fenceMs": 9354.531167000023,
+              "readHashMs": 1364.8154939997476,
+              "workerHeapPeak": 27512528,
+              "serverHeapPeak": 32928512
+            },
+            "bindings": 1
+          },
+          "id": "resource-0",
+          "otherBefore": [
+            "95977c0c-b340-4629-9a3f-04948e2885d5"
+          ],
+          "otherAfter": [
+            "95977c0c-b340-4629-9a3f-04948e2885d5"
+          ],
+          "selection": {
+            "anchor": 24,
+            "head": 33
+          },
+          "message": "search resource-173vault-1000/173.mutable.json · text · resource-173Leonardo studied light, mountains and water. A🧭B é 漢字: observationDocument referencesLink selected textReferences in this Document"
+        },
+        "elapsedMs": 17304.59999999404,
+        "longTasks": [
+          50,
+          52,
+          457,
+          138,
+          83
+        ],
+        "maxHeartbeatGapMs": 599.6999999880791,
+        "maxFrameGapMs": 583.3999999999942,
+        "frames": 996
+      },
+      "release": {
+        "elapsedMs": 65.59999999403954,
+        "bytes": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:53170) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+search evidence { hits: 1, unopened: true, views: 2, before: 2 }
+{"requestId":"53292.319","timestamp":195570.555056,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.323","timestamp":195571.432454,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.325","timestamp":195571.612286,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.334","timestamp":195572.777229,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.336","timestamp":195572.910082,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.338","timestamp":195573.136237,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.348","timestamp":195573.657519,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.352","timestamp":195574.239509,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.354","timestamp":195574.542472,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.364","timestamp":195574.970526,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.379","timestamp":195580.062244,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"53292.384","timestamp":195580.479628,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{
+  "passed": 16,
+  "checks": [
+    "saved-enabled real worker searches unmounted Unicode text without mounting other resources",
+    "search and passage navigation do not change canonical state or History",
+    "keyboard Escape cancels picker and restores native selection",
+    "real pointer picker consumes a native selection into a stable reference",
+    "reference creation Undo removes the native annotation",
+    "reference target survives authored title change and pair relocation",
+    "two Windows do not duplicate canonical search results",
+    "result uses invoking Window occurrence and preserves the other Window",
+    "same reference follows through the second Window",
+    "edits immediately disable stale result actions",
+    "Undo does not resurrect an old query token",
+    "reopened reference reports its unopened target explicitly",
+    "native Save/Open plus restarted server preserves the canonical reference and relocated target",
+    "reference removal Undo restores the same mention",
+    "real external removal rejects activation without a mount or canonical mutation",
+    "no uncaught browser exceptions"
+  ]
+}

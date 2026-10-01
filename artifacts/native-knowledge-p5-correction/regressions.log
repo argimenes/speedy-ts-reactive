@@ -1,0 +1,233 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-knowledge.test.tsx (12 tests) 20269ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 2006ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 740ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 674ms
+   ✓ creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 2608ms
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 2097ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 1794ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 1603ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 1758ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 2725ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 1625ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 1240ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 1394ms
+ ✓ src/application/flint-vault.test.tsx (14 tests) 7411ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 1310ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 964ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 394ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 381ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 310ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 383ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 320ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 1987ms
+ ✓ src/qualification/native-b1/resource.test.tsx (28 tests) 757ms
+ ✓ server/native-vault-store.test.mjs (44 tests) 5233ms
+   ✓ moves an enrolled pair without changing bytes, identity or save generation; saves at new binding 462ms
+ ✓ src/block-tree/portable-spike/codec.test.ts (31 tests) 114ms
+ ✓ src/block-tree/block-tree.test.ts (18 tests) 42ms
+ ❯ src/block-tree/commit-capture.test.ts (10 tests | 1 failed) 535ms
+   × repository commit results > never snapshots, serializes or enumerates the whole graph for strict captured typing and Enter 267ms
+     → expected true to be false // Object.is equality
+ ✓ src/qualification/native-b2/paired-save.test.mjs (22 tests) 2727ms
+   ✓ recovers after actual writer-process death at after-native with the OS lock released 310ms
+ ✓ src/application/facts-query-provider.test.ts (33 tests) 1082ms
+   ✓ preserves the 1,000 mention and search passage budgets 677ms
+ ✓ src/block-tree/identity.test.ts (10 tests) 79ms
+ ✓ src/block-tree/resource-boundary.test.ts (13 tests) 235ms
+ ✓ src/qualification/native-b1/compatibility.test.ts (13 tests) 577ms
+ ✓ src/application/flint-saved-knowledge.test.tsx (11 tests) 7218ms
+   ✓ progressively searches saved resources without admission, then opens only the selected source in the invoking Window 1830ms
+   ✓ saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 2157ms
+   ✓ checks bytes returned by Open before admission and preserves a read-only source 319ms
+   ✓ read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 1081ms
+   ✓ a duplicate introduced while native Open is awaiting its response cannot be admitted 356ms
+   ✓ an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 326ms
+ ✓ src/qualification/native-knowledge/boundary.test.ts (16 tests) 5396ms
+   ✓ returns ready cold evidence without enumerating either repository dictionary 378ms
+   ✓ matches general target and unrelated structure and expires every old token 782ms
+   ✓ retains unplaced definitions, rejects outside ownership and tracks retention changes 924ms
+   ✓ preserves nested Document boundaries and registration as non-owning retention 1404ms
+   ✓ rejects resource ownership cycles and duplicate claims without expiring admitted tokens; reference cycles remain legal 879ms
+   ✓ preserves resolved external ownership, registration precedence and token-safe incoming evidence 659ms
+   ✓ rejects cross-resource shared Cells after a certified leaf edit, without rescanning globally 326ms
+ ✓ src/qualification/native-knowledge/live-observer.test.ts (30 tests) 8280ms
+   ✓ repository boundary qualification=false > observes changed native text/annotations and Undo/Redo without capture or snapshots 390ms
+   ✓ repository boundary qualification=false > does not mutate canonical content, revision or history and checks binding changes at completion 304ms
+   ✓ repository boundary qualification=false > reports missing definitions and rejects annotation-budget excess without publishing partial facts 380ms
+   ✓ repository boundary qualification=false > does not absorb a locally loaded owned child Document into its owner contribution 385ms
+   ✓ repository boundary qualification=true > observes changed native text/annotations and Undo/Redo without capture or snapshots 634ms
+   ✓ repository boundary qualification=true > revalidates metadata/structural changes instead of reusing an inline proof 320ms
+   ✓ repository boundary qualification=true > rejects cancellation, stale completion, disappearing identity and disposed observation 313ms
+   ✓ repository boundary qualification=true > does not mutate canonical content, revision or history and checks binding changes at completion 328ms
+   ✓ repository boundary qualification=true > reports missing definitions and rejects annotation-budget excess without publishing partial facts 344ms
+   ✓ repository boundary qualification=true > does not absorb a locally loaded owned child Document into its owner contribution 409ms
+   ✓ repository boundary qualification=true > rejects retained content that also has a structural owner outside the Document 518ms
+   ✓ repository boundary qualification=true > matches legacy Workspace definition provenance without adopting it as Document-owned 460ms
+ ✓ src/block-tree/undo-storage-parity.test.ts (7 tests) 11636ms
+   ✓ ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 7129 4364ms
+   ✓ ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 305419896 3702ms
+   ✓ ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 3735928559 2805ms
+   ✓ ordinary undo storage semantic parity with full-operation snapshots > preserves split/join, moves/copies, shared content, annotations, inline atoms and transactions 501ms
+ ✓ src/knowledge/session.test.ts (36 tests) 24600ms
+   ✓ shares one repository subscription and resource contribution across two Window leases 1348ms
+   ✓ suppresses immediately on an edit, rejects spanning queries, and does no traversal or cleanup in the callback 773ms
+   ✓ hand-back verifies bytes after disappearance; reappearance suppresses saved even on live failure 1335ms
+   ✓ hand-back retains suppression on incomplete 686ms
+   ✓ hand-back retains suppression on duplicate 632ms
+   ✓ hand-back retains suppression on changed 601ms
+   ✓ hand-back retains suppression on pending operation 617ms
+   ✓ hand-back retains suppression on admitting 522ms
+   ✓ hand-back retains suppression on closed 640ms
+   ✓ hand-back retains suppression on binding move 566ms
+   ✓ hand-back retains suppression on binding hash 500ms
+   ✓ hand-back retains suppression on read failure 638ms
+   ✓ hand-back retains suppression on stale hash 1668ms
+   ✓ hand-back retains suppression on wrong identity 824ms
+   ✓ hand-back retains suppression on wrong facts identity 1088ms
+   ✓ hand-back retains suppression on wrong location 906ms
+   ✓ hand-back retains suppression on wrong policy 655ms
+   ✓ hand-back retains suppression on no hash 640ms
+   ✓ hand-back retains suppression on unavailable boundary 520ms
+   ✓ hand-back retains suppression on ambiguous boundary 659ms
+   ✓ hand-back retains suppression on invalid boundary 715ms
+   ✓ rejects asynchronous hand-back completion spanning admission 1124ms
+   ✓ rejects asynchronous hand-back completion spanning policy 759ms
+   ✓ rejects asynchronous hand-back completion spanning binding 793ms
+   ✓ rejects asynchronous hand-back completion spanning discovery 721ms
+   ✓ rejects asynchronous hand-back completion spanning reappearance 809ms
+   ✓ rejects asynchronous hand-back completion spanning dispose 592ms
+   ✓ keeps query cancellation separate from resource work and permits read-only derived Facts 343ms
+   ✓ repeated editing and cleanup retains one current generation; repository replacement owns fresh evidence 1231ms
+   ✓ a stalled saved verification is cancelled by the resource deadline without restoring stale Facts 321ms
+ ✓ src/history/stage-c-gates/resource.test.ts (9 tests) 134ms
+ ✓ src/qualification/native-b1/owned-resources.test.ts (10 tests) 1049ms
+ ✓ src/qualification/native-knowledge/index.test.ts (13 tests) 14327ms
+   ✓ extracts canonical identity, tags, text and typed facts with no editor/repository admission or native changes 389ms
+   ✓ derives inverse references, Entity mentions and sources without storing authored reverse edges 814ms
+   ✓ replaces one contribution without stale tags, incoming edges or entity aggregates 1106ms
+   ✓ keeps unknown annotations typed, ignores deleted/client-only references, rejects unknown reserved native fields 331ms
+   ✓ does not cross owned-external resource boundaries or resolve foreign definitions by guess 565ms
+   ✓ reads mixed native suffixes but never Markdown; hides internal paths and diagnoses symlinks 841ms
+   ✓ fails closed on duplicate identity and conventional stem-pair collision without picking a winner 510ms
+   ✓ suppresses saved contribution immediately, defers capture, follows Undo/Redo and cannot resurrect stale disk on disposal 5142ms
+   ✓ drops stale overlay extraction and keeps disappeared/ambiguous loaded sources suppressed 2253ms
+   ✓ keeps inline typing free of snapshots and synchronous overlay capture 1998ms
+   ✓ bounds examined edges including unresolved targets 328ms
+ ✓ src/qualification/native-knowledge/lightweight.test.ts (38 tests) 26887ms
+   ✓ matches every fact in 24 seeded native fixtures with distinct resource/root IDs 6538ms
+   ✓ matches actual native feature producers and historical value profiles 807ms
+   ✓ matches unsupported values, linked mention provenance, deleted/client-only and duplicate IDs 1695ms
+   ✓ retains external ownership/reference and unplaced-definition validation 1102ms
+   ✓ invalid native input is rejected by both paths > invalid UTF-8 and JSON 1115ms
+   ✓ matches explicit annotation-budget failure and cancellation 3709ms
+   ✓ matches traversal truncation without claiming complete coverage 8894ms
+   ✓ preserves duplicate suppression even if the duplicate would exceed facts budgets 720ms
+ ✓ server/native-document-store.test.mjs (12 tests) 1323ms
+ ✓ src/block-tree/split-performance.test.ts (12 tests) 10472ms
+   ✓ incremental paragraph splitting (capture=false) > inserts empty siblings across shared parent views without touching existing paragraphs 595ms
+   ✓ incremental paragraph splitting (capture=false) > rejects a nonempty or detached paragraph from the empty insertion fast path 560ms
+   ✓ incremental paragraph splitting (capture=false) > splits and restores annotations and Cell identities without snapshots, including redo and another split 964ms
+   ✓ incremental paragraph splitting (capture=false) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 1411ms
+   ✓ incremental paragraph splitting (capture=false) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 664ms
+   ✓ incremental paragraph splitting (capture=false) > falls back safely for inline atoms and maintains indexes for the next plain-text split 1063ms
+   ✓ incremental paragraph splitting (capture=true) > inserts empty siblings across shared parent views without touching existing paragraphs 520ms
+   ✓ incremental paragraph splitting (capture=true) > rejects a nonempty or detached paragraph from the empty insertion fast path 602ms
+   ✓ incremental paragraph splitting (capture=true) > splits and restores annotations and Cell identities without snapshots, including redo and another split 956ms
+   ✓ incremental paragraph splitting (capture=true) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 1402ms
+   ✓ incremental paragraph splitting (capture=true) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 653ms
+   ✓ incremental paragraph splitting (capture=true) > falls back safely for inline atoms and maintains indexes for the next plain-text split 1081ms
+ ✓ src/application/canonical-backlinks.test.ts (10 tests) 151ms
+ ✓ src/block-tree/inline-performance.test.ts (14 tests) 5344ms
+   ✓ incremental inline editing (capture=false) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 659ms
+   ✓ incremental inline editing (capture=false) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 1223ms
+   ✓ incremental inline editing (capture=true) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 661ms
+   ✓ incremental inline editing (capture=true) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 2417ms
+ ✓ src/block-tree/compact-changes.test.ts (9 tests) 28314ms
+   ✓ compact exact capture > copies only changed sequence keys for 5600 character typing and undo 841ms
+   ✓ compact exact capture > copies only changed sequence keys for 25000 character typing and undo 26841ms
+ ✓ src/knowledge/live-observer.test.ts (18 tests) 5529ms
+   ✓ production live/capture/lightweight differential: undefined 315ms
+   ✓ does not capture, serialize, mount or mutate during observation; Undo/Redo remain canonical 624ms
+   ✓ does not include a loaded nested owned Document body 589ms
+   ✓ rejects invalid ownership/identity instead of capture fallback: outside retention 429ms
+   ✓ keeps plain/text block parity and rejects indivisible large authored values explicitly 1160ms
+   ✓ rejects a current boundary issued for a different canonical resource 620ms
+ ✓ src/qualification/native-b2/markdown.test.tsx (11 tests) 538ms
+ ✓ src/application/native-saved-scope.test.ts (7 tests) 3981ms
+   ✓ shares a bounded saved cohort without Open, binding, projection, History or per-resource conservative endpoints 546ms
+   ✓ saved-to-opening suppresses immediately, dirty live never falls back, and disappearance requires verified hand-back 906ms
+   ✓ a failed saved scope withdraws its old results, keeps loaded operation usable, and explicit Refresh retries 1289ms
+   ✓ explicit selected Open can re-admit after admission Undo; retained binding is not mistaken for canonical presence 929ms
+ ✓ src/persistence/native-vault-session.test.ts (8 tests) 2108ms
+   ✓ changes only the resource binding with zero occurrences and rejects automatic same-ID adoption by another session 827ms
+ ✓ src/block-tree/definition-ownership.test.ts (9 tests) 55ms
+ ✓ src/application/jet-stage-a-proof.test.ts (5 tests) 186ms
+ ✓ src/application/flint-transient-proof.test.ts (5 tests) 158ms
+ ✓ src/block-tree/undo-storage.test.ts (5 tests) 2730ms
+   ✓ private undo sequence storage > round-trips every stored version across seeded insertion, deletion and replacement 491ms
+   ✓ private undo sequence storage > shares unchanged 25k sequences and bounds fragmentation across repeated small edits 2229ms
+ ✓ server/native-vault-restart.test.mjs (10 tests) 8456ms
+   ✓ recovers from actual SIGKILL at relocation-intent through real routes 1305ms
+   ✓ recovers from actual SIGKILL at relocation-after-0 through real routes 658ms
+   ✓ recovers from actual SIGKILL at relocation-after-1 through real routes 995ms
+   ✓ recovers from actual SIGKILL at relocation-after-2 through real routes 706ms
+   ✓ recovers from actual SIGKILL at relocation-receipt-displaced through real routes 665ms
+   ✓ recovers from actual SIGKILL at relocation-before-complete through real routes 961ms
+   ✓ recovers from actual SIGKILL at relocation-complete through real routes 1171ms
+   ✓ recovers nonempty directory movement after server death and refuses external interference on recovery 616ms
+   ✓ serializes a concurrent Save against a pending relocation across server processes 727ms
+   ✓ finishes a directory move after actual server death and reopens its unchanged native identity 650ms
+ ✓ src/qualification/native-b1/owned-resource-files.test.mjs (9 tests) 273ms
+ ✓ src/history/stage-c-gates/portable.test.ts (4 tests) 37ms
+ ✓ src/persistence/native-session.test.ts (5 tests) 1565ms
+   ✓ opens canonically without an occurrence, saves/reopens, and blocks tree/extended/Workspace bypasses 651ms
+   ✓ does not refresh a stale client baseline after a rejected Save or Open 461ms
+ ✓ src/block-tree/cross-text-edit.test.ts (7 tests) 77ms
+ ✓ src/features/flint/backlinks-view.test.tsx (3 tests) 345ms
+ ✓ src/application/native-knowledge-scope.test.ts (1 test) 576ms
+   ✓ real NativeSession/vault/worker HTTP composition: saved then live, two consumers, notification without capture, shutdown 576ms
+ ✓ src/block-tree/margin-commands.test.ts (3 tests) 105ms
+ ✓ src/qualification/native-knowledge/live-overlay.test.ts (2 tests) 1809ms
+   ✓ suppresses immediately, rejects stale completions and never falls back on disposal 461ms
+   ✓ supports ten independently registered canonical resources without mounting them 1347ms
+ ✓ src/application/document-vault.test.ts (3 tests) 7ms
+ ✓ src/features/flint/query-results.test.tsx (1 test) 19ms
+ ✓ src/block-tree/compatibility-fixtures.test.ts (2 tests) 5ms
+ ✓ src/qualification/native-b1/server.test.mjs (1 test) 3ms
+ ✓ server/native-knowledge.test.ts (32 tests) 5551ms
+   ✓ changed and pending paired resources at after-native are ineligible and reads never update pair evidence 704ms
+   ✓ changed and pending paired resources at before-receipt are ineligible and reads never update pair evidence 1042ms
+   ✓ Facts text-budget exhaustion leaves valid identity inspection available and never emits partial success 1533ms
+ ✓ src/block-tree/block-restore.test.ts (16 tests) 110ms
+ ✓ server/native-saved-scope.test.ts (15 tests) 712ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/block-tree/commit-capture.test.ts > repository commit results > never snapshots, serializes or enumerates the whole graph for strict captured typing and Enter
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/block-tree/commit-capture.test.ts:249:149
+    247|       expect(stringify.mock.calls.some(([value]) => value === state ||…
+    248|         (value && typeof value === "object" && "contents" in value && …
+    249|       for (const enumerator of enumerators) expect(enumerator.mock.cal…
+       |                                                                                                                                                     ^
+    250|       expect(s.events).toHaveLength(9);
+    251|       expect(s.errors).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 49 passed (50)
+      Tests  1 failed | 656 passed (657)
+   Start at  21:40:16
+   Duration  307.56s (transform 15.99s, setup 0ms, collect 37.89s, tests 219.13s, environment 33.90s, prepare 3.81s)
+

@@ -1,0 +1,49 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ❯ src/application/flint-knowledge.test.tsx (12 tests | 5 failed) 44553ms
+   × searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 7479ms
+     → expected null to be truthy
+   × uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 7146ms
+     → expected null to be truthy
+   × uses cell-correct Unicode ranges and never joins text across inline images 6863ms
+     → expected null to be truthy
+   × creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 6807ms
+     → expected null to be truthy
+   × revalidates a displayed result after filesystem removal without mounting or changing bindings 6811ms
+     → expected null to be truthy
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 868ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 811ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 1810ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 3032ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 1323ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 754ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 844ms
+ ✓ src/application/canonical-backlinks.test.ts (10 tests) 885ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/application/flint-knowledge.test.tsx > searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes
+ FAIL  src/application/flint-knowledge.test.tsx > uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection
+ FAIL  src/application/flint-knowledge.test.tsx > uses cell-correct Unicode ranges and never joins text across inline images
+ FAIL  src/application/flint-knowledge.test.tsx > creates, follows and removes native references with Undo/Redo; target titles and paths are not identity
+ FAIL  src/application/flint-knowledge.test.tsx > revalidates a displayed result after filesystem removal without mounting or changing bindings
+AssertionError: expected null to be truthy
+
+- Expected: 
+true
+
++ Received: 
+null
+
+ ❯ src/application/flint-knowledge.test.tsx:41:357
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  5 failed | 17 passed (22)
+   Start at  21:41:58
+   Duration  63.34s (transform 6.59s, setup 0ms, collect 10.20s, tests 45.44s, environment 4.21s, prepare 469ms)
+

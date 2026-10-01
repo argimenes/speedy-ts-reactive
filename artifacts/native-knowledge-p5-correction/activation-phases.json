@@ -1,0 +1,255 @@
+[
+  {
+    "count": 100,
+    "activation": 3908,
+    "longTasks": [
+      86,
+      346,
+      60,
+      300
+    ],
+    "rows": {
+      "before": 100,
+      "retained": 99
+    },
+    "phases": {
+      "discovery.refresh": {
+        "calls": 5,
+        "inclusiveMs": 3097.899999976158,
+        "maxMs": 986.7999999821186
+      },
+      "native.request.open": {
+        "calls": 3,
+        "inclusiveMs": 553.5,
+        "maxMs": 313.69999998807907
+      },
+      "native.request.vault/discover": {
+        "calls": 3,
+        "inclusiveMs": 2059.5,
+        "maxMs": 986.5
+      },
+      "native.decode": {
+        "calls": 2,
+        "inclusiveMs": 164,
+        "maxMs": 87.7000000178814
+      },
+      "vault.derive": {
+        "calls": 4,
+        "inclusiveMs": 5.5,
+        "maxMs": 3
+      },
+      "repository.publication": {
+        "calls": 1,
+        "inclusiveMs": 96.09999999403954,
+        "maxMs": 96.09999999403954
+      },
+      "repository.commit": {
+        "calls": 1,
+        "inclusiveMs": 117.7999999821186,
+        "maxMs": 117.7999999821186
+      },
+      "native.admission": {
+        "calls": 1,
+        "inclusiveMs": 202.90000000596046,
+        "maxMs": 202.90000000596046
+      },
+      "native.bind": {
+        "calls": 1,
+        "inclusiveMs": 45.30000001192093,
+        "maxMs": 45.30000001192093
+      },
+      "native.openResource": {
+        "calls": 1,
+        "inclusiveMs": 1127,
+        "maxMs": 1127
+      },
+      "native.openVerified": {
+        "calls": 1,
+        "inclusiveMs": 1127.800000011921,
+        "maxMs": 1127.800000011921
+      },
+      "activation.prepare": {
+        "calls": 1,
+        "inclusiveMs": 1588.9000000059605,
+        "maxMs": 1588.9000000059605
+      },
+      "navigation.observeLive": {
+        "calls": 1,
+        "inclusiveMs": 91.69999998807907,
+        "maxMs": 91.69999998807907
+      },
+      "navigation.runSearchWorker": {
+        "calls": 1,
+        "inclusiveMs": 67.80000001192093,
+        "maxMs": 67.80000001192093
+      },
+      "occurrence.construct": {
+        "calls": 1,
+        "inclusiveMs": 207.80000001192093,
+        "maxMs": 207.80000001192093
+      },
+      "occurrence.open": {
+        "calls": 1,
+        "inclusiveMs": 288.40000000596046,
+        "maxMs": 288.40000000596046
+      },
+      "native.verifySelected": {
+        "calls": 2,
+        "inclusiveMs": 240.30000001192093,
+        "maxMs": 127.5
+      },
+      "navigation.revealMatch": {
+        "calls": 1,
+        "inclusiveMs": 1.800000011920929,
+        "maxMs": 1.800000011920929
+      },
+      "navigation.editor.focus.request": {
+        "calls": 1,
+        "inclusiveMs": 3.100000023841858,
+        "maxMs": 3.100000023841858
+      },
+      "navigation.mount.restoreInlineSelection": {
+        "calls": 1,
+        "inclusiveMs": 1.199999988079071,
+        "maxMs": 1.199999988079071
+      },
+      "navigation": {
+        "calls": 1,
+        "inclusiveMs": 2142.0999999940395,
+        "maxMs": 2142.0999999940395
+      },
+      "activation.live-validation-and-navigation": {
+        "calls": 1,
+        "inclusiveMs": 3891.2000000178814,
+        "maxMs": 3891.2000000178814
+      }
+    }
+  },
+  {
+    "count": 1000,
+    "activation": 17110.20000001788,
+    "longTasks": [
+      50,
+      52,
+      457,
+      138,
+      83
+    ],
+    "rows": {
+      "before": 1000,
+      "retained": 999
+    },
+    "phases": {
+      "discovery.refresh": {
+        "calls": 5,
+        "inclusiveMs": 20394.399999976158,
+        "maxMs": 4729.9000000059605
+      },
+      "native.request.open": {
+        "calls": 3,
+        "inclusiveMs": 317.30000001192093,
+        "maxMs": 124.10000002384186
+      },
+      "native.request.vault/discover": {
+        "calls": 3,
+        "inclusiveMs": 12792.599999964237,
+        "maxMs": 4728.5999999940395
+      },
+      "native.decode": {
+        "calls": 2,
+        "inclusiveMs": 197.5,
+        "maxMs": 110.5
+      },
+      "vault.derive": {
+        "calls": 4,
+        "inclusiveMs": 11.299999982118607,
+        "maxMs": 4.4000000059604645
+      },
+      "repository.publication": {
+        "calls": 1,
+        "inclusiveMs": 117,
+        "maxMs": 117
+      },
+      "repository.commit": {
+        "calls": 1,
+        "inclusiveMs": 136.2000000178814,
+        "maxMs": 136.2000000178814
+      },
+      "native.admission": {
+        "calls": 1,
+        "inclusiveMs": 234.80000001192093,
+        "maxMs": 234.80000001192093
+      },
+      "native.bind": {
+        "calls": 1,
+        "inclusiveMs": 91,
+        "maxMs": 91
+      },
+      "native.openResource": {
+        "calls": 1,
+        "inclusiveMs": 4261.399999976158,
+        "maxMs": 4261.399999976158
+      },
+      "native.openVerified": {
+        "calls": 1,
+        "inclusiveMs": 4262.300000011921,
+        "maxMs": 4262.300000011921
+      },
+      "activation.prepare": {
+        "calls": 1,
+        "inclusiveMs": 7508.799999982119,
+        "maxMs": 7508.799999982119
+      },
+      "navigation.observeLive": {
+        "calls": 1,
+        "inclusiveMs": 153.7000000178814,
+        "maxMs": 153.7000000178814
+      },
+      "navigation.runSearchWorker": {
+        "calls": 1,
+        "inclusiveMs": 18.19999998807907,
+        "maxMs": 18.19999998807907
+      },
+      "occurrence.construct": {
+        "calls": 1,
+        "inclusiveMs": 69.40000000596046,
+        "maxMs": 69.40000000596046
+      },
+      "occurrence.open": {
+        "calls": 1,
+        "inclusiveMs": 79.5,
+        "maxMs": 79.5
+      },
+      "native.verifySelected": {
+        "calls": 2,
+        "inclusiveMs": 210,
+        "maxMs": 124.30000001192093
+      },
+      "navigation.revealMatch": {
+        "calls": 1,
+        "inclusiveMs": 3.2000000178813934,
+        "maxMs": 3.2000000178813934
+      },
+      "navigation.editor.focus.request": {
+        "calls": 1,
+        "inclusiveMs": 1.4000000059604645,
+        "maxMs": 1.4000000059604645
+      },
+      "navigation.mount.restoreInlineSelection": {
+        "calls": 1,
+        "inclusiveMs": 1.2000000178813934,
+        "maxMs": 1.2000000178813934
+      },
+      "navigation": {
+        "calls": 1,
+        "inclusiveMs": 9405.300000011921,
+        "maxMs": 9405.300000011921
+      },
+      "activation.live-validation-and-navigation": {
+        "calls": 1,
+        "inclusiveMs": 17087.09999999404,
+        "maxMs": 17087.09999999404
+      }
+    }
+  }
+]

@@ -1,0 +1,18 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-vault.test.tsx (14 tests) 6827ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 1132ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 1054ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 386ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 310ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 382ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 313ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 1717ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  21:31:12
+   Duration  14.55s (transform 3.10s, setup 0ms, collect 6.82s, tests 6.83s, environment 596ms, prepare 77ms)
+

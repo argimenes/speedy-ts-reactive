@@ -1,0 +1,2138 @@
+{
+  "discovery-100": {
+    "self": [
+      {
+        "frame": "(idle) :0",
+        "selfMs": 933.7449999999986,
+        "inclusiveMs": 933.7449999999986
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 154.26199999999994,
+        "inclusiveMs": 154.26199999999994
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 12.288,
+        "inclusiveMs": 12.288
+      },
+      {
+        "frame": "setAttribute :0",
+        "selfMs": 5.071999999999999,
+        "inclusiveMs": 5.071999999999999
+      },
+      {
+        "frame": "fetch :0",
+        "selfMs": 4.861,
+        "inclusiveMs": 4.861
+      },
+      {
+        "frame": "insertBefore :0",
+        "selfMs": 4.031,
+        "inclusiveMs": 4.031
+      },
+      {
+        "frame": "replaceChild :0",
+        "selfMs": 2.517,
+        "inclusiveMs": 2.517
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/features/flint/vault-view.tsx:230",
+        "selfMs": 2.5060000000000002,
+        "inclusiveMs": 2.5060000000000002
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:106",
+        "selfMs": 2.472,
+        "inclusiveMs": 3.7359999999999998
+      },
+      {
+        "frame": "createRenderEffect http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:246",
+        "selfMs": 2.322,
+        "inclusiveMs": 11.328999999999999
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:187",
+        "selfMs": 2.3,
+        "inclusiveMs": 2.3
+      },
+      {
+        "frame": " :1",
+        "selfMs": 1.895,
+        "inclusiveMs": 7.757
+      },
+      {
+        "frame": "querySelector :0",
+        "selfMs": 1.264,
+        "inclusiveMs": 1.264
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:335",
+        "selfMs": 1.262,
+        "inclusiveMs": 1.262
+      },
+      {
+        "frame": "wait http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:36",
+        "selfMs": 1.26,
+        "inclusiveMs": 4.996
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/features/flint/vault-view.tsx:72",
+        "selfMs": 1.259,
+        "inclusiveMs": 4.803000000000001
+      },
+      {
+        "frame": "createComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:828",
+        "selfMs": 1.237,
+        "inclusiveMs": 1.237
+      },
+      {
+        "frame": "insertExpression http://127.0.0.1:51673/node_modules/.vite/deps/chunk-HXW2XNL6.js?v=745b232b:1001",
+        "selfMs": 1.222,
+        "inclusiveMs": 9.007
+      },
+      {
+        "frame": "acquire http://127.0.0.1:51673/src/application/document-vault.ts:185",
+        "selfMs": 1.17,
+        "inclusiveMs": 4.7749999999999995
+      },
+      {
+        "frame": "dispatch http://127.0.0.1:51673/src/input/bindings.ts:142",
+        "selfMs": 1.087,
+        "inclusiveMs": 1.087
+      },
+      {
+        "frame": "cleanNode http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1072",
+        "selfMs": 0.836,
+        "inclusiveMs": 0.836
+      },
+      {
+        "frame": " http://127.0.0.1:51673/@solid-refresh:25",
+        "selfMs": 0.318,
+        "inclusiveMs": 0.318
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 0.087,
+        "inclusiveMs": 22.669000000000004
+      },
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 1139.2729999999992
+      },
+      {
+        "frame": "observeHeartbeat http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:172",
+        "selfMs": 0,
+        "inclusiveMs": 7.757
+      },
+      {
+        "frame": "onControlClick http://127.0.0.1:51673/src/input/gateway.ts:107",
+        "selfMs": 0,
+        "inclusiveMs": 1.087
+      },
+      {
+        "frame": "click :0",
+        "selfMs": 0,
+        "inclusiveMs": 5.861999999999999
+      },
+      {
+        "frame": "click http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:44",
+        "selfMs": 0,
+        "inclusiveMs": 5.861999999999999
+      },
+      {
+        "frame": "open http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:102",
+        "selfMs": 0,
+        "inclusiveMs": 5.861999999999999
+      },
+      {
+        "frame": "open http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:370",
+        "selfMs": 0,
+        "inclusiveMs": 28.7
+      }
+    ],
+    "inclusive": [
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 1139.2729999999992
+      },
+      {
+        "frame": "(idle) :0",
+        "selfMs": 933.7449999999986,
+        "inclusiveMs": 933.7449999999986
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 154.26199999999994,
+        "inclusiveMs": 154.26199999999994
+      },
+      {
+        "frame": "open http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:370",
+        "selfMs": 0,
+        "inclusiveMs": 28.7
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 0.087,
+        "inclusiveMs": 22.669000000000004
+      },
+      {
+        "frame": "completeUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:935",
+        "selfMs": 0,
+        "inclusiveMs": 22.669000000000004
+      },
+      {
+        "frame": "runUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:913",
+        "selfMs": 0,
+        "inclusiveMs": 22.669000000000004
+      },
+      {
+        "frame": "writeSignal http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:732",
+        "selfMs": 0,
+        "inclusiveMs": 22.669000000000004
+      },
+      {
+        "frame": "setter http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:228",
+        "selfMs": 0,
+        "inclusiveMs": 22.669000000000004
+      },
+      {
+        "frame": "updateComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:776",
+        "selfMs": 0,
+        "inclusiveMs": 22.582000000000004
+      },
+      {
+        "frame": "runComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:793",
+        "selfMs": 0,
+        "inclusiveMs": 21.746000000000002
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 12.288,
+        "inclusiveMs": 12.288
+      },
+      {
+        "frame": "runUserEffects http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1012",
+        "selfMs": 0,
+        "inclusiveMs": 11.584999999999999
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:985",
+        "selfMs": 0,
+        "inclusiveMs": 11.584999999999999
+      },
+      {
+        "frame": "createRenderEffect http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:246",
+        "selfMs": 2.322,
+        "inclusiveMs": 11.328999999999999
+      },
+      {
+        "frame": "runQueue http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:991",
+        "selfMs": 0,
+        "inclusiveMs": 11.084
+      },
+      {
+        "frame": "insertExpression http://127.0.0.1:51673/node_modules/.vite/deps/chunk-HXW2XNL6.js?v=745b232b:1001",
+        "selfMs": 1.222,
+        "inclusiveMs": 9.007
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-HXW2XNL6.js?v=745b232b:773",
+        "selfMs": 0,
+        "inclusiveMs": 9.007
+      },
+      {
+        "frame": "Show.createMemo.name http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1650",
+        "selfMs": 0,
+        "inclusiveMs": 8.899
+      },
+      {
+        "frame": "get children http://127.0.0.1:51673/src/features/flint/vault-view.tsx:127",
+        "selfMs": 0,
+        "inclusiveMs": 8.581
+      },
+      {
+        "frame": " :1",
+        "selfMs": 1.895,
+        "inclusiveMs": 7.757
+      },
+      {
+        "frame": "observeHeartbeat http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:172",
+        "selfMs": 0,
+        "inclusiveMs": 7.757
+      },
+      {
+        "frame": "untrack http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:497",
+        "selfMs": 0,
+        "inclusiveMs": 7.627000000000001
+      },
+      {
+        "frame": "createMemo http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:276",
+        "selfMs": 0,
+        "inclusiveMs": 7.627000000000001
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:620",
+        "selfMs": 0,
+        "inclusiveMs": 7.627000000000001
+      },
+      {
+        "frame": "createComponent http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1408",
+        "selfMs": 0,
+        "inclusiveMs": 7.627000000000001
+      },
+      {
+        "frame": "mapper http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1334",
+        "selfMs": 0,
+        "inclusiveMs": 7.309000000000001
+      },
+      {
+        "frame": "updateFn http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:198",
+        "selfMs": 0,
+        "inclusiveMs": 7.309000000000001
+      },
+      {
+        "frame": "createRoot http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:185",
+        "selfMs": 0,
+        "inclusiveMs": 7.309000000000001
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1261",
+        "selfMs": 0,
+        "inclusiveMs": 7.309000000000001
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1258",
+        "selfMs": 0,
+        "inclusiveMs": 7.309000000000001
+      },
+      {
+        "frame": "For http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1625",
+        "selfMs": 0,
+        "inclusiveMs": 7.309000000000001
+      },
+      {
+        "frame": "click :0",
+        "selfMs": 0,
+        "inclusiveMs": 5.861999999999999
+      },
+      {
+        "frame": "click http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:44",
+        "selfMs": 0,
+        "inclusiveMs": 5.861999999999999
+      },
+      {
+        "frame": "open http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:102",
+        "selfMs": 0,
+        "inclusiveMs": 5.861999999999999
+      },
+      {
+        "frame": "setAttribute :0",
+        "selfMs": 5.071999999999999,
+        "inclusiveMs": 5.071999999999999
+      },
+      {
+        "frame": "setAttribute http://127.0.0.1:51673/node_modules/.vite/deps/chunk-HXW2XNL6.js?v=745b232b:659",
+        "selfMs": 0,
+        "inclusiveMs": 5.071999999999999
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/features/flint/vault-view.tsx:116",
+        "selfMs": 0,
+        "inclusiveMs": 5.071999999999999
+      },
+      {
+        "frame": "wait http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:36",
+        "selfMs": 1.26,
+        "inclusiveMs": 4.996
+      },
+      {
+        "frame": "fetch :0",
+        "selfMs": 4.861,
+        "inclusiveMs": 4.861
+      }
+    ]
+  },
+  "partial-100": {
+    "self": [
+      {
+        "frame": "(idle) :0",
+        "selfMs": 807.7090000000004,
+        "inclusiveMs": 807.7090000000004
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 271.08200000000005,
+        "inclusiveMs": 271.08200000000005
+      },
+      {
+        "frame": "step http://127.0.0.1:51673/src/knowledge/scheduler.ts:18",
+        "selfMs": 33.584,
+        "inclusiveMs": 45.26100000000002
+      },
+      {
+        "frame": "request http://127.0.0.1:51673/src/application/saved-facts-client.ts:15",
+        "selfMs": 18.888,
+        "inclusiveMs": 18.888
+      },
+      {
+        "frame": "click :0",
+        "selfMs": 18.734,
+        "inclusiveMs": 20.003
+      },
+      {
+        "frame": "prepare http://127.0.0.1:51673/src/application/saved-facts-client.ts:61",
+        "selfMs": 15.290000000000001,
+        "inclusiveMs": 23.101000000000006
+      },
+      {
+        "frame": "estimateBytes http://127.0.0.1:51673/src/knowledge/scheduler.ts:35",
+        "selfMs": 14.314999999999998,
+        "inclusiveMs": 57.233000000000004
+      },
+      {
+        "frame": "yieldTask http://127.0.0.1:51673/src/knowledge/scheduler.ts:1",
+        "selfMs": 9.280000000000001,
+        "inclusiveMs": 9.280000000000001
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 6.309,
+        "inclusiveMs": 6.309
+      },
+      {
+        "frame": "get subtle :0",
+        "selfMs": 4.029999999999999,
+        "inclusiveMs": 4.029999999999999
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 3.7840000000000003,
+        "inclusiveMs": 3.7840000000000003
+      },
+      {
+        "frame": "knowledgeBindings http://127.0.0.1:51673/src/persistence/native-session.ts:77",
+        "selfMs": 3.5949999999999998,
+        "inclusiveMs": 3.5949999999999998
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:175",
+        "selfMs": 2.545,
+        "inclusiveMs": 2.545
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/application/saved-facts-client.ts:79",
+        "selfMs": 2.522,
+        "inclusiveMs": 2.522
+      },
+      {
+        "frame": " :0",
+        "selfMs": 2.519,
+        "inclusiveMs": 2.519
+      },
+      {
+        "frame": "decodeAuthoredValue http://127.0.0.1:51673/src/history/preplan-spike/wire.ts:72",
+        "selfMs": 2.114,
+        "inclusiveMs": 5.709
+      },
+      {
+        "frame": "valid http://127.0.0.1:51673/src/knowledge/session.ts:269",
+        "selfMs": 1.582,
+        "inclusiveMs": 1.582
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/application/vault-knowledge.ts:127",
+        "selfMs": 1.4509999999999998,
+        "inclusiveMs": 1.4509999999999998
+      },
+      {
+        "frame": "PerformanceObserver :0",
+        "selfMs": 1.329,
+        "inclusiveMs": 1.329
+      },
+      {
+        "frame": "_$effect.e http://127.0.0.1:51673/src/features/flint/knowledge-view.tsx:136",
+        "selfMs": 1.281,
+        "inclusiveMs": 1.281
+      },
+      {
+        "frame": "runUserEffects http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1012",
+        "selfMs": 1.276,
+        "inclusiveMs": 1.276
+      },
+      {
+        "frame": "unpack http://127.0.0.1:51673/src/history/preplan-spike/wire.ts:38",
+        "selfMs": 1.269,
+        "inclusiveMs": 1.269
+      },
+      {
+        "frame": "pack http://127.0.0.1:51673/src/history/preplan-spike/wire.ts:7",
+        "selfMs": 1.266,
+        "inclusiveMs": 1.266
+      },
+      {
+        "frame": "state http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:59",
+        "selfMs": 1.265,
+        "inclusiveMs": 6.045
+      },
+      {
+        "frame": "decodeFacts http://127.0.0.1:51673/src/knowledge/transport.ts:17",
+        "selfMs": 1.263,
+        "inclusiveMs": 8.229
+      },
+      {
+        "frame": "URL :0",
+        "selfMs": 1.263,
+        "inclusiveMs": 1.263
+      },
+      {
+        "frame": "normalizePolicy http://127.0.0.1:51673/src/knowledge/policy.ts:2",
+        "selfMs": 1.259,
+        "inclusiveMs": 1.259
+      },
+      {
+        "frame": "readCanonicalResourceBoundaryCooperative http://127.0.0.1:51673/src/block-tree/repository.ts:256",
+        "selfMs": 1.257,
+        "inclusiveMs": 1.257
+      },
+      {
+        "frame": "keys http://127.0.0.1:51673/src/knowledge/transport.ts:10",
+        "selfMs": 1.257,
+        "inclusiveMs": 1.257
+      },
+      {
+        "frame": "run http://127.0.0.1:51673/src/knowledge/session.ts:217",
+        "selfMs": 1.238,
+        "inclusiveMs": 28.568
+      }
+    ],
+    "inclusive": [
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 1237.9489999999992
+      },
+      {
+        "frame": "(idle) :0",
+        "selfMs": 807.7090000000004,
+        "inclusiveMs": 807.7090000000004
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 271.08200000000005,
+        "inclusiveMs": 271.08200000000005
+      },
+      {
+        "frame": "estimateBytes http://127.0.0.1:51673/src/knowledge/scheduler.ts:35",
+        "selfMs": 14.314999999999998,
+        "inclusiveMs": 57.233000000000004
+      },
+      {
+        "frame": "step http://127.0.0.1:51673/src/knowledge/scheduler.ts:18",
+        "selfMs": 33.584,
+        "inclusiveMs": 45.26100000000002
+      },
+      {
+        "frame": "run http://127.0.0.1:51673/src/knowledge/session.ts:217",
+        "selfMs": 1.238,
+        "inclusiveMs": 28.568
+      },
+      {
+        "frame": "prepare http://127.0.0.1:51673/src/application/saved-facts-client.ts:61",
+        "selfMs": 15.290000000000001,
+        "inclusiveMs": 23.101000000000006
+      },
+      {
+        "frame": "click :0",
+        "selfMs": 18.734,
+        "inclusiveMs": 20.003
+      },
+      {
+        "frame": "click http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:44",
+        "selfMs": 0,
+        "inclusiveMs": 20.003
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:74",
+        "selfMs": 0,
+        "inclusiveMs": 20.003
+      },
+      {
+        "frame": "partial http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:112",
+        "selfMs": 0,
+        "inclusiveMs": 20.003
+      },
+      {
+        "frame": "host.acquire.prepareSaved http://127.0.0.1:51673/src/application/native-knowledge-scope.ts:34",
+        "selfMs": 0,
+        "inclusiveMs": 19.320000000000004
+      },
+      {
+        "frame": "request http://127.0.0.1:51673/src/application/saved-facts-client.ts:15",
+        "selfMs": 18.888,
+        "inclusiveMs": 18.888
+      },
+      {
+        "frame": "read http://127.0.0.1:51673/src/application/saved-facts-client.ts:100",
+        "selfMs": 0,
+        "inclusiveMs": 9.488
+      },
+      {
+        "frame": "yieldTask http://127.0.0.1:51673/src/knowledge/scheduler.ts:1",
+        "selfMs": 9.280000000000001,
+        "inclusiveMs": 9.280000000000001
+      },
+      {
+        "frame": "decodeFacts http://127.0.0.1:51673/src/knowledge/transport.ts:17",
+        "selfMs": 1.263,
+        "inclusiveMs": 8.229
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 6.309,
+        "inclusiveMs": 6.309
+      },
+      {
+        "frame": "state http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:59",
+        "selfMs": 1.265,
+        "inclusiveMs": 6.045
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:114",
+        "selfMs": 0,
+        "inclusiveMs": 6.045
+      },
+      {
+        "frame": "wait http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:36",
+        "selfMs": 0,
+        "inclusiveMs": 6.045
+      },
+      {
+        "frame": "decodeAuthoredValue http://127.0.0.1:51673/src/history/preplan-spike/wire.ts:72",
+        "selfMs": 2.114,
+        "inclusiveMs": 5.709
+      },
+      {
+        "frame": "get subtle :0",
+        "selfMs": 4.029999999999999,
+        "inclusiveMs": 4.029999999999999
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 3.7840000000000003,
+        "inclusiveMs": 3.7840000000000003
+      },
+      {
+        "frame": "knowledgeBindings http://127.0.0.1:51673/src/persistence/native-session.ts:77",
+        "selfMs": 3.5949999999999998,
+        "inclusiveMs": 3.5949999999999998
+      },
+      {
+        "frame": "runUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:913",
+        "selfMs": 0,
+        "inclusiveMs": 2.557
+      },
+      {
+        "frame": "completeUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:935",
+        "selfMs": 0,
+        "inclusiveMs": 2.557
+      },
+      {
+        "frame": "writeSignal http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:732",
+        "selfMs": 0,
+        "inclusiveMs": 2.557
+      },
+      {
+        "frame": "setter http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:228",
+        "selfMs": 0,
+        "inclusiveMs": 2.557
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/features/flint/knowledge-view.tsx:33",
+        "selfMs": 0,
+        "inclusiveMs": 2.55
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:175",
+        "selfMs": 2.545,
+        "inclusiveMs": 2.545
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/application/saved-facts-client.ts:79",
+        "selfMs": 2.522,
+        "inclusiveMs": 2.522
+      },
+      {
+        "frame": " :0",
+        "selfMs": 2.519,
+        "inclusiveMs": 2.519
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/application/facts-query-provider.ts:94",
+        "selfMs": 0,
+        "inclusiveMs": 2.351
+      },
+      {
+        "frame": "valid http://127.0.0.1:51673/src/knowledge/session.ts:269",
+        "selfMs": 1.582,
+        "inclusiveMs": 1.582
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/application/vault-knowledge.ts:127",
+        "selfMs": 1.4509999999999998,
+        "inclusiveMs": 1.4509999999999998
+      },
+      {
+        "frame": "PerformanceObserver :0",
+        "selfMs": 1.329,
+        "inclusiveMs": 1.329
+      },
+      {
+        "frame": "observeHeartbeat http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:172",
+        "selfMs": 0,
+        "inclusiveMs": 1.329
+      },
+      {
+        "frame": " :1",
+        "selfMs": 0,
+        "inclusiveMs": 1.329
+      },
+      {
+        "frame": "_$effect.e http://127.0.0.1:51673/src/features/flint/knowledge-view.tsx:136",
+        "selfMs": 1.281,
+        "inclusiveMs": 1.281
+      },
+      {
+        "frame": "runComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:793",
+        "selfMs": 0,
+        "inclusiveMs": 1.281
+      }
+    ]
+  },
+  "activation-100": {
+    "self": [
+      {
+        "frame": "(idle) :0",
+        "selfMs": 2809.5129999999976,
+        "inclusiveMs": 2809.5129999999976
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 603.0700000000003,
+        "inclusiveMs": 603.0700000000003
+      },
+      {
+        "frame": "clone http://127.0.0.1:51673/src/block-tree/clone.ts:1",
+        "selfMs": 155.56900000000005,
+        "inclusiveMs": 161.94800000000004
+      },
+      {
+        "frame": "getNodes http://127.0.0.1:51673/node_modules/.vite/deps/solid-js_store.js?v=f91475ca:77",
+        "selfMs": 108.357,
+        "inclusiveMs": 108.357
+      },
+      {
+        "frame": "getBoundingClientRect :0",
+        "selfMs": 66.769,
+        "inclusiveMs": 66.769
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 57.99900000000001,
+        "inclusiveMs": 57.99900000000001
+      },
+      {
+        "frame": "step http://127.0.0.1:51673/src/knowledge/scheduler.ts:18",
+        "selfMs": 49.81300000000001,
+        "inclusiveMs": 64.716
+      },
+      {
+        "frame": "unwrap http://127.0.0.1:51673/node_modules/.vite/deps/solid-js_store.js?v=f91475ca:44",
+        "selfMs": 44.48800000000001,
+        "inclusiveMs": 44.48800000000001
+      },
+      {
+        "frame": "estimateBytes http://127.0.0.1:51673/src/knowledge/scheduler.ts:35",
+        "selfMs": 26.394,
+        "inclusiveMs": 83.66
+      },
+      {
+        "frame": "validateResource http://127.0.0.1:51673/src/history/stage-c-gates/resource.ts:12",
+        "selfMs": 22.706999999999997,
+        "inclusiveMs": 33.612
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/block-tree/resource-identity.ts:13",
+        "selfMs": 22.54,
+        "inclusiveMs": 22.54
+      },
+      {
+        "frame": "insertExpression http://127.0.0.1:51673/node_modules/.vite/deps/chunk-HXW2XNL6.js?v=745b232b:1001",
+        "selfMs": 18.971999999999998,
+        "inclusiveMs": 28.312999999999995
+      },
+      {
+        "frame": "freeze http://127.0.0.1:51673/src/block-tree/commit-capture.ts:22",
+        "selfMs": 17.894000000000005,
+        "inclusiveMs": 17.894000000000005
+      },
+      {
+        "frame": "captureNative http://127.0.0.1:51673/src/persistence/native-resource.ts:19",
+        "selfMs": 13.398000000000001,
+        "inclusiveMs": 117.65800000000003
+      },
+      {
+        "frame": "resourceOwner http://127.0.0.1:51673/src/block-tree/resource-identity.ts:25",
+        "selfMs": 13.039,
+        "inclusiveMs": 38.965999999999994
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 10.049,
+        "inclusiveMs": 10.049
+      },
+      {
+        "frame": "randomUUID :0",
+        "selfMs": 9.876,
+        "inclusiveMs": 9.876
+      },
+      {
+        "frame": "structuredClone :0",
+        "selfMs": 9.319999999999999,
+        "inclusiveMs": 9.319999999999999
+      },
+      {
+        "frame": "visit http://127.0.0.1:51673/src/history/stage-c-gates/resource.ts:53",
+        "selfMs": 8.933,
+        "inclusiveMs": 8.933
+      },
+      {
+        "frame": "setTimeout :0",
+        "selfMs": 7.677,
+        "inclusiveMs": 7.677
+      },
+      {
+        "frame": "focus :0",
+        "selfMs": 7.379,
+        "inclusiveMs": 7.379
+      },
+      {
+        "frame": "cleanNode http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1072",
+        "selfMs": 7.009,
+        "inclusiveMs": 326.62999999999994
+      },
+      {
+        "frame": "fn http://127.0.0.1:51673/node_modules/.vite/deps/chunk-HXW2XNL6.js?v=745b232b:633",
+        "selfMs": 6.563,
+        "inclusiveMs": 6.563
+      },
+      {
+        "frame": "_$effect.e http://127.0.0.1:51673/src/features/flint/knowledge-view.tsx:136",
+        "selfMs": 6.538,
+        "inclusiveMs": 12.451
+      },
+      {
+        "frame": "decodeFacts http://127.0.0.1:51673/src/knowledge/transport.ts:17",
+        "selfMs": 6.114000000000001,
+        "inclusiveMs": 10.305000000000001
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:187",
+        "selfMs": 5.733,
+        "inclusiveMs": 5.733
+      },
+      {
+        "frame": "unique http://127.0.0.1:51673/src/block-tree/ids.ts:5",
+        "selfMs": 5.568,
+        "inclusiveMs": 14.196
+      },
+      {
+        "frame": "captureSelection http://127.0.0.1:51673/src/rendering/standoff-editor-view.tsx:537",
+        "selfMs": 5.095,
+        "inclusiveMs": 8.9
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/runtime/search-worker.ts:1",
+        "selfMs": 5.01,
+        "inclusiveMs": 5.01
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 4.941,
+        "inclusiveMs": 326.4569999999999
+      }
+    ],
+    "inclusive": [
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 4347.407999999994
+      },
+      {
+        "frame": "(idle) :0",
+        "selfMs": 2809.5129999999976,
+        "inclusiveMs": 2809.5129999999976
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 603.0700000000003,
+        "inclusiveMs": 603.0700000000003
+      },
+      {
+        "frame": "sync :1",
+        "selfMs": 2.737,
+        "inclusiveMs": 601.0730000000003
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/persistence/native-session.ts:314",
+        "selfMs": 0,
+        "inclusiveMs": 333.9979999999999
+      },
+      {
+        "frame": "updateComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:776",
+        "selfMs": 1.248,
+        "inclusiveMs": 327.87799999999993
+      },
+      {
+        "frame": "cleanNode http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1072",
+        "selfMs": 7.009,
+        "inclusiveMs": 326.62999999999994
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 4.941,
+        "inclusiveMs": 326.4569999999999
+      },
+      {
+        "frame": "completeUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:935",
+        "selfMs": 0,
+        "inclusiveMs": 325.5139999999999
+      },
+      {
+        "frame": "runUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:913",
+        "selfMs": 0,
+        "inclusiveMs": 297.3499999999998
+      },
+      {
+        "frame": "untrack http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:497",
+        "selfMs": 0,
+        "inclusiveMs": 279.99999999999983
+      },
+      {
+        "frame": "runQueue http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:991",
+        "selfMs": 0,
+        "inclusiveMs": 219.95199999999997
+      },
+      {
+        "frame": "setter http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:228",
+        "selfMs": 1.256,
+        "inclusiveMs": 203.61399999999995
+      },
+      {
+        "frame": "writeSignal http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:732",
+        "selfMs": 0,
+        "inclusiveMs": 202.35799999999998
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/persistence/native-resource.ts:190",
+        "selfMs": 2.524,
+        "inclusiveMs": 195.684
+      },
+      {
+        "frame": "admitNative http://127.0.0.1:51673/src/persistence/native-resource.ts:189",
+        "selfMs": 0,
+        "inclusiveMs": 195.684
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1655",
+        "selfMs": 0,
+        "inclusiveMs": 189.075
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:620",
+        "selfMs": 1.083,
+        "inclusiveMs": 187.796
+      },
+      {
+        "frame": "createComponent http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1408",
+        "selfMs": 0,
+        "inclusiveMs": 187.796
+      },
+      {
+        "frame": "Show.createMemo.name http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1650",
+        "selfMs": 0,
+        "inclusiveMs": 187.779
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/rendering/transient-document-view.tsx:16",
+        "selfMs": 0,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": "TransientDocumentView2 http://127.0.0.1:51673/src/rendering/transient-document-view.tsx:15",
+        "selfMs": 0,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": " http://127.0.0.1:51673/@solid-refresh:25",
+        "selfMs": 0,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": "HMRComp.createMemo.name http://127.0.0.1:51673/@solid-refresh:22",
+        "selfMs": 0,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": "createMemo http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:276",
+        "selfMs": 3.122,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": "HMRComp http://127.0.0.1:51673/@solid-refresh:19",
+        "selfMs": 0,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": "children http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:161",
+        "selfMs": 0,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": "Show http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1641",
+        "selfMs": 0,
+        "inclusiveMs": 186.504
+      },
+      {
+        "frame": "Target http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:147",
+        "selfMs": 0,
+        "inclusiveMs": 184.072
+      },
+      {
+        "frame": "children http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:217",
+        "selfMs": 0,
+        "inclusiveMs": 181.856
+      },
+      {
+        "frame": "get children http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:210",
+        "selfMs": 0,
+        "inclusiveMs": 179.78
+      },
+      {
+        "frame": "clone http://127.0.0.1:51673/src/block-tree/clone.ts:1",
+        "selfMs": 155.56900000000005,
+        "inclusiveMs": 161.94800000000004
+      },
+      {
+        "frame": "decodeNative http://127.0.0.1:51673/src/persistence/native-resource.ts:170",
+        "selfMs": 0,
+        "inclusiveMs": 157.952
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/persistence/native-resource.ts:171",
+        "selfMs": 2.517,
+        "inclusiveMs": 156.515
+      },
+      {
+        "frame": "chooseTab http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:177",
+        "selfMs": 1.419,
+        "inclusiveMs": 156.23600000000002
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:239",
+        "selfMs": 0,
+        "inclusiveMs": 156.23600000000002
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:535",
+        "selfMs": 1.501,
+        "inclusiveMs": 156.13500000000002
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1258",
+        "selfMs": 0,
+        "inclusiveMs": 154.07999999999996
+      },
+      {
+        "frame": "mapper http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1334",
+        "selfMs": 0,
+        "inclusiveMs": 151.83099999999996
+      },
+      {
+        "frame": "createRoot http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:185",
+        "selfMs": 0,
+        "inclusiveMs": 151.83099999999996
+      }
+    ]
+  },
+  "discovery-1000": {
+    "self": [
+      {
+        "frame": "(idle) :0",
+        "selfMs": 4048.393,
+        "inclusiveMs": 4048.393
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 287.3519999999998,
+        "inclusiveMs": 287.3519999999998
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 32.964,
+        "inclusiveMs": 32.964
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:187",
+        "selfMs": 24.509999999999998,
+        "inclusiveMs": 26.731999999999996
+      },
+      {
+        "frame": "querySelector :0",
+        "selfMs": 7.241999999999999,
+        "inclusiveMs": 7.241999999999999
+      },
+      {
+        "frame": "requestAnimationFrame :0",
+        "selfMs": 4.894,
+        "inclusiveMs": 4.894
+      },
+      {
+        "frame": "setTimeout :0",
+        "selfMs": 2.485,
+        "inclusiveMs": 2.485
+      },
+      {
+        "frame": "tick http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:180",
+        "selfMs": 2.449,
+        "inclusiveMs": 7.342999999999999
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 2.222,
+        "inclusiveMs": 2.222
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:106",
+        "selfMs": 2.1769999999999996,
+        "inclusiveMs": 9.418999999999999
+      },
+      {
+        "frame": "resolveEvent http://127.0.0.1:51673/src/runtime/mounts.ts:59",
+        "selfMs": 1.377,
+        "inclusiveMs": 1.377
+      },
+      {
+        "frame": "setStore http://127.0.0.1:51673/node_modules/.vite/deps/solid-js_store.js?v=f91475ca:255",
+        "selfMs": 1.363,
+        "inclusiveMs": 1.363
+      },
+      {
+        "frame": "json :0",
+        "selfMs": 1.28,
+        "inclusiveMs": 1.28
+      },
+      {
+        "frame": "updateComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:776",
+        "selfMs": 1.261,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:620",
+        "selfMs": 1.259,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "insertBefore :0",
+        "selfMs": 1.259,
+        "inclusiveMs": 1.259
+      },
+      {
+        "frame": "get http://127.0.0.1:51673/node_modules/.vite/deps/solid-js_store.js?v=f91475ca:112",
+        "selfMs": 1.259,
+        "inclusiveMs": 1.259
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:352",
+        "selfMs": 1.258,
+        "inclusiveMs": 1.258
+      },
+      {
+        "frame": "children http://127.0.0.1:51673/src/features/flint/vault-view.tsx:72",
+        "selfMs": 1.255,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "createComponent http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1408",
+        "selfMs": 1.254,
+        "inclusiveMs": 8.76
+      },
+      {
+        "frame": "createMemo http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:276",
+        "selfMs": 1.238,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/features/flint/vault-view.tsx:72",
+        "selfMs": 1.234,
+        "inclusiveMs": 6.251
+      },
+      {
+        "frame": "wait http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:36",
+        "selfMs": 1.166,
+        "inclusiveMs": 12.030999999999999
+      },
+      {
+        "frame": "guard http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:124",
+        "selfMs": 0.184,
+        "inclusiveMs": 0.184
+      },
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 4431.335000000004
+      },
+      {
+        "frame": "onInput http://127.0.0.1:51673/src/input/gateway.ts:53",
+        "selfMs": 0,
+        "inclusiveMs": 1.377
+      },
+      {
+        "frame": "dispatchEvent :0",
+        "selfMs": 0,
+        "inclusiveMs": 1.377
+      },
+      {
+        "frame": "field http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:50",
+        "selfMs": 0,
+        "inclusiveMs": 1.377
+      },
+      {
+        "frame": "open http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:102",
+        "selfMs": 0,
+        "inclusiveMs": 1.561
+      },
+      {
+        "frame": " :1",
+        "selfMs": 0,
+        "inclusiveMs": 1.561
+      }
+    ],
+    "inclusive": [
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 4431.335000000004
+      },
+      {
+        "frame": "(idle) :0",
+        "selfMs": 4048.393,
+        "inclusiveMs": 4048.393
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 287.3519999999998,
+        "inclusiveMs": 287.3519999999998
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 32.964,
+        "inclusiveMs": 32.964
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:187",
+        "selfMs": 24.509999999999998,
+        "inclusiveMs": 26.731999999999996
+      },
+      {
+        "frame": "wait http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:36",
+        "selfMs": 1.166,
+        "inclusiveMs": 12.030999999999999
+      },
+      {
+        "frame": "open http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:370",
+        "selfMs": 0,
+        "inclusiveMs": 11.460999999999999
+      },
+      {
+        "frame": "runComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:793",
+        "selfMs": 0,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": "updateComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:776",
+        "selfMs": 1.261,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 0,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": "runQueue http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:991",
+        "selfMs": 0,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": "completeUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:935",
+        "selfMs": 0,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": "runUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:913",
+        "selfMs": 0,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": "writeSignal http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:732",
+        "selfMs": 0,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": "setter http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:228",
+        "selfMs": 0,
+        "inclusiveMs": 11.277000000000001
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:106",
+        "selfMs": 2.1769999999999996,
+        "inclusiveMs": 9.418999999999999
+      },
+      {
+        "frame": "createComponent http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1408",
+        "selfMs": 1.254,
+        "inclusiveMs": 8.76
+      },
+      {
+        "frame": "get children http://127.0.0.1:51673/src/features/flint/vault-view.tsx:127",
+        "selfMs": 0,
+        "inclusiveMs": 8.76
+      },
+      {
+        "frame": "Show.createMemo.name http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1650",
+        "selfMs": 0,
+        "inclusiveMs": 8.76
+      },
+      {
+        "frame": "children http://127.0.0.1:51673/src/features/flint/vault-view.tsx:72",
+        "selfMs": 1.255,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "mapper http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1334",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "updateFn http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:198",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "createRoot http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:185",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1261",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1258",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "createMemo http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:276",
+        "selfMs": 1.238,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "For http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1625",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:620",
+        "selfMs": 1.259,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "devComponent http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:619",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/features/flint/vault-view.tsx:61",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "Folder http://127.0.0.1:51673/src/features/flint/vault-view.tsx:61",
+        "selfMs": 0,
+        "inclusiveMs": 7.506
+      },
+      {
+        "frame": "tick http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:180",
+        "selfMs": 2.449,
+        "inclusiveMs": 7.342999999999999
+      },
+      {
+        "frame": "querySelector :0",
+        "selfMs": 7.241999999999999,
+        "inclusiveMs": 7.241999999999999
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/features/flint/vault-view.tsx:72",
+        "selfMs": 1.234,
+        "inclusiveMs": 6.251
+      },
+      {
+        "frame": "requestAnimationFrame :0",
+        "selfMs": 4.894,
+        "inclusiveMs": 4.894
+      },
+      {
+        "frame": "Show http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1641",
+        "selfMs": 0,
+        "inclusiveMs": 2.4989999999999997
+      },
+      {
+        "frame": "setTimeout :0",
+        "selfMs": 2.485,
+        "inclusiveMs": 2.485
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:8",
+        "selfMs": 0,
+        "inclusiveMs": 2.485
+      },
+      {
+        "frame": "delay http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:8",
+        "selfMs": 0,
+        "inclusiveMs": 2.485
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 2.222,
+        "inclusiveMs": 2.222
+      }
+    ]
+  },
+  "partial-1000": {
+    "self": [
+      {
+        "frame": "(idle) :0",
+        "selfMs": 5753.4200000000055,
+        "inclusiveMs": 5753.4200000000055
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 306.86199999999997,
+        "inclusiveMs": 306.86199999999997
+      },
+      {
+        "frame": "step http://127.0.0.1:51673/src/knowledge/scheduler.ts:18",
+        "selfMs": 29.048000000000002,
+        "inclusiveMs": 40.01
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 28.843,
+        "inclusiveMs": 28.843
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:187",
+        "selfMs": 17.336,
+        "inclusiveMs": 19.775
+      },
+      {
+        "frame": "state http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:59",
+        "selfMs": 17.013,
+        "inclusiveMs": 21.323
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/runtime/search-worker.ts:1",
+        "selfMs": 15.067,
+        "inclusiveMs": 15.067
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 13.401,
+        "inclusiveMs": 13.401
+      },
+      {
+        "frame": "estimateBytes http://127.0.0.1:51673/src/knowledge/scheduler.ts:35",
+        "selfMs": 13.298,
+        "inclusiveMs": 53.30799999999999
+      },
+      {
+        "frame": "tick http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:180",
+        "selfMs": 9.846,
+        "inclusiveMs": 13.767999999999999
+      },
+      {
+        "frame": "setTimeout :0",
+        "selfMs": 8.456999999999999,
+        "inclusiveMs": 8.456999999999999
+      },
+      {
+        "frame": "clearTimeout :0",
+        "selfMs": 6.966,
+        "inclusiveMs": 6.966
+      },
+      {
+        "frame": "lease http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:297",
+        "selfMs": 5.707,
+        "inclusiveMs": 5.707
+      },
+      {
+        "frame": "field http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:50",
+        "selfMs": 5.082000000000001,
+        "inclusiveMs": 5.082000000000001
+      },
+      {
+        "frame": "decodeFacts http://127.0.0.1:51673/src/knowledge/transport.ts:17",
+        "selfMs": 4.103,
+        "inclusiveMs": 11.098
+      },
+      {
+        "frame": "requestAnimationFrame :0",
+        "selfMs": 3.9219999999999997,
+        "inclusiveMs": 3.9219999999999997
+      },
+      {
+        "frame": "updateComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:776",
+        "selfMs": 3.674,
+        "inclusiveMs": 8.834
+      },
+      {
+        "frame": "request http://127.0.0.1:51673/src/application/saved-facts-client.ts:15",
+        "selfMs": 3.551,
+        "inclusiveMs": 7.542
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:114",
+        "selfMs": 3.52,
+        "inclusiveMs": 24.843000000000004
+      },
+      {
+        "frame": "_$effect.e http://127.0.0.1:51673/src/features/flint/vault-view.tsx:96",
+        "selfMs": 3.293,
+        "inclusiveMs": 3.293
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/knowledge/transport.ts:33",
+        "selfMs": 3.162,
+        "inclusiveMs": 3.162
+      },
+      {
+        "frame": "fetch :0",
+        "selfMs": 2.705,
+        "inclusiveMs": 2.705
+      },
+      {
+        "frame": "decodeAuthoredValue http://127.0.0.1:51673/src/history/preplan-spike/wire.ts:72",
+        "selfMs": 2.5439999999999996,
+        "inclusiveMs": 2.5439999999999996
+      },
+      {
+        "frame": "run http://127.0.0.1:51673/src/knowledge/session.ts:217",
+        "selfMs": 2.512,
+        "inclusiveMs": 12
+      },
+      {
+        "frame": "knowledgeBindings http://127.0.0.1:51673/src/persistence/native-session.ts:77",
+        "selfMs": 2.449,
+        "inclusiveMs": 2.449
+      },
+      {
+        "frame": "check http://127.0.0.1:51673/src/application/saved-facts-client.ts:70",
+        "selfMs": 2.089,
+        "inclusiveMs": 2.089
+      },
+      {
+        "frame": "runComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:793",
+        "selfMs": 1.867,
+        "inclusiveMs": 5.16
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:62",
+        "selfMs": 1.861,
+        "inclusiveMs": 1.861
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 1.683,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/application/document-vault.ts:76",
+        "selfMs": 1.524,
+        "inclusiveMs": 2.834
+      }
+    ],
+    "inclusive": [
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 6287.317000000003
+      },
+      {
+        "frame": "(idle) :0",
+        "selfMs": 5753.4200000000055,
+        "inclusiveMs": 5753.4200000000055
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 306.86199999999997,
+        "inclusiveMs": 306.86199999999997
+      },
+      {
+        "frame": "estimateBytes http://127.0.0.1:51673/src/knowledge/scheduler.ts:35",
+        "selfMs": 13.298,
+        "inclusiveMs": 53.30799999999999
+      },
+      {
+        "frame": "step http://127.0.0.1:51673/src/knowledge/scheduler.ts:18",
+        "selfMs": 29.048000000000002,
+        "inclusiveMs": 40.01
+      },
+      {
+        "frame": "wait http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:36",
+        "selfMs": 0,
+        "inclusiveMs": 34.551
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 28.843,
+        "inclusiveMs": 28.843
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:114",
+        "selfMs": 3.52,
+        "inclusiveMs": 24.843000000000004
+      },
+      {
+        "frame": "state http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:59",
+        "selfMs": 17.013,
+        "inclusiveMs": 21.323
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:187",
+        "selfMs": 17.336,
+        "inclusiveMs": 19.775
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/runtime/search-worker.ts:1",
+        "selfMs": 15.067,
+        "inclusiveMs": 15.067
+      },
+      {
+        "frame": "runSearchWorker http://127.0.0.1:51673/src/runtime/search-worker.ts:1",
+        "selfMs": 0,
+        "inclusiveMs": 15.067
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/application/facts-query-provider.ts:94",
+        "selfMs": 0,
+        "inclusiveMs": 15.067
+      },
+      {
+        "frame": "read http://127.0.0.1:51673/src/application/saved-facts-client.ts:100",
+        "selfMs": 1.151,
+        "inclusiveMs": 14.954
+      },
+      {
+        "frame": "tick http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:180",
+        "selfMs": 9.846,
+        "inclusiveMs": 13.767999999999999
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 13.401,
+        "inclusiveMs": 13.401
+      },
+      {
+        "frame": "run http://127.0.0.1:51673/src/knowledge/session.ts:217",
+        "selfMs": 2.512,
+        "inclusiveMs": 12
+      },
+      {
+        "frame": "decodeFacts http://127.0.0.1:51673/src/knowledge/transport.ts:17",
+        "selfMs": 4.103,
+        "inclusiveMs": 11.098
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:74",
+        "selfMs": 0,
+        "inclusiveMs": 10.789000000000001
+      },
+      {
+        "frame": "partial http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:112",
+        "selfMs": 0,
+        "inclusiveMs": 10.789000000000001
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 1.683,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": "runUserEffects http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1012",
+        "selfMs": 0,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:985",
+        "selfMs": 0,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": "runUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:913",
+        "selfMs": 0,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": "completeUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:935",
+        "selfMs": 0,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": "writeSignal http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:732",
+        "selfMs": 0,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": "setter http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:228",
+        "selfMs": 0,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": "run http://127.0.0.1:51673/src/features/flint/vault-view.tsx:27",
+        "selfMs": 0,
+        "inclusiveMs": 10.517
+      },
+      {
+        "frame": "updateComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:776",
+        "selfMs": 3.674,
+        "inclusiveMs": 8.834
+      },
+      {
+        "frame": "setTimeout :0",
+        "selfMs": 8.456999999999999,
+        "inclusiveMs": 8.456999999999999
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:8",
+        "selfMs": 0,
+        "inclusiveMs": 8.456999999999999
+      },
+      {
+        "frame": "delay http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:8",
+        "selfMs": 0,
+        "inclusiveMs": 8.456999999999999
+      },
+      {
+        "frame": "request http://127.0.0.1:51673/src/application/saved-facts-client.ts:15",
+        "selfMs": 3.551,
+        "inclusiveMs": 7.542
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/application/vault-knowledge.ts:127",
+        "selfMs": 0,
+        "inclusiveMs": 6.9959999999999996
+      },
+      {
+        "frame": "clearTimeout :0",
+        "selfMs": 6.966,
+        "inclusiveMs": 6.966
+      },
+      {
+        "frame": "lease http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:297",
+        "selfMs": 5.707,
+        "inclusiveMs": 5.707
+      },
+      {
+        "frame": "search http://127.0.0.1:51673/src/features/flint/knowledge-view.tsx:33",
+        "selfMs": 0,
+        "inclusiveMs": 5.707
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/features/flint/knowledge-view.tsx:67",
+        "selfMs": 0,
+        "inclusiveMs": 5.707
+      },
+      {
+        "frame": "click :0",
+        "selfMs": 0,
+        "inclusiveMs": 5.707
+      },
+      {
+        "frame": "click http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:44",
+        "selfMs": 0,
+        "inclusiveMs": 5.707
+      }
+    ]
+  },
+  "activation-1000": {
+    "self": [
+      {
+        "frame": "(idle) :0",
+        "selfMs": 14833.816000000123,
+        "inclusiveMs": 14833.816000000123
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 1236.1279999999986,
+        "inclusiveMs": 1236.1279999999986
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 169.957,
+        "inclusiveMs": 169.957
+      },
+      {
+        "frame": "step http://127.0.0.1:51673/src/knowledge/scheduler.ts:18",
+        "selfMs": 161.1739999999999,
+        "inclusiveMs": 214.74599999999987
+      },
+      {
+        "frame": "clone http://127.0.0.1:51673/src/block-tree/clone.ts:1",
+        "selfMs": 158.685,
+        "inclusiveMs": 173.89599999999996
+      },
+      {
+        "frame": "estimateBytes http://127.0.0.1:51673/src/knowledge/scheduler.ts:35",
+        "selfMs": 74.05799999999996,
+        "inclusiveMs": 281.7689999999998
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p3-browser.ts:187",
+        "selfMs": 52.050000000000004,
+        "inclusiveMs": 57.76100000000001
+      },
+      {
+        "frame": "now :0",
+        "selfMs": 43.338000000000015,
+        "inclusiveMs": 43.338000000000015
+      },
+      {
+        "frame": "unwrap http://127.0.0.1:51673/node_modules/.vite/deps/solid-js_store.js?v=f91475ca:44",
+        "selfMs": 42.421,
+        "inclusiveMs": 42.421
+      },
+      {
+        "frame": "validateResource http://127.0.0.1:51673/src/history/stage-c-gates/resource.ts:12",
+        "selfMs": 34.73799999999999,
+        "inclusiveMs": 51.72099999999999
+      },
+      {
+        "frame": "decodeFacts http://127.0.0.1:51673/src/knowledge/transport.ts:17",
+        "selfMs": 29.187000000000005,
+        "inclusiveMs": 46.49900000000001
+      },
+      {
+        "frame": "freeze http://127.0.0.1:51673/src/block-tree/commit-capture.ts:22",
+        "selfMs": 24.576,
+        "inclusiveMs": 24.576
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 22.008999999999993,
+        "inclusiveMs": 127.196
+      },
+      {
+        "frame": "structuredClone :0",
+        "selfMs": 20.951,
+        "inclusiveMs": 20.951
+      },
+      {
+        "frame": "read http://127.0.0.1:51673/src/application/saved-facts-client.ts:100",
+        "selfMs": 18.666000000000004,
+        "inclusiveMs": 69.74800000000002
+      },
+      {
+        "frame": "visit http://127.0.0.1:51673/src/history/stage-c-gates/resource.ts:53",
+        "selfMs": 16.982999999999997,
+        "inclusiveMs": 16.982999999999997
+      },
+      {
+        "frame": "request http://127.0.0.1:51673/src/application/saved-facts-client.ts:15",
+        "selfMs": 15.859000000000002,
+        "inclusiveMs": 28.363000000000003
+      },
+      {
+        "frame": "setTimeout :0",
+        "selfMs": 15.133,
+        "inclusiveMs": 15.133
+      },
+      {
+        "frame": "pointBoundary http://127.0.0.1:51673/src/rendering/standoff-editor-view.tsx:318",
+        "selfMs": 13.442,
+        "inclusiveMs": 13.442
+      },
+      {
+        "frame": "captureNative http://127.0.0.1:51673/src/persistence/native-resource.ts:19",
+        "selfMs": 12.889,
+        "inclusiveMs": 143.094
+      },
+      {
+        "frame": "readSignal http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:699",
+        "selfMs": 12.822999999999997,
+        "inclusiveMs": 18.366999999999997
+      },
+      {
+        "frame": "captureSelection http://127.0.0.1:51673/src/rendering/standoff-editor-view.tsx:537",
+        "selfMs": 12.195000000000002,
+        "inclusiveMs": 28.191000000000003
+      },
+      {
+        "frame": "node http://127.0.0.1:51673/src/reactive-editor/editor.ts:266",
+        "selfMs": 11.613,
+        "inclusiveMs": 13.931999999999999
+      },
+      {
+        "frame": "eligibleRow http://127.0.0.1:51673/src/knowledge/contribution-state.ts:2",
+        "selfMs": 11.599000000000002,
+        "inclusiveMs": 15.379000000000001
+      },
+      {
+        "frame": "decode :0",
+        "selfMs": 11.247,
+        "inclusiveMs": 11.247
+      },
+      {
+        "frame": "get http://127.0.0.1:51673/node_modules/.vite/deps/solid-js_store.js?v=f91475ca:112",
+        "selfMs": 10.602,
+        "inclusiveMs": 29.170999999999996
+      },
+      {
+        "frame": "postTask :0",
+        "selfMs": 10.011,
+        "inclusiveMs": 10.011
+      },
+      {
+        "frame": "randomUUID :0",
+        "selfMs": 8.325,
+        "inclusiveMs": 8.325
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:157",
+        "selfMs": 8.004999999999999,
+        "inclusiveMs": 51.20400000000002
+      },
+      {
+        "frame": "encodeGateDocument http://127.0.0.1:51673/src/history/stage-c-gates/portable.ts:15",
+        "selfMs": 7.3790000000000004,
+        "inclusiveMs": 14.88
+      }
+    ],
+    "inclusive": [
+      {
+        "frame": "(root) :0",
+        "selfMs": 0,
+        "inclusiveMs": 17415.673000000075
+      },
+      {
+        "frame": "(idle) :0",
+        "selfMs": 14833.816000000123,
+        "inclusiveMs": 14833.816000000123
+      },
+      {
+        "frame": "(program) :0",
+        "selfMs": 1236.1279999999986,
+        "inclusiveMs": 1236.1279999999986
+      },
+      {
+        "frame": "sync :1",
+        "selfMs": 0,
+        "inclusiveMs": 488.13299999999964
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/persistence/native-session.ts:314",
+        "selfMs": 1.315,
+        "inclusiveMs": 427.56699999999995
+      },
+      {
+        "frame": "estimateBytes http://127.0.0.1:51673/src/knowledge/scheduler.ts:35",
+        "selfMs": 74.05799999999996,
+        "inclusiveMs": 281.7689999999998
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/persistence/native-resource.ts:190",
+        "selfMs": 2.3949999999999996,
+        "inclusiveMs": 231.83399999999995
+      },
+      {
+        "frame": "admitNative http://127.0.0.1:51673/src/persistence/native-resource.ts:189",
+        "selfMs": 0,
+        "inclusiveMs": 231.83399999999995
+      },
+      {
+        "frame": "step http://127.0.0.1:51673/src/knowledge/scheduler.ts:18",
+        "selfMs": 161.1739999999999,
+        "inclusiveMs": 214.74599999999987
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/persistence/native-resource.ts:171",
+        "selfMs": 3.556,
+        "inclusiveMs": 179.613
+      },
+      {
+        "frame": "decodeNative http://127.0.0.1:51673/src/persistence/native-resource.ts:170",
+        "selfMs": 0,
+        "inclusiveMs": 179.613
+      },
+      {
+        "frame": "clone http://127.0.0.1:51673/src/block-tree/clone.ts:1",
+        "selfMs": 158.685,
+        "inclusiveMs": 173.89599999999996
+      },
+      {
+        "frame": "(garbage collector) :0",
+        "selfMs": 169.957,
+        "inclusiveMs": 169.957
+      },
+      {
+        "frame": "captureNative http://127.0.0.1:51673/src/persistence/native-resource.ts:19",
+        "selfMs": 12.889,
+        "inclusiveMs": 143.094
+      },
+      {
+        "frame": "commit http://127.0.0.1:51673/src/block-tree/repository.ts:390",
+        "selfMs": 1.262,
+        "inclusiveMs": 136.492
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/block-tree/repository.ts:391",
+        "selfMs": 2.512,
+        "inclusiveMs": 135.23
+      },
+      {
+        "frame": "completeUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:935",
+        "selfMs": 0,
+        "inclusiveMs": 127.646
+      },
+      {
+        "frame": "runUpdates http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:913",
+        "selfMs": 0,
+        "inclusiveMs": 127.56800000000001
+      },
+      {
+        "frame": "runTop http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:879",
+        "selfMs": 22.008999999999993,
+        "inclusiveMs": 127.196
+      },
+      {
+        "frame": "updateComputation http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:776",
+        "selfMs": 0,
+        "inclusiveMs": 117.11999999999995
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/block-tree/repository.ts:439",
+        "selfMs": 0,
+        "inclusiveMs": 116.35
+      },
+      {
+        "frame": "batch http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:494",
+        "selfMs": 0,
+        "inclusiveMs": 116.35
+      },
+      {
+        "frame": "cleanNode http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1072",
+        "selfMs": 5.279,
+        "inclusiveMs": 103.26699999999997
+      },
+      {
+        "frame": "writeSignal http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:732",
+        "selfMs": 1.33,
+        "inclusiveMs": 102.76199999999997
+      },
+      {
+        "frame": "setter http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:228",
+        "selfMs": 0,
+        "inclusiveMs": 99.17199999999997
+      },
+      {
+        "frame": "wait http://127.0.0.1:51673/src/qualification/native-knowledge/p5-browser.tsx:36",
+        "selfMs": 6.3420000000000005,
+        "inclusiveMs": 87.15999999999995
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/persistence/native-session.ts:369",
+        "selfMs": 1.265,
+        "inclusiveMs": 83.75699999999996
+      },
+      {
+        "frame": "bind http://127.0.0.1:51673/src/persistence/native-session.ts:368",
+        "selfMs": 0,
+        "inclusiveMs": 83.75699999999996
+      },
+      {
+        "frame": "runQueue http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:991",
+        "selfMs": 0,
+        "inclusiveMs": 80.616
+      },
+      {
+        "frame": "untrack http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:497",
+        "selfMs": 0,
+        "inclusiveMs": 71.719
+      },
+      {
+        "frame": "read http://127.0.0.1:51673/src/application/saved-facts-client.ts:100",
+        "selfMs": 18.666000000000004,
+        "inclusiveMs": 69.74800000000002
+      },
+      {
+        "frame": " http://127.0.0.1:51673/src/rendering/transient-document-view.tsx:16",
+        "selfMs": 0,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": "TransientDocumentView2 http://127.0.0.1:51673/src/rendering/transient-document-view.tsx:15",
+        "selfMs": 0,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": " http://127.0.0.1:51673/@solid-refresh:25",
+        "selfMs": 0,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": "HMRComp.createMemo.name http://127.0.0.1:51673/@solid-refresh:22",
+        "selfMs": 0,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": "createMemo http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:276",
+        "selfMs": 0,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": "HMRComp http://127.0.0.1:51673/@solid-refresh:19",
+        "selfMs": 0,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": " http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:620",
+        "selfMs": 1.083,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": "createComponent http://127.0.0.1:51673/node_modules/.vite/deps/chunk-X22YAOZP.js?v=745b232b:1408",
+        "selfMs": 1.258,
+        "inclusiveMs": 66.15499999999999
+      },
+      {
+        "frame": "children http://127.0.0.1:51673/src/application/document-application-capabilities.tsx:161",
+        "selfMs": 0,
+        "inclusiveMs": 66.15499999999999
+      }
+    ]
+  }
+}

@@ -9,11 +9,11 @@ export function VaultView(props:{vault:ApplicationVault}) {
   const [name,setName]=createSignal('Document.mutable.json'), [title,setTitle]=createSignal('Untitled'), [directory,setDirectory]=createSignal('New folder');
   const [destination,setDestination]=createSignal('.'), [moveName,setMoveName]=createSignal(''), [importSource,setImportSource]=createSignal(''), [tag,setTag]=createSignal('');
   const [working,setWorking]=createSignal(false), [error,setError]=createSignal('');
-  const state=()=>props.vault.state(), busy=()=>working()||state()?.busy, readOnly=()=>state()?.readOnly;
+  const state=createMemo(()=>props.vault.state()), busy=()=>working()||state()?.busy, readOnly=()=>state()?.readOnly;
   const run=async(action:()=>Promise<unknown>)=>{if(busy())return;setWorking(true);setError('');try{await action();}catch(e){setError(String(e));}finally{setWorking(false);}};
   createEffect(on(createMemo(()=>state()?.root),r=>{if(r){setRoot(r);setFolder(r);setDestination(r);setSelected('');}}));
   createEffect(()=>{const s=state();if(s && folder()!==s.root&&!s.folders.includes(folder()))setFolder(s.root);});
-  const folders=()=>state()?[state()!.root,...state()!.folders]:[];
+  const folders=createMemo(()=>state()?[state()!.root,...state()!.folders]:[]);
   const tags=createMemo(()=>[...new Set(state()?.documents.flatMap(d=>d.tags)??[])].sort());
   const pickFolder=(p:string)=>{setFolder(p);setSelected('');setMoveName(p.split('/').pop()!);setDestination(state()!.root);};
   const Folder=(p:{path:string})=> <details open class="flint-tree-folder"><summary><button aria-pressed={folder()===p.path&&!selected()} onClick={()=>pickFolder(p.path)}>{p.path===state()?.root?p.path:p.path.split('/').pop()}</button></summary>
