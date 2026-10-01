@@ -1,0 +1,73 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:18525309-78ad-4d53-985a-562def28dc0c:placement:abb79b8c-941c-4d17-a0d4-26a471092b06",
+            "target": {
+              "blockId": "edd32ada-87cb-4980-b9e9-6be3d1416fbd",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "18525309-78ad-4d53-985a-562def28dc0c",
+        "properties": {
+          "metadata": {
+            "documentFormat": {
+              "format": "page",
+              "template": "blank",
+              "theme": "default",
+              "version": 1
+            },
+            "documentId": "18525309-78ad-4d53-985a-562def28dc0c",
+            "tags": [],
+            "title": "Source"
+          }
+        },
+        "type": "document-block"
+      },
+      {
+        "id": "edd32ada-87cb-4980-b9e9-6be3d1416fbd",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Visit this destination."
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 4,
+              "id": "784724b7-9fa1-46d4-8ca4-d1ab30db146c",
+              "metadata": {
+                "documentId": "5f614f29-7439-43a2-8ffb-ab326cc29701"
+              },
+              "start": 0,
+              "type": "codex/block-reference",
+              "value": "5f614f29-7439-43a2-8ffb-ab326cc29701"
+            }
+          ]
+        },
+        "type": "standoff-editor-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "18525309-78ad-4d53-985a-562def28dc0c",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:18525309-78ad-4d53-985a-562def28dc0c:placement:7b154289-68f7-4056-90fa-5a9352d8f9ad",
+      "target": {
+        "blockId": "18525309-78ad-4d53-985a-562def28dc0c",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "18525309-78ad-4d53-985a-562def28dc0c",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

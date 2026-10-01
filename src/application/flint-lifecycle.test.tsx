@@ -23,6 +23,31 @@ function setup(enabled = true, saved?: ExistingBlockDto) {
 }
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 describe("Flint composite transient hosting", () => {
+  it("keeps the editor and canonical History stable across F1 shell controls", async () => {
+    const f=setup(); await tick();
+    const shell=f.host.querySelector<HTMLElement>('.flint-application')!;
+    Object.defineProperty(shell,'clientWidth',{value:1200});
+    const view=f.views()[0], node=f.text(), mount=f.editor.mounts.get(node.key)!;
+    f.editor.focus.request(node.key); mount.restoreInlineSelection!({anchor:2,head:7});
+    const before=f.editor.repository.snapshot(); let history=0;
+    const stop=f.editor.repository.subscribeHistoryChanges(()=>history++,e=>{throw e;});
+    const click=(name:string)=>[...shell.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===name)!.click();
+    for(let i=0;i<3;i++){
+      click('Search');click('Browse');click('References');click('Properties');click('Backlinks');
+      shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Library"]')!.click();
+      shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Context"]')!.click();
+      await tick();
+      expect(f.views()[0]).toBe(view);expect(f.editor.mounts.get(node.key)).toBe(mount);
+    }
+    expect(f.editor.repository.snapshot()).toEqual(before); expect(history).toBe(0);stop();
+    shell.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!.click();click('Files');await tick();
+    const sheet=shell.querySelector<HTMLElement>('[aria-label="Storage and recovery"]')!;
+    expect(sheet.contains(document.activeElement)).toBe(true);
+    sheet.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await tick();
+    expect(shell.querySelector('[aria-label="Storage and recovery"]')).toBeNull();
+    expect(document.activeElement).toBe(shell.querySelector('[aria-label="Flint application menu"]'));
+    expect(f.editor.mounts.get(node.key)).toBe(mount);expect(f.editor.repository.snapshot()).toEqual(before);
+  });
   it("ignores late image completion after a transient occurrence is disposed", async () => {
     const f = setup(); await tick();
     f.editor.commands.insertInlineImage(f.text().key, 0, { assetId: "late", src: "late.png", alt: "Late", status: "pending" });
@@ -172,9 +197,10 @@ describe("Flint composite transient hosting", () => {
   it("closes/reopens tabs without deleting canonical Documents; disablement retains their data", async () => {
     const f = setup(); await tick();
     const before = Object.values(f.editor.repository.state.contents).filter(c => c.viewType === "document-block").map(c => c.key);
+    f.host.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!.click();
     [...f.host.querySelectorAll('button')].find(b => b.textContent === 'Close tab')!.click(); await tick();
     expect(f.tabs()).toHaveLength(1); expect(f.views()).toHaveLength(1);
-    [...f.host.querySelectorAll<HTMLButtonElement>('[aria-label="Flint Documents"] button')].find(b => b.textContent === 'Notes')!.click(); await tick();
+    [...f.host.querySelectorAll<HTMLButtonElement>('[aria-label="Flint Documents"] button')].find(b => b.textContent?.startsWith('Notes'))!.click(); await tick();
     expect(f.tabs()).toHaveLength(2);
     expect(Object.values(f.editor.repository.state.contents).filter(c => c.viewType === "document-block").map(c => c.key)).toEqual(before);
     const saved = f.editor.persistence.captureWorkspace().document;
@@ -191,8 +217,9 @@ describe("Flint composite transient hosting", () => {
     expect(a.contentKey).toBe(b.contentKey); expect(a.key).not.toBe(b.key);
     f.editor.commands.replaceInlineRange(a.key, 0, 0, 'Shared ');
     expect(f.editor.mounts.get(b.key)!.captureText!()).toContain('Shared');
-    const title = f.host.querySelector<HTMLInputElement>('[aria-label="Rename Notes"]')!;
-    title.value = 'Renamed'; title.dispatchEvent(new Event('change', { bubbles: true })); await tick();
+    const title = f.host.querySelector<HTMLInputElement>('[aria-label="Document title"]')!;
+    title.value = 'Renamed'; title.dispatchEvent(new Event('input', { bubbles: true }));
+    [...f.host.querySelectorAll('button')].find(b => b.textContent === 'Apply properties')!.click(); await tick();
     expect(f.tabs().filter(t => t.textContent === 'Renamed')).toHaveLength(2);
     const window = Object.values(f.projection.state.nodes).find(n => n.viewType === 'window-block')!;
     f.editor.commands.remove(window.key); await tick();

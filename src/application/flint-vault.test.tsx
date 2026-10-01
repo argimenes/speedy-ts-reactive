@@ -18,7 +18,7 @@ execFileSync(process.execPath,['scripts/build-relocation-helper.mjs']);
 const disposers:Array<()=>any>=[], actualFetch=globalThis.fetch;
 afterEach(async()=>{for(const f of disposers.splice(0).reverse())await f();document.body.replaceChildren();localStorage.clear();vi.unstubAllGlobals();});
 const wait=(f:()=>void)=>vi.waitFor(f,{timeout:6000,interval:20});
-const button=(host:ParentNode,label:string)=>{const b=[...host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label);expect(b,`button ${label}`).toBeTruthy();return b!;};
+const button=(host:ParentNode,label:string)=>{if(label==='Files'||label==='Close tab'){const menu=host.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!;if(menu.getAttribute('aria-expanded')!=='true')menu.click();}const b=[...host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label);expect(b,`button ${label}`).toBeTruthy();return b!;};
 const click=(host:ParentNode,label:string)=>{const b=button(host,label);expect(b.disabled,`${label} enabled`).toBe(false);b.click();};
 const field=(host:ParentNode,label:string,value:string)=>{const input=host.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;expect(input,label).toBeTruthy();input.value=value;input.dispatchEvent(new Event(input.tagName==='SELECT'?'change':'input',{bubbles:true}));};
 async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise<void>}={}) {
@@ -51,7 +51,7 @@ it('uses the real tree in two Windows, shared native properties and independent 
  f.editor.repository.undo();expect((a.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('A title');f.editor.repository.redo();
  click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));
  expect(await fs.readdir(path.join(f.root,'vault'))).toContain('note.mutable.json');expect(await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8')).toContain('Authored title');
- field(a,'Tag filter','night');expect(a.querySelector('[aria-label="Open vault/note.mutable.json"]')).toBeTruthy();expect(views().map(v=>v.state.rootKey)).toEqual(keys);
+ await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));field(a,'Tag filter','night');expect(a.querySelector('[aria-label="Open vault/note.mutable.json"]')).toBeTruthy();expect(views().map(v=>v.state.rootKey)).toEqual(keys);
  expect(Object.values(f.editor.repository.state.contents).some(c=>(c.payload.metadata as any)?.members)).toBe(false);
  expect(()=>f.editor.persistence.captureWorkspace()).toThrow(/native/i);
  click(a,'Close tab');expect(views()).toHaveLength(1);expect(idOf(b)).toBe(id);
@@ -115,7 +115,7 @@ it('preserves nested unknown native properties through property editing, Save an
 it('allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource',async()=>{
  const f=await fixture(),a=f.windows()[0];await open(a);await create(a);const original=await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8');
  click(a,'New Document');await wait(()=>expect(a.textContent).toContain('Save blocked'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));const candidate=idOf(a);expect(f.service.isCandidate(candidate)).toBe(true);
- click(a,'Files');field(a,'Native filename','retry.mutable.json');click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));expect(f.service.location(candidate)?.filename).toBe('retry.mutable.json');expect(f.service.isCandidate(candidate)).toBe(false);expect(await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8')).toBe(original);
+ click(a,'Files');field(a,'Native filename','retry.mutable.json');click(a,'Save to selected destination');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));expect(f.service.location(candidate)?.filename).toBe('retry.mutable.json');expect(f.service.isCandidate(candidate)).toBe(false);expect(await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8')).toBe(original);
 },15000);
 it('relocates a Document containing a native external reference without rewriting its target or saved generation',async()=>{
  const f=await fixture();await fs.copyFile('artifacts/flint-b1.2/c.mutable.json',path.join(f.root,'vault/c.mutable.json'));const a=f.windows()[0];await open(a);a.querySelector<HTMLButtonElement>('[aria-label="Open vault/c.mutable.json"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-c'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));

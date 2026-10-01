@@ -22,7 +22,7 @@ execFileSync(process.execPath,['scripts/build-relocation-helper.mjs']);
 const disposers:Array<()=>any>=[], actualFetch=globalThis.fetch;
 afterEach(async()=>{for(const f of disposers.splice(0).reverse())await f();document.body.replaceChildren();localStorage.clear();vi.unstubAllGlobals();});
 const wait=(f:()=>void)=>vi.waitFor(f,{timeout:6000,interval:20});
-const button=(host:ParentNode,label:string)=>{const b=[...host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label);expect(b,`button ${label}`).toBeTruthy();return b!;};
+const button=(host:ParentNode,label:string)=>{if(label==='Files'||label==='Close tab'){const menu=host.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!;if(menu.getAttribute('aria-expanded')!=='true')menu.click();}const b=[...host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label);expect(b,`button ${label}`).toBeTruthy();return b!;};
 const click=(host:ParentNode,label:string)=>{const b=button(host,label);expect(b.disabled,`${label} enabled`).toBe(false);b.click();};
 const field=(host:ParentNode,label:string,value:string)=>{const input=host.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;expect(input,label).toBeTruthy();input.value=value;input.dispatchEvent(new Event(input.tagName==='SELECT'?'change':'input',{bubbles:true}));};
 async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise<void>}={}) {
@@ -61,7 +61,7 @@ it('progressively searches saved resources without admission, then opens only th
  await readySearch(a,'Leonardo');expect(a.querySelectorAll('[data-search-document="resource-1"]')).toHaveLength(12);
 },30000);
 it('saved backlinks open and revalidate the logical mention rather than returning an unopened-source error',async()=>{
- const f=await savedFixture(),a=f.windows()[0];await open(a);a.querySelector<HTMLButtonElement>('[aria-label="Open vault/0.mutable.json"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-0'));click(a,'Show backlinks');
+ const f=await savedFixture(),a=f.windows()[0];await open(a);a.querySelector<HTMLButtonElement>('[aria-label="Open vault/0.mutable.json"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-0'));click(a,'Backlinks');
  await wait(()=>expect(a.querySelector('.flint-backlink[data-backlink-source="resource-2"]')).toBeTruthy());expect(canonicalIds(f)).toEqual(['resource-0']);
  a.querySelector<HTMLButtonElement>('.flint-backlink[data-backlink-source="resource-2"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-2'));await wait(()=>expect(f.editor.mounts.get(f.editor.focus.state.focusedKey!)?.captureInlineSelection?.()).toEqual({anchor:9,head:16}));
  expect(canonicalIds(f).sort()).toEqual(['resource-0','resource-2']);

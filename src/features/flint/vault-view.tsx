@@ -63,6 +63,6 @@ export function DocumentProperties(props:{application:DocumentApplicationInstanc
     <button disabled={!app.properties()!.tagsValid} onClick={()=>{try{app.setProperties(app.properties()!.id,{title:title(),tags:tags().split('\n')});setError('');}catch(e){setError(String(e));}}}>Apply properties</button>
     <p>Title edits do not rename files.</p><Show when={error()}><p role="alert">{error()}</p></Show>
     <dl><dt>Canonical ID</dt><dd data-flint-property="id">{app.properties()!.id}</dd><dt>Format</dt><dd>{app.properties()!.format}</dd><dt>Physical location</dt><dd data-flint-property="location">{app.properties()!.location?path(app.properties()!.location!):'No native file binding'}</dd><dt>Save status</dt><dd>{app.properties()!.status}</dd></dl>
-    <Show when={app.properties()!.unsaved}><p>Unsaved native candidate. Use Files to choose a fresh native filename, then Save Document. It is not yet a vault file.</p></Show>
+    <Show when={app.properties()!.unsaved}><p>Unsaved native candidate. Use Storage details to choose a fresh native filename, then Save to selected destination. It is not yet a vault file.</p></Show>
   </aside></Show>;
 }

@@ -104,7 +104,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('two live occurrences share canonical content',await evaluate(`f.views().length===2&&f.texts(0)[0].contentKey===f.texts(1)[0].contentKey&&f.texts(0)[0].key!==f.texts(1)[0].key`));
  await evaluate('f.focus()');await send('Input.insertText',{text:'Shared edit. '},sessionId);await wait();
  check('typing updates both Windows',await evaluate(`f.editor.mounts.get(f.texts(1)[0].key).captureText().startsWith('Shared edit. ')`));
- await evaluate(`(()=>{const input=f.host.querySelector('[aria-label="Rename Notes"]');input.focus();input.value='Reading notes';input.dispatchEvent(new Event('change',{bubbles:true}));})()`);await wait();
+ await evaluate(`(()=>{const input=f.host.querySelector('[aria-label="Document title"]');input.focus();input.value='Reading notes';input.dispatchEvent(new Event('input',{bubbles:true}));[...f.host.querySelectorAll('button')].find(b=>b.textContent==='Apply properties').click();})()`);await wait();
  check('native rename control updates both tab labels',await evaluate(`f.tabs().filter(t=>t.textContent==='Reading notes').length`),2);
  await shot('shared-document-windows');
  for(let i=0;i<6;i++){await evaluate(`f.tabs()[${i%2}].click()`);await wait(30);}

@@ -59,7 +59,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  proof.wait=async predicate=>{for(let i=0;i<150;i++){if(predicate())return;await new Promise(r=>setTimeout(r,30));}throw Error('UI wait timed out: '+host.textContent.slice(0,1700))};
  })()`);
  await evaluate(`proof.one=proof.host.querySelector('.flint-application');proof.win=proof.one;
- proof.click=text=>{const b=[...proof.win.querySelectorAll('button')].find(b=>b.textContent===text);if(!b||b.disabled)throw Error('Button unavailable '+text);b.click();};
+ proof.click=text=>{if(text==='Close tab'||text==='Files'){const m=proof.win.querySelector('[aria-label="Flint application menu"]');if(m.getAttribute('aria-expanded')!=='true')m.click();}const b=[...proof.win.querySelectorAll('button')].find(b=>b.textContent===text);if(!b||b.disabled)throw Error('Button unavailable '+text);b.click();};
  proof.field=(label,value)=>{const el=proof.win.querySelector('[aria-label="'+label+'"]');if(!el)throw Error('Field missing '+label);el.value=value;el.dispatchEvent(new Event(el.tagName==='SELECT'?'change':'input',{bubbles:true}));};
  proof.id=()=>proof.win.querySelector('[data-flint-property="id"]').textContent;
  proof.ready=()=>![...proof.win.querySelectorAll('button')].find(b=>b.textContent==='Refresh')?.disabled;

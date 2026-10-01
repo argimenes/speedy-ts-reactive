@@ -1,0 +1,64 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-knowledge.test.tsx (12 tests) 10126ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 911ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 546ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 598ms
+   ✓ creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 1195ms
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 429ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 449ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 460ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 667ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 2337ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 1559ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 501ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 472ms
+ ✓ src/application/flint-vault.test.tsx (14 tests) 11155ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 920ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 1209ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 452ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 368ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 383ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 578ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 421ms
+   ✓ relocates a Document containing a native external reference without rewriting its target or saved generation 403ms
+   ✓ reports a vanished location without discarding the live Document or adopting an external same-ID move 469ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 5094ms
+ ✓ src/qualification/native-b1/resource.test.tsx (28 tests) 1208ms
+ ✓ src/qualification/native-b1/compatibility.test.ts (13 tests) 1084ms
+ ✓ src/application/flint-lifecycle.test.tsx (14 tests) 3102ms
+   ✓ Flint composite transient hosting > keeps the editor and canonical History stable across F1 shell controls 402ms
+   ✓ Flint composite transient hosting > mounts one ordinary editor, restores selection across tab switches, and releases occurrence state 476ms
+   ✓ Flint composite transient hosting > owns Entity panel focus and cancels asynchronous work when its tab disappears 422ms
+   ✓ Flint composite transient hosting > handles source deletion, unavailable view and undo while remaining editable 381ms
+ ✓ src/qualification/native-b1/owned-resources.test.ts (10 tests) 553ms
+ ✓ src/application/flint-backlinks.test.tsx (2 tests) 3733ms
+   ✓ follows a live backlink in the invoking Window and refreshes reference removal/Undo without authoring navigation 2273ms
+   ✓ refreshes title and binding labels, preserves no-tab source and reports unopened coverage 1459ms
+ ✓ src/features/compact-document/window.test.tsx (3 tests) 267ms
+ ✓ src/qualification/native-b2/markdown.test.tsx (11 tests) 271ms
+ ✓ src/application/flint-saved-knowledge.test.tsx (11 tests) 7670ms
+   ✓ progressively searches saved resources without admission, then opens only the selected source in the invoking Window 2334ms
+   ✓ saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 2098ms
+   ✓ checks bytes returned by Open before admission and preserves a read-only source 328ms
+   ✓ read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 1127ms
+   ✓ a duplicate introduced while native Open is awaiting its response cannot be admitted 333ms
+   ✓ an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 312ms
+ ✓ src/persistence/native-session.test.ts (5 tests) 1151ms
+   ✓ opens canonically without an occurrence, saves/reopens, and blocks tree/extended/Workspace bypasses 406ms
+   ✓ does not refresh a stale client baseline after a rejected Save or Open 512ms
+ ✓ src/persistence/native-vault-session.test.ts (8 tests) 2522ms
+   ✓ changes only the resource binding with zero occurrences and rejects automatic same-ID adoption by another session 684ms
+   ✓ retains edits and shared identity across two occurrences and their disposal during relocation 424ms
+   ✓ queues Save behind relocation so it uses the confirmed new binding 559ms
+ ✓ src/features/flint/backlinks-view.test.tsx (3 tests) 340ms
+ ✓ src/block-tree/margin-commands.test.ts (3 tests) 54ms
+ ✓ src/features/flint/query-results.test.tsx (1 test) 19ms
+
+ Test Files  15 passed (15)
+      Tests  138 passed (138)
+   Start at  22:22:39
+   Duration  38.16s (transform 7.50s, setup 0ms, collect 20.93s, tests 43.26s, environment 7.21s, prepare 1.01s)
+

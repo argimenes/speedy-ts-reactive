@@ -1,0 +1,63 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:63b73930-9b67-4638-a272-29791b79b7f6:placement:96abaac2-eb18-4a07-a2b1-9b641c37364d",
+            "target": {
+              "blockId": "9a779957-027b-4452-bbd9-e4ed8af677b5",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "63b73930-9b67-4638-a272-29791b79b7f6",
+        "properties": {
+          "metadata": {
+            "documentFormat": {
+              "format": "page",
+              "template": "blank",
+              "theme": "default",
+              "version": 1
+            },
+            "documentId": "63b73930-9b67-4638-a272-29791b79b7f6",
+            "tags": [
+              "night",
+              "poetry"
+            ],
+            "title": "A different authored title"
+          }
+        },
+        "type": "document-block"
+      },
+      {
+        "id": "9a779957-027b-4452-bbd9-e4ed8af677b5",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Written during relocation. "
+          }
+        ],
+        "properties": {},
+        "type": "standoff-editor-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "63b73930-9b67-4638-a272-29791b79b7f6",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:63b73930-9b67-4638-a272-29791b79b7f6:placement:5c4384be-8ac6-472b-bf07-5119c7ccf61f",
+      "target": {
+        "blockId": "63b73930-9b67-4638-a272-29791b79b7f6",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "63b73930-9b67-4638-a272-29791b79b7f6",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

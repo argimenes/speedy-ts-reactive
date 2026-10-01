@@ -1,0 +1,28 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-lifecycle.test.tsx (14 tests) 6734ms
+   ✓ Flint composite transient hosting > keeps the editor and canonical History stable across F1 shell controls 738ms
+   ✓ Flint composite transient hosting > ignores late image completion after a transient occurrence is disposed 1724ms
+   ✓ Flint composite transient hosting > mounts one ordinary editor, restores selection across tab switches, and releases occurrence state 1673ms
+   ✓ Flint composite transient hosting > owns Entity panel focus and cancels asynchronous work when its tab disappears 505ms
+ ✓ src/application/flint-knowledge.test.tsx (12 tests) 27891ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 1890ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 968ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 1283ms
+   ✓ creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 7694ms
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 1208ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 3324ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 2366ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 1502ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 3788ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 1922ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 697ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 1241ms
+
+ Test Files  2 passed (2)
+      Tests  26 passed (26)
+   Start at  22:31:34
+   Duration  51.67s (transform 15.04s, setup 0ms, collect 34.17s, tests 34.63s, environment 7.86s, prepare 542ms)
+

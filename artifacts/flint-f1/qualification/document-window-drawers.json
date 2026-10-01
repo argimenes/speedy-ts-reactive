@@ -1,0 +1,155 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "removed": false,
+  "checks": [
+    "1440 laptop initial policy",
+    "1440 laptop automatic collapse",
+    "1440 laptop explicit state",
+    "1440 laptop compact margins",
+    "1440 laptop expanded storage",
+    "1440 laptop focused margin selection",
+    "1440 laptop drawer focus",
+    "1440 laptop drawer Escape focus",
+    "1440 laptop width restored",
+    "1440 laptop automatic cause survives toggle",
+    "1440 laptop presentation preserves authored tree and Cells",
+    "1440 laptop resized automatic margins",
+    "1440 laptop generic drawer access",
+    "1440 laptop normal editing",
+    "1440 laptop unknown authored metadata",
+    "1440 laptop restored document focus",
+    "1280 laptop initial policy",
+    "1280 laptop automatic collapse",
+    "1280 laptop explicit state",
+    "1280 laptop compact margins",
+    "1280 laptop expanded storage",
+    "1280 laptop focused margin selection",
+    "1280 laptop drawer focus",
+    "1280 laptop drawer Escape focus",
+    "1280 laptop width restored",
+    "1280 laptop automatic cause survives toggle",
+    "1280 laptop presentation preserves authored tree and Cells",
+    "1280 laptop resized automatic margins",
+    "1280 laptop generic drawer access",
+    "1280 laptop normal editing",
+    "1280 laptop unknown authored metadata",
+    "1280 laptop restored document focus",
+    "200% effective CSS viewport initial policy",
+    "200% effective CSS viewport automatic collapse",
+    "200% effective CSS viewport explicit state",
+    "200% effective CSS viewport compact margins",
+    "200% effective CSS viewport expanded storage",
+    "200% effective CSS viewport drawer focus",
+    "200% effective CSS viewport drawer Escape focus",
+    "200% effective CSS viewport width restored",
+    "200% effective CSS viewport automatic cause survives toggle",
+    "200% effective CSS viewport presentation preserves authored tree and Cells",
+    "200% effective CSS viewport resized automatic margins",
+    "200% effective CSS viewport generic drawer access",
+    "200% effective CSS viewport normal editing",
+    "200% effective CSS viewport unknown authored metadata",
+    "200% effective CSS viewport restored document focus"
+  ],
+  "shell": {
+    "mainPadding": null,
+    "window": null
+  },
+  "geometry": [
+    {
+      "scenario": "1440 laptop",
+      "initial": {
+        "width": 1000,
+        "stored": 1000,
+        "pressed": "false",
+        "collapsed": false,
+        "indicators": 0,
+        "revision": 0,
+        "unknown": true
+      },
+      "compact": {
+        "width": 849,
+        "stored": 1000,
+        "pressed": "true",
+        "collapsed": true,
+        "indicators": 1,
+        "revision": 0,
+        "unknown": true
+      },
+      "restored": {
+        "width": 1000,
+        "stored": 1000,
+        "pressed": "false",
+        "collapsed": false,
+        "indicators": 0,
+        "revision": 0,
+        "unknown": true
+      }
+    },
+    {
+      "scenario": "1280 laptop",
+      "initial": {
+        "width": 840,
+        "stored": 840,
+        "pressed": "false",
+        "collapsed": false,
+        "indicators": 0,
+        "revision": 0,
+        "unknown": true
+      },
+      "compact": {
+        "width": 740,
+        "stored": 840,
+        "pressed": "true",
+        "collapsed": true,
+        "indicators": 1,
+        "revision": 0,
+        "unknown": true
+      },
+      "restored": {
+        "width": 840,
+        "stored": 840,
+        "pressed": "false",
+        "collapsed": false,
+        "indicators": 0,
+        "revision": 0,
+        "unknown": true
+      }
+    },
+    {
+      "scenario": "200% effective CSS viewport",
+      "initial": {
+        "width": 640,
+        "stored": 640,
+        "pressed": "false",
+        "collapsed": true,
+        "indicators": 1,
+        "revision": 0,
+        "unknown": true
+      },
+      "compact": {
+        "width": 640,
+        "stored": 640,
+        "pressed": "true",
+        "collapsed": true,
+        "indicators": 1,
+        "revision": 0,
+        "unknown": true
+      },
+      "restored": {
+        "width": 640,
+        "stored": 640,
+        "pressed": "false",
+        "collapsed": true,
+        "indicators": 1,
+        "revision": 0,
+        "unknown": true
+      }
+    }
+  ]
+}
