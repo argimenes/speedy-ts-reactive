@@ -1,10 +1,12 @@
 import type { BacklinkMention, BacklinksQuery, BacklinksResult, BacklinksService } from '../feature-api/backlinks';
 import type { DocumentVaultLease } from './document-vault';
-import { FactsQueryProvider } from './facts-query-provider';
+import { FactsQueryProvider, type SavedSourceEvidence } from './facts-query-provider';
 import { WorkSlice } from '../knowledge/scheduler';
 
 /** Read-only C3 adapter. Navigation and reference commands stay in the application host. */
 export class FactsBacklinks implements BacklinksService {
+  private savedSources = new WeakMap<BacklinksResult, Map<string,SavedSourceEvidence>>();
+  savedSource(result:BacklinksResult,id:string) {return this.savedSources.get(result)?.get(id);}
   private evidence = new WeakMap<BacklinksResult, () => void>();
   private stale = new WeakSet<BacklinksResult>();
   private requests = new Set<AbortController>();
@@ -25,7 +27,7 @@ export class FactsBacklinks implements BacklinksService {
     try {
       if (!this.alive) throw Error('Backlinks service disposed');
       const vault = this.vault(); if (vault.root !== request.vault) throw Error('Backlinks vault changed');
-      await vault.refresh(); controller.signal.throwIfAborted();
+      if (!this.provider.progressive) await vault.refresh(); controller.signal.throwIfAborted();
       const scope = await this.provider.prepare(vault, controller.signal), diagnostics = scope.diagnostics;
       const proof=scope.current;
       const check = () => { if (!this.alive || this.vault() !== vault) throw Error('Backlinks scope changed'); proof(); };
@@ -60,8 +62,8 @@ export class FactsBacklinks implements BacklinksService {
         }
       }
       check();
-      const result: BacklinksResult = Object.freeze({query: Object.freeze({vault: request.vault,target: Object.freeze({...request.target})}), target: Object.freeze({...target.target}), mentions: Object.freeze(mentions), coverage: Object.freeze({available: scope.sources.length, discovered: scope.discovered, complete: !diagnostics.length, diagnostics: Object.freeze([...new Set(diagnostics)])})});
-      this.evidence.set(result, check); return result;
+      const result: BacklinksResult = Object.freeze({query: Object.freeze({vault: request.vault,target: Object.freeze({...request.target})}), target: Object.freeze({...target.target}), mentions: Object.freeze(mentions), coverage: Object.freeze({...(this.provider.progressive?{mode:'saved-and-live' as const}:{}),available: scope.sources.length, discovered: scope.discovered, complete: !diagnostics.length, diagnostics: Object.freeze([...new Set(diagnostics)])})});
+      this.evidence.set(result, check); this.savedSources.set(result,new Map(scope.sources.filter(s=>s.evidence).map(s=>[s.target.documentId,s.evidence!]))); return result;
     } finally { clearTimeout(timeout); signal?.removeEventListener('abort', abort); this.requests.delete(controller); }
   };
 }

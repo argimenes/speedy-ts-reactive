@@ -14,8 +14,8 @@ export function KnowledgeView(props:{knowledge:ApplicationKnowledge}) {
   const act=async(action:()=>Promise<unknown>|void)=>{if(acting())return;setActing(true);setMessage('');try{await action();}catch(e){if(live)setMessage(String(e));}finally{if(live)setActing(false);}};
   return <section class="flint-knowledge" aria-label="Vault search and references">
     <h2>Search</h2><form onSubmit={e=>{e.preventDefault();void search();}}><label>Titles and native text<input aria-label="Search vault" value={query()} maxLength={256} onInput={e=>{cancel();setQuery(e.currentTarget.value);}}/></label><button type="submit">Search vault</button><Show when={pending()}><button type="button" onClick={cancel}>Cancel search</button></Show></form>
-    <Show when={pending()}><p role="status">Searching loaded Documents…</p></Show>
-    <Show when={results()}>{result=><div><p role="status">{result().hits.length} results · {result().available}/{result().discovered} Documents available. {result().complete?'Loaded vault coverage complete.':'Incomplete coverage.'}</p>
+    <Show when={pending()}><p role="status">Searching available native Documents…</p></Show>
+    <Show when={results()}>{result=><div><p role="status">{result().hits.length} results · {result().available}/{result().discovered} Documents available. {result().complete?(result().coverageMode==='saved-and-live'?'Verified saved/live coverage complete.':'Loaded vault coverage complete.'):'Incomplete coverage; zero results do not establish absence.'}</p>
       <Show when={!api.current(result().token)}><p role="status">Results are stale. Search again.</p></Show>
       <For each={result().diagnostics}>{d=><p>{d}</p>}</For>
       <QueryResults each={result().hits}>{hit=><button class="flint-search-hit" data-search-document={hit.documentId} data-search-block={hit.blockId} disabled={acting()||!api.current(result().token)} onClick={()=>void act(()=>api.activate(hit.id))}><strong>{hit.title}</strong><small>{hit.location} · {hit.kind} · {hit.documentId}</small><span>{hit.snippet}</span></button>}</QueryResults>

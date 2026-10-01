@@ -42,7 +42,7 @@ function fixture(properties:any[]=[prop()]) {
 const searchShape=(r:any)=>({hits:r.hits.map(({id,...hit}:any)=>hit),available:r.available,discovered:r.discovered,complete:r.complete});
 const backlinkShape=(r:any)=>({query:r.query,target:r.target,mentions:r.mentions,coverage:{available:r.coverage.available,discovered:r.coverage.discovered,complete:r.coverage.complete}});
 async function backlinksParity(f:ReturnType<typeof fixture>) {const a=await f.facts.query(f.query),b=await f.legacy.query(f.query);expect(backlinkShape(a)).toEqual(backlinkShape(b));return a;}
-it('keeps the production default on the accepted legacy provider',()=>expect(featureFlags.nativeKnowledge).toBe(false));
+it('defaults to the accepted loaded Facts provider with saved coverage separately gated',()=>{expect(featureFlags.nativeKnowledge).toBe(true);expect(featureFlags.nativeKnowledgeSaved).toBe(false);});
 it.each(['needle','🧭','é','Source','margin','absent',''])('C2 exact identities/ranges/snippets/order/coverage: %s',async query=>{
  const f=fixture(),before=f.editor.repository.snapshot(),snapshot=vi.spyOn(f.editor.repository,'snapshot');
  expect(searchShape(await f.search.search(query))).toEqual(searchShape(await f.oldSearch.search(query)));

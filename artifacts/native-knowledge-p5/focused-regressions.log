@@ -1,0 +1,29 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-saved-knowledge.test.tsx (11 tests) 36238ms
+   ✓ progressively searches saved resources without admission, then opens only the selected source in the invoking Window 5562ms
+   ✓ saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 10695ms
+   ✓ rejects a saved result after changed bytes without admission or binding 2402ms
+   ✓ rejects a saved result after duplicate without admission or binding 1652ms
+   ✓ rejects a saved result after external move without admission or binding 2688ms
+   ✓ rejects a saved result after removed without admission or binding 1544ms
+   ✓ checks bytes returned by Open before admission and preserves a read-only source 4498ms
+   ✓ read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 3128ms
+   ✓ a duplicate introduced while native Open is awaiting its response cannot be admitted 3506ms
+   ✓ an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 389ms
+ ✓ src/application/native-saved-scope.test.ts (7 tests) 2776ms
+   ✓ saved-to-opening suppresses immediately, dirty live never falls back, and disappearance requires verified hand-back 730ms
+   ✓ a failed saved scope withdraws its old results, keeps loaded operation usable, and explicit Refresh retries 655ms
+   ✓ explicit selected Open can re-admit after admission Undo; retained binding is not mistaken for canonical presence 832ms
+ ✓ src/persistence/native-session.test.ts (5 tests) 1030ms
+   ✓ opens canonically without an occurrence, saves/reopens, and blocks tree/extended/Workspace bypasses 445ms
+   ✓ does not refresh a stale client baseline after a rejected Save or Open 308ms
+ ✓ server/native-saved-scope.test.ts (15 tests) 728ms
+
+ Test Files  4 passed (4)
+      Tests  38 passed (38)
+   Start at  21:23:44
+   Duration  62.80s (transform 9.15s, setup 0ms, collect 15.89s, tests 40.77s, environment 4.12s, prepare 891ms)
+

@@ -121,10 +121,10 @@ export class FactsIndex {
             this.retainedBytes -= e.bytes;
         }
     }
-    ticket(scope: IndexScope) { const epoch = this.currentEpoch(), version = scope.epoch, publication = this.revision; return () => { if (!scope.alive || epoch !== this.currentEpoch() || version !== scope.epoch || publication !== this.revision)
+    ticket(scope: IndexScope, progressive = false) { const epoch = this.currentEpoch(), version = scope.epoch, publication = this.revision; return () => { if (!scope.alive || epoch !== this.currentEpoch() || version !== scope.epoch || !progressive && publication !== this.revision)
         throw Error('Stale Knowledge query'); }; }
-    async prepare(scope: IndexScope, pause: YieldControl, signal?: AbortSignal) {
-        const current = this.ticket(scope), check = () => { signal?.throwIfAborted(); current(); }, work = new WorkSlice(check, pause), facts: Facts[] = [];
+    async prepare(scope: IndexScope, pause: YieldControl, signal?: AbortSignal, progressive = false) {
+        const current = this.ticket(scope, progressive), check = () => { signal?.throwIfAborted(); current(); }, work = new WorkSlice(check, pause), facts: Facts[] = [];
         for (const e of this.entries) {
             await work.step();
             if (e.scope === scope && this.eligible(e))

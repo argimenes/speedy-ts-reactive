@@ -42,6 +42,9 @@ export interface KnowledgeScope {
     native(id: string): NativeEvidence;
     policy(): ExtractionPolicy;
     subscribe(listener: () => void): () => void;
+    prepareSaved?(policy:ExtractionPolicy, signal:AbortSignal): Promise<void>;
+    savedFailure?(): string | undefined;
+    savedMetrics?(): Readonly<Record<string, number>> | undefined;
     verifySaved(row: DiscoveryRow, policy: ExtractionPolicy, signal: AbortSignal): Promise<VerifiedSaved>;
 }
 export type ContributionState = 'unavailable' | 'live-pending' | 'live-ready' | 'live-incomplete' | 'saved-ready' | 'saved-incomplete' | 'verifying-hand-back';

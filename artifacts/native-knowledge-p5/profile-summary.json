@@ -1,0 +1,1220 @@
+{
+  "artifacts/native-knowledge-p5/activation-1000.cpuprofile": {
+    "self": [
+      {
+        "ms": 12637.75,
+        "functionName": "(idle)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 1081.46,
+        "functionName": "(program)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 399.13,
+        "functionName": "(garbage collector)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 212.15,
+        "functionName": "cleanNode",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1071,
+        "columnNumber": 18
+      },
+      {
+        "ms": 187.86,
+        "functionName": "cleanNode",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1071,
+        "columnNumber": 18
+      },
+      {
+        "ms": 169.31,
+        "functionName": "cleanNode",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1071,
+        "columnNumber": 18
+      },
+      {
+        "ms": 162.08,
+        "functionName": "step",
+        "scriptId": "39",
+        "url": "http://127.0.0.1:65464/src/knowledge/scheduler.ts",
+        "lineNumber": 17,
+        "columnNumber": 12
+      },
+      {
+        "ms": 160.1,
+        "functionName": "getBoundingClientRect",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 131.24,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 109.87,
+        "functionName": "cleanNode",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1071,
+        "columnNumber": 18
+      },
+      {
+        "ms": 89.91,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 79.16,
+        "functionName": "estimateBytes",
+        "scriptId": "39",
+        "url": "http://127.0.0.1:65464/src/knowledge/scheduler.ts",
+        "lineNumber": 34,
+        "columnNumber": 35
+      },
+      {
+        "ms": 67.77,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 64.96,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 62.67,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 745,
+        "columnNumber": 17
+      },
+      {
+        "ms": 62.3,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 61.9,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 60.09,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 57.61,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 57.55,
+        "functionName": "",
+        "scriptId": "11",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p3-browser.ts",
+        "lineNumber": 186,
+        "columnNumber": 28
+      },
+      {
+        "ms": 52.57,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 51.19,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 50.22,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 745,
+        "columnNumber": 17
+      },
+      {
+        "ms": 47.72,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 46.72,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      }
+    ],
+    "inclusive": [
+      {
+        "ms": 17769.48,
+        "functionName": "(root)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 12637.75,
+        "functionName": "(idle)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 2482.75,
+        "functionName": "openResource",
+        "scriptId": "8",
+        "url": "http://127.0.0.1:65464/src/persistence/native-session.ts",
+        "lineNumber": 306,
+        "columnNumber": 20
+      },
+      {
+        "ms": 1260.33,
+        "functionName": "admitNative",
+        "scriptId": "16",
+        "url": "http://127.0.0.1:65464/src/persistence/native-resource.ts",
+        "lineNumber": 186,
+        "columnNumber": 27
+      },
+      {
+        "ms": 1160.37,
+        "functionName": "commit",
+        "scriptId": "36",
+        "url": "http://127.0.0.1:65464/src/block-tree/repository.ts",
+        "lineNumber": 389,
+        "columnNumber": 8
+      },
+      {
+        "ms": 1142.64,
+        "functionName": "runUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 912,
+        "columnNumber": 19
+      },
+      {
+        "ms": 1142.64,
+        "functionName": "batch",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 493,
+        "columnNumber": 14
+      },
+      {
+        "ms": 1114.56,
+        "functionName": "bind",
+        "scriptId": "8",
+        "url": "http://127.0.0.1:65464/src/persistence/native-session.ts",
+        "lineNumber": 359,
+        "columnNumber": 6
+      },
+      {
+        "ms": 1081.46,
+        "functionName": "(program)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 1058.81,
+        "functionName": "runUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 912,
+        "columnNumber": 19
+      },
+      {
+        "ms": 1058.81,
+        "functionName": "writeSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 731,
+        "columnNumber": 20
+      },
+      {
+        "ms": 1058.81,
+        "functionName": "setter",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 227,
+        "columnNumber": 17
+      },
+      {
+        "ms": 1058.81,
+        "functionName": "touchStorage",
+        "scriptId": "8",
+        "url": "http://127.0.0.1:65464/src/persistence/native-session.ts",
+        "lineNumber": 87,
+        "columnNumber": 14
+      },
+      {
+        "ms": 1047.34,
+        "functionName": "completeUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 934,
+        "columnNumber": 24
+      },
+      {
+        "ms": 1026.54,
+        "functionName": "runTop",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 878,
+        "columnNumber": 15
+      },
+      {
+        "ms": 1026.54,
+        "functionName": "runQueue",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 990,
+        "columnNumber": 17
+      },
+      {
+        "ms": 996.14,
+        "functionName": "completeUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 934,
+        "columnNumber": 24
+      },
+      {
+        "ms": 983.57,
+        "functionName": "runTop",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 878,
+        "columnNumber": 15
+      },
+      {
+        "ms": 983.57,
+        "functionName": "runQueue",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 990,
+        "columnNumber": 17
+      },
+      {
+        "ms": 982.7,
+        "functionName": "updateComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 775,
+        "columnNumber": 26
+      },
+      {
+        "ms": 980.56,
+        "functionName": "cleanNode",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1071,
+        "columnNumber": 18
+      },
+      {
+        "ms": 972.31,
+        "functionName": "updateComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 775,
+        "columnNumber": 26
+      },
+      {
+        "ms": 971.33,
+        "functionName": "cleanNode",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1071,
+        "columnNumber": 18
+      },
+      {
+        "ms": 866.45,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1257,
+        "columnNumber": 9
+      },
+      {
+        "ms": 800.47,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1257,
+        "columnNumber": 9
+      }
+    ]
+  },
+  "artifacts/native-knowledge-p5/partial-1000.cpuprofile": {
+    "self": [
+      {
+        "ms": 10270.76,
+        "functionName": "(idle)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 490.22,
+        "functionName": "(program)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 227.89,
+        "functionName": "(garbage collector)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 60.96,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 47.28,
+        "functionName": "resolve",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 99,
+        "columnNumber": 24
+      },
+      {
+        "ms": 46.52,
+        "functionName": "step",
+        "scriptId": "39",
+        "url": "http://127.0.0.1:65464/src/knowledge/scheduler.ts",
+        "lineNumber": 17,
+        "columnNumber": 12
+      },
+      {
+        "ms": 40.03,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 36.59,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 32.49,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 29.96,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 29.93,
+        "functionName": "location",
+        "scriptId": "8",
+        "url": "http://127.0.0.1:65464/src/persistence/native-session.ts",
+        "lineNumber": 96,
+        "columnNumber": 10
+      },
+      {
+        "ms": 24.31,
+        "functionName": "",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 348,
+        "columnNumber": 44
+      },
+      {
+        "ms": 24.16,
+        "functionName": "setTimeout",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 22.48,
+        "functionName": "state",
+        "scriptId": "7",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p5-browser.tsx",
+        "lineNumber": 58,
+        "columnNumber": 16
+      },
+      {
+        "ms": 22.28,
+        "functionName": "",
+        "scriptId": "11",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p3-browser.ts",
+        "lineNumber": 186,
+        "columnNumber": 28
+      },
+      {
+        "ms": 18.57,
+        "functionName": "estimateBytes",
+        "scriptId": "39",
+        "url": "http://127.0.0.1:65464/src/knowledge/scheduler.ts",
+        "lineNumber": 34,
+        "columnNumber": 35
+      },
+      {
+        "ms": 14.07,
+        "functionName": "",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 348,
+        "columnNumber": 44
+      },
+      {
+        "ms": 13.34,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 13.3,
+        "functionName": "resolve",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 99,
+        "columnNumber": 24
+      },
+      {
+        "ms": 10.29,
+        "functionName": "location",
+        "scriptId": "8",
+        "url": "http://127.0.0.1:65464/src/persistence/native-session.ts",
+        "lineNumber": 96,
+        "columnNumber": 10
+      },
+      {
+        "ms": 10.19,
+        "functionName": "wait",
+        "scriptId": "7",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p5-browser.tsx",
+        "lineNumber": 35,
+        "columnNumber": 15
+      },
+      {
+        "ms": 9.01,
+        "functionName": "click",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 8.87,
+        "functionName": "request",
+        "scriptId": "221",
+        "url": "http://127.0.0.1:65464/src/application/saved-facts-client.ts",
+        "lineNumber": 14,
+        "columnNumber": 15
+      },
+      {
+        "ms": 7.92,
+        "functionName": "now",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 7.62,
+        "functionName": "knowledgeBindings",
+        "scriptId": "8",
+        "url": "http://127.0.0.1:65464/src/persistence/native-session.ts",
+        "lineNumber": 74,
+        "columnNumber": 19
+      }
+    ],
+    "inclusive": [
+      {
+        "ms": 11640.3,
+        "functionName": "(root)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 10270.76,
+        "functionName": "(idle)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 490.22,
+        "functionName": "(program)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 391.45,
+        "functionName": "runUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 912,
+        "columnNumber": 19
+      },
+      {
+        "ms": 391.45,
+        "functionName": "writeSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 731,
+        "columnNumber": 20
+      },
+      {
+        "ms": 391.45,
+        "functionName": "setter",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 227,
+        "columnNumber": 17
+      },
+      {
+        "ms": 391.45,
+        "functionName": "run",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 26,
+        "columnNumber": 14
+      },
+      {
+        "ms": 390.09,
+        "functionName": "completeUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 934,
+        "columnNumber": 24
+      },
+      {
+        "ms": 388.67,
+        "functionName": "runTop",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 878,
+        "columnNumber": 15
+      },
+      {
+        "ms": 388.67,
+        "functionName": "runUserEffects",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1011,
+        "columnNumber": 23
+      },
+      {
+        "ms": 388.67,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 984,
+        "columnNumber": 15
+      },
+      {
+        "ms": 388.67,
+        "functionName": "runUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 912,
+        "columnNumber": 19
+      },
+      {
+        "ms": 386.13,
+        "functionName": "updateComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 775,
+        "columnNumber": 26
+      },
+      {
+        "ms": 383.54,
+        "functionName": "runComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 792,
+        "columnNumber": 23
+      },
+      {
+        "ms": 365.35,
+        "functionName": "_$effect.e",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 95,
+        "columnNumber": 17
+      },
+      {
+        "ms": 227.89,
+        "functionName": "(garbage collector)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 207.14,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 207.14,
+        "functionName": "state",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 25,
+        "columnNumber": 16
+      },
+      {
+        "ms": 193.8,
+        "functionName": "",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 348,
+        "columnNumber": 44
+      },
+      {
+        "ms": 152.81,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 152.81,
+        "functionName": "state",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 25,
+        "columnNumber": 16
+      },
+      {
+        "ms": 152.81,
+        "functionName": "busy",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 25,
+        "columnNumber": 50
+      },
+      {
+        "ms": 119.02,
+        "functionName": "",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 348,
+        "columnNumber": 44
+      },
+      {
+        "ms": 113.21,
+        "functionName": "resolve",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 99,
+        "columnNumber": 24
+      },
+      {
+        "ms": 79.97,
+        "functionName": "wait",
+        "scriptId": "7",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p5-browser.tsx",
+        "lineNumber": 35,
+        "columnNumber": 15
+      }
+    ]
+  },
+  "artifacts/native-knowledge-p5/discovery-1000.cpuprofile": {
+    "self": [
+      {
+        "ms": 4226.73,
+        "functionName": "(idle)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 288.07,
+        "functionName": "(program)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 41.36,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 37.99,
+        "functionName": "(garbage collector)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 29.12,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 20.89,
+        "functionName": "state",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 332,
+        "columnNumber": 15
+      },
+      {
+        "ms": 11.38,
+        "functionName": "",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 348,
+        "columnNumber": 44
+      },
+      {
+        "ms": 10.56,
+        "functionName": "",
+        "scriptId": "11",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p3-browser.ts",
+        "lineNumber": 186,
+        "columnNumber": 28
+      },
+      {
+        "ms": 6.42,
+        "functionName": "location",
+        "scriptId": "8",
+        "url": "http://127.0.0.1:65464/src/persistence/native-session.ts",
+        "lineNumber": 96,
+        "columnNumber": 10
+      },
+      {
+        "ms": 6.32,
+        "functionName": "resolve",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 99,
+        "columnNumber": 24
+      },
+      {
+        "ms": 4.96,
+        "functionName": "setTimeout",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 3.66,
+        "functionName": "querySelector",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 2.5,
+        "functionName": "fetch",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 2.5,
+        "functionName": "field",
+        "scriptId": "7",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p5-browser.tsx",
+        "lineNumber": 49,
+        "columnNumber": 16
+      },
+      {
+        "ms": 2.32,
+        "functionName": "now",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 2.29,
+        "functionName": "",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 71,
+        "columnNumber": 24
+      },
+      {
+        "ms": 1.38,
+        "functionName": "createComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 827,
+        "columnNumber": 26
+      },
+      {
+        "ms": 1.33,
+        "functionName": "",
+        "scriptId": "11",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p3-browser.ts",
+        "lineNumber": 174,
+        "columnNumber": 43
+      },
+      {
+        "ms": 1.28,
+        "functionName": "delay",
+        "scriptId": "7",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p5-browser.tsx",
+        "lineNumber": 7,
+        "columnNumber": 14
+      },
+      {
+        "ms": 1.28,
+        "functionName": "wait",
+        "scriptId": "7",
+        "url": "http://127.0.0.1:65464/src/qualification/native-knowledge/p5-browser.tsx",
+        "lineNumber": 35,
+        "columnNumber": 15
+      },
+      {
+        "ms": 1.27,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 619,
+        "columnNumber": 30
+      },
+      {
+        "ms": 1.27,
+        "functionName": "readSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 698,
+        "columnNumber": 19
+      },
+      {
+        "ms": 1.27,
+        "functionName": "resolve",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 99,
+        "columnNumber": 24
+      },
+      {
+        "ms": 1.26,
+        "functionName": "get each",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 68,
+        "columnNumber": 14
+      },
+      {
+        "ms": 1.26,
+        "functionName": "update",
+        "scriptId": "156",
+        "url": "http://127.0.0.1:65464/src/application/document-vault.ts",
+        "lineNumber": 48,
+        "columnNumber": 10
+      }
+    ],
+    "inclusive": [
+      {
+        "ms": 4729.73,
+        "functionName": "(root)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 4226.73,
+        "functionName": "(idle)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 288.07,
+        "functionName": "(program)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      {
+        "ms": 140.28,
+        "functionName": "completeUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 934,
+        "columnNumber": 24
+      },
+      {
+        "ms": 140.28,
+        "functionName": "runUpdates",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 912,
+        "columnNumber": 19
+      },
+      {
+        "ms": 140.28,
+        "functionName": "writeSignal",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 731,
+        "columnNumber": 20
+      },
+      {
+        "ms": 140.28,
+        "functionName": "setter",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 227,
+        "columnNumber": 17
+      },
+      {
+        "ms": 140.28,
+        "functionName": "open",
+        "scriptId": "57",
+        "url": "http://127.0.0.1:65464/src/application/document-application-capabilities.tsx",
+        "lineNumber": 361,
+        "columnNumber": 20
+      },
+      {
+        "ms": 137.79,
+        "functionName": "runTop",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 878,
+        "columnNumber": 15
+      },
+      {
+        "ms": 137.79,
+        "functionName": "runQueue",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 990,
+        "columnNumber": 17
+      },
+      {
+        "ms": 137.71,
+        "functionName": "updateComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 775,
+        "columnNumber": 26
+      },
+      {
+        "ms": 135.39,
+        "functionName": "runComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 792,
+        "columnNumber": 23
+      },
+      {
+        "ms": 132.91,
+        "functionName": "get children",
+        "scriptId": "165",
+        "url": "http://127.0.0.1:65464/src/features/flint/vault-view.tsx",
+        "lineNumber": 126,
+        "columnNumber": 18
+      },
+      {
+        "ms": 132.91,
+        "functionName": "Show.createMemo.name",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1649,
+        "columnNumber": 20
+      },
+      {
+        "ms": 130.32,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 619,
+        "columnNumber": 30
+      },
+      {
+        "ms": 130.32,
+        "functionName": "runComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 792,
+        "columnNumber": 23
+      },
+      {
+        "ms": 130.32,
+        "functionName": "updateComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 775,
+        "columnNumber": 26
+      },
+      {
+        "ms": 130.32,
+        "functionName": "createComponent",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1407,
+        "columnNumber": 24
+      },
+      {
+        "ms": 129.15,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1257,
+        "columnNumber": 9
+      },
+      {
+        "ms": 129.15,
+        "functionName": "runComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 792,
+        "columnNumber": 23
+      },
+      {
+        "ms": 129.15,
+        "functionName": "updateComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 775,
+        "columnNumber": 26
+      },
+      {
+        "ms": 129.15,
+        "functionName": "createMemo",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 275,
+        "columnNumber": 19
+      },
+      {
+        "ms": 129.15,
+        "functionName": "For",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 1624,
+        "columnNumber": 12
+      },
+      {
+        "ms": 129.15,
+        "functionName": "",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 619,
+        "columnNumber": 30
+      },
+      {
+        "ms": 129.15,
+        "functionName": "runComputation",
+        "scriptId": "265",
+        "url": "http://127.0.0.1:65464/node_modules/.vite/deps/chunk-X22YAOZP.js?v=064b48bb",
+        "lineNumber": 792,
+        "columnNumber": 23
+      }
+    ]
+  }
+}

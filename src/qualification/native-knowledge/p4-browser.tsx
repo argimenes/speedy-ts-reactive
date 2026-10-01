@@ -39,7 +39,7 @@ export async function setup(count:number,enabled:boolean){
  const settle=async()=>{await host?.flush();await delay(350);await host?.flush();for(let i=0;i<100;i++){if(panels.every(p=>!p.textContent?.includes('Finding native references')))return;await delay(20);}throw Error('Panels did not settle');};
  const clickSearch=async(text:string)=>{
   const panel=panels[0],input=panel.querySelector<HTMLInputElement>('[aria-label="Search vault"]')!;input.value=text;input.dispatchEvent(new Event('input',{bubbles:true}));panel.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
-  for(let i=0;i<400;i++){const expected=panel.textContent?.match(/(\d+) results ·/);if(expected&&panel.querySelectorAll('.flint-search-hit').length===Number(expected[1]))return Number(expected[1]);if(!expected&&!panel.textContent?.includes('Searching loaded'))throw Error('Search failed: '+panel.textContent?.slice(0,200));await delay(10);}throw Error('Search timed out');
+  for(let i=0;i<400;i++){const expected=panel.textContent?.match(/(\d+) results ·/);if(expected&&panel.querySelectorAll('.flint-search-hit').length===Number(expected[1]))return Number(expected[1]);if(!expected&&!panel.textContent?.includes('Searching '))throw Error('Search failed: '+panel.textContent?.slice(0,200));await delay(10);}throw Error('Search timed out');
  };
  return {count,enabled,fixtureMs,constructionMs,
   async cold(){const start=performance.now();await settle();return {elapsedMs:performance.now()-start,mentions:panels[0].querySelectorAll('.flint-backlink').length,panelStatus:panels[0].querySelector('.flint-backlinks')?.textContent,metrics:host?{...host.metrics}:undefined,retainedBytes:host?.index.retainedBytes};},

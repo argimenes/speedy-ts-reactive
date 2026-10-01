@@ -3,6 +3,7 @@ import path from 'node:path';
 import {hash} from '../src/persistence/managed-pair.mjs';
 import {nativeKnowledgeJobs} from './native-knowledge-jobs';
 import {normalizePolicy} from '../src/knowledge/policy';
+import {NativeSavedScopes} from './native-saved-scope.mjs';
 const fail=message=>{throw Object.assign(Error(message),{status:409});};
 export async function readSavedFacts(store,request,{signal,jobs=nativeKnowledgeJobs}={}) {
  const {vault,location,resourceId,byteHash}=request??{};
@@ -29,6 +30,11 @@ export async function readSavedFacts(store,request,{signal,jobs=nativeKnowledgeJ
  return {wire:result.wire,evidence:{location,resourceId,byteHash,policy:result.policy},timings:result.timings};
 }
 export function installNativeKnowledgeRoutes(route,store){
+ const scopes=new NativeSavedScopes(store);
+ for(const [name,method]of [['begin','begin'],['batch','batch'],['release','release']])route('post','/vault/facts/'+name,async(req,res)=>{
+  const controller=new AbortController(),closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);
+  try{return await scopes[method](req.body,controller.signal);}finally{res.off('close',closed);}
+ });
  route('post','/vault/facts',async(req,res)=>{
   const controller=new AbortController(),closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);
   try{return await readSavedFacts(store,req.body,{signal:controller.signal});}finally{res.off('close',closed);}

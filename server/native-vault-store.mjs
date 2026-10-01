@@ -50,6 +50,26 @@ export class NativeVaultStore {
   if(s.isSymbolicLink()||(kind==='directory'?!s.isDirectory():!s.isFile()||s.size>BigInt(MAX)))fail('Expected bounded regular file',400);
   return [s.dev,s.ino,s.size,s.mtimeNs,s.ctimeNs].join(':');
  }
+ /** Read-only discovery fence, not an identity index. Includes pair/relocation
+  * metadata and directory entries so a new duplicate or operation expires it.
+  * ctime/inode evidence prevents mtime restoration from blessing changed bytes. */
+ async readScopeFence(vault,signal) {
+  relative(vault);const rows=[];let count=0;
+  const walk=async p=>{
+   signal?.throwIfAborted();if(++count>100000)fail('Knowledge scope evidence budget exceeded');
+   const s=await fs.lstat(await this.resolve(p),{bigint:true});
+   if(!s.isDirectory()&&!s.isFile())fail('Unsupported Knowledge scope entry');
+   rows.push([p,String(s.dev),String(s.ino),String(s.size),String(s.mtimeNs),String(s.ctimeNs)]);
+   if(s.isDirectory())for(const name of (await fs.readdir(await this.resolve(p))).sort())await walk(join(p,name));
+  };
+  await walk(vault);
+  // Relocation authority is store-wide, including moves entering this vault.
+  if(vault!=='.'){
+   rows.push(['managed-root',await this.stamp('.','directory')]);
+   if(!await absent(path.join(this.root,'.mutable-relocations')))await walk('.mutable-relocations');
+  }
+  signal?.throwIfAborted();return hash(JSON.stringify(rows));
+ }
  async write(p,data) {
   const file=await this.resolve(p,{missing:true}), h=await fs.open(file,C.O_WRONLY|C.O_CREAT|C.O_EXCL|C.O_NOFOLLOW,0o600);
   try{await h.writeFile(data);await h.sync();}finally{await h.close();}await this.sync(path.posix.dirname(p));

@@ -9,6 +9,7 @@ interface Slot {
     entry?: IndexedContribution;
     authority?: 'live' | 'saved';
     savedWanted: boolean;
+    savedEvidence?: {resourceId:string;byteHash:string;location:{folder:string;filename:string};policy:string};
     structuralEpoch: number;
     scopeEpoch: number;
 }
@@ -19,6 +20,7 @@ interface Scope extends IndexScope {
     stop: () => void;
     completedEpoch: number;
     coverageError?: string;
+    savedFailure?: string;
 }
 /** One host/repository subscription; jobs belong to resource slots, never views. */
 export class NativeKnowledgeHost {
@@ -45,10 +47,11 @@ export class NativeKnowledgeHost {
     private running?: Promise<void>;
     private closed = false;
     readonly index: FactsIndex;
-    readonly metrics = { invalidations: 0, invalidationMs: 0, maxInvalidationMs: 0, boundaryMs: 0, observationMs: 0, indexingMs: 0, cleanupMs: 0, savedMs: 0, queryMs: 0, observations: 0, savedReads: 0, maxObservationSliceMs: 0 };
+    readonly metrics = { invalidations: 0, invalidationMs: 0, maxInvalidationMs: 0, boundaryMs: 0, observationMs: 0, indexingMs: 0, cleanupMs: 0, savedMs: 0, scopeMs: 0, queryMs: 0, observations: 0, savedReads: 0, maxObservationSliceMs: 0 };
     private pause: YieldControl;
     constructor(private repository: BoundaryRepository, private options: {
         loadedOnly?: boolean;
+        progressiveSaved?: boolean;
         debounceMs?: number;
         factsBudget?: number;
         maxResources?: number;
@@ -88,7 +91,7 @@ export class NativeKnowledgeHost {
             scope = { port, users: 0, slots: new Map(), alive: true, epoch: 0, completedEpoch: -1, stop: () => { } };
             this.scopes.set(port.root, scope);
             const owned = scope;
-            scope.stop = port.subscribe(() => { owned.epoch++; this.invalidate(); });
+            scope.stop = port.subscribe(() => { owned.savedFailure=undefined; owned.epoch++; this.invalidate(); });
             if (!this.stop)
                 this.stop = this.repository.subscribeChanges(change => this.invalidate(!change.inlineOwner));
         }
@@ -100,6 +103,7 @@ export class NativeKnowledgeHost {
         const check = () => { if (released || !owned.alive)
             throw Error('Knowledge lease closed'); };
         return {
+            savedMetrics: () => owned.port.savedMetrics?.(),
             generation: () => { check(); const epoch=this.epoch, version=owned.epoch; return () => { check(); if(epoch!==this.epoch || version!==owned.epoch) throw Error('Stale Knowledge query generation'); }; },
             requestSaved: (id: string) => { check(); if (this.options.loadedOnly) throw Error('Saved coverage is disabled'); let s = owned.slots.get(id); if (!s) {
                 if (this.resourceSlots >= (this.options.maxResources ?? 10000))
@@ -107,8 +111,8 @@ export class NativeKnowledgeHost {
                 owned.slots.set(id, s = this.empty());
                 this.resourceSlots++;
             } s.savedWanted = true; this.invalidate(); },
-            coverage: () => { check(); return { complete: !this.lastError && !owned.coverageError && owned.completedEpoch === this.epoch && owned.port.snapshot().complete && [...owned.slots.values()].every(s => !!s.entry && this.index.eligible(s.entry) && !s.entry.facts.diagnostics.length), diagnostic: owned.coverageError ?? this.lastError, resources: [...owned.slots].map(([id, s]) => ({ id, state: s.entry && this.index.eligible(s.entry) ? s.state : 'unavailable', error: s.error ?? (s.entry && !this.index.eligible(s.entry) ? 'Observation pending' : undefined) })), retainedBytes: this.index.retainedBytes }; },
-            prepare: async (signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.prepare(owned, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
+            coverage: () => { check(); return { complete: !this.lastError && !owned.coverageError && owned.completedEpoch === this.epoch && owned.port.snapshot().complete && [...owned.slots.values()].every(s => !!s.entry && this.index.eligible(s.entry) && !s.entry.facts.diagnostics.length), diagnostic: owned.coverageError ?? this.lastError, resources: [...owned.slots].map(([id, s]) => ({ id, evidence: s.authority === 'saved' ? s.savedEvidence : undefined, state: s.entry && this.index.eligible(s.entry) ? s.state : 'unavailable', error: s.error ?? (s.entry && !this.index.eligible(s.entry) ? 'Observation pending' : undefined) })), retainedBytes: this.index.retainedBytes }; },
+            prepare: async (signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.prepare(owned, this.pause, signal, !!this.options.progressiveSaved); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
             backlinks: async (id: string, signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.backlinks(owned, id, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
             release: () => { if (released)
                 return; released = true; if (--owned.users)
@@ -127,6 +131,7 @@ export class NativeKnowledgeHost {
         scope.slots.clear();
         this.retiredScopes.delete(scope);
     } await this.index.sweep(this.pause); this.metrics.cleanupMs += performance.now() - t; }
+    start() { if (!this.running) void this.flush().catch(e => {this.lastError=String(e);this.notify();}); }
     async flush(): Promise<void> {
         clearTimeout(this.timer);
         this.timer = undefined;
@@ -164,11 +169,21 @@ export class NativeKnowledgeHost {
                         if (++count % 64 === 0)
                             await this.pause();
                     }
-                    for (const [id, slot] of scope.slots) {
+                    let savedPrepared=false;
+                    for (const [id, slot] of [...scope.slots].sort((a,b) => Number(!!scope.port.native(b[0]).location)-Number(!!scope.port.native(a[0]).location))) {
                         await this.pause();
                         check();
                         if (!scope.alive)
                             break;
+                        // Discovery verification belongs to the scope, not the first resource's
+                        // 10 s extraction deadline. Bound it independently and prioritize live work.
+                        if (this.options.progressiveSaved && scope.port.prepareSaved && !savedPrepared && !scope.savedFailure && !scope.port.native(id).location && scope.port.snapshot().complete) {
+                            savedPrepared=true;const preparation=new AbortController(),abort=()=>preparation.abort(controller.signal.reason);
+                            controller.signal.addEventListener('abort',abort,{once:true});const timeout=setTimeout(()=>preparation.abort(Error('Saved scope verification deadline exceeded')),90000);
+                            try {const start=performance.now();await scope.port.prepareSaved(normalizePolicy(scope.port.policy()),preparation.signal);this.metrics.scopeMs+=performance.now()-start;check();}
+                            catch(error){if(!controller.signal.aborted){scope.savedFailure=String(error);this.invalidate();}throw error;}
+                            finally{clearTimeout(timeout);controller.signal.removeEventListener('abort',abort);}
+                        }
                         const version = scope.epoch, budget = this.options.maxResourceMs ?? 10000, deadline = performance.now() + budget, job = new AbortController();
                         const abort = () => job.abort(controller.signal.reason);
                         controller.signal.addEventListener('abort', abort, { once: true });
@@ -189,6 +204,7 @@ export class NativeKnowledgeHost {
                                     throw Error('Live native binding unavailable');
                                 slot.state = 'live-pending';
                                 slot.authority = 'live';
+                                slot.savedEvidence = undefined;
                                 this.index.retire(slot.entry);
                                 slot.entry = undefined;
                                 await this.cleanup();
@@ -205,6 +221,7 @@ export class NativeKnowledgeHost {
                             }
                             else if (boundary.status === 'missing') {
                                 if (this.options.loadedOnly) throw Error('unopened canonical resource; loaded-only coverage');
+                                if (scope.savedFailure) throw Error(scope.savedFailure);
                                 // A saved-only contribution may survive a classified unrelated inline edit,
                                 // but never a structural/scope change or canonical-to-saved transition.
                                 if (slot.authority === 'saved' && slot.entry && slot.structuralEpoch === this.structuralEpoch && slot.scopeEpoch === scope.epoch) {
@@ -214,7 +231,7 @@ export class NativeKnowledgeHost {
                                 const handBack = slot.authority === 'live';
                                 this.index.retire(slot.entry);
                                 slot.entry = undefined;
-                                if (!slot.savedWanted && !handBack)
+                                if (!this.options.progressiveSaved && !slot.savedWanted && !handBack)
                                     throw Error('Saved coverage awaits explicit enrollment (P5 progressive coverage is not enabled)');
                                 slot.state = 'verifying-hand-back';
                                 const hash = row.baseline?.nativeHash;
@@ -239,10 +256,12 @@ export class NativeKnowledgeHost {
                                 slot.entry = await this.index.publish(scope, saved.facts, valid, this.pause);
                                 this.metrics.indexingMs += performance.now() - p;
                                 slot.authority = 'saved';
+                                slot.savedEvidence = {resourceId:id,byteHash:saved.byteHash,location:saved.location,policy:saved.policy};
                                 slot.state = saved.facts.diagnostics.length ? 'saved-incomplete' : 'saved-ready';
                             }
                             else
                                 throw Error(`Canonical boundary ${boundary.status}: ${boundary.reason}`);
+                            if (this.options.progressiveSaved) this.notify();
                             slot.error = undefined;
                             slot.structuralEpoch = this.structuralEpoch;
                             slot.scopeEpoch = scope.epoch;
@@ -252,6 +271,8 @@ export class NativeKnowledgeHost {
                             slot.entry = undefined;
                             slot.state = 'unavailable';
                             slot.error = String(error);
+                            const fatal=scope.port.savedFailure?.();
+                            if (this.options.progressiveSaved && fatal && !scope.savedFailure) {scope.savedFailure=fatal;this.invalidate();}
                             if (controller.signal.aborted)
                                 throw error;
                         }
@@ -261,6 +282,7 @@ export class NativeKnowledgeHost {
                         }
                     }
                     scope.completedEpoch = this.epoch;
+                    if (this.options.progressiveSaved) this.notify();
                 }
                 check();
                 this.completedEpoch = epoch;

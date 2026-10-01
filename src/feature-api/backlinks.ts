@@ -16,7 +16,7 @@ export interface BacklinksResult {
   query: BacklinksQuery;
   target: BacklinkDocument;
   mentions: readonly BacklinkMention[];
-  coverage: { available: number; discovered: number; complete: boolean; diagnostics: readonly string[] };
+  coverage: { mode?: 'loaded'|'saved-and-live'; available: number; discovered: number; complete: boolean; diagnostics: readonly string[] };
 }
 /** Implementations declare coverage; storage and reference representation stay private. */
 export interface BacklinksService {

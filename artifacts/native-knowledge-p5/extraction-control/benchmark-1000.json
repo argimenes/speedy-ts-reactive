@@ -1,0 +1,105 @@
+{
+  "size": 1000,
+  "environment": {
+    "node": "v22.12.0",
+    "cpu": "Apple M1"
+  },
+  "method": "Fresh process; warm OS files; raised total extraction budget only. One worker, serialized requests. Derived Map publication is a qualification sink, not a product index. Heartbeat is Node scheduling, not browser input.",
+  "worker": {
+    "elapsedMs": 4438.496166000001,
+    "heartbeat": {
+      "samples": 760,
+      "p95": 1.771291999999903,
+      "max": 113.48195899999973
+    },
+    "result": {
+      "resources": 1000
+    }
+  },
+  "totals": {
+    "readHashMs": 454.05034400000625,
+    "validationMs": 2606.6660219999853,
+    "factsMs": 540.506426999997,
+    "encodeMs": 81.40888099999984,
+    "workerMs": 3318.564359000007,
+    "roundTripMs": 3626.7478720000013,
+    "publicationMs": 232.79084400000556,
+    "wireBytes": 14271100,
+    "workerHeapPeak": 21650376,
+    "serverHeapPeak": 33787720
+  },
+  "control": {
+    "elapsedMs": 3133.5378330000003,
+    "heartbeat": {
+      "samples": 497,
+      "p95": 4.510916999999608,
+      "max": 30.358624999999847
+    },
+    "result": {
+      "validationMs": 2120.8734400000194,
+      "factsMs": 357.13472299999285,
+      "encodePublishMs": 278.15480899999784
+    }
+  },
+  "discovery": [
+    {
+      "worker": false,
+      "elapsedMs": 88131.463625,
+      "heartbeat": {
+        "samples": 1198,
+        "p95": 125.91229099999691,
+        "max": 621.7554999999993
+      },
+      "result": {
+        "resources": 1000,
+        "complete": true
+      },
+      "readMs": 1731.4832870004702,
+      "hashMs": 95.10250500020629,
+      "inspectMs": 0,
+      "validationMs": 0
+    },
+    {
+      "worker": true,
+      "elapsedMs": 2848.3094589999964,
+      "heartbeat": {
+        "samples": 564,
+        "p95": 1.0078749999956926,
+        "max": 3.9047500000015134
+      },
+      "result": {
+        "resources": 1000,
+        "complete": true
+      },
+      "readMs": 685.8284060003934,
+      "hashMs": 46.01962399983313,
+      "inspectMs": 1606.6762160001672,
+      "validationMs": 1438.360283999864
+    }
+  ],
+  "memory": {
+    "initial": {
+      "rss": 69582848,
+      "heapTotal": 22593536,
+      "heapUsed": 5015320,
+      "external": 2367801,
+      "arrayBuffers": 16623
+    },
+    "retained": {
+      "rss": 159006720,
+      "heapTotal": 66895872,
+      "heapUsed": 31397168,
+      "external": 2740632,
+      "arrayBuffers": 151026
+    },
+    "released": {
+      "rss": 115048448,
+      "heapTotal": 44613632,
+      "heapUsed": 5503736,
+      "external": 2088440,
+      "arrayBuffers": 16623
+    },
+    "workerHeapPeak": 21650376,
+    "processPeakRssKiB": 155296
+  }
+}

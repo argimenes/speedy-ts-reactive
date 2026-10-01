@@ -7,15 +7,17 @@ import { vaultPath, vaultContains } from './document-vault';
 import { runSearchWorker, type SearchRunner } from '../runtime/search-worker';
 import type { SearchSource } from '../runtime/search-matching';
 
-export interface FactsScopeHost { bindings?():readonly {resourceId:string;location:{folder:string;filename:string}}[]; host: NativeKnowledgeHost; acquire(vault: DocumentVaultLease): KnowledgeLease }
-export interface FactsSource { target: DocumentTarget; facts: Facts }
-export interface DerivedSearchHit { target: DocumentTarget; blockId: string; kind: 'title'|'text'; snippet: string; start: number; end: number; coordinate: 'cell'|'utf16' }
+export interface FactsScopeHost { progressive?: boolean; bindings?():readonly {resourceId:string;location:{folder:string;filename:string}}[]; host: NativeKnowledgeHost; acquire(vault: DocumentVaultLease): KnowledgeLease }
+export interface FactsSource { target: DocumentTarget; facts: Facts; evidence?: SavedSourceEvidence }
+export interface SavedSourceEvidence {resourceId:string;rootBlockId:string;location:{folder:string;filename:string};byteHash:string;policy:string}
+export interface DerivedSearchHit { target: DocumentTarget; blockId: string; kind: 'title'|'text'; snippet: string; start: number; end: number; evidence?: SavedSourceEvidence; coordinate: 'cell'|'utf16' }
 /** A Window owns this handle, not extraction or retained Facts. No editor or write capability. */
 export class FactsQueryProvider {
   private vault?: DocumentVaultLease;
   private lease?: KnowledgeLease;
   private alive = true;
   constructor(private shared: FactsScopeHost) {}
+  get progressive() {return !!this.shared.progressive;}
   use(vault?: DocumentVaultLease) {
     if (this.vault === vault) return;
     this.lease?.release(); this.lease = undefined; this.vault = vault;
@@ -29,7 +31,7 @@ export class FactsQueryProvider {
     const check = () => { generation(); signal?.throwIfAborted(); if (!this.alive || this.lease !== lease || signature !== vault.signature() || !vault.isAlive()) throw Error('Stale Facts scope'); };
     check();
     // Cancellation abandons only this query. Resource-owned refresh continues for other Windows.
-    await waitForQuery(this.shared.host.flush(), signal); check();
+    if (this.progressive) this.shared.host.start(); else await waitForQuery(this.shared.host.flush(), signal); check();
     const prepared = await lease.prepare(signal), coverage = lease.coverage();
     const proof = prepared.current;
     const current = () => { check(); proof(); };
@@ -42,18 +44,20 @@ export class FactsQueryProvider {
       await work.step();
       if (vaultContains(vault.root,vaultPath(binding.location)) && !paths.has(JSON.stringify([binding.resourceId,vaultPath(binding.location)]))) diagnostics.push(`${vaultPath(binding.location)}: missing loaded binding; not searched.`);
     }
+    if (this.progressive && !coverage.complete) diagnostics.push('Saved/live coverage is incomplete or rebuilding; zero results do not establish absence.');
     if (!scan.complete) diagnostics.push('Vault discovery is incomplete; unique resource availability cannot be established.');
     if (coverage.diagnostic) diagnostics.push(coverage.diagnostic);
     for (const row of scan.documents) {
       await work.step(); const facts = byId.get(row.resourceId), state = states.get(row.resourceId);
-      if (!scan.complete || !facts || !state?.state.startsWith('live-')) {
+      if (!scan.complete || !facts || !(state?.state.startsWith('live-') || this.progressive && state?.state.startsWith('saved-'))) {
         diagnostics.push(`${vaultPath(row.location)}: ${state?.error ?? 'unopened or unavailable'}; not searched.`); continue;
       }
       if (sources.length === 200) { diagnostics.push('Coverage limited to 200 available Documents.'); break; }
-      sources.push({facts, target: {documentId: facts.id, blockId: facts.rootBlockId, title: facts.hasTitle === false ? row.title ?? 'Untitled' : facts.title, location: vaultPath(row.location)}});
+      sources.push({facts, evidence: state!.state.startsWith('saved-') ? {...state!.evidence!,rootBlockId:facts.rootBlockId} : undefined, target: {documentId: facts.id, blockId: facts.rootBlockId, title: facts.hasTitle === false ? row.title ?? 'Untitled' : facts.title, location: vaultPath(row.location)}});
     }
     const discovered = new Set(scan.documents.map(d => d.resourceId));
     for (const row of coverage.resources) if (!discovered.has(row.id)) diagnostics.push(`${row.id}: missing loaded binding; not searched.`);
+    if(this.progressive&&diagnostics.length>32){const omitted=diagnostics.length-32;diagnostics.splice(32);diagnostics.push(`${omitted} additional unavailable/incomplete resource diagnostics; Refresh the vault to retry.`);}
     current(); return {sources, diagnostics, discovered: scan.documents.length, current};
   }
   async search(vault: DocumentVaultLease, query: string, signal?: AbortSignal, runner: SearchRunner = runSearchWorker) {
@@ -90,7 +94,7 @@ export class FactsQueryProvider {
         await work.step();
         if (!match.actionable) { diagnostics.push('A match splitting a grapheme was omitted; search for the complete character.'); continue; }
         if (hits.length === 1000) { diagnostics.push('Results limited to 1,000 passages.'); break outer; }
-        hits.push({target: source.target, blockId: block?.id ?? source.target.blockId, kind: block ? 'text':'title', snippet: match.context, start: match.start, end: match.end, coordinate: block?.text?.coordinate ?? 'utf16'});
+        hits.push({target: source.target, evidence: source.evidence, blockId: block?.id ?? source.target.blockId, kind: block ? 'text':'title', snippet: match.context, start: match.start, end: match.end, coordinate: block?.text?.coordinate ?? 'utf16'});
       }
     }
     scope.current(); return {...scope, hits, diagnostics: [...new Set(diagnostics)]};

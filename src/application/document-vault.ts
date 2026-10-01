@@ -49,11 +49,11 @@ export function createDocumentVaults(native: NativeDocumentSession) {
       for(const operationId of native.pendingVaultRelocations(this.root))rows.set(operationId,{operationId,phase:'pending'});
       return [...rows.values()];
     };
-    async refresh() {
+    async refresh(force=false) {
       if(!this.alive)return;
       if(this.refreshWork)return this.refreshWork;
       this.controller=new AbortController();
-      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive)this.update(value);}catch(e){if(this.alive){this.noticeSignal[1](String(e));this.update({...this.snapshot(),complete:false,diagnostics:[...this.snapshot().diagnostics,{message:'Discovery refresh failed: '+String(e)}]});throw e;}}finally{this.refreshWork=undefined;}})();
+      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive){const unchanged=JSON.stringify(value)===this.signature();this.update(value);if(force&&unchanged)this.notify();}}catch(e){if(this.alive){this.noticeSignal[1](String(e));this.update({...this.snapshot(),complete:false,diagnostics:[...this.snapshot().diagnostics,{message:'Discovery refresh failed: '+String(e)}]});throw e;}}finally{this.refreshWork=undefined;}})();
       return this.refreshWork;
     }
     requireDirectory(folder:string) {

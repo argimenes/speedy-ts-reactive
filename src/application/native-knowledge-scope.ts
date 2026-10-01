@@ -1,3 +1,4 @@
+import { SavedFactsClient } from './saved-facts-client';
 import { NativeKnowledgeHost } from '../knowledge/session';
 import type { BoundaryRepository } from '../knowledge/live-observer';
 import type { NativeDocumentSession } from '../persistence/native-session';
@@ -16,11 +17,17 @@ export function createNativeKnowledgeHost(repository: BoundaryRepository, native
         void host.dispose(); });
     return {
         host,
+        progressive: !!options.progressiveSaved,
         bindings: () => native.knowledgeBindings?.() ?? [],
         acquire(vault: DocumentVaultLease) {
+            const saved = options.progressiveSaved ? new SavedFactsClient(vault, id => !!native.knowledgeEvidence(id).location) : undefined;
             return host.acquire({ root: vault.root, snapshot: () => vault.isAlive() ? vault.snapshot() : { ...vault.snapshot(), complete: false }, native: id => native.knowledgeEvidence(id), policy: () => policy.read(),
-                subscribe(listener) { const a = vault.subscribe(listener), b = native.subscribeKnowledge(listener), c = policy.subscribe(listener); return () => { a(); b(); c(); }; },
+                subscribe(listener) { const changed=()=>{saved?.reset();listener();}; const a = vault.subscribe(changed), b = native.subscribeKnowledge(changed), c = policy.subscribe(changed); return () => { a(); b(); c(); saved?.reset(); }; },
+                prepareSaved: saved ? (policy,signal) => saved.prepare(policy,signal) : undefined,
+                savedFailure: () => saved?.failure(),
+                savedMetrics: () => saved?.metrics,
                 async verifySaved(row: DiscoveryRow, extraction: ExtractionPolicy, signal: AbortSignal): Promise<VerifiedSaved> {
+                    if (saved) return saved.read(row, extraction, signal);
                     // Explicit single-resource enrollment/hand-back only. Not N invocations for
                     // progressive vault discovery; that remains P5's separate coverage work.
                     const response = await fetch('/api/native/vault/facts', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vault: vault.root, location: row.location, resourceId: row.resourceId, byteHash: row.baseline?.nativeHash, policy: extraction }) });

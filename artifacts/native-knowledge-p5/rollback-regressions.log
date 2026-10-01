@@ -1,0 +1,24 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-knowledge.test.tsx (12 tests) 10103ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 1303ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 599ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 696ms
+   ✓ creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 1979ms
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 530ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 564ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 505ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 797ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 1555ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 587ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 492ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 493ms
+ ✓ src/application/canonical-backlinks.test.ts (10 tests) 151ms
+
+ Test Files  2 passed (2)
+      Tests  22 passed (22)
+   Start at  21:24:50
+   Duration  19.12s (transform 4.72s, setup 0ms, collect 6.97s, tests 10.25s, environment 1.15s, prepare 154ms)
+

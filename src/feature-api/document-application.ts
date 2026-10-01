@@ -65,7 +65,7 @@ export interface ApplicationVault {
 
 export interface DocumentTarget { documentId: string; blockId: string; title: string; location: string }
 export interface VaultSearchHit extends DocumentTarget { id: string; kind: 'title' | 'text'; snippet: string; start: number; end: number }
-export interface VaultSearchResults { token: string; hits: readonly VaultSearchHit[]; diagnostics: readonly string[]; available: number; discovered: number; complete: boolean }
+export interface VaultSearchResults { coverageMode?: 'loaded'|'saved-and-live'; token: string; hits: readonly VaultSearchHit[]; diagnostics: readonly string[]; available: number; discovered: number; complete: boolean }
 export interface NativeReferenceItem { id: string; label: string; target?: DocumentTarget; diagnostic?: string; removable: boolean }
 export interface ApplicationKnowledge {
   search(query: string): Promise<VaultSearchResults>;

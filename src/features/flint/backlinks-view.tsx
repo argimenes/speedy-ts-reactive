@@ -30,13 +30,13 @@ export function BacklinksPanel(props: { backlinks: ApplicationBacklinks }) {
       <button onClick={() => { clearTimeout(timer); const query = target(); if (query) void run(query); }}>Refresh backlinks</button>
       <Show when={pending()}><p role="status">Finding native references…</p><button onClick={() => { request++; controller?.abort(); clearTimeout(timer); setPending(false); setStale(true); setError('Backlinks query cancelled.'); }}>Cancel backlinks query</button></Show>
       <Show when={result()}>{value => <>
-        <p role="status">{value().mentions.length} backlinks to {value().target.title} · {value().coverage.available}/{value().coverage.discovered} Documents available. {value().coverage.complete ? 'Loaded vault coverage complete.' : 'Incomplete coverage; other resources may contain backlinks.'}</p>
+        <p role="status">{value().mentions.length} backlinks to {value().target.title} · {value().coverage.available}/{value().coverage.discovered} Documents available. {value().coverage.complete ? (value().coverage.mode==='saved-and-live'?'Verified saved/live coverage complete.':'Loaded vault coverage complete.') : 'Incomplete coverage; other resources may contain backlinks.'}</p>
         <Show when={stale() || !api.service.current(value())}><p role="status">Backlinks are stale; refreshing or manual refresh is required.</p></Show>
         <For each={value().coverage.diagnostics}>{message => <p>{message}</p>}</For>
         <QueryResults each={value().mentions}>{mention => <button class="flint-backlink" data-backlink-source={mention.source.documentId} disabled={following() || stale() || !api.service.current(value())} onClick={async () => {
           setFollowing(true); setError(''); try { await api.follow(value(), mention, navigation.signal); } catch (e) { if (live) setError(String(e)); } finally { if (live) setFollowing(false); }
         }}><strong>{mention.source.title}</strong><small>{mention.source.location} · {mention.source.documentId}</small><span>{mention.snippet}</span></button>}</QueryResults>
-        <Show when={!value().mentions.length}><p>No backlinks found in the inspected loaded content.</p></Show>
+        <Show when={!value().mentions.length}><p>No backlinks found in the inspected content.</p></Show>
       </>}</Show>
     </Show>
     <Show when={error()}><p role="status">{error()}</p></Show>

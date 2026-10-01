@@ -164,8 +164,23 @@ export class NativeDocumentSession {
   async open(location: DocumentLocation, importText = false) {
     this.opening++;this.notifyKnowledge();try{return await this.openResource(location,importText);}finally{this.opening--;this.notifyKnowledge();}
   }
-  private async openResource(location: DocumentLocation, importText: boolean) {
-    const data = await request('open',{location}); if(this.disposed)throw new Error('Document session closed');
+  /** Selected result only. The caller owns navigation; admission retains all native guards. */
+  async openVerified(location: DocumentLocation, expected: {resourceId:string;byteHash:string}, guard:()=>void, signal?:AbortSignal, verify?:()=>Promise<void>) {
+    guard(); signal?.throwIfAborted(); this.opening++;this.notifyKnowledge();const epoch=this.knowledgeEpoch;
+    const check=()=>{guard();signal?.throwIfAborted();if(this.knowledgeEpoch!==epoch)throw Error('Native operation changed during selected Open');};
+    let revision=this.editor.repository.state.revision;
+    try{const id=await this.openResource(location,false,{...expected,check,signal,verify,completed:()=>{revision=this.editor.repository.state.revision;}});return {id,revision};}finally{this.opening--;this.notifyKnowledge();}
+  }
+  async verifySelected(location:DocumentLocation, expected:{resourceId:string;byteHash:string}, signal?:AbortSignal) {
+    const data=await request('open',{location},signal);await this.checkSelected(data,expected);signal?.throwIfAborted();
+  }
+  private async checkSelected(data:any, expected:{resourceId:string;byteHash:string}) {
+    if(this.disposed||data.kind!=='native'||data.pending||data.resourceId!==expected.resourceId||data.baseline?.nativeHash!==expected.byteHash)throw Error('Selected native evidence changed');
+    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data.native));
+    if([...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('')!==expected.byteHash)throw Error('Selected native bytes changed');
+  }
+  private async openResource(location: DocumentLocation, importText: boolean, expected?:{resourceId:string;byteHash:string;check:()=>void;signal?:AbortSignal;verify?:()=>Promise<void>;completed:()=>void}) {
+    const data = await request('open',{location},expected?.signal); if(expected){expected.check();await this.checkSelected(data,expected);expected.check();await expected.verify?.();expected.check();} if(this.disposed)throw new Error('Document session closed');
     if(data.kind === 'markdown') {
       if(!importText)throw new Error('Choose Import Markdown to create a new native candidate');
       const admitted=admitMarkdown(this.editor.repository,this.bank(),data.text,this.targets()); markNativeBinding(this.editor.repository,admitted.resourceId);this.candidates.add(admitted.resourceId);
@@ -177,15 +192,22 @@ export class NativeDocumentSession {
     if(existing&&!sameLocation(existing.location,location))throw new Error('This identity is already bound to another location. Relocation requires separate review.');
     if(existing){
       if(JSON.stringify(existing.baseline)!==JSON.stringify(data.baseline))throw new Error('The server file changed since this Document was opened. Current edits and baseline were preserved.');
-      return data.resourceId;
+      const boundary=this.editor.repository.readCanonicalResourceBoundary(data.resourceId);
+      if(boundary.status==='ready'){expected?.completed();return data.resourceId;}
+      if(boundary.status!=='missing')throw Error('Bound canonical resource is '+boundary.status);
+      // Explicit Open after disappearance may re-admit the verified native resource.
+      // A retained binding alone is never evidence of a live canonical Document.
+
     }
     const bytes=new TextEncoder().encode(data.native),resource=decodeNative(bytes);
+    expected?.check();
     const admitted=admitNative(this.editor.repository,bytes,this.bank());
-    const binding=this.bind(data.resourceId,location,data.baseline);
+    const binding=existing??this.bind(data.resourceId,location,data.baseline);
+    if(existing)binding.members=new Set(Object.keys(captureNative(this.editor.repository.snapshot(),data.resourceId).contents));
     binding.pair.acknowledgeOpen(nativeText(resource));binding.message=data.readOnly?'Opened native Document (server is read-only)':'Opened native Document';
     const contentKey=this.editor.repository.state.placements[admitted.placementKey].contentKey;
     this.editor.persistence.registerWorkspaceDocument(contentKey,data.resourceId,location.folder,location.filename);
-    this.touch();return data.resourceId;
+    this.touch();expected?.completed();return data.resourceId;
   }
   private bind(id: string, location: DocumentLocation, baseline: Baseline): Binding {
     const binding = { location: {...location}, baseline, message:'Native destination selected', busy:false, members:new Set(Object.keys(captureNative(this.editor.repository.snapshot(),id).contents)) } as Binding;

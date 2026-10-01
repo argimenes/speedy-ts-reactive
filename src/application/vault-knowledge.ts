@@ -1,4 +1,4 @@
-import type { FactsQueryProvider } from './facts-query-provider';
+import type { FactsQueryProvider, SavedSourceEvidence } from './facts-query-provider';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { NativeDocumentSession } from '../persistence/native-session';
 import type { DocumentVaultLease } from './document-vault';
@@ -21,7 +21,8 @@ type Reference = Stamp & {source:Source; contentKey:string; property:JsonObject;
 export interface KnowledgeHost {
   vault():DocumentVaultLease;
   active():{documentId:string; projection:BlockTreeProjection}|undefined;
-  navigate(target:DocumentTarget, passage:Passage|undefined, current:()=>boolean):Promise<void>;
+  activateSaved?(target:DocumentTarget,passage:Passage|undefined,evidence:SavedSourceEvidence,current:()=>boolean,query:string):Promise<void>;
+  navigate(target:DocumentTarget, passage:Passage|undefined, current:()=>boolean, verify?:()=>Promise<void>):Promise<void>;
   guard():void;
 }
 const pause=()=>new Promise<void>(r=>setTimeout(r,0));
@@ -33,7 +34,7 @@ export class VaultKnowledge implements ApplicationKnowledge {
   private referenceToken?:string;
   private referenceDocument?:string;
   private batches=new Map<string,Stamp>();
-  private hits=new Map<string,{stamp:Stamp; target:DocumentTarget; passage?:Passage}>();
+  private hits=new Map<string,{stamp:Stamp; target:DocumentTarget; passage?:Passage;saved?:SavedSourceEvidence;query?:string}>();
   private selections=new Map<string,Selection>();
   private mentions=new Map<string,Reference>();
   constructor(private editor:ReactiveEditor,private native:NativeDocumentSession,private host:KnowledgeHost,private runner:SearchRunner=runSearchWorker, private derived?:FactsQueryProvider) {}
@@ -80,7 +81,7 @@ export class VaultKnowledge implements ApplicationKnowledge {
   }
   search=async(query:string):Promise<VaultSearchResults>=>{
     this.host.guard();this.cancel();const controller=new AbortController();this.controller=controller;
-    const vault=this.host.vault();await vault.refresh();controller.signal.throwIfAborted();
+    const vault=this.host.vault();if(!this.derived?.progressive)await vault.refresh();controller.signal.throwIfAborted();
     const stamp=this.stamp(vault),token=crypto.randomUUID(),scope=this.derived?undefined:this.scope(vault),diagnostics=scope?.diagnostics??[];
     const stop=this.editor.repository.subscribeChanges(()=>controller.abort());
     const timeout=setTimeout(()=>controller.abort(),15000);
@@ -90,12 +91,12 @@ export class VaultKnowledge implements ApplicationKnowledge {
         const result=await this.derived.search(vault,query,controller.signal,this.runner);this.require(stamp);controller.signal.throwIfAborted();
         stamp.derivedCurrent=result.current;
         const hits=result.hits.map(value=>{
-          const id=crypto.randomUUID(),{target,coordinate, ...rest}=value;
-          this.hits.set(id,{stamp,target,passage:value.kind==='text'?{blockId:value.blockId,start:value.start,end:value.end,coordinate}:undefined});
+          const id=crypto.randomUUID(),{target,coordinate,evidence, ...rest}=value;
+          this.hits.set(id,{stamp,target,saved:evidence,query,passage:value.kind==='text'?{blockId:value.blockId,start:value.start,end:value.end,coordinate}:undefined});
           return Object.freeze({id,...target,...rest});
         });
         this.searchToken=token;this.batches.set(token,stamp);
-        return Object.freeze({token,hits:Object.freeze(hits),diagnostics:Object.freeze(result.diagnostics),available:result.sources.length,discovered:result.discovered,complete:!result.diagnostics.length});
+        return Object.freeze({...(this.derived.progressive?{coverageMode:'saved-and-live' as const}:{}),token,hits:Object.freeze(hits),diagnostics:Object.freeze(result.diagnostics),available:result.sources.length,discovered:result.discovered,complete:!result.diagnostics.length});
       }
 
       const inputs:SearchSource[]=[],locators=new Map<string,{target:Source;content?:ContentRecord}>();let cells=0,units=0,blocks=0;
@@ -132,7 +133,9 @@ export class VaultKnowledge implements ApplicationKnowledge {
     return found[0];
   }
   activate=async(id:string)=>{
-    const hit=this.hits.get(id);if(!hit)throw new Error('Search result expired');await this.refresh(hit.stamp);if(this.hits.get(id)!==hit)throw new Error('Search result expired');
+    const hit=this.hits.get(id);if(!hit)throw new Error('Search result expired');
+    if(hit.saved){if(!this.host.activateSaved)throw Error('Saved result Open unavailable');return this.host.activateSaved(hit.target,hit.passage,hit.saved,()=>this.hits.get(id)===hit&&this.valid(hit.stamp),hit.query!);}
+    await this.refresh(hit.stamp);if(this.hits.get(id)!==hit)throw new Error('Search result expired');
     const target=this.target(hit.target,hit.stamp.vault);if(target.blockId!==hit.target.blockId||target.location!==hit.target.location)throw new Error('Search target identity or location changed');
     await this.host.navigate(target,hit.passage,()=>{try{return this.hits.get(id)===hit&&this.valid(hit.stamp);}catch{return false;}});
   };

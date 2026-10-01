@@ -1,3 +1,6 @@
+import {SavedResultActivation} from './saved-result-activation';
+import {observeLive} from '../knowledge/live-observer';
+import {runSearchWorker} from '../runtime/search-worker';
 import { createNativeKnowledgeHost } from './native-knowledge-scope';
 import { FactsQueryProvider } from './facts-query-provider';
 import { FactsBacklinks } from './facts-backlinks';
@@ -38,7 +41,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
     const factsHost = native && editor.features.nativeKnowledge ? createNativeKnowledgeHost(editor.repository, native, {
       read: () => ({version: 1, opaqueTypes: editor.registry.typesWithCapability('opaque-widget')}),
       subscribe: listener => editor.registry.subscribe(listener),
-    }, {loadedOnly: true}) : undefined;
+    }, {loadedOnly: !editor.features.nativeKnowledgeSaved, progressiveSaved: editor.features.nativeKnowledgeSaved}) : undefined;
     scope.own(() => { void factsHost?.dispose(); });
     const vaults = native ? createDocumentVaults(native) : undefined;
     scope.own(() => vaults?.dispose());
@@ -152,7 +155,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           const previous = selectedVault(); setSelectedVault(next); previous?.release(); await next.refresh();
         },
         close() { guard(); opening++; openQuery?.abort(); const previous = selectedVault(); setSelectedVault(undefined); vaultRoots.delete(props.nodeKey); previous?.release(); },
-        async refresh() { await lease().refresh(); },
+        async refresh() { await lease().refresh(true); },
         async openFile(location) { const v = lease(); await v.refresh(); v.requireFile(location); const id = await native.open(location); if (mounted) openDocument(id); await v.refresh(); },
         async createDocument(folder, filename, title) {
           const v = lease(), destination = {folder, filename}; destinationIn(v, destination);
@@ -186,14 +189,28 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         async recoverOperation(id) { const v = lease(); if (!v.operations().some(o => o.operationId === id && o.phase === 'pending')) throw new Error('Refresh to find a pending operation'); await v.recover(id); },
         async recoverNative(location) { const v = lease(), row = v.requireFile(location); await v.mutate(() => native.recover(row.resourceId, location)); },
       } : undefined;
+      const activation = native ? new SavedResultActivation(editor,native,lease,guard) : undefined;
+      onCleanup(()=>activation?.dispose());
       const knowledgeHost: KnowledgeHost = {
         vault: lease, guard,
         active: () => { const key = activeTab(), documentId = activeId(), projection = key && liveViews.get(key); return documentId && projection ? {documentId, projection} : undefined; },
-        async navigate(target, passage, current) {
+        async activateSaved(target,passage,evidence,current,query) {
+          const ticket=await activation!.prepare(evidence,current);
+          const live=await observeLive(editor.repository,target.documentId,{version:1,opaqueTypes:editor.registry.typesWithCapability('opaque-widget')},{check:()=>{if(!ticket.current())throw Error('Selected activation expired');}});
+          if(live.facts.id!==target.documentId||live.facts.rootBlockId!==evidence.rootBlockId||target.blockId!==evidence.rootBlockId)throw Error('Selected root identity changed');
+          const block=passage&&live.facts.blocks.filter(b=>b.id===passage.blockId);
+          const source=passage?block?.length===1&&block[0].text:{coordinate:'utf16' as const,runs:[{text:live.facts.title}]};
+          if(!source||passage&&source.coordinate!==passage.coordinate)throw Error('Selected passage missing or unsupported');
+          const matches=await runSearchWorker([{...source,contentKey:'selected',version:0}],query,{});
+          if(!matches[0]?.matches.some(m=>m.actionable&&(!passage||m.start===passage.start&&m.end===passage.end))||!ticket.current())throw Error('Selected passage changed');
+          await knowledgeHost.navigate(target,passage,ticket.current,ticket.verify);
+        },
+        async navigate(target, passage, current, verify) {
           guard(); if(!current()) throw new Error('Navigation is stale');
           // Resolve only this application instance's occurrence, never a global first match.
           openDocument(target.documentId, true);
           await new Promise(resolve=>setTimeout(resolve,0));
+          await verify?.();
           guard(); if(!current()||activeId()!==target.documentId) throw new Error('Navigation was superseded');
           const view=liveViews.get(activeTab()!); if(!view) throw new Error('Document occurrence is unavailable');
           const nodes=Object.values(view.state.nodes);
@@ -203,6 +220,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           const range={nodeKey:node.key,contentKey:node.contentKey,placementKey:node.placementKey,version:editor.repository.state.contents[node.contentKey].inlineRevision,start:passage?.start??0,end:passage?.end??0,coordinate:passage?.coordinate??'cell' as const};
           const stillCurrent=()=>mounted&&current()&&liveViews.get(activeTab()!)===view&&activeId()===target.documentId;
           const revealed=await revealMatch(editor,{id:'flint-navigation',text:'',context:'',captures:[],ranges:[range],path:editor.blockQueries.ancestorPath(node.key).map(n=>n.key),breadcrumb:'',capabilities:{highlight:false,reveal:true,annotate:false,replace:false}},stillCurrent);
+          await verify?.();
           if(!revealed||!stillCurrent())throw new Error('Passage is stale or cannot currently be revealed');
           editor.focus.request(node.key,{reason:'flint-navigation'});
           const mount=editor.mounts.get(node.key);
@@ -221,7 +239,15 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         service: backlinkService,
         target() { const v = selectedVault(), id = activeId(), doc = id && resolve(id); if (!v || !doc || !id) return; return {vault: v.root, target: {documentId: id, blockId: String(editor.repository.state.contents[doc.contentKey].payload.id)}}; },
         async follow(result, mention, signal) {
-          guard(); const resolved = await (facts ? canonical!.resolveDerived(result, mention, () => backlinkService.current(result), signal) : canonical!.resolve(result, mention, signal)); guard();
+          guard();
+          const saved=backlinkService instanceof FactsBacklinks ? backlinkService.savedSource(result,mention.source.documentId) : undefined;
+          if(saved){
+            if(!result.mentions.includes(mention))throw Error('Backlink is not a member of this result');
+            const ticket=await activation!.prepare(saved,()=>backlinkService.current(result),signal);
+            const resolved=await canonical!.resolveDerived(result,mention,ticket.current,signal);guard();
+            await knowledgeHost.navigate(resolved.target,resolved.passage,ticket.current,ticket.verify);return;
+          }
+          const resolved = await (facts ? canonical!.resolveDerived(result, mention, () => backlinkService.current(result), signal) : canonical!.resolve(result, mention, signal)); guard();
           await knowledgeHost.navigate(resolved.target, resolved.passage, () => !signal?.aborted && backlinkService.current(result));
         },
       } : undefined;
