@@ -5,7 +5,7 @@ import { DocumentDialog } from "./document-dialog";
 import "./document-browser.css";
 
 export interface DocumentBrowserProps {
-  mode: "open" | "save";
+  mode: "open" | "save" | "directory";
   initialLocation?: DocumentLocation;
   busy?: boolean;
   error?: string;
@@ -64,6 +64,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
   });
   createEffect(() => {
     const path = folder(); refresh();
+    if (props.mode === "directory") return;
     const request = new AbortController();
     onCleanup(() => request.abort());
     setLoading(true); setError(""); setFiles([]); setSelected(""); setFilter(""); setReplacement(undefined);
@@ -85,6 +86,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
   createEffect(() => { if (selected() && !visibleFiles().includes(selected())) setSelected(""); });
   const selectFolder = (path: string, focus = false) => {
     setFolder(path);
+    if (props.mode === "directory") void loadChildren(path);
     if (focus) queueMicrotask(() => [...treeRoot.querySelectorAll<HTMLElement>("[data-folder]")].find((item) => item.dataset.folder === path)?.focus());
   };
   const expand = (path: string) => { setTree("expanded", path, !tree.expanded[path]); if (tree.expanded[path]) void loadChildren(path); };
@@ -105,6 +107,10 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
   };
   const selectFile = (name: string) => { setSelected(name); if (props.mode === "save") setFilename(name); setReplacement(undefined); };
   const choose = async (name = props.mode === "save" ? filename().trim() : selected()) => {
+    if (props.mode === "directory") {
+      if (!props.busy && !tree.loading[folder()] && !tree.errors[folder()]) await props.onChoose({folder:folder(),filename:""},false);
+      return;
+    }
     if (!name || props.busy || loading()) return;
     if (props.mode === "save" && !/\.json$/i.test(name)) name += ".json";
     if (/[\\/\0]/.test(name) || name.startsWith(".")) { setError("Enter a filename without path separators."); return; }
@@ -129,7 +135,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
       queueMicrotask(() => document.getElementById(id)?.scrollIntoView?.({ block: "nearest" }));
     }
   };
-  return <DocumentDialog title={props.mode === "open" ? "Open document" : "Save document as"} onClose={props.onClose} busy={props.busy}
+  return <DocumentDialog title={props.mode === "directory" ? "Choose vault directory" : props.mode === "open" ? "Open document" : "Save document as"} onClose={props.onClose} busy={props.busy}
     resizable={{ initial: { width: 880, height: 600 }, minimum: { width: 560, height: 360 } }}>
     <div class="document-browser__path">
       <button type="button" disabled={folder() === "." || props.busy} onClick={() => selectFolder(parentPath(folder()))} aria-label="Parent folder">↑</button>
@@ -147,7 +153,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
           <Show when={tree.errors[row.path]}><p class="document-browser__tree-error" role="alert">{tree.errors[row.path]} <button type="button" onClick={() => void loadChildren(row.path, true)}>Retry</button></p></Show>
         </>}</For>
       </div>
-      <div class="document-browser__files">
+      <Show when={props.mode !== "directory"} fallback={<div class="document-browser__files document-browser__directory"><h3>Choose this directory as a vault</h3><p>Documents{folder() === "." ? "" : ` / ${folder()}`}</p><p>Browse the server Documents directory using the folder tree or Parent folder. This is the permitted managed store, not the browser device’s filesystem.</p><p>Flint will inspect native .mutable.json resources and their paired projections after selection. Legacy JSON files are not native Flint Documents.</p><p role="status">{tree.loading[folder()] ? "Loading folders…" : tree.children[folder()]?.length === 0 ? "No subfolders. You may still choose this directory." : "Select a folder, then Choose directory."}</p></div>}><div class="document-browser__files">
         <label class="document-browser__filter">Find in this folder<input data-autofocus type="search" value={filter()} onInput={(event) => setFilter(event.currentTarget.value)} placeholder="Filter documents…" /></label>
         <div class="document-browser__list" role="listbox" aria-label="Documents in selected folder" aria-busy={loading()} aria-activedescendant={selected() ? fileId(selected()) : undefined} tabIndex={0} onKeyDown={listKey}>
           <Show when={!loading()} fallback={<p role="status">Loading documents…</p>}>
@@ -157,7 +163,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
         </div>
         <small class="document-browser__count">{visibleFiles().length} document{visibleFiles().length === 1 ? "" : "s"}</small>
       </div>
-    </div>
+    </Show></div>
     <Show when={error() || props.error}><p class="document-dialog__error" role="alert">{error() || props.error}</p></Show>
     <Show when={replacement()}>{(target) => <div class="document-browser__replace" role="alert">
       <p>“{target().filename}” already exists. Replace its contents?</p>
@@ -167,7 +173,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
     <form class="document-dialog__footer" onSubmit={(event) => { event.preventDefault(); void choose(); }}>
       <Show when={props.mode === "save"}><label>File name<input aria-label="File name" value={filename()} disabled={props.busy} onInput={(event) => { setFilename(event.currentTarget.value); setReplacement(undefined); }} /></label></Show>
       <button type="button" disabled={props.busy} onClick={props.onClose}>Cancel</button>
-      <button type="submit" class="document-dialog__primary" disabled={props.busy || loading() || !!replacement() || !(props.mode === "save" ? filename().trim() : selected())}>{props.busy ? "Please wait…" : props.mode === "save" ? "Save" : "Open"}</button>
+      <button type="submit" class="document-dialog__primary" disabled={props.busy || loading() || !!replacement() || (props.mode === "directory" ? !!tree.loading[folder()] || !!tree.errors[folder()] : !(props.mode === "save" ? filename().trim() : selected()))}>{props.busy ? "Please wait…" : props.mode === "directory" ? "Choose directory" : props.mode === "save" ? "Save" : "Open"}</button>
     </form>
   </DocumentDialog>;
 }

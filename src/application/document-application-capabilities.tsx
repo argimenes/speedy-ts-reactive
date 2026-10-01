@@ -1,3 +1,4 @@
+import { DocumentBrowser } from "../demo/document-browser";
 import {SavedResultActivation} from './saved-result-activation';
 import {observeLive} from '../knowledge/live-observer';
 import {runSearchWorker} from '../runtime/search-worker';
@@ -151,8 +152,10 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
             return old && old.id === row.id && old.state === row.state && old.loaded === row.loaded && old.title === row.title && old.tags.length === row.tags.length && old.tags.every((tag, i) => tag === row.tags[i]) ? old : row;
           }) };
       });
+      const [choosingVault,setChoosingVault]=createSignal(false),[chooserBusy,setChooserBusy]=createSignal(false),[chooserError,setChooserError]=createSignal('');
       const vault: ApplicationVault | undefined = native && vaults ? {
         state: vaultState,
+        choose() { guard(); setChooserError(''); setChoosingVault(true); },
         async open(root) {
           guard(); openQuery?.abort(); openQuery = new AbortController();
           const request = ++opening, next = await vaults.acquire(root, openQuery.signal);
@@ -277,7 +280,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         async keepMutable() { guard(); await native.keepMutable(requireId()); },
         status: () => native.status(activeId()), location: () => native.location(activeId()),
       } : undefined;
-      return <div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
+      return <><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
           documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, backlinks,
           setProperties(id, value) {
@@ -297,7 +300,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           },
           closeActiveTab() { guard(); const key = activeTab(); if (key) { if(navigation.tabs.has(key)){navigation.tabs.delete(key);navigation.active=undefined;setNavigationRevision(n=>n+1);}else editor.commands.remove(key); bookmarks.delete(key); const r = row(); if (r) editor.setViewChild(r.key, r.children[0]); } },
         }} />
-      </div>;
+      </div></>;
     };
     scope.own(editor.registry.register({ type: definition.type, capabilities: ["container"], view: props => <Show when={scope.active()}><Instance nodeKey={props.nodeKey} /></Show> }, scope.owner));
     scope.own(editor.commandRegistry.register({ id: "flint.open", label: "Open Flint", canExecute: () => editor.repository.state.contents[editor.repository.state.placements[editor.repository.state.rootPlacementKey].contentKey].viewType === "workspace-block", execute() {

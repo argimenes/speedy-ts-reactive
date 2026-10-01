@@ -30,6 +30,22 @@ function mount(dto: ExistingBlockDto = {
 
 const click = (element: HTMLElement) => element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 
+it("maximizes without replacing content or overwriting normal geometry, and preserves maximize across minimize",async()=>{
+  const f=mount(),root=f.host.querySelector<HTMLElement>('.reactive-window')!,text=f.host.querySelector<HTMLTextAreaElement>('textarea')!;
+  const normal=structuredClone(f.editor.repository.snapshot().contents[f.node('window').contentKey].payload.metadata);
+  text.focus();text.setSelectionRange(2,7);
+  click(f.host.querySelector('[aria-label="Maximize window"]')!);await Promise.resolve();
+  expect(root.classList.contains('reactive-window--maximized')).toBe(true);expect(f.host.querySelector('textarea')).toBe(text);
+  expect([text.selectionStart,text.selectionEnd]).toEqual([2,7]);
+  expect(f.node('window').payload.metadata).toMatchObject({position:(normal as any).position,size:(normal as any).size});
+  click(f.host.querySelector('[aria-label="Restore window"]')!);
+  expect(root.style.transform).toBe('translate(20px, 30px)');expect(root.style.width).toBe('400px');
+  click(f.host.querySelector('[aria-label="Maximize window"]')!);click(f.host.querySelector('[aria-label="Minimize window"]')!);
+  click(f.host.querySelector('[data-window-icon]')!);await Promise.resolve();
+  expect(root.classList.contains('reactive-window--maximized')).toBe(true);
+});
+it("can disable the generic maximize affordance",()=>{const f=mount(undefined,{features:{windowMaximize:false}});expect(f.host.querySelector('[aria-label="Maximize window"]')).toBeNull();});
+
 describe("Window icon minimization", () => {
   it("keeps one Block identity, follows metadata through history and restores focus, selection, geometry and children", async () => {
     const { editor, projection, host, node } = mount();

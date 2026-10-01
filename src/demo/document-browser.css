@@ -44,3 +44,6 @@
   .document-browser__panes { grid-template-columns: minmax(125px, 38%) 1fr; }
   .document-dialog__footer label { flex-basis: 100%; }
 }
+
+.document-browser__directory { padding: 20px; gap: 14px; overflow: auto; line-height: 1.45; }
+.document-browser__directory h3 { font-size: 17px; font-weight: 600; }

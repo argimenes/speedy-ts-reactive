@@ -1,3 +1,4 @@
+import { createWindowMaximize } from "./window-maximize";
 import { createWindowPresentation } from "./window-presentation";
 import { useDocumentTabHost, tabDocumentTarget } from "./document-tab-context";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
@@ -458,6 +459,9 @@ export function WindowView(props: BlockViewProps) {
   const [toolbarNotice, setToolbarNotice] = createSignal("");
   const state = () => geometry?.static ? "normal" : resolvedWindowState(metadata().state);
   const minimized = () => state() === "minimized";
+  const maximized = () => !geometry && editor.features.windowMaximize && state() === "maximized";
+  const workArea = createWindowMaximize(()=>root, maximized);
+  let beforeMinimize: "normal"|"maximized" = "normal";
   const isDocument = () => node()?.viewType === "document-window-block";
   const marginsCollapsed = () => narrowMarginsCollapsed() || presentation.requested();
   const isSticky = () => node()?.viewType === "window-block" && metadata().stickyNote === true;
@@ -491,7 +495,7 @@ export function WindowView(props: BlockViewProps) {
     dispose?.(); marginObserver?.disconnect();
     if (suppressTimer) clearTimeout(suppressTimer);
   });
-  const position = () => preview() ?? geometry?.position() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
+  const position = () => maximized() ? {x:workArea().x,y:workArea().y} : preview() ?? geometry?.position() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
   const storedSize = () => {
     if (geometry) { const size = geometry.expandedSize(); return { w: size.width, h: size.height }; }
     const w = Number(metadata().size?.w), h = Number(metadata().size?.h);
@@ -524,7 +528,7 @@ export function WindowView(props: BlockViewProps) {
       minimum: () => ({ width: minimumSize().w, height: minimumSize().h }), toExpanded: presentation.expandedFromPresented });
     if (release) onCleanup(release);
   });
-  const dimensions = () => ({ w: windowResize.dimensions().width, h: windowResize.dimensions().height });
+  const dimensions = () => maximized() ? {w:workArea().width,h:workArea().height} : ({ w: windowResize.dimensions().width, h: windowResize.dimensions().height });
   const registerMargin = (entry: DocumentMarginEntry) => {
     setMarginEntries(current => current.some(candidate => candidate.ownerKey === entry.ownerKey && candidate.relationKey === entry.relationKey && candidate.name === entry.name) ? current : [...current, entry]);
     return () => setMarginEntries(current => current.filter(candidate => candidate.ownerKey !== entry.ownerKey || candidate.relationKey !== entry.relationKey || candidate.name !== entry.name));
@@ -587,7 +591,7 @@ export function WindowView(props: BlockViewProps) {
     };
   };
   const beginDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
-    if (geometry?.static || event.ctrlKey || event.button !== 0) return;
+    if (geometry?.static || maximized() || event.ctrlKey || event.button !== 0) return;
     drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y, moved: false };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
@@ -638,12 +642,13 @@ export function WindowView(props: BlockViewProps) {
     if (focusWasInside) { rememberReturnFocus(); editor.focus.adopt(props.nodeKey); }
     if (editor.find.state.open && contains(editor.find.state.scope?.rootKey)) editor.find.close(false);
     for (const overlay of [...editor.overlays.overlays]) if (contains(overlay.ownerKey)) editor.overlays.close(overlay.key, false);
+    beforeMinimize=maximized()?"maximized":"normal";
     editor.crossText.clear(); commitMetadata({ state: "minimized" }, "Minimize Window");
     if (focusWasInside) queueMicrotask(() => root.querySelector<HTMLButtonElement>("[data-window-icon]")?.focus({ preventScroll: true }));
   };
   const restoreWindow = () => {
     if (suppressIconClick) { suppressIconClick = false; return; }
-    commitMetadata({ state: "normal" }, "Restore Window");
+    commitMetadata({ state: beforeMinimize }, "Restore Window");
     const saved = returnFocus; returnFocus = undefined;
     queueMicrotask(() => {
       const focused = editor.focus.state.focusedKey, mounted = focused && editor.mounts.get(focused);
@@ -658,15 +663,16 @@ export function WindowView(props: BlockViewProps) {
     });
   };
   const frame = () => (
-    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
+    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--maximized": maximized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
       hidden={closedSticky()}
-      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
+      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": maximized() ? Math.max(101, Number(metadata().zIndex ?? 1)) : Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
       <Show when={minimized()} fallback={<>
         <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
           <span>{title()}</span>
           <span class="reactive-window__controls">
             <Dynamic component={presentation.control()} />
             <Show when={!geometry?.static}>
+            <Show when={!geometry && editor.features.windowMaximize}><button type="button" aria-label={maximized()?"Restore window":"Maximize window"} onPointerDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>commitMetadata({state:maximized()?"normal":"maximized"},maximized()?"Restore Window":"Maximize Window")}>{maximized()?"❐":"□"}</button></Show>
             <button type="button" aria-label="Minimize window" onPointerDown={(e) => { rememberReturnFocus(); e.stopPropagation(); }} onClick={minimizeWindow}>−</button>
             <button type="button" aria-label={isSticky() ? "Close sticky note" : "Close window"} onPointerDown={(e) => e.stopPropagation()} onClick={() => isSticky() ? editor.stickyNotes.closeWindow(props.nodeKey) : editor.commands.remove(props.nodeKey)}>×</button>
             </Show>

@@ -167,3 +167,15 @@ describe("document browser request and keyboard handling", () => {
     dialog().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+it('reuses the folder tree for directory choice without loading or opening document bytes', async () => {
+  const store=mockStore(), choose=vi.fn(async()=>true);
+  disposers.push(render(()=><DocumentBrowser mode="directory" onChoose={choose} onClose={()=>{}}/>,document.body));
+  await vi.waitFor(()=>expect(document.querySelector('[data-folder="archive"]')).not.toBeNull());
+  click(document.querySelector('[data-folder="archive"]')!);
+  await vi.waitFor(()=>expect((button('Choose directory') as HTMLButtonElement).disabled).toBe(false));
+  click(button('Choose directory'));expect(choose).toHaveBeenCalledWith({folder:'archive',filename:''},false);
+  click(document.querySelector('[aria-label="Parent folder"]')!);
+  expect((document.querySelector('[aria-label="Parent folder"]') as HTMLButtonElement).disabled).toBe(true);
+  expect(store.fetch.mock.calls.every(([url])=>String(url).includes('/listFolders'))).toBe(true);
+});

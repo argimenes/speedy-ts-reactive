@@ -21,12 +21,14 @@ export function VaultView(props:{vault:ApplicationVault}) {
     <For each={state()?.folders.filter(f=>location(f).folder===p.path)}>{f=><Folder path={f}/>}</For>
   </details>;
   return <section class="flint-vault-controls" aria-label="Filesystem vault">
-    <label>Managed directory<input aria-label="Vault directory" value={root()} onInput={e=>setRoot(e.currentTarget.value)}/></label>
-    <button disabled={busy()} onClick={()=>void run(()=>props.vault.open(root()))}>Open Vault</button>
+    <Show when={props.vault.choose}><button disabled={busy()} onClick={()=>props.vault.choose!()}>Choose Vault…</button><p>Choose a directory in the server Documents store.</p></Show>
+    <details><summary>Open by managed relative path</summary><label>Managed directory<input aria-label="Vault directory" value={root()} onInput={e=>setRoot(e.currentTarget.value)}/></label>
+    <button disabled={busy()} onClick={()=>void run(()=>props.vault.open(root()))}>Open Vault</button></details>
     <Show when={state()}><button disabled={busy()} onClick={()=>void run(()=>props.vault.refresh())}>Refresh</button><button disabled={busy()} onClick={()=>props.vault.close()}>Close Vault</button>
       <p>Vault: {state()!.root} <Show when={readOnly()}><strong>Read-only storage. Local edits cannot be saved.</strong></Show></p>
       <label>Tag filter<select aria-label="Tag filter" value={tag()} onChange={e=>setTag(e.currentTarget.value)}><option value="">All tags</option><For each={tags()}>{t=><option value={t}>{t}</option>}</For></select></label>
       <Show when={state()!.documents.some(d=>!d.loaded)}><p>Tag filtering covers opened Documents only.</p></Show>
+      <Show when={state()!.complete&&!state()!.documents.length}><p role="status">No eligible native Documents in this vault. Browse its folders, create a Document, or explicitly import Markdown. Legacy JSON files are not listed as native Documents.</p></Show>
       <Folder path={state()!.root}/>
       <p>Selected folder: <output aria-label="Selected folder">{folder()}</output></p>
       <details><summary>New Document / import</summary>

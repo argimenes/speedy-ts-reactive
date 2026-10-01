@@ -408,3 +408,7 @@
 .reactive-window--margins-collapsed .reactive-page--minimap-right { padding-right: 58px; }
 .workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="leftMargin"],
 .workspace-demo__window--margins-collapsed .workspace-demo__document .reactive-relation[data-relation-name="rightMargin"] { display: none; }
+
+/* The desktop work area excludes the existing 28px system bar. */
+.workspace-demo[data-window-work-area] { --window-work-area-top:0px; }
+.workspace-demo--system-bar[data-window-work-area] { --window-work-area-top:28px; }

@@ -18,6 +18,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Generic Desktop Window maximize/restore; normal geometry is retained. */
+  windowMaximize: boolean;
   /** Composite Document application; transient tabs share canonical content. */
   flint: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
@@ -51,6 +53,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  windowMaximize: true,
   flint: true,
   nativeDocumentPersistence: true,
   nativeKnowledge: true,

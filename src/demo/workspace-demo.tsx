@@ -231,7 +231,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   });
 
   return (
-    <main class="workspace-demo" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }} data-demo-state={loaded() ? "loaded" : "loading"}>
+    <main data-window-work-area class="workspace-demo" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }} data-demo-state={loaded() ? "loaded" : "loading"}>
       <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Demo controls">
         <Show when={editor.features.publicHostedVersion} fallback={<>
           <button type="button" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
@@ -419,7 +419,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   onCleanup(() => { release(); session.dispose(); });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
-  return <main class="workspace-demo workspace-demo--canonical" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
+  return <main data-window-work-area class="workspace-demo workspace-demo--canonical" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
     <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Workspace controls">
       <opening.Buttons />
       <Show when={editor.features.flint}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>
@@ -604,7 +604,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
   };
   return (
     <ErrorBoundary fallback={(error, reset) => (
-      <main class="workspace-demo" data-demo-state="error">
+      <main data-window-work-area class="workspace-demo" data-demo-state="error">
         <h1>The workspace could not load.</h1>
         <p role="alert">{error instanceof Error ? error.message : String(error)}</p>
         <button type="button" onClick={reset}>Try again</button>

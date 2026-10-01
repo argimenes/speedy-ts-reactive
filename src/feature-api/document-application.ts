@@ -48,6 +48,8 @@ export interface ApplicationVaultState {
   readOnly: boolean; complete: boolean; busy: boolean; notice: string;
 }
 export interface ApplicationVault {
+  /** Host-owned, confined server directory chooser. Selection still requires native discovery. */
+  choose?(): void;
   state(): ApplicationVaultState | undefined;
   open(root: string): Promise<void>;
   close(): void;
