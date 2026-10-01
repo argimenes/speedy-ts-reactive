@@ -1,5 +1,7 @@
 # Native Knowledge and Facts Production Integration Plan
 
+**Programme closure — 1 October 2026:** P1–P5 and the [bounded responsiveness correction](NATIVE_KNOWLEDGE_P5_RESPONSIVENESS_REPORT.md) are accepted and complete for current Flint development. Loaded `nativeKnowledge:true` remains the default, `nativeKnowledgeSaved:false` remains the normal composition, and `nativeKnowledge:false` remains the legacy rollback. Saved coverage stays implemented and opt-in. Large-vault saved activation latency and the documented watchpoints remain known limitations, not prerequisites to Flint application work. No further Knowledge optimisation is authorized. The next planning direction is the [Flint Application Implementation Plan](FLINT_APPLICATION_IMPLEMENTATION_PLAN.md); F1 awaits review. The original plan below is retained as historical scope and gate documentation.
+
 Planning only. Prepared against the accepted C2/C3, saved Facts, live observation and canonical resource-boundary qualifications. No implementation is authorized by this document itself.
 
 ## 1. Objective and accepted foundation
