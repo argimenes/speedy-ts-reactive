@@ -1,0 +1,428 @@
+{
+  "utc": "2026-10-02T12:48:37.672Z",
+  "node": "v22.12.0",
+  "cpu": "Apple M1",
+  "memoryBytes": 8589934592,
+  "controls": [
+    {
+      "blocks": 100,
+      "uncontented": {
+        "discoveryMs": 20.90549999999996,
+        "inspectionMs": 17.44900000000007,
+        "stageMs": 38.06333299999994,
+        "publicationMs": 1.831957999999986,
+        "totalMs": 98.2722920000001,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 2.1434169999999995
+          },
+          {
+            "phase": "read",
+            "ms": 0.30045800000004874
+          },
+          {
+            "phase": "capture",
+            "ms": 3.011457999999948
+          },
+          {
+            "phase": "publish",
+            "ms": 7.698792000000026
+          },
+          {
+            "phase": "finish",
+            "ms": 1.8041660000000093
+          }
+        ],
+        "discardMs": 0
+      },
+      "preparedPhases": {
+        "resourceId": "resource",
+        "contentHash": "236403942135739a390325873875552958b3eaf5ab817a81a0642cdc6c0f0cca",
+        "mode": "incremental",
+        "changedBlocks": 1,
+        "removedBlocks": 0,
+        "unchangedBlocks": 100,
+        "diagnostics": [],
+        "timings": {
+          "decodeValidationMs": 11.397583999999938,
+          "projectionMs": 2.7816249999999627,
+          "previousReadMs": 14.33383399999991,
+          "comparisonMs": 8.576833000000079,
+          "mutationAndFtsMs": 0.42258300000003146,
+          "commitMs": 0.9624579999999696,
+          "sqlTotalMs": 1.508874999999989
+        },
+        "extractionTimings": {
+          "decodeValidationMs": 11.397583999999938,
+          "projectionMs": 2.7816249999999627,
+          "previousReadMs": 14.33383399999991,
+          "comparisonMs": 8.576833000000079
+        }
+      },
+      "race": {
+        "discoveryMs": 14.544875000000047,
+        "inspectionMs": 11.25770799999998,
+        "stageMs": 14.382582999999954,
+        "publicationMs": 0,
+        "totalMs": 51.60070899999994,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 2.8883329999999887
+          },
+          {
+            "phase": "read",
+            "ms": 0.26549999999997453
+          },
+          {
+            "phase": "capture",
+            "ms": 3.542500000000018
+          }
+        ],
+        "discardMs": 0
+      },
+      "foregroundWaitMs": 0.003249999999979991,
+      "foregroundSaveMs": 94.18220900000006,
+      "cancellationToStageSettledMs": 8.537500000000023,
+      "backgroundDrainMs": 95.04962499999999,
+      "recovery": {
+        "discoveryMs": 20.649874999999952,
+        "inspectionMs": 15.236291999999935,
+        "stageMs": 35.151208,
+        "publicationMs": 1.5160000000000764,
+        "totalMs": 109.95449999999994,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 5.071332999999981
+          },
+          {
+            "phase": "read",
+            "ms": 0.3420409999999947
+          },
+          {
+            "phase": "capture",
+            "ms": 6.207458000000088
+          },
+          {
+            "phase": "publish",
+            "ms": 10.245374999999967
+          },
+          {
+            "phase": "finish",
+            "ms": 3.220416
+          }
+        ],
+        "discardMs": 0
+      },
+      "staleCandidateCommitted": false,
+      "latestSavedPublished": true,
+      "integrity": {
+        "ok": true,
+        "mutable": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "ok"
+        },
+        "audit": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "not-applicable"
+        }
+      }
+    },
+    {
+      "blocks": 1000,
+      "uncontented": {
+        "discoveryMs": 99.64674999999988,
+        "inspectionMs": 150.19495800000004,
+        "stageMs": 313.20629199999985,
+        "publicationMs": 1.3269580000001042,
+        "totalMs": 590.7618339999999,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 1.991291999999703
+          },
+          {
+            "phase": "read",
+            "ms": 0.3109999999996944
+          },
+          {
+            "phase": "capture",
+            "ms": 3.7011250000000473
+          },
+          {
+            "phase": "publish",
+            "ms": 8.133834000000206
+          },
+          {
+            "phase": "finish",
+            "ms": 6.63779199999999
+          }
+        ],
+        "discardMs": 0
+      },
+      "preparedPhases": {
+        "resourceId": "resource",
+        "contentHash": "66b43be47a79748a459b4cc2b89c466c9e7b8bb58cacdd043d9c415f674680c6",
+        "mode": "incremental",
+        "changedBlocks": 1,
+        "removedBlocks": 0,
+        "unchangedBlocks": 1000,
+        "diagnostics": [],
+        "timings": {
+          "decodeValidationMs": 88.27154100000007,
+          "projectionMs": 21.02500000000009,
+          "previousReadMs": 161.8737500000002,
+          "comparisonMs": 40.7199999999998,
+          "mutationAndFtsMs": 0.4190840000001117,
+          "commitMs": 0.40354100000013204,
+          "sqlTotalMs": 0.961667000000034
+        },
+        "extractionTimings": {
+          "decodeValidationMs": 88.27154100000007,
+          "projectionMs": 21.02500000000009,
+          "previousReadMs": 161.8737500000002,
+          "comparisonMs": 40.7199999999998
+        }
+      },
+      "race": {
+        "discoveryMs": 101.93412499999977,
+        "inspectionMs": 105.85641699999996,
+        "stageMs": 130.69379200000003,
+        "publicationMs": 0,
+        "totalMs": 352.2175830000001,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 2.415124999999989
+          },
+          {
+            "phase": "read",
+            "ms": 0.3002919999998994
+          },
+          {
+            "phase": "capture",
+            "ms": 4.137375000000247
+          }
+        ],
+        "discardMs": 0
+      },
+      "foregroundWaitMs": 0.002666999999746622,
+      "foregroundSaveMs": 294.0890830000003,
+      "cancellationToStageSettledMs": 79.47325000000001,
+      "backgroundDrainMs": 294.46487499999967,
+      "recovery": {
+        "discoveryMs": 86.45833399999992,
+        "inspectionMs": 118.88791599999968,
+        "stageMs": 323.75716699999975,
+        "publicationMs": 1.3451249999998254,
+        "totalMs": 563.0029999999997,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 3.0748750000002474
+          },
+          {
+            "phase": "read",
+            "ms": 0.2899999999999636
+          },
+          {
+            "phase": "capture",
+            "ms": 4.734375
+          },
+          {
+            "phase": "publish",
+            "ms": 10.39954200000011
+          },
+          {
+            "phase": "finish",
+            "ms": 3.3685000000004948
+          }
+        ],
+        "discardMs": 0
+      },
+      "staleCandidateCommitted": false,
+      "latestSavedPublished": true,
+      "integrity": {
+        "ok": true,
+        "mutable": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "ok"
+        },
+        "audit": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "not-applicable"
+        }
+      }
+    },
+    {
+      "blocks": 10000,
+      "uncontented": {
+        "discoveryMs": 1020.3750419999997,
+        "inspectionMs": 1284.6459579999973,
+        "stageMs": 4805.959917,
+        "publicationMs": 73.16791599999851,
+        "totalMs": 7362.963500000002,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 1.8615420000023732
+          },
+          {
+            "phase": "read",
+            "ms": 0.9997919999987062
+          },
+          {
+            "phase": "capture",
+            "ms": 12.43341700000019
+          },
+          {
+            "phase": "publish",
+            "ms": 217.20624999999927
+          },
+          {
+            "phase": "finish",
+            "ms": 4.86883399999715
+          }
+        ],
+        "discardMs": 0
+      },
+      "preparedPhases": {
+        "resourceId": "resource",
+        "contentHash": "2d4bbab8011925bdf825826c0e625500eb6e1c98e882bf24bcb98e9bd10a91c0",
+        "mode": "incremental",
+        "changedBlocks": 1,
+        "removedBlocks": 0,
+        "unchangedBlocks": 10000,
+        "diagnostics": [],
+        "timings": {
+          "decodeValidationMs": 1842.950832999999,
+          "projectionMs": 296.14020900000105,
+          "previousReadMs": 2203.5176250000004,
+          "comparisonMs": 459.66554200000246,
+          "mutationAndFtsMs": 10.08574999999837,
+          "commitMs": 1.560457999999926,
+          "sqlTotalMs": 12.198416999999608
+        },
+        "extractionTimings": {
+          "decodeValidationMs": 1842.950832999999,
+          "projectionMs": 296.14020900000105,
+          "previousReadMs": 2203.5176250000004,
+          "comparisonMs": 459.66554200000246
+        }
+      },
+      "race": {
+        "discoveryMs": 1216.161,
+        "inspectionMs": 1584.5454160000008,
+        "stageMs": 2399.860499999999,
+        "publicationMs": 0,
+        "totalMs": 5231.296166000004,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 2.6135829999984708
+          },
+          {
+            "phase": "read",
+            "ms": 1.2206250000017462
+          },
+          {
+            "phase": "capture",
+            "ms": 12.173040999998193
+          }
+        ],
+        "discardMs": 0
+      },
+      "foregroundWaitMs": 0.009541999999783002,
+      "foregroundSaveMs": 3257.5097500000047,
+      "cancellationToStageSettledMs": 2346.033041999999,
+      "backgroundDrainMs": 3258.6672089999956,
+      "recovery": {
+        "discoveryMs": 1020.9529579999944,
+        "inspectionMs": 1164.2545839999948,
+        "stageMs": 4671.652167,
+        "publicationMs": 2.7757090000013704,
+        "totalMs": 7007.922292000003,
+        "criticalSections": [
+          {
+            "phase": "scope",
+            "ms": 3.274083000003884
+          },
+          {
+            "phase": "read",
+            "ms": 1.1357910000006086
+          },
+          {
+            "phase": "capture",
+            "ms": 76.45145899999625
+          },
+          {
+            "phase": "publish",
+            "ms": 29.976417000005313
+          },
+          {
+            "phase": "finish",
+            "ms": 3.9348749999990105
+          }
+        ],
+        "discardMs": 0
+      },
+      "staleCandidateCommitted": false,
+      "latestSavedPublished": true,
+      "integrity": {
+        "ok": true,
+        "mutable": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "ok"
+        },
+        "audit": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "not-applicable"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Single diagnostic samples; not p95 guarantees.",
+    "Foreground wait excludes the foreground save itself. Existing native pair validation/encoding is not optimized.",
+    "Cancellation-to-stage-settled is observed by the host and may include main-thread foreground validation time.",
+    "Critical-section durations exclude lock acquisition; foreground wait includes release/acquisition coordination."
+  ]
+}

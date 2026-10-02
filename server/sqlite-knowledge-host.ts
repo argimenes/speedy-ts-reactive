@@ -36,7 +36,7 @@ export class SqliteKnowledgeHost {
         // Failed/missing/corrupt/read-only databases remain unavailable, never repaired by replacement.
         try{e.client=await (this.options.open??openSqliteFoundation)({vault:root,initialize:!this.options.readOnly,readOnly:!!this.options.readOnly});
           e.vaultGuid=(await e.client.inspect()).mutable.vaultGuid;
-          e.index=(this.options.indexer??createSavedIndexer)(e.client,{root:this.options.root,vault,store:this.store,policy:normalized});
+          e.index=(this.options.indexer??createSavedIndexer)(e.client,{root:this.options.root,vault,store:this.store,policy:normalized,protect:this.protect});
         }catch(error){await e.client?.close().catch(()=>{});e.client=undefined;e.coverage=unknown(String(error));}
         this.entries.set(root,e);
         if(e.client&&!this.options.readOnly)this.enqueue(e,false);
@@ -51,6 +51,15 @@ export class SqliteKnowledgeHost {
   private invalidate(e:any,message:string){e.epoch++;e.fence=undefined;e.coverage=unknown(message);}
   private enqueue(e:any,full:boolean){if(this.closed||!e.client||this.options.readOnly)return;this.invalidate(e,'Saved reconciliation pending');e.pending=true;e.full ||= full;this.schedule();}
   private schedule(){if(this.closed||this.foregrounds||this.timer||this.running)return;this.timer=setTimeout(()=>{this.timer=undefined;void this.flush();},this.options.debounceMs??100);this.timer.unref?.();}
+  // Only this short section, never the background CPU operation, blocks foreground storage.
+  private critical?:Promise<any>;
+  private protect=(action:()=>Promise<any>,signal?:AbortSignal):Promise<any>=>{
+    signal?.throwIfAborted();
+    if(this.foregrounds||this.closed)throw Error('Background storage superseded');
+    const work=this.store.lock(async()=>{signal?.throwIfAborted();return action();});
+    this.critical=work;
+    return work.finally(()=>{if(this.critical===work)this.critical=undefined;});
+  };
   private active?:any; private controller?:AbortController;
   /** Internal drain used by explicit reconciliation and qualification, never by typing. */
   async flush():Promise<void>{
@@ -95,7 +104,7 @@ export class SqliteKnowledgeHost {
     for(const e of this.entries.values())this.invalidate(e,'Storage operation pending');
     const previous=this.foregroundTail;let done:()=>void;this.foregroundTail=new Promise<void>(r=>{done=r;});
     const start=performance.now();
-    try{await previous;await this.running;const wait=performance.now()-start;this.metrics.foregroundWaitMs+=wait;this.metrics.maxForegroundWaitMs=Math.max(this.metrics.maxForegroundWaitMs,wait);return await action();}
+    try{await previous;await this.critical?.catch(()=>{});const wait=performance.now()-start;this.metrics.foregroundWaitMs+=wait;this.metrics.maxForegroundWaitMs=Math.max(this.metrics.maxForegroundWaitMs,wait);return await action();}
     finally{done!();this.foregrounds--;for(const e of this.entries.values())this.enqueue(e,false);this.schedule();}
   }
   async release(token:string){

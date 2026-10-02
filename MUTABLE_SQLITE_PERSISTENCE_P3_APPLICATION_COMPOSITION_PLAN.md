@@ -14,6 +14,8 @@ Source inspection is against repository baseline `d239949`, including the accept
 
 **P3a implementation status (2026-10-02):** see [P3a implementation and qualification report](MUTABLE_SQLITE_PERSISTENCE_P3A_REPORT.md). Host/coverage correctness is qualified; coarse cancellation can delay foreground Save for large Resources and needs review before P3b rollout. The planning-time descriptions below remain the proposed later-stage sequence, not a claim that those stages have shipped.
 
+**P3a foreground follow-up:** the accepted architecture now separates unlocked worker preparation from protected, revalidated publication. See the [foreground coordination qualification addendum](MUTABLE_SQLITE_PERSISTENCE_P3A_FOREGROUND_ADDENDUM.md) for the correction, race tests and remaining costs. This replaces the earlier requirement to drain the entire sweep before foreground persistence. P3b remains unstarted pending review.
+
 ## 1 Scope differences requiring review
 
 The programme's original P3 row says “SQLite Entity/Alias/Relationship services; injected Entity feature transport, native-reference/mentions queries, saved search adapter and existing live overlay/navigation contracts.” Its gate includes Entity creation, retries, preferred-name changes and aliases without SurrealDB. The new brief first requires a composition plan, preservation of working consumers and a narrow progressive adoption seam. The plan below makes that sequencing explicit rather than replacing all consumers at once.

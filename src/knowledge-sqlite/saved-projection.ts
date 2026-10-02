@@ -36,8 +36,8 @@ function legacy(dto:any):RepositoryState {
   };check(dto);return decodeBlockTree(dto).state;
 }
 
-export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:ExtractionPolicy,timings?:Record<string,number>):Promise<SavedProjection> {
-  const started=performance.now();
+export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:ExtractionPolicy,timings?:Record<string,number>,check:()=>void=()=>{}):Promise<SavedProjection> {
+  check();const started=performance.now();
   requireValue(bytes.byteLength<=20*1024*1024,'saved file exceeds byte budget');
   const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
   const extraction=normalizePolicy(policy);
@@ -52,7 +52,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
     format='legacy-block-tree';version=null;
   }
   requireValue(id(resourceId),'missing Resource identity; explicit import required');
-  validateRepository(state);
+  check();validateRepository(state);check();
   const decoded=performance.now();if(timings)timings.decodeValidationMs=decoded-started;
   const root=state.contents[state.placements[state.rootPlacementKey].contentKey];
   const blocks=Object.values(state.contents).filter(c=>!cell(c)),ids=new Set<string>();
@@ -68,6 +68,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
   const tags=bag(root.payload.metadata).tags;
   if(tags!==undefined){requireValue(Array.isArray(tags)&&tags.every(t=>typeof t==='string'),'invalid native tags');result.tags=[...new Set<string>(tags)].sort();}
   for(const c of blocks) {
+    check();
     const blockId=String(c.payload.id),p=c.payload as any;
     const coordinate=c.inlineKind==='standoff'?'cell':['plain-text-block','text-block'].includes(c.viewType)?'utf16':null;
     const units=c.inlineContent.map(pk=>state.contents[state.placements[pk].contentKey]);
@@ -131,7 +132,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
     if(suppressed.has(c.key))warn('Opaque application text excluded from search; authored structure retained');
     result.blocks.push(out);
   }
-  result.blocks.sort((a,b)=>a.block.guid.localeCompare(b.block.guid));
+  check();result.blocks.sort((a,b)=>a.block.guid.localeCompare(b.block.guid));
   if(timings)timings.projectionMs=performance.now()-decoded;
   return result;
 }

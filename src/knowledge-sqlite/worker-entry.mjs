@@ -22,22 +22,25 @@ if (store) {
     queue = queue.then(async () => {
       try {
         let value;
+        const check=()=>{if(payload?.cancellation&&Atomics.load(payload.cancellation,0))throw Error('Saved indexing canceled');};
+        check();
         if(['inspect-saved','stage-saved'].includes(operation)&&payload.vaultGuid!==store.vaultGuid)throw Error('Saved indexing vault identity mismatch');
         switch (operation) {
           case 'finish-reconciliation': value=store.finishReconciliation();break;
           case 'inventory': value=store.inventory(); break;
           case 'index-status': value=store.indexStatus(); break;
           case 'resource-projection': value=store.resourceProjection(payload.resourceId); break;
-          case 'inspect-saved': {const p=await projectSaved(payload.bytes,payload.vaultGuid,payload.policy);value={resourceId:p.resourceId,rootBlockId:p.rootBlockId,contentHash:p.contentHash,format:p.format,blockIds:p.blocks.map(b=>b.block.guid)};break;}
+          case 'inspect-saved': {const p=await projectSaved(payload.bytes,payload.vaultGuid,payload.policy,undefined,check);check();value={resourceId:p.resourceId,rootBlockId:p.rootBlockId,contentHash:p.contentHash,format:p.format,blockIds:p.blocks.map(b=>b.block.guid)};break;}
           case 'stage-saved': {
             staged=undefined;
-            const timings={},projection=await projectSaved(payload.bytes,payload.vaultGuid,payload.policy,timings),token=randomUUID();
-            staged={token,projection,expected:store.indexingBaseline(projection.resourceId),evidence:payload.evidence,mode:payload.mode};
+            const timings={},projection=await projectSaved(payload.bytes,payload.vaultGuid,payload.policy,timings,check),token=randomUUID();
+            check();const prepared=store.prepareReconciliation(projection,payload.evidence,store.indexingBaseline(projection.resourceId),{mode:payload.mode,timings,check});
+            staged={token,prepared,timings};
             value={token,resourceId:projection.resourceId,contentHash:projection.contentHash,timings};break;
           }
           case 'commit-saved': {
             if(!staged||staged.token!==payload.token)throw Error('Expired saved indexing token');
-            const job=staged;staged=undefined;const timings={};value={...store.reconcile(job.projection,job.evidence,job.expected,{mode:job.mode,timings}),timings};break;
+            const job=staged;staged=undefined;const timings={...job.timings};value={...store.commitReconciliation(job.prepared,{timings,check}),timings};break;
           }
           case 'discard-saved': if(staged?.token===payload.token)staged=undefined;value={discarded:true};break;
           case 'deletion-baseline': value=store.indexingBaseline(payload.resourceId);break;

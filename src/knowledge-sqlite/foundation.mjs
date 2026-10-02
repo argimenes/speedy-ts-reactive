@@ -61,6 +61,8 @@ export function openFoundation({ vault, readOnly = false, initialize: create = f
         issues:mutable.prepare('SELECT path,reason FROM IndexIssue ORDER BY path LIMIT 32').all()}; },
       indexingBaseline(id) { active(); return indexing.baseline(mutable,id); },
       resourceProjection(id) { active(); return indexing.readProjection(mutable,id); },
+      prepareReconciliation(projection,evidence,expected,options) { active(); return indexing.prepareReconciliation(mutable,projection,evidence,expected,options); },
+      commitReconciliation(plan,options) { active(); writable(); return indexing.commitReconciliation(mutable,plan,options); },
       reconcile(projection,evidence,expected,options) { active(); writable(); return indexing.reconcile(mutable,projection,evidence,expected,options); },
       removeConfirmed(id,expected) { active(); writable(); return indexing.removeConfirmed(mutable,id,expected); },
       recordIssue(path,reason) { active(); writable(); return indexing.recordIssue(mutable,path,reason); },

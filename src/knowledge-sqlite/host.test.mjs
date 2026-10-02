@@ -21,11 +21,11 @@ test('unknown candidate cannot turn missing file into deletion; refresh recovers
  await fs.unlink(path.join(f.root,'doc.json'));await fs.writeFile(path.join(f.root,'bad.json'),'bad');assert.equal((await f.host.refresh(l.lease)).coverage.complete,false);
  await fs.unlink(path.join(f.root,'bad.json'));const status=await f.host.refresh(l.lease);assert.equal(status.coverage.complete,true);assert.equal(status.coverage.resources,0);
 });
-test('foreground quiesces the active sweep, keeps file publication successful and resumes from authoritative bytes',async t=>{
+test('foreground bypasses paused background staging, keeps publication successful and resumes from authoritative bytes',async t=>{
  let reached,proceed,once=true;const staged=new Promise(r=>reached=r),wait=new Promise(r=>proceed=r);
  const f=await fixture(t,{indexer:(c,o)=>createSavedIndexer(c,{...o,checkpoint:async phase=>{if(phase==='staged'&&once){once=false;reached();await wait;}}})});await fs.writeFile(path.join(f.root,'doc.json'),JSON.stringify(doc));const l=await f.host.acquire('.');const work=f.host.flush();await staged;
  let published=false;const save=f.host.foreground(()=>f.host.store.lock(async()=>{await fs.writeFile(path.join(f.root,'doc.json'),JSON.stringify({...doc,metadata:{documentId:'resource',title:'saved'}}));published=true;return 'saved';}));
- await new Promise(r=>setTimeout(r,10));assert.equal(published,false);proceed();assert.equal(await save,'saved');await work;await f.host.flush();assert.equal((await f.host.status(l.lease)).coverage.complete,true);assert.equal(f.host.metrics.cancellations,1);
+ try{assert.equal(await save,'saved');assert.equal(published,true);}finally{proceed();}await work;await f.host.flush();assert.equal((await f.host.status(l.lease)).coverage.complete,true);assert.equal(f.host.metrics.cancellations,1);
 });
 test('storage still works after SQL worker failure; no automatic transaction replay',async t=>{
  let client;const f=await fixture(t,{open:async o=>client=await openSqliteFoundation(o)});await fs.writeFile(path.join(f.root,'doc.json'),JSON.stringify(doc));const l=await f.host.acquire('.');await f.host.flush();await client.terminate();

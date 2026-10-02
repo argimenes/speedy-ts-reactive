@@ -70,7 +70,7 @@ try{
   }
   const integrity=await client.verify();await client.close();client=undefined;
   let reached!:()=>void;const stageStarted=new Promise<void>(r=>reached=r);
-  const host=new SqliteKnowledgeHost({root:folder,debounceMs:60000,indexer:(c:any,o:any)=>{const stage=c.stageSaved;c.stageSaved=(p:any)=>{const work=stage(p);reached();return work;};return createSavedIndexer(c,o);}});
+  const host=new SqliteKnowledgeHost({root:folder,debounceMs:60000,indexer:(c:any,o:any)=>{const stage=c.stageSaved;c.stageSaved=(p:any,signal?:AbortSignal)=>{const work=stage(p,signal);reached();return work;};return createSavedIndexer(c,o);}});
   let foreground;
   try{await host.acquire('.');const refresh=host.flush();await stageStarted;foreground=await host.foreground(()=>host.store.lock(async()=>{plain.payload.text+=' Foreground.';return publish();}));await refresh;foreground={...foreground,coordination:host.metrics};}finally{await host.close();}
   report.resources.push({childBlocks:count,initialSetupAndFirstReconcileMs:seed.timings.totalMs+initialPublication.saveTotalMs,fixtureBuildMs,initialPublication,measurements:rows,verify:integrity,foregroundSaveDuringStage:foreground});

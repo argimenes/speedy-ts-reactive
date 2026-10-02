@@ -46,12 +46,19 @@ export async function openSqliteFoundation(options) {
       catch(e){pending.delete(id);pendingBytes-=byteSize;clearTimeout(timer);reject(e);}
     });
   };
+  const cancellable=(operation,payload,signal)=>{
+    if(!signal)return request(operation,undefined,payload);
+    if(signal.aborted)return Promise.reject(signal.reason??Error('Saved indexing canceled'));
+    const cancellation=new Int32Array(new SharedArrayBuffer(4));
+    const cancel=()=>Atomics.store(cancellation,0,1);signal.addEventListener('abort',cancel,{once:true});
+    return request(operation,undefined,{...payload,cancellation}).finally(()=>signal.removeEventListener('abort',cancel));
+  };
   return {
     // Internal host capabilities; not exposed through a browser/request route.
     inventory:()=>request('inventory'),resourceProjection:resourceId=>request('resource-projection',undefined,{resourceId}),
     indexStatus:()=>request('index-status'),
-    inspectSaved:payload=>request('inspect-saved',undefined,payload),stageSaved:payload=>request('stage-saved',undefined,payload),
-    commitSaved:token=>request('commit-saved',undefined,{token}),discardSaved:token=>request('discard-saved',undefined,{token}),
+    inspectSaved:(payload,signal)=>cancellable('inspect-saved',payload,signal),stageSaved:(payload,signal)=>cancellable('stage-saved',payload,signal),
+    commitSaved:(token,signal)=>cancellable('commit-saved',{token},signal),discardSaved:token=>request('discard-saved',undefined,{token}),
     deletionBaseline:resourceId=>request('deletion-baseline',undefined,{resourceId}),removeConfirmed:(resourceId,expected)=>request('remove-confirmed',undefined,{resourceId,expected}),
     indexIssue:(path,reason)=>request('index-issue',undefined,{path,reason}),
     finishReconciliation:()=>request('finish-reconciliation'),

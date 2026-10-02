@@ -13,7 +13,7 @@ import {anchorCapabilities} from '../application/anchor-capabilities';
 import {clone} from '../block-tree/clone';
 import {projectSaved} from './saved-projection';
 import {migrate} from './schema.mjs';
-import {baseline,reconcile,readProjection} from './reconcile.mjs';
+import {baseline,reconcile,readProjection,prepareReconciliation,commitReconciliation} from './reconcile.mjs';
 
 const cleanups:(()=>void)[]=[];
 afterEach(()=>cleanups.splice(0).reverse().forEach(f=>f()));
@@ -129,4 +129,19 @@ it('SQL reconciliation rollback keeps rows, FTS and Resource evidence together; 
   expect(()=>reconcile(db,next,evidence(next),baseline(db,p.resourceId),{beforeCommit:()=>{throw Error('fault');}})).toThrow('fault');expect(readProjection(db,p.resourceId)).toEqual(before);
   expect(db.prepare("SELECT count(*) n FROM BlockSearch WHERE BlockSearch MATCH 'changed'").get().n).toBe(0);
   expect(()=>reconcile(db,{...p,resourceId:'collision'}, {...evidence(p),path:'other.json'},null)).toThrow('already claimed');
+});
+
+
+it('cancellation at the last transactional checkpoint rolls back Resource rows and FTS together',async()=>{
+  const p=await projectSaved(bytes(doc()),vault),db=database();reconcile(db,p,evidence(p),null);
+  const before=semantic(readProjection(db,p.resourceId));
+  const changed=doc();changed.children[0].text='replacementword';
+  const next=await projectSaved(bytes(changed),vault),plan=prepareReconciliation(db,next,evidence(next),baseline(db,next.resourceId),{mode:'incremental'});
+  let canceled=false;
+  expect(()=>commitReconciliation(db,plan,{beforeCommit:()=>{canceled=true;},check:()=>{if(canceled)throw Error('Canceled before SQL commit');}})).toThrow('Canceled before SQL commit');
+  expect(semantic(readProjection(db,p.resourceId))).toEqual(before);
+  expect(db.prepare("SELECT count(*) n FROM BlockSearch WHERE BlockSearch MATCH 'replacementword'").get().n).toBe(0);
+  expect(()=>commitReconciliation(db,plan)).toThrow('Stale SQL');
+  reconcile(db,next,evidence(next),baseline(db,next.resourceId),{mode:'incremental'});
+  expect(db.prepare("SELECT count(*) n FROM BlockSearch WHERE BlockSearch MATCH 'replacementword'").get().n).toBe(1);
 });
