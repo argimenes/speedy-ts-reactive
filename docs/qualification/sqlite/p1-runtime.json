@@ -1,0 +1,78 @@
+{
+  "qualification": "P1 built-artifact empty-schema smoke; not P6 startup or throughput",
+  "recordedUtc": "2026-10-02T08:18:32.553Z",
+  "node": "v22.12.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "os": "24.5.0",
+  "cpu": "Apple M1",
+  "memoryBytes": 8589934592,
+  "driver": "12.4.1",
+  "sqlite": "3.50.4",
+  "pragmas": {
+    "foreign_keys": 1,
+    "journal_mode": "wal",
+    "synchronous": 2,
+    "busy_timeout": 1000,
+    "user_version": 1,
+    "application_id": 1297437771
+  },
+  "emptyTableCounts": {
+    "SchemaInfo": 5,
+    "Actor": 0,
+    "Entity": 0,
+    "EntityAlias": 0,
+    "Relationship": 0,
+    "Resource": 0,
+    "ResourceTag": 0,
+    "IndexIssue": 0,
+    "Block": 0,
+    "BlockProperty": 0,
+    "BlockRelation": 0,
+    "AnnotationDefinition": 0,
+    "StandoffProperty": 0,
+    "BlockTextRun": 0,
+    "PendingAuditMutation": 0
+  },
+  "snapshotBytes": {
+    "mutable.db": 335872,
+    "audit.db": 45056
+  },
+  "samples": [
+    {
+      "initializeWorkerMs": 56.661,
+      "inspectTransportMs": 2.4945419999999956,
+      "verifyMs": 1.0913330000000059,
+      "backupMs": 16.517041000000006,
+      "restoreWorkerMs": 49.37699999999998
+    },
+    {
+      "initializeWorkerMs": 51.49558299999998,
+      "inspectTransportMs": 2.1988330000000076,
+      "verifyMs": 1.004540999999989,
+      "backupMs": 16.816541,
+      "restoreWorkerMs": 53.82291699999999
+    },
+    {
+      "initializeWorkerMs": 53.319834000000014,
+      "inspectTransportMs": 2.244624999999985,
+      "verifyMs": 1.041166999999973,
+      "backupMs": 16.535083999999983,
+      "restoreWorkerMs": 57.91458299999999
+    },
+    {
+      "initializeWorkerMs": 53.14262500000001,
+      "inspectTransportMs": 1.8734170000000177,
+      "verifyMs": 1.01724999999999,
+      "backupMs": 15.881666999999993,
+      "restoreWorkerMs": 51.84579200000002
+    },
+    {
+      "initializeWorkerMs": 53.41724999999997,
+      "inspectTransportMs": 2.308208000000036,
+      "verifyMs": 1.0383749999999736,
+      "backupMs": 14.87600000000009,
+      "restoreWorkerMs": 52.78237499999989
+    }
+  ]
+}

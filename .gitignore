@@ -11,3 +11,5 @@ data/video
 data/appdb
 # Directory-local persistent Document history (runtime data).
 .memory/
+# Vault-local SQLite current knowledge, audit, locks and WAL sidecars.
+.mutable/

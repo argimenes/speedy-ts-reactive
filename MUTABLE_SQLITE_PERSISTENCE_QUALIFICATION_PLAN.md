@@ -2,6 +2,8 @@
 
 **P0 review — 2 October 2026. No production persistence changes or user-data migration.**
 
+P0 was subsequently approved. P1 implementation and qualification are recorded in [the P1 report](MUTABLE_SQLITE_PERSISTENCE_P1_REPORT.md); P2 remains behind its review gate. The P0 evidence below is retained as the planning baseline.
+
 The SQLite direction fits Mutable. The existing SurrealDB implementation should become an import source, not the model for the replacement. However, installing the brief's illustrative DDL unchanged would lose placement semantics, reject valid unresolved references, and misrepresent linked annotations. This report proposes the specific corrections below and stops at the brief's architectural-review exception before P1.
 
 The user's clarification is incorporated: **local Node.js is an available runtime; Vercel limitations do not constrain development.** Use embedded SQLite in the local Node process, without a separate database service, cloud account or remote server. An HTTP transport for the current browser UI is an adapter, not the knowledge model. An eventual desktop host can call the same service directly. Browser-only SQLite/OPFS and desktop packaging are not prerequisites for this implementation.
@@ -67,13 +69,16 @@ The complete review DDL is in [mutable-proposed.sql](docs/architecture/sqlite/mu
 
 | Authority class | Tables |
 |---|---|
-| Canonical vault-level state, requires backup | `Entity`, `EntityAlias`, `Relationship`, `Actor`; vault GUID/schema identity in `SchemaInfo` |
+| Canonical vault-level state, requires backup | `Entity`, curated/imported `EntityAlias`, `Relationship`, `Actor`; vault GUID/schema identity in `SchemaInfo` |
+| Rebuildable observed knowledge | `EntityAlias` with observed/recovered origin, where supported by surviving authoritative EntityReference text |
 | Rebuildable saved-file projection | `Resource`, `ResourceTag`, `Block`, `BlockProperty`, `BlockRelation`, `AnnotationDefinition`, `StandoffProperty`, `BlockTextRun` |
 | Rebuildable query/inspection state | `BlockSearch`, `EntitySearch`, `EntityAliasSearch`, `IndexIssue` |
 | Temporary delivery state | `PendingAuditMutation`; acknowledged rows are deleted, not retained as another history store |
 | Separate history | `audit.db`: `AuditMutation`, `AuditEvent`, `SchemaInfo` |
 
 `Relationship` contains **only Entity endpoints**, type, attribution and extensible attributes. It has no Resource/Block columns. Aliases have GUIDs and an explicit origin so observed aliases cannot be confused with curated ones. Entity names need not be unique. A `revision` column protects DB-owned mutations from stale UI updates; it is not a Document save generation. Current Actor GUID fields intentionally tolerate missing historical principals instead of inventing them.
+
+**Accepted clarification:** an Entity created by linking selected text takes that text as its initial/default preferred name without a second name-entry requirement. Later forms may become observed aliases. Observed aliases are rebuildable only from surviving authoritative reference text; curated/imported aliases absent from those files require database backup for exact recovery. The current Entity preferred name/enrichment remains database-authoritative. P1 permits the same normalized alias under different origins, so removal/rebuild of observed knowledge cannot erase an independently curated/imported alias. The service must deduplicate matching Entity targets rather than collapse alias origins.
 
 Resource paths are vault-relative location projections. A Resource row is not a persistence enrollment/binding. Hash, format/profile and availability fields qualify saved index evidence; unknown inspection is never absence. `IndexIssue` can describe two paths claiming one identity without breaking uniqueness or authorizing adoption. Native binding/discovery authority remains in the managed store.
 
