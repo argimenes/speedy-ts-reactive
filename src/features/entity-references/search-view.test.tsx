@@ -27,6 +27,62 @@ function setup() {
   return { editor, node, select, open, panel, query, host, pause };
 }
 describe("entity search overlay", () => {
+  const createButton = () => [...document.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.startsWith('Create entity “'));
+  it("creates from the original selection and links immediately even with candidate mode enabled; Undo/Redo affects the annotation", async () => {
+    const fetch = vi.fn().mockImplementation(async (_url, init) => init?.method === "POST"
+      ? { ok: true, json: async () => ({ Success: true, Entity: JSON.parse(init.body) }) } : reply([]));
+    vi.stubGlobal("fetch", fetch);
+    const { editor, node, panel } = setup();
+    openEntitySearch(entityTestApi(editor), [{ nodeKey: node("a").key, start: 0, end: 6 }]);
+    expect(createButton()).toBeUndefined(); await vi.advanceTimersByTimeAsync(310);
+    createButton()!.click(); await vi.advanceTimersByTimeAsync(0);
+    const [url, request] = fetch.mock.calls.find(([, init]) => init?.method === "POST")!;
+    expect(url).toBe("/api/entities"); const entity = JSON.parse(request.body);
+    expect(entity.name).toBe("Vernon"); expect(entity.id).not.toContain("Agent:");
+    expect(panel()).toBeNull();
+    const properties = () => editor.encodeDocument().children![0].standoffProperties;
+    expect(properties()).toEqual([expect.objectContaining({ type: "codex/entity-reference", value: entity.id, start: 0, end: 5, metadata: { entityId: entity.id, entityName: "Vernon" } })]);
+    expect(document.activeElement).toBe(editor.mounts.get(node("a").key)!.focusElement);
+    editor.repository.undo(); expect(properties()).toBeUndefined();
+    editor.repository.redo(); expect(properties()).toEqual([expect.objectContaining({ value: entity.id })]);
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+  });
+  it("does not mistake failed searches or a different lookup query for an unmatched selection", async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ Success: false, Error: "Offline" }) }); vi.stubGlobal("fetch", fetch);
+    const { open, query } = setup(); open(); await vi.advanceTimersByTimeAsync(310);
+    expect(createButton()).toBeUndefined();
+    fetch.mockResolvedValue(reply([])); query().value = "Another name"; query().dispatchEvent(new InputEvent("input", { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(310); expect(createButton()).toBeUndefined();
+    query().value = "Vernon"; query().dispatchEvent(new InputEvent("input", { bubbles: true }));
+    expect(createButton()).toBeUndefined(); await vi.advanceTimersByTimeAsync(310); expect(createButton()).toBeDefined();
+  });
+  it("keeps the selection unchanged on creation failure and retries with the same entity ID", async () => {
+    let attempted = false;
+    const fetch = vi.fn().mockImplementation(async (_url, init) => {
+      if (init?.method !== "POST") return reply([]);
+      if (!attempted) { attempted = true; throw new Error("Response lost"); }
+      return { ok: true, json: async () => ({ Success: true, Entity: JSON.parse(init.body) }) };
+    }); vi.stubGlobal("fetch", fetch);
+    const { editor, open, panel } = setup(); open(); await vi.advanceTimersByTimeAsync(310);
+    createButton()!.click(); await vi.advanceTimersByTimeAsync(0);
+    expect(panel()!.textContent).toContain("Response lost"); expect(editor.repository.canUndo()).toBe(false);
+    createButton()!.click(); await vi.advanceTimersByTimeAsync(0);
+    const writes = fetch.mock.calls.filter(([, init]) => init?.method === "POST");
+    expect(writes).toHaveLength(2); expect(writes[0][1].body).toBe(writes[1][1].body); expect(panel()).toBeNull();
+  });
+  it.each(["cancel", "edit"])("ignores a late creation completion after %s", async action => {
+    let complete!: () => void;
+    const fetch = vi.fn().mockImplementation(async (_url, init) => {
+      if (init?.method !== "POST") return reply([]);
+      return new Promise(resolve => { complete = () => resolve({ ok: true, json: async () => ({ Success: true, Entity: JSON.parse(init.body) }) }); });
+    }); vi.stubGlobal("fetch", fetch);
+    const { editor, node, open, panel } = setup(); open(); await vi.advanceTimersByTimeAsync(310);
+    createButton()!.click();
+    if (action === "edit") editor.commands.replaceInlineRange(node("a").key, 0, 0, "New ");
+    else [...panel()!.querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent === 'Cancel')!.click();
+    expect(panel()).toBeNull(); complete(); await vi.advanceTimersByTimeAsync(0);
+    expect(editor.encodeDocument().children![0].standoffProperties).toBeUndefined();
+  });
   it("seeds the query, searches existing API, commits local reference/name metadata and undoes atomically", async () => {
     const fetch = vi.fn().mockResolvedValue(reply()); vi.stubGlobal("fetch", fetch);
     const { editor, open, panel, query } = setup(); const before = editor.repository.snapshot(); open();

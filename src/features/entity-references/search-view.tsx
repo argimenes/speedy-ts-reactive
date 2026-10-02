@@ -19,6 +19,11 @@ export function EntitySearch(props: { api: AnnotationCapabilities; panel: PanelS
   const [order, setOrder] = createSignal("ByMentions"), [direction, setDirection] = createSignal("Descending"), [page, setPage] = createSignal(1);
   const [results, setResults] = createSignal<Entity[]>([]), [current, setCurrent] = createSignal(0), [total, setTotal] = createSignal(0), [maxPage, setMaxPage] = createSignal(1);
   const [busy, setBusy] = createSignal(false), [error, setError] = createSignal("");
+  const [unmatchedSelection, setUnmatchedSelection] = createSignal(false), [creating, setCreating] = createSignal(false), [creationError, setCreationError] = createSignal("");
+  const selectedName = overlay.entityQuery;
+  let creationId: string | undefined, alive = true;
+  const creationRequest = new AbortController();
+  onCleanup(() => { alive = false; creationRequest.abort(); });
   const initialWidth = Math.min(1200, Math.max(1, window.innerWidth - 24));
   const [position, setPosition] = createSignal({ x: Math.max(8, (window.innerWidth - initialWidth) / 2), y: Math.max(8, window.innerHeight * .06) });
   const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
@@ -37,7 +42,7 @@ export function EntitySearch(props: { api: AnnotationCapabilities; panel: PanelS
   });
   const displaySize = () => windowResize.preview() ?? sessionSize();
   const select = (entity?: Entity) => {
-    if (!entity || busy()) return;
+    if (!entity || busy() || creating()) return;
     if (candidates.state.enabled) { candidates.nominate(entity); return; }
     if (!overlay.entityRanges?.length) { setError("Enable Search additional occurrences and enter mention text first, or reopen with selected text."); return; }
     try { editing = true; chooseEntity(editor, overlay, entity); close(); }
@@ -45,24 +50,44 @@ export function EntitySearch(props: { api: AnnotationCapabilities; panel: PanelS
     finally { editing = false; }
   };
   const bind = () => {
+    if (creating()) return;
     try { editing = true; candidates.bind(); close(); }
     catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { editing = false; }
   };
+  const createEntity = async () => {
+    if (!unmatchedSelection() || creating() || !alive) return;
+    if (editor.revision() !== overlay.entityRevision) { setCreationError("The document changed. Select the text again."); return; }
+    setCreating(true); setCreationError("");
+    creationId ??= crypto.randomUUID();
+    try {
+      const response = await fetch("/api/entities", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: creationId, name: selectedName }), signal: creationRequest.signal });
+      const json = await response.json();
+      if (!response.ok || json.Success !== true) throw new Error(json.Error || "Entity creation failed.");
+      if (json.Entity?.id !== creationId || json.Entity?.name !== selectedName) throw new Error("The server did not confirm the requested entity. Retry to confirm creation.");
+      if (!alive) return;
+      // Creation links the original selection only; additional occurrences still require explicit Bind.
+      editing = true;
+      chooseEntity(editor, overlay, json.Entity);
+      close();
+    } catch (error) { if (alive) setCreationError(error instanceof Error ? error.message : String(error)); }
+    finally { editing = false; if (alive) setCreating(false); }
+  };
   createEffect(() => {
     const search = query().trim(), requestedPage = page(), parameters = new URLSearchParams({ search, byPartial: String(partial()), page: String(requestedPage), order: order(), direction: direction() });
-    const endpoint = alias() ? "findAgentsByAliasJson" : "findAgentsByNameJson";
+    const byAlias = alias(), endpoint = byAlias ? "findAgentsByAliasJson" : "findAgentsByNameJson";
     const controller = new AbortController(); let active = true;
-    setResults([]); setCurrent(0); setError(""); setTotal(0); setMaxPage(1); setBusy(!!search);
+    setResults([]); setCurrent(0); setError(""); setTotal(0); setMaxPage(1); setBusy(!!search); setUnmatchedSelection(false);
     const timer = setTimeout(async () => {
       if (!search) return;
       try {
         const response = await fetch(`/api/${endpoint}?${parameters}`, { signal: controller.signal });
         const json = await response.json();
         if (!response.ok || json.Success !== true) throw new Error(json.Error || "Entity search failed. Check the Node server and SurrealDB connection.");
-        if (!Array.isArray(json.Results) || json.Results.some((item: Entity) => typeof item.id !== "string" || typeof item.name !== "string")) throw new Error("The entity search API returned invalid results.");
+        if (!Array.isArray(json.Results) || json.Results.some((item: Entity) => !item || typeof item.id !== "string" || typeof item.name !== "string") || !Number.isSafeInteger(json.Count) || json.Count < json.Results.length) throw new Error("The entity search API returned invalid results.");
         if (!active) return;
         setResults(json.Results); setTotal(Number(json.Count) || 0); setMaxPage(Math.max(1, Number(json.MaxPage) || 1));
+        setUnmatchedSelection(!byAlias && search === selectedName.trim() && selectedName.length <= 1000 && overlay.entityRanges.length > 0 && json.Count === 0);
         if (Number.isInteger(json.Page) && json.Page > 0 && json.Page !== requestedPage) setPage(json.Page);
       } catch (error) { if (active) setError(error instanceof Error ? error.message : "Entity search unavailable."); }
       finally { if (active) setBusy(false); }
@@ -130,6 +155,11 @@ export function EntitySearch(props: { api: AnnotationCapabilities; panel: PanelS
     </div>
     <p role="status">{busy() ? "Searching…" : !query().trim() ? "Enter a name or alias." : error() ? "Search unavailable." : `${total()} results${results().length ? "" : " — no matching entities."}`}</p>
     <Show when={error()}><p role="alert">{error()}</p></Show>
+    <Show when={unmatchedSelection()}><div class="entity-search-create">
+      <button type="button" disabled={creating()} onClick={() => void createEntity()}>{creating() ? "Creating entity…" : `Create entity “${selectedName}”`}</button>
+      <small>Creates an entity with the selected text as its canonical name and links the original selection.</small>
+    </div></Show>
+    <Show when={creationError()}><p role="alert">{creationError()}</p></Show>
     <table aria-label="Entity results"><thead><tr><th>Entity</th><th>Matched text</th><th>Mentions</th><th /></tr></thead><tbody>
       <For each={results()}>{(entity, index) => <tr classList={{ current: current() === index() }}><td>{entity.name}<small>{entity.id}</small></td><td>{entity.text ?? "—"}</td><td>{entity.mentions ?? 0}</td><td><button type="button" aria-label={`Select ${entity.name}`} onClick={() => select(entity)}>Select</button></td></tr>}</For>
     </tbody></table>

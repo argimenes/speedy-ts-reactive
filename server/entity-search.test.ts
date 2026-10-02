@@ -6,19 +6,39 @@ import { surrealdbNodeEngines } from "@surrealdb/node";
 import { createEntitySearchRouter } from "./entity-search";
 const cleanup: (() => Promise<unknown>)[] = [];
 afterEach(async () => { for (const fn of cleanup.splice(0).reverse()) await fn(); });
-async function setup(available = true) {
+async function setup(available = true, readOnly = false) {
   const db = new Surreal({ engines: surrealdbNodeEngines() });
   await db.connect("mem://"); await db.use({ namespace: "test", database: "entities" });
   cleanup.push(() => db.close());
-  const app = express(); app.use(express.json()); app.use("/api", createEntitySearchRouter(() => available ? db : undefined));
+  const app = express(); app.use(express.json()); app.use("/api", createEntitySearchRouter(() => available ? db : undefined, { readOnly }));
   const server = await new Promise<Server>(resolve => { const s = app.listen(0, "127.0.0.1", () => resolve(s)); });
   cleanup.push(() => new Promise(resolve => server.close(resolve)));
   const base = `http://127.0.0.1:${(server.address() as any).port}/api`;
   const search = (alias: boolean, parameters: Record<string,string>) => fetch(`${base}/findAgentsBy${alias ? "Alias" : "Name"}Json?${new URLSearchParams(parameters)}`);
   const summaries = (ids: unknown) => fetch(`${base}/entities/summary`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
-  return { db, search, summaries };
+  const create = (id: unknown, name: unknown) => fetch(`${base}/entities`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, name }) });
+  return { db, search, summaries, create };
 }
 describe("SurrealDB entity search", () => {
+  it("creates a searchable canonical name, confirms retries and never overwrites another name", async () => {
+    const { create, search, summaries } = await setup(), id = crypto.randomUUID(), name = "O’Keeffe — 山";
+    expect(await (await create(id, name)).json()).toEqual({ Success: true, Entity: { id, name } });
+    expect(await (await create(id, name)).json()).toEqual({ Success: true, Entity: { id, name } });
+    expect((await create(id, "Changed name")).status).toBe(409);
+    expect(await (await search(false, { search: name })).json()).toMatchObject({ Count: 1, Results: [{ id, name }] });
+    expect(await (await summaries([id])).json()).toMatchObject({ Results: [{ id, name, mentions: 0 }] });
+  });
+  it("rejects invalid, offline and read-only creation and handles SQL-like names as data", async () => {
+    const f = await setup(), id = crypto.randomUUID(), name = "'; REMOVE TABLE Agent; --";
+    expect((await f.create("Agent:other", "Name")).status).toBe(400);
+    expect((await f.create(id, "  ")).status).toBe(400);
+    expect((await f.create(id, "x".repeat(1001))).status).toBe(400);
+    expect((await f.create(id, name)).status).toBe(200);
+    expect(await (await f.summaries([id])).json()).toMatchObject({ Results: [{ id, name }] });
+    const offline = await setup(false); expect((await offline.create(crypto.randomUUID(), "Name")).status).toBe(503);
+    const readOnly = await setup(true, true); expect((await readOnly.create(crypto.randomUUID(), "Name")).status).toBe(403);
+    expect(await (await readOnly.search(false, { search: "Name" })).json()).toMatchObject({ Count: 0 });
+  });
   it("queries real in-memory names and aliases with mentions and stable string IDs", async () => {
     const { db, search } = await setup();
     await db.query("CREATE Agent:blake SET name = 'Vernon Blake'; CREATE StandoffProperty:mention SET text = 'Blake'; RELATE StandoffProperty:mention->standoff_property_refers_to_agent->Agent:blake;");

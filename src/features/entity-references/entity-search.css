@@ -29,6 +29,8 @@
 .entity-candidates__actions { display:flex; flex-wrap:wrap; gap:6px; }
 .entity-candidates__bind { background:#dcefe9; font-weight:bold; width:100%; margin-bottom:10px; }
 .reactive-entity-search button:disabled { opacity:.5; cursor:not-allowed; }
+.entity-search-create { display:grid; gap:6px; margin:12px 0; }
+.entity-search-create button { background:#dcefe9; font-weight:bold; overflow-wrap:anywhere; }
 .entity-candidates small { display:block; }
 .entity-candidates [data-candidate-row]:focus { outline:2px solid #477f6a; outline-offset:-2px; }
 .entity-candidates td select { max-width:120px; }

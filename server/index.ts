@@ -478,7 +478,7 @@ type AgentMention = {
 }
 
 // Keep the original entity-search API paths with validated, failure-safe handlers.
-app.use("/api", createEntitySearchRouter(() => db));
+app.use("/api", createEntitySearchRouter(() => db, { readOnly: publicHostedVersion }));
 
 
 app.post('/api/getEntitiesJson', async function(req: Request, res: Response) {

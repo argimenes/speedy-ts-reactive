@@ -1,8 +1,31 @@
 import { Router } from "express";
 import { RecordId } from "surrealdb";
 interface SearchDatabase { query(sql: string, variables?: Record<string, unknown>): Promise<unknown> }
-export function createEntitySearchRouter(database: () => SearchDatabase | undefined) {
+export function createEntitySearchRouter(database: () => SearchDatabase | undefined, options: { readOnly?: boolean } = {}) {
   const router = Router();
+  router.post("/entities", async (req, res) => {
+    if (options.readOnly) { res.status(403).json({ Success: false, Error: "Entity creation is disabled while server storage is read-only." }); return; }
+    const { id, name } = req.body ?? {};
+    if (typeof id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) || typeof name !== "string" || !name.trim() || name.length > 1000) {
+      res.status(400).json({ Success: false, Error: "Supply a new entity UUID and a non-empty name of up to 1000 characters." }); return;
+    }
+    const db = database();
+    if (!db) { res.status(503).json({ Success: false, Error: "Entity creation requires the Node server's SurrealDB connection." }); return; }
+    try {
+      const entity = new RecordId("Agent", id);
+      const rows = await db.query("SELECT name FROM $entity", { entity }) as Array<Array<{ name: string }>>;
+      if (rows[0]?.length) {
+        // A retry after a lost response may confirm its own write, never rename an existing entity.
+        if (rows[0].length !== 1 || rows[0][0].name !== name) { res.status(409).json({ Success: false, Error: "This entity ID already belongs to a different name." }); return; }
+      } else {
+        await db.query("CREATE ONLY $entity CONTENT { name: $name }", { entity, name });
+      }
+      res.json({ Success: true, Entity: { id, name } });
+    } catch (error) {
+      console.error("Entity creation failed", error);
+      res.status(503).json({ Success: false, Error: "Entity creation could not be confirmed. Retry, or check the Node server and SurrealDB connection." });
+    }
+  });
   for (const alias of [false, true]) router.get(alias ? "/findAgentsByAliasJson" : "/findAgentsByNameJson", async (req, res) => {
     const search = req.query.search, pageValue = Number(req.query.page ?? 1);
     if (typeof search !== "string" || search.length > 1000 || !Number.isSafeInteger(pageValue) || pageValue < 1) {
