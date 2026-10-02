@@ -6,6 +6,8 @@ P0 was subsequently approved. P1 implementation and qualification are recorded i
 
 P1 was subsequently accepted. [The P2 implementation/qualification report](MUTABLE_SQLITE_PERSISTENCE_P2_REPORT.md) records the authoritative saved reconciliation path and incremental SQL differential gate. P2 is stopped for review before P3; the historical stage descriptions below remain the programme baseline.
 
+P2 was subsequently accepted. [The P3 Application Composition Plan](MUTABLE_SQLITE_PERSISTENCE_P3_APPLICATION_COMPOSITION_PLAN.md) records the current consumer inventory, saved/live composition, scheduling and coverage contracts, and proposed separation of read-side integration from the original Entity authority transition. This is a planning amendment awaiting review; no P3 implementation has begun.
+
 The SQLite direction fits Mutable. The existing SurrealDB implementation should become an import source, not the model for the replacement. However, installing the brief's illustrative DDL unchanged would lose placement semantics, reject valid unresolved references, and misrepresent linked annotations. This report proposes the specific corrections below and stops at the brief's architectural-review exception before P1.
 
 The user's clarification is incorporated: **local Node.js is an available runtime; Vercel limitations do not constrain development.** Use embedded SQLite in the local Node process, without a separate database service, cloud account or remote server. An HTTP transport for the current browser UI is an adapter, not the knowledge model. An eventual desktop host can call the same service directly. Browser-only SQLite/OPFS and desktop packaging are not prerequisites for this implementation.
