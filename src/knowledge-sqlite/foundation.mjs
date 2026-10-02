@@ -4,6 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { migrate, validateSchema, inspectDatabase, verifyDatabase, rebuildFts, clearDerived, hash } from './schema.mjs';
 import { regularFile, directory, prepareHome, writerLock } from './paths.mjs';
+import * as indexing from './reconcile.mjs';
 function checkFiles(home, kind = 'mutable') {
   for (const suffix of ['', '-wal', '-shm', '-journal']) regularFile(path.join(home, `${kind}.db${suffix}`), true);
 }
@@ -52,10 +53,18 @@ export function openFoundation({ vault, readOnly = false, initialize: create = f
       if (audit) try { regularFile(path.join(home, 'audit.db')); checkFiles(home, 'audit'); } catch (e) { audit.close(); audit = undefined; auditError = e.message; }
     };
     return {
+      vaultGuid: identity.vaultGuid,
+      inventory() { active(); return indexing.inventory(mutable); },
+      indexingBaseline(id) { active(); return indexing.baseline(mutable,id); },
+      resourceProjection(id) { active(); return indexing.readProjection(mutable,id); },
+      reconcile(projection,evidence,expected,options) { active(); writable(); return indexing.reconcile(mutable,projection,evidence,expected,options); },
+      removeConfirmed(id,expected) { active(); writable(); return indexing.removeConfirmed(mutable,id,expected); },
+      recordIssue(path,reason) { active(); writable(); return indexing.recordIssue(mutable,path,reason); },
+      finishReconciliation() { active(); writable(); mutable.prepare('DELETE FROM IndexIssue').run(); return {complete:true}; },
       inspect() { active(); return { root, home, readOnly, mutable: inspectDatabase(mutable, 'mutable'), audit: audit ? inspectDatabase(audit, 'audit') : { available: false, error: auditError } }; },
       verify() { active(); const current = verifyDatabase(mutable, 'mutable'); return { ok: current.ok, mutable: current, audit: audit ? verifyDatabase(audit, 'audit') : { available: false, error: auditError } }; },
       rebuildFts() { active(); writable(); rebuildFts(mutable); return verifyDatabase(mutable, 'mutable'); },
-      clearDerived() { active(); writable(); clearDerived(mutable); return { cleared: true, repopulated: false, message: 'File-derived rows invalidated; P2 reconciliation is not installed.' }; },
+      clearDerived() { active(); writable(); clearDerived(mutable); return { cleared: true, repopulated: false, message: 'File-derived rows invalidated; run reconciliation to repopulate from authoritative saved files.' }; },
       async backup(destination) {
         active();
         if (typeof destination !== 'string' || !path.isAbsolute(destination)) throw Error('Backup requires an absolute new directory');

@@ -1,0 +1,129 @@
+{
+  "qualification": "P2 bounded saved indexing, not P6 performance",
+  "recordedUtc": "2026-10-02T10:24:11.646Z",
+  "node": "v22.12.0",
+  "cpu": "Apple M1",
+  "memoryBytes": 8589934592,
+  "legacy": [
+    {
+      "file": "20240830.json",
+      "status": "reconciled",
+      "bytes": 16890,
+      "contentHash": "60878286c4fb6ddf1c9714376d2e74044ee4cdf7012a01bccb81c22e4e9ecb31",
+      "blocks": 69,
+      "properties": 33,
+      "segments": 11,
+      "diagnostics": [],
+      "elapsedMs": 120.94158399999998
+    },
+    {
+      "file": "20240902.json",
+      "status": "reconciled",
+      "bytes": 17774,
+      "contentHash": "214e4363f884fce37e95c34a1e470106c46196ddc10d75ece3efa1b4f0387c7b",
+      "blocks": 74,
+      "properties": 37,
+      "segments": 9,
+      "diagnostics": [],
+      "elapsedMs": 94.628916
+    },
+    {
+      "file": "20240914.json",
+      "status": "reconciled",
+      "bytes": 16586,
+      "contentHash": "288a8197f4e0e134cf61d6b24465544ff24521f1e2b91268d3fe8d96938cf5df",
+      "blocks": 69,
+      "properties": 33,
+      "segments": 10,
+      "diagnostics": [],
+      "elapsedMs": 89.11045899999999
+    },
+    {
+      "file": "Israfel.json",
+      "status": "reconciled",
+      "bytes": 7367,
+      "contentHash": "2445e5d24dc7cb9d39fbaf1c2791bbebdd856242fed39b21461e97f56415abd6",
+      "blocks": 24,
+      "properties": 7,
+      "segments": 14,
+      "diagnostics": [],
+      "elapsedMs": 48.20937500000008
+    },
+    {
+      "file": "TLS.json",
+      "status": "reconciled",
+      "bytes": 4014,
+      "contentHash": "f96062938124af5a3d2709ec5f8b0c982389defbb048779747de3f7c75409016",
+      "blocks": 10,
+      "properties": 3,
+      "segments": 8,
+      "diagnostics": [],
+      "elapsedMs": 39.004249999999956
+    },
+    {
+      "file": "animation.json",
+      "status": "reconciled",
+      "bytes": 10398,
+      "contentHash": "f0dc45fb4257eee3e4e326aa257e7fe2ae68ac2e91aaf40666cf0b6b87342dd0",
+      "blocks": 44,
+      "properties": 21,
+      "segments": 9,
+      "diagnostics": [],
+      "elapsedMs": 50.17274999999995
+    },
+    {
+      "file": "blur.json",
+      "status": "reconciled",
+      "bytes": 17394,
+      "contentHash": "0f964775f9538dbe49d51216502179d7344e20f8c3019539c733ec40603226dc",
+      "blocks": 73,
+      "properties": 33,
+      "segments": 10,
+      "diagnostics": [],
+      "elapsedMs": 85.56179199999997
+    },
+    {
+      "file": "bullet-tabs.json",
+      "status": "reconciled",
+      "bytes": 19407,
+      "contentHash": "b871a43b4ee80e125e18d3409612d8b335e86f5b535a8233887fc4b417adb0b0",
+      "blocks": 61,
+      "properties": 71,
+      "segments": 9,
+      "diagnostics": [],
+      "elapsedMs": 87.20233400000006
+    }
+  ],
+  "control": {
+    "blocks": 101,
+    "fullMs": 355.955417,
+    "incrementalMs": 324.33462499999996,
+    "changedBlocks": 1,
+    "unchangedBlocks": 100,
+    "differential": "equal",
+    "decoding": "entire Resource in both modes"
+  },
+  "integrity": {
+    "ok": true,
+    "mutable": {
+      "ok": true,
+      "integrity": [
+        {
+          "integrity_check": "ok"
+        }
+      ],
+      "foreignKeys": [],
+      "fts": "ok"
+    },
+    "audit": {
+      "ok": true,
+      "integrity": [
+        {
+          "integrity_check": "ok"
+        }
+      ],
+      "foreignKeys": [],
+      "fts": "not-applicable"
+    }
+  }
+}

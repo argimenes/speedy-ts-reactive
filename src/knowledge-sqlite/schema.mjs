@@ -1,11 +1,13 @@
 import Database from 'better-sqlite3';
 import { readFileSync } from 'node:fs';
 import { createHash, randomUUID } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 export const APPLICATION_IDS = Object.freeze({ mutable: 0x4d55544b, audit: 0x4d555441 });
 export const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 export const migrations = Object.freeze(Object.fromEntries(Object.keys(APPLICATION_IDS).map(kind => {
-  const sql = readFileSync(new URL(`./migrations/${kind}/0001-foundation.sql`, import.meta.url), 'utf8');
+  const sql = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations', kind, '0001-foundation.sql'), 'utf8');
   return [kind, Object.freeze([{ version: 1, sql, checksum: hash(sql) }])];
 })));
 const metadata = db => Object.fromEntries(db.prepare('SELECT key,value FROM SchemaInfo').all().map(r => [r.key, r.value]));
@@ -80,7 +82,7 @@ export function rebuildFts(db) {
   db.transaction(() => { for (const table of ['BlockSearch','EntitySearch','EntityAliasSearch']) db.prepare(`INSERT INTO ${table}(${table}) VALUES('rebuild')`).run(); })();
 }
 
-/** Invalidation/reset only. P2 will repopulate from files; never reset canonical knowledge. */
+/** Explicit invalidation only. Reconciliation repopulates from files; never reset canonical knowledge. */
 export function clearDerived(db) {
   db.transaction(() => {
     db.prepare("DELETE FROM EntityAlias WHERE origin IN ('observed','recovered')").run();

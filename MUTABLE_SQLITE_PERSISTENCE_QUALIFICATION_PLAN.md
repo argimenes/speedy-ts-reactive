@@ -2,7 +2,9 @@
 
 **P0 review — 2 October 2026. No production persistence changes or user-data migration.**
 
-P0 was subsequently approved. P1 implementation and qualification are recorded in [the P1 report](MUTABLE_SQLITE_PERSISTENCE_P1_REPORT.md); P2 remains behind its review gate. The P0 evidence below is retained as the planning baseline.
+P0 was subsequently approved. P1 implementation and qualification are recorded in [the P1 report](MUTABLE_SQLITE_PERSISTENCE_P1_REPORT.md). The P0 evidence below is retained as the planning baseline.
+
+P1 was subsequently accepted. [The P2 implementation/qualification report](MUTABLE_SQLITE_PERSISTENCE_P2_REPORT.md) records the authoritative saved reconciliation path and incremental SQL differential gate. P2 is stopped for review before P3; the historical stage descriptions below remain the programme baseline.
 
 The SQLite direction fits Mutable. The existing SurrealDB implementation should become an import source, not the model for the replacement. However, installing the brief's illustrative DDL unchanged would lose placement semantics, reject valid unresolved references, and misrepresent linked annotations. This report proposes the specific corrections below and stops at the brief's architectural-review exception before P1.
 

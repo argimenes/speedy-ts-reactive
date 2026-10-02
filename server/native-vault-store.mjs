@@ -60,7 +60,7 @@ export class NativeVaultStore {
    const s=await fs.lstat(await this.resolve(p),{bigint:true});
    if(!s.isDirectory()&&!s.isFile())fail('Unsupported Knowledge scope entry');
    rows.push([p,String(s.dev),String(s.ino),String(s.size),String(s.mtimeNs),String(s.ctimeNs)]);
-   if(s.isDirectory())for(const name of (await fs.readdir(await this.resolve(p))).sort())await walk(join(p,name));
+   if(s.isDirectory())for(const name of (await fs.readdir(await this.resolve(p))).sort())if(name!=='.mutable')await walk(join(p,name));
   };
   await walk(vault);
   // Relocation authority is store-wide, including moves entering this vault.
@@ -126,7 +126,7 @@ export class NativeVaultStore {
   vault=path.relative(this.root,await fs.realpath(base)).split(path.sep).join('/')||'.';
   const folders=[],documents=[],markdown=[],other=[],diagnostics=[],uninspected=[],inspected=[],directories=[];let count=0;
   const walk=async dir=>{signal?.throwIfAborted();let entries;try{directories.push({path:dir,stamp:await this.stamp(dir,'directory')});entries=await fs.readdir(await this.resolve(dir),{withFileTypes:true});}catch(e){diagnostics.push({path:dir,message:e.message});return;}
-   for(const e of entries.sort((a,b)=>a.name.localeCompare(b.name))){signal?.throwIfAborted();if(++count>LIMIT){diagnostics.push({path:dir,message:'Vault scan limit reached'});return;}if(e.name.startsWith('.mutable-'))continue;
+   for(const e of entries.sort((a,b)=>a.name.localeCompare(b.name))){signal?.throwIfAborted();if(++count>LIMIT){diagnostics.push({path:dir,message:'Vault scan limit reached'});return;}if(e.name==='.mutable'||e.name.startsWith('.mutable-'))continue;
     const p=join(dir,e.name);if(e.isSymbolicLink()){diagnostics.push({path:p,message:'Symlink excluded'});continue;}
     if(e.isDirectory()){folders.push(p);await walk(p);}else if(e.isFile()&&e.name.endsWith('.mutable.json')){
      try{const stamp=await this.stamp(p),bytes=await this.read(p),byteHash=hash(bytes),result=await this.inspect(bytes,signal);signal?.throwIfAborted();

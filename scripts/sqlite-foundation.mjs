@@ -10,11 +10,11 @@ let client;
 try {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: {
     vault: { type: 'string' }, destination: { type: 'string' }, source: { type: 'string' },
-    'read-only': { type: 'boolean' }, 'confirm-derived-reset': { type: 'boolean' },
+    'read-only': { type: 'boolean' }, 'confirm-derived-reset': { type: 'boolean' }, incremental: { type: 'boolean' },
   } });
   const [command] = positionals;
-  if (positionals.length !== 1 || !['init','init-test','inspect','verify','rebuild-fts','clear-derived','backup','restore','reset-test'].includes(command)) throw Error('Usage: npm run sqlite -- <init|init-test|inspect|verify|rebuild-fts|clear-derived|backup|restore|reset-test> --vault /absolute/path');
-  if (values['read-only'] && ['init','init-test','reset-test','restore','rebuild-fts','clear-derived'].includes(command)) throw Error('Read-only mode cannot perform this operation');
+  if (positionals.length !== 1 || !['init','init-test','inspect','verify','rebuild-fts','clear-derived','backup','restore','reset-test','reconcile','rebuild-derived'].includes(command)) throw Error('Usage: npm run sqlite -- <init|init-test|inspect|verify|rebuild-fts|clear-derived|reconcile|rebuild-derived|backup|restore|reset-test> --vault /absolute/path');
+  if (values['read-only'] && ['init','init-test','reset-test','restore','rebuild-fts','clear-derived','reconcile','rebuild-derived'].includes(command)) throw Error('Read-only mode cannot perform this operation');
   let vault = values.vault;
   if (command === 'init-test') {
     if (vault) throw Error('init-test chooses its own disposable temp directory');
@@ -43,6 +43,11 @@ try {
     readOnly: !!values['read-only'] || command === 'inspect', ...(command === 'restore' ? { restoreFrom: values.source } : {}) });
   let result;
   switch (command) {
+    case 'reconcile': case 'rebuild-derived': {
+      const {createSavedIndexer}=await import('../dist/server/sqlite-saved-indexer.js');
+      result=await createSavedIndexer(client,{root:vault}).refresh({mode:command==='reconcile'&&values.incremental?'incremental':'full'});
+      if(!result.complete)process.exitCode=1;break;
+    }
     case 'verify': result = await client.verify(); if (!result.ok || result.audit?.ok === false) process.exitCode = 1; break;
     case 'rebuild-fts': result = await client.rebuildFts(); break;
     case 'clear-derived': if (!values['confirm-derived-reset']) throw Error('clear-derived requires --confirm-derived-reset; it does not repopulate from files'); result = await client.clearDerived(); break;
