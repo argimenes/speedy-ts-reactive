@@ -1,0 +1,12 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ server/sqlite-saved-scope.test.ts (11 tests) 2999ms
+   ✓ real SQL worker/HTTP saved Facts equal the file reader; scopes share the worker and reads never write native files 447ms
+   ✓ restart and read-only hosts cannot trust durable rows without fresh validation 388ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  07:24:54
+   Duration  4.31s (transform 274ms, setup 0ms, collect 427ms, tests 3.00s, environment 530ms, prepare 70ms)
+

@@ -17,7 +17,7 @@ export function readProjection(db,id,check=()=>{}){
 const ordered=b=>({...b,...Object.fromEntries(Object.keys(children).map(k=>[k,[...b[k]].sort((a,b)=>k==='runs'?a.ordinal-b.ordinal:a.guid.localeCompare(b.guid))]))});
 
 /** Ephemeral worker-local SQL preparation. No publication or filesystem authority. */
-const sqlRevision=db=>[db.pragma('data_version',{simple:true}),db.prepare('SELECT total_changes() AS n').get().n].join(':');
+export const sqlRevision=db=>[db.pragma('data_version',{simple:true}),db.prepare('SELECT total_changes() AS n').get().n].join(':');
 export function prepareReconciliation(db,projection,evidence,expected,{mode='full',timings,check=()=>{}}={}) {
   if(!['full','incremental'].includes(mode))throw Error('Unknown reconciliation mode');
   return db.transaction(()=>{

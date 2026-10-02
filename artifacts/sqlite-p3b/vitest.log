@@ -1,0 +1,105 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-lifecycle.test.tsx (14 tests) 3152ms
+   ✓ Flint composite transient hosting > keeps the editor and canonical History stable across F1 shell controls 345ms
+   ✓ Flint composite transient hosting > mounts one ordinary editor, restores selection across tab switches, and releases occurrence state 570ms
+   ✓ Flint composite transient hosting > owns Entity panel focus and cancels asynchronous work when its tab disappears 485ms
+ ✓ src/knowledge-sqlite/saved-projection.test.tsx (10 tests) 429ms
+ ✓ src/application/flint-knowledge.test.tsx (12 tests) 8649ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 1332ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 900ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 708ms
+   ✓ creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 1378ms
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 407ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 400ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 366ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 635ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 1321ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 483ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 333ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 382ms
+ ✓ src/qualification/native-knowledge/boundary.test.ts (16 tests) 4639ms
+   ✓ returns ready cold evidence without enumerating either repository dictionary 438ms
+   ✓ matches general target and unrelated structure and expires every old token 904ms
+   ✓ retains unplaced definitions, rejects outside ownership and tracks retention changes 901ms
+   ✓ preserves nested Document boundaries and registration as non-owning retention 503ms
+   ✓ rejects resource ownership cycles and duplicate claims without expiring admitted tokens; reference cycles remain legal 834ms
+   ✓ preserves resolved external ownership, registration precedence and token-safe incoming evidence 665ms
+   ✓ rejects cross-resource shared Cells after a certified leaf edit, without rescanning globally 348ms
+ ✓ src/application/flint-saved-knowledge.test.tsx (11 tests) 13980ms
+   ✓ progressively searches saved resources without admission, then opens only the selected source in the invoking Window 1985ms
+   ✓ saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 2178ms
+   ✓ checks bytes returned by Open before admission and preserves a read-only source 3336ms
+   ✓ read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 1545ms
+   ✓ a duplicate introduced while native Open is awaiting its response cannot be admitted 3337ms
+   ✓ an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 346ms
+ ✓ src/qualification/native-knowledge/live-observer.test.ts (30 tests) 8029ms
+   ✓ repository boundary qualification=false > observes changed native text/annotations and Undo/Redo without capture or snapshots 389ms
+   ✓ repository boundary qualification=false > does not mutate canonical content, revision or history and checks binding changes at completion 323ms
+   ✓ repository boundary qualification=false > reports missing definitions and rejects annotation-budget excess without publishing partial facts 302ms
+   ✓ repository boundary qualification=false > does not absorb a locally loaded owned child Document into its owner contribution 378ms
+   ✓ repository boundary qualification=true > observes changed native text/annotations and Undo/Redo without capture or snapshots 410ms
+   ✓ repository boundary qualification=true > does not mutate canonical content, revision or history and checks binding changes at completion 301ms
+   ✓ repository boundary qualification=true > reports missing definitions and rejects annotation-budget excess without publishing partial facts 338ms
+   ✓ repository boundary qualification=true > does not absorb a locally loaded owned child Document into its owner contribution 800ms
+   ✓ repository boundary qualification=true > rejects retained content that also has a structural owner outside the Document 344ms
+   ✓ repository boundary qualification=true > matches legacy Workspace definition provenance without adopting it as Document-owned 324ms
+ ✓ src/knowledge/session.test.ts (36 tests) 10539ms
+   ✓ hand-back retains suppression on wrong identity 411ms
+   ✓ hand-back retains suppression on wrong location 341ms
+   ✓ hand-back retains suppression on unavailable boundary 456ms
+   ✓ hand-back retains suppression on ambiguous boundary 720ms
+   ✓ hand-back retains suppression on invalid boundary 679ms
+   ✓ rejects asynchronous hand-back completion spanning admission 342ms
+   ✓ rejects asynchronous hand-back completion spanning policy 745ms
+   ✓ rejects asynchronous hand-back completion spanning binding 387ms
+   ✓ rejects asynchronous hand-back completion spanning reappearance 305ms
+   ✓ repeated editing and cleanup retains one current generation; repository replacement owns fresh evidence 729ms
+ ✓ src/knowledge-sqlite/saved-facts.test.tsx (9 tests) 6368ms
+   ✓ SQL Facts exactly match lightweight/full native oracles for Unicode, inline images, linked annotations, unknown values and ordered properties 618ms
+   ✓ output byte bounds reject large native text without rewriting SQL or returning partial Facts 307ms
+   ✓ SQL traversal applies the existing 10,000-visit budget and reports incomplete coverage 5059ms
+ ✓ src/qualification/native-knowledge/index.test.ts (13 tests) 3409ms
+   ✓ derives inverse references, Entity mentions and sources without storing authored reverse edges 360ms
+   ✓ replaces one contribution without stale tags, incoming edges or entity aggregates 406ms
+   ✓ reads mixed native suffixes but never Markdown; hides internal paths and diagnoses symlinks 327ms
+   ✓ suppresses saved contribution immediately, defers capture, follows Undo/Redo and cannot resurrect stale disk on disposal 777ms
+   ✓ drops stale overlay extraction and keeps disappeared/ambiguous loaded sources suppressed 426ms
+   ✓ keeps inline typing free of snapshots and synchronous overlay capture 353ms
+ ✓ src/knowledge/live-observer.test.ts (18 tests) 3585ms
+   ✓ does not capture, serialize, mount or mutate during observation; Undo/Redo remain canonical 583ms
+   ✓ does not include a loaded nested owned Document body 529ms
+   ✓ keeps plain/text block parity and rejects indivisible large authored values explicitly 484ms
+ ✓ server/sqlite-saved-scope.test.ts (11 tests) 3689ms
+   ✓ real SQL worker/HTTP saved Facts equal the file reader; scopes share the worker and reads never write native files 461ms
+   ✓ save invalidates SQL reads without claiming absence 383ms
+   ✓ sql invalidates SQL reads without claiming absence 382ms
+   ✓ relocate invalidates SQL reads without claiming absence 674ms
+   ✓ pending invalidates SQL reads without claiming absence 300ms
+ ✓ src/application/flint-transient-proof.test.ts (5 tests) 105ms
+ ✓ server/sqlite-knowledge-host.test.ts (3 tests) 908ms
+   ✓ real native/legacy publication routes schedule saved indexing without altering receipts or providers 547ms
+   ✓ partial pair and missing dependency cannot become complete index evidence; recovery retains exact publication 300ms
+ ✓ src/application/sqlite-saved-facts-client.test.ts (4 tests) 18ms
+ ✓ src/qualification/native-knowledge/live-overlay.test.ts (2 tests) 1985ms
+   ✓ suppresses immediately, rejects stale completions and never falls back on disposal 578ms
+   ✓ supports ten independently registered canonical resources without mounting them 1406ms
+ ✓ src/knowledge-sqlite/live-input.test.tsx (1 test) 214ms
+ ✓ src/qualification/native-knowledge/lightweight.test.ts (38 tests) 19678ms
+   ✓ matches every fact in 24 seeded native fixtures with distinct resource/root IDs 3432ms
+   ✓ matches actual native feature producers and historical value profiles 517ms
+   ✓ matches unsupported values, linked mention provenance, deleted/client-only and duplicate IDs 770ms
+   ✓ retains external ownership/reference and unplaced-definition validation 448ms
+   ✓ invalid native input is rejected by both paths > invalid UTF-8 and JSON 404ms
+   ✓ matches explicit annotation-budget failure and cancellation 2693ms
+   ✓ matches traversal truncation without claiming complete coverage 9366ms
+   ✓ preserves duplicate suppression even if the duplicate would exceed facts budgets 673ms
+ ✓ src/application/sqlite-index-lifecycle.test.ts (2 tests) 7ms
+
+ Test Files  18 passed (18)
+      Tests  235 passed (235)
+   Start at  07:22:54
+   Duration  60.61s (transform 5.45s, setup 0ms, collect 14.39s, tests 89.38s, environment 9.54s, prepare 1.21s)
+

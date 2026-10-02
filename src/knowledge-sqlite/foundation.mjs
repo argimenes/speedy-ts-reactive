@@ -54,6 +54,8 @@ export function openFoundation({ vault, readOnly = false, initialize: create = f
     };
     return {
       vaultGuid: identity.vaultGuid,
+      knowledgeRevision() { active(); return indexing.sqlRevision(mutable); },
+      readKnowledge(reader) { active(); return reader(mutable); },
       inventory() { active(); return indexing.inventory(mutable); },
       indexStatus() { active(); return {resources:mutable.prepare('SELECT count(*) AS n FROM Resource').get().n,
         incompleteResources:mutable.prepare("SELECT count(*) AS n FROM Resource WHERE indexStatus!='complete'").get().n,
@@ -66,7 +68,7 @@ export function openFoundation({ vault, readOnly = false, initialize: create = f
       reconcile(projection,evidence,expected,options) { active(); writable(); return indexing.reconcile(mutable,projection,evidence,expected,options); },
       removeConfirmed(id,expected) { active(); writable(); return indexing.removeConfirmed(mutable,id,expected); },
       recordIssue(path,reason) { active(); writable(); return indexing.recordIssue(mutable,path,reason); },
-      finishReconciliation() { active(); writable(); mutable.prepare('DELETE FROM IndexIssue').run(); return {complete:true}; },
+      finishReconciliation() { active(); writable(); mutable.prepare('DELETE FROM IndexIssue').run(); return {complete:true,revision:indexing.sqlRevision(mutable)}; },
       inspect() { active(); return { root, home, readOnly, mutable: inspectDatabase(mutable, 'mutable'), audit: audit ? inspectDatabase(audit, 'audit') : { available: false, error: auditError } }; },
       verify() { active(); const current = verifyDatabase(mutable, 'mutable'); return { ok: current.ok, mutable: current, audit: audit ? verifyDatabase(audit, 'audit') : { available: false, error: auditError } }; },
       rebuildFts() { active(); writable(); rebuildFts(mutable); return verifyDatabase(mutable, 'mutable'); },

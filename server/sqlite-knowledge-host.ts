@@ -5,6 +5,7 @@ import { Router, json } from 'express';
 import { openSqliteFoundation } from '../src/knowledge-sqlite/client.mjs';
 import { NativeVaultStore } from './native-vault-store.mjs';
 import { createSavedIndexer } from './sqlite-saved-indexer';
+import {SqliteSavedScopes} from './sqlite-saved-scope';
 import { normalizePolicy, policyKey } from '../src/knowledge/policy';
 
 const inside = (a:string,b:string) => a===b || b.startsWith(a+path.sep);
@@ -77,7 +78,7 @@ export class SqliteKnowledgeHost {
           if(epoch!==e.epoch)throw Error('Reconciliation superseded');
           const status=await e.client.indexStatus();controller.signal.throwIfAborted();
           if(epoch!==e.epoch)throw Error('Reconciliation superseded');
-          e.epoch++;e.fence=r.complete?r.scopeFence:undefined;
+          e.epoch++;e.fence=r.complete?r.scopeFence:undefined;e.sqlRevision=r.sqlRevision;
           e.coverage={state:r.complete&&!status.incompleteResources&&!status.issueCount?'complete':'incomplete',complete:!!r.complete&&!status.incompleteResources&&!status.issueCount,
             resources:status.resources,incompleteResources:status.incompleteResources,issueCount:status.issueCount,
             diagnostics:[...r.issues.map((x:any)=>x.message),...status.issues.map((x:any)=>x.reason)].slice(0,32)};
@@ -92,6 +93,20 @@ export class SqliteKnowledgeHost {
     if(e.fence){try{await e.client.indexStatus();if(await this.store.readScopeFence(e.vault)!==e.fence&&epoch===e.epoch)this.invalidate(e,'Saved scope changed; Refresh required');}
       catch(error){if(epoch===e.epoch)this.invalidate(e,String(error));}}
     return this.snapshot(e);
+  }
+  private savedScopes?:SqliteSavedScopes;
+  /** Read evidence only: never refreshes, enrolls or acknowledges a save. */
+  async knowledgeEvidence(token:string,signal?:AbortSignal){
+    signal?.throwIfAborted();const e=this.entry(token),epoch=e.epoch;
+    await this.status(token);signal?.throwIfAborted();
+    if(!e.client||!e.fence||epoch!==e.epoch||e.pending||this.active===e)throw Error('SQL saved scope unknown or incomplete; Refresh required');
+    const revision=await e.client.knowledgeRevision();signal?.throwIfAborted();
+    if(epoch!==e.epoch||!e.fence||revision!==e.sqlRevision)throw Error('SQL saved scope superseded');
+    return {session:this.session,indexEpoch:epoch,revision,vault:e.vault,policy:e.policyKey,coverage:structuredClone(e.coverage)};
+  }
+  async readKnowledge(token:string,proof:any,request:any,signal?:AbortSignal){
+    const validate=async()=>{const now=await this.knowledgeEvidence(token,signal);if(now.session!==proof.session||now.indexEpoch!==proof.indexEpoch||now.revision!==proof.revision||now.policy!==proof.policy)throw Error('SQL read evidence superseded');};
+    await validate();const result=await this.entry(token).client.readKnowledge({...request,revision:proof.revision},signal);await validate();return result;
   }
   async refresh(token:string,full=false){
     const e=this.entry(token);if(this.options.readOnly)throw Error('SQLite reconciliation is read-only');
@@ -112,10 +127,11 @@ export class SqliteKnowledgeHost {
       if(--e.users===0){e.pending=false;if(this.active===e){this.controller?.abort(Error('Vault lease closed'));await this.running;}this.entries.delete(e.root);await e.client?.close();}
       return {released:true};});
   }
-  async close(){this.closed=true;clearTimeout(this.timer);this.controller?.abort(Error('Host shutdown'));await this.control;await this.foregroundTail;await this.running;
+  async close(){this.closed=true;this.savedScopes?.close();clearTimeout(this.timer);this.controller?.abort(Error('Host shutdown'));await this.control;await this.foregroundTail;await this.running;
     for(const l of this.leases.values())clearTimeout(l.timer);this.leases.clear();for(const e of this.entries.values())await e.client?.close();this.entries.clear();}
   router(){
     const router=Router();router.use(json({limit:'32kb'}));
+    this.savedScopes??=new SqliteSavedScopes(this);router.use('/facts',this.savedScopes.router());
     for(const [name,action]of Object.entries({open:(b:any)=>this.acquire(b.vault,b.policy),status:(b:any)=>this.status(b.lease),refresh:(b:any)=>this.refresh(b.lease,b.full===true),release:(b:any)=>this.release(b.lease)}))
       router.post('/'+name,async(req,res)=>{try{res.json({Success:true,Data:await action(req.body??{})});}catch(error){res.status(409).json({Success:false,Error:String(error)});}});
     return router;

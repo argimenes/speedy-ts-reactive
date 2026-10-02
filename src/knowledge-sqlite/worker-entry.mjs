@@ -2,6 +2,7 @@ import { parentPort, workerData } from 'node:worker_threads';
 import { openFoundation, restoreSnapshot } from './foundation.mjs';
 import { prepareHome } from './paths.mjs';
 import { projectSaved } from './saved-projection.ts';
+import { sqlKnowledgeRead } from './query-services.ts';
 import { randomUUID } from 'node:crypto';
 let store;
 try {
@@ -26,6 +27,8 @@ if (store) {
         check();
         if(['inspect-saved','stage-saved'].includes(operation)&&payload.vaultGuid!==store.vaultGuid)throw Error('Saved indexing vault identity mismatch');
         switch (operation) {
+          case 'knowledge-revision': value=store.knowledgeRevision();break;
+          case 'knowledge-read': value=await store.readKnowledge(db=>sqlKnowledgeRead(db,payload,check));break;
           case 'finish-reconciliation': value=store.finishReconciliation();break;
           case 'inventory': value=store.inventory(); break;
           case 'index-status': value=store.indexStatus(); break;

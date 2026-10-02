@@ -102,12 +102,12 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
         }
         signal?.throwIfAborted();
         if(await store.readScopeFence(vault,signal)!==initialFence){const message='Vault changed before reconciliation completion';await client.indexIssue(vault,message);return {complete:false,issues:[{path:vault,message}],reconciled,removed};}
-        await locked('finish',async()=>{
+        const publication=await locked('finish',async()=>{
           if(await store.readScopeFence(vault,signal)!==initialFence)throw Error('Vault changed before reconciliation completion');
-          signal?.throwIfAborted();await client.finishReconciliation();
+          signal?.throwIfAborted();return client.finishReconciliation();
         });
         timings.totalMs=performance.now()-started;
-        return {complete:true,issues:[],reconciled,removed,scopeFence:initialFence,timings};
+        return {complete:true,issues:[],reconciled,removed,scopeFence:initialFence,sqlRevision:publication.revision,timings};
       }finally{timings.totalMs=performance.now()-started;running=false;}
     },
   };

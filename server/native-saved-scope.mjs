@@ -7,7 +7,7 @@ import {normalizePolicy,policyKey} from '../src/knowledge/policy';
 import {nativeKnowledgeJobs} from './native-knowledge-jobs';
 const fail=message=>{throw Object.assign(Error(message),{status:409});};
 export class NativeSavedScopes {
- constructor(store,{jobs=nativeKnowledgeJobs,maxScopes=8,ttlMs=600000,batchSize=32,maxBytes=3*1024*1024}={}){this.store=store;this.jobs=jobs;this.options={maxScopes,ttlMs,batchSize,maxBytes};this.scopes=new Map();this.pending=0;}
+ constructor(store,{jobs=nativeKnowledgeJobs,readFacts,maxScopes=8,ttlMs=600000,batchSize=32,maxBytes=3*1024*1024}={}){this.store=store;this.jobs=jobs;this.readFacts=readFacts;this.options={maxScopes,ttlMs,batchSize,maxBytes};this.scopes=new Map();this.pending=0;}
  prune(){for(const [id,s]of this.scopes)if(s.expires<Date.now())this.release({scope:id});}
  async begin({vault,signature,policy},signal){
   this.prune();if(this.scopes.size+this.pending>=this.options.maxScopes)fail('Knowledge saved scope budget exceeded');
@@ -36,7 +36,7 @@ export class NativeSavedScopes {
      if(!['paired','unenrolled'].includes(row.state)||!row.baseline?.nativeHash)fail('Saved resource unavailable: '+row.state);
      let readStart=performance.now();const stamp=await this.store.stamp(p),bytes=await this.store.read(p);
      if(hash(bytes)!==row.baseline.nativeHash)fail('Saved bytes changed before extraction');timings.readHashMs+=performance.now()-readStart;
-     const result=await this.jobs.run('facts',bytes,{signal,policy:s.policy});signal?.throwIfAborted();timings.workerHeapPeak=Math.max(timings.workerHeapPeak,result.memory??0);readStart=performance.now();
+     const result=this.readFacts?await this.readFacts({scope,row,bytes,signal,policy:s.policy}):await this.jobs.run('facts',bytes,{signal,policy:s.policy});signal?.throwIfAborted();timings.workerHeapPeak=Math.max(timings.workerHeapPeak,result.memory??0);readStart=performance.now();
      if(result.byteHash!==row.baseline.nativeHash||result.inspection.resourceId!==id||await this.store.stamp(p)!==stamp||hash(await this.store.read(p))!==row.baseline.nativeHash)fail('Saved extraction evidence changed');timings.readHashMs+=performance.now()-readStart;
      const bytesOut=Buffer.byteLength(JSON.stringify(result.wire));
      if(bytesOut>2*1024*1024||size+bytesOut>this.options.maxBytes){items.push({resourceId:id,error:'Saved response budget exceeded'});continue;}

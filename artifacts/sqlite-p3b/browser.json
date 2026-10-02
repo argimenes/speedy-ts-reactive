@@ -1,0 +1,155 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.95",
+    "revision": "@05d469856e75794131cc2e5d9b2f6b6f10a70388",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.19"
+  },
+  "hardware": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M1",
+    "node": "v22.12.0"
+  },
+  "method": "Production browser SqliteSavedFactsClient -> real HTTP route -> dedicated SQLite worker, isolated temporary vault. No UI/provider selection.",
+  "setup": {
+    "elapsedMs": 130.2999999821186,
+    "facts": {
+      "id": "a",
+      "rootBlockId": "a-doc",
+      "title": "a",
+      "hasTitle": true,
+      "tags": [
+        "poetry"
+      ],
+      "blocks": [
+        {
+          "id": "a-doc",
+          "type": "document-block",
+          "ordinal": 1,
+          "cellCount": 0
+        },
+        {
+          "id": "a-text",
+          "type": "standoff-editor-block",
+          "ordinal": 2,
+          "cellCount": 21,
+          "text": {
+            "coordinate": "cell",
+            "runs": [
+              {
+                "text": "Poe 😀 wrote The Raven",
+                "boundaries": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  -1,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11,
+                  12,
+                  13,
+                  14,
+                  15,
+                  16,
+                  17,
+                  18,
+                  19,
+                  20,
+                  21
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "annotations": [
+        {
+          "id": "[\"a\",\"a-text\",\"a-mention\"]",
+          "logicalId": "[\"a\",\"a-text\",\"a-mention\"]",
+          "blockId": "a-text",
+          "type": "codex/entity-reference",
+          "start": 0,
+          "end": 3,
+          "value": "poe"
+        }
+      ],
+      "mentions": [
+        {
+          "id": "[\"a\",\"a-text\",\"a-mention\"]",
+          "kind": "entity",
+          "targetId": "poe",
+          "ranges": [
+            {
+              "blockId": "a-text",
+              "start": 0,
+              "end": 3
+            }
+          ],
+          "text": "Poe",
+          "annotationIds": [
+            "[\"a\",\"a-text\",\"a-mention\"]"
+          ]
+        }
+      ],
+      "diagnostics": [],
+      "referenceDiagnostics": []
+    },
+    "metrics": {
+      "discoveryMs": 14.03204199999982,
+      "requests": 4,
+      "transportMs": 85.90000000596046,
+      "decodeMs": 1.399999976158142,
+      "workerMs": 4.028123999999934,
+      "queueMs": 0,
+      "validationMs": 0,
+      "factsMs": 0.7969170000001213,
+      "sqlReadMs": 2.0101669999999103,
+      "bytes": 5007,
+      "fenceMs": 0.7935420000003433,
+      "readHashMs": 1.319499000000178,
+      "workerHeapPeak": 8813744,
+      "serverHeapPeak": 46945680
+    },
+    "status": {
+      "state": "complete",
+      "complete": true,
+      "resources": 2,
+      "incompleteResources": 0,
+      "issueCount": 0,
+      "diagnostics": [],
+      "scope": "native-documents",
+      "hostResources": 2
+    }
+  },
+  "buffers": {
+    "secondId": "b",
+    "status": {
+      "state": "complete",
+      "complete": true,
+      "resources": 2,
+      "incompleteResources": 0,
+      "issueCount": 0,
+      "diagnostics": [],
+      "scope": "native-documents",
+      "hostResources": 2
+    }
+  },
+  "stale": {
+    "error": "Error: Error: SQL saved scope unknown or incomplete; Refresh required",
+    "status": {
+      "state": "unknown",
+      "complete": false,
+      "diagnostics": [
+        "Error: Error: SQL saved scope unknown or incomplete; Refresh required"
+      ]
+    }
+  }
+}
