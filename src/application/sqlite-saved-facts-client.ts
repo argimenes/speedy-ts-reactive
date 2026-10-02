@@ -1,4 +1,4 @@
-/** P3b adapter only. Production provider selection remains P3c. */
+/** Verified SQL saved adapter; application composition owns provider selection. */
 import {SavedFactsClient} from './saved-facts-client';
 import type {DiscoveryRow} from '../knowledge/contribution-state';
 import {policyKey,type ExtractionPolicy} from '../knowledge/policy';
@@ -24,7 +24,8 @@ export class SqliteSavedFactsClient extends SavedFactsClient {
    return result;
   }catch(error){if(serial===this.serial)this.coverage={state:'unknown',complete:false,diagnostics:[String(error)]};throw error;}
  }
- protected async validateRead(signal:AbortSignal){await this.request('current',{scope:this.scope},signal);}
+ async current(signal:AbortSignal){if(!this.scope)throw Error('SQL scope unavailable');await this.request('current',{scope:this.scope},signal);}
+ protected async validateRead(signal:AbortSignal){await this.current(signal);}
  async read(row:DiscoveryRow,policy:ExtractionPolicy,signal:AbortSignal){
   try{const result=await super.read(row,policy,signal);
   if(result.resourceId!==row.resourceId||result.facts.id!==row.resourceId||result.byteHash!==row.baseline?.nativeHash||result.policy!==policyKey(policy)||result.location.folder!==row.location.folder||result.location.filename!==row.location.filename)throw Error('SQL contribution evidence mismatch');

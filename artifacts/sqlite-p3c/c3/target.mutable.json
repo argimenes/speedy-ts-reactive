@@ -1,0 +1,60 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:1f609bf0-2003-401e-bed7-eaf31ee12a77:placement:54b6cd4b-e503-433c-95f7-dea4679f312c",
+            "target": {
+              "blockId": "3b6988e7-882f-46a2-ac87-e5fe7ec10d1e",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "1f609bf0-2003-401e-bed7-eaf31ee12a77",
+        "properties": {
+          "metadata": {
+            "documentFormat": {
+              "format": "page",
+              "template": "blank",
+              "theme": "default",
+              "version": 1
+            },
+            "documentId": "1f609bf0-2003-401e-bed7-eaf31ee12a77",
+            "tags": [],
+            "title": "Alpine study"
+          }
+        },
+        "type": "document-block"
+      },
+      {
+        "id": "3b6988e7-882f-46a2-ac87-e5fe7ec10d1e",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Snow and 🧭 mountains."
+          }
+        ],
+        "properties": {},
+        "type": "standoff-editor-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "1f609bf0-2003-401e-bed7-eaf31ee12a77",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:1f609bf0-2003-401e-bed7-eaf31ee12a77:placement:043ca240-d565-4485-8e8c-1b6ed203cdbd",
+      "target": {
+        "blockId": "1f609bf0-2003-401e-bed7-eaf31ee12a77",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "1f609bf0-2003-401e-bed7-eaf31ee12a77",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

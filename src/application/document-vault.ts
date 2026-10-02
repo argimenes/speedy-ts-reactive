@@ -40,7 +40,7 @@ export function createDocumentVaults(native: NativeDocumentSession, indexLifecyc
     private signatureSignal=createSignal('');
     private update(value:VaultDiscovery){const signature=JSON.stringify(value);if(signature===this.signature())return;batch(()=>{this.snapshotSignal[1](value);this.signatureSignal[1](signature);});this.notify();}
     private index?:ReturnType<NonNullable<typeof indexLifecycle>>;
-    constructor(readonly root:string,initial:VaultDiscovery){this.update(initial);this.index=indexLifecycle?.(root);void this.index?.refresh();}
+    constructor(readonly root:string,initial:VaultDiscovery){this.update(initial);this.index=indexLifecycle?.(root);void this.index?.refresh(true).then(()=>{if(this.alive)this.notify();});}
     snapshot=()=>this.snapshotSignal[0]()!;
     signature=()=>this.signatureSignal[0]();
     busy=()=>this.busySignal[0]();
@@ -54,8 +54,8 @@ export function createDocumentVaults(native: NativeDocumentSession, indexLifecyc
       if(!this.alive)return;
       if(this.refreshWork)return this.refreshWork;
       this.controller=new AbortController();
-      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive){const unchanged=JSON.stringify(value)===this.signature();this.update(value);if(force&&unchanged)this.notify();}}catch(e){if(this.alive){this.noticeSignal[1](String(e));this.update({...this.snapshot(),complete:false,diagnostics:[...this.snapshot().diagnostics,{message:'Discovery refresh failed: '+String(e)}]});throw e;}}finally{this.refreshWork=undefined;}})();
-      void this.index?.refresh(force);
+      const indexWork=this.index?.refresh(force);
+      this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(force)await indexWork;if(this.alive){const unchanged=JSON.stringify(value)===this.signature();this.update(value);if(force&&unchanged)this.notify();}}catch(e){if(this.alive){this.noticeSignal[1](String(e));this.update({...this.snapshot(),complete:false,diagnostics:[...this.snapshot().diagnostics,{message:'Discovery refresh failed: '+String(e)}]});throw e;}}finally{this.refreshWork=undefined;}})();
       return this.refreshWork;
     }
     requireDirectory(folder:string) {

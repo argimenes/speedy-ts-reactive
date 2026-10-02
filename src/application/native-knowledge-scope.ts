@@ -1,3 +1,4 @@
+import { PreferredSavedFactsClient } from './preferred-saved-facts-client';
 import { SavedFactsClient } from './saved-facts-client';
 import { NativeKnowledgeHost } from '../knowledge/session';
 import type { BoundaryRepository } from '../knowledge/live-observer';
@@ -11,7 +12,7 @@ import type { DiscoveryRow, VerifiedSaved } from '../knowledge/contribution-stat
 export function createNativeKnowledgeHost(repository: BoundaryRepository, native: Pick<NativeDocumentSession, 'knowledgeEvidence' | 'subscribeKnowledge'> & Partial<Pick<NativeDocumentSession, 'knowledgeBindings'>>, policy: {
     read(): ExtractionPolicy;
     subscribe(listener: () => void): () => void;
-}, options: ConstructorParameters<typeof NativeKnowledgeHost>[1] = {}) {
+}, options: ConstructorParameters<typeof NativeKnowledgeHost>[1] & {sqliteSaved?:boolean} = {}) {
     const host = new NativeKnowledgeHost(repository, options);
     const stop = native.subscribeKnowledge(() => { if (native.knowledgeEvidence('').closed)
         void host.dispose(); });
@@ -20,10 +21,13 @@ export function createNativeKnowledgeHost(repository: BoundaryRepository, native
         progressive: !!options.progressiveSaved,
         bindings: () => native.knowledgeBindings?.() ?? [],
         acquire(vault: DocumentVaultLease) {
-            const saved = options.progressiveSaved ? new SavedFactsClient(vault, id => !!native.knowledgeEvidence(id).location) : undefined;
+            let providerChanged=()=>{};
+            const saved = options.progressiveSaved ? options.sqliteSaved ? new PreferredSavedFactsClient(vault,id=>!!native.knowledgeEvidence(id).location,()=>providerChanged()) : new SavedFactsClient(vault, id => !!native.knowledgeEvidence(id).location) : undefined;
             return host.acquire({ root: vault.root, snapshot: () => vault.isAlive() ? vault.snapshot() : { ...vault.snapshot(), complete: false }, native: id => native.knowledgeEvidence(id), policy: () => policy.read(),
-                subscribe(listener) { const changed=()=>{saved?.reset();listener();}; const a = vault.subscribe(changed), b = native.subscribeKnowledge(changed), c = policy.subscribe(changed); return () => { a(); b(); c(); saved?.reset(); }; },
+                subscribe(listener) { providerChanged=listener; const changed=()=>{saved?.reset();listener();}; const a = vault.subscribe(changed), b = native.subscribeKnowledge(changed), c = policy.subscribe(changed); return () => { a(); b(); c(); saved?.reset(); }; },
                 prepareSaved: saved ? (policy,signal) => saved.prepare(policy,signal) : undefined,
+                validateSaved: saved instanceof PreferredSavedFactsClient ? signal=>saved.current(signal) : undefined,
+                savedCoverage: saved instanceof PreferredSavedFactsClient ? ()=>saved.status() : undefined,
                 savedFailure: () => saved?.failure(),
                 savedMetrics: () => saved?.metrics,
                 async verifySaved(row: DiscoveryRow, extraction: ExtractionPolicy, signal: AbortSignal): Promise<VerifiedSaved> {

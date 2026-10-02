@@ -31,7 +31,7 @@ export async function readSavedFacts(store,request,{signal,jobs=nativeKnowledgeJ
 }
 export function installNativeKnowledgeRoutes(route,store){
  const scopes=new NativeSavedScopes(store);
- for(const [name,method]of [['begin','begin'],['batch','batch'],['release','release']])route('post','/vault/facts/'+name,async(req,res)=>{
+ for(const [name,method]of [['begin','begin'],['batch','batch'],['current','verify'],['release','release']])route('post','/vault/facts/'+name,async(req,res)=>{
   const controller=new AbortController(),closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);
   try{return await scopes[method](req.body,controller.signal);}finally{res.off('close',closed);}
  });

@@ -1,0 +1,52 @@
+
+> speedy-ts-reactive@0.0.0 build
+> npm run build:client && npm run build:server
+
+
+> speedy-ts-reactive@0.0.0 build:client
+> vite build
+
+vite v4.5.14 building for production...
+transforming...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+✓ 322 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] 
+(!) /Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/persistence/markdown.ts is dynamically imported by /Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/persistence/native-session.ts but also statically imported by /Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/persistence/native-session.ts, /Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/persistence/resource-pair.ts, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                     0.65 kB │ gzip:   0.39 kB
+dist/assets/text-count-worker-ff73449a.js           0.67 kB
+dist/assets/embedded-page-cf5e6448.html             0.97 kB │ gzip:   0.59 kB
+dist/assets/search.worker-15a72c52.js               1.62 kB
+dist/assets/illuminated-frame-1f5b302f.svg          1.95 kB │ gzip:   0.76 kB
+dist/assets/favicon-0e726a38.ico                   15.09 kB
+dist/assets/durable.worker-cd7d6c9d.js             69.25 kB
+dist/assets/medieval-template-ca17e3d1.jpg        567.21 kB
+dist/assets/codex-system-logo-df3b53ac.png        617.04 kB
+dist/assets/green-aurora-ee5e459d.jpg           1,055.58 kB
+dist/assets/flint-app-icon-master-197c078a.png  1,563.81 kB
+dist/assets/snow-aurora-d1710f1e.jpg            1,607.19 kB
+dist/assets/green-aurora-49091b22.mp4           2,277.51 kB
+dist/assets/rain-d5051878.mp4                   3,956.79 kB
+dist/assets/clouds-cf2b2472.jpg                 4,056.02 kB
+dist/assets/wood-2bc49664.jpg                   6,049.97 kB
+dist/assets/view-d23d166e.css                       3.92 kB │ gzip:   1.28 kB
+dist/assets/index-99505990.css                    103.52 kB │ gzip:  20.45 kB
+dist/assets/coffee-cup-a7801d1e.js                  2.15 kB │ gzip:   1.14 kB │ map:     6.05 kB
+dist/assets/scene-runtime-d7f13c18.js               2.56 kB │ gzip:   1.39 kB │ map:     9.38 kB
+dist/assets/view-98238e18.js                       31.98 kB │ gzip:  12.58 kB │ map:   104.45 kB
+dist/assets/index-421bdb36.js                      37.06 kB │ gzip:   9.30 kB │ map:    51.01 kB
+dist/assets/three.core-babdf777.js                209.77 kB │ gzip:  58.32 kB │ map: 1,897.20 kB
+dist/assets/three.module-37c5f25d.js              358.46 kB │ gzip:  87.65 kB │ map: 1,009.81 kB
+dist/assets/index-3471672b.js                     966.25 kB │ gzip: 289.41 kB │ map: 3,020.74 kB
+
+(!) Some chunks are larger than 500 kBs after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.58s
+
+> speedy-ts-reactive@0.0.0 build:server
+> tsc --project tsconfig.server.json && node scripts/build-history-worker.mjs && node scripts/build-sqlite-foundation.mjs
+

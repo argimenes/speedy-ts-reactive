@@ -96,7 +96,7 @@ export class VaultKnowledge implements ApplicationKnowledge {
           return Object.freeze({id,...target,...rest});
         });
         this.searchToken=token;this.batches.set(token,stamp);
-        return Object.freeze({...(this.derived.progressive?{coverageMode:'saved-and-live' as const}:{}),token,hits:Object.freeze(hits),diagnostics:Object.freeze(result.diagnostics),available:result.sources.length,discovered:result.discovered,complete:!result.diagnostics.length});
+        return Object.freeze({savedProvider:result.savedProvider,...(this.derived.progressive?{coverageMode:'saved-and-live' as const}:{}),token,hits:Object.freeze(hits),diagnostics:Object.freeze(result.diagnostics),available:result.sources.length,discovered:result.discovered,complete:!result.diagnostics.length});
       }
 
       const inputs:SearchSource[]=[],locators=new Map<string,{target:Source;content?:ContentRecord}>();let cells=0,units=0,blocks=0;

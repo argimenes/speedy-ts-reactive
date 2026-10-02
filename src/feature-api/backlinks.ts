@@ -1,3 +1,4 @@
+export interface SavedProviderCoverage {provider:'sqlite'|'file';state:'verified'|'incomplete'|'unknown';reason?:string}
 /** Derived, read-only mentions. IDs are authored identities, never DOM/projection keys. */
 export interface BacklinkTarget { documentId: string; blockId: string }
 export interface BacklinkDocument extends BacklinkTarget { title: string; location: string }
@@ -16,7 +17,7 @@ export interface BacklinksResult {
   query: BacklinksQuery;
   target: BacklinkDocument;
   mentions: readonly BacklinkMention[];
-  coverage: { mode?: 'loaded'|'saved-and-live'; available: number; discovered: number; complete: boolean; diagnostics: readonly string[] };
+  coverage: { savedProvider?:SavedProviderCoverage; mode?: 'loaded'|'saved-and-live'; available: number; discovered: number; complete: boolean; diagnostics: readonly string[] };
 }
 /** Implementations declare coverage; storage and reference representation stay private. */
 export interface BacklinksService {

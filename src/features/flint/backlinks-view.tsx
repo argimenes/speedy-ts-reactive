@@ -1,3 +1,4 @@
+import {SavedCoverage} from './saved-coverage';
 import {QueryResults} from './query-results';
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, untrack } from 'solid-js';
 import type { ApplicationBacklinks, BacklinksQuery, BacklinksResult } from '../../feature-api/backlinks';
@@ -30,6 +31,7 @@ export function BacklinksPanel(props: { backlinks: ApplicationBacklinks }) {
       <button onClick={() => { clearTimeout(timer); const query = target(); if (query) void run(query); }}>Refresh backlinks</button>
       <Show when={pending()}><p role="status">Finding native references…</p><button onClick={() => { request++; controller?.abort(); clearTimeout(timer); setPending(false); setStale(true); setError('Backlinks query cancelled.'); }}>Cancel backlinks query</button></Show>
       <Show when={result()}>{value => <>
+        <SavedCoverage value={value().coverage.savedProvider}/>
         <p role="status">{value().mentions.length} backlinks to {value().target.title} · {value().coverage.available}/{value().coverage.discovered} Documents available. {value().coverage.complete ? (value().coverage.mode==='saved-and-live'?'Verified saved/live coverage complete.':'Loaded vault coverage complete.') : 'Incomplete coverage; other resources may contain backlinks.'}</p>
         <Show when={stale() || !api.service.current(value())}><p role="status">Backlinks are stale; refreshing or manual refresh is required.</p></Show>
         <For each={value().coverage.diagnostics}>{message => <p>{message}</p>}</For>

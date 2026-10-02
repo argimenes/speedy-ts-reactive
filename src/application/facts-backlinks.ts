@@ -61,8 +61,8 @@ export class FactsBacklinks implements BacklinksService {
           mentions.push(Object.freeze({...entry, source: Object.freeze({...entry.source}), target: Object.freeze({...entry.target}), ranges: Object.freeze(entry.ranges.map(r => Object.freeze({...r})))}));
         }
       }
-      check();
-      const result: BacklinksResult = Object.freeze({query: Object.freeze({vault: request.vault,target: Object.freeze({...request.target})}), target: Object.freeze({...target.target}), mentions: Object.freeze(mentions), coverage: Object.freeze({...(this.provider.progressive?{mode:'saved-and-live' as const}:{}),available: scope.sources.length, discovered: scope.discovered, complete: !diagnostics.length, diagnostics: Object.freeze([...new Set(diagnostics)])})});
+      await scope.validate();check();
+      const result: BacklinksResult = Object.freeze({query: Object.freeze({vault: request.vault,target: Object.freeze({...request.target})}), target: Object.freeze({...target.target}), mentions: Object.freeze(mentions), coverage: Object.freeze({savedProvider:scope.savedProvider,...(this.provider.progressive?{mode:'saved-and-live' as const}:{}),available: scope.sources.length, discovered: scope.discovered, complete: !diagnostics.length, diagnostics: Object.freeze([...new Set(diagnostics)])})});
       this.evidence.set(result, check); this.savedSources.set(result,new Map(scope.sources.filter(s=>s.evidence).map(s=>[s.target.documentId,s.evidence!]))); return result;
     } finally { clearTimeout(timeout); signal?.removeEventListener('abort', abort); this.requests.delete(controller); }
   };

@@ -1,7 +1,8 @@
+import {SqliteKnowledgeHost} from '../../dist/server/sqlite-knowledge-host.js';
 import {webcrypto} from 'node:crypto';
 import {fixtureText} from '../qualification/native-knowledge/fixture';
 // @vitest-environment jsdom
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi, describe } from 'vitest';
 import { render } from 'solid-js/web';
 import express from 'express';
 import { promises as fs } from 'node:fs';
@@ -25,20 +26,22 @@ const wait=(f:()=>void)=>vi.waitFor(f,{timeout:6000,interval:20});
 const button=(host:ParentNode,label:string)=>{if(label==='Files'||label==='Close tab'){const menu=host.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!;if(menu.getAttribute('aria-expanded')!=='true')menu.click();}const b=[...host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label);expect(b,`button ${label}`).toBeTruthy();return b!;};
 const click=(host:ParentNode,label:string)=>{const b=button(host,label);expect(b.disabled,`${label} enabled`).toBe(false);b.click();};
 const field=(host:ParentNode,label:string,value:string)=>{const input=host.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;expect(input,label).toBeTruthy();input.value=value;input.dispatchEvent(new Event(input.tagName==='SELECT'?'change':'input',{bubbles:true}));};
+describe.each([false,true])('Flint saved composition sqlite=%s',sqlite=>{
 async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise<void>}={}) {
  vi.stubGlobal('crypto',webcrypto);
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'flint-c1b-'));disposers.push(()=>fs.rm(root,{recursive:true,force:true}));await fs.mkdir(path.join(root,'vault/nested'),{recursive:true});await fs.writeFile(path.join(root,'vault/input.md'),'# Imported\n\n**Bold** text');
- const app=express();app.use('/api/native',createNativeDocumentStoreRouter({root,...options}));const server:any=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});disposers.push(()=>new Promise(r=>server.close(r)));
+ const sql=sqlite?new SqliteKnowledgeHost({root,readOnly:options.readOnly,debounceMs:60000}):undefined;if(sql)disposers.push(()=>sql.close());
+ const app=express();if(sql)app.use('/api/sqlite/knowledge',sql.router());app.use('/api/native',createNativeDocumentStoreRouter({root,...options,coordinate:sql?(a:any)=>sql.foreground(a):undefined}));const server:any=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});disposers.push(()=>new Promise(r=>server.close(r)));
  vi.stubGlobal('fetch',(input:any,init:any)=>actualFetch(typeof input==='string'&&input.startsWith('/')?`http://127.0.0.1:${server.address().port}${input}`:input,init));
  function make() {
-  const editor=new ReactiveEditor(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{compactEditorChrome:false,nativeKnowledgeSaved:true}});registerApplicationViews(editor);const projection=editor.createView('workspace');disposers.push(()=>editor.dispose());
+  const editor=new ReactiveEditor(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{compactEditorChrome:false,nativeKnowledgeSaved:true,sqliteKnowledge:sqlite}});registerApplicationViews(editor);const projection=editor.createView('workspace');disposers.push(()=>editor.dispose());
   const launch=()=>editor.commandRegistry.execute('flint.open',{targetKey:projection.state.rootKey,args:undefined});launch();
   const host=document.body.appendChild(document.createElement('div'));disposers.push(render(()=><ReactiveTreeView editor={editor} projection={projection}/>,host));
   const windows=()=>[...host.querySelectorAll<HTMLElement>('.flint-application')];
   return {editor,projection,host,windows,launch,service:nativeDocumentSession(editor)};
  }
  vi.stubGlobal('Worker',class {constructor(url:URL){if(!url.pathname.includes('search.worker'))throw new Error('Only the search worker is simulated in this test');}onmessage?: (e:any)=>void;onerror?:()=>void;live=true;terminate(){this.live=false;}postMessage(data:any){setTimeout(()=>{if(this.live)this.onmessage?.({data:{results:matchSources(data.sources,data.query,data.options)}});},0);}});
- const f=make();return {...f,root,make};
+ const f=make();return {...f,root,make,sql};
 }
 async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Vault');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Vault').disabled).toBe(false));}
 async function create(host:ParentNode,name='note.mutable.json',title='A title') {field(host,'New Document filename',name);field(host,'New Document title',title);click(host,'New Document');await wait(()=>expect(host.textContent).toContain('Saved native Document and Markdown'));await wait(()=>expect(host.querySelector(`[aria-label="Open vault/${name}"]`)).toBeTruthy());await wait(()=>expect(button(host,'New Document').disabled).toBe(false));}
@@ -99,3 +102,5 @@ it('selected Open retains the existing owned-external dependency/ownership admis
  await wait(async()=>{await search(a,'Document c');expect(a.querySelector('[data-search-document="resource-c"]')).toBeTruthy();});const before=f.editor.repository.snapshot();
  a.querySelector<HTMLButtonElement>('[data-search-document="resource-c"]')!.click();await wait(()=>expect(a.textContent).toMatch(/multiple semantic owners/i));expect(f.editor.repository.snapshot()).toEqual(before);expect(f.service.location('resource-c')).toBeUndefined();expect(idOf(a)).toBe(prior);
 },30000);
+
+});

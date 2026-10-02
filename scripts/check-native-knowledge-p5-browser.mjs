@@ -24,14 +24,16 @@ try{
   console.log('P5 count '+count);const vault='vault-'+count;await mkdir(path.join(root,vault));for(let i=0;i<count;i++)await writeFile(path.join(root,vault,i+'.mutable.json'),fixtureText(i,count));
   const base=await heap(),setup=await evaluate(`control.setup(${JSON.stringify(vault)},${count}).then(f=>{window.fixture=f;return {constructionMs:f.constructionMs}})`);
   const discovery=await profiled('discovery-'+count,'control.observeHeartbeat(()=>fixture.open())'),partial=await profiled('partial-'+count,'control.observeHeartbeat(()=>fixture.partial())'),initialComplete=await evaluate('control.observeHeartbeat(()=>fixture.complete())');
+  let sqlVerification;if(process.env.PROOF_SQLITE==='1'){await evaluate('fixture.refresh()');await evaluate('fixture.complete()');sqlVerification=await evaluate('fixture.state()');if(sqlVerification.savedProvider?.provider!=='sqlite'||sqlVerification.savedProvider?.state!=='verified')throw Error('SQL provider was not selected: '+JSON.stringify(sqlVerification));}
   const coldSearch=await evaluate('control.observeHeartbeat(()=>fixture.search())'),warmSearch=[];for(let i=0;i<3;i++)warmSearch.push(await evaluate('control.observeHeartbeat(()=>fixture.search())'));
   const sharing=await evaluate('fixture.sharing()'),activation=await profiled('activation-'+count,'control.observeHeartbeat(()=>fixture.activate())');
   if(process.env.P5_PROFILE){const release=await evaluate('fixture.dispose()');report.resources.push({count,discovery,partial,initialComplete,coldSearch,warmSearch,sharing,activation,release});await writeFile(out+'/browser-profile.json',JSON.stringify(report,null,2));continue;}
+  const backlinks=process.env.PROOF_SQLITE==='1'?await evaluate('fixture.backlinks()'):undefined;
   const input=await evaluate('control.observeHeartbeat(()=>fixture.input())'),liveComplete=await evaluate('control.observeHeartbeat(()=>fixture.complete())'),retained=await heap();
   const refresh=await evaluate('fixture.refresh()'),during=await evaluate('control.observeHeartbeat(()=>fixture.input())'),rebuild=await evaluate('control.observeHeartbeat(()=>fixture.complete())'),queryAfter=await evaluate('fixture.search()'),cancel=await evaluate('fixture.cancel()');
   const shot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(out+'/vault-'+count+'.png',Buffer.from(shot.data,'base64'));
   const release=await evaluate('fixture.dispose()');await evaluate('window.fixture=null;window.__p5Hosts=[]');const disposed=await heap();
-  report.resources.push({count,base,setup,discovery,partial,initialComplete,coldSearch,warmSearch,sharing,activation,input,liveComplete,retained,refresh,during,rebuild,queryAfter,cancel,release,disposed});await writeFile(out+'/'+(process.env.P5_OUTPUT??'browser-integrated.json'),JSON.stringify(report,null,2));
+  report.resources.push({count,base,setup,discovery,partial,initialComplete,sqlVerification,coldSearch,warmSearch,sharing,activation,backlinks,input,liveComplete,retained,refresh,during,rebuild,queryAfter,cancel,release,disposed});await writeFile(out+'/'+(process.env.P5_OUTPUT??'browser-integrated.json'),JSON.stringify(report,null,2));
  }
  console.log('P5 real UI/server controls complete');
 

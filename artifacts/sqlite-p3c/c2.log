@@ -1,0 +1,35 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:21091) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+search evidence { hits: 1, unopened: true, views: 2, before: 2 }
+{"requestId":"21181.340","timestamp":244223.579425,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.366","timestamp":244224.291819,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.373","timestamp":244224.501978,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.383","timestamp":244224.755029,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.390","timestamp":244224.908472,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.403","timestamp":244225.225951,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.418","timestamp":244226.261488,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.430","timestamp":244226.536173,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.462","timestamp":244229.506285,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"21181.470","timestamp":244230.160015,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{
+  "passed": 16,
+  "checks": [
+    "saved-enabled real worker searches unmounted Unicode text without mounting other resources",
+    "search and passage navigation do not change canonical state or History",
+    "keyboard Escape cancels picker and restores native selection",
+    "real pointer picker consumes a native selection into a stable reference",
+    "reference creation Undo removes the native annotation",
+    "reference target survives authored title change and pair relocation",
+    "two Windows do not duplicate canonical search results",
+    "result uses invoking Window occurrence and preserves the other Window",
+    "same reference follows through the second Window",
+    "edits immediately disable stale result actions",
+    "Undo does not resurrect an old query token",
+    "reopened reference reports its unopened target explicitly",
+    "native Save/Open plus restarted server preserves the canonical reference and relocated target",
+    "reference removal Undo restores the same mention",
+    "real external removal rejects activation without a mount or canonical mutation",
+    "no uncaught browser exceptions"
+  ]
+}

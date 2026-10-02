@@ -36,6 +36,8 @@ export interface VerifiedSaved {
 /** Read-only capabilities. The store verifies bytes/uniqueness; this cannot save,
  * bind, relocate, admit or navigate. Saved verification is explicitly requested,
  * not a progressive whole-vault loop over P2's single-resource HTTP route. */
+import type {SavedProviderCoverage} from '../feature-api/backlinks';
+export type {SavedProviderCoverage} from '../feature-api/backlinks';
 export interface KnowledgeScope {
     readonly root: string;
     snapshot(): Discovery;
@@ -43,6 +45,8 @@ export interface KnowledgeScope {
     policy(): ExtractionPolicy;
     subscribe(listener: () => void): () => void;
     prepareSaved?(policy:ExtractionPolicy, signal:AbortSignal): Promise<void>;
+    validateSaved?(signal:AbortSignal):Promise<void>;
+    savedCoverage?():SavedProviderCoverage;
     savedFailure?(): string | undefined;
     savedMetrics?(): Readonly<Record<string, number>> | undefined;
     verifySaved(row: DiscoveryRow, policy: ExtractionPolicy, signal: AbortSignal): Promise<VerifiedSaved>;

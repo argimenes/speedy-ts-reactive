@@ -43,7 +43,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
     const factsHost = native && editor.features.nativeKnowledge ? createNativeKnowledgeHost(editor.repository, native, {
       read: () => ({version: 1, opaqueTypes: editor.registry.typesWithCapability('opaque-widget')}),
       subscribe: listener => editor.registry.subscribe(listener),
-    }, {loadedOnly: !editor.features.nativeKnowledgeSaved, progressiveSaved: editor.features.nativeKnowledgeSaved}) : undefined;
+    }, {loadedOnly: !editor.features.nativeKnowledgeSaved, progressiveSaved: editor.features.nativeKnowledgeSaved, sqliteSaved: editor.features.sqliteKnowledge}) : undefined;
     scope.own(() => { void factsHost?.dispose(); });
     const vaults = native ? createDocumentVaults(native, editor.features.sqliteKnowledge ? root => sqliteIndexLifecycle(root,{version:1,opaqueTypes:editor.registry.typesWithCapability('opaque-widget')}) : undefined) : undefined;
     scope.own(() => vaults?.dispose());

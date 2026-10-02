@@ -1,0 +1,398 @@
+
+> speedy-ts-reactive@0.0.0 pretest:sqlite
+> node scripts/build-sqlite-foundation.mjs
+
+
+> speedy-ts-reactive@0.0.0 test:sqlite
+> node --test src/knowledge-sqlite/*.test.mjs
+
+TAP version 13
+# Subtest: save racing a prepared background stage never publishes the old candidate
+ok 1 - save racing a prepared background stage never publishes the old candidate
+  ---
+  duration_ms: 1945.498583
+  ...
+# Subtest: relocate racing a prepared background stage never publishes the old candidate
+ok 2 - relocate racing a prepared background stage never publishes the old candidate
+  ---
+  duration_ms: 2399.781542
+  ...
+# Subtest: recovery racing a prepared background stage never publishes the old candidate
+ok 3 - recovery racing a prepared background stage never publishes the old candidate
+  ---
+  duration_ms: 1096.780667
+  ...
+# Subtest: external racing a prepared background stage never publishes the old candidate
+ok 4 - external racing a prepared background stage never publishes the old candidate
+  ---
+  duration_ms: 872.358459
+  ...
+# Subtest: duplicate-resource racing a prepared background stage never publishes the old candidate
+ok 5 - duplicate-resource racing a prepared background stage never publishes the old candidate
+  ---
+  duration_ms: 737.21775
+  ...
+# Subtest: duplicate-block racing a prepared background stage never publishes the old candidate
+ok 6 - duplicate-block racing a prepared background stage never publishes the old candidate
+  ---
+  duration_ms: 731.133083
+  ...
+# Subtest: worker-failure racing a prepared background stage never publishes the old candidate
+ok 7 - worker-failure racing a prepared background stage never publishes the old candidate
+  ---
+  duration_ms: 717.487167
+  ...
+# Subtest: foreground racing guarded SQL publication releases the critical section safely
+ok 8 - foreground racing guarded SQL publication releases the critical section safely
+  ---
+  duration_ms: 853.921875
+  ...
+# Subtest: worker racing guarded SQL publication releases the critical section safely
+ok 9 - worker racing guarded SQL publication releases the critical section safely
+  ---
+  duration_ms: 676.622417
+  ...
+# Subtest: prepared SQL comparison expires on an external connection change even with unchanged Resource baseline
+ok 10 - prepared SQL comparison expires on an external connection change even with unchanged Resource baseline
+  ---
+  duration_ms: 143.683
+  ...
+# Subtest: external change immediately after SQL commit invalidates publication and retains stale rows as non-current
+ok 11 - external change immediately after SQL commit invalidates publication and retains stale rows as non-current
+  ---
+  duration_ms: 493.560125
+  ...
+# Subtest: worker failure after a committed transaction gives unknown coverage without replay; reopen revalidates
+ok 12 - worker failure after a committed transaction gives unknown coverage without replay; reopen revalidates
+  ---
+  duration_ms: 827.332083
+  ...
+# Subtest: worker init, bounded queue, graceful shutdown, restart and explicit read-only mode
+ok 13 - worker init, bounded queue, graceful shutdown, restart and explicit read-only mode
+  ---
+  duration_ms: 528.53475
+  ...
+# Subtest: one writer, simultaneous read-only inspection, worker termination releases lock
+ok 14 - one writer, simultaneous read-only inspection, worker termination releases lock
+  ---
+  duration_ms: 683.582042
+  ...
+# Subtest: worker timeout fails explicitly and recreation is possible without automatic replay
+ok 15 - worker timeout fails explicitly and recreation is possible without automatic replay
+  ---
+  duration_ms: 270.533
+  ...
+# Subtest: independent vault workers retain distinct identities and release their own leases
+ok 16 - independent vault workers retain distinct identities and release their own leases
+  ---
+  duration_ms: 265.679334
+  ...
+# Subtest: bounded busy failure leaves canonical/derived rows intact and permits explicit retry
+ok 17 - bounded busy failure leaves canonical/derived rows intact and permits explicit retry
+  ---
+  duration_ms: 1331.06875
+  ...
+# Subtest: OS process death rolls back a transaction and WAL reopens with the committed state
+ok 18 - OS process death rolls back a transaction and WAL reopens with the committed state
+  ---
+  duration_ms: 529.586167
+  ...
+# Subtest: audit missing does not prevent current knowledge reads
+ok 19 - audit missing does not prevent current knowledge reads
+  ---
+  duration_ms: 204.664542
+  ...
+# Subtest: audit corrupt does not prevent current knowledge reads
+ok 20 - audit corrupt does not prevent current knowledge reads
+  ---
+  duration_ms: 199.043375
+  ...
+# Subtest: audit wrong-vault does not prevent current knowledge reads
+ok 21 - audit wrong-vault does not prevent current knowledge reads
+  ---
+  duration_ms: 224.430292
+  ...
+# Subtest: audit future-version does not prevent current knowledge reads
+ok 22 - audit future-version does not prevent current knowledge reads
+  ---
+  duration_ms: 184.469541
+  ...
+# Subtest: current corrupt is rejected, never reset
+ok 23 - current corrupt is rejected, never reset
+  ---
+  duration_ms: 175.812959
+  ...
+# Subtest: current future-version is rejected, never reset
+ok 24 - current future-version is rejected, never reset
+  ---
+  duration_ms: 172.042292
+  ...
+# Subtest: current schema-drift is rejected, never reset
+ok 25 - current schema-drift is rejected, never reset
+  ---
+  duration_ms: 165.106625
+  ...
+# Subtest: missing current database next to audit is not recreated, even by init
+ok 26 - missing current database next to audit is not recreated, even by init
+  ---
+  duration_ms: 145.645459
+  ...
+# Subtest: initialization is explicit and read-only cannot initialize or restore
+ok 27 - initialization is explicit and read-only cannot initialize or restore
+  ---
+  duration_ms: 278.083417
+  ...
+# Subtest: rejects symlink home before SQLite touches it
+ok 28 - rejects symlink home before SQLite touches it
+  ---
+  duration_ms: 188.877375
+  ...
+# Subtest: rejects symlink mutable.db before SQLite touches it
+ok 29 - rejects symlink mutable.db before SQLite touches it
+  ---
+  duration_ms: 179.211375
+  ...
+# Subtest: rejects symlink mutable.db-wal before SQLite touches it
+ok 30 - rejects symlink mutable.db-wal before SQLite touches it
+  ---
+  duration_ms: 204.494833
+  ...
+# Subtest: rejects symlink writer.lock before SQLite touches it
+ok 31 - rejects symlink writer.lock before SQLite touches it
+  ---
+  duration_ms: 167.466583
+  ...
+# Subtest: rejects hard-linked canonical databases
+ok 32 - rejects hard-linked canonical databases
+  ---
+  duration_ms: 191.229083
+  ...
+# Subtest: WAL-aware online backup restores current knowledge, independent audit and explicit stale derived rows
+ok 33 - WAL-aware online backup restores current knowledge, independent audit and explicit stale derived rows
+  ---
+  duration_ms: 494.308208
+  ...
+# Subtest: restore rejects corrupted snapshot bytes before publication
+ok 34 - restore rejects corrupted snapshot bytes before publication
+  ---
+  duration_ms: 238.440791
+  ...
+# Subtest: backup remains available without audit and does not invent missing history on restore
+ok 35 - backup remains available without audit and does not invent missing history on restore
+  ---
+  duration_ms: 347.747041
+  ...
+# Subtest: CLI disposable reset is guarded against user files, ordinary vaults and active writers
+ok 36 - CLI disposable reset is guarded against user files, ordinary vaults and active writers
+  ---
+  duration_ms: 2066.537666
+  ...
+# Subtest: two leases share one worker; status uses current fence, release is independent and restart is unknown
+ok 37 - two leases share one worker; status uses current fence, release is independent and restart is unknown
+  ---
+  duration_ms: 810.776042
+  ...
+# Subtest: unknown candidate cannot turn missing file into deletion; refresh recovers only after complete evidence
+ok 38 - unknown candidate cannot turn missing file into deletion; refresh recovers only after complete evidence
+  ---
+  duration_ms: 394.819917
+  ...
+# Subtest: foreground bypasses paused background staging, keeps publication successful and resumes from authoritative bytes
+ok 39 - foreground bypasses paused background staging, keeps publication successful and resumes from authoritative bytes
+  ---
+  duration_ms: 317.532958
+  ...
+# Subtest: storage still works after SQL worker failure; no automatic transaction replay
+ok 40 - storage still works after SQL worker failure; no automatic transaction replay
+  ---
+  duration_ms: 333.810375
+  ...
+# Subtest: read-only missing/existing database never initializes or reconciles and cannot claim coverage
+ok 41 - read-only missing/existing database never initializes or reconciles and cannot claim coverage
+  ---
+  duration_ms: 433.125542
+  ...
+# Subtest: confines roots, rejects overlaps and conflicting policy, and expires abandoned leases
+ok 42 - confines roots, rejects overlaps and conflicting policy, and expires abandoned leases
+  ---
+  duration_ms: 483.6715
+  ...
+# Subtest: authoritative legacy reconcile, changed-one-Block diff, external edit, identity-preserving move and restart
+ok 43 - authoritative legacy reconcile, changed-one-Block diff, external edit, identity-preserving move and restart
+  ---
+  duration_ms: 1002.056209
+  ...
+# Subtest: confirmed deletion removes only derived source rows; canonical knowledge and other incoming assertions survive
+ok 44 - confirmed deletion removes only derived source rows; canonical knowledge and other incoming assertions survive
+  ---
+  duration_ms: 461.1355
+  ...
+# Subtest: malformed discovery is incomplete, never deletion authority
+ok 45 - malformed discovery is incomplete, never deletion authority
+  ---
+  duration_ms: 365.218875
+  ...
+# Subtest: duplicate discovery is incomplete, never deletion authority
+ok 46 - duplicate discovery is incomplete, never deletion authority
+  ---
+  duration_ms: 304.241209
+  ...
+# Subtest: duplicate-block discovery is incomplete, never deletion authority
+ok 47 - duplicate-block discovery is incomplete, never deletion authority
+  ---
+  duration_ms: 308.203334
+  ...
+# Subtest: symlink discovery is incomplete, never deletion authority
+ok 48 - symlink discovery is incomplete, never deletion authority
+  ---
+  duration_ms: 234.193125
+  ...
+# Subtest: inspection-failure discovery is incomplete, never deletion authority
+ok 49 - inspection-failure discovery is incomplete, never deletion authority
+  ---
+  duration_ms: 222.063625
+  ...
+# Subtest: edit between staging and commit cannot publish stale or partial rows
+ok 50 - edit between staging and commit cannot publish stale or partial rows
+  ---
+  duration_ms: 477.239
+  ...
+# Subtest: new-duplicate between staging and commit cannot publish stale or partial rows
+ok 51 - new-duplicate between staging and commit cannot publish stale or partial rows
+  ---
+  duration_ms: 284.028583
+  ...
+# Subtest: cancel between staging and commit cannot publish stale or partial rows
+ok 52 - cancel between staging and commit cannot publish stale or partial rows
+  ---
+  duration_ms: 266.416458
+  ...
+# Subtest: file reappearance during confirmed deletion prevents removal
+ok 53 - file reappearance during confirmed deletion prevents removal
+  ---
+  duration_ms: 241.64775
+  ...
+# Subtest: worker stage tokens expire on supersession and do not replay across a changed SQL baseline
+ok 54 - worker stage tokens expire on supersession and do not replay across a changed SQL baseline
+  ---
+  duration_ms: 207.316959
+  ...
+# Subtest: rebuild CLI uses authoritative files and clears old issues only after successful reconciliation
+ok 55 - rebuild CLI uses authoritative files and clears old issues only after successful reconciliation
+  ---
+  duration_ms: 673.019167
+  ...
+# Subtest: read-only mode rejects indexing and preserves database bytes
+ok 56 - read-only mode rejects indexing and preserves database bytes
+  ---
+  duration_ms: 282.95525
+  ...
+# Subtest: managed native pair relocation changes only SQL location; native, Markdown and receipt generations stay unchanged
+ok 57 - managed native pair relocation changes only SQL location; native, Markdown and receipt generations stay unchanged
+  ---
+  duration_ms: 1228.141417
+  ...
+# Subtest: external native move is not silently rebound; pair pending is not index publication evidence
+ok 58 - external native move is not silently rebound; pair pending is not index publication evidence
+  ---
+  duration_ms: 615.249583
+  ...
+# Subtest: pending native/Markdown publication preserves the previous projection until recovery
+ok 59 - pending native/Markdown publication preserves the previous projection until recovery
+  ---
+  duration_ms: 891.497209
+  ...
+# Subtest: fresh/repeated migration preserves identities, checksums and independent databases
+ok 60 - fresh/repeated migration preserves identities, checksums and independent databases
+  ---
+  duration_ms: 57.70925
+  ...
+# Subtest: rejects future version without mutating database
+ok 61 - rejects future version without mutating database
+  ---
+  duration_ms: 9.757083
+  ...
+# Subtest: rejects version disagreement without mutating database
+ok 62 - rejects version disagreement without mutating database
+  ---
+  duration_ms: 49.26175
+  ...
+# Subtest: rejects checksum without mutating database
+ok 63 - rejects checksum without mutating database
+  ---
+  duration_ms: 66.535584
+  ...
+# Subtest: rejects kind without mutating database
+ok 64 - rejects kind without mutating database
+  ---
+  duration_ms: 11.990083
+  ...
+# Subtest: rejects value grammar without mutating database
+ok 65 - rejects value grammar without mutating database
+  ---
+  duration_ms: 9.876375
+  ...
+# Subtest: rejects application id without mutating database
+ok 66 - rejects application id without mutating database
+  ---
+  duration_ms: 9.728292
+  ...
+# Subtest: rejects missing index without mutating database
+ok 67 - rejects missing index without mutating database
+  ---
+  duration_ms: 18.618458
+  ...
+# Subtest: rejects extra schema without mutating database
+ok 68 - rejects extra schema without mutating database
+  ---
+  duration_ms: 54.022833
+  ...
+# Subtest: failed future migration rolls back DDL, data and migration metadata together
+ok 69 - failed future migration rolls back DDL, data and migration metadata together
+  ---
+  duration_ms: 13.747375
+  ...
+# Subtest: successful future migration is transactional and repeatable; old runner rejects it
+ok 70 - successful future migration is transactional and repeatable; old runner rejects it
+  ---
+  duration_ms: 32.262167
+  ...
+# Subtest: Entity identity, alias origins, relationship endpoints and strict authored-value storage
+ok 71 - Entity identity, alias origins, relationship endpoints and strict authored-value storage
+  ---
+  duration_ms: 16.563292
+  ...
+# Subtest: source consistency, unresolved targets, linked segments and half-open ranges
+ok 72 - source consistency, unresolved targets, linked segments and half-open ranges
+  ---
+  duration_ms: 13.634792
+  ...
+# Subtest: FTS trigger/update/delete/rebuild/rollback parity and inline-object boundaries
+ok 73 - FTS trigger/update/delete/rebuild/rollback parity and inline-object boundaries
+  ---
+  duration_ms: 15.244292
+  ...
+# Subtest: derived clearing preserves canonical knowledge and pending audit; never claims repopulation
+ok 74 - derived clearing preserves canonical knowledge and pending audit; never claims repopulation
+  ---
+  duration_ms: 19.479875
+  ...
+# Subtest: representative query plans have indexed access in both directions and for ranges
+ok 75 - representative query plans have indexed access in both directions and for ranges
+  ---
+  duration_ms: 12.630541
+  ...
+# Subtest: audit constraints and rollback are isolated from current state
+ok 76 - audit constraints and rollback are isolated from current state
+  ---
+  duration_ms: 19.838625
+  ...
+1..76
+# tests 76
+# suites 0
+# pass 76
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12002.906917

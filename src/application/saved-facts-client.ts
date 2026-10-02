@@ -19,6 +19,7 @@ export class SavedFactsClient {
   signal?.throwIfAborted();this.metrics.transportMs+=performance.now()-start;this.metrics.bytes+=bytes;this.metrics.requests++;
   const json=JSON.parse(parts.join(''));if(!r.ok||!json.Success)throw Error(json.Error??'Saved request failed');return json.Data;
  }
+ async current(signal:AbortSignal){if(!this.scope)throw Error('Saved scope unavailable');const scope=this.scope;const result=await this.request('current',{scope},signal);if(this.scope!==scope||result.scope!==scope)throw Error('Saved scope changed');}
  failure(){return this.failed;}
  reset(){const scope=this.scope;this.scope=undefined;this.signature='';this.policy='';this.failed=undefined;this.buffered.clear();this.serial++;if(scope)void this.request('release',{scope}).catch(()=>{});}
  async prepare(policy:ExtractionPolicy,signal:AbortSignal) {

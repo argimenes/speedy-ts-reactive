@@ -102,7 +102,9 @@ export class NativeKnowledgeHost {
         const owned = scope;
         const check = () => { if (released || !owned.alive)
             throw Error('Knowledge lease closed'); };
+        const validateSaved = async (signal?:AbortSignal) => {check();if([...owned.slots.values()].some(s=>s.authority==='saved'&&s.entry&&this.index.eligible(s.entry)))await owned.port.validateSaved?.(signal??new AbortController().signal);check();};
         return {
+            validateSaved,
             savedMetrics: () => owned.port.savedMetrics?.(),
             generation: () => { check(); const epoch=this.epoch, version=owned.epoch; return () => { check(); if(epoch!==this.epoch || version!==owned.epoch) throw Error('Stale Knowledge query generation'); }; },
             requestSaved: (id: string) => { check(); if (this.options.loadedOnly) throw Error('Saved coverage is disabled'); let s = owned.slots.get(id); if (!s) {
@@ -111,9 +113,9 @@ export class NativeKnowledgeHost {
                 owned.slots.set(id, s = this.empty());
                 this.resourceSlots++;
             } s.savedWanted = true; this.invalidate(); },
-            coverage: () => { check(); return { complete: !this.lastError && !owned.coverageError && owned.completedEpoch === this.epoch && owned.port.snapshot().complete && [...owned.slots.values()].every(s => !!s.entry && this.index.eligible(s.entry) && !s.entry.facts.diagnostics.length), diagnostic: owned.coverageError ?? this.lastError, resources: [...owned.slots].map(([id, s]) => ({ id, evidence: s.authority === 'saved' ? s.savedEvidence : undefined, state: s.entry && this.index.eligible(s.entry) ? s.state : 'unavailable', error: s.error ?? (s.entry && !this.index.eligible(s.entry) ? 'Observation pending' : undefined) })), retainedBytes: this.index.retainedBytes }; },
-            prepare: async (signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.prepare(owned, this.pause, signal, !!this.options.progressiveSaved); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
-            backlinks: async (id: string, signal?: AbortSignal) => { check(); const t = performance.now(); const r = await this.index.backlinks(owned, id, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
+            coverage: () => { check(); return { savedProvider:owned.port.savedCoverage?.(), complete: !this.lastError && !owned.coverageError && owned.completedEpoch === this.epoch && owned.port.snapshot().complete && [...owned.slots.values()].every(s => !!s.entry && this.index.eligible(s.entry) && !s.entry.facts.diagnostics.length), diagnostic: owned.coverageError ?? this.lastError, resources: [...owned.slots].map(([id, s]) => ({ id, evidence: s.authority === 'saved' ? s.savedEvidence : undefined, state: s.entry && this.index.eligible(s.entry) ? s.state : 'unavailable', error: s.error ?? (s.entry && !this.index.eligible(s.entry) ? 'Observation pending' : undefined) })), retainedBytes: this.index.retainedBytes }; },
+            prepare: async (signal?: AbortSignal) => { check(); await validateSaved(signal); const t = performance.now(); const r = await this.index.prepare(owned, this.pause, signal, !!this.options.progressiveSaved); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
+            backlinks: async (id: string, signal?: AbortSignal) => { check(); await validateSaved(signal); const t = performance.now(); const r = await this.index.backlinks(owned, id, this.pause, signal); check(); this.metrics.queryMs += performance.now() - t; const current=r.current; return { ...r, current: () => { check(); current(); } }; },
             release: () => { if (released)
                 return; released = true; if (--owned.users)
                 return; this.index.closeScope(owned); this.retiredScopes.add(owned); owned.epoch++; owned.stop(); this.resourceSlots -= owned.slots.size; this.scopes.delete(port.root); this.invalidate(); if (!this.scopes.size) {

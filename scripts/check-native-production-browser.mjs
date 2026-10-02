@@ -54,20 +54,21 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const make=()=>new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{publicHostedVersion:false}});
  const setup=()=>{const session=make(),editor=session.editor;editor.commandRegistry.execute('flint.open',{targetKey:session.projection.state.rootKey,args:undefined});const dispose=render(()=>createComponent(WorkspacePresentationView,{session}),host);editor.installGateway(document);return {session,editor,dispose}};
  window.proof={host,setup,...setup(),nativeDocumentSession,codec};
- proof.click=text=>{const button=[...host.querySelectorAll('button')].find(b=>b.textContent===text);if(!button)throw Error('Missing '+text);button.click()};
+ proof.click=text=>{if(text==='Files'){const menu=host.querySelector('[aria-label="Flint application menu"]');if(menu.getAttribute('aria-expanded')!=='true')menu.click();}const button=[...host.querySelectorAll('button')].find(b=>b.textContent===text);if(!button)throw Error('Missing '+text);button.click()};
  proof.field=(label,value)=>{const input=host.querySelector('input[aria-label="'+label+'"]');input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));};
  proof.wait=async predicate=>{for(let i=0;i<150;i++){if(predicate())return;await new Promise(r=>setTimeout(r,30));}throw Error('UI wait timed out: '+host.textContent.slice(0,1700))};
  })()`);
  const click=label=>evaluate(`proof.click(${JSON.stringify(label)})`);
  const field=(label,value)=>evaluate(`proof.field(${JSON.stringify(label)},${JSON.stringify(value)})`);
  const wait=predicate=>evaluate(`proof.wait(()=>(${predicate}))`);
- await click('Files');await field('Native filename','rich.mutable.json');await click('List files');await wait(`proof.host.querySelector('select').textContent.includes('rich.mutable.json')`);
- check('real server listing offers native resources and explicit Markdown import',await evaluate(`proof.host.querySelector('select').textContent.includes('standalone.md')`));
+ await click('Files');await field('Native filename','rich.mutable.json');await click('List files');await wait(`proof.host.querySelector('[aria-label="Server files"]').textContent.includes('rich.mutable.json')`);
+ check('real server listing offers native resources and explicit Markdown import',await evaluate(`proof.host.querySelector('[aria-label="Server files"]').textContent.includes('standalone.md')`));
  await click('Open native');await wait(`!!proof.nativeDocumentSession(proof.editor).location('resource')`);
+ await click('Close storage');
  const resourceId='resource';
  await evaluate(`proof.resourceId=${JSON.stringify(resourceId)};proof.source=Object.values(proof.editor.repository.state.contents).find(c=>c.viewType==='document-block'&&((c.payload.metadata??{}).documentId??c.payload.id)===proof.resourceId);proof.rootKey=proof.source.key;`);
  check('native admission retains one canonical resource',await evaluate(`!!proof.source&&Object.values(proof.editor.repository.state.contents).filter(c=>c.viewType==='document-block'&&((c.payload.metadata??{}).documentId??c.payload.id)===proof.resourceId).length===1`));
- await evaluate(`proof.editor.commandRegistry.execute('flint.open',{targetKey:proof.session.projection.state.rootKey,args:undefined});for(const vault of proof.host.querySelectorAll('.flint-application__vault'))[...vault.querySelectorAll('button')].find(b=>b.textContent==='Untitled').click();`);
+ await evaluate(`proof.editor.commandRegistry.execute('flint.open',{targetKey:proof.session.projection.state.rootKey,args:undefined});for(const shell of proof.host.querySelectorAll('.flint-application')){const choice=[...shell.querySelectorAll('.flint-open-document')].find(b=>b.textContent==='Untitled');choice?.click();}`);
  check('two Flint Windows share native content through independent occurrences',await evaluate(`[...proof.editor.projections.values()].filter(p=>p!==proof.session.projection&&p.state.nodes[p.state.rootKey]?.contentKey===proof.rootKey).length===2`));
  await evaluate(`(()=>{const projection=[...proof.editor.projections.values()].find(p=>p!==proof.session.projection&&p.state.nodes[p.state.rootKey]?.contentKey===proof.rootKey);const n=Object.values(projection.state.nodes).find(n=>n.viewType==='standoff-editor-block');proof.textKey=n.key;proof.editor.focus.request(n.key);proof.editor.mounts.get(n.key).restoreInlineSelection({anchor:0,head:0})})()`);
  await send('Input.insertText',{text:'Production edit '},sessionId);
@@ -85,6 +86,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  // Reopen in a fresh shared repository through the actual file UI.
  await evaluate(`proof.dispose();proof.session.dispose();Object.assign(proof,proof.setup());void 0;`);
  await click('Files');await field('Native filename','rich.mutable.json');await click('Open native');await wait(`!!proof.nativeDocumentSession(proof.editor).location('resource')`);
+ await click('Close storage');
  check('fresh Open restores native authored state without Markdown reconstruction',await evaluate(`proof.host.textContent.includes('Captured Production edit')`));
  // Restart the actual server process; the durable pair receipt remains usable.
  backend.kill('SIGKILL');await new Promise(r=>backend.once('exit',r));await startBackend();
@@ -95,13 +97,14 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await click('Save Document');
  let held=false;for(let i=0;i<100;i++){if((await(await control('status')).json()).entered){held=true;break;}await new Promise(r=>setTimeout(r,20));}assert.equal(held,true,'server reached the partial-publication checkpoint');
  backend.kill('SIGKILL');await new Promise(r=>backend.once('exit',r));await startBackend();
+ await click('Files');
  await wait(`[...proof.host.querySelectorAll('button')].find(b=>b.textContent==='Retry / Recover').disabled===false`);
  await click('Retry / Recover');await wait(`proof.host.textContent.includes('Saved native Document and Markdown')`);
  check('UI retry recovers after actual server death during partial publication',(await readFile(path.join(storeRoot,'rich.md'),'utf8')).includes('Restart recovery'));
 
  await field('Native filename','standalone.md');await click('Import Markdown');await wait(`proof.host.textContent.includes('native bold')`);
  check('explicit Markdown import creates a separate native candidate',await evaluate(`proof.host.textContent.includes('native bold')`));
- await field('Native filename','candidate.mutable.json');await click('Save Document');await wait(`proof.host.textContent.includes('Saved native Document and Markdown')`);
+ await field('Native filename','candidate.mutable.json');await click('Save to selected destination');await wait(`proof.host.textContent.includes('Saved native Document and Markdown')`);
  check('imported candidate saves natively without changing source Markdown',(await readFile(path.join(storeRoot,'standalone.md'),'utf8'))==='# Imported\n\n**native bold**');
  await writeFile(path.join(artifacts,'saved.mutable.json'),await readFile(path.join(storeRoot,'rich.mutable.json')));await writeFile(path.join(artifacts,'saved.md'),await readFile(path.join(storeRoot,'rich.md')));
  const screenshot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'native-save-open.png'),Buffer.from(screenshot.data,'base64'));

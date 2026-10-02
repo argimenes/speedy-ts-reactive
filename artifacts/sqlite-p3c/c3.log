@@ -1,0 +1,25 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:21479) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"requestId":"21557.416","timestamp":244273.952325,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{
+  "passed": 16,
+  "checks": [
+    "native reference in a different real directory produces one backlink",
+    "pair/folder relocation and title changes refresh labels while preserving reference identity",
+    "source remains loaded without a mounted occurrence",
+    "canonical search finds the unmounted source without mounting it",
+    "backlink follows source mention in invoking Window without moving the other Window",
+    "backlink query/navigation creates no canonical mutation or History event",
+    "Grouping retains invoking occurrence scope with Facts panels active",
+    "IME commits native text while Facts panels observe",
+    "reference removal and Undo/Redo update the other Window backlinks",
+    "Refresh reconstructs external directory changes without a hierarchy catalog",
+    "closing one panel leaves the other consumer active",
+    "fresh reopen derives the saved source backlink without background Open",
+    "saved backlink keyboard activation admits only its source and restores native selection",
+    "reopened source retains native title/tags and the new physical binding",
+    "native files rebuild the same backlink after restart with keyboard activation and source focus",
+    "no uncaught browser exceptions"
+  ]
+}

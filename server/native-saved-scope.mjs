@@ -24,6 +24,7 @@ export class NativeSavedScopes {
   }finally{this.pending--;}
  }
  async current(s,signal){signal?.throwIfAborted();if(s.expires<Date.now()||await this.store.readScopeFence(s.vault,signal)!==s.fence)fail('Saved scope evidence expired or changed; Refresh required');}
+ async verify({scope},signal){this.prune();const s=this.scopes.get(scope);if(!s)fail('Saved scope missing or expired');await this.current(s,signal);if(this.scopes.get(scope)!==s)fail('Saved scope released');return {scope};}
  async batch({scope,ids},signal){
   this.prune();const s=this.scopes.get(scope);if(!s||s.busy)fail('Saved scope missing, expired or busy');
   if(!Array.isArray(ids)||!ids.length||ids.length>this.options.batchSize||new Set(ids).size!==ids.length||ids.some(id=>typeof id!=='string'||!s.rows.has(id)))fail('Invalid bounded saved request');

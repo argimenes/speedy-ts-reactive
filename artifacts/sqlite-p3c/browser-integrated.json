@@ -1,0 +1,766 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.95",
+    "revision": "@05d469856e75794131cc2e5d9b2f6b6f10a70388",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.19"
+  },
+  "method": "Real default-on loaded Facts composition, saved coverage explicitly enabled, actual managed server routes and Flint UI. Qualification-only Vite transform exposes read-only host measurements.",
+  "resources": [
+    {
+      "count": 3,
+      "base": {
+        "usedSize": 6033328,
+        "totalSize": 6815744,
+        "embedderHeapUsedSize": 985144,
+        "backingStorageSize": 5932460
+      },
+      "setup": {
+        "constructionMs": 172.40000000596046
+      },
+      "discovery": {
+        "result": {
+          "discoveryMs": 219.2999999821186,
+          "state": {
+            "resources": 0,
+            "complete": false,
+            "bytes": 0,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0,
+              "observationMs": 0,
+              "indexingMs": 0,
+              "cleanupMs": 0.7999999821186066,
+              "savedMs": 0,
+              "scopeMs": 0,
+              "queryMs": 1.4000000059604645,
+              "observations": 0,
+              "savedReads": 0,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 0,
+              "requests": 0,
+              "transportMs": 0,
+              "decodeMs": 0,
+              "workerMs": 0,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 0,
+              "sqlReadMs": 0,
+              "bytes": 0,
+              "fenceMs": 0,
+              "readHashMs": 0,
+              "workerHeapPeak": 0,
+              "serverHeapPeak": 0
+            },
+            "savedProvider": {
+              "provider": "sqlite",
+              "state": "unknown"
+            },
+            "bindings": 0
+          }
+        },
+        "elapsedMs": 250.09999999403954,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 17.399999976158142,
+        "maxFrameGapMs": 16.800000000000182,
+        "frames": 16
+      },
+      "partial": {
+        "result": {
+          "elapsedMs": 103.39999997615814,
+          "state": {
+            "resources": 3,
+            "complete": true,
+            "bytes": 316614,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0.4000000059604645,
+              "observationMs": 0,
+              "indexingMs": 4.500000029802322,
+              "cleanupMs": 0.7999999821186066,
+              "savedMs": 26,
+              "scopeMs": 143.5,
+              "queryMs": 1.4000000059604645,
+              "observations": 0,
+              "savedReads": 3,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 19.207542000000103,
+              "requests": 2,
+              "transportMs": 48.5,
+              "decodeMs": 1.2000000178813934,
+              "workerMs": 10.6308760000029,
+              "queueMs": 0.06704199999876437,
+              "validationMs": 5.873333999999886,
+              "factsMs": 4.202375999999276,
+              "sqlReadMs": 0,
+              "bytes": 48726,
+              "fenceMs": 2.094374999998763,
+              "readHashMs": 1.98233099999743,
+              "workerHeapPeak": 8548328,
+              "serverHeapPeak": 10131144
+            },
+            "savedProvider": {
+              "provider": "file",
+              "state": "verified",
+              "reason": "SQL saved coverage unavailable; independently verified file fallback. Error: Error: SQL saved scope unknown or incomplete; Refresh required"
+            },
+            "bindings": 0
+          },
+          "query": {
+            "elapsedMs": 45.5,
+            "hits": 36,
+            "status": "36 results · 3/3 Documents available. Verified saved/live coverage complete.",
+            "savedStatus": "Saved knowledge: verified file fallback; SQLite unavailable. Refresh to retry SQLite."
+          }
+        },
+        "elapsedMs": 179.89999997615814,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 7.699999988079071,
+        "maxFrameGapMs": 16.699999999999818,
+        "frames": 11
+      },
+      "initialComplete": {
+        "result": {
+          "elapsedMs": 0,
+          "state": {
+            "resources": 3,
+            "complete": true,
+            "bytes": 316614,
+            "metrics": {
+              "invalidations": 1,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0.4000000059604645,
+              "observationMs": 0,
+              "indexingMs": 4.500000029802322,
+              "cleanupMs": 0.7999999821186066,
+              "savedMs": 26,
+              "scopeMs": 143.5,
+              "queryMs": 1.5,
+              "observations": 0,
+              "savedReads": 3,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 19.207542000000103,
+              "requests": 4,
+              "transportMs": 59.900000005960464,
+              "decodeMs": 1.2000000178813934,
+              "workerMs": 10.6308760000029,
+              "queueMs": 0.06704199999876437,
+              "validationMs": 5.873333999999886,
+              "factsMs": 4.202375999999276,
+              "sqlReadMs": 0,
+              "bytes": 48870,
+              "fenceMs": 2.094374999998763,
+              "readHashMs": 1.98233099999743,
+              "workerHeapPeak": 8548328,
+              "serverHeapPeak": 10131144
+            },
+            "savedProvider": {
+              "provider": "file",
+              "state": "verified",
+              "reason": "SQL saved coverage unavailable; independently verified file fallback. Error: Error: SQL saved scope unknown or incomplete; Refresh required"
+            },
+            "bindings": 0
+          }
+        },
+        "elapsedMs": 31.099999994039536,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.9000000059604645,
+        "maxFrameGapMs": 16.600000000000364,
+        "frames": 2
+      },
+      "sqlVerification": {
+        "resources": 3,
+        "complete": true,
+        "bytes": 316614,
+        "metrics": {
+          "invalidations": 3,
+          "invalidationMs": 0,
+          "maxInvalidationMs": 0,
+          "boundaryMs": 0.5999999940395355,
+          "observationMs": 0,
+          "indexingMs": 12.300000071525574,
+          "cleanupMs": 1.1999999582767487,
+          "savedMs": 181.9000000357628,
+          "scopeMs": 237,
+          "queryMs": 1.5999999940395355,
+          "observations": 0,
+          "savedReads": 6,
+          "maxObservationSliceMs": 0
+        },
+        "saved": {
+          "discoveryMs": 52.431790999999066,
+          "requests": 13,
+          "transportMs": 361.80000004172325,
+          "decodeMs": 1.2000000476837158,
+          "workerMs": 24.031834000001254,
+          "queueMs": 0,
+          "validationMs": 0,
+          "factsMs": 8.485749999999825,
+          "sqlReadMs": 14.349291999998968,
+          "bytes": 55424,
+          "fenceMs": 3.230415999998513,
+          "readHashMs": 5.835250000000087,
+          "workerHeapPeak": 48162616,
+          "serverHeapPeak": 10487688
+        },
+        "savedProvider": {
+          "provider": "sqlite",
+          "state": "verified"
+        },
+        "bindings": 0
+      },
+      "coldSearch": {
+        "result": {
+          "elapsedMs": 42.89999997615814,
+          "hits": 36,
+          "status": "36 results · 3/3 Documents available. Verified saved/live coverage complete.",
+          "savedStatus": "Saved knowledge: verified SQLite index."
+        },
+        "elapsedMs": 73.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.800000011920929,
+        "maxFrameGapMs": 16.700000000000728,
+        "frames": 5
+      },
+      "warmSearch": [
+        {
+          "result": {
+            "elapsedMs": 42.900000005960464,
+            "hits": 36,
+            "status": "36 results · 3/3 Documents available. Verified saved/live coverage complete.",
+            "savedStatus": "Saved knowledge: verified SQLite index."
+          },
+          "elapsedMs": 73.59999999403954,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 5.9000000059604645,
+          "maxFrameGapMs": 16.700000000000728,
+          "frames": 5
+        },
+        {
+          "result": {
+            "elapsedMs": 43.5,
+            "hits": 36,
+            "status": "36 results · 3/3 Documents available. Verified saved/live coverage complete.",
+            "savedStatus": "Saved knowledge: verified SQLite index."
+          },
+          "elapsedMs": 74.30000001192093,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 6.199999988079071,
+          "maxFrameGapMs": 16.700000000000728,
+          "frames": 4
+        },
+        {
+          "result": {
+            "elapsedMs": 22,
+            "hits": 36,
+            "status": "36 results · 3/3 Documents available. Verified saved/live coverage complete.",
+            "savedStatus": "Saved knowledge: verified SQLite index."
+          },
+          "elapsedMs": 52.900000005960464,
+          "longTasks": [],
+          "maxHeartbeatGapMs": 5.799999982118607,
+          "maxFrameGapMs": 16.700000000000728,
+          "frames": 4
+        }
+      ],
+      "sharing": {
+        "elapsedMs": 222.09999999403954,
+        "before": {
+          "resources": 3,
+          "complete": true,
+          "bytes": 316614,
+          "metrics": {
+            "invalidations": 3,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 0.5999999940395355,
+            "observationMs": 0,
+            "indexingMs": 12.300000071525574,
+            "cleanupMs": 1.1999999582767487,
+            "savedMs": 181.9000000357628,
+            "scopeMs": 237,
+            "queryMs": 1.699999988079071,
+            "observations": 0,
+            "savedReads": 6,
+            "maxObservationSliceMs": 0
+          },
+          "saved": {
+            "discoveryMs": 52.431790999999066,
+            "requests": 22,
+            "transportMs": 432.1000000536442,
+            "decodeMs": 1.2000000476837158,
+            "workerMs": 24.031834000001254,
+            "queueMs": 0,
+            "validationMs": 0,
+            "factsMs": 8.485749999999825,
+            "sqlReadMs": 14.349291999998968,
+            "bytes": 61805,
+            "fenceMs": 3.230415999998513,
+            "readHashMs": 5.835250000000087,
+            "workerHeapPeak": 48162616,
+            "serverHeapPeak": 10487688
+          },
+          "savedProvider": {
+            "provider": "sqlite",
+            "state": "verified"
+          },
+          "bindings": 0
+        },
+        "after": {
+          "resources": 3,
+          "complete": true,
+          "bytes": 316614,
+          "metrics": {
+            "invalidations": 3,
+            "invalidationMs": 0,
+            "maxInvalidationMs": 0,
+            "boundaryMs": 0.5999999940395355,
+            "observationMs": 0,
+            "indexingMs": 12.300000071525574,
+            "cleanupMs": 1.1999999582767487,
+            "savedMs": 181.9000000357628,
+            "scopeMs": 237,
+            "queryMs": 1.699999988079071,
+            "observations": 0,
+            "savedReads": 6,
+            "maxObservationSliceMs": 0
+          },
+          "saved": {
+            "discoveryMs": 52.431790999999066,
+            "requests": 23,
+            "transportMs": 439.00000005960464,
+            "decodeMs": 1.2000000476837158,
+            "workerMs": 24.031834000001254,
+            "queueMs": 0,
+            "validationMs": 0,
+            "factsMs": 8.485749999999825,
+            "sqlReadMs": 14.349291999998968,
+            "bytes": 62514,
+            "fenceMs": 3.230415999998513,
+            "readHashMs": 5.835250000000087,
+            "workerHeapPeak": 48162616,
+            "serverHeapPeak": 10487688
+          },
+          "savedProvider": {
+            "provider": "sqlite",
+            "state": "verified"
+          },
+          "bindings": 0
+        }
+      },
+      "activation": {
+        "result": {
+          "elapsedMs": 1556.2999999821186,
+          "rows": {
+            "before": 3,
+            "retained": 2
+          },
+          "before": {
+            "resources": 3,
+            "complete": true,
+            "bytes": 316614,
+            "metrics": {
+              "invalidations": 3,
+              "invalidationMs": 0,
+              "maxInvalidationMs": 0,
+              "boundaryMs": 0.5999999940395355,
+              "observationMs": 0,
+              "indexingMs": 12.300000071525574,
+              "cleanupMs": 1.1999999582767487,
+              "savedMs": 181.9000000357628,
+              "scopeMs": 237,
+              "queryMs": 1.699999988079071,
+              "observations": 0,
+              "savedReads": 6,
+              "maxObservationSliceMs": 0
+            },
+            "saved": {
+              "discoveryMs": 52.431790999999066,
+              "requests": 25,
+              "transportMs": 454.3000000715256,
+              "decodeMs": 1.2000000476837158,
+              "workerMs": 24.031834000001254,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 8.485749999999825,
+              "sqlReadMs": 14.349291999998968,
+              "bytes": 63932,
+              "fenceMs": 3.230415999998513,
+              "readHashMs": 5.835250000000087,
+              "workerHeapPeak": 48162616,
+              "serverHeapPeak": 10487688
+            },
+            "savedProvider": {
+              "provider": "sqlite",
+              "state": "verified"
+            },
+            "bindings": 0
+          },
+          "after": {
+            "resources": 1,
+            "complete": false,
+            "bytes": 317884,
+            "metrics": {
+              "invalidations": 7,
+              "invalidationMs": 0.20000001788139343,
+              "maxInvalidationMs": 0.10000002384185791,
+              "boundaryMs": 8.099999994039536,
+              "observationMs": 8.5,
+              "indexingMs": 14.90000006556511,
+              "cleanupMs": 91.89999997615814,
+              "savedMs": 181.9000000357628,
+              "scopeMs": 522.5,
+              "queryMs": 33.29999998211861,
+              "observations": 1,
+              "savedReads": 6,
+              "maxObservationSliceMs": 0.800000011920929
+            },
+            "saved": {
+              "discoveryMs": 308.1714159999974,
+              "requests": 33,
+              "transportMs": 846.1000000238419,
+              "decodeMs": 1.2000000476837158,
+              "workerMs": 24.031834000001254,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 8.485749999999825,
+              "sqlReadMs": 14.349291999998968,
+              "bytes": 67205,
+              "fenceMs": 3.230415999998513,
+              "readHashMs": 5.835250000000087,
+              "workerHeapPeak": 48162616,
+              "serverHeapPeak": 10487688
+            },
+            "savedProvider": {
+              "provider": "sqlite",
+              "state": "verified"
+            },
+            "bindings": 1
+          },
+          "id": "resource-0",
+          "otherBefore": [
+            "90aca0a9-d78b-4bb9-a2c4-e2f3bd1db85a"
+          ],
+          "otherAfter": [
+            "90aca0a9-d78b-4bb9-a2c4-e2f3bd1db85a"
+          ],
+          "selection": {
+            "anchor": 24,
+            "head": 33
+          },
+          "message": " studied light, mountains and water. A🧭B é 漢字: observationResearch resource-2vault-3/2.mutable.json · text · resource-2rch notes. Leonardo studied light, mountains and water. A🧭B é 漢字: observation"
+        },
+        "elapsedMs": 1631.199999988079,
+        "longTasks": [
+          546,
+          247
+        ],
+        "maxHeartbeatGapMs": 552.0999999940395,
+        "maxFrameGapMs": 533.2999999999993,
+        "frames": 54
+      },
+      "backlinks": {
+        "count": 4,
+        "status": "Saved knowledge: verified SQLite index.",
+        "id": "resource-2",
+        "otherBefore": [
+          "90aca0a9-d78b-4bb9-a2c4-e2f3bd1db85a"
+        ],
+        "otherAfter": [
+          "90aca0a9-d78b-4bb9-a2c4-e2f3bd1db85a"
+        ],
+        "selection": {
+          "anchor": 9,
+          "head": 16
+        }
+      },
+      "input": {
+        "result": {
+          "medianMs": 26.599999994039536,
+          "maxMs": 28.599999994039536,
+          "state": {
+            "resources": 0,
+            "complete": false,
+            "bytes": 213616,
+            "metrics": {
+              "invalidations": 31,
+              "invalidationMs": 0.7000000476837158,
+              "maxInvalidationMs": 0.20000001788139343,
+              "boundaryMs": 16.69999998807907,
+              "observationMs": 10.599999994039536,
+              "indexingMs": 20.900000125169754,
+              "cleanupMs": 96.59999996423721,
+              "savedMs": 333.60000002384186,
+              "scopeMs": 710.4000000059605,
+              "queryMs": 36.599999994039536,
+              "observations": 3,
+              "savedReads": 8,
+              "maxObservationSliceMs": 0.800000011920929
+            },
+            "saved": {
+              "discoveryMs": 325.18249899999864,
+              "requests": 47,
+              "transportMs": 1213.3000000715256,
+              "decodeMs": 1.7000000178813934,
+              "workerMs": 30.748293000004196,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 11.174708000002283,
+              "sqlReadMs": 18.10216699999728,
+              "bytes": 106373,
+              "fenceMs": 4.329498999999487,
+              "readHashMs": 7.296081999997114,
+              "workerHeapPeak": 48162616,
+              "serverHeapPeak": 19045240
+            },
+            "savedProvider": {
+              "provider": "sqlite",
+              "state": "unknown"
+            },
+            "bindings": 2
+          }
+        },
+        "elapsedMs": 982.8999999761581,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 36.599999994039536,
+        "maxFrameGapMs": 33.26999999999862,
+        "frames": 58
+      },
+      "liveComplete": {
+        "result": {
+          "elapsedMs": 58.099999994039536,
+          "state": {
+            "resources": 3,
+            "complete": true,
+            "bytes": 319154,
+            "metrics": {
+              "invalidations": 31,
+              "invalidationMs": 0.7000000476837158,
+              "maxInvalidationMs": 0.20000001788139343,
+              "boundaryMs": 22,
+              "observationMs": 12.599999994039536,
+              "indexingMs": 24.100000113248825,
+              "cleanupMs": 96.69999995827675,
+              "savedMs": 354.30000004172325,
+              "scopeMs": 737,
+              "queryMs": 36.599999994039536,
+              "observations": 5,
+              "savedReads": 9,
+              "maxObservationSliceMs": 0.800000011920929
+            },
+            "saved": {
+              "discoveryMs": 337.5859569999957,
+              "requests": 53,
+              "transportMs": 1259.9000000953674,
+              "decodeMs": 2.0000000298023224,
+              "workerMs": 32.76704300000347,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 11.996666000002733,
+              "sqlReadMs": 19.238750999997137,
+              "bytes": 126624,
+              "fenceMs": 5.29508199999691,
+              "readHashMs": 7.8732899999995425,
+              "workerHeapPeak": 48162616,
+              "serverHeapPeak": 19045240
+            },
+            "savedProvider": {
+              "provider": "sqlite",
+              "state": "verified"
+            },
+            "bindings": 2
+          }
+        },
+        "elapsedMs": 88.5,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 6.199999988079071,
+        "maxFrameGapMs": 16.799999999999272,
+        "frames": 6
+      },
+      "retained": {
+        "usedSize": 37391048,
+        "totalSize": 38961152,
+        "embedderHeapUsedSize": 4383048,
+        "backingStorageSize": 6003885
+      },
+      "refresh": {
+        "elapsedMs": 636.3999999761581,
+        "state": {
+          "resources": 0,
+          "complete": false,
+          "bytes": 319154,
+          "metrics": {
+            "invalidations": 33,
+            "invalidationMs": 0.7000000476837158,
+            "maxInvalidationMs": 0.20000001788139343,
+            "boundaryMs": 27.400000005960464,
+            "observationMs": 15.5,
+            "indexingMs": 27.800000101327896,
+            "cleanupMs": 96.89999994635582,
+            "savedMs": 363.4000000357628,
+            "scopeMs": 754.3000000119209,
+            "queryMs": 36.599999994039536,
+            "observations": 7,
+            "savedReads": 10,
+            "maxObservationSliceMs": 0.800000011920929
+          },
+          "saved": {
+            "discoveryMs": 337.5859569999957,
+            "requests": 56,
+            "transportMs": 1274.1000000834465,
+            "decodeMs": 2.0000000298023224,
+            "workerMs": 32.76704300000347,
+            "queueMs": 0,
+            "validationMs": 0,
+            "factsMs": 11.996666000002733,
+            "sqlReadMs": 19.238750999997137,
+            "bytes": 126844,
+            "fenceMs": 5.29508199999691,
+            "readHashMs": 7.8732899999995425,
+            "workerHeapPeak": 48162616,
+            "serverHeapPeak": 19045240
+          },
+          "savedProvider": {
+            "provider": "sqlite",
+            "state": "unknown"
+          },
+          "bindings": 2
+        }
+      },
+      "during": {
+        "result": {
+          "medianMs": 27.19999998807907,
+          "maxMs": 31.599999994039536,
+          "state": {
+            "resources": 0,
+            "complete": false,
+            "bytes": 319154,
+            "metrics": {
+              "invalidations": 53,
+              "invalidationMs": 0.9000000357627869,
+              "maxInvalidationMs": 0.20000001788139343,
+              "boundaryMs": 27.400000005960464,
+              "observationMs": 15.5,
+              "indexingMs": 27.800000101327896,
+              "cleanupMs": 96.89999994635582,
+              "savedMs": 363.4000000357628,
+              "scopeMs": 754.3000000119209,
+              "queryMs": 36.599999994039536,
+              "observations": 7,
+              "savedReads": 10,
+              "maxObservationSliceMs": 0.800000011920929
+            },
+            "saved": {
+              "discoveryMs": 337.5859569999957,
+              "requests": 56,
+              "transportMs": 1274.1000000834465,
+              "decodeMs": 2.0000000298023224,
+              "workerMs": 32.76704300000347,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 11.996666000002733,
+              "sqlReadMs": 19.238750999997137,
+              "bytes": 126844,
+              "fenceMs": 5.29508199999691,
+              "readHashMs": 7.8732899999995425,
+              "workerHeapPeak": 48162616,
+              "serverHeapPeak": 19045240
+            },
+            "savedProvider": {
+              "provider": "sqlite",
+              "state": "unknown"
+            },
+            "bindings": 2
+          }
+        },
+        "elapsedMs": 1000.6000000238419,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 38.400000005960464,
+        "maxFrameGapMs": 16.80000000000109,
+        "frames": 60
+      },
+      "rebuild": {
+        "result": {
+          "elapsedMs": 56.599999994039536,
+          "state": {
+            "resources": 3,
+            "complete": true,
+            "bytes": 319154,
+            "metrics": {
+              "invalidations": 53,
+              "invalidationMs": 0.9000000357627869,
+              "maxInvalidationMs": 0.20000001788139343,
+              "boundaryMs": 32.400000005960464,
+              "observationMs": 17.599999994039536,
+              "indexingMs": 30.800000101327896,
+              "cleanupMs": 96.89999994635582,
+              "savedMs": 383.6000000536442,
+              "scopeMs": 781.4000000059605,
+              "queryMs": 36.599999994039536,
+              "observations": 9,
+              "savedReads": 11,
+              "maxObservationSliceMs": 0.800000011920929
+            },
+            "saved": {
+              "discoveryMs": 350.2835399999967,
+              "requests": 62,
+              "transportMs": 1320.6000000238419,
+              "decodeMs": 2.200000047683716,
+              "workerMs": 34.85845900000277,
+              "queueMs": 0,
+              "validationMs": 0,
+              "factsMs": 12.932708000003913,
+              "sqlReadMs": 20.330417999997735,
+              "bytes": 147094,
+              "fenceMs": 6.408040999995137,
+              "readHashMs": 8.473790000000008,
+              "workerHeapPeak": 48162616,
+              "serverHeapPeak": 25826576
+            },
+            "savedProvider": {
+              "provider": "sqlite",
+              "state": "verified"
+            },
+            "bindings": 2
+          }
+        },
+        "elapsedMs": 86.7999999821186,
+        "longTasks": [],
+        "maxHeartbeatGapMs": 5.699999988079071,
+        "maxFrameGapMs": 16.700000000000728,
+        "frames": 5
+      },
+      "queryAfter": {
+        "elapsedMs": 21.69999998807907,
+        "hits": 36,
+        "status": "36 results · 3/3 Documents available. Verified saved/live coverage complete.",
+        "savedStatus": "Saved knowledge: verified SQLite index."
+      },
+      "cancel": {
+        "published": 0
+      },
+      "release": {
+        "elapsedMs": 17,
+        "bytes": 0
+      },
+      "disposed": {
+        "usedSize": 28615420,
+        "totalSize": 30048256,
+        "embedderHeapUsedSize": 2689320,
+        "backingStorageSize": 6012804
+      }
+    }
+  ]
+}

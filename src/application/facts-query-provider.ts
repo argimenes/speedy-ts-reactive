@@ -55,10 +55,11 @@ export class FactsQueryProvider {
       if (sources.length === 200) { diagnostics.push('Coverage limited to 200 available Documents.'); break; }
       sources.push({facts, evidence: state!.state.startsWith('saved-') ? {...state!.evidence!,rootBlockId:facts.rootBlockId} : undefined, target: {documentId: facts.id, blockId: facts.rootBlockId, title: facts.hasTitle === false ? row.title ?? 'Untitled' : facts.title, location: vaultPath(row.location)}});
     }
+    if(sources.some(s=>s.evidence)&&coverage.savedProvider&&coverage.savedProvider.state!=='verified')diagnostics.push('Saved provider coverage is incomplete or unknown; zero results do not establish absence.');
     const discovered = new Set(scan.documents.map(d => d.resourceId));
     for (const row of coverage.resources) if (!discovered.has(row.id)) diagnostics.push(`${row.id}: missing loaded binding; not searched.`);
     if(this.progressive&&diagnostics.length>32){const omitted=diagnostics.length-32;diagnostics.splice(32);diagnostics.push(`${omitted} additional unavailable/incomplete resource diagnostics; Refresh the vault to retry.`);}
-    current(); return {sources, diagnostics, discovered: scan.documents.length, current};
+    current(); return {sources, diagnostics, discovered: scan.documents.length, current, savedProvider:coverage.savedProvider, validate:async()=>{await lease.validateSaved(signal);current();}};
   }
   async search(vault: DocumentVaultLease, query: string, signal?: AbortSignal, runner: SearchRunner = runSearchWorker) {
     if (query.length > 256) throw Error('Search text is limited to 256 characters');
@@ -97,7 +98,7 @@ export class FactsQueryProvider {
         hits.push({target: source.target, evidence: source.evidence, blockId: block?.id ?? source.target.blockId, kind: block ? 'text':'title', snippet: match.context, start: match.start, end: match.end, coordinate: block?.text?.coordinate ?? 'utf16'});
       }
     }
-    scope.current(); return {...scope, hits, diagnostics: [...new Set(diagnostics)]};
+    await scope.validate();scope.current(); return {...scope, hits, diagnostics: [...new Set(diagnostics)]};
   }
 }
 export function waitForQuery<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {

@@ -42,7 +42,7 @@ function fixture(properties:any[]=[prop()]) {
 const searchShape=(r:any)=>({hits:r.hits.map(({id,...hit}:any)=>hit),available:r.available,discovered:r.discovered,complete:r.complete});
 const backlinkShape=(r:any)=>({query:r.query,target:r.target,mentions:r.mentions,coverage:{available:r.coverage.available,discovered:r.coverage.discovered,complete:r.coverage.complete}});
 async function backlinksParity(f:ReturnType<typeof fixture>) {const a=await f.facts.query(f.query),b=await f.legacy.query(f.query);expect(backlinkShape(a)).toEqual(backlinkShape(b));return a;}
-it('defaults to the accepted loaded Facts provider with saved coverage separately gated',()=>{expect(featureFlags.nativeKnowledge).toBe(true);expect(featureFlags.nativeKnowledgeSaved).toBe(false);});
+it('defaults to the accepted loaded Facts provider with saved coverage separately gated',()=>{expect(featureFlags.nativeKnowledge).toBe(true);expect(featureFlags.nativeKnowledgeSaved).toBe(false);expect(featureFlags.sqliteKnowledge).toBe(true);});
 it.each(['needle','🧭','é','Source','margin','absent',''])('C2 exact identities/ranges/snippets/order/coverage: %s',async query=>{
  const f=fixture(),before=f.editor.repository.snapshot(),snapshot=vi.spyOn(f.editor.repository,'snapshot');
  expect(searchShape(await f.search.search(query))).toEqual(searchShape(await f.oldSearch.search(query)));
@@ -129,7 +129,7 @@ it.each(['resources','traversal','cells','units'])('enforces the existing C2 %s 
  const facts=Array.from({length:kind==='resources'?201:1},(_,i)=>({id:'r'+i,rootBlockId:'root'+i,title:'Document',hasTitle:true,tags:[],annotations:[],mentions:[],diagnostics:[],blocks:kind==='resources'?[]:[{id:'text'+i,type:'standoff-editor-block',ordinal:kind==='traversal'?5001:2,cellCount:kind==='cells'?250001:0,text:{coordinate:'cell',runs:[{text:kind==='units'?'x'.repeat(2000001):'x',boundaries:[0,1]}]}}]}));
  const scan={complete:true,diagnostics:[],documents:facts.map(f=>({resourceId:f.id,title:f.title,state:'paired',location:{folder:'vault',filename:f.id+'.mutable.json'}}))};
  const vault={root:'vault',snapshot:()=>scan,signature:()=>'',isAlive:()=>true} as unknown as DocumentVaultLease;
- const lease={generation:()=>()=>{},prepare:async()=>({facts,current:()=>{}}),coverage:()=>({resources:facts.map(f=>({id:f.id,state:'live-ready'}))}),release:()=>{}};
+ const lease={generation:()=>()=>{},validateSaved:async()=>{},prepare:async()=>({facts,current:()=>{}}),coverage:()=>({resources:facts.map(f=>({id:f.id,state:'live-ready'}))}),release:()=>{}};
  const provider=new FactsQueryProvider({host:{flush:async()=>{}} as any,acquire:()=>lease as any});cleanup.push(()=>provider.dispose());
  const result=await provider.search(vault,'x',undefined,runner);
  expect(result.hits).toHaveLength(0);expect(result.diagnostics.join(' ')).toMatch({resources:/200 available/,traversal:/5,000 entries/,cells:/250,000 Cells/,units:/2,000,000-character/}[kind]!);
