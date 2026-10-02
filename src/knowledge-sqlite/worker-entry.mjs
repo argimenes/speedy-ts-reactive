@@ -26,17 +26,18 @@ if (store) {
         switch (operation) {
           case 'finish-reconciliation': value=store.finishReconciliation();break;
           case 'inventory': value=store.inventory(); break;
+          case 'index-status': value=store.indexStatus(); break;
           case 'resource-projection': value=store.resourceProjection(payload.resourceId); break;
           case 'inspect-saved': {const p=await projectSaved(payload.bytes,payload.vaultGuid,payload.policy);value={resourceId:p.resourceId,rootBlockId:p.rootBlockId,contentHash:p.contentHash,format:p.format,blockIds:p.blocks.map(b=>b.block.guid)};break;}
           case 'stage-saved': {
             staged=undefined;
-            const projection=await projectSaved(payload.bytes,payload.vaultGuid,payload.policy),token=randomUUID();
+            const timings={},projection=await projectSaved(payload.bytes,payload.vaultGuid,payload.policy,timings),token=randomUUID();
             staged={token,projection,expected:store.indexingBaseline(projection.resourceId),evidence:payload.evidence,mode:payload.mode};
-            value={token,resourceId:projection.resourceId,contentHash:projection.contentHash};break;
+            value={token,resourceId:projection.resourceId,contentHash:projection.contentHash,timings};break;
           }
           case 'commit-saved': {
             if(!staged||staged.token!==payload.token)throw Error('Expired saved indexing token');
-            const job=staged;staged=undefined;value=store.reconcile(job.projection,job.evidence,job.expected,{mode:job.mode});break;
+            const job=staged;staged=undefined;const timings={};value={...store.reconcile(job.projection,job.evidence,job.expected,{mode:job.mode,timings}),timings};break;
           }
           case 'discard-saved': if(staged?.token===payload.token)staged=undefined;value={discarded:true};break;
           case 'deletion-baseline': value=store.indexingBaseline(payload.resourceId);break;

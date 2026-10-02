@@ -8,6 +8,12 @@ There are two distinct changes in the original P3: consuming saved file-derived 
 
 Source inspection is against repository baseline `d239949`, including the accepted [P2 report](MUTABLE_SQLITE_PERSISTENCE_P2_REPORT.md) and [programme qualification plan](MUTABLE_SQLITE_PERSISTENCE_QUALIFICATION_PLAN.md). Statements labelled proposed describe changes still to be implemented and qualified.
 
+**Subsequent user clarification:** [Vault Content Recognition Strategy](MUTABLE_VAULT_CONTENT_RECOGNITION_STRATEGY.md) separates candidate browsing, content recognition and admission. The native-only query scope below records current qualification, not a permanent exclusion of compatible generic JSON Documents. Compatibility Open must use existing format-specific validators and retain source identity without migration. Missing typed-resource handlers and native pair filename assumptions are recorded explicitly in that strategy update; they are not solved by weakening P2 guards during P3a.
+
+**Export scope clarification:** default Markdown export is deferred. Compatible Document discovery/Open must not require or create a Markdown sidecar. Existing pair guards remain applicable to already enrolled pairs; adding `.ink.md` output is not a prerequisite for content-based compatibility opening. This strategy change does not silently alter the accepted paired-save implementation.
+
+**P3a implementation status (2026-10-02):** see [P3a implementation and qualification report](MUTABLE_SQLITE_PERSISTENCE_P3A_REPORT.md). Host/coverage correctness is qualified; coarse cancellation can delay foreground Save for large Resources and needs review before P3b rollout. The planning-time descriptions below remain the proposed later-stage sequence, not a claim that those stages have shipped.
+
 ## 1 Scope differences requiring review
 
 The programme's original P3 row says “SQLite Entity/Alias/Relationship services; injected Entity feature transport, native-reference/mentions queries, saved search adapter and existing live overlay/navigation contracts.” Its gate includes Entity creation, retries, preferred-name changes and aliases without SurrealDB. The new brief first requires a composition plan, preservation of working consumers and a narrow progressive adoption seam. The plan below makes that sequencing explicit rather than replacing all consumers at once.

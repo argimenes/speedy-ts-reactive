@@ -55,6 +55,10 @@ export function openFoundation({ vault, readOnly = false, initialize: create = f
     return {
       vaultGuid: identity.vaultGuid,
       inventory() { active(); return indexing.inventory(mutable); },
+      indexStatus() { active(); return {resources:mutable.prepare('SELECT count(*) AS n FROM Resource').get().n,
+        incompleteResources:mutable.prepare("SELECT count(*) AS n FROM Resource WHERE indexStatus!='complete'").get().n,
+        issueCount:mutable.prepare('SELECT count(*) AS n FROM IndexIssue').get().n,
+        issues:mutable.prepare('SELECT path,reason FROM IndexIssue ORDER BY path LIMIT 32').all()}; },
       indexingBaseline(id) { active(); return indexing.baseline(mutable,id); },
       resourceProjection(id) { active(); return indexing.readProjection(mutable,id); },
       reconcile(projection,evidence,expected,options) { active(); writable(); return indexing.reconcile(mutable,projection,evidence,expected,options); },

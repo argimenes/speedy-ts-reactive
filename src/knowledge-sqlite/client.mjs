@@ -49,6 +49,7 @@ export async function openSqliteFoundation(options) {
   return {
     // Internal host capabilities; not exposed through a browser/request route.
     inventory:()=>request('inventory'),resourceProjection:resourceId=>request('resource-projection',undefined,{resourceId}),
+    indexStatus:()=>request('index-status'),
     inspectSaved:payload=>request('inspect-saved',undefined,payload),stageSaved:payload=>request('stage-saved',undefined,payload),
     commitSaved:token=>request('commit-saved',undefined,{token}),discardSaved:token=>request('discard-saved',undefined,{token}),
     deletionBaseline:resourceId=>request('deletion-baseline',undefined,{resourceId}),removeConfirmed:(resourceId,expected)=>request('remove-confirmed',undefined,{resourceId,expected}),

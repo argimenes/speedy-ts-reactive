@@ -28,6 +28,8 @@ export type FeatureFlags = Readonly<{
   nativeKnowledge: boolean;
   /** P5 saved coverage qualification; rollout remains separately reviewed. */
   nativeKnowledgeSaved: boolean;
+  /** Vault-owned saved SQLite lifecycle only; does not change query/Entity providers. */
+  sqliteKnowledge: boolean;
   /** Initial Document format arrangements and creation menu. */
   documentFormats: boolean;
   threeDObjects: boolean;
@@ -58,6 +60,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   nativeDocumentPersistence: true,
   nativeKnowledge: true,
   nativeKnowledgeSaved: false,
+  sqliteKnowledge: true,
   documentFormats: true,
   threeDObjects: true,
   anchorRelationships: true,

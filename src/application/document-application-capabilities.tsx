@@ -1,5 +1,6 @@
 import { DocumentBrowser } from "../demo/document-browser";
 import {SavedResultActivation} from './saved-result-activation';
+import {sqliteIndexLifecycle} from './sqlite-index-lifecycle';
 import {observeLive} from '../knowledge/live-observer';
 import {runSearchWorker} from '../runtime/search-worker';
 import { createNativeKnowledgeHost } from './native-knowledge-scope';
@@ -44,7 +45,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       subscribe: listener => editor.registry.subscribe(listener),
     }, {loadedOnly: !editor.features.nativeKnowledgeSaved, progressiveSaved: editor.features.nativeKnowledgeSaved}) : undefined;
     scope.own(() => { void factsHost?.dispose(); });
-    const vaults = native ? createDocumentVaults(native) : undefined;
+    const vaults = native ? createDocumentVaults(native, editor.features.sqliteKnowledge ? root => sqliteIndexLifecycle(root,{version:1,opaqueTypes:editor.registry.typesWithCapability('opaque-widget')}) : undefined) : undefined;
     scope.own(() => vaults?.dispose());
     const vaultRoots = new Map<string, string>();
     scope.own(() => vaultRoots.clear());

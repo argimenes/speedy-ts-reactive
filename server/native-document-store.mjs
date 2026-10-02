@@ -11,7 +11,7 @@ const LIMIT = 20 * 1024 * 1024;
 const fail = (message, status = 409) => { throw Object.assign(new Error(message), { status }); };
 const read = async file => { try { const s = await fs.lstat(file); if (!s.isFile() || s.isSymbolicLink() || s.size > LIMIT) fail('Expected a bounded regular file', 400); return await fs.readFile(file); } catch(e) { if(e.code !== 'ENOENT') throw e; } };
 const fields = (v, names) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === names.length && Object.keys(v).every(k => names.includes(k));
-export function createNativeDocumentStoreRouter({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true}) {
+export function createNativeDocumentStoreRouter({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true, coordinate = action => action()}) {
  const vault = new NativeVaultStore({root,readOnly,fault,nativeDiscoveryWorker});
  const router = Router(); router.use(json({limit:'32mb'}));
  const directory = async folder => {
@@ -39,7 +39,8 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  };
  const lock = async (_dir, action) => vault.lock(action);
  const baseline = async pair => ({nativeHash: await read(pair.file('native')).then(b=>b?hash(b):null),markdownHash:await read(pair.file('markdown')).then(b=>b?hash(b):null),generation:(await pair.receipt())?.generation??null,...(await vault.guard(pair.resourceId,{folder:path.relative(vault.root,pair.root).split(path.sep).join('/')||'.',filename:pair.nativeName}) ? {locationRevision:await vault.guard(pair.resourceId)} : {})});
- const route = (method,name,action) => router[method](name,async(req,res)=>{try{res.json({Success:true,Data:await action(req,res)});}catch(e){res.status(e.status??(e.conflict?409:e.code==='ENOENT'?404:500)).json({Success:false,Error:e.message,PublicationStarted:!!req.nativePublicationStarted||!!e.relocationStarted});}});
+ const writes=new Set(['/save','/recover','/vault/mkdir','/vault/relocate','/vault/recover']);
+ const route = (method,name,action) => router[method](name,async(req,res)=>{try{const execute=()=>action(req,res);res.json({Success:true,Data:await (writes.has(name)?coordinate(execute):execute())});}catch(e){res.status(e.status??(e.conflict?409:e.code==='ENOENT'?404:500)).json({Success:false,Error:e.message,PublicationStarted:!!req.nativePublicationStarted||!!e.relocationStarted});}});
  installNativeKnowledgeRoutes(route,vault);
  const writable=()=>{if(readOnly)fail('Server Documents are read-only. Paired Save requires a writable managed server store.',403);};
  route('get','/list',async req=>{const dir=await directory(req.query.folder??'.');return {files:(await fs.readdir(dir,{withFileTypes:true})).filter(e=>e.isFile()&&!e.name.startsWith('.')&&/\.(mutable\.json|md)$/.test(e.name)).map(e=>e.name).sort(),readOnly};});

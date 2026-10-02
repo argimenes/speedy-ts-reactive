@@ -1,0 +1,218 @@
+{
+  "node": "v22.12.0",
+  "cpu": "Apple M1",
+  "before": {
+    "rss": 58081280,
+    "heapTotal": 17088512,
+    "heapUsed": 7364072,
+    "external": 2295520,
+    "arrayBuffers": 16623,
+    "activeWorkers": 0
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "open": {
+        "rss": 78413824,
+        "heapTotal": 17350656,
+        "heapUsed": 7720968,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 67125248,
+        "heapTotal": 17350656,
+        "heapUsed": 7737448,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 2,
+      "open": {
+        "rss": 79888384,
+        "heapTotal": 17350656,
+        "heapUsed": 7823640,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 68452352,
+        "heapTotal": 17350656,
+        "heapUsed": 7824024,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 3,
+      "open": {
+        "rss": 80297984,
+        "heapTotal": 17350656,
+        "heapUsed": 7872968,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 68845568,
+        "heapTotal": 17350656,
+        "heapUsed": 7856352,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 4,
+      "open": {
+        "rss": 80527360,
+        "heapTotal": 17350656,
+        "heapUsed": 7901048,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 69107712,
+        "heapTotal": 17350656,
+        "heapUsed": 7884320,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 5,
+      "open": {
+        "rss": 80379904,
+        "heapTotal": 17874944,
+        "heapUsed": 7997264,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 68960256,
+        "heapTotal": 17874944,
+        "heapUsed": 8012152,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 6,
+      "open": {
+        "rss": 80347136,
+        "heapTotal": 17874944,
+        "heapUsed": 8033552,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 69009408,
+        "heapTotal": 17874944,
+        "heapUsed": 8019504,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 7,
+      "open": {
+        "rss": 74792960,
+        "heapTotal": 17874944,
+        "heapUsed": 8038000,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 68075520,
+        "heapTotal": 17874944,
+        "heapUsed": 8023880,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 8,
+      "open": {
+        "rss": 78905344,
+        "heapTotal": 18137088,
+        "heapUsed": 8065552,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 67731456,
+        "heapTotal": 18137088,
+        "heapUsed": 8051400,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 9,
+      "open": {
+        "rss": 79675392,
+        "heapTotal": 18137088,
+        "heapUsed": 8130240,
+        "external": 2358533,
+        "arrayBuffers": 16823,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 68239360,
+        "heapTotal": 18137088,
+        "heapUsed": 8125312,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    },
+    {
+      "cycle": 10,
+      "open": {
+        "rss": 80019456,
+        "heapTotal": 18137088,
+        "heapUsed": 8158176,
+        "external": 2358533,
+        "arrayBuffers": 19479,
+        "activeWorkers": 1
+      },
+      "closed": {
+        "rss": 68599808,
+        "heapTotal": 18137088,
+        "heapUsed": 8145192,
+        "external": 2334498,
+        "arrayBuffers": 16623,
+        "activeWorkers": 0
+      }
+    }
+  ],
+  "after": {
+    "rss": 68599808,
+    "heapTotal": 18137088,
+    "heapUsed": 8150128,
+    "external": 2334298,
+    "arrayBuffers": 16623,
+    "activeWorkers": 0
+  },
+  "opens": 10,
+  "peakWorkers": 1,
+  "notes": [
+    "RSS includes worker heaps and native SQLite allocation; parent heap does not.",
+    "Ten small-fixture cycles are a bounded lifecycle smoke measurement, not a retained-heap leak proof or browser-memory qualification."
+  ]
+}

@@ -119,9 +119,11 @@ export function createWorkspaceStoreRouter(options: {
   documentRoot: string;
   workspaceRoot: string;
   readOnly?: boolean;
+  coordinate?: <T>(action: () => Promise<T>) => Promise<T>;
   indexDocument?: (document: any, filepath: string) => Promise<void>;
 }) {
   const router = Router();
+  const coordinate = options.coordinate ?? (async action => action());
   const respondError = (res: any, error: any) => {
     const status = error instanceof WorkspaceStoreError ? error.status : error?.code === "ENOENT" ? 404 : 500;
     const message = error instanceof WorkspaceStoreError ? error.message : status === 404 ? "The Workspace or Document could not be found." : "The Workspace store could not complete the request.";
@@ -152,7 +154,7 @@ export function createWorkspaceStoreRouter(options: {
   });
 
   // Compatibility writer for the original UI. New reactive saves use the bundle route.
-  router.post("/saveWorkspaceJson", async (req, res) => {
+  router.post("/saveWorkspaceJson", async (req, res) => coordinate(async () => {
     let temporary: string | undefined;
     try {
       if (/\.mutable\.json$/i.test(String(req.body?.filename ?? ""))) throw new WorkspaceStoreError(409, "Native destinations require paired resource Save.", "native-resource-guard");
@@ -165,9 +167,9 @@ export function createWorkspaceStoreRouter(options: {
       res.json({ Success: true });
     } catch (error) { respondError(res, error); }
     finally { if (temporary) await fs.unlink(temporary).catch(() => undefined); }
-  });
+  }));
 
-  router.post("/saveWorkspaceBundle", async (req, res) => {
+  router.post("/saveWorkspaceBundle", async (req, res) => coordinate(async () => {
     const staged: Array<{ target: string; temporary: string; document?: any }> = [];
     const committed: Array<{ target: string; previous?: Buffer }> = [];
     try {
@@ -242,7 +244,7 @@ export function createWorkspaceStoreRouter(options: {
     } finally {
       for (const item of staged) await fs.unlink(item.temporary).catch(() => undefined);
     }
-  });
+  }));
 
   return router;
 }

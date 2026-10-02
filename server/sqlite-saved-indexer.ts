@@ -13,6 +13,7 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
     /** An explicit Refresh/reconciliation; SQL does not enroll resources or alter their binding. */
     async refresh({mode='incremental',signal}:{mode?:'full'|'incremental';signal?:AbortSignal}={}) {
       if(running)throw Error('Saved indexing refresh already active');running=true;
+      const started=performance.now(),timings={discoveryMs:0,inspectionMs:0,stageMs:0,publicationMs:0,totalMs:0};
       try {return await store.lock(async()=>{
         signal?.throwIfAborted();
         const identity=await client.inspect();
@@ -20,7 +21,8 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
         if(identity.root!==await store.resolve(vault))throw Error('SQLite vault and managed scope differ');
         const vaultGuid=identity.mutable.vaultGuid;let initialFence:string;
         try{initialFence=await store.readScopeFence(vault,signal);}catch(e:any){signal?.throwIfAborted();await client.indexIssue(vault,e.message);return {complete:false,issues:[{path:vault,message:e.message}],reconciled:[],removed:[]};}
-        const discovery=await store.discover(vault,{signal}),issues:any[]=[...discovery.diagnostics],candidates:any[]=[];
+        const discoveryStart=performance.now(),discovery=await store.discover(vault,{signal}),issues:any[]=[...discovery.diagnostics],candidates:any[]=[];
+        timings.discoveryMs=performance.now()-discoveryStart;
         if(discovery.operations.some((r:any)=>r.phase==='pending'))issues.push({path:vault,message:'Relocation pending'});
         const native=new Map<string,any>(discovery.documents.map((d:any)=>[filename(d.location),d]));
         const paths=[...native.keys(),...discovery.other.filter((p:string)=>p.endsWith('.json'))].sort();
@@ -29,7 +31,8 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
           try {
             const n=native.get(file);
             if(n?.state==='pending'||n?.state==='ambiguous'||n&&!n.baseline)throw Error('Native pair evidence pending, ambiguous or unavailable');
-            const stamp=await store.stamp(file),bytes=await store.read(file),inspection=await client.inspectSaved({bytes,vaultGuid,policy});
+            const inspectStart=performance.now(),stamp=await store.stamp(file),bytes=await store.read(file),inspection=await client.inspectSaved({bytes,vaultGuid,policy});
+            timings.inspectionMs+=performance.now()-inspectStart;
             if(n&&inspection.format!=='mutable-document'||!n&&inspection.format==='mutable-document')throw Error('Native resource requires its supported native location');
             if(n&&(inspection.resourceId!==n.resourceId||inspection.contentHash!==n.baseline.nativeHash))throw Error('Native discovery evidence changed');
             if(await store.stamp(file)!==stamp||hash(await store.read(file))!==inspection.contentHash)throw Error('Resource changed during inspection');
@@ -63,10 +66,10 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
             const bytes=await store.read(c.file);
             const evidence={path:c.file,contentHash:c.contentHash,fileSize:bytes.byteLength,
               saveGeneration:c.native&&c.native.state==='paired'?c.native.baseline.generation:null};
-            staged=await client.stageSaved({bytes,vaultGuid,policy,evidence,mode});
+            const stageStart=performance.now();staged=await client.stageSaved({bytes,vaultGuid,policy,evidence,mode});timings.stageMs+=performance.now()-stageStart;
             await checkpoint('staged',{candidate:c,token:staged.token});
             await revalidate(c,initialFence);
-            reconciled.push(await client.commitSaved(staged.token));
+            const publishStart=performance.now();reconciled.push({...await client.commitSaved(staged.token),extractionTimings:staged.timings});timings.publicationMs+=performance.now()-publishStart;
           }catch(e:any){if(staged)await client.discardSaved(staged.token);if(signal?.aborted)throw e;await client.indexIssue(c.file,e.message);return {complete:false,issues:[{path:c.file,message:e.message}],reconciled,removed};}
         }
         for(const prior of old)if(!resources.has(prior.guid)){
@@ -80,7 +83,8 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
         signal?.throwIfAborted();
         if(await store.readScopeFence(vault,signal)!==initialFence){const message='Vault changed before reconciliation completion';await client.indexIssue(vault,message);return {complete:false,issues:[{path:vault,message}],reconciled,removed};}
         await client.finishReconciliation();
-        return {complete:true,issues:[],reconciled,removed};
+        timings.totalMs=performance.now()-started;
+        return {complete:true,issues:[],reconciled,removed,scopeFence:initialFence,timings};
       });}finally{running=false;}
     },
   };

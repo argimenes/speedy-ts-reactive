@@ -12,6 +12,7 @@ import { createDocumentStoreRouter } from "./document-store.js";
 import { createHistoryService } from "./history-router.js";
 import { createEntitySearchRouter } from "./entity-search.js";
 import { createWorkspaceStoreRouter } from "./workspace-store.js";
+import { SqliteKnowledgeHost } from "./sqlite-knowledge-host.js";
 import { featureFlags } from "../src/configuration.js";
 //import { BlockType } from "./types";
 let db: Surreal | undefined;
@@ -269,10 +270,15 @@ app.use((req, res, next) => {
   next();
 });
 
+const sqliteKnowledge = featureFlags.sqliteKnowledge ? new SqliteKnowledgeHost({root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath), readOnly: publicHostedVersion}) : undefined;
+const coordinateStorage = sqliteKnowledge ? <T>(action: () => Promise<T>) => sqliteKnowledge.foreground(action) : undefined;
+if (sqliteKnowledge) app.use("/api/sqlite/knowledge", sqliteKnowledge.router());
+
 const documentHistory = createHistoryService({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath) });
 app.use("/api/history", documentHistory.router);
-if (featureFlags.nativeDocumentPersistence) app.use("/api/native", createNativeDocumentStoreRouter({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath), readOnly: publicHostedVersion }));
+if (featureFlags.nativeDocumentPersistence) app.use("/api/native", createNativeDocumentStoreRouter({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath), readOnly: publicHostedVersion, coordinate: coordinateStorage }));
 app.use("/api", createDocumentStoreRouter({
+  coordinate: coordinateStorage,
   readOnly: publicHostedVersion,
   history: documentHistory,
   root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),
@@ -285,6 +291,7 @@ app.use("/api", createDocumentStoreRouter({
 }));
 
 app.use("/api", createWorkspaceStoreRouter({
+  coordinate: coordinateStorage,
   readOnly: publicHostedVersion,
   documentRoot: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),
   workspaceRoot: process.env.SPEEDY_WORKSPACE_ROOT || path.join(__dirname, baseWorkspacesPath),
@@ -657,7 +664,14 @@ try { setAgents(); }
 catch { console.warn("Agent catalog unavailable; document storage is still available."); }
 
 const port = process.env.PORT || 3002;
-app.listen(port, () => {
+const httpServer = app.listen(port, () => {
   console.log('Server running at localhost:' + port);
 });
 console.log('Running at Port ' + port);
+
+// Host shutdown does not cancel or replay an authored Save through the indexer.
+let stopping = false;
+for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => {
+  if (stopping) return; stopping = true;
+  httpServer.close(() => { void (async () => { await sqliteKnowledge?.close(); await closeDb(); process.exit(0); })().catch(error => { console.error(error); process.exit(1); }); });
+});

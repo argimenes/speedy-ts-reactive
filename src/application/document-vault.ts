@@ -20,7 +20,7 @@ export function vaultLeaf(value: string) {
   return value;
 }
 /** Feature-owned, disposable tree read model. No authored membership or persistent catalog. */
-export function createDocumentVaults(native: NativeDocumentSession) {
+export function createDocumentVaults(native: NativeDocumentSession, indexLifecycle?: (root:string)=>{refresh(force?:boolean):Promise<void>;dispose():void}) {
   const entries=new Map<string,VaultLease>();
   let disposed=false;
   function check(root: string) {
@@ -39,7 +39,8 @@ export function createDocumentVaults(native: NativeDocumentSession) {
     private notify(){for(const listener of this.listeners)listener();}
     private signatureSignal=createSignal('');
     private update(value:VaultDiscovery){const signature=JSON.stringify(value);if(signature===this.signature())return;batch(()=>{this.snapshotSignal[1](value);this.signatureSignal[1](signature);});this.notify();}
-    constructor(readonly root:string,initial:VaultDiscovery){this.update(initial);}
+    private index?:ReturnType<NonNullable<typeof indexLifecycle>>;
+    constructor(readonly root:string,initial:VaultDiscovery){this.update(initial);this.index=indexLifecycle?.(root);void this.index?.refresh();}
     snapshot=()=>this.snapshotSignal[0]()!;
     signature=()=>this.signatureSignal[0]();
     busy=()=>this.busySignal[0]();
@@ -54,6 +55,7 @@ export function createDocumentVaults(native: NativeDocumentSession) {
       if(this.refreshWork)return this.refreshWork;
       this.controller=new AbortController();
       this.refreshWork=(async()=>{try{const value:VaultDiscovery=await native.discoverVault(this.root,this.controller!.signal);if(this.alive){const unchanged=JSON.stringify(value)===this.signature();this.update(value);if(force&&unchanged)this.notify();}}catch(e){if(this.alive){this.noticeSignal[1](String(e));this.update({...this.snapshot(),complete:false,diagnostics:[...this.snapshot().diagnostics,{message:'Discovery refresh failed: '+String(e)}]});throw e;}}finally{this.refreshWork=undefined;}})();
+      void this.index?.refresh(force);
       return this.refreshWork;
     }
     requireDirectory(folder:string) {
@@ -89,9 +91,9 @@ export function createDocumentVaults(native: NativeDocumentSession) {
     async recover(operationId:string) {
       return this.mutate(async()=>{const result=await native.recoverRelocation(operationId);this.noticeSignal[1](result.phase==='relocated'?'Recovery complete. Open the destination explicitly if it is not already bound.':`Recovery pending: ${result.error}`);return result;});
     }
-    release(){if(--this.users===0){this.alive=false;this.controller?.abort();this.notify();this.listeners.clear();entries.delete(this.root);}}
+    release(){if(--this.users===0){this.alive=false;this.controller?.abort();this.index?.dispose();this.notify();this.listeners.clear();entries.delete(this.root);}}
     isAlive=()=>this.alive;
-    dispose(){this.alive=false;this.controller?.abort();this.notify();this.listeners.clear();}
+    dispose(){this.alive=false;this.controller?.abort();this.index?.dispose();this.notify();this.listeners.clear();}
   }
   return {
     async acquire(input:string, signal?:AbortSignal):Promise<VaultLease> {

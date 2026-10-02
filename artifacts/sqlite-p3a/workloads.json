@@ -1,0 +1,1352 @@
+{
+  "recordedUtc": "2026-10-02T12:26:15.725Z",
+  "node": "v22.12.0",
+  "cpu": "Apple M1",
+  "memoryBytes": 8589934592,
+  "purpose": "P3a bounded diagnostic controls, not P6 or user-visible latency guarantees",
+  "resources": [
+    {
+      "childBlocks": 100,
+      "initialSetupAndFirstReconcileMs": 246.68229100000008,
+      "fixtureBuildMs": 10.445625000000291,
+      "initialPublication": {
+        "nativeEncodeMs": 16.70616599999994,
+        "markdownMs": 1.5869170000005397,
+        "filePublicationMs": 88.01816699999927,
+        "saveTotalMs": 106.3135000000002,
+        "bytes": 41792
+      },
+      "measurements": [
+        {
+          "operation": "text",
+          "nativeEncodeMs": 2.227708000000348,
+          "markdownMs": 0.25020799999947485,
+          "filePublicationMs": 101.60325000000012,
+          "saveTotalMs": 104.08166600000004,
+          "bytes": 41803,
+          "totalReconciliationMs": 97.52633400000013,
+          "phases": {
+            "discoveryMs": 17.163125000000036,
+            "inspectionMs": 21.364125000000058,
+            "stageMs": 17.59333400000014,
+            "publicationMs": 24.36437500000011,
+            "totalMs": 97.46762499999932
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "c964f232ed342e61007a4446193f6857f9770b0c35adb1707677b40eafaed9af",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 100,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 13.553082999999788,
+                "comparisonMs": 9.187082999999802,
+                "mutationAndFtsMs": 0.4179169999997612,
+                "commitMs": 0.6690830000006827,
+                "sqlTotalMs": 23.934541999999965
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 13.512332999999671,
+                "projectionMs": 3.531582999999955
+              }
+            }
+          ]
+        },
+        {
+          "operation": "style",
+          "nativeEncodeMs": 2.2622919999994338,
+          "markdownMs": 0.27416600000015023,
+          "filePublicationMs": 79.90887500000008,
+          "saveTotalMs": 82.44587499999943,
+          "bytes": 41993,
+          "totalReconciliationMs": 87.47045900000012,
+          "phases": {
+            "discoveryMs": 15.162208000000646,
+            "inspectionMs": 17.98504099999991,
+            "stageMs": 16.48766700000033,
+            "publicationMs": 19.758832999999868,
+            "totalMs": 87.4383340000004
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "9da54fb05c6c2c93d6a5b87f8ecf0045a44d5661eee5a7cd92bc4d094503306d",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 100,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 13.172083000000384,
+                "comparisonMs": 4.929250000000138,
+                "mutationAndFtsMs": 0.4046669999997903,
+                "commitMs": 0.7822500000002037,
+                "sqlTotalMs": 19.419667000000118
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 12.925874999999905,
+                "projectionMs": 3.029207999999926
+              }
+            }
+          ]
+        },
+        {
+          "operation": "entity",
+          "nativeEncodeMs": 2.1380840000001626,
+          "markdownMs": 0.2508330000000569,
+          "filePublicationMs": 78.09895799999958,
+          "saveTotalMs": 80.48849999999948,
+          "bytes": 42375,
+          "totalReconciliationMs": 94.97099999999955,
+          "phases": {
+            "discoveryMs": 14.962832999999591,
+            "inspectionMs": 19.555374999999913,
+            "stageMs": 16.974833000000217,
+            "publicationMs": 22.75016599999981,
+            "totalMs": 94.94329099999959
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "253aa8d05c0fcbe27a4bec83d4e6547b855c7b23eaaf514837096b84ecc7eb59",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 100,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 12.257125000000087,
+                "comparisonMs": 8.033499999999549,
+                "mutationAndFtsMs": 0.9298749999998108,
+                "commitMs": 0.8967090000005555,
+                "sqlTotalMs": 22.221999999999753
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 13.547207999999955,
+                "projectionMs": 2.941458000000239
+              }
+            }
+          ]
+        },
+        {
+          "operation": "add",
+          "nativeEncodeMs": 1.8667920000007143,
+          "markdownMs": 0.2669999999998254,
+          "filePublicationMs": 88.8447500000002,
+          "saveTotalMs": 90.97908400000051,
+          "bytes": 42738,
+          "totalReconciliationMs": 90.7357920000004,
+          "phases": {
+            "discoveryMs": 13.933999999999287,
+            "inspectionMs": 14.660542000000532,
+            "stageMs": 14.732624999999643,
+            "publicationMs": 22.997167000000445,
+            "totalMs": 90.70941599999969
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "2c3d31438985800b1a219e724e4dfe0e658c5b1caa402471f386dee99aa9ffbf",
+              "mode": "incremental",
+              "changedBlocks": 2,
+              "removedBlocks": 0,
+              "unchangedBlocks": 100,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 12.295082999999977,
+                "comparisonMs": 4.522625000000517,
+                "mutationAndFtsMs": 5.005249999999251,
+                "commitMs": 0.7737080000006245,
+                "sqlTotalMs": 22.690667000000758
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 10.785917000000154,
+                "projectionMs": 3.4383749999997235
+              }
+            }
+          ]
+        },
+        {
+          "operation": "delete",
+          "nativeEncodeMs": 1.63799999999992,
+          "markdownMs": 0.4160830000000715,
+          "filePublicationMs": 84.19562500000029,
+          "saveTotalMs": 86.25033299999996,
+          "bytes": 42375,
+          "totalReconciliationMs": 100.03229199999987,
+          "phases": {
+            "discoveryMs": 14.241791999999805,
+            "inspectionMs": 17.386749999999665,
+            "stageMs": 14.211459000000104,
+            "publicationMs": 26.418165999999474,
+            "totalMs": 100.00704200000018
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "253aa8d05c0fcbe27a4bec83d4e6547b855c7b23eaaf514837096b84ecc7eb59",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 1,
+              "unchangedBlocks": 100,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 12.19695800000045,
+                "comparisonMs": 8.60308299999997,
+                "mutationAndFtsMs": 4.478874999999789,
+                "commitMs": 0.7149170000002414,
+                "sqlTotalMs": 26.090291000000434
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 11.04870899999969,
+                "projectionMs": 2.6635830000004717
+              }
+            }
+          ]
+        },
+        {
+          "operation": "move",
+          "nativeEncodeMs": 1.6372080000001006,
+          "markdownMs": 0.25737500000013824,
+          "filePublicationMs": 89.00208300000031,
+          "saveTotalMs": 90.89720800000032,
+          "bytes": 42375,
+          "totalReconciliationMs": 92.44687500000055,
+          "phases": {
+            "discoveryMs": 13.09875000000011,
+            "inspectionMs": 13.70483299999978,
+            "stageMs": 13.420082999999977,
+            "publicationMs": 22.445832999999766,
+            "totalMs": 92.42083400000047
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "73fab26db33126c24c496f19fa5034eb4da9813393e1e95db1182b438d026c7f",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 100,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 12.407374999999774,
+                "comparisonMs": 4.345459000000119,
+                "mutationAndFtsMs": 4.421957999999904,
+                "commitMs": 0.7168750000000728,
+                "sqlTotalMs": 22.130999999999403
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 9.90666599999986,
+                "projectionMs": 3.0609169999997903
+              }
+            }
+          ]
+        }
+      ],
+      "verify": {
+        "ok": true,
+        "mutable": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "ok"
+        },
+        "audit": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "not-applicable"
+        }
+      },
+      "foregroundSaveDuringStage": {
+        "nativeEncodeMs": 1.715291999999863,
+        "markdownMs": 0.26050000000032014,
+        "filePublicationMs": 85.23216700000012,
+        "saveTotalMs": 87.2085420000003,
+        "bytes": 42387,
+        "coordination": {
+          "sweeps": 1,
+          "cancellations": 1,
+          "foregroundWaitMs": 21.213040999999976,
+          "maxForegroundWaitMs": 21.213040999999976
+        }
+      }
+    },
+    {
+      "childBlocks": 1000,
+      "initialSetupAndFirstReconcileMs": 959.8712510000014,
+      "fixtureBuildMs": 44.100000000000364,
+      "initialPublication": {
+        "nativeEncodeMs": 16.92437500000051,
+        "markdownMs": 2.052458999999544,
+        "filePublicationMs": 299.705833,
+        "saveTotalMs": 318.6833340000003,
+        "bytes": 413492
+      },
+      "measurements": [
+        {
+          "operation": "text",
+          "nativeEncodeMs": 18.797500000000582,
+          "markdownMs": 4.215625000000728,
+          "filePublicationMs": 336.604041999999,
+          "saveTotalMs": 359.61787500000173,
+          "bytes": 413503,
+          "totalReconciliationMs": 603.9719999999998,
+          "phases": {
+            "discoveryMs": 100.3276249999999,
+            "inspectionMs": 146.2677500000009,
+            "stageMs": 130.3627499999984,
+            "publicationMs": 206.1405419999992,
+            "totalMs": 603.9116670000003
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "c4fe9939244bb3f52676a0f24f762d058fb6ceba7f938aa9bb24ada266b1461d",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 1000,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 122.57058400000096,
+                "comparisonMs": 81.75412499999948,
+                "mutationAndFtsMs": 0.482665999999881,
+                "commitMs": 0.586250000000291,
+                "sqlTotalMs": 205.5333329999994
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 103.6924999999992,
+                "projectionMs": 25.49225000000115
+              }
+            }
+          ]
+        },
+        {
+          "operation": "move",
+          "nativeEncodeMs": 14.719250000000102,
+          "markdownMs": 2.1492920000000595,
+          "filePublicationMs": 319.52000000000044,
+          "saveTotalMs": 336.38879199999974,
+          "bytes": 413503,
+          "totalReconciliationMs": 592.5751249999994,
+          "phases": {
+            "discoveryMs": 96.45445800000016,
+            "inspectionMs": 121.99045800000022,
+            "stageMs": 112.36204100000032,
+            "publicationMs": 241.35970799999996,
+            "totalMs": 592.5305410000001
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "9a18aafea6cb544b632168695acbeb6ccbd6481ff41970792b179d44d3ad6810",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 1000,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 133.8299160000006,
+                "comparisonMs": 65.2950839999994,
+                "mutationAndFtsMs": 40.31916600000113,
+                "commitMs": 1.4239589999997406,
+                "sqlTotalMs": 240.99129099999845
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 95.61691600000086,
+                "projectionMs": 15.911708999999973
+              }
+            }
+          ]
+        }
+      ],
+      "verify": {
+        "ok": true,
+        "mutable": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "ok"
+        },
+        "audit": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "not-applicable"
+        }
+      },
+      "foregroundSaveDuringStage": {
+        "nativeEncodeMs": 14.30212500000016,
+        "markdownMs": 2.213999999999942,
+        "filePublicationMs": 307.80854199999885,
+        "saveTotalMs": 324.3250419999986,
+        "bytes": 413515,
+        "coordination": {
+          "sweeps": 1,
+          "cancellations": 1,
+          "foregroundWaitMs": 159.86979099999917,
+          "maxForegroundWaitMs": 159.86979099999917
+        }
+      }
+    },
+    {
+      "childBlocks": 10000,
+      "initialSetupAndFirstReconcileMs": 11629.812165999998,
+      "fixtureBuildMs": 465.7916670000013,
+      "initialPublication": {
+        "nativeEncodeMs": 222.13633300000038,
+        "markdownMs": 33.18804199999977,
+        "filePublicationMs": 4076.8667910000004,
+        "saveTotalMs": 4332.19175,
+        "bytes": 4157492
+      },
+      "measurements": [
+        {
+          "operation": "text",
+          "nativeEncodeMs": 197.16062500000044,
+          "markdownMs": 25.716042000000016,
+          "filePublicationMs": 2669.720083,
+          "saveTotalMs": 2892.597458,
+          "bytes": 4157503,
+          "totalReconciliationMs": 6734.591665999997,
+          "phases": {
+            "discoveryMs": 2157.6515419999996,
+            "inspectionMs": 1302.5374169999996,
+            "stageMs": 1182.1911670000009,
+            "publicationMs": 2045.2613750000019,
+            "totalMs": 6734.512583000003
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "6f78c3ec584e42a50c322dc334014e7bce9dcb7b43e2e7886d61ff6b4636ee29",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 10000,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 1598.5307920000014,
+                "comparisonMs": 444.6583750000027,
+                "mutationAndFtsMs": 0.6401249999980791,
+                "commitMs": 0.5224159999997937,
+                "sqlTotalMs": 2044.5187090000036
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 961.9519589999982,
+                "projectionMs": 212.6217080000024
+              }
+            }
+          ]
+        },
+        {
+          "operation": "move",
+          "nativeEncodeMs": 196.03720800000156,
+          "markdownMs": 24.628457999999227,
+          "filePublicationMs": 2882.119209000004,
+          "saveTotalMs": 3102.785250000001,
+          "bytes": 4157503,
+          "totalReconciliationMs": 6759.891208000001,
+          "phases": {
+            "discoveryMs": 931.1132500000022,
+            "inspectionMs": 1255.5277079999942,
+            "stageMs": 1199.0793340000018,
+            "publicationMs": 3271.3187499999985,
+            "totalMs": 6759.697333999997
+          },
+          "resources": [
+            {
+              "resourceId": "resource",
+              "contentHash": "03009b63f2171406d4e7381fce1165f8187aa4ef529761e426c3341f21c2b31a",
+              "mode": "incremental",
+              "changedBlocks": 1,
+              "removedBlocks": 0,
+              "unchangedBlocks": 10000,
+              "diagnostics": [],
+              "timings": {
+                "previousReadMs": 2233.2182079999984,
+                "comparisonMs": 494.8162500000035,
+                "mutationAndFtsMs": 523.228959,
+                "commitMs": 18.691749999998137,
+                "sqlTotalMs": 3270.1235830000005
+              },
+              "extractionTimings": {
+                "decodeValidationMs": 984.6986249999973,
+                "projectionMs": 212.36962499999936
+              }
+            }
+          ]
+        }
+      ],
+      "verify": {
+        "ok": true,
+        "mutable": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "ok"
+        },
+        "audit": {
+          "ok": true,
+          "integrity": [
+            {
+              "integrity_check": "ok"
+            }
+          ],
+          "foreignKeys": [],
+          "fts": "not-applicable"
+        }
+      },
+      "foregroundSaveDuringStage": {
+        "nativeEncodeMs": 273.10820799999783,
+        "markdownMs": 63.023250000005646,
+        "filePublicationMs": 2779.577124999996,
+        "saveTotalMs": 3115.7090000000026,
+        "bytes": 4157515,
+        "coordination": {
+          "sweeps": 1,
+          "cancellations": 1,
+          "foregroundWaitMs": 1422.0172079999975,
+          "maxForegroundWaitMs": 1422.0172079999975
+        }
+      }
+    }
+  ],
+  "entities": {
+    "populationMs": 2890.494083,
+    "shape": {
+      "entities": 10000,
+      "curatedImportedAliases": 20000,
+      "resources": 100,
+      "blocks": 25000,
+      "segments": 25000,
+      "highDegree": "every tenth segment targets one Entity",
+      "unresolvedDefinitions": "every ninth segment excluded",
+      "missingEntities": "every seventh target absent unless high-degree"
+    },
+    "sqlite": {
+      "version": "3.50.4"
+    },
+    "queries": [
+      {
+        "kind": "exact",
+        "returned": 50,
+        "firstConnectionReadMs": 0.49974999999994907,
+        "warmRaw": {
+          "p50": 0.1422090000000935,
+          "p95": 0.16791599999987739,
+          "max": 0.16791599999987739,
+          "n": 20
+        },
+        "firstWorkerMs": 2.447167000000263,
+        "warmWorker": {
+          "p50": 0.26541599999973187,
+          "p95": 0.7186670000000959,
+          "max": 0.7186670000000959,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 0.15650000000005093,
+          "p95": 0.17895799999996598,
+          "max": 0.17895799999996598,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.030791000000135682,
+          "p95": 0.036207999999987805,
+          "max": 0.036207999999987805,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.03704199999992852,
+          "p95": 0.49262599999974555,
+          "max": 0.49262599999974555,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.025292000000263215,
+          "p95": 0.03366700000015044,
+          "max": 0.03366700000015044,
+          "n": 20
+        },
+        "firstHttpMs": 25.547708000000057,
+        "httpServiceRoundtrip": {
+          "p50": 2.0525000000002365,
+          "p95": 4.911916999999903,
+          "max": 4.911916999999903,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 5,
+            "parent": 0,
+            "notused": 92,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          },
+          {
+            "id": 9,
+            "parent": 0,
+            "notused": 0,
+            "detail": "LIST SUBQUERY 2"
+          },
+          {
+            "id": 11,
+            "parent": 9,
+            "notused": 0,
+            "detail": "COMPOUND QUERY"
+          },
+          {
+            "id": 12,
+            "parent": 11,
+            "notused": 0,
+            "detail": "LEFT-MOST SUBQUERY"
+          },
+          {
+            "id": 15,
+            "parent": 12,
+            "notused": 54,
+            "detail": "SEARCH Entity USING COVERING INDEX IX_Entity_Name (nameKey=?)"
+          },
+          {
+            "id": 25,
+            "parent": 11,
+            "notused": 0,
+            "detail": "UNION USING TEMP B-TREE"
+          },
+          {
+            "id": 28,
+            "parent": 25,
+            "notused": 62,
+            "detail": "SEARCH EntityAlias USING INDEX IX_EntityAlias_Alias (aliasKey=?)"
+          },
+          {
+            "id": 47,
+            "parent": 11,
+            "notused": 0,
+            "detail": "CREATE BLOOM FILTER"
+          },
+          {
+            "id": 72,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      {
+        "kind": "prefix",
+        "returned": 50,
+        "firstConnectionReadMs": 0.4705420000000231,
+        "warmRaw": {
+          "p50": 0.1382499999999709,
+          "p95": 0.16516600000022663,
+          "max": 0.16516600000022663,
+          "n": 20
+        },
+        "firstWorkerMs": 0.459041999999954,
+        "warmWorker": {
+          "p50": 0.26729199999999764,
+          "p95": 0.7291669999999613,
+          "max": 0.7291669999999613,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 0.16129099999989194,
+          "p95": 0.21733399999993708,
+          "max": 0.21733399999993708,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.031749999999647116,
+          "p95": 0.03524999999990541,
+          "max": 0.03524999999990541,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.03275099999973463,
+          "p95": 0.43779200000017227,
+          "max": 0.43779200000017227,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.026292000000012195,
+          "p95": 0.07287499999983993,
+          "max": 0.07287499999983993,
+          "n": 20
+        },
+        "firstHttpMs": 1.6169590000004064,
+        "httpServiceRoundtrip": {
+          "p50": 1.08725000000004,
+          "p95": 1.2755839999999807,
+          "max": 1.2755839999999807,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 5,
+            "parent": 0,
+            "notused": 92,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          },
+          {
+            "id": 9,
+            "parent": 0,
+            "notused": 0,
+            "detail": "LIST SUBQUERY 2"
+          },
+          {
+            "id": 11,
+            "parent": 9,
+            "notused": 0,
+            "detail": "COMPOUND QUERY"
+          },
+          {
+            "id": 12,
+            "parent": 11,
+            "notused": 0,
+            "detail": "LEFT-MOST SUBQUERY"
+          },
+          {
+            "id": 15,
+            "parent": 12,
+            "notused": 151,
+            "detail": "SEARCH Entity USING COVERING INDEX IX_Entity_Name (nameKey>? AND nameKey<?)"
+          },
+          {
+            "id": 28,
+            "parent": 11,
+            "notused": 0,
+            "detail": "UNION USING TEMP B-TREE"
+          },
+          {
+            "id": 31,
+            "parent": 28,
+            "notused": 164,
+            "detail": "SEARCH EntityAlias USING INDEX IX_EntityAlias_Alias (aliasKey>? AND aliasKey<?)"
+          },
+          {
+            "id": 53,
+            "parent": 11,
+            "notused": 0,
+            "detail": "CREATE BLOOM FILTER"
+          },
+          {
+            "id": 78,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      {
+        "kind": "lexical",
+        "returned": 50,
+        "firstConnectionReadMs": 0.7457079999999223,
+        "warmRaw": {
+          "p50": 0.1952080000000933,
+          "p95": 0.2798750000001746,
+          "max": 0.2798750000001746,
+          "n": 20
+        },
+        "firstWorkerMs": 0.7127089999999043,
+        "warmWorker": {
+          "p50": 0.30329100000017206,
+          "p95": 0.4907499999999345,
+          "max": 0.4907499999999345,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 0.20212500000025102,
+          "p95": 0.2244580000001406,
+          "max": 0.2244580000001406,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.030707999999776803,
+          "p95": 0.033584000000246306,
+          "max": 0.033584000000246306,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.027332999999543972,
+          "p95": 0.19929099999990285,
+          "max": 0.19929099999990285,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.02624999999989086,
+          "p95": 0.028166999999939435,
+          "max": 0.028166999999939435,
+          "n": 20
+        },
+        "firstHttpMs": 1.5625409999997828,
+        "httpServiceRoundtrip": {
+          "p50": 1.2197919999998703,
+          "p95": 1.5322500000002037,
+          "max": 1.5322500000002037,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 5,
+            "parent": 0,
+            "notused": 92,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          },
+          {
+            "id": 9,
+            "parent": 0,
+            "notused": 0,
+            "detail": "LIST SUBQUERY 2"
+          },
+          {
+            "id": 11,
+            "parent": 9,
+            "notused": 0,
+            "detail": "COMPOUND QUERY"
+          },
+          {
+            "id": 12,
+            "parent": 11,
+            "notused": 0,
+            "detail": "LEFT-MOST SUBQUERY"
+          },
+          {
+            "id": 16,
+            "parent": 12,
+            "notused": 132,
+            "detail": "SCAN f VIRTUAL TABLE INDEX 0:M2"
+          },
+          {
+            "id": 21,
+            "parent": 12,
+            "notused": 45,
+            "detail": "SEARCH e USING INTEGER PRIMARY KEY (rowid=?)"
+          },
+          {
+            "id": 28,
+            "parent": 11,
+            "notused": 0,
+            "detail": "UNION USING TEMP B-TREE"
+          },
+          {
+            "id": 31,
+            "parent": 28,
+            "notused": 132,
+            "detail": "SCAN f VIRTUAL TABLE INDEX 0:M1"
+          },
+          {
+            "id": 36,
+            "parent": 28,
+            "notused": 45,
+            "detail": "SEARCH a USING INTEGER PRIMARY KEY (rowid=?)"
+          },
+          {
+            "id": 51,
+            "parent": 11,
+            "notused": 0,
+            "detail": "CREATE BLOOM FILTER"
+          },
+          {
+            "id": 76,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      {
+        "kind": "substring",
+        "returned": 50,
+        "firstConnectionReadMs": 17.24912499999982,
+        "warmRaw": {
+          "p50": 15.44250000000011,
+          "p95": 18.914708000000246,
+          "max": 18.914708000000246,
+          "n": 20
+        },
+        "firstWorkerMs": 17.26449999999977,
+        "warmWorker": {
+          "p50": 15.769874999999956,
+          "p95": 17.656957999999577,
+          "max": 17.656957999999577,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 15.530749999999898,
+          "p95": 17.2170000000001,
+          "max": 17.2170000000001,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.040500000000065484,
+          "p95": 0.050499999999829015,
+          "max": 0.050499999999829015,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.10066599999981918,
+          "p95": 0.3126249999995707,
+          "max": 0.3126249999995707,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.03245900000001711,
+          "p95": 0.03541700000005221,
+          "max": 0.03541700000005221,
+          "n": 20
+        },
+        "firstHttpMs": 17.414500000000317,
+        "httpServiceRoundtrip": {
+          "p50": 19.90120799999977,
+          "p95": 94.21704200000022,
+          "max": 94.21704200000022,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 5,
+            "parent": 0,
+            "notused": 92,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          },
+          {
+            "id": 9,
+            "parent": 0,
+            "notused": 0,
+            "detail": "LIST SUBQUERY 2"
+          },
+          {
+            "id": 11,
+            "parent": 9,
+            "notused": 0,
+            "detail": "COMPOUND QUERY"
+          },
+          {
+            "id": 12,
+            "parent": 11,
+            "notused": 0,
+            "detail": "LEFT-MOST SUBQUERY"
+          },
+          {
+            "id": 15,
+            "parent": 12,
+            "notused": 211,
+            "detail": "SCAN Entity USING COVERING INDEX IX_Entity_Name"
+          },
+          {
+            "id": 24,
+            "parent": 11,
+            "notused": 0,
+            "detail": "UNION USING TEMP B-TREE"
+          },
+          {
+            "id": 26,
+            "parent": 24,
+            "notused": 213,
+            "detail": "SCAN EntityAlias USING COVERING INDEX sqlite_autoindex_EntityAlias_2"
+          },
+          {
+            "id": 43,
+            "parent": 11,
+            "notused": 0,
+            "detail": "CREATE BLOOM FILTER"
+          },
+          {
+            "id": 68,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      {
+        "kind": "mention",
+        "returned": 50,
+        "firstConnectionReadMs": 24.043375000000196,
+        "warmRaw": {
+          "p50": 15.501040999999532,
+          "p95": 21.711459000000104,
+          "max": 21.711459000000104,
+          "n": 20
+        },
+        "firstWorkerMs": 21.050374999999804,
+        "warmWorker": {
+          "p50": 15.500457999999526,
+          "p95": 24.885291999999936,
+          "max": 24.885291999999936,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 15.208916999999929,
+          "p95": 24.50512499999968,
+          "max": 24.50512499999968,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.0415419999999358,
+          "p95": 0.0595419999999649,
+          "max": 0.0595419999999649,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.11049899999943591,
+          "p95": 0.3758330000009664,
+          "max": 0.3758330000009664,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.04362500000024738,
+          "p95": 0.08816699999988487,
+          "max": 0.08816699999988487,
+          "n": 20
+        },
+        "firstHttpMs": 17.130709000000024,
+        "httpServiceRoundtrip": {
+          "p50": 16.73266599999988,
+          "p95": 16.914749999999913,
+          "max": 16.914749999999913,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 5,
+            "parent": 0,
+            "notused": 92,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          },
+          {
+            "id": 9,
+            "parent": 0,
+            "notused": 0,
+            "detail": "LIST SUBQUERY 3"
+          },
+          {
+            "id": 12,
+            "parent": 9,
+            "notused": 0,
+            "detail": "COMPOUND QUERY"
+          },
+          {
+            "id": 13,
+            "parent": 12,
+            "notused": 0,
+            "detail": "LEFT-MOST SUBQUERY"
+          },
+          {
+            "id": 15,
+            "parent": 13,
+            "notused": 211,
+            "detail": "SCAN Entity USING COVERING INDEX IX_Entity_Name"
+          },
+          {
+            "id": 24,
+            "parent": 12,
+            "notused": 0,
+            "detail": "UNION USING TEMP B-TREE"
+          },
+          {
+            "id": 26,
+            "parent": 24,
+            "notused": 213,
+            "detail": "SCAN EntityAlias USING COVERING INDEX sqlite_autoindex_EntityAlias_2"
+          },
+          {
+            "id": 38,
+            "parent": 12,
+            "notused": 0,
+            "detail": "UNION USING TEMP B-TREE"
+          },
+          {
+            "id": 43,
+            "parent": 38,
+            "notused": 61,
+            "detail": "SEARCH s USING INDEX IX_Standoff_Type (typename=?)"
+          },
+          {
+            "id": 57,
+            "parent": 38,
+            "notused": 46,
+            "detail": "SEARCH b USING INDEX sqlite_autoindex_Block_1 (guid=?)"
+          },
+          {
+            "id": 73,
+            "parent": 12,
+            "notused": 0,
+            "detail": "CREATE BLOOM FILTER"
+          },
+          {
+            "id": 98,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      {
+        "kind": "guid",
+        "batch": 1,
+        "returned": 1,
+        "firstConnectionReadMs": 0.02191599999969185,
+        "warmRaw": {
+          "p50": 0.004542000000583357,
+          "p95": 0.007958000000144239,
+          "max": 0.007958000000144239,
+          "n": 20
+        },
+        "firstWorkerMs": 0.15524999999979627,
+        "warmWorker": {
+          "p50": 0.05795899999975518,
+          "p95": 0.29349999999976717,
+          "max": 0.29349999999976717,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 0.007875000000240107,
+          "p95": 0.010707999999794993,
+          "max": 0.010707999999794993,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.0023330000003625173,
+          "p95": 0.010833000000275206,
+          "max": 0.010833000000275206,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.03183400000034453,
+          "p95": 0.2648749999989377,
+          "max": 0.2648749999989377,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.0016249999998763087,
+          "p95": 0.003499999999803549,
+          "max": 0.003499999999803549,
+          "n": 20
+        },
+        "firstHttpMs": 0.9977909999997792,
+        "httpServiceRoundtrip": {
+          "p50": 0.7383749999999054,
+          "p95": 0.8349589999997988,
+          "max": 0.8349589999997988,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 4,
+            "parent": 0,
+            "notused": 39,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          }
+        ]
+      },
+      {
+        "kind": "guid",
+        "batch": 10,
+        "returned": 10,
+        "firstConnectionReadMs": 0.063083000000006,
+        "warmRaw": {
+          "p50": 0.0185830000000351,
+          "p95": 0.030208000000129687,
+          "max": 0.030208000000129687,
+          "n": 20
+        },
+        "firstWorkerMs": 0.151332999999795,
+        "warmWorker": {
+          "p50": 0.08516700000018318,
+          "p95": 0.10333400000035908,
+          "max": 0.10333400000035908,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 0.023584000000482774,
+          "p95": 0.033333000000311586,
+          "max": 0.033333000000311586,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.007458000000042375,
+          "p95": 0.00874999999996362,
+          "max": 0.00874999999996362,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.03116799999952491,
+          "p95": 0.04250000000047294,
+          "max": 0.04250000000047294,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.0072089999994204845,
+          "p95": 0.01541700000052515,
+          "max": 0.01541700000052515,
+          "n": 20
+        },
+        "firstHttpMs": 1.0368340000004537,
+        "httpServiceRoundtrip": {
+          "p50": 0.774333000000297,
+          "p95": 0.8265420000006998,
+          "max": 0.8265420000006998,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 4,
+            "parent": 0,
+            "notused": 79,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          }
+        ]
+      },
+      {
+        "kind": "guid",
+        "batch": 100,
+        "returned": 100,
+        "firstConnectionReadMs": 0.32670800000050804,
+        "warmRaw": {
+          "p50": 0.15491599999950267,
+          "p95": 0.18299999999999272,
+          "max": 0.18299999999999272,
+          "n": 20
+        },
+        "firstWorkerMs": 1.0777079999998023,
+        "warmWorker": {
+          "p50": 0.3115829999997004,
+          "p95": 0.6080830000000788,
+          "max": 0.6080830000000788,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 0.161457999999584,
+          "p95": 0.2022500000002765,
+          "max": 0.2022500000002765,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.05829200000061974,
+          "p95": 0.0718750000005457,
+          "max": 0.0718750000005457,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.047832999999627646,
+          "p95": 0.34729200000037963,
+          "max": 0.34729200000037963,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.05520799999976589,
+          "p95": 0.06870799999978772,
+          "max": 0.06870799999978772,
+          "n": 20
+        },
+        "firstHttpMs": 1.8176250000005894,
+        "httpServiceRoundtrip": {
+          "p50": 1.2400829999996859,
+          "p95": 1.3498340000005555,
+          "max": 1.3498340000005555,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 4,
+            "parent": 0,
+            "notused": 112,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          }
+        ]
+      },
+      {
+        "kind": "guid",
+        "batch": 1000,
+        "returned": 1000,
+        "firstConnectionReadMs": 2.188458000000537,
+        "warmRaw": {
+          "p50": 1.8450000000002547,
+          "p95": 3.10608400000001,
+          "max": 3.10608400000001,
+          "n": 20
+        },
+        "firstWorkerMs": 3.436584000000039,
+        "warmWorker": {
+          "p50": 3.122667000000547,
+          "p95": 3.230541999999332,
+          "max": 3.230541999999332,
+          "n": 20
+        },
+        "workerSql": {
+          "p50": 1.8782920000003287,
+          "p95": 1.999166999999943,
+          "max": 1.999166999999943,
+          "n": 20
+        },
+        "workerSerialize": {
+          "p50": 0.7046669999999722,
+          "p95": 0.7835830000003625,
+          "max": 0.7835830000003625,
+          "n": 20
+        },
+        "transportAndScheduling": {
+          "p50": 0.239292000000205,
+          "p95": 0.2946670000001177,
+          "max": 0.2946670000001177,
+          "n": 20
+        },
+        "clientPayloadDecode": {
+          "p50": 0.5867500000003929,
+          "p95": 0.6130419999999503,
+          "max": 0.6130419999999503,
+          "n": 20
+        },
+        "firstHttpMs": 10.401375000000371,
+        "httpServiceRoundtrip": {
+          "p50": 7.976624999999331,
+          "p95": 9.035874999999578,
+          "max": 9.035874999999578,
+          "n": 10
+        },
+        "plan": [
+          {
+            "id": 4,
+            "parent": 0,
+            "notused": 145,
+            "detail": "SEARCH Entity USING INDEX sqlite_autoindex_Entity_1 (guid=?)"
+          }
+        ]
+      }
+    ]
+  },
+  "notes": [
+    "Cold = first read on a new connection; OS caches were not flushed. Warm raw 20 samples, HTTP 10.",
+    "Resource scenarios are single diagnostic samples, not p95 promises. Mostly plain-text Blocks; one standoff Block.",
+    "FTS trigger work is included in SQL mutation; no production triggers disabled for measurement.",
+    "Discovery and inspection decode the Resource before stage decodes/projects it again. Timings retain that work.",
+    "Mention prototype only admits direct authored assertions; unresolved linked definitions excluded. Missing Entity targets do not produce canonical rows. Live unsaved mentions not in SQLite.",
+    "No 100000-Block optional fixture; no P6 data generation or schema/query optimization."
+  ]
+}

@@ -26,10 +26,12 @@ export function validateDocument(value: unknown): asserts value is Record<string
 export function createDocumentStoreRouter(options: {
   root: string;
   readOnly?: boolean;
+  coordinate?: <T>(action: () => Promise<T>) => Promise<T>;
   indexDocument?: (document: any, filepath: string) => Promise<void>;
   history?: Pick<ReturnType<typeof createHistoryService>, "validatePortable" | "saveDocument">;
 }) {
   const router = Router();
+  const coordinate = options.coordinate ?? (async action => action());
   const inside = (root: string, target: string) => {
     const relative = path.relative(root, target);
     if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
@@ -93,7 +95,7 @@ export function createDocumentStoreRouter(options: {
     } catch (error) { errorResponse(res, error); }
   });
 
-  router.post("/saveDocumentJson", async (req, res) => {
+  router.post("/saveDocumentJson", async (req, res) => coordinate(async () => {
     let temporary: string | undefined;
     try {
       if (options.readOnly) throw new StoreError(403, "Server Documents are read-only in the public hosted version. Save to a Local JSON file instead.");
@@ -145,6 +147,6 @@ export function createDocumentStoreRouter(options: {
       res.json({ Success: true, ...(warning ? { Warning: warning } : {}), ...(receipt ? { Data: { receipt } } : {}) });
     } catch (error) { errorResponse(res, error); }
     finally { if (temporary) await fs.unlink(temporary).catch(() => undefined); }
-  });
+  }));
   return router;
 }
