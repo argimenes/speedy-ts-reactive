@@ -38,6 +38,8 @@ try {
       for (const name of names) regularFile(path.join(home,name));
       for (const name of names) if (name !== 'writer.lock') fs.unlinkSync(path.join(home,name));
     } finally { unlock(); }
+    // Explicit disposable-only reset removes the empty test home; normal init never repairs partial infrastructure.
+    fs.unlinkSync(path.join(home,'writer.lock'));fs.rmdirSync(home);
   }
   client = await openSqliteFoundation({ vault, initialize: ['init','init-test','reset-test'].includes(command),
     readOnly: !!values['read-only'] || command === 'inspect', ...(command === 'restore' ? { restoreFrom: values.source } : {}) });

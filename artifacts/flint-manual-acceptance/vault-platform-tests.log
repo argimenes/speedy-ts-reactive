@@ -1,0 +1,150 @@
+TAP version 13
+# Subtest: worker init, bounded queue, graceful shutdown, restart and explicit read-only mode
+ok 1 - worker init, bounded queue, graceful shutdown, restart and explicit read-only mode
+  ---
+  duration_ms: 190.64175
+  ...
+# Subtest: one writer, simultaneous read-only inspection, worker termination releases lock
+ok 2 - one writer, simultaneous read-only inspection, worker termination releases lock
+  ---
+  duration_ms: 238.392541
+  ...
+# Subtest: worker timeout fails explicitly and recreation is possible without automatic replay
+ok 3 - worker timeout fails explicitly and recreation is possible without automatic replay
+  ---
+  duration_ms: 96.695542
+  ...
+# Subtest: independent vault workers retain distinct identities and release their own leases
+ok 4 - independent vault workers retain distinct identities and release their own leases
+  ---
+  duration_ms: 185.543625
+  ...
+# Subtest: bounded busy failure leaves canonical/derived rows intact and permits explicit retry
+ok 5 - bounded busy failure leaves canonical/derived rows intact and permits explicit retry
+  ---
+  duration_ms: 1157.433
+  ...
+# Subtest: OS process death rolls back a transaction and WAL reopens with the committed state
+ok 6 - OS process death rolls back a transaction and WAL reopens with the committed state
+  ---
+  duration_ms: 199.497625
+  ...
+# Subtest: audit missing does not prevent current knowledge reads
+ok 7 - audit missing does not prevent current knowledge reads
+  ---
+  duration_ms: 102.492958
+  ...
+# Subtest: audit corrupt does not prevent current knowledge reads
+ok 8 - audit corrupt does not prevent current knowledge reads
+  ---
+  duration_ms: 91.305083
+  ...
+# Subtest: audit wrong-vault does not prevent current knowledge reads
+ok 9 - audit wrong-vault does not prevent current knowledge reads
+  ---
+  duration_ms: 88.570625
+  ...
+# Subtest: audit future-version does not prevent current knowledge reads
+ok 10 - audit future-version does not prevent current knowledge reads
+  ---
+  duration_ms: 91.886917
+  ...
+# Subtest: current corrupt is rejected, never reset
+ok 11 - current corrupt is rejected, never reset
+  ---
+  duration_ms: 75.290584
+  ...
+# Subtest: current future-version is rejected, never reset
+ok 12 - current future-version is rejected, never reset
+  ---
+  duration_ms: 110.841084
+  ...
+# Subtest: current schema-drift is rejected, never reset
+ok 13 - current schema-drift is rejected, never reset
+  ---
+  duration_ms: 79.471667
+  ...
+# Subtest: missing current database next to audit is not recreated, even by init
+ok 14 - missing current database next to audit is not recreated, even by init
+  ---
+  duration_ms: 30.332833
+  ...
+# Subtest: initialization is explicit and read-only cannot initialize or restore
+ok 15 - initialization is explicit and read-only cannot initialize or restore
+  ---
+  duration_ms: 128.752709
+  ...
+# Subtest: rejects symlink home before SQLite touches it
+ok 16 - rejects symlink home before SQLite touches it
+  ---
+  duration_ms: 29.40625
+  ...
+# Subtest: rejects symlink mutable.db before SQLite touches it
+ok 17 - rejects symlink mutable.db before SQLite touches it
+  ---
+  duration_ms: 28.084
+  ...
+# Subtest: rejects symlink mutable.db-wal before SQLite touches it
+ok 18 - rejects symlink mutable.db-wal before SQLite touches it
+  ---
+  duration_ms: 72.962458
+  ...
+# Subtest: rejects symlink writer.lock before SQLite touches it
+ok 19 - rejects symlink writer.lock before SQLite touches it
+  ---
+  duration_ms: 76.305917
+  ...
+# Subtest: rejects hard-linked canonical databases
+ok 20 - rejects hard-linked canonical databases
+  ---
+  duration_ms: 72.267
+  ...
+# Subtest: WAL-aware online backup restores current knowledge, independent audit and explicit stale derived rows
+ok 21 - WAL-aware online backup restores current knowledge, independent audit and explicit stale derived rows
+  ---
+  duration_ms: 195.005708
+  ...
+# Subtest: restore rejects corrupted snapshot bytes before publication
+ok 22 - restore rejects corrupted snapshot bytes before publication
+  ---
+  duration_ms: 106.84675
+  ...
+# Subtest: backup remains available without audit and does not invent missing history on restore
+ok 23 - backup remains available without audit and does not invent missing history on restore
+  ---
+  duration_ms: 166.849042
+  ...
+# Subtest: CLI disposable reset is guarded against user files, ordinary vaults and active writers
+ok 24 - CLI disposable reset is guarded against user files, ordinary vaults and active writers
+  ---
+  duration_ms: 1178.274125
+  ...
+# Subtest: same root reopens with same identity and persistent overlap rejection outlives all leases
+ok 25 - same root reopens with same identity and persistent overlap rejection outlives all leases
+  ---
+  duration_ms: 179.271375
+  ...
+# Subtest: dormant child forbids parent and sibling vaults retain independent knowledge identities
+ok 26 - dormant child forbids parent and sibling vaults retain independent knowledge identities
+  ---
+  duration_ms: 177.699916
+  ...
+# Subtest: incomplete, symlink, partial infrastructure and conflicting existing topology fail closed
+ok 27 - incomplete, symlink, partial infrastructure and conflicting existing topology fail closed
+  ---
+  duration_ms: 91.365209
+  ...
+# Subtest: cross-process concurrent parent/child establishment creates at most one persistence domain
+ok 28 - cross-process concurrent parent/child establishment creates at most one persistence domain
+  ---
+  duration_ms: 201.368125
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5711.740583

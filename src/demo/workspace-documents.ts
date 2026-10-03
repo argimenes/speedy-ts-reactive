@@ -47,7 +47,7 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
     } else continuation?.action();
   };
   const save = async (continuation?: PendingAction) => {
-    if (busy() || editor.features.publicHostedVersion) return;
+    if (busy()) return;
     const target = location();
     if (!target) { saveAs(continuation); return; }
     setError("");
@@ -125,17 +125,17 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
   };
 
   const definitions = [
-    { id: "document.open", label: "Open document", execute: editor.features.publicHostedVersion ? openLocal : open },
-    { id: "document.save", label: "Save document", execute: editor.features.publicHostedVersion ? () => saveLocal() : () => save() },
-    { id: "document.saveAs", label: "Save document as", execute: editor.features.publicHostedVersion ? () => saveLocal(undefined, true) : () => saveAs() },
+    { id: "document.open", label: "Open document", execute: open },
+    { id: "document.save", label: "Save document", execute: () => save() },
+    { id: "document.saveAs", label: "Save document as", execute: () => saveAs() },
   ];
   definitions.forEach((definition) => editor.commandRegistry.register({ ...definition, canExecute: () => !busy() && !browser() && !pending() }));
-  const run = (id: string, storage: "server" | "local" = editor.features.publicHostedVersion ? "local" : "server") => {
+  const run = (id: string, storage: "server" | "local" = "server") => {
     if (busy() || pending()) return;
     if (storage === "server") {
       if (id === "document.open") open();
-      else if (!editor.features.publicHostedVersion && id === "document.save") void save();
-      else if (!editor.features.publicHostedVersion && id === "document.saveAs") saveAs();
+      else if (id === "document.save") void save();
+      else if (id === "document.saveAs") saveAs();
       return;
     }
     if (id === "document.open") openLocal();
@@ -171,6 +171,6 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
     closeBrowser: () => { if (!busy()) { setBrowser(undefined); setAfterSave(undefined); setError(""); } },
     cancelPending: () => { if (!busy()) { setPending(undefined); setError(""); } },
     discardPending: () => { const next = pending(); setPending(undefined); next?.action(); },
-    savePending: () => { const next = pending(); setPending(undefined); if (editor.features.publicHostedVersion || localFile()) void saveLocal(next); else void save(next); },
+    savePending: () => { const next = pending(); setPending(undefined); if (localFile()) void saveLocal(next); else void save(next); },
   };
 }

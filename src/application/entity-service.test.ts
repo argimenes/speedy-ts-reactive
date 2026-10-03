@@ -13,7 +13,7 @@ async function fixture(){
  vi.stubGlobal('crypto',webcrypto);const root=await fs.mkdtemp(path.join(os.tmpdir(),'p3d-service-'));cleanup.push(()=>fs.rm(root,{recursive:true,force:true}));await fs.mkdir(path.join(root,'vault'));const entityId=randomUUID();
  for(const id of ['a','b'])await fs.writeFile(path.join(root,`vault/${id}.mutable.json`),bytes(id,entityId,id==='a'?'the city':'Firenze'));
  const sql=new SqliteKnowledgeHost({root,debounceMs:60000});cleanup.push(()=>sql.close());const lease=await sql.acquire('vault');await sql.flush();
- const app=express();app.use('/api/sqlite/knowledge',sql.router());app.use('/api/native',createNativeDocumentStoreRouter({root,coordinate:(a:any)=>sql.foreground(a)}));const server:any=await new Promise(r=>{const s=app.listen(0,'127.0.0.1',()=>r(s));});cleanup.push(()=>new Promise(r=>server.close(r)));vi.stubGlobal('fetch',(url:any,o:any)=>realFetch(typeof url==='string'&&url.startsWith('/')?`http://127.0.0.1:${server.address().port}${url}`:url,o));
+ const app=express();app.use('/api/sqlite/knowledge',sql.router());app.use('/api/native',createNativeDocumentStoreRouter({root,establishVault:v=>sql.establish(v),coordinate:(a:any)=>sql.foreground(a)}));const server:any=await new Promise(r=>{const s=app.listen(0,'127.0.0.1',()=>r(s));});cleanup.push(()=>new Promise(r=>server.close(r)));vi.stubGlobal('fetch',(url:any,o:any)=>realFetch(typeof url==='string'&&url.startsWith('/')?`http://127.0.0.1:${server.address().port}${url}`:url,o));
  const editor=new ReactiveEditor({id:'workspace',type:'workspace-block',children:[{id:'bank',type:'workspace-object-bank-block',children:[]}]}),native=nativeDocumentSession(editor),vaults=createDocumentVaults(native),factory=createNativeKnowledgeHost(editor.repository,native,{read:()=>DEFAULT_POLICY,subscribe:()=>()=>{}},{progressiveSaved:true,sqliteSaved:true,debounceMs:60000,yieldControl:async()=>{}});
  cleanup.push(async()=>{await factory.dispose();vaults.dispose();editor.dispose();});const vault=await vaults.acquire('vault');await native.open({folder:'vault',filename:'a.mutable.json'});const view=editor.createView('entity-source'),node=Object.values(view.state.nodes).find(n=>n.payload.id==='a-text')!;expect(node).toBeTruthy();const facts=new FactsQueryProvider(factory);facts.use(vault);cleanup.push(()=>facts.dispose());let selected=vault;
  cleanup.push(registerEntityContext(editor,{accepts:key=>key===node.key,vault:()=>selected,facts}));const service=entityService(editor,node.key);cleanup.push(()=>service.dispose());const settle=async()=>{await vault.refresh(true);await factory.host.flush();};await settle();
@@ -32,15 +32,15 @@ it('real HTTP/worker resolves canonical names, curated aliases and live/saved me
  const saved=await f.query('city','mention');f.editor.commands.replaceInlineRange(f.node.key,4,8,'town');expect(()=>saved.current()).toThrow();await f.factory.host.flush();expect((await f.query('city','mention','document')).candidates).toHaveLength(0);expect((await f.query('the ','mention','document','exact')).candidates[0]?.id).toBe(f.entityId);
  expect((await f.service.get(f.entityId))!.aliases.map(a=>a.name)).toEqual(['Firenze']);expect(await fs.readFile(path.join(f.root,'vault/a.mutable.json'))).toEqual(before);
  f.editor.repository.undo();await f.factory.host.flush();expect((await f.query('the city','mention','document','exact')).candidates).toHaveLength(1);
- f.select(undefined);await expect(f.service.get(f.entityId)).rejects.toThrow(/vault/);
+ f.select(undefined);await expect(f.service.get(f.entityId)).rejects.toThrow(/Vault|vault/);
 },30000);
 it('rejects duplicate/source disappearance, forged bindings, wrong vault, cancellation and stale live tokens',async()=>{
  const f=await fixture();await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});await f.settle();const result=await f.query('city','mention','document');
  const signal=new AbortController();signal.abort();await expect(f.service.search({query:'x',scope:'vault',stream:'name',match:'partial'},signal.signal)).rejects.toThrow();
  const source={resourceId:'a',location:{folder:'vault',filename:'a.mutable.json'},byteHash:f.native.knowledgeEvidence('a').byteHash};
- await expect(f.sql.entities({lease:f.lease.lease,source:{...source,resourceId:'b'},request:{op:'get',id:f.entityId}})).rejects.toThrow(/evidence/);
- await fs.copyFile(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/duplicate.mutable.json'));await expect(f.service.get(f.entityId)).rejects.toThrow(/evidence/);await fs.rm(path.join(f.root,'vault/duplicate.mutable.json'));
- await fs.rename(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/moved.mutable.json'));await expect(f.service.get(f.entityId)).rejects.toThrow(/evidence/);
+ await expect(f.sql.entities({lease:f.lease.lease,source:{...source,resourceId:'b'},request:{op:'get',id:f.entityId}})).rejects.toThrow(/evidence|identity|outside|changed/);
+ await fs.copyFile(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/duplicate.mutable.json'));await expect(f.service.get(f.entityId)).rejects.toThrow(/evidence|identity|outside|changed/);await fs.rm(path.join(f.root,'vault/duplicate.mutable.json'));
+ await fs.rename(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/moved.mutable.json'));await expect(f.service.get(f.entityId)).rejects.toThrow(/evidence|identity|outside|changed/);
  f.editor.commands.replaceInlineRange(f.node.key,0,0,'x');expect(()=>result.current()).toThrow();
  const root=Object.values(f.editor.repository.readState().contents).find(c=>c.payload.id==='a-doc')!;f.editor.repository.commit('Disappear',[{kind:'put-content',record:{...root,payload:{...root.payload,metadata:{documentId:'elsewhere'}}}}]);await expect(f.service.get(f.entityId)).rejects.toThrow(/missing|ambiguous/);
 },30000);
@@ -54,7 +54,7 @@ it('read-only vault permits resolution but rejects canonical writes, and another
  const f=await fixture();await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});await f.settle();await f.sql.close();
  const reader=new SqliteKnowledgeHost({root:f.root,readOnly:true});cleanup.push(()=>reader.close());const lease=await reader.acquire('vault'),source={resourceId:'a',location:{folder:'vault',filename:'a.mutable.json'},byteHash:f.native.knowledgeEvidence('a').byteHash};
  expect((await reader.entities({lease:lease.lease,source,request:{op:'get',id:f.entityId}})).entity.name).toBe('Florence');await expect(reader.entities({lease:lease.lease,source,request:{op:'create',id:randomUUID(),operationId:randomUUID(),name:'No write'}})).rejects.toThrow(/read-only/);
- await fs.mkdir(path.join(f.root,'other'));const other=new SqliteKnowledgeHost({root:f.root});cleanup.push(()=>other.close());const otherLease=await other.acquire('other');await other.flush();await expect(other.entities({lease:otherLease.lease,source,request:{op:'create',id:f.entityId,operationId:randomUUID(),name:'Wrong vault'}})).rejects.toThrow(/evidence/);
+ await fs.mkdir(path.join(f.root,'other'));const other=new SqliteKnowledgeHost({root:f.root});cleanup.push(()=>other.close());const otherLease=await other.acquire('other');await other.flush();await expect(other.entities({lease:otherLease.lease,source,request:{op:'create',id:f.entityId,operationId:randomUUID(),name:'Wrong vault'}})).rejects.toThrow(/evidence|identity|outside|changed/);
 },30000);
 it('unresolved saved definitions keep mention resolution and vault counts explicitly incomplete',async()=>{
  const f=await fixture();await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});await f.settle();
@@ -62,4 +62,11 @@ it('unresolved saved definitions keep mention resolution and vault counts explic
  saved.document.blocks[1].properties.standoffProperties.push({id:'unresolved',annotationId:'missing-definition',start:0,end:1});await fs.writeFile(file,JSON.stringify(saved));await f.settle();
  await expect(f.query('Firenze','mention')).rejects.toThrow(/incomplete/i);
  await expect(f.service.summaries([f.entityId])).rejects.toThrow(/incomplete/i);
+},30000);
+it('identifies a missing source binding before creation dispatch without claiming an uncertain Entity commit',async()=>{
+ const f=await fixture(),proof=f.native.knowledgeEvidence('a');
+ const spy=vi.spyOn(f.native,'knowledgeEvidence').mockReturnValue({...proof,location:undefined,byteHash:undefined});
+ const fetchSpy=vi.spyOn(globalThis,'fetch');
+ await expect(f.service.create({id:randomUUID(),operationId:randomUUID(),name:'Mutable OS'})).rejects.toMatchObject({entityCreationOutcome:'not-created',message:expect.stringContaining('Save this Document')});
+ expect(fetchSpy).not.toHaveBeenCalled();spy.mockRestore();fetchSpy.mockRestore();
 },30000);

@@ -14,7 +14,7 @@ function fixture(twoWindows = false) {
     { id: `${id}-p`, type: "standoff-editor-block", text: "one two three" },
     { id: `${id}-q`, type: "standoff-editor-block", text: "four five" },
   ] }] });
-  const editor = new ReactiveEditor(twoWindows ? { type: "workspace-block", children: [windowDto("a"), windowDto("b")] } : windowDto("a"), { features: { publicHostedVersion: false } });
+  const editor = new ReactiveEditor(twoWindows ? { type: "workspace-block", children: [windowDto("a"), windowDto("b")] } : windowDto("a"), { features: {  } });
   registerCoreViews(editor); const projection = editor.createView("compact-test");
   const host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);

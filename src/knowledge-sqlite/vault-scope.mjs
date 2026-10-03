@@ -1,0 +1,45 @@
+/** Mutable establishment only. No catalog, file membership or ordinary-operation lock. */
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { isMainThread } from 'node:worker_threads';
+const require=createRequire(import.meta.url);
+const exists=p=>{try{return fs.lstatSync(p);}catch(e){if(e.code==='ENOENT')return;throw e;}};
+export function inspectVaultScope(vault,{maxEntries=10000,maxDepth=128,maxMs=5000}={}) {
+ if(typeof vault!=='string'||!path.isAbsolute(vault))throw Error('Supply an absolute Vault directory');
+ const stat=fs.lstatSync(vault);if(!stat.isDirectory()||stat.isSymbolicLink())throw Error('Vault must be a real directory');
+ const root=fs.realpathSync(vault),start=Date.now();let count=0;
+ for(let dir=path.dirname(root);;dir=path.dirname(dir)){
+  if(exists(path.join(dir,'.mutable')))throw Error(`Overlapping Vault: ancestor Mutable infrastructure at ${dir}`);
+  if(dir===path.dirname(dir))break;
+ }
+ const home=path.join(root,'.mutable'),own=exists(home);
+ if(own&&(!own.isDirectory()||own.isSymbolicLink()))throw Error('Invalid Mutable system directory: expected a real directory, not a symlink');
+ const walk=(dir,depth)=>{
+  if(depth>maxDepth||Date.now()-start>maxMs)throw Error('Vault overlap inspection incomplete: scan budget exceeded');
+  const handle=fs.opendirSync(dir);
+  try{for(let e;(e=handle.readSync());){
+   if(++count>maxEntries||Date.now()-start>maxMs)throw Error('Vault overlap inspection incomplete: scan budget exceeded');
+   const p=path.join(dir,e.name);
+   if(e.name==='.mutable'){if(dir!==root)throw Error(`Overlapping Vault: descendant Mutable infrastructure at ${dir}`);continue;}
+   if(e.isSymbolicLink())throw Error(`Vault overlap inspection incomplete: symlink at ${p}`);
+   if(e.isDirectory())walk(p,depth+1);
+  }}finally{handle.closeSync();}
+ };
+ walk(root,0);
+ // Never repair a partial existing home by manufacturing a new canonical database.
+ if(own){const database=exists(path.join(home,'mutable.db'));if(!database?.isFile()||database.isSymbolicLink())throw Error('Existing Mutable infrastructure has missing or invalid current database; expected a private regular file, restore current knowledge explicitly');}
+ return {root,home,existing:!!own,entries:count};
+}
+export function lockVaultEstablishment(){
+ if(!isMainThread)throw Error('The host must coordinate Vault establishment');
+ // Purpose-specific, per-user coordination across server/CLI processes and managed roots.
+ // Held only across scope inspection and database establishment/open; never ordinary reads/writes.
+ const file=path.join(fs.realpathSync(os.tmpdir()),`mutable-vault-establishment-${process.getuid?.()??'user'}.lock`);
+ const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_RDWR|fs.constants.O_NOFOLLOW,0o600);
+ const stat=fs.fstatSync(fd);
+ if(!stat.isFile()||stat.nlink!==1||(process.getuid&&stat.uid!==process.getuid())){fs.closeSync(fd);throw Error('Invalid Vault establishment coordinator');}
+ try{require('fs-ext').flockSync(fd,'exnb');}catch(e){fs.closeSync(fd);throw Object.assign(Error('Another Vault establishment is in progress; retry'),{code:e.code});}
+ let closed=false;return()=>{if(!closed){closed=true;fs.closeSync(fd);}};
+}

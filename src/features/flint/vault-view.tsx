@@ -19,6 +19,7 @@ export function VaultView(props:{vault:ApplicationVault}) {
   const Folder=(p:{path:string})=> <details open class="flint-tree-folder"><summary><button aria-pressed={folder()===p.path&&!selected()} onClick={()=>pickFolder(p.path)}>{p.path===state()?.root?p.path:p.path.split('/').pop()}</button></summary>
     <For each={state()?.documents.filter(d=>d.location.folder===p.path&&(!tag()||d.loaded&&d.tags.includes(tag())))}>{d=><div class="flint-tree-document"><button aria-label={`Open ${path(d.location)}`} disabled={busy()||!state()!.complete||d.state==='ambiguous'||d.state==='pending'} onClick={()=>{setSelected(path(d.location));setFolder(d.location.folder);setDestination(d.location.folder);setMoveName(d.location.filename);void run(()=>props.vault.openFile(d.location));}}>{d.title}<small>{d.location.filename} · {d.state}</small></button><Show when={d.state==='pending'}><button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.recoverNative(d.location))}>Recover {d.location.filename}</button></Show></div>}</For>
     <For each={state()?.folders.filter(f=>location(f).folder===p.path)}>{f=><Folder path={f}/>}</For>
+    <For each={state()?.candidates?.filter(candidate=>location(candidate).folder===p.path)}>{candidate=><div class="flint-tree-document"><button aria-label={`Open ${candidate}`} disabled={busy()} onClick={()=>{setSelected('');setFolder(location(candidate).folder);void run(async()=>{if(!props.vault.openCandidate)throw Error('Content recognition is unavailable');await props.vault.openCandidate(location(candidate));});}}>{location(candidate).filename}<small>File · recognize on Open</small></button></div>}</For>
   </details>;
   return <section class="flint-vault-controls" aria-label="Filesystem vault">
     <Show when={props.vault.choose}><button disabled={busy()} onClick={()=>props.vault.choose!()}>Choose Vault…</button><p>Choose a directory in the server Documents store.</p></Show>
@@ -28,7 +29,7 @@ export function VaultView(props:{vault:ApplicationVault}) {
       <p>Vault: {state()!.root} <Show when={readOnly()}><strong>Read-only storage. Local edits cannot be saved.</strong></Show></p>
       <label>Tag filter<select aria-label="Tag filter" value={tag()} onChange={e=>setTag(e.currentTarget.value)}><option value="">All tags</option><For each={tags()}>{t=><option value={t}>{t}</option>}</For></select></label>
       <Show when={state()!.documents.some(d=>!d.loaded)}><p>Tag filtering covers opened Documents only.</p></Show>
-      <Show when={state()!.complete&&!state()!.documents.length}><p role="status">No eligible native Documents in this vault. Browse its folders, create a Document, or explicitly import Markdown. Legacy JSON files are not listed as native Documents.</p></Show>
+      <Show when={state()!.complete&&!state()!.documents.length}><p role="status">No enrolled native Documents in this vault. Existing files remain browsable; Open recognizes compatible Document content without converting the source.</p></Show>
       <Folder path={state()!.root}/>
       <p>Selected folder: <output aria-label="Selected folder">{folder()}</output></p>
       <details><summary>New Document / import</summary>
@@ -48,6 +49,7 @@ export function VaultView(props:{vault:ApplicationVault}) {
           else {await props.vault.relocateDirectory(folder(),join(destination(),moveName()));if(state()!.folders.includes(join(destination(),moveName())))setFolder(join(destination(),moveName()));}
         })}>Apply rename / move</button><p>This changes physical location only. Authored titles and native reference IDs stay unchanged; existing Markdown links are not rewritten.</p>
       </details>
+      <For each={state()!.documentSaves??[]}>{o=><p>Document Save pending: {o.path}<button disabled={busy()} onClick={()=>void run(()=>props.vault.recoverDocumentSave!(o.resourceId,o.generation))}>Recover Document</button></p>}</For>
       <For each={state()!.operations.filter(o=>o.phase==='pending')}>{o=><p>Pending relocation: {o.operationId}<button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.recoverOperation(o.operationId))}>Recover relocation</button></p>}</For>
       <For each={state()!.diagnostics}>{d=><p role="alert">{d}</p>}</For>
       <p role="status">{busy()?'Vault operation in progress…':state()!.notice}</p>

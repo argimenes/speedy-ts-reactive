@@ -64,3 +64,16 @@ it('supports explicit alias add/update/remove without linking or history',async(
 it('keeps Tab and numeric text input native; Enter links and Escape cancels',async()=>{
  const f=setup();f.open();f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);const input=f.panel().querySelector<HTMLInputElement>('[aria-label="Search entities"]')!;for(const key of ['Tab','1']){const e=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});input.dispatchEvent(e);expect(e.defaultPrevented).toBe(false);}input.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));await vi.advanceTimersByTimeAsync(0);expect(f.panel()).toBeNull();
 });
+it('reports a local pre-dispatch creation failure as not created and allows a fresh name',async()=>{
+ const f=setup('Mutable OS');vi.mocked(f.service.create).mockRejectedValueOnce(Object.assign(Error('Save this Document first'),{entityCreationOutcome:'not-created'}));
+ f.open();f.button('+ Create Entity').click();f.button('Create and link').click();await vi.advanceTimersByTimeAsync(0);
+ expect(f.panel().textContent).toContain('Not created');expect(f.panel().textContent).not.toContain('Creation outcome unconfirmed');
+ expect(f.panel().querySelector<HTMLInputElement>('[aria-label="Canonical name"]')!.disabled).toBe(false);expect(f.editor.repository.canUndo()).toBe(false);
+});
+it('does not erase an earlier uncertain attempt when a retry is rejected before dispatch',async()=>{
+ const f=setup();vi.mocked(f.service.create).mockRejectedValueOnce(Error('Response lost')).mockRejectedValueOnce(Object.assign(Error('Source pending'),{entityCreationOutcome:'not-created'}));
+ f.open();f.button('+ Create Entity').click();f.button('Create and link').click();await vi.advanceTimersByTimeAsync(0);
+ const original=vi.mocked(f.service.create).mock.calls[0][0];f.button('Retry creation and link').click();await vi.advanceTimersByTimeAsync(0);
+ expect(f.panel().textContent).toContain('Creation outcome unconfirmed');f.button('Retry creation and link').click();await vi.advanceTimersByTimeAsync(0);
+ expect(vi.mocked(f.service.create).mock.calls[2][0]).toEqual(original);
+});

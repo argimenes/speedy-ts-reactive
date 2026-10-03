@@ -30,8 +30,10 @@ describe.each([false,true])('Flint saved composition sqlite=%s',sqlite=>{
 async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise<void>}={}) {
  vi.stubGlobal('crypto',webcrypto);
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'flint-c1b-'));disposers.push(()=>fs.rm(root,{recursive:true,force:true}));await fs.mkdir(path.join(root,'vault/nested'),{recursive:true});await fs.writeFile(path.join(root,'vault/input.md'),'# Imported\n\n**Bold** text');
- const sql=sqlite?new SqliteKnowledgeHost({root,readOnly:options.readOnly,debounceMs:60000}):undefined;if(sql)disposers.push(()=>sql.close());
- const app=express();if(sql)app.use('/api/sqlite/knowledge',sql.router());app.use('/api/native',createNativeDocumentStoreRouter({root,...options,coordinate:sql?(a:any)=>sql.foreground(a):undefined}));const server:any=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});disposers.push(()=>new Promise(r=>server.close(r)));
+ // The normal Mutable host establishes writable infrastructure. The optional
+ // source adapter denial below exercises failure handling, not a server mode.
+ const sql=sqlite?new SqliteKnowledgeHost({root,debounceMs:60000}):undefined;if(sql)disposers.push(()=>sql.close());
+ const app=express();if(sql)app.use('/api/sqlite/knowledge',sql.router());app.use('/api/native',createNativeDocumentStoreRouter({root,establishVault:sql?v=>sql.establish(v):undefined,...options,coordinate:sql?(a:any)=>sql.foreground(a):undefined}));const server:any=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});disposers.push(()=>new Promise(r=>server.close(r)));
  vi.stubGlobal('fetch',(input:any,init:any)=>actualFetch(typeof input==='string'&&input.startsWith('/')?`http://127.0.0.1:${server.address().port}${input}`:input,init));
  function make() {
   const editor=new ReactiveEditor(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{compactEditorChrome:false,nativeKnowledgeSaved:true,sqliteKnowledge:sqlite}});registerApplicationViews(editor);const projection=editor.createView('workspace');disposers.push(()=>editor.dispose());

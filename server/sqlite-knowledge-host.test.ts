@@ -34,6 +34,15 @@ it('partial pair and missing dependency cannot become complete index evidence; r
  const owner=await f.generation('a');const failed=await f.call('/native/save',{location:{folder:'.',filename:'owner.mutable.json'},generation:owner,baseline:{nativeHash:null,markdownHash:null,generation:null}});expect(failed.Data.result.phase).toBe('failed');await f.host.flush();expect((await f.host.status(l.lease)).coverage.resources).toBe(1);
 });
 it('actual read-only routes preserve files and report unavailable saved coverage',async()=>{
- const f=await fixture({readOnly:true}),l=(await f.call('/knowledge/open',{vault:'.'})).Data;
- expect(l.readOnly).toBe(true);expect(l.coverage.complete).toBe(false);expect((await f.call('/knowledge/refresh',{lease:l.lease})).Success).toBe(false);expect((await f.save(await f.generation())).status).toBe(403);await expect(fs.stat(path.join(f.root,'.mutable'))).rejects.toThrow();
+ const f=await fixture({readOnly:true}),l=await f.call('/knowledge/open',{vault:'.'});
+ expect(l.Success).toBe(false);expect(l.Data).toBeUndefined();expect((await f.save(await f.generation())).status).toBe(403);await expect(fs.stat(path.join(f.root,'.mutable'))).rejects.toThrow();
+});
+it('Vault establishment reuses a warm application policy without replacing it or losing its lease',async()=>{
+ const f=await fixture(),policy={version:1 as const,opaqueTypes:['application-block','timer-block']};
+ const open=await f.host.acquire('.',policy);
+ expect((await f.host.establish('.')).vaultGuid).toBe(open.vaultGuid);
+ expect((await f.host.status(open.lease)).vaultGuid).toBe(open.vaultGuid);
+ await expect(f.host.acquire('.',{version:1,opaqueTypes:[]})).rejects.toThrow(/policy differs/);
+ await f.host.release(open.lease);
+ expect((await f.host.establish('.')).vaultGuid).toBe(open.vaultGuid);
 });

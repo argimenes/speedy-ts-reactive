@@ -1,0 +1,22 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+stdout | src/persistence/compatible-document.test.ts > reports actual historical codec round-trip capability without using suffix as permission
+ACTUAL_CORPUS_CODEC [{"name":"20240830.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"20240902.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"20240914.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"Israfel.json","format":"legacy-block-tree","roundTrip":true},{"name":"TLS.json","format":"legacy-block-tree","roundTrip":true},{"name":"animation.json","format":"legacy-block-tree","roundTrip":true},{"name":"blur.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"bullet-tabs.json","format":"legacy-block-tree","roundTrip":true},{"name":"checkbox-test.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"clock.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"default.graph.json","error":"Error: Missing or duplicate authored Block identity in compatible Document"},{"name":"del-test.json","format":"legacy-block-tree","roundTrip":true},{"name":"gibberish.json","format":"legacy-block-tree","roundTrip":true},{"name":"grid-test.json","format":"legacy-block-tree","roundTrip":true},{"name":"image-right-left.json","format":"legacy-block-tree","roundTrip":true},{"name":"image-right.json","format":"legacy-block-tree","roundTrip":true},{"name":"israfel2.json","format":"legacy-block-tree","roundTrip":true},{"name":"masque.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"masque2.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"merged.json","format":"legacy-block-tree","roundTrip":true},{"name":"monitor.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"multilinking.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"raven.json","format":"legacy-block-tree","roundTrip":true},{"name":"ref-test.json","format":"legacy-block-tree","roundTrip":true},{"name":"replace.json","format":"legacy-block-tree","roundTrip":true},{"name":"richtextpaste.json","format":"legacy-block-tree","roundTrip":true},{"name":"siena.json","format":"legacy-block-tree","roundTrip":true},{"name":"tables.json","format":"legacy-block-tree","roundTrip":true},{"name":"template-test.json","format":"legacy-block-tree","roundTrip":true},{"name":"template.json","format":"legacy-block-tree","roundTrip":true},{"name":"test.json","error":"Error: Nested Document resources require a qualified compatibility admission handler"},{"name":"test2.json","format":"legacy-block-tree","roundTrip":true},{"name":"test3.json","format":"legacy-block-tree","roundTrip":true},{"name":"testy-tester.json","format":"legacy-block-tree","roundTrip":true},{"name":"text1.json","format":"legacy-block-tree","roundTrip":true},{"name":"usher.json","error":"SyntaxError: Unexpected token 'V', \"Viewer\nTex\"... is not valid JSON"}]
+
+ ✓ src/persistence/compatible-document.test.ts (1 test) 3282ms
+   ✓ reports actual historical codec round-trip capability without using suffix as permission 3281ms
+ ✓ server/recognized-document-store.test.ts (7 tests) 6261ms
+   ✓ Raven saves in place, survives retry/restart, rejects stale clients and never creates Markdown 1497ms
+   ✓ displacement interruption exposes durable recovery after restart and preserves prior bytes 1514ms
+   ✓ external replacement during publication is preserved and cannot be confirmed or silently recovered 1091ms
+   ✓ duplicate identities and source format changes cannot authorize an in-place save 598ms
+   ✓ positively anonymous historical content does not claim another Document identity; duplicate authored identities still do 709ms
+   ✓ an oversized JSON candidate remains unknown and cannot authorize a save 321ms
+   ✓ verifies Raven against the actual corpus without writing its files 528ms
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  21:14:55
+   Duration  7.61s (transform 761ms, setup 0ms, collect 948ms, tests 9.54s, environment 890ms, prepare 425ms)
+

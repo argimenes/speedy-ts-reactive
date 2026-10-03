@@ -41,30 +41,7 @@ export class ManagedPair {
     if (!fields(r, ["version", "resourceId", "generation", "nativeHash", "markdownHash", "nativeName", "markdownName"]) || r.version !== 1 || !validGeneration(r.generation) || r.resourceId !== this.resourceId || r.nativeName !== this.nativeName || r.markdownName !== this.markdownName || ![r.nativeHash, r.markdownHash].every(h => /^[0-9a-f]{64}$/.test(h))) throw fail("Invalid pair receipt", true);
     return r;
   }
-  async dependencies(native) {
-    const owner = decodeNative(bytes(native)); if (owner.resourceId !== this.resourceId) throw fail("Native resource identity mismatch", true);
-    const known = new Map([[owner.resourceId, owner]]);
-    for (const [id, location] of this.locations) {
-      if (id === owner.resourceId) continue;
-      const data = await read(location); if (!data) continue;
-      const r = decodeNative(data); if (r.resourceId !== id) throw fail("Dependency catalog identity mismatch", true); known.set(id, r);
-    }
-    const claims = new Map();
-    const owned = r => Object.values(r.placements).filter(p => p.kind === "owned" && p.target.kind === "external");
-    for (const [id, r] of known) for (const p of owned(r)) {
-      const child = p.target.reference.source.resourceId;
-      if (claims.has(child)) throw fail("Conflicting owned-resource evidence", true); claims.set(child, id);
-    }
-    const visit = (id, active = new Set()) => {
-      if (active.has(id)) throw fail("Owned-resource cycle", true);
-      const r = known.get(id); if (!r) throw fail(`Required owned resource unavailable: ${id}`);
-      for (const p of owned(r)) {
-        const t = p.target.reference, child = known.get(t.source.resourceId), root = child?.placements[child.rootPlacementKey];
-        if (!child || root.target.kind !== "local" || child.contents[root.target.contentKey].payload.id !== t.targetId) throw fail(`Required owned resource unavailable: ${t.source.resourceId}`);
-        visit(t.source.resourceId, new Set(active).add(id));
-      }
-    }; visit(owner.resourceId);
-  }
+  async dependencies(native) { return validateResourceDependencies(native,this.resourceId,this.locations); }
   async save(generation, acceptMarkdownHash, baseline) {
     return this.lock(async () => {
       try {
@@ -110,35 +87,8 @@ export class ManagedPair {
       } catch (error) { return { phase: "failed", error: error.message, conflict: !!error.conflict }; }
     });
   }
-  async displaced(intent, kind) {
-    const backup = path.join(this.home, intent.generation, `${kind}.previous`), prior = await read(backup);
-    if (prior && !sameHash(prior, intent.expected[kind])) throw fail(`External ${kind} write preserved in ${backup}`, true);
-  }
-  async publish(intent, kind, data) {
-    const file = this.file(kind), desired = intent[kind + "Hash"], priorHash = intent.expected[kind];
-    await this.displaced(intent, kind);
-    if (sameHash(await read(file), desired)) return;
-    await this.fault(`before-${kind}`, { file, intent });
-    const current = await read(file);
-    const backup = path.join(this.home, intent.generation, `${kind}.previous`);
-    if (await read(backup)) {
-      if (current) throw fail(`Unexpected ${kind} after interrupted replacement`, true);
-    } else if (current !== undefined) {
-      if (priorHash === null) throw fail(`Unknown ${kind} destination`, true);
-      // Rename preserves the ACTUAL displaced inode, even if another writer raced.
-      await fs.rename(file, backup); await syncDir(this.root); await syncDir(path.dirname(backup));
-      await this.fault(`displaced-${kind}`, { file, backup, intent });
-      await this.displaced(intent, kind);
-    } else if (priorHash !== null) throw fail(`Expected ${kind} disappeared`, true);
-    const temp = path.join(this.home, intent.generation, `${kind}.publish-${randomUUID()}`);
-    await durableWrite(temp, data);
-    try { await this.fault(`publish-${kind}`, { file, intent }); await fs.link(temp, file); await syncDir(this.root); }
-    catch (error) { if (error.code === "EEXIST") throw fail(`External ${kind} created during publication; all files preserved`, true); throw error; }
-    finally { await fs.unlink(temp); }
-    await this.fault(`after-${kind}`, { file, intent });
-    await this.displaced(intent, kind);
-    if (!sameHash(await read(file), desired)) throw fail(`External ${kind} changes after publication`, true);
-  }
+  async displaced(intent, kind) { return checkDisplacedFile(this,intent,kind); }
+  async publish(intent, kind, data) { return publishManagedFile(this,intent,kind,data); }
   async attempt(intent) {
     try {
       const dir = path.join(this.home, intent.generation), native = await fs.readFile(path.join(dir, "native")), markdown = await fs.readFile(path.join(dir, "markdown"));
@@ -161,4 +111,60 @@ export class ManagedPair {
   }
   /** Read-only compare/import input. Never treats Markdown as native authority. */
   async compare(generated) { const external = await read(this.file("markdown")); return { external: external?.toString(), externalHash: external ? hash(external) : null, generated }; }
+}
+
+/** Shared preservation primitive; callers retain their own journal/identity protocol. */
+export async function checkDisplacedFile(adapter,intent,kind){
+    const backup = path.join(adapter.home, intent.generation, `${kind}.previous`), prior = await read(backup);
+    if (prior && !sameHash(prior, intent.expected[kind])) throw fail(`External ${kind} write preserved in ${backup}`, true);
+}
+export async function publishManagedFile(adapter,intent,kind,data){
+    const file = adapter.file(kind), desired = intent[kind + "Hash"], priorHash = intent.expected[kind];
+    await checkDisplacedFile(adapter, intent, kind);
+    if (sameHash(await read(file), desired)) return;
+    await adapter.fault(`before-${kind}`, { file, intent });
+    const current = await read(file);
+    const backup = path.join(adapter.home, intent.generation, `${kind}.previous`);
+    if (await read(backup)) {
+      if (current) throw fail(`Unexpected ${kind} after interrupted replacement`, true);
+    } else if (current !== undefined) {
+      if (priorHash === null) throw fail(`Unknown ${kind} destination`, true);
+      // Rename preserves the ACTUAL displaced inode, even if another writer raced.
+      await fs.rename(file, backup); await syncDir(adapter.root); await syncDir(path.dirname(backup));
+      await adapter.fault(`displaced-${kind}`, { file, backup, intent });
+      await checkDisplacedFile(adapter, intent, kind);
+    } else if (priorHash !== null) throw fail(`Expected ${kind} disappeared`, true);
+    const temp = path.join(adapter.home, intent.generation, `${kind}.publish-${randomUUID()}`);
+    await durableWrite(temp, data);
+    try { await adapter.fault(`publish-${kind}`, { file, intent }); await fs.link(temp, file); await syncDir(adapter.root); }
+    catch (error) { if (error.code === "EEXIST") throw fail(`External ${kind} created during publication; all files preserved`, true); throw error; }
+    finally { await fs.unlink(temp); }
+    await adapter.fault(`after-${kind}`, { file, intent });
+    await checkDisplacedFile(adapter, intent, kind);
+    if (!sameHash(await read(file), desired)) throw fail(`External ${kind} changes after publication`, true);
+}
+
+export async function validateResourceDependencies(native,resourceId,locations=new Map()) {
+    const owner = decodeNative(bytes(native)); if (owner.resourceId !== resourceId) throw fail("Native resource identity mismatch", true);
+    const known = new Map([[owner.resourceId, owner]]);
+    for (const [id, location] of locations) {
+      if (id === owner.resourceId) continue;
+      const data = await read(location); if (!data) continue;
+      const r = decodeNative(data); if (r.resourceId !== id) throw fail("Dependency catalog identity mismatch", true); known.set(id, r);
+    }
+    const claims = new Map();
+    const owned = r => Object.values(r.placements).filter(p => p.kind === "owned" && p.target.kind === "external");
+    for (const [id, r] of known) for (const p of owned(r)) {
+      const child = p.target.reference.source.resourceId;
+      if (claims.has(child)) throw fail("Conflicting owned-resource evidence", true); claims.set(child, id);
+    }
+    const visit = (id, active = new Set()) => {
+      if (active.has(id)) throw fail("Owned-resource cycle", true);
+      const r = known.get(id); if (!r) throw fail(`Required owned resource unavailable: ${id}`);
+      for (const p of owned(r)) {
+        const t = p.target.reference, child = known.get(t.source.resourceId), root = child?.placements[child.rootPlacementKey];
+        if (!child || root.target.kind !== "local" || child.contents[root.target.contentKey].payload.id !== t.targetId) throw fail(`Required owned resource unavailable: ${t.source.resourceId}`);
+        visit(t.source.resourceId, new Set(active).add(id));
+      }
+    }; visit(owner.resourceId);
 }

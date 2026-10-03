@@ -1,3 +1,4 @@
+import { RecognizedDocumentStore } from './recognized-document-store.mjs';
 /** C1a: tree-derived discovery and journalled, same-vault storage relocation.
  * No authored hierarchy, editor, save generation or global resource catalog. */
 import { promises as fs, constants as C, existsSync, realpathSync, lstatSync } from 'node:fs';
@@ -113,6 +114,7 @@ export class NativeVaultStore {
    await this.guard(decodeNative(bytes).resourceId,loc); 
   }
  }}
+ async guardReadPath(p){relative(p);for(const {intent,done}of await this.records())if(!done&&(inside(intent.source,p)||inside(intent.destination,p)||intent.moves.some(m=>m.from===p||m.to===p)))fail(`Relocation pending: ${intent.operationId}`);}
  async baseline(p,id) {
   const loc=location(p), pair=new ManagedPair({root:await this.resolve(loc.folder),resourceId:id,nativeName:loc.filename,markdownName:loc.filename.replace(/\.mutable\.json$/,'.md')});
   const home=join(loc.folder,`.mutable-pair-${hash(id)}`);await this.resolve(home,{missing:true});
@@ -126,7 +128,7 @@ export class NativeVaultStore {
   vault=path.relative(this.root,await fs.realpath(base)).split(path.sep).join('/')||'.';
   const folders=[],documents=[],markdown=[],other=[],diagnostics=[],uninspected=[],inspected=[],directories=[];let count=0;
   const walk=async dir=>{signal?.throwIfAborted();let entries;try{directories.push({path:dir,stamp:await this.stamp(dir,'directory')});entries=await fs.readdir(await this.resolve(dir),{withFileTypes:true});}catch(e){diagnostics.push({path:dir,message:e.message});return;}
-   for(const e of entries.sort((a,b)=>a.name.localeCompare(b.name))){signal?.throwIfAborted();if(++count>LIMIT){diagnostics.push({path:dir,message:'Vault scan limit reached'});return;}if(e.name==='.mutable'||e.name.startsWith('.mutable-'))continue;
+   for(const e of entries.sort((a,b)=>a.name.localeCompare(b.name))){signal?.throwIfAborted();if(++count>LIMIT){diagnostics.push({path:dir,message:'Vault scan limit reached'});return;}if(e.name==='.mutable'){if(dir!==vault)diagnostics.push({path:join(dir,e.name),message:'Invalid Vault topology: overlapping descendant Mutable Vault'});continue;}if(e.name.startsWith('.mutable-'))continue;
     const p=join(dir,e.name);if(e.isSymbolicLink()){diagnostics.push({path:p,message:'Symlink excluded'});continue;}
     if(e.isDirectory()){folders.push(p);await walk(p);}else if(e.isFile()&&e.name.endsWith('.mutable.json')){
      try{const stamp=await this.stamp(p),bytes=await this.read(p),byteHash=hash(bytes),result=await this.inspect(bytes,signal);signal?.throwIfAborted();
@@ -152,8 +154,9 @@ export class NativeVaultStore {
   const paired=new Set(documents.filter(d=>d.state==='paired').map(d=>filename(d.location).replace(/\.mutable\.json$/,'.md')));
   let operations=[];try{operations=(await this.records()).filter(r=>inside(vault,r.intent.source)||inside(vault,r.intent.destination)||inside(r.intent.source,vault)||inside(r.intent.destination,vault)).map(r=>({operationId:r.intent.operationId,phase:r.done?'relocated':'pending'}));}catch(e){diagnostics.push({path:'.mutable-relocations',message:e.message});}
   for(const dir of directories){signal?.throwIfAborted();try{if(await this.stamp(dir.path,'directory')!==dir.stamp)throw Error('Directory changed during discovery');}catch(e){diagnostics.push({path:dir.path,message:e.message});}}
+  let documentSaves=[];try{documentSaves=await new RecognizedDocumentStore(this).operations(vault);}catch(e){diagnostics.push({message:'Document recovery evidence unavailable: '+e.message});}
   signal?.throwIfAborted();
-  return {vault,folders,documents,markdown:markdown.filter(p=>!paired.has(p)),other,diagnostics,uninspected,complete:!diagnostics.length,operations,readOnly:this.readOnly};
+  return {vault,folders,documents,documentSaves,markdown:markdown.filter(p=>!paired.has(p)),other,diagnostics,uninspected,complete:!diagnostics.length&&!documentSaves.length,operations,readOnly:this.readOnly};
  }
  async signature(p) {
   let count=0;const entries=[];

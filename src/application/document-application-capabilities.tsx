@@ -128,9 +128,9 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         revision(); const id = activeId(), doc = id && resolve(id); if (!doc || !id) return;
         const meta = editor.repository.state.contents[doc.contentKey].payload.metadata;
         const bound = native?.location(id), v = selectedVault(), scan = v?.snapshot();
-        const missing = !!bound && !!v && vaultContains(v.root, vaultPath(bound)) && !scan!.documents.some(d => d.resourceId === id && vaultPath(d.location) === vaultPath(bound));
+        const missing = !!bound && !!v && !native?.compatibleSource(id) && vaultContains(v.root, vaultPath(bound)) && !scan!.documents.some(d => d.resourceId === id && vaultPath(d.location) === vaultPath(bound));
         return { id, title: doc.title, tags: tagsOf(id) ?? [], tagsValid: tagsOf(id) !== undefined,
-          format: readDocumentFormat(meta)?.format ?? 'Native', location: native?.location(id),
+          format: native?.compatibleSource(id)?.format ?? readDocumentFormat(meta)?.format ?? 'Native', location: native?.location(id),
           status: (missing ? scan!.complete ? 'Location missing or moved; explicit reconciliation required. ' : 'Location unverified; vault discovery is incomplete. ' : '') + (native?.status(id) ?? 'Native persistence unavailable'), unsaved: native?.isCandidate(id) ?? false };
       };
       const destinationIn = (v: DocumentVaultLease, destination: VaultLocation) => {
@@ -144,7 +144,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         // binding/status and repository publications. Never reuse storage evidence.
         const previousRows = new Map(previous?.documents.map(d => [vaultPath(d.location), d]));
         return { root: v.root, folders: scan.folders, markdown: scan.markdown.filter(p => !scan.documents.some(d => vaultPath(d.location).replace(/\.mutable\.json$/, '.md') === p)), readOnly: scan.readOnly, complete: scan.complete,
-          busy: v.busy(), notice: v.notice(), operations: v.operations(),
+          busy: v.busy(), notice: v.notice(), operations: v.operations(), documentSaves:scan.documentSaves, candidates: [...(scan.other??[]),...scan.markdown],
           diagnostics: scan.diagnostics.map(d => `${d.path ?? d.resourceId ?? ''}: ${d.message}`),
           documents: scan.documents.map(d => {
             const bound = native.location(d.resourceId), loaded = !!resolve(d.resourceId) && !!bound && vaultPath(bound) === vaultPath(d.location) && d.state !== 'ambiguous';
@@ -168,6 +168,11 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         close() { guard(); opening++; openQuery?.abort(); const previous = selectedVault(); setSelectedVault(undefined); vaultRoots.delete(props.nodeKey); previous?.release(); },
         async refresh() { await lease().refresh(true); },
         async openFile(location) { const v = lease(); await v.refresh(); v.requireFile(location); const id = await native.open(location); if (mounted) openDocument(id); await v.refresh(); },
+        async openCandidate(location) {
+          const v=lease();await v.refresh();v.requireDirectory(location.folder);vaultLeaf(location.filename);
+          if(![...(v.snapshot().other??[]),...v.snapshot().markdown].includes(vaultPath(location)))throw Error('File is no longer in this vault; Refresh first');
+          const id=await native.openCompatible(location,v.root);if(mounted&&selectedVault()===v)openDocument(id);
+        },
         async createDocument(folder, filename, title) {
           const v = lease(), destination = {folder, filename}; destinationIn(v, destination);
           await v.mutate(async () => {
@@ -197,6 +202,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           if (source === v.root || vaultContains(source, destination)) throw new Error('Cannot move the vault root or a directory inside itself');
           await v.relocate('directory', source, destination);
         },
+        async recoverDocumentSave(resourceId,generation){const v=lease();await v.mutate(()=>native.recoverRecognized(v.root,resourceId,generation));},
         async recoverOperation(id) { const v = lease(); if (!v.operations().some(o => o.operationId === id && o.phase === 'pending')) throw new Error('Refresh to find a pending operation'); await v.recover(id); },
         async recoverNative(location) { const v = lease(), row = v.requireFile(location); await v.mutate(() => native.recover(row.resourceId, location)); },
       } : undefined;
@@ -264,7 +270,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         },
       } : undefined;
       onCleanup(()=>{ knowledge?.dispose(); backlinkService?.dispose(); canonical?.dispose(); facts?.dispose(); });
-      onMount(() => { const root = vaultRoots.get(props.nodeKey); if (root && vault) void vault.open(root).catch(() => { vaultRoots.delete(props.nodeKey); }); });
+      onMount(() => { if(vault&&native)void (async()=>{const root=vaultRoots.get(props.nodeKey)??await native.defaultVault();if(root&&mounted)await vault.open(root);})().catch(e=>{if(mounted){setChooserError(String(e));setChoosingVault(true);}}); });
       const files = native ? {
         list: (folder: string) => { selectedVault()?.requireDirectory(folder); return native.list(folder); },
         async open(location: {folder: string; filename: string}, importMarkdown = false) {
@@ -278,7 +284,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           if (lease) { lease.requireDirectory(destination.folder); await lease.mutate(() => native.save(id, destination)); }
           else await native.save(id, location);
         },
-        async recover(location: {folder: string; filename: string}) { guard(); if (selectedVault()) await vault!.recoverNative(location); else await native.recover(activeId(), location); },
+        async recover(location: {folder: string; filename: string}) { guard(); if(native.compatibleSource(activeId()??''))await native.recover(activeId(),location);else if (selectedVault()) await vault!.recoverNative(location); else await native.recover(activeId(), location); },
         compare() { guard(); return native.compare(requireId()); },
         async keepMutable() { guard(); await native.keepMutable(requireId()); },
         status: () => native.status(activeId()), location: () => native.location(activeId()),

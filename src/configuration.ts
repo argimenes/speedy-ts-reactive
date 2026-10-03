@@ -10,10 +10,6 @@
  * Set `blockHistory` to `true` to expose the History/Restore UI and allow a
  * ReactiveEditor to start session or persistent history recording.
  *
- * `publicHostedVersion` separates the read-only hosted stores from browser-local
- * JSON file operations. It is enabled by default on the public-hosted-version
- * feature branch.
- *
  * `textSuperposition` is an experimental projected-reading feature and remains
  * disabled unless a host or dedicated demo explicitly enables it.
  */
@@ -52,7 +48,6 @@ export type FeatureFlags = Readonly<{
   codexSystemBar: boolean;
   compactDocumentMode: boolean;
   compactEditorChrome: boolean;
-  publicHostedVersion: boolean;
   textSuperposition: boolean;
 }>;
 
@@ -76,7 +71,6 @@ export const featureFlags: FeatureFlags = Object.freeze({
   codexSystemBar: true,
   compactDocumentMode: true,
   compactEditorChrome: true,
-  publicHostedVersion: true,
   textSuperposition: false,
 });
 

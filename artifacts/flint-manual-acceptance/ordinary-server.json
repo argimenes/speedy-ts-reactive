@@ -1,0 +1,29 @@
+{
+  "url": "http://localhost:3002",
+  "launch": "npm start",
+  "writableOverride": false,
+  "defaults": {
+    "vault": "."
+  },
+  "established": {
+    "vault": ".",
+    "vaultGuid": "51ec9e37-aa22-4426-a3c2-d8c71ce11020"
+  },
+  "discovery": {
+    "readOnly": false,
+    "complete": true,
+    "folders": 15,
+    "otherFiles": 91,
+    "diagnostics": []
+  },
+  "raven": {
+    "resourceId": "d7db09e8-45b3-4a93-b5c4-f3f707801eb6",
+    "format": "legacy-block-tree",
+    "saveCapability": "in-place",
+    "readOnly": false,
+    "verified": {
+      "verified": true
+    }
+  },
+  "authoredFilesWritten": false
+}

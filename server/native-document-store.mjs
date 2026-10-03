@@ -1,4 +1,7 @@
 /** Bounded native Document routes. No Workspace writer or global resource catalog. */
+import { RecognizedDocumentStore } from './recognized-document-store.mjs';
+import { verifyDocumentSource } from './recognized-source.mjs';
+import { openSqliteFoundation } from '../src/knowledge-sqlite/client.mjs';
 import { Router, json } from 'express';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -7,12 +10,14 @@ import { installNativeKnowledgeRoutes } from './native-knowledge-routes.mjs';
 import { NativeVaultStore } from './native-vault-store.mjs';
 import { decodeNative } from '../src/persistence/native-resource';
 import { exportMarkdown } from '../src/persistence/markdown';
+import { recognizeCompatibleDocument, encodeRecognizedDocument } from '../src/persistence/compatible-document';
 const LIMIT = 20 * 1024 * 1024;
 const fail = (message, status = 409) => { throw Object.assign(new Error(message), { status }); };
 const read = async file => { try { const s = await fs.lstat(file); if (!s.isFile() || s.isSymbolicLink() || s.size > LIMIT) fail('Expected a bounded regular file', 400); return await fs.readFile(file); } catch(e) { if(e.code !== 'ENOENT') throw e; } };
 const fields = (v, names) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === names.length && Object.keys(v).every(k => names.includes(k));
-export function createNativeDocumentStoreRouter({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true, coordinate = action => action()}) {
+export function createNativeDocumentStoreRouter({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true, coordinate = action => action(), establishVault, defaultVault}) {
  const vault = new NativeVaultStore({root,readOnly,fault,nativeDiscoveryWorker});
+ const recognizedStore=new RecognizedDocumentStore(vault);
  const router = Router(); router.use(json({limit:'32mb'}));
  const directory = async folder => {
   if(typeof folder !== 'string' || path.isAbsolute(folder) || /[\\\0]/.test(folder) || folder.split('/').includes('..')) fail('Invalid document folder',400);
@@ -39,11 +44,18 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  };
  const lock = async (_dir, action) => vault.lock(action);
  const baseline = async pair => ({nativeHash: await read(pair.file('native')).then(b=>b?hash(b):null),markdownHash:await read(pair.file('markdown')).then(b=>b?hash(b):null),generation:(await pair.receipt())?.generation??null,...(await vault.guard(pair.resourceId,{folder:path.relative(vault.root,pair.root).split(path.sep).join('/')||'.',filename:pair.nativeName}) ? {locationRevision:await vault.guard(pair.resourceId)} : {})});
- const writes=new Set(['/save','/recover','/vault/mkdir','/vault/relocate','/vault/recover']);
+ const writes=new Set(['/recover-recognized','/save-recognized','/save','/recover','/vault/mkdir','/vault/relocate','/vault/recover']);
  const route = (method,name,action) => router[method](name,async(req,res)=>{try{const execute=()=>action(req,res);res.json({Success:true,Data:await (writes.has(name)?coordinate(execute):execute())});}catch(e){res.status(e.status??(e.conflict?409:e.code==='ENOENT'?404:500)).json({Success:false,Error:e.message,PublicationStarted:!!req.nativePublicationStarted||!!e.relocationStarted});}});
  installNativeKnowledgeRoutes(route,vault);
  const writable=()=>{if(readOnly)fail('Server Documents are read-only. Paired Save requires a writable managed server store.',403);};
  route('get','/list',async req=>{const dir=await directory(req.query.folder??'.');return {files:(await fs.readdir(dir,{withFileTypes:true})).filter(e=>e.isFile()&&!e.name.startsWith('.')&&/\.(mutable\.json|md)$/.test(e.name)).map(e=>e.name).sort(),readOnly};});
+ route('get','/vault/default',async()=>({vault:defaultVault}));
+ route('post','/vault/establish',async req=>{
+  const root=await directory(req.body.vault);
+  if(establishVault)return establishVault(req.body.vault);
+  const client=await openSqliteFoundation({vault:root,initialize:true});
+  try{return {vault:req.body.vault,vaultGuid:(await client.inspect()).mutable.vaultGuid};}finally{await client.close();}
+ });
  route('post','/vault/discover',async (req,res)=>{
   const controller=new AbortController(),closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);
   try{return await vault.discover(req.body.vault,{signal:controller.signal});}finally{res.off('close',closed);}
@@ -51,6 +63,23 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  route('post','/vault/mkdir',async req=>vault.mkdir(req.body.vault,req.body.directory));
  route('post','/vault/relocate',async req=>vault.relocate(req.body));
  route('post','/vault/recover',async req=>vault.recover(req.body.operationId));
+ route('post','/recover-recognized',async req=>{writable();if(establishVault)await establishVault(req.body.vault);return recognizedStore.recover(req.body.vault,req.body.resourceId,req.body.generation,()=>{req.nativePublicationStarted=true;});});
+ route('post','/save-recognized',async req=>{writable();if(establishVault)await establishVault(req.body.vault);return recognizedStore.save(req.body,()=>{req.nativePublicationStarted=true;});});
+ route('post','/verify-source',async req=>{await verifyDocumentSource(vault,req.body.vault,req.body.source);if(await recognizedStore.pending(req.body.vault,req.body.source.resourceId))fail('Document Save recovery is pending');return {verified:true};});
+ route('post','/recognize',async req=>{
+  const location=req.body.location;
+  if(!fields(location,['folder','filename'])||typeof location.filename!=='string'||!location.filename||/[/\\\0]/.test(location.filename)||location.filename.startsWith('.'))fail('Choose a regular vault file',400);
+  if(location.filename.endsWith('.mutable.json'))fail('Use native Open for enrolled native files',400);
+  if(location.filename.endsWith('.md'))fail('Use explicit Import Markdown; the source will remain unchanged',400);
+  await directory(location.folder);const relative=path.posix.join(location.folder||'.',location.filename);await vault.guardReadPath(relative);
+  const bytes=await vault.read(relative);if(!bytes)fail('File not found',404);
+  let recognized;try{recognized=recognizeCompatibleDocument(bytes);}catch(error){fail(error.message,400);}
+  const again=await vault.read(relative);await vault.guardReadPath(relative);
+  if(await vault.guard(recognized.resource.resourceId))fail('Known native relocation identity; Open its current native location instead');
+  if(!again||hash(again)!==hash(bytes))fail('Source changed during recognition; retry Open');
+  let saveCapability='in-place',saveReason;try{encodeRecognizedDocument(recognized.resource,recognized.format);}catch(e){saveCapability='unavailable';saveReason=e.message;}
+  return {text:bytes.toString('utf8'),byteHash:hash(bytes),format:recognized.format,resourceId:recognized.resource.resourceId,readOnly,saveCapability,saveReason};
+ });
  route('post','/open',async req=>{
   if(req.body.location?.filename?.endsWith('.mutable.json'))await vault.guardPath(req.body.location);
   const {file}=await locate(req.body.location),data=await read(file);if(!data)fail('File not found',404);

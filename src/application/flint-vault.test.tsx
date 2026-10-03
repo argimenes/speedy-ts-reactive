@@ -76,7 +76,7 @@ it('keeps typing and resource-owned relocation alive after both initiating occur
 it('imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files',async()=>{
  const f=await fixture(),a=f.windows()[0];await open(a);field(a,'Markdown source','vault/input.md');field(a,'New Document filename','input.mutable.json');click(a,'Import into new native Document');await wait(()=>expect(a.textContent).toContain('preserve the imported Markdown source'));
  field(a,'New Document filename','imported.mutable.json');click(a,'Import into new native Document');await wait(()=>expect(a.querySelector('[aria-label="Open vault/imported.mutable.json"]')).toBeTruthy());const id=idOf(a);expect(await fs.readFile(path.join(f.root,'vault/input.md'),'utf8')).toContain('**Bold**');
- click(a,'Import into new native Document');await wait(()=>expect(idOf(a)).not.toBe(id));await wait(()=>expect(a.textContent).toContain('Save blocked'));expect(a.textContent).toContain('Unsaved native candidate');expect(a.querySelectorAll('[aria-label="Open vault/imported.mutable.json"]')).toHaveLength(1);
+ await wait(()=>expect(button(a,'Import into new native Document').disabled).toBe(false));click(a,'Import into new native Document');await wait(()=>expect(idOf(a)).not.toBe(id));await wait(()=>expect(a.textContent).toContain('Save blocked'));expect(a.textContent).toContain('Unsaved native candidate');expect(a.querySelectorAll('[aria-label="Open vault/imported.mutable.json"]')).toHaveLength(1);
 },15000);
 it('exposes read-only storage, preserves ordinary editing, and cannot bypass it through Files',async()=>{
  const f=await fixture({readOnly:true});await fs.copyFile('artifacts/flint-b1.2/rich.mutable.json',path.join(f.root,'vault/rich.mutable.json'));const a=f.windows()[0];await open(a);expect(button(a,'New Document').disabled).toBe(true);expect(button(a,'Create directory').disabled).toBe(true);expect(button(a,'Save Document').disabled).toBe(true);
@@ -134,7 +134,8 @@ it('derives vault rows once per publication and retains unchanged DOM rows acros
  const locations=vi.spyOn(f.service,'location');await open(a);
  // The old per-control derivation performed thousands of 40-row passes here.
  expect(locations.mock.calls.length).toBeLessThan(40*20);
- const rows=[...a.querySelectorAll<HTMLButtonElement>('.flint-tree-document > button')];expect(rows).toHaveLength(40);
+ const rows=[...a.querySelectorAll<HTMLButtonElement>('.flint-tree-document > button')].filter(b=>b.getAttribute('aria-label')?.endsWith('.mutable.json'));expect(rows).toHaveLength(40);
+ expect(a.querySelector('[aria-label="Open vault/input.md"]')).toBeTruthy();
  const untouched=rows.find(r=>r.getAttribute('aria-label')==='Open vault/1.mutable.json')!;
  const folder=a.querySelector('details.flint-tree-folder')!;
  rows.find(r=>r.getAttribute('aria-label')==='Open vault/0.mutable.json')!.click();
@@ -150,3 +151,35 @@ it('derives vault rows once per publication and retains unchanged DOM rows acros
  expect(a.querySelector('details.flint-tree-folder')).toBe(folder);
  locations.mockRestore();
 },15000);
+it('browses physical files and opens a real historical Document without migration or hidden native enrollment',async()=>{
+ const f=await fixture(),a=f.windows()[0];
+ const source=await fs.readFile('data/raven.json','utf8'),original=JSON.parse(source);
+ await fs.writeFile(path.join(f.root,'vault/nested/raven.json'),source);
+ await fs.writeFile(path.join(f.root,'vault/unsupported.json'),JSON.stringify({format:'unknown-future',version:99}));
+ await fs.writeFile(path.join(f.root,'vault/notes.txt'),'not a Document');
+ await open(a);expect(a.querySelector('[aria-label="Open vault/notes.txt"]')).toBeTruthy();
+ click(a,'nested');expect(a.querySelector('[aria-label="Selected folder"]')?.textContent).toBe('vault/nested');
+ a.querySelector<HTMLButtonElement>('[aria-label="Open vault/nested/raven.json"]')!.click();
+ const id=String(original.metadata?.documentId??original.id);
+ await wait(()=>expect(idOf(a)).toBe(id));expect(a.textContent).toContain('Document');
+ expect(f.service.compatibleSource(id)?.location).toEqual({folder:'vault/nested',filename:'raven.json'});
+ expect(f.service.knowledgeEvidence(id).location).toEqual({folder:'vault/nested',filename:'raven.json'});
+ expect(nativeText(captureNative(f.editor.repository.snapshot(),id))).toContain('Raven');
+ field(a,'Document title','Local reading copy');click(a,'Apply properties');
+ await f.service.save(id);expect(f.service.status(id)).toContain('Saved Document in place');
+ await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
+ a.querySelector<HTMLButtonElement>('[aria-label="Open vault/nested/raven.json"]')!.click();await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
+ expect((a.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('Local reading copy');
+ expect(JSON.parse(await fs.readFile(path.join(f.root,'vault/nested/raven.json'),'utf8')).id).toBe(original.id);
+ expect(await fs.readdir(path.join(f.root,'vault/nested'))).toEqual(['raven.json']);
+ await fs.copyFile(path.join(f.root,'vault/nested/raven.json'),path.join(f.root,'vault/copied.json'));click(a,'Refresh');
+ await wait(()=>expect(a.querySelector('[aria-label="Open vault/copied.json"]')).toBeTruthy());
+ await expect(f.service.openCompatible({folder:'vault',filename:'copied.json'},'vault')).rejects.toThrow(/another source/);
+ await expect(f.service.openCompatible({folder:'vault',filename:'unsupported.json'},'vault')).rejects.toThrow(/Unsupported resource/);
+ await expect(f.service.openCompatible({folder:'../',filename:'raven.json'},'vault')).rejects.toThrow(/folder/);
+ await fs.symlink(path.join(f.root,'vault/nested/raven.json'),path.join(f.root,'vault/link.json'));
+ await expect(f.service.openCompatible({folder:'vault',filename:'link.json'},'vault')).rejects.toThrow(/Symlink/);
+ const fresh=f.make(),b=fresh.windows()[0];await fs.rm(path.join(f.root,'vault/link.json'));await fs.rm(path.join(f.root,'vault/copied.json'));await open(b);
+ b.querySelector<HTMLButtonElement>('[aria-label="Open vault/nested/raven.json"]')!.click();await wait(()=>expect(idOf(b)).toBe(id));
+ expect((b.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('Local reading copy');
+},20000);

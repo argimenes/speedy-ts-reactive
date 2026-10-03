@@ -102,3 +102,20 @@ it('never attaches a newer file baseline to older bytes returned by Open',async(
  const first=await f.generation();await f.save(first);replacement=(await f.generation(undefined,'concurrent writer')).native;
  const opened=await f.call('native/open',{location:f.location});expect(opened.status).toBe(409);expect(opened.Error).toContain('changed while opening');
 });
+it('recognizes content independently of suffix with no enrollment, source rewrite or generated sidecar',async()=>{
+ const f=await fixture({readOnly:true}),legacy=await fs.readFile('data/raven.json','utf8'),g=await f.generation();
+ for(const [filename,text,format]of [['raven.json',legacy,'legacy-block-tree'],['raven.unusual',legacy,'legacy-block-tree'],['native.json',g.native,'mutable-document'],['native.ink',g.native,'mutable-document']]){
+  await fs.writeFile(path.join(f.root,filename),text);
+  const r=await f.call('native/recognize',{location:{folder:'.',filename}});expect(r.status).toBe(200);expect(r.Data.format).toBe(format);expect(r.Data.saveCapability).toBe('in-place');expect(r.Data.readOnly).toBe(true);expect(r.Data.text).toBe(text);expect(r.Data.byteHash).toBe(hash(text));
+ }
+ expect((await fs.readdir(f.root)).sort()).toEqual(['native.ink','native.json','raven.json','raven.unusual','workspaces']);
+});
+it('rejects unsupported content, invented identity, native-pair bypass, traversal and symlinks during compatibility Open',async()=>{
+ const f=await fixture(),location=filename=>({folder:'.',filename});
+ for(const [filename,text]of [['bad.json','{broken'],['unknown.json',JSON.stringify({format:'mutable-document',version:99})],['workspace.desktop',JSON.stringify({id:'w',type:'workspace-block'})],['missing.json',JSON.stringify({type:'document-block',children:[]})],['duplicate.json',JSON.stringify({id:'a',type:'document-block',children:[{id:'a',type:'standoff-editor-block',text:'a'}]})]]){
+  await fs.writeFile(path.join(f.root,filename),text);expect((await f.call('native/recognize',{location:location(filename)})).status).toBe(400);
+ }
+ expect((await f.call('native/recognize',{location:location('native.mutable.json')})).Error).toContain('native Open');
+ expect((await f.call('native/recognize',{location:{folder:'..',filename:'outside.json'}})).status).toBe(400);
+ await fs.symlink(path.join(f.root,'bad.json'),path.join(f.root,'link.json'));expect((await f.call('native/recognize',{location:location('link.json')})).Error).toContain('Symlink');
+});

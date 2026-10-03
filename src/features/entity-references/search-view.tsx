@@ -55,13 +55,14 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   if(!service)throw Error('Canonical Entity service unavailable');
   if(!attempt()&&(!valid()||api.revision()!==target().entityRevision))throw Error('Select a valid target before creating an Entity');
   if(!canonicalName().trim())throw Error('Enter a canonical name');
+  const retrying=!!attempt();
   if(!attempt())setAttempt({id:crypto.randomUUID(),operationId:crypto.randomUUID(),name:canonicalName()});
   setCreating(true);setOutcome('Creation outcome unconfirmed');
   try{
    const e=await service.create(attempt()!);if(!alive)return;
    setCreated(e);setDetails(e);setRename(e.name);setOutcome('Created but not linked');
    try{bind(e);}catch(reason){setValid(false);setError(`${e.name} was created, but the original text could no longer be linked. ${String(reason)}`);panel.allowDocumentInput(true);}
-  }finally{if(alive)setCreating(false);}
+  }catch(error){if(alive&&!retrying&&(error as any)?.entityCreationOutcome==='not-created'){setOutcome('Not created');setAttempt(undefined);}throw error;}finally{if(alive)setCreating(false);}
  });
  const recover=()=>void run(async()=>{
   const e=created();if(!e)throw Error('No confirmed Entity creation to recover');

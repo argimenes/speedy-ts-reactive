@@ -7,13 +7,13 @@ import { randomUUID } from 'node:crypto';
 let store;
 try {
   if (workerData.restoreFrom && workerData.readOnly) throw Error('Read-only mode cannot restore databases');
-  const restored = workerData.restoreFrom ? restoreSnapshot(workerData.restoreFrom, workerData.vault) : undefined;
+  const restored = workerData.restoreFrom ? restoreSnapshot(workerData.restoreFrom, workerData.vault, workerData.scopeValidated) : undefined;
   const { home } = prepareHome(workerData);
   if (!workerData.readOnly) await new Promise((resolve, reject) => {
     parentPort.once('message', message => message.leaseGranted ? resolve() : reject(Error(message.leaseError || 'Writer lease unavailable')));
     parentPort.postMessage({ leaseRequest: true, home });
   });
-  store = openFoundation(workerData, { hostLeaseHeld: !workerData.readOnly });
+  store = openFoundation(workerData, { hostLeaseHeld: !workerData.readOnly, scopeValidated:workerData.scopeValidated });
   parentPort.postMessage({ ready: true, restored });
 } catch (e) { parentPort.postMessage({ startupError: e.message }); parentPort.close(); }
 if (store) {

@@ -33,7 +33,7 @@ function writableHandle(name: string, writes: string[]): BrowserFileHandle {
   };
 }
 
-describe("public-hosted-version", () => {
+describe("ordinary Mutable server and local file actions", () => {
   it("switches a loaded workspace through fallback commands and uses the same snapshot for Local Save As", async () => {
     const original = { id: "workspace", type: "workspace-block", children: [{ id: "window", type: "document-window-block", children: [{ id: "document", type: "document-block", metadata: { documentId: "stable" }, children: [{ id: "text", type: "plain-text-block", text: "Identity retained" }] }] }] };
     const writes = [JSON.stringify(original)], copies: string[] = [];
@@ -62,8 +62,8 @@ describe("public-hosted-version", () => {
     click(button("Desktop", host)); expect(host.querySelector('.workspace-canvas')).toBeNull();
     click(button("Canvas", host)); expect(host.querySelectorAll('textarea')).toHaveLength(1);
   });
-  it("is enabled by default and separates read-only Server actions from writable Local actions in Workspace", async () => {
-    expect(featureFlags.publicHostedVersion).toBe(true);
+  it("offers writable Server actions alongside explicit Local actions", async () => {
+    expect("publicHostedVersion" in featureFlags).toBe(false);
     expect(featureFlags.codexSystemBar).toBe(true);
     const host = document.body.appendChild(document.createElement("div"));
     disposers.push(render(() => <WorkspaceDemo />, host));
@@ -72,9 +72,9 @@ describe("public-hosted-version", () => {
     const server = menu.querySelector<HTMLElement>('[aria-label="Server files"]')!;
     const local = menu.querySelector<HTMLElement>('[aria-label="Local files"]')!;
     expect(server).not.toBeNull(); expect(local).not.toBeNull();
-    expect(button("Save", server).disabled).toBe(true);
-    expect(button("Save as…", server).disabled).toBe(true);
-    expect(button("Save Workspace…", server).disabled).toBe(true);
+    expect(button("Save", server).disabled).toBe(false);
+    expect(button("Save as…", server).disabled).toBe(false);
+    expect(button("Save Workspace…", server).disabled).toBe(false);
     expect(button("Open…", server).disabled).toBe(false);
     expect(button("Save", local).disabled).toBe(false);
   });

@@ -1,0 +1,52 @@
+Sat, 03 Oct 2026 11:19:04 GMT body-parser deprecated undefined extended: provide extended option at file:/Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/index.js:145:17
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:59687) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS default Mutable Vault established without writable override
+PASS initial unbound tab explains Save prerequisite and reports no creation
+PASS physical files and nested legacy JSON are visible
+PASS nested folder selectable
+PASS real Raven corpus Document opens through ordinary Flint
+PASS Raven saves in its existing legacy format and identity
+PASS Raven EntityReference saved without conversion
+PASS Raven canonical alias resolution works
+PASS Raven current-Document mention resolution works
+PASS return to vault root
+PASS incompatible JSON produces content recognition error
+PASS New Document / Save reaches usable Entity service without reopen
+PASS native selection initializes target and query
+PASS create and link persists target GUID and native range
+PASS canonical alias service available on UI-created binding
+Sat, 03 Oct 2026 11:19:32 GMT body-parser deprecated undefined extended: provide extended option at file:/Users/iianneill/Documents/GitHub/speedy-ts-reactive/dist/server/index.js:145:17
+PASS default Mutable Vault established without writable override
+PASS existing native Open resolves same canonical Entity after restart
+PASS Raven restart preserves Document identity and canonical Entity GUID
+PASS Mutable infrastructure belongs to the configured Vault root
+PASS Raven has no generated Markdown or converted native sibling
+PASS no uncaught browser exceptions
+{
+  "passed": 21,
+  "checks": [
+    "default Mutable Vault established without writable override",
+    "initial unbound tab explains Save prerequisite and reports no creation",
+    "physical files and nested legacy JSON are visible",
+    "nested folder selectable",
+    "real Raven corpus Document opens through ordinary Flint",
+    "Raven saves in its existing legacy format and identity",
+    "Raven EntityReference saved without conversion",
+    "Raven canonical alias resolution works",
+    "Raven current-Document mention resolution works",
+    "return to vault root",
+    "incompatible JSON produces content recognition error",
+    "New Document / Save reaches usable Entity service without reopen",
+    "native selection initializes target and query",
+    "create and link persists target GUID and native range",
+    "canonical alias service available on UI-created binding",
+    "default Mutable Vault established without writable override",
+    "existing native Open resolves same canonical Entity after restart",
+    "Raven restart preserves Document identity and canonical Entity GUID",
+    "Mutable infrastructure belongs to the configured Vault root",
+    "Raven has no generated Markdown or converted native sibling",
+    "no uncaught browser exceptions"
+  ]
+}

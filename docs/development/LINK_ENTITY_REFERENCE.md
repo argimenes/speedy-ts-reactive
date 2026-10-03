@@ -6,7 +6,7 @@ This guide describes the accepted P3d implementation. For authority, independent
 
 ## Open and use it
 
-1. Open a bound native Document in a Flint vault. Select text in the Document, including an ordinary cross-Block text selection if needed.
+1. Open a recognized Document with a verified source binding in a Mutable Vault (currently through Flint). A supported historical `.json` source can qualify; `.ink` is not an admission badge. Select text in the Document, including an ordinary cross-Block text selection if needed.
 2. Press **Control+`;`, then `r`**, or choose **Entity reference** in the Document annotation toolbar. This is a two-step chord, including on macOS; it is not Command+R. Bindings can be customized.
 3. Keep the selected **Target** and edit **Search** independently. For example, target `he`, query `leonardo`, and canonical Entity `Leonardo da Vinci` can link the original `he` without rewriting it.
 4. Choose **Link** to preserve the prose, or explicitly choose **Replace & Link** to replace a suitable single-Block plain-text target with the preferred Entity name and annotate it in one native Undo operation.
@@ -20,6 +20,8 @@ The original target stays highlighted while the Window has focus. Search offers 
 Up/Down and Enter navigate/select candidates; Escape closes. Alt+S/M/V change stream/match/scope. Number keys select the displayed numbered rows outside text fields. Native text entry, Tab and composition retain their normal role. Character/word target adjustments are transient and limited to a current, suitable plain-text Block; they add no delimiter Cells. Replace & Link and boundary adjustment have narrower eligibility than ordinary cross-Block linking.
 
 The related **Entities in Document** action opens the listing, not LER. Its default chord is **Control+`;`, then `l`**.
+
+Starter Notes/Ideas remain transient until explicit Save. Selecting a Vault alone does not bind them. A pre-dispatch rejection reports **Not created**, not an uncertain Entity commit. After dispatch, preserve the existing created/linked, created-but-not-linked and unconfirmed recovery distinctions.
 
 ## Choose the reuse boundary
 
@@ -104,7 +106,7 @@ The current resolver is deterministic. Future semantic/NL candidate discovery ma
 
 ## Context, lifecycle and recovery requirements
 
-**Context:** the [application Entity adapter](../../src/application/entity-service.ts) needs exactly one registered context accepting the owner occurrence, a live selected vault, a ready canonical resource boundary and verified source identity/location/hash evidence. Pending, missing or ambiguous bindings fail explicitly. [Flint composition](../../src/application/document-application-capabilities.tsx) registers/disposes that context with its existing vault/Facts lifecycle. `sqliteEntities` and `entityReferences` are enabled by default; that does not authorize writes to a read-only vault or enable `nativeKnowledgeSaved`.
+**Context:** the [application Entity adapter](../../src/application/entity-service.ts) needs exactly one registered context accepting the owner occurrence, a live selected vault, a ready canonical resource boundary and verified source identity/location/hash evidence. Pending, missing or ambiguous bindings fail explicitly. [Flint composition](../../src/application/document-application-capabilities.tsx) registers/disposes that context with its existing vault/Facts lifecycle. `sqliteEntities` and `entityReferences` are enabled by default; normal Mutable composition is writable, but filesystem/SQLite failures and invalid source evidence still reject operations. These flags do not enable `nativeKnowledgeSaved`.
 
 The feature is reusable across invoking Flint Windows, including independent occurrences of one canonical Document. Another Window's focus must not select its vault or target. Generic Desktop Documents, Canvas and Spatial do not automatically gain this context just because they can render the feature. Their broader vault-context integration is deferred; showing the Window there may yield an explicit service-unavailable result. Do not fabricate a default vault, silently enroll a source or fall back to SurrealDB to make it work.
 
@@ -125,4 +127,4 @@ The feature is reusable across invoking Flint Windows, including independent occ
 | Focused regressions | [Window tests](../../src/features/entity-references/search-view.test.tsx), [candidate tests](../../src/features/entity-references/candidates-view.test.tsx), [lifecycle tests](../../src/features/entity-references/lifecycle.test.tsx), [service tests](../../src/application/entity-service.test.ts) |
 | Accepted browser/server gate and limits | [P3d report](../../MUTABLE_SQLITE_PERSISTENCE_P3D_REPORT.md) |
 
-When adding an invocation point, qualify selection surviving the trigger, target/query independence, the invoking Window's vault, cross-Block linking, stale selection, Escape/focus, native inputs/IME and disposal. If adding creation or recovery behavior, include uncertain retry, created-but-not-linked recovery, read-only rejection and Undo that changes only the native annotation. Reuse the existing native mutation and Entity service tests rather than building another resolver or persistence path.
+When adding an invocation point, qualify selection surviving the trigger, target/query independence, the invoking Window's vault, cross-Block linking, stale selection, Escape/focus, native inputs/IME and disposal. If adding creation or recovery behavior, include uncertain retry, created-but-not-linked recovery, permission/storage-failure rejection and Undo that changes only the native annotation. Reuse the existing native mutation and Entity service tests rather than building another resolver or persistence path.

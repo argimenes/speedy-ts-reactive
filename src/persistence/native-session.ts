@@ -5,6 +5,7 @@ import { admitNative, captureNative, decodeNative, nativeText } from './native-r
 import { admitMarkdown, type LinkTarget } from './markdown';
 import { enrollPair, type PairGeneration, type PairResult, type ResourcePair } from './resource-pair';
 import { markNativeBinding, ownNativeSession } from './native-bindings';
+import { recognizeCompatibleDocument } from './compatible-document';
 type Baseline = { nativeHash: string | null; markdownHash: string | null; generation: string | null; locationRevision?: string };
 type Binding = { location: DocumentLocation; baseline: Baseline; pair: ResourcePair; pending?: PairGeneration; message: string; comparedHash?: string; busy: boolean; relocation?: string; relocationWork?: Promise<unknown>; members: Set<string> };
 const sessions = new WeakMap<ReactiveEditor, NativeDocumentSession>();
@@ -24,6 +25,7 @@ export interface VaultRelocation {
 }
 export class NativeDocumentSession {
   private bindings = new Map<string, Binding>();
+  private compatibleSources = new Map<string,{location:DocumentLocation;byteHash:string;format:string;vault:string;canSave:boolean;message:string;dirty:boolean;busy:boolean;members:Set<string>;pending?:any}>();
   private changed = createSignal(0);
   // Tree observers must not rebuild for ordinary content/status changes.
   private storageChanged = createSignal(0);
@@ -32,12 +34,12 @@ export class NativeDocumentSession {
   private notifyKnowledge(){this.knowledgeEpoch++;for(const listener of this.knowledgeListeners)listener();}
   /** Read-only existing bindings, for scope coverage diagnostics. No capture or enrollment. */
   knowledgeBindings(){return Object.freeze([...this.bindings].map(([resourceId,b])=>Object.freeze({resourceId,location:Object.freeze({...b.location})})));}
-  knowledgeEvidence(id:string){const b=this.bindings.get(id);return Object.freeze({epoch:this.knowledgeEpoch,closed:this.disposed,admitting:this.opening>0,pending:!!(b?.busy||b?.pending||b?.relocation||this.relocations.size),location:b?Object.freeze({...b.location}):undefined,byteHash:b?.baseline.nativeHash});}
+  knowledgeEvidence(id:string){const b=this.bindings.get(id),s=this.compatibleSources.get(id);return Object.freeze({epoch:this.knowledgeEpoch,closed:this.disposed,admitting:this.opening>0,pending:!!(b?.busy||b?.pending||s?.busy||s?.pending||b?.relocation||this.relocations.size),location:b||s?Object.freeze({...((b??s)!.location)}):undefined,byteHash:b?.baseline.nativeHash??s?.byteHash});}
   private notice = '';
   private candidates = new Set<string>();
   private relocations = new Map<string, { request: VaultRelocation; work?: Promise<unknown>; bindings: Array<{ id: string; baseline: Baseline; location: DocumentLocation }> }>();
   constructor(private editor: ReactiveEditor) {
-    const warn = (event: BeforeUnloadEvent) => { if (this.candidates.size || this.relocations.size || [...this.bindings.values()].some(b => b.pending || b.relocation || b.pair.dirty)) { event.preventDefault(); event.returnValue = ''; } };
+    const warn = (event: BeforeUnloadEvent) => { if (this.candidates.size || this.relocations.size || [...this.compatibleSources.values()].some(s=>s.dirty||s.pending) || [...this.bindings.values()].some(b => b.pending || b.relocation || b.pair.dirty)) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', warn);
     const stop = editor.repository.subscribeChanges(change => {
       for (const [id,b] of this.bindings) {
@@ -45,14 +47,16 @@ export class NativeDocumentSession {
         if (!b.pending && !b.busy) b.message = 'Document changed — Save required';
         if (!change.inlineOwner) { try { b.members = new Set(Object.keys(captureNative(editor.repository.snapshot(), id).contents)); } catch { b.message = 'Canonical source unavailable or ambiguous'; } }
       }
+      for(const [id,s] of this.compatibleSources){if(![...change.previousContents.keys(),...(change.inlineOwner?[change.inlineOwner]:[])].some(k=>s.members.has(k)))continue;s.dirty=true;if(!change.inlineOwner){try{s.members=new Set(Object.keys(captureNative(editor.repository.snapshot(),id).contents));}catch{s.message="Canonical source unavailable or ambiguous";}}if(!s.busy&&!s.pending)s.message="Document changed — Save required";}
       this.touch();
     });
     ownNativeSession(editor.repository, () => { this.disposed = true;this.notifyKnowledge();this.knowledgeListeners.clear(); stop(); window.removeEventListener('beforeunload', warn); });
   }
   private touch() { this.changed[1](v => v + 1); }
   private touchStorage() { this.storageChanged[1](v => v + 1);this.notifyKnowledge(); }
-  status(id?: string) { this.changed[0](); const b = id && this.bindings.get(id); return b ? b.message : this.notice || 'Native Documents save individually; Workspace saving remains guarded.'; }
-  location(id?: string) { this.storageChanged[0](); const b = id && this.bindings.get(id); return b ? { ...b.location } : undefined; }
+  status(id?: string) { this.changed[0](); const b = id && this.bindings.get(id); return b ? b.message : id&&this.compatibleSources.has(id) ? this.compatibleSources.get(id)!.message : this.notice || 'Save this Document to a native file before using canonical Entities.'; }
+  location(id?: string) { this.storageChanged[0](); const b = id && (this.bindings.get(id)??this.compatibleSources.get(id)); return b ? { ...b.location } : undefined; }
+  compatibleSource(id:string){const source=this.compatibleSources.get(id);return source?Object.freeze({...source,location:Object.freeze({...source.location})}):undefined;}
   trackCandidate(id: string) {
     captureNative(this.editor.repository.snapshot(),id);
     markNativeBinding(this.editor.repository,id);this.candidates.add(id);this.touch();
@@ -74,6 +78,8 @@ export class NativeDocumentSession {
     return [...known].filter(([resourceId]) => resourceId !== id).map(([resourceId,location]) => ({ resourceId, location }));
   }
   async list(folder: string) { return (await request(`list?${new URLSearchParams({folder})}`)).files as string[]; }
+  async defaultVault(){return (await request('vault/default')).vault as string|undefined;}
+  async establishVault(vault:string,signal?:AbortSignal){return request('vault/establish',{vault},signal);}
   async discoverVault(vault: string, signal?: AbortSignal) { return request('vault/discover', {vault}, signal); }
   async createVaultDirectory(vault: string, directory: string) { return request('vault/mkdir', {vault, directory}); }
   async relocateVault(input: VaultRelocation) {
@@ -164,6 +170,25 @@ export class NativeDocumentSession {
   async open(location: DocumentLocation, importText = false) {
     this.opening++;this.notifyKnowledge();try{return await this.openResource(location,importText);}finally{this.opening--;this.notifyKnowledge();}
   }
+  async openCompatible(location:DocumentLocation,vault:string) {
+    this.opening++;this.notifyKnowledge();
+    try {
+      const data=await request('recognize',{location});if(this.disposed)throw Error('Document session closed');
+      const bytes=new TextEncoder().encode(data.text),recognized=recognizeCompatibleDocument(bytes),id=recognized.resource.resourceId;
+      if(id!==data.resourceId)throw Error('Recognition identity changed');
+      const digest=await crypto.subtle.digest('SHA-256',bytes);
+      if([...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('')!==data.byteHash)throw Error('Recognition bytes changed');
+      if(this.disposed)throw Error('Document session closed');
+      const old=this.compatibleSources.get(id);
+      if(this.bindings.has(id)||old&&!sameLocation(old.location,location))throw Error('Identity already opened from another source; no automatic rebinding');
+      if(old&&old.byteHash!==data.byteHash)throw Error('Source changed since Open; live edits were preserved');
+      const boundary=this.editor.repository.readCanonicalResourceBoundary(id);
+      if(!old&&boundary.status!=='missing')throw Error('Canonical identity is already loaded without this source proof; no implicit adoption');
+      if(!old||boundary.status!=='ready')admitNative(this.editor.repository,new TextEncoder().encode(nativeText(recognized.resource)),this.bank());
+      if(!old)this.compatibleSources.set(id,{location:{...location},byteHash:data.byteHash,format:recognized.format,vault,canSave:data.saveCapability==='in-place',message:data.saveCapability==='in-place'?'Opened Document — in-place Save available':data.saveReason,dirty:false,busy:false,members:new Set(Object.keys(captureNative(this.editor.repository.snapshot(),id).contents))});
+      markNativeBinding(this.editor.repository,id);this.touchStorage();this.touch();return id;
+    }finally{this.opening--;this.notifyKnowledge();}
+  }
   /** Selected result only. The caller owns navigation; admission retains all native guards. */
   async openVerified(location: DocumentLocation, expected: {resourceId:string;byteHash:string}, guard:()=>void, signal?:AbortSignal, verify?:()=>Promise<void>) {
     guard(); signal?.throwIfAborted(); this.opening++;this.notifyKnowledge();const epoch=this.knowledgeEpoch;
@@ -189,6 +214,7 @@ export class NativeDocumentSession {
     if(importText)throw new Error('Select a standalone .md file to import');
     if(data.pending)throw new Error('This file has a pending generation. Use Recover, then Open again.');
     const existing=this.bindings.get(data.resourceId);
+    if(this.compatibleSources.has(data.resourceId))throw Error('Identity already opened from a compatibility source; no automatic rebinding');
     if(existing&&!sameLocation(existing.location,location))throw new Error('This identity is already bound to another location. Relocation requires separate review.');
     if(existing){
       if(JSON.stringify(existing.baseline)!==JSON.stringify(data.baseline))throw new Error('The server file changed since this Document was opened. Current edits and baseline were preserved.');
@@ -246,6 +272,7 @@ export class NativeDocumentSession {
     }finally{b.busy=false;this.notifyKnowledge();this.touch();}
   }
   async save(id: string, location?: DocumentLocation) {
+    if(this.compatibleSources.has(id)){if(location&&!sameLocation(location,this.compatibleSources.get(id)!.location))throw Error('Changing source format/location requires explicit Save As; no conversion was performed');return this.saveRecognized(id);}
     if(this.editor.blockHistory.state.storage==='persistent')throw new Error('Native pair integration does not migrate persistent History enrollment');
     let b=this.bindings.get(id);
     if(!b){if(!location?.filename.endsWith('.mutable.json'))throw new Error('Choose a .mutable.json destination');captureNative(this.editor.repository.snapshot(),id);b=this.bind(id,location,{nativeHash:null,markdownHash:null,generation:null});}
@@ -256,10 +283,27 @@ export class NativeDocumentSession {
     }
     return this.operate(id,false);
   }
+  async recoverRecognized(vault:string,resourceId:string,generation:string){const result=await request('recover-recognized',{vault,resourceId,generation});if(result.phase!=='saved')throw Error(result.error??'Document recovery remains pending');this.notice='Recovery complete. Explicitly reopen the Document; live source baselines were not replaced.';this.touch();return result;}
+  async verifySource(vault:string,id:string){const proof=this.knowledgeEvidence(id);if(proof.pending||!proof.location||!proof.byteHash)throw Error('Source unavailable or pending');return request('verify-source',{vault,source:{resourceId:id,location:proof.location,byteHash:proof.byteHash}});}
+  private async saveRecognized(id:string){
+    const s=this.compatibleSources.get(id)!;if(s.busy)throw Error('Document Save is already active');
+    if(!s.canSave)throw Error(s.message);
+    s.busy=true;s.message='Saving Document';this.notifyKnowledge();this.touch();
+    try{
+      s.pending??={vault:s.vault,source:{resourceId:id,location:s.location,byteHash:s.byteHash},format:s.format,dependencies:this.dependencies(id),generation:crypto.randomUUID(),native:nativeText(captureNative(this.editor.repository.snapshot(),id))};
+      const result=await request('save-recognized',s.pending);
+      if(result.phase!=='saved'){s.message='Document Save pending: '+result.error;return result;}
+      s.byteHash=result.byteHash;const captured=s.pending.native;s.pending=undefined;
+      s.dirty=nativeText(captureNative(this.editor.repository.snapshot(),id))!==captured;
+      s.message='Saved Document in place'+(s.dirty?' — newer edits remain':'');this.touchStorage();return result;
+    }catch(e){if((e as any).preflight)s.pending=undefined;s.message='Document Save blocked: '+String(e);throw e;}
+    finally{s.busy=false;this.notifyKnowledge();this.touch();}
+  }
   async recover(id: string | undefined, location: DocumentLocation) {
     this.opening++;this.notifyKnowledge();try{return await this.recoverWork(id,location);}finally{this.opening--;this.notifyKnowledge();}
   }
   private async recoverWork(id:string|undefined,location:DocumentLocation){
+    if(id&&this.compatibleSources.has(id))return this.saveRecognized(id);
     if(id&&this.bindings.get(id)?.pending)return this.operate(id,true);
     const data=await request('open',{location});if(data.kind!=='native'||!data.pending)throw new Error('No pending generation at this location');
     const result=await request('recover',{location,resourceId:data.resourceId,generation:data.pending.generation,dependencies:this.dependencies(data.resourceId),baseline:data.baseline});

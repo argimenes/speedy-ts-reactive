@@ -1,0 +1,88 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-vault.test.tsx (15 tests) 19857ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 1625ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 8471ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 975ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 598ms
+   ✓ exposes read-only storage, preserves ordinary editing, and cannot bypass it through Files 489ms
+   ✓ refresh discovers external changes without rebinding or replacing loaded dirty content; ambiguous identities stay unavailable 414ms
+   ✓ retains the selected vault across minimize/restore, with no serialized membership or root path 325ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 395ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 570ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 432ms
+   ✓ relocates a Document containing a native external reference without rewriting its target or saved generation 381ms
+   ✓ reports a vanished location without discarding the live Document or adopting an external same-ID move 340ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 2392ms
+   ✓ browses physical files and opens a real historical Document without migration or hidden native enrollment 2161ms
+ ✓ src/application/native-saved-scope.test.ts (16 tests) 21067ms
+   ✓ saved provider sqlite=false > shares a bounded saved cohort without Open, binding, projection, History or per-resource conservative endpoints 460ms
+   ✓ saved provider sqlite=false > saved-to-opening suppresses immediately, dirty live never falls back, and disappearance requires verified hand-back 1065ms
+   ✓ saved provider sqlite=false > a failed saved scope withdraws its old results, keeps loaded operation usable, and explicit Refresh retries 946ms
+   ✓ saved provider sqlite=false > explicit selected Open can re-admit after admission Undo; retained binding is not mistaken for canonical presence 1223ms
+   ✓ saved provider sqlite=true > shares a bounded saved cohort without Open, binding, projection, History or per-resource conservative endpoints 5129ms
+   ✓ saved provider sqlite=true > saved-to-opening suppresses immediately, dirty live never falls back, and disappearance requires verified hand-back 1506ms
+   ✓ saved provider sqlite=true > a failed saved scope withdraws its old results, keeps loaded operation usable, and explicit Refresh retries 2240ms
+   ✓ saved provider sqlite=true > memory/resource budget remains explicit incomplete coverage, not complete zero results 921ms
+   ✓ saved provider sqlite=true > repository/session replacement expires result tokens and releases derived state only 1144ms
+   ✓ saved provider sqlite=true > explicit selected Open can re-admit after admission Undo; retained binding is not mistaken for canonical presence 1818ms
+   ✓ saved provider sqlite=true > closing the last scope cancels staged saved work; reacquisition starts with fresh read evidence 1445ms
+   ✓ saved provider sqlite=true > SQL query expiry withdraws cached evidence and selects independently verified file fallback 1199ms
+   ✓ saved provider sqlite=true > changed files cannot escape through cached SQL or file fallback, while valid live state survives 1280ms
+ ✓ src/application/entity-service.test.ts (6 tests) 2347ms
+   ✓ real HTTP/worker resolves canonical names, curated aliases and live/saved mentions as independent evidence 871ms
+   ✓ read-only vault permits resolution but rejects canonical writes, and another vault cannot supply source authority 373ms
+   ✓ unresolved saved definitions keep mention resolution and vault counts explicitly incomplete 352ms
+ ❯ src/application/flint-saved-knowledge.test.tsx (22 tests | 2 failed) 70194ms
+   ✓ Flint saved composition sqlite=false > progressively searches saved resources without admission, then opens only the selected source in the invoking Window 2803ms
+   ✓ Flint saved composition sqlite=false > saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 5220ms
+   ✓ Flint saved composition sqlite=false > rejects a saved result after changed bytes without admission or binding 2518ms
+   ✓ Flint saved composition sqlite=false > rejects a saved result after duplicate without admission or binding 556ms
+   ✓ Flint saved composition sqlite=false > rejects a saved result after external move without admission or binding 530ms
+   ✓ Flint saved composition sqlite=false > rejects a saved result after removed without admission or binding 442ms
+   ✓ Flint saved composition sqlite=false > checks bytes returned by Open before admission and preserves a read-only source 3501ms
+   ✓ Flint saved composition sqlite=false > read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 1520ms
+   ✓ Flint saved composition sqlite=false > a duplicate introduced while native Open is awaiting its response cannot be admitted 3516ms
+   ✓ Flint saved composition sqlite=false > an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 500ms
+   ✓ Flint saved composition sqlite=false > selected Open retains the existing owned-external dependency/ownership admission guard 389ms
+   ✓ Flint saved composition sqlite=true > progressively searches saved resources without admission, then opens only the selected source in the invoking Window 2517ms
+   ✓ Flint saved composition sqlite=true > saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 7420ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after changed bytes without admission or binding 3788ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after duplicate without admission or binding 3875ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after external move without admission or binding 3868ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after removed without admission or binding 3667ms
+   × Flint saved composition sqlite=true > checks bytes returned by Open before admission and preserves a read-only source 6117ms
+     → expected undefined to be 'vault' // Object.is equality
+   × Flint saved composition sqlite=true > read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 6089ms
+     → expected undefined to be 'vault' // Object.is equality
+   ✓ Flint saved composition sqlite=true > a duplicate introduced while native Open is awaiting its response cannot be admitted 4633ms
+   ✓ Flint saved composition sqlite=true > an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 6314ms
+   ✓ Flint saved composition sqlite=true > selected Open retains the existing owned-external dependency/ownership admission guard 403ms
+ ✓ server/sqlite-knowledge-host.test.ts (4 tests) 1238ms
+   ✓ real native/legacy publication routes schedule saved indexing without altering receipts or providers 701ms
+   ✓ partial pair and missing dependency cannot become complete index evidence; recovery retains exact publication 308ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/application/flint-saved-knowledge.test.tsx > Flint saved composition sqlite=true > checks bytes returned by Open before admission and preserves a read-only source
+ FAIL  src/application/flint-saved-knowledge.test.tsx > Flint saved composition sqlite=true > read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation
+AssertionError: expected undefined to be 'vault' // Object.is equality
+
+- Expected: 
+"vault"
+
++ Received: 
+undefined
+
+ ❯ src/application/flint-saved-knowledge.test.tsx:46:201
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  2 failed | 61 passed (63)
+   Start at  21:21:35
+   Duration  79.14s (transform 4.70s, setup 0ms, collect 11.94s, tests 114.70s, environment 2.92s, prepare 347ms)
+

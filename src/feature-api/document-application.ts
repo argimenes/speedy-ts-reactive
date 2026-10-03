@@ -45,6 +45,9 @@ export interface ApplicationVaultDocument {
 export interface ApplicationVaultState {
   root: string; folders: readonly string[]; documents: readonly ApplicationVaultDocument[];
   markdown: readonly string[]; diagnostics: readonly string[];
+  /** Physical candidates, not recognized identities or native persistence bindings. */
+  candidates?: readonly string[];
+  documentSaves?: readonly {resourceId:string;generation:string;path:string}[];
   operations: readonly {operationId: string; phase: string}[];
   readOnly: boolean; complete: boolean; busy: boolean; notice: string;
 }
@@ -56,11 +59,13 @@ export interface ApplicationVault {
   close(): void;
   refresh(): Promise<void>;
   openFile(location: {folder: string; filename: string}): Promise<void>;
+  openCandidate?(location: {folder: string; filename: string}): Promise<void>;
   createDocument(folder: string, filename: string, title: string): Promise<void>;
   importMarkdown(source: {folder: string; filename: string}, destination: {folder: string; filename: string}): Promise<void>;
   createDirectory(parent: string, name: string): Promise<void>;
   relocateDocument(source: {folder: string; filename: string}, destination: {folder: string; filename: string}): Promise<void>;
   relocateDirectory(source: string, destination: string): Promise<void>;
+  recoverDocumentSave?(resourceId:string,generation:string):Promise<void>;
   recoverOperation(operationId: string): Promise<void>;
   recoverNative(location: {folder: string; filename: string}): Promise<void>;
 }

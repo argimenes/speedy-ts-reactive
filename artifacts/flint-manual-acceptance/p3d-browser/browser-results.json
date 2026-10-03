@@ -1,0 +1,19 @@
+{
+  "passed": 13,
+  "checks": [
+    "actual LER/HTTP/worker creation links he without replacing prose",
+    "native Undo removes annotation only",
+    "explicit alias resolution preserves provenance",
+    "live unsaved mention is resolver evidence without becoming an alias",
+    "Replace and Link is one Undo unit",
+    "canonical name edits never rewrite Resource bytes",
+    "Entity references survive native pair relocation",
+    "restart/native reopen retains canonical GUID, current name and alias",
+    "native references retain stable canonical GUID after rename/restart",
+    "panel restores invoking occurrence focus",
+    "confirmed creation after stale target can bind a fresh native selection",
+    "native mentions never manufacture aliases or Relationships",
+    "no uncaught browser exceptions"
+  ],
+  "errors": []
+}

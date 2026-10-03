@@ -14,7 +14,7 @@ async function request(action:string,body:unknown,signal?:AbortSignal){
  if(!response.body)throw Error('Entity service unavailable');const reader=response.body.getReader(),parts:Uint8Array[]=[];let length=0;
  try{for(;;){signal?.throwIfAborted();const c=await reader.read();if(c.done)break;if((length+=c.value.length)>1024*1024)throw Error('Entity response budget exceeded');parts.push(c.value);}}finally{await reader.cancel();}
  const bytes=new Uint8Array(length);let offset=0;for(const p of parts){bytes.set(p,offset);offset+=p.length;}const result=JSON.parse(new TextDecoder().decode(bytes));
- if(!response.ok||!result.Success)throw Error(result.Error??'Entity operation unavailable');return result.Data;
+ if(!response.ok||!result.Success)throw Object.assign(new Error(result.Error??'Entity operation unavailable'),result.entityCreationOutcome==='not-created'?{entityCreationOutcome:'not-created'}:{});return result.Data;
 }
 /** A resolver belongs to the invoking occurrence. Vault selection is never global focus. */
 export function entityService(editor:ReactiveEditor,owner:string):EntityService {
@@ -26,16 +26,18 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
  const id=String((root?.payload.metadata as any)?.documentId??root?.payload.id??'');
  const vault=context?.vault();
  const check=()=>{
-  if(!alive||!editor.features.sqliteEntities||!context||!vault||context.vault()!==vault||!context.accepts(owner)||!vault.isAlive())throw Error('Open this native Document in one verified Flint vault to resolve Entities.');
+  if(!alive||!editor.features.sqliteEntities||!context||!vault||context.vault()!==vault||!context.accepts(owner)||!vault.isAlive())throw Error('Open this Document in one verified Mutable Vault to resolve Entities.');
   const b=editor.repository.readCanonicalResourceBoundary(id);if(b.status!=='ready')throw Error('Entity source is missing or ambiguous');
-  const proof=native.knowledgeEvidence(id);if(proof.pending||!proof.location||!proof.byteHash)throw Error('Entity source binding is unavailable or pending');
-  const row=vault.requireFile(proof.location);if(row.resourceId!==id||row.baseline?.nativeHash!==proof.byteHash)throw Error('Entity source location changed; Refresh first');
+  const proof=native.knowledgeEvidence(id);
+  if(proof.pending)throw Error('Finish or recover this Document’s pending Save/relocation before resolving Entities.');
+  if(!proof.location||!proof.byteHash)throw Error('Save this Document into the selected Mutable Vault first. Selecting a Vault does not save an unsaved tab.');
+  if(!native.compatibleSource(id)){const row=vault.requireFile(proof.location);if(row.resourceId!==id||row.baseline?.nativeHash!==proof.byteHash)throw Error('Entity source location changed; Refresh first');}
   return {resourceId:id,location:proof.location,byteHash:proof.byteHash};
  };
- const call=async(input:any,signal?:AbortSignal)=>{
+ const call=async(input:any,signal?:AbortSignal,onDispatch?:()=>void)=>{
   const source=check();signal?.throwIfAborted();
   if(!lease){opening??=request('open',{vault:vault!.root,policy:policy()}).then(async result=>{if(!alive){await request('release',{lease:result.lease});throw Error('Entity resolver closed');}lease=result.lease;}).finally(()=>opening=undefined);await opening;}
-  check();return request('entities',{lease,source,request:input},signal);
+  check();signal?.throwIfAborted();onDispatch?.();return request('entities',{lease,source,request:input},signal);
  };
  return {
   async get(id,signal){const result=await call({op:'get',id},signal);check();return result.entity;},
@@ -59,7 +61,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
    const complete=!diagnostics.length;
    return {rows:result.entities.map((e:CanonicalEntity)=>({id:e.id,name:e.name,...(complete?{mentions:counts.get(e.id)??0}:{})})),complete,diagnostics:[...new Set(diagnostics)].slice(0,32)};
   },
-  async create(input,signal){return (await call({op:'create',...input},signal)).entity;},
+  async create(input,signal){let dispatched=false;try{return (await call({op:'create',...input},signal,()=>{dispatched=true;})).entity;}catch(error){if(!dispatched)throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});throw error;}},
   async rename(input){return (await call({op:'rename',...input})).entity;},
   async alias(input){return (await call(input)).entity;},
   async search(query,signal){
@@ -68,7 +70,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
    const local=await observeLive(editor.repository,id,policy(),{check:current}),diagnostics=[...local.facts.diagnostics];
    let sources=[local.facts],validate=async()=>current();
    if(query.scope==='vault'&&(query.stream==='all'||query.stream==='mention')){
-    if(context!.facts){const scope=await context!.facts.prepare(vault!,signal);sources=scope.sources.map(s=>s.facts);diagnostics.push(...scope.diagnostics,...sources.flatMap(f=>f.diagnostics));validate=async()=>{await scope.validate();current();};}
+    if(context!.facts){const scope=await context!.facts.prepare(vault!,signal);sources=[local.facts,...scope.sources.map(s=>s.facts).filter(f=>f.id!==local.facts.id)];diagnostics.push(...scope.diagnostics,...sources.flatMap(f=>f.diagnostics));validate=async()=>{await scope.validate();current();};}
     else diagnostics.push('Vault mention coverage unavailable; current Document only.');
    }
    const locals=new Map<string,number>();for(const m of local.facts.mentions)if(m.kind==='entity')locals.set(m.targetId,(locals.get(m.targetId)??0)+1);

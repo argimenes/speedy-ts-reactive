@@ -1,0 +1,30 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-saved-knowledge.test.tsx (22 tests) 59079ms
+   ✓ Flint saved composition sqlite=false > progressively searches saved resources without admission, then opens only the selected source in the invoking Window 2956ms
+   ✓ Flint saved composition sqlite=false > saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 2418ms
+   ✓ Flint saved composition sqlite=false > rejects a saved result after changed bytes without admission or binding 350ms
+   ✓ Flint saved composition sqlite=false > rejects a saved result after duplicate without admission or binding 345ms
+   ✓ Flint saved composition sqlite=false > checks bytes returned by Open before admission and preserves a read-only source 390ms
+   ✓ Flint saved composition sqlite=false > read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 1394ms
+   ✓ Flint saved composition sqlite=false > a duplicate introduced while native Open is awaiting its response cannot be admitted 3451ms
+   ✓ Flint saved composition sqlite=false > an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 455ms
+   ✓ Flint saved composition sqlite=true > progressively searches saved resources without admission, then opens only the selected source in the invoking Window 4571ms
+   ✓ Flint saved composition sqlite=true > saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 7378ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after changed bytes without admission or binding 3923ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after duplicate without admission or binding 4370ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after external move without admission or binding 3593ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after removed without admission or binding 4033ms
+   ✓ Flint saved composition sqlite=true > checks bytes returned by Open before admission and preserves a read-only source 4658ms
+   ✓ Flint saved composition sqlite=true > read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 4458ms
+   ✓ Flint saved composition sqlite=true > a duplicate introduced while native Open is awaiting its response cannot be admitted 4746ms
+   ✓ Flint saved composition sqlite=true > an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 4261ms
+   ✓ Flint saved composition sqlite=true > selected Open retains the existing owned-external dependency/ownership admission guard 460ms
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  21:24:32
+   Duration  67.60s (transform 5.43s, setup 0ms, collect 7.41s, tests 59.08s, environment 594ms, prepare 82ms)
+

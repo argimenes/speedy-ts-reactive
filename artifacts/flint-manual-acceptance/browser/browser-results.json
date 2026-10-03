@@ -1,0 +1,27 @@
+{
+  "passed": 21,
+  "checks": [
+    "default Mutable Vault established without writable override",
+    "initial unbound tab explains Save prerequisite and reports no creation",
+    "physical files and nested legacy JSON are visible",
+    "nested folder selectable",
+    "real Raven corpus Document opens through ordinary Flint",
+    "Raven saves in its existing legacy format and identity",
+    "Raven EntityReference saved without conversion",
+    "Raven canonical alias resolution works",
+    "Raven current-Document mention resolution works",
+    "return to vault root",
+    "incompatible JSON produces content recognition error",
+    "New Document / Save reaches usable Entity service without reopen",
+    "native selection initializes target and query",
+    "create and link persists target GUID and native range",
+    "canonical alias service available on UI-created binding",
+    "default Mutable Vault established without writable override",
+    "existing native Open resolves same canonical Entity after restart",
+    "Raven restart preserves Document identity and canonical Entity GUID",
+    "Mutable infrastructure belongs to the configured Vault root",
+    "Raven has no generated Markdown or converted native sibling",
+    "no uncaught browser exceptions"
+  ],
+  "errors": []
+}

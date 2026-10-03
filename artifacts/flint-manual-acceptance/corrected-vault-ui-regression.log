@@ -1,0 +1,39 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ server/recognized-document-store.test.ts (5 tests) 4729ms
+   ✓ Raven saves in place, survives retry/restart, rejects stale clients and never creates Markdown 1482ms
+   ✓ displacement interruption exposes durable recovery after restart and preserves prior bytes 836ms
+   ✓ external replacement during publication is preserved and cannot be confirmed or silently recovered 772ms
+   ✓ duplicate identities and source format changes cannot authorize an in-place save 984ms
+   ✓ positively anonymous historical content does not claim another Document identity; duplicate authored identities still do 654ms
+ ✓ src/application/entity-service.test.ts (6 tests) 3895ms
+   ✓ real HTTP/worker resolves canonical names, curated aliases and live/saved mentions as independent evidence 1675ms
+   ✓ rejects duplicate/source disappearance, forged bindings, wrong vault, cancellation and stale live tokens 434ms
+   ✓ lost mutation response is explicitly unconfirmed and retrying the same attempt does not create another Entity 442ms
+   ✓ read-only vault permits resolution but rejects canonical writes, and another vault cannot supply source authority 460ms
+   ✓ unresolved saved definitions keep mention resolution and vault counts explicitly incomplete 347ms
+   ✓ identifies a missing source binding before creation dispatch without claiming an uncertain Entity commit 536ms
+ ✓ src/application/flint-vault.test.tsx (15 tests) 16715ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 1533ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 1571ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 587ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 2219ms
+   ✓ exposes read-only storage, preserves ordinary editing, and cannot bypass it through Files 503ms
+   ✓ refresh discovers external changes without rebinding or replacing loaded dirty content; ambiguous identities stay unavailable 580ms
+   ✓ preserves unknown authored payloads and incompatible tags, and reports missing owned-resource dependencies 468ms
+   ✓ retains the selected vault across minimize/restore, with no serialized membership or root path 581ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 668ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 655ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 537ms
+   ✓ relocates a Document containing a native external reference without rewriting its target or saved generation 880ms
+   ✓ reports a vanished location without discarding the live Document or adopting an external same-ID move 607ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 2856ms
+   ✓ browses physical files and opens a real historical Document without migration or hidden native enrollment 2465ms
+
+ Test Files  3 passed (3)
+      Tests  26 passed (26)
+   Start at  21:08:11
+   Duration  24.91s (transform 5.79s, setup 0ms, collect 9.63s, tests 25.34s, environment 1.80s, prepare 522ms)
+

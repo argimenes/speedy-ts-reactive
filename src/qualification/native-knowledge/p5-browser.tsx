@@ -7,7 +7,7 @@ import {nativeDocumentSession} from '../../persistence/native-session';
 export {observeHeartbeat} from './p3-browser';
 const delay=(n:number)=>new Promise(r=>setTimeout(r,n));
 export async function setup(root:string,count:number){
- const t=performance.now(),session=new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{nativeKnowledgeSaved:true,publicHostedVersion:false}}),editor=session.editor;
+ const t=performance.now(),session=new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{nativeKnowledgeSaved:true}}),editor=session.editor;
  const launch=()=>editor.commandRegistry.execute('flint.open',{targetKey:session.projection.state.rootKey,args:undefined});launch();launch();
  const host=document.body.appendChild(document.createElement('div'));host.className='workspace-demo workspace-demo--canonical';host.style.cssText='position:fixed;inset:0;background:#eee;overflow:auto';
  const dispose=render(()=><WorkspacePresentationView session={session}/>,host);editor.installGateway(document);

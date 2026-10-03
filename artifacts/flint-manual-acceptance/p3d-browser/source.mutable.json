@@ -1,0 +1,85 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "id": "dbe90289-6c43-42ee-8676-7204dcee2e1c",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "he met Firenze. Leo writes. he"
+          }
+        ],
+        "properties": {
+          "standoffProperties": [
+            {
+              "end": 1,
+              "id": "c91d943d-d00c-45ec-a9b5-5560a270f77c",
+              "metadata": {
+                "entityId": "35f47df3-532d-43ae-b81b-62172c480d62",
+                "entityName": "Leonardo da Vinci"
+              },
+              "start": 0,
+              "type": "codex/entity-reference",
+              "value": "35f47df3-532d-43ae-b81b-62172c480d62"
+            },
+            {
+              "end": 29,
+              "id": "97728977-b3dc-494b-ac3a-d66749c3b67d",
+              "metadata": {
+                "entityId": "35f47df3-532d-43ae-b81b-62172c480d62",
+                "entityName": "Leonardo da Vinci"
+              },
+              "start": 28,
+              "type": "codex/entity-reference",
+              "value": "35f47df3-532d-43ae-b81b-62172c480d62"
+            }
+          ]
+        },
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:f6225888-08cc-4bd4-a35f-9aa72e6d295f:placement:624f78b7-76c6-428c-9719-c8652005cc66",
+            "target": {
+              "blockId": "dbe90289-6c43-42ee-8676-7204dcee2e1c",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "f6225888-08cc-4bd4-a35f-9aa72e6d295f",
+        "properties": {
+          "metadata": {
+            "documentFormat": {
+              "format": "page",
+              "template": "blank",
+              "theme": "default",
+              "version": 1
+            },
+            "documentId": "f6225888-08cc-4bd4-a35f-9aa72e6d295f",
+            "tags": [],
+            "title": "Source"
+          }
+        },
+        "type": "document-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "f6225888-08cc-4bd4-a35f-9aa72e6d295f",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:f6225888-08cc-4bd4-a35f-9aa72e6d295f:placement:68f6460f-56ab-4438-a08a-13333a2c9c98",
+      "target": {
+        "blockId": "f6225888-08cc-4bd4-a35f-9aa72e6d295f",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "f6225888-08cc-4bd4-a35f-9aa72e6d295f",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

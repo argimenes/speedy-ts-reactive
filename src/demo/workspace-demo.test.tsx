@@ -68,7 +68,7 @@ describe("workspace demo fixture", () => {
 describe("WorkspaceDemo", () => {
   function mount() {
     const host = document.body.appendChild(document.createElement("div"));
-    const dispose = render(() => <WorkspaceDemo configuration={{ features: { codexSystemBar: false, publicHostedVersion: false } }} />, host);
+    const dispose = render(() => <WorkspaceDemo configuration={{ features: { codexSystemBar: false } }} />, host);
     disposers.push(dispose);
     return host;
   }
@@ -77,7 +77,7 @@ describe("WorkspaceDemo", () => {
     expect(featureFlags.codexSystemBar).toBe(true);
     expect(featureFlags.compactDocumentMode).toBe(true);
     const host = document.body.appendChild(document.createElement("div"));
-    disposers.push(render(() => <WorkspaceDemo configuration={{ features: { publicHostedVersion: false } }} />, host));
+    disposers.push(render(() => <WorkspaceDemo configuration={{ features: {  } }} />, host));
     expect(host.querySelector(".workspace-demo__toolbar")).toBeNull();
     expect(host.querySelector(".codex-system-bar")).not.toBeNull();
     expect(host.querySelector<HTMLButtonElement>('[aria-label="Codex search (coming soon)"]')?.disabled).toBe(true);

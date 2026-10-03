@@ -198,7 +198,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
     window: () => ({ state: windowState(), position: position(), size: windowSize() ?? (windowElement?.isConnected && windowState() === "normal" ? { w: windowElement.getBoundingClientRect().width, h: windowElement.getBoundingClientRect().height } : props.window?.size ?? { w: 1200, h: 760 }) }),
   });
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave]] as const) {
-    editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: editor.features.publicHostedVersion ? localExecute : serverExecute });
+    editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: serverExecute });
   }
   const encoded = createMemo(() => {
     editor.repository.state.revision;
@@ -233,22 +233,15 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   return (
     <main data-window-work-area class="workspace-demo" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }} data-demo-state={loaded() ? "loaded" : "loading"}>
       <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Demo controls">
-        <Show when={editor.features.publicHostedVersion} fallback={<>
-          <button type="button" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
-          <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
-          <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
-          <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
-          <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-          <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace…</button>
-        </>}>
+        {<>
           <span class="workspace-demo__toolbar-group" aria-label="Server files">
             <strong>Server</strong>
             <button type="button" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
             <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
-            <button type="button" disabled title="Server files are read-only in the public hosted version.">Save</button>
-            <button type="button" disabled title="Server files are read-only in the public hosted version.">Save as…</button>
+            <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
+            <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
             <button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-            <button type="button" disabled title="Server files are read-only in the public hosted version.">Save Workspace…</button>
+            <button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace…</button>
           </span>
           <span class="workspace-demo__toolbar-group" aria-label="Local files">
             <strong>Local</strong>
@@ -259,7 +252,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
             <button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
             <button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace…</button>
           </span>
-        </Show>
+        </>}
         <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
         <For each={props.stickyHost.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => props.stickyHost.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
         <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
@@ -274,21 +267,14 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
           <button type="button" role="menuitem" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
           <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
           <hr role="separator" />
-          <Show when={editor.features.publicHostedVersion} fallback={<>
-            <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
-            <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
-            <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
-            <hr role="separator" />
-            <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-            <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace…</button>
-          </>}>
+          {<>
             <fieldset class="codex-system-menu__group" aria-label="Server files">
               <legend>Server</legend>
               <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
-              <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save</button>
-              <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save as…</button>
+              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
+              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
               <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-              <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save Workspace…</button>
+              <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace…</button>
             </fieldset>
             <fieldset class="codex-system-menu__group" aria-label="Local files">
               <legend>Local</legend>
@@ -298,7 +284,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
               <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
               <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace…</button>
             </fieldset>
-          </Show>
+          </>}
           <hr role="separator" />
           <button type="button" role="menuitem" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
           <For each={props.stickyHost.stickyNotes.closedWindows()}>{key => <button type="button" role="menuitem" onClick={() => props.stickyHost.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
@@ -413,7 +399,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   const opening = createWorkspaceOpenControls(session, () => !props.workspaceBusy);
   const release = props.onEditor(editor);
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave], ["workspace.saveAs", props.onWorkspaceSave, props.onLocalWorkspaceSaveAs]] as const) {
-    editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: editor.features.publicHostedVersion ? localExecute : serverExecute });
+    editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: serverExecute });
   }
   onMount(() => editor.installGateway(document));
   onCleanup(() => { release(); session.dispose(); });
@@ -423,13 +409,10 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
     <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Workspace controls">
       <opening.Buttons />
       <Show when={editor.features.flint}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>
-      <Show when={editor.features.publicHostedVersion} fallback={<>
-        <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-        <button type="button" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
-      </>}>
-        <span class="workspace-demo__toolbar-group" aria-label="Server files"><strong>Server</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button><button type="button" disabled title="Server files are read-only in the public hosted version.">Save Workspace</button></span>
+      {<>
+        <span class="workspace-demo__toolbar-group" aria-label="Server files"><strong>Server</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button></span>
         <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button><Show when={session.presentation.enabled}><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show></span>
-      </Show>
+      </>}
       <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
       <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
       <button type="button" disabled={!canUndo()} onClick={() => editor.repository.undo()}>Undo</button>
@@ -446,14 +429,11 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
         <a role="menuitem" href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
         <hr role="separator" />
-        <Show when={editor.features.publicHostedVersion} fallback={<>
-          <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.open")} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-          <button type="button" role="menuitem" disabled={props.workspaceBusy} title={editor.bindings.label("workspace.save")} onClick={props.onWorkspaceSave}>Save Workspace</button>
-        </>}>
+        {<>
           <fieldset class="codex-system-menu__group" aria-label="Server files">
             <legend>Server</legend>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-            <button type="button" role="menuitem" disabled title="Server files are read-only in the public hosted version.">Save Workspace</button>
+            <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button>
           </fieldset>
           <fieldset class="codex-system-menu__group" aria-label="Local files">
             <legend>Local</legend>
@@ -461,7 +441,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button>
             <Show when={session.presentation.enabled}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
           </fieldset>
-        </Show>
+        </>}
         <hr role="separator" />
         <button type="button" role="menuitem" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
         <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" role="menuitem" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
@@ -510,7 +490,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
     if (!background.overlays.overlays.some(overlay => overlay.viewType === "context-menu")) background.overlays.open({ viewType: "context-menu", ownerKey: backgroundView.state.rootKey, anchor: { x: rect.left, y: rect.bottom + 4 } });
   };
   const openWorkspace = () => { if (!workspaceBusy()) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("open"); } };
-  const saveWorkspace = () => { if (!workspaceBusy() && !features.publicHostedVersion) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("save"); } };
+  const saveWorkspace = () => { if (!workspaceBusy()) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("save"); } };
   const splitWorkspaceDocument = (requireServerLocation: boolean): ExistingBlockDto => {
     if (!activeDemo) throw new Error("The current Workspace is not ready.");
     if (requireServerLocation && activeDemo.editor.blockHistory.state.storage === "persistent") {

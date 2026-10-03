@@ -1,0 +1,169 @@
+[
+  {
+    "name": "20240830.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "20240902.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "20240914.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "Israfel.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "TLS.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "animation.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "blur.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "bullet-tabs.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "checkbox-test.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "clock.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "default.graph.json",
+    "error": "Error: Missing or duplicate authored Block identity in compatible Document"
+  },
+  {
+    "name": "del-test.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "gibberish.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "grid-test.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "image-right-left.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "image-right.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "israfel2.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "masque.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "masque2.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "merged.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "monitor.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "multilinking.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "raven.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "ref-test.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "replace.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "richtextpaste.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "siena.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "tables.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "template-test.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "template.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "test.json",
+    "error": "Error: Nested Document resources require a qualified compatibility admission handler"
+  },
+  {
+    "name": "test2.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "test3.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "testy-tester.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "text1.json",
+    "format": "legacy-block-tree",
+    "roundTrip": true
+  },
+  {
+    "name": "usher.json",
+    "error": "SyntaxError: Unexpected token 'V', \"Viewer\nTex\"... is not valid JSON"
+  }
+]

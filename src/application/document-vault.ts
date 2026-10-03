@@ -6,6 +6,8 @@ export interface VaultDiscovery {
   vault: string; folders: string[];
   documents: Array<{location: VaultLocation; resourceId: string; title: string; state: string; baseline?: Baseline}>;
   markdown: string[]; diagnostics: Array<{path?: string; resourceId?: string; message: string}>;
+  other?: string[];
+  documentSaves?: Array<{resourceId:string;generation:string;path:string}>;
   operations: Array<{operationId: string; phase: string}>; readOnly: boolean; complete: boolean;
 }
 export const vaultPath = (location: VaultLocation) => location.folder === '.' ? location.filename : `${location.folder}/${location.filename}`;
@@ -19,13 +21,13 @@ export function vaultLeaf(value: string) {
   if(!value.trim()||value!==value.trim()||/[\/\\\0]/.test(value)||value.startsWith('.'))throw new Error('Choose a filename or directory name without separators');
   return value;
 }
-/** Feature-owned, disposable tree read model. No authored membership or persistent catalog. */
+/** Application-facing, disposable tree read model of a Mutable Vault. No authored membership or persistent catalog. */
 export function createDocumentVaults(native: NativeDocumentSession, indexLifecycle?: (root:string)=>{refresh(force?:boolean):Promise<void>;dispose():void}) {
   const entries=new Map<string,VaultLease>();
   let disposed=false;
   function check(root: string) {
     if(disposed)throw new Error('Document vault host disposed');
-    for(const key of entries.keys())if(key!==root&&(vaultContains(key,root)||vaultContains(root,key)))throw new Error('An overlapping vault is already open. Use the same root or close that vault first.');
+    for(const key of entries.keys())if(key!==root&&(vaultContains(key,root)||vaultContains(root,key)))throw new Error('An overlapping vault is already open. Choose the same root or a non-overlapping Vault. Closing a session does not remove an established Vault.');
   }
   class VaultLease {
     users=0;
@@ -100,7 +102,7 @@ export function createDocumentVaults(native: NativeDocumentSession, indexLifecyc
       signal?.throwIfAborted();
       const root=vaultRoot(input);check(root);
       let entry=entries.get(root);
-      if(!entry){const scan:VaultDiscovery=await native.discoverVault(root,signal);signal?.throwIfAborted();check(scan.vault);entry=entries.get(scan.vault);if(!entry){entry=new VaultLease(scan.vault,scan);entries.set(scan.vault,entry);}}
+      if(!entry){await native.establishVault(root,signal);const scan:VaultDiscovery=await native.discoverVault(root,signal);signal?.throwIfAborted();check(scan.vault);entry=entries.get(scan.vault);if(!entry){entry=new VaultLease(scan.vault,scan);entries.set(scan.vault,entry);}}
       entry.users++;return entry;
     },
     dispose(){disposed=true;for(const e of entries.values())e.dispose();entries.clear();},

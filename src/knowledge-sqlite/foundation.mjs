@@ -1,3 +1,5 @@
+import { isMainThread } from 'node:worker_threads';
+import { inspectVaultScope, lockVaultEstablishment } from './vault-scope.mjs';
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,7 +26,11 @@ function initialize(file, kind, vaultGuid) {
   } finally { db?.close(); if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
 }
 
-export function openFoundation({ vault, readOnly = false, initialize: create = false } = {}, { hostLeaseHeld = false } = {}) {
+export function openFoundation(options = {}, context = {}) {
+ if(!isMainThread){if(!context.scopeValidated)throw Error('Vault scope was not verified by the host');return openValidatedFoundation(options,context);}
+ const release=lockVaultEstablishment();try{inspectVaultScope(options.vault);return openValidatedFoundation(options,context);}finally{release();}
+}
+function openValidatedFoundation({ vault, readOnly = false, initialize: create = false } = {}, { hostLeaseHeld = false } = {}) {
   const { root, home } = prepareHome({ vault, readOnly, initialize: create }); checkFiles(home);
   let unlock, mutable, audit, closed = false, auditError;
   try {
@@ -111,7 +117,11 @@ function configure(db, readOnly) {
 }
 
 /** Restore only into an empty destination, never over a live vault. No file-resource restore claim. */
-export function restoreSnapshot(source, destination) {
+export function restoreSnapshot(source, destination, scopeValidated=false) {
+ if(!isMainThread){if(!scopeValidated)throw Error('Vault restore scope was not verified');return restoreValidatedSnapshot(source,destination);}
+ const release=lockVaultEstablishment();try{inspectVaultScope(destination);return restoreValidatedSnapshot(source,destination);}finally{release();}
+}
+function restoreValidatedSnapshot(source, destination) {
   if (typeof source !== 'string' || !path.isAbsolute(source) || typeof destination !== 'string' || !path.isAbsolute(destination)) throw Error('Restore requires absolute source and destination directories');
   const backup = directory(source), target = directory(destination);
   if (fs.readdirSync(target).length) throw Error('Restore requires an empty destination directory');

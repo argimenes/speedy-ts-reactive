@@ -4,7 +4,7 @@ for (const name of ['history-validation-worker', 'history-derived-worker']) awai
   outfile: fileURLToPath(new URL(`../dist/server/${name}.js`, import.meta.url)),
   bundle: true, platform: 'node', format: 'esm', target: 'node22', sourcemap: true });
 
-await build({entryPoints:[fileURLToPath(new URL('../server/native-document-store.mjs',import.meta.url))],outfile:fileURLToPath(new URL('../dist/server/native-document-store.mjs',import.meta.url)),bundle:true,platform:'node',format:'esm',target:'node22',sourcemap:true,external:['express','fs-ext']});
+await build({entryPoints:[fileURLToPath(new URL('../server/native-document-store.mjs',import.meta.url))],outfile:fileURLToPath(new URL('../dist/server/native-document-store.mjs',import.meta.url)),bundle:true,platform:'node',format:'esm',target:'node22',sourcemap:true,external:['express','fs-ext'],plugins:[{name:'vault-worker-client',setup(b){b.onResolve({filter:/knowledge-sqlite\/client\.mjs$/},()=>({path:'./knowledge-sqlite/client.mjs',external:true}));}}]});
 
 await import('./build-relocation-helper.mjs');
 

@@ -15,7 +15,7 @@ function fixture(compactEditorChrome: boolean) {
   const editor = new ReactiveEditor({ type: "document-window-block", children: [{ type: "document-block", children: [
     { id: "p", type: "standoff-editor-block", text: "one 😀 two", standoffProperties: [{ id: "entity", type: "codex/entity-reference", start: 0, end: 2, value: "entity-id" }], blockProperties: [{ type: "block/alignment", value: "right" }] },
     { id: "q", type: "standoff-editor-block", text: "Other paragraph" },
-  ] }] }, { features: { compactEditorChrome, publicHostedVersion: false } });
+  ] }] }, { features: { compactEditorChrome } });
   const feature = createGroupingFeature(scope => textOperationCapabilities(editor, scope));
   editor.featureHost.activate(feature);
   const groupSelection = feature.selection!;

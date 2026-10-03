@@ -1,4 +1,6 @@
 /** Vault worker lifetime, verified saved reads and source-scoped canonical Entity requests. */
+import { verifyDocumentSource } from './recognized-source.mjs';
+import { RecognizedDocumentStore } from './recognized-document-store.mjs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { Router, json } from 'express';
@@ -23,13 +25,18 @@ export class SqliteKnowledgeHost {
     const work=this.control.then(action);this.control=work.then(()=>{},()=>{});return work;
   }
   async acquire(vault:string,policy=normalizePolicy()) {
+    return this.acquireContext(vault,policy);
+  }
+  private async acquireContext(vault:string,policy:ReturnType<typeof normalizePolicy>,establishment=false) {
     return this.serialize(async()=>{
       if(this.closed)throw Error('SQLite knowledge host closed');
       if(this.leases.size>=64)throw Error('SQLite lease budget exceeded');
       const root=await this.store.resolve(vault);
-      const normalized=normalizePolicy(policy),key=policyKey(normalized);
       for(const other of this.entries.keys())if(other!==root&&(inside(other,root)||inside(root,other)))throw Error('Overlapping SQLite vault already open');
       let e=this.entries.get(root);
+      // Establishing persistence is policy-neutral. Reuse a warm context without
+      // asking it to replace an application's explicitly selected extraction policy.
+      const normalized=normalizePolicy(establishment&&e?e.policy:policy),key=policyKey(normalized);
       if(e&&e.policyKey!==key)throw Error('SQLite vault extraction policy differs; no automatic profile replacement');
       if(!e){
         if(this.entries.size>=8)throw Error('SQLite vault budget exceeded');
@@ -38,7 +45,7 @@ export class SqliteKnowledgeHost {
         try{e.client=await (this.options.open??openSqliteFoundation)({vault:root,initialize:!this.options.readOnly,readOnly:!!this.options.readOnly});
           e.vaultGuid=(await e.client.inspect()).mutable.vaultGuid;
           e.index=(this.options.indexer??createSavedIndexer)(e.client,{root:this.options.root,vault,store:this.store,policy:normalized,protect:this.protect});
-        }catch(error){await e.client?.close().catch(()=>{});e.client=undefined;e.coverage=unknown(String(error));}
+        }catch(error){await e.client?.close().catch(()=>{});e.client=undefined;throw error;}
         this.entries.set(root,e);
         if(e.client&&!this.options.readOnly)this.enqueue(e,false);
       }
@@ -46,6 +53,7 @@ export class SqliteKnowledgeHost {
       return {lease,...this.snapshot(e)};
     });
   }
+  async establish(vault:string){const opened=await this.acquireContext(vault,normalizePolicy(),true);try{if(!opened.vaultGuid)throw Error('Mutable Vault infrastructure unavailable');return {vault:opened.vault,vaultGuid:opened.vaultGuid};}finally{await this.release(opened.lease);}}
   private renew(token:string,l:any){clearTimeout(l.timer);l.timer=setTimeout(()=>{void this.release(token).catch(()=>{});},this.options.leaseMs??600000);l.timer.unref?.();}
   private entry(token:string){if(this.closed)throw Error('SQLite knowledge host closed');const l=this.leases.get(token);if(!l)throw Error('SQLite lease expired');this.renew(token,l);return l.entry;}
   private snapshot(e:any){return {session:this.session,vault:e.vault,vaultGuid:e.vaultGuid,epoch:e.epoch,readOnly:!!this.options.readOnly,pending:!!e.pending||this.active===e,coverage:structuredClone(e.coverage)};}
@@ -111,17 +119,19 @@ export class SqliteKnowledgeHost {
   /** Canonical Entity authority is separate from saved-index coverage. Source context
    * must still name one currently verified native resource in this vault. */
   async entities(body:any,signal?:AbortSignal){
+    let dispatched=false;
+    try {
     if(this.options.entitiesEnabled===false)throw Error('Canonical Entity service is disabled');
     const e=this.entry(body.lease), source=body.source;
     if(!e.client||!source||typeof source.resourceId!=='string'||!source.location||typeof source.byteHash!=='string')throw Error('Verified native source context required');
-    const fence=await this.store.readScopeFence(e.vault,signal),scan=await this.store.discover(e.vault,{signal});
-    const rows=scan.documents.filter((r:any)=>r.resourceId===source.resourceId);
-    if(!scan.complete||scan.operations.some((o:any)=>o.phase==='pending')||rows.length!==1||rows[0].state==='pending'||rows[0].state==='ambiguous'||JSON.stringify(rows[0].location)!==JSON.stringify(source.location)||rows[0].baseline?.nativeHash!==source.byteHash||await this.store.readScopeFence(e.vault,signal)!==fence)throw Error('Entity source identity/location evidence changed; Refresh required');
+    await verifyDocumentSource(this.store,e.vault,source,signal);
+    if(await new RecognizedDocumentStore(this.store).pending(e.vault,source.resourceId))throw Error('Document Save recovery is pending');
     signal?.throwIfAborted();
     const mutation=['create','rename','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(body.request?.op);
     if(mutation&&this.options.readOnly)throw Error('Canonical Entity storage is read-only');
-    try{return await e.client.entities(body.request,signal);}
+    try{dispatched=true;return await e.client.entities(body.request,signal);}
     finally {if(mutation)this.enqueue(e,false);}
+    }catch(error){if(!dispatched&&body.request?.op==='create')throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});throw error;}
   }
   async refresh(token:string,full=false){
     const e=this.entry(token);if(this.options.readOnly)throw Error('SQLite reconciliation is read-only');
@@ -149,7 +159,7 @@ export class SqliteKnowledgeHost {
     this.savedScopes??=new SqliteSavedScopes(this);router.use('/facts',this.savedScopes.router());
     router.post('/entities',async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
       try{const data=await this.entities(req.body??{},c.signal);if(!c.signal.aborted)res.json({Success:true,Data:data});}
-      catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error)});}
+      catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),...((error as any)?.entityCreationOutcome==='not-created'?{entityCreationOutcome:'not-created'}:{})});}
       finally{req.off('aborted',cancel);res.off('close',cancel);}
     });
     for(const [name,action]of Object.entries({open:(b:any)=>this.acquire(b.vault,b.policy),status:(b:any)=>this.status(b.lease),refresh:(b:any)=>this.refresh(b.lease,b.full===true),release:(b:any)=>this.release(b.lease)}))
