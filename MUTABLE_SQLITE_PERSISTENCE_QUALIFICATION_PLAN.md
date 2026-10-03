@@ -1,6 +1,8 @@
 # SQLite Persistence Layer Qualification & Implementation Plan
 
-**P0 review — 2 October 2026. No production persistence changes or user-data migration.**
+**Current programme status — 3 October 2026. P1, P2 and P3a–P3d are accepted; P3 is closed.** The [accepted architecture/LER baseline](docs/architecture/PERSISTENCE_AND_HISTORY.md#accepted-sqlite-p3-baseline) is the current handoff. Return to the [Flint product checkpoint](FLINT_APPLICATION_IMPLEMENTATION_PLAN.md#9-post-p3-product-checkpoint); do not automatically execute P4, P5, P6, further hardening or performance optimisation.
+
+The original **P0 review of 2 October 2026** and intermediate status notes below remain historical evidence. Their “not begun” and proposed implementation-order statements are superseded by this status. Later stages remain separately scoped roadmap items, not unfinished P3. P6 Typical/Large requirements remain recorded without claiming they have passed.
 
 P0 was subsequently approved. P1 implementation and qualification are recorded in [the P1 report](MUTABLE_SQLITE_PERSISTENCE_P1_REPORT.md). The P0 evidence below is retained as the planning baseline.
 

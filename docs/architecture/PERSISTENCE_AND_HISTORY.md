@@ -1,6 +1,60 @@
 # Persistence and history
 
-## The portable/runtime boundary
+## Accepted SQLite P3 baseline
+
+**3 October 2026: P3a–P3d are complete and accepted.** This is the current authority and application-composition contract. The individual [P3 reports and original composition plan](../../MUTABLE_SQLITE_PERSISTENCE_P3_APPLICATION_COMPOSITION_PLAN.md) retain qualification evidence; their earlier proposals and stop points are historical. P3 closure authorizes no P4/P6, further persistence hardening or performance work. The [Flint product checkpoint](../../FLINT_APPLICATION_IMPLEMENTATION_PLAN.md#9-post-p3-product-checkpoint) records the choices awaiting product review.
+
+### Authored authority and query evidence
+
+| State | Authority and boundary |
+| --- | --- |
+| Prose, Blocks, BlockProperties, BlockRelations, annotation definitions and standoff properties | Native Resources persist authored state; the canonical repository owns current live edits. SQLite's saved projection cannot author, simplify or overwrite these values. |
+| EntityReference ranges and target GUIDs | Native annotations, including linked/cross-Block segments. An EntityReference asserts a mention of an Entity; it is not the Entity record. |
+| Entities, preferred names/enrichment, explicit aliases and explicit canonical Relationships | Vault-scoped SQLite canonical knowledge. Stable Entity GUIDs are identity; names are not unique identity keys. No canonical `entities.json` sidecar or SurrealDB write fallback. |
+| File-derived SQL rows, Facts, search/backlink/mention results | Verified saved projections or live query evidence, never ownership, binding, persistence or navigation authority. Rebuilding them preserves canonical database knowledge and never modifies Resource files. |
+| Resource identity, ownership, location and publication | Existing canonical repository and managed-store contracts. Paths are locations, registrations are non-owning retention, occurrences are transient presentation, and `external` does not imply non-ownership. SQL rows cannot establish or transfer any of these authorities. |
+
+The accepted composition is **live canonical state → verified SQL saved state → independently verified file fallback → unknown/incomplete coverage**. A database row is insufficient evidence of current knowledge. Preserve scope, freshness, identity, boundedness, cancellation and failure checks; uncertainty never means absence or a zero count. Live unsaved assertions suppress stale saved assertions, including for loaded Documents without mounted tabs. Existing C2/C3 host activation/revalidation remains the navigation authority for the invoking Window.
+
+P3a separates background preparation from protected, revalidated publication. Foreground/native persistence and ordinary vault operations do not wait for size-dependent background SQL decoding/projection/comparison; stale publication is rejected. This is not an incremental whole-Resource Save claim.
+
+Current composition switches are `nativeKnowledge:true`, `sqliteKnowledge:true`, `sqliteEntities:true`, and **`nativeKnowledgeSaved:false`**. Saved coverage remains explicitly enabled where qualified; SQLite backend availability does not silently enable it. The Entity service uses the source Document's verified Flint vault/binding, not the last-focused Window or an implicit global database. Missing/ambiguous context fails explicitly. Broader Desktop/Canvas/Spatial vault context remains separate work. Legacy SurrealDB infrastructure elsewhere is not a fallback for this canonical service.
+
+Production seams: [Entity capability](../../src/feature-api/entities.ts), [application Entity service](../../src/application/entity-service.ts), [SQLite host](../../server/sqlite-knowledge-host.ts), and [canonical Entity/Alias/Relationship operations](../../src/knowledge-sqlite/entities.mjs). Features receive narrow semantic capabilities, not database rows or arbitrary editor access.
+
+### Link Entity Reference is a semantic-authoring component
+
+The **Link Entity Reference (LER) Window** follows: annotation target → resolution query/evidence → canonical Entity selection → explicit EntityReference binding. Preserve this interaction in future UI work; it is more than autocomplete.
+
+| Concept | Meaning |
+| --- | --- |
+| Target | The authored span being annotated, visibly decorated while resolving. Editing the query never changes this span. |
+| Query | Freely editable candidate-discovery text. Target `he`, query `leonardo`, Entity `Leonardo da Vinci` may bind the unchanged `he` to Leonardo's GUID. |
+| Canonical name | The Entity's preferred name, separate from query and mention text. Explicit creation offers an editable initial name derived from query/selection; selected text supplies the default without a mandatory re-entry step. |
+| Alias | An explicitly curated/imported alternative name. Add/update/remove is a canonical database mutation. |
+| Mention | Actual authored EntityReference surface text, with native range and source provenance. Mention evidence never silently becomes an alias. |
+
+Name/Alias/Mention are distinct resolver streams, with independent Partial/Exact matching and Current Document/Vault scope. Local evidence can influence ranking; candidate provenance does not confer canonical authority. Explicit aliases require database backup for exact recovery. Observed mention forms are rebuildable from surviving authored references; their recoverability does not turn them into curated aliases. Native `entityName` metadata is a display snapshot, not preferred-name authority. Missing Entity GUIDs remain unresolved rather than being matched or merged by name.
+
+Default **Link** preserves prose. **Replace & Link** is an explicit action for a suitable plain-text Block, using one native replacement/annotation transaction and atomic Undo. Additional occurrences require candidate review and explicit binding. Range adjustment is transient, grapheme-safe and introduces no authored delimiter Cells. Retain native text input, composition, focus/selection restoration, scoped keyboard interaction and existing cross-Block annotation capability. Mere mention proximity never creates a Relationship; canonical Relationships require an explicit operation and their own endpoint identities.
+
+### Independent Entity creation and partial outcomes
+
+Entity creation and native annotation are separate commits across different authorities. Outcomes are **not created**, **created and linked**, **created but not linked**, or **creation outcome unconfirmed**. Supplied stable Entity GUIDs and idempotent mutation attempts govern retries. A created Entity whose annotation failed is valid canonical knowledge, not an orphan.
+
+Cancelling before dispatch creates nothing; cancelling after dispatch cannot promise rollback. Panel closure prevents late annotation. Native Undo/Redo changes EntityReferences, not the independently committed Entity. A confirmed GUID can remain in transient interaction/Window state and offer **Bind to new selection**: validate a fresh selection, vault and Entity, then perform a new annotation action. Never replay a stale target. Do not add compensating deletion, distributed transactions or staged Entity publication. The bounded audit outbox supplies mutation retry receipts; end-to-end audit delivery remains deferred.
+
+### Recorded limits and separately scoped future work
+
+- Known baseline regression: `Flint saved composition sqlite=true > selected Open retains the existing owned-external dependency/ownership admission guard` reaches `Saved result is stale` before the expected `multiple semantic owners` guard. It was reproduced at unchanged accepted commit `b2fcfff`; it is neither a P3d blocker nor a new P3d regression. Preserve both guards and the test for later investigation.
+- Approximately five seconds for native foreground Save in the 10,000-Block control remains future work. P3 establishes neither incremental whole-Resource Save/reconciliation nor P6 Typical/Large performance qualification.
+- Entity Merge/Delete, external authority lookup/import (for example Wikidata/GND), semantic/NL candidate discovery, automatic alias suggestions/extraction, broader Relationship-management UI and audit delivery are separate roadmap items. Duplicate conceptual Entities are possible; name uniqueness is not a substitute for future explicit management.
+- Semantic/NL queries such as `that Florentine artist` may eventually feed the existing candidate-provider boundary. They remain discovery evidence followed by explicit LER selection/binding; AI output cannot confer canonical authority.
+- Compatibility Open, standalone `.ink` Save, `.ink.md` generation, Markdown compatibility/defaults, native Save optimisation, broader presentation-host vault context and P6 remain deferred. Default Markdown export is not required for future compatibility Open; existing enrolled pair receipts/recovery remain protected. See the [content recognition strategy](../../MUTABLE_VAULT_CONTENT_RECOGNITION_STRATEGY.md).
+
+## The legacy portable/runtime boundary
+
+The following sections describe existing legacy/portable extension and History paths. They do not replace Flint's native resource path or authorize flattening native registered resources through legacy Document/Workspace serialization. Native resource capture/admission lives in [native-resource.ts](../../src/persistence/native-resource.ts); native session/pair coordination in [native-session.ts](../../src/persistence/native-session.ts). Save belongs to the canonical resource, independently of its visible occurrences.
 
 Codex normally saves a portable nested `ExistingBlockDto`, while the live editor uses a normalized `RepositoryState`. [`codecs.ts`](../../src/block-tree/codecs.ts) is the boundary:
 

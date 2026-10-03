@@ -96,6 +96,8 @@ Core [`SelectionGestures`](../../src/input/selection-gestures.ts) and [`CurrentT
 
 ## Entity References: asynchronous annotation workflow
 
+For current user controls, invocation examples, service-only reuse and host-context requirements, see [Link Entity Reference: invocation and reuse](LINK_ENTITY_REFERENCE.md). The [accepted P3 baseline](../architecture/PERSISTENCE_AND_HISTORY.md#accepted-sqlite-p3-baseline) supersedes earlier Entity transport assumptions: canonical Entities/explicit aliases/Relationships are SQLite-owned, while native EntityReference spans and target GUIDs remain Document-owned.
+
 [`createEntityReferencesFeature`](../../src/features/entity-references/index.tsx) registers its purple `EffectDefinition`, search/list panels, an `AnnotationContribution`, commands, bindings and a document action. It owns the list/controller lifetime. The annotation contribution is the existing apply-button plus read-only property-details surface, not a universal property editor framework.
 
 Use [`entity-search.ts`](../../src/features/entity-references/entity-search.ts), [`entity-candidates.ts`](../../src/features/entity-references/entity-candidates.ts) and [`document-entity-list.ts`](../../src/features/entity-references/document-entity-list.ts) for actual async policy: retain the originating revision/ranges, reject stale results, validate again before mutation and avoid applying results after cancellation/disposal. The adapter's `annotate` delegates to shared `LinkedAnnotations.createBatch`, which validates the revision and all versioned ranges before a single atomic local/linked annotation commit. Linked identity remains core/shared; copying only an underline or a visible highlight does not reproduce that identity.

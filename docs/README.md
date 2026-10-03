@@ -30,6 +30,8 @@ Additional recipes and references:
 
 Names in this guide use **Block** for an authored Codex concept, `ContentRecord` for its canonical content, `PlacementRecord` for an attachment of that content, and `BlockNode` for one occurrence projected into one view.
 
+Current Mutable/Flint handoff (3 October 2026): **SQLite P3a–P3d are closed and accepted.** Read the [authority, live/saved composition and LER baseline](architecture/PERSISTENCE_AND_HISTORY.md#accepted-sqlite-p3-baseline), the [Link Entity Reference invocation/reuse guide](development/LINK_ENTITY_REFERENCE.md), and the [Flint product checkpoint](../FLINT_APPLICATION_IMPLEMENTATION_PLAN.md#9-post-p3-product-checkpoint). The checkpoint presents unranked product choices; no P4/P6 or next application stage is automatically authorized. Earlier stage reports retain their historical qualification/status text.
+
 Current migration status: Stages 1–5 are accepted: Timer, Grouping, Entity References and Compact Document have feature-owned implementations with the demonstrated Block, operation, passive-effect/panel and presentation boundaries. [Stage 5 report](../CODEX_FEATURE_MODULE_STAGE_5_REPORT.md) records the latest extraction. Stage 6 / History extraction is deliberately deferred; the [architecture review](../CODEX_FEATURE_MODULE_ARCHITECTURE_REVIEW.md) is a roadmap, not an API reference.
 
 The [Canvas workspace / presentation plan](../CODEX_CANVAS_WORKSPACE_PRESENTATION_PLAN.md) is approved in principle. The [Milestone A report](../CODEX_CANVAS_MILESTONE_A_REPORT.md) covers the default-off scaled Window prototype and local shared-Document materialization. The full Canvas presentation is not implemented; Milestone B awaits review.

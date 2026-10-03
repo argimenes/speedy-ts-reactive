@@ -1,6 +1,6 @@
 # Vault Content Recognition Strategy
 
-**Strategy update during SQLite P3a. No filename migration or compatibility Open implementation in this document.**
+**Post-P3 status — 3 October 2026.** SQLite P3a–P3d are closed and accepted. Compatibility Open and standalone `.ink` Save remain separately deferred; this strategy does not authorize implementation. It supersedes the earlier F1 correction proposal to require legacy-to-native import. The [accepted architecture](docs/architecture/PERSISTENCE_AND_HISTORY.md#accepted-sqlite-p3-baseline) and [product checkpoint](FLINT_APPLICATION_IMPLEMENTATION_PLAN.md#9-post-p3-product-checkpoint) provide current context. P3a-era sequencing references below are historical; the content/identity/export constraints remain applicable.
 
 The selected directory defines browsing scope. Generic `.json` is a candidate, not a Resource type. Validated content must select an existing Document codec and admission path. No canonical identity rule requires `.mutable.json` as a suffix; the current restrictions largely combine discovery, recognition and native pair enrollment. Those concerns should be separated.
 

@@ -1,6 +1,12 @@
 # SQLite Persistence P3 Application Composition Plan
 
-**Planning report for review. P2 is accepted. No P3 implementation or database changes have been made.**
+**Closed and accepted — 3 October 2026. P3a, P3b, P3c and P3d are complete.** The [current architecture and LER contract](docs/architecture/PERSISTENCE_AND_HISTORY.md#accepted-sqlite-p3-baseline) consolidates the accepted authority, composition, partial-outcome and known-limit decisions. The [Flint product checkpoint](FLINT_APPLICATION_IMPLEMENTATION_PLAN.md#9-post-p3-product-checkpoint) returns the next product choice to the user. No P4/P6, hardening, performance work or product implementation follows automatically.
+
+Qualification evidence: [P3a](MUTABLE_SQLITE_PERSISTENCE_P3A_REPORT.md), [foreground correction](MUTABLE_SQLITE_PERSISTENCE_P3A_FOREGROUND_ADDENDUM.md), [P3b](MUTABLE_SQLITE_PERSISTENCE_P3B_REPORT.md), [P3c](MUTABLE_SQLITE_PERSISTENCE_P3C_REPORT.md), [P3d](MUTABLE_SQLITE_PERSISTENCE_P3D_REPORT.md). P3d's broader regression exception was reproduced at baseline `b2fcfff`; it is recorded in the accepted architecture and does not keep P3 open.
+
+## Historical planning record
+
+The remainder preserves the original stage proposals and intermediate review positions. “Proposed”, “unstarted” and “next executable order” below are historical, not current authorization. In particular, P3d has now completed the canonical SQLite Entity/Alias/Relationship transition; its feature no longer uses legacy SurrealDB lookup/create/summary or write fallback.
 
 The recommended first integration is to supply verified saved Facts from SQLite to the existing Native Knowledge host. That host should continue selecting between live and saved contributions; Flint should continue using its C2/C3 query and navigation contracts. This makes the durable saved projection useful without giving SQL authority over current editor state, files, bindings or navigation.
 

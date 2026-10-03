@@ -1,8 +1,8 @@
 # Flint Application Implementation Plan
 
-**1 October 2026 — planning for review; F1 is not implemented or authorized by this document.**
+**Current checkpoint — 3 October 2026.** F1's shell and manual-review corrections are implemented; F2–F4 remain unstarted. SQLite P3a–P3d are complete and accepted. This update closes the infrastructure handoff and presents product choices only; it authorizes no implementation. See [§9](#9-post-p3-product-checkpoint) and the [accepted authority/LER baseline](docs/architecture/PERSISTENCE_AND_HISTORY.md#accepted-sqlite-p3-baseline).
 
-Flint should now become a coherent place to read, write and follow knowledge relationships. Its native Document, vault, occurrence and query foundations already exist. The recommended next slice is **F1 — Flint workspace shell and context**, combining the supplied material identity with a useful Library → Document → Context arrangement. It moves existing capabilities into an intelligible application rather than adding another infrastructure prerequisite.
+The original 1 October plan moved existing capabilities into a Library → Document → Context shell. The [F1 report](FLINT_F1_IMPLEMENTATION_REPORT.md) and [manual-review correction report](FLINT_F1_MANUAL_REVIEW_CORRECTION_REPORT.md) record delivery. The stage designs below remain the application roadmap; their original F1 recommendation is historical, not a request to implement F1 again. Earlier Stage A/B/C and Native Knowledge P1–P5 work are foundations, not incomplete Flint application stages.
 
 ## 1. Close the Native Knowledge programme
 
@@ -13,16 +13,17 @@ P1–P5 and the [bounded responsiveness correction](NATIVE_KNOWLEDGE_P5_RESPONSI
 | `nativeKnowledge:true` | Default loaded-resource Facts-backed C2/C3 provider. |
 | `nativeKnowledgeSaved:false` | Normal production setting. The implemented saved pipeline remains available by explicit opt-in/qualification. |
 | `nativeKnowledge:false` | Retained legacy loaded-provider rollback. |
+| `sqliteKnowledge:true`, `sqliteEntities:true` | Accepted SQLite saved backend and canonical Entity service. Neither enables saved coverage implicitly; canonical Entity writes have no SurrealDB fallback. |
 
-Do not remove saved coverage, enable it by default, or resume optimisation through this application plan. The remaining 1,000-resource saved-result activation delay is a **known performance limitation, not a blocker to Flint development**. The corrected runs took 16.6–20.1 seconds; repeated conservative discovery dominated wall time, while diagnostic native admission was approximately 235 ms. A future unchanged-filesystem-evidence investigation is recorded only, not proposed as work in F1–F4.
+Do not remove saved coverage, enable it by default, or resume optimisation through this application plan. The pre-SQLite 1,000-resource saved-result activation runs took 16.6–20.1 seconds; repeated conservative discovery dominated wall time, while diagnostic native admission was approximately 235 ms. Those are historical measurements, not a new timing claim for the accepted SQL composition. Their future unchanged-filesystem-evidence investigation is not proposed as work in F1–F4. P3 also records approximately five seconds for native foreground Save of the 10,000-Block control; it makes no incremental Save or P6 qualification claim.
 
 Keep the existing first-use result-publication long-task watchpoint, global arbitrary structural admission, very-large-Block editing cost, Solid development projection enumeration regression and legacy constructor-owner-cache lifetime caveat. None is made an application prerequisite. Preserve the completed reports as evidence rather than reopening their gates.
 
 This plan is the current Flint application roadmap. Earlier [Jet/Flint](JET_MUTABLE_OS_IMPLEMENTATION_PLAN.md), [Stage C](FLINT_STAGE_C_IMPLEMENTATION_PLAN.md) and post-C3 planning documents remain historical architecture/context; their old “not yet implemented” status text does not describe today's production surface.
 
-## 2. Inspected production baseline
+## 2. Original pre-F1 inspection and subsequent changes
 
-Inspection covered the current source, feature contracts, existing qualification tests, supplied icon master and the accepted [two-Window browser capture](artifacts/native-knowledge-p5-correction/c3-browser/two-window-backlinks.png). That capture is prior qualification evidence, not a new browser run for this planning task. No product code or rollout switch changed during planning.
+The table below preserves the **1 October pre-F1 inspection**, not today's UI inventory. F1 subsequently delivered the shell, welcome surface, right Context selector, storage sheet and launcher wording; its follow-up added Choose Vault and generic Desktop Maximize/Restore. P3 subsequently replaced the Entity feature's legacy backend and completed the verified SQL saved composition. Current status and remaining work are in §9; use the accepted persistence/LER baseline for authority decisions. The [two-Window browser capture](artifacts/native-knowledge-p5-correction/c3-browser/two-window-backlinks.png) is prior qualification evidence, not a new browser run for this handoff. No product code or rollout switch changed during this documentation update.
 
 | Surface | Exists now | Missing application work / constraint |
 | --- | --- | --- |
@@ -46,7 +47,7 @@ The recent correction memoizes vault derivation and preserves equal row identiti
 - `DocumentApplicationInstance` exposes `tabs`, vault, files, properties, knowledge and backlinks. F1 can work through those capabilities. It must not receive `ReactiveEditor`, repository dictionaries or filesystem access.
 - The [Window application guide](docs/development/CREATING_WINDOW_APPLICATIONS.md) and current host expose standard move/resize/minimize/close, not an arbitrary application icon/header slot. Put Flint's identity and commands inside Flint's content shell. Do not hide or replace the core title bar through CSS.
 - Native Document editing already carries standoff, Grouping, Entity, margins and Block capabilities. Their supported occurrence/presentation behaviour should remain available, not be reimplemented as Flint widgets. In particular, a generic Flint Window is not automatically a Document Window with its own Compact control.
-- The [SurrealDB review](FLINT_SURREALDB_INFRASTRUCTURE_REVIEW.md) remains authoritative about legacy Entity data: preserve existing IDs and provenance; do not equate Entity IDs with Document IDs or promote saved Graph counts to live native truth.
+- The [SurrealDB review](FLINT_SURREALDB_INFRASTRUCTURE_REVIEW.md) remains evidence about legacy data, not the current Entity service. P3d supplies canonical SQLite names/aliases and qualified native mention summaries. Preserve existing IDs and provenance; do not equate Entity IDs with Document IDs or promote legacy Graph counts to live native truth.
 
 ## 3. Product model and design language
 
@@ -137,7 +138,7 @@ Scope:
 
 Start with compact resource rows, a selected-object sheet and deliberate resource actions. Keep current selection distinct from the active editing tab. Disambiguate duplicate titles with path, then canonical ID in details. Show title editing separately from **Rename file / Move**. The first actions are Open, Inspect, Edit title/tags where available, Rename/move and existing recovery; no delete/Trash, cross-vault move or implicit rebinding.
 
-A small optional text/type preview may use an already available live Facts summary; it must not mount an editor, capture native state, read Markdown, start saved indexing, or issue a query per row. For unopened resources show only discovery metadata; unavailable tags/format/preview are unknown, not empty. No screenshots, texture generation, fabricated thumbnails or claims of media inventory beyond what discovery currently supplies.
+A small optional text/type preview may use an already available eligible Facts summary; it must not mount an editor, capture native state, read Markdown, start saved indexing, or issue a query per row. P3's verified saved contribution can be reused where already enabled and current; otherwise unopened resources show only discovery metadata. Unavailable tags/format/preview are unknown, not empty. No screenshots, texture generation, fabricated thumbnails or claims of media inventory beyond what discovery currently supplies.
 
 **Reuse / files:** existing `ApplicationVaultDocument`, `ApplicationDocumentProperties`, vault lease/native status and current Facts observations. Extend `vault-view.tsx`; new `resource-row.tsx`, `resource-details.tsx` and a small shared resource presentation model. If selected-resource metadata beyond the active Document is needed, add only a read-only semantic description/action capability to [document-application.ts](src/feature-api/document-application.ts) and its host adapter. A preview adapter reads the current eligible contribution once on explicit inspection; it must not become another observer/index or be required for basic browsing.
 
@@ -157,7 +158,7 @@ Keep F3 Document-centred first. Group logical mentions without collapsing distin
 
 **Reuse / files:** existing backlink result/mention objects, reference handles, `knowledge.activate/followReference` and `backlinks.follow`; `context-pane.tsx`, `backlinks-view.tsx`, extracted reference view, new `relationship-context.tsx` and `navigation-trail.tsx`. If back/forward requires new host support, add opaque Window-scoped visit handles and a narrow revalidated return action to the application contract/host. Never replay an old query token or blindly restore a stale offset. If the original passage cannot be re-established, show that it is unavailable rather than select a nearby passage.
 
-Entity integration initially dispatches the existing Entity-list command against the invoking occurrence through a narrow host action. It keeps the existing feature's panel ownership, async checks, preview and focus lifecycle. Flint does not embed a private `DocumentEntityList` instance or receive annotation/editor internals. Local Document mention counts remain useful when the server's name enrichment fails; saved Graph counts retain their separate provenance and are not used as native backlink totals. Entity creation, Entity pages and a new Entity authority are outside this slice.
+Entity integration initially dispatches the existing Entity-list command against the invoking occurrence through a narrow host action. It keeps the existing feature's panel ownership, async checks, preview and focus lifecycle. Flint does not embed a private `DocumentEntityList` instance or receive annotation/editor internals. P3d now provides canonical SQLite names/explicit aliases, native mention evidence and qualified vault summaries; incomplete counts remain unknown, not zero. LER already supports creation and explicit binding and must retain its target/query/name distinctions and independent-commit recovery. F3 reuses it rather than rebuilding it. Entity pages, merge/delete and broader canonical Relationship-management UI remain outside this slice; authored Document references, EntityReferences and canonical Relationships must stay distinct.
 
 **Boundaries:** trail entries own no resource and create no authored History. Navigation revalidates ID/root/Block, revision, binding and current availability through the host. Only explicit reference/property edits create native History entries. Preserve typed identity: a Document reference, Entity mention and generic standoff annotation are not interchangeable edges.
 
@@ -189,7 +190,7 @@ Use HTML resource objects with SVG connectors and a keyboard/list equivalent. St
 | --- | --- |
 | Open Vault, Refresh, New Document, Import Markdown | Flint Library/application menu, delegating to current vault APIs. |
 | Save Document; storage status/details | Flint shell invoking canonical resource persistence. Preserve pending/conflict actions. |
-| Search available Documents | Flint header/Library; existing loaded C2 search with visible coverage. |
+| Search available Documents | Flint header/Library; accepted C2 composition with visible coverage, including verified saved contributions only where explicitly enabled. |
 | Inspect resource; Rename file / Move | Flint resource representation, distinct from active Document title edit. |
 | Show Context: Backlinks / References / Properties | Flint presentation only; no storage or History effects. |
 | Link selection to Document | Flint reference workflow using the existing valid-selection picker and native edit command. |
@@ -214,14 +215,35 @@ F1 and basic F2 have no identified architectural prerequisite. F3's new navigati
 
 ## 7. Deliberately deferred
 
-Not prerequisites and not implementation tasks in this programme: saved-only Knowledge default rollout or discovery-proof optimisation; SurrealDB repair/ingestion; persistent semantic caching; `.ink`/`.ink.md` migration; arbitrary resource-local admission; watchers/synchronization; a graph database; native Workspace persistence/session restoration; ownership transfer/deletion/Trash; cross-vault moves; complete Markdown/Obsidian filesystem support; standalone artifact formats; independent Entity storage/pages; a complete Mutable desktop/eikon system.
+Not prerequisites and not automatically authorized by this programme: saved-only Knowledge default rollout or discovery-proof optimisation; SurrealDB repair/ingestion; persistent semantic caching; compatibility Open and standalone `.ink` Save; `.ink.md` generation and Markdown defaults; arbitrary resource-local admission; watchers/synchronization; native Workspace persistence/session restoration; ownership transfer/deletion/Trash; cross-vault moves; complete Markdown/Obsidian filesystem support; standalone artifact formats; Entity pages/merge/delete/external imports; semantic/NL resolution and alias suggestions; broader Relationship-management UI; audit delivery; broader Desktop/Canvas/Spatial vault context; native Save optimisation/P6; a complete Mutable desktop/eikon system. Canonical SQLite Entity/Alias/Relationship storage is already accepted and is no longer a missing prerequisite.
 
 Cavern/3D is later product exploration after the ordinary Flint experience is useful. The cave/chamber/passage vocabulary can inform the 2D experience now; it does not authorize a Three.js environment, additional spatial hosting or a new resource model.
 
-## 8. Concrete F1 recommendation
+## 8. Original F1 recommendation (delivered; historical)
 
 Approve **F1 — Flint workspace shell and context** as one product slice: supplied Flint identity, scoped material styling, Library Browse/Search, the existing native editing slot, a right-hand Backlinks/References/Properties selector, concise visible save/coverage status, accessible menus and responsive panel collapse. Retain all current native/vault operations in reachable detail controls.
 
 The review demonstration should be: launch Flint on Desktop → open a vault → recognize and open a Document → edit/save ordinary native content → find an available passage → inspect/follow a backlink in Context → return to editing in the same Window → resize without losing the editor or selection. Show the same Document in a second Window and an incomplete/read-only state. This is substantial enough to make Flint visibly and conceptually distinct while relying entirely on accepted foundations.
 
-Proceed next in the order **F1 shell/context → F2 resource experience → F3 richer relationship context/trail → F4 bounded relationship map**, with ordinary product review after each. No F1 implementation, Native Knowledge optimisation or further infrastructure work is authorized by this planning deliverable. **Stop for review of this plan.**
+The original proposed order was **F1 shell/context → F2 resource experience → F3 richer relationship context/trail → F4 bounded relationship map**, with ordinary product review after each. F1 subsequently shipped. This historical order does not select the next task after P3; the following checkpoint returns that choice to the user.
+
+## 9. Post-P3 product checkpoint
+
+**Where product work paused.** F1 had delivered Flint's material identity, Library Browse/Search, ordinary native editing, Context Backlinks/References/Properties, storage controls, responsive rails and status. Manual review prompted the shared vault-directory chooser and Desktop Maximize/Restore. The user's substantial collection consisted of legacy Codex `.json` files, which native-only Flint discovery did not admit. Entity creation/linking and the read-only/backend questions then led into SQLite work. The user-facing legacy collection gap remains; P3's native qualification does not close it.
+
+**What remains.** F2's selected-resource inspector/action model, F3's integrated relationship context and Window-local Back/Forward trail, and F4's bounded map are unstarted. Existing title/tags, search, reference picker, backlinks, Entity listing and LER are implemented foundations, not tasks to repeat. Compatibility Open remains independently deferred. The accepted [content recognition strategy](MUTABLE_VAULT_CONTENT_RECOGNITION_STRATEGY.md) supersedes the correction report's earlier recommendation to require legacy-to-native import: supported files should be recognized by content, admitted through existing codecs, preserve identity/source and use a safe format-specific writer where qualified. Opening must not silently convert files or create Markdown.
+
+**Which assumptions changed.** P3 supersedes the old SurrealDB Entity dependency, the absence of canonical Entity storage, and the assumption that eligible saved knowledge can only come from the file reader. The narrow application/query/navigation contracts, filesystem vault hierarchy and independent transient occurrences remain valid. Verified SQL and file fallback broaden available evidence only under existing rollout/currentness rules; they do not guarantee whole-vault coverage or grant metadata/navigation authority to a database row. The LER is now a first-class semantic-authoring component to reuse, not simplify into autocomplete. No new general architecture study is needed to resume the bounded UI stages.
+
+### Unranked options for the next product decision
+
+These are alternatives for review, not an implementation queue or authorization. No option is selected here.
+
+| Option | User-visible outcome | Available dependencies | Major remaining work | Requires deferred P3 work? |
+| --- | --- | --- | --- | --- |
+| **Resource browsing and inspection (F2)** | Select a resource independently of the editing tab; see meaningful title/type/status and deliberate Open, Inspect, title/tags and file actions. | Physical vault tree, native properties, guarded relocation/recovery, accepted live/eligible saved evidence. | Selected-resource description/action seam, rows/detail sheet, unknown/read-only states, keyboard/two-Window checks. Previews stay optional and bounded. | **No** for currently supported native resources. Do not bundle compatibility Open or saved-default rollout. |
+| **Relationship context and visit trail (F3)** | Understand incoming/outgoing references, reach Entities in this Document, and go Back/Forward within the invoking Window. | C2/C3 targets/revalidation, linked mentions, canonical Entity service, existing listing/LER and source-aware summaries. | Context grouping, at most 30 transient visit handles, validated return action and stale/selection/focus tests. | **No** for the bounded scope. Merge/Delete, NL resolution and broader Relationship management stay separate. |
+| **Local relationship map (F4)** | See one-hop incoming/current/outgoing Document connections with navigable evidence and a list/keyboard equivalent. | Current native reference/backlink results and host navigation; F3's presentation model can be factored narrowly if selected first. | Deterministic HTML/SVG map (40 objects/80 connections), evidence grouping, coverage and stale-target handling. | **No** for Document references. It still needs the small context model, not a new graph store. Entity/Block expansion has its own existing semantic gate. |
+| **Open the existing legacy collection** | Browse and open recognized historical Documents alongside native files without mandatory conversion or Markdown sidecars. | Confined directory browsing, existing legacy/History/native codecs, accepted source recognition strategy, saved indexing adapters. | Candidate rows, explicit content dispatch, identity/source/binding evidence, qualified format-specific Save capability, representative real-file and adversarial tests. Index support alone does not prove admission. | **Yes: explicitly select deferred compatibility Open.** Standalone `.ink` Save, projection generation and new formats need not be bundled. Stop at a concrete unsupported writer/admission case. |
+
+P3 remains closed irrespective of which product direction is chosen. No P4/P6, performance optimisation, migration or product implementation begins from this checkpoint. **Stop for the user's choice.**
