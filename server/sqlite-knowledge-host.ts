@@ -1,4 +1,4 @@
-/** P3a lifecycle/coverage only. No query provider, Entity authority or file writer. */
+/** Vault worker lifetime, verified saved reads and source-scoped canonical Entity requests. */
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { Router, json } from 'express';
@@ -16,7 +16,7 @@ export class SqliteKnowledgeHost {
   private control=Promise.resolve(); private running?:Promise<void>; private timer?:ReturnType<typeof setTimeout>;
   private foregrounds=0; private foregroundTail=Promise.resolve(); private closed=false;
   readonly metrics={sweeps:0,cancellations:0,foregroundWaitMs:0,maxForegroundWaitMs:0};
-  constructor(private options:{root:string;readOnly?:boolean;store?:any;open?:typeof openSqliteFoundation;indexer?:typeof createSavedIndexer;debounceMs?:number;leaseMs?:number}) {
+  constructor(private options:{root:string;readOnly?:boolean;entitiesEnabled?:boolean;store?:any;open?:typeof openSqliteFoundation;indexer?:typeof createSavedIndexer;debounceMs?:number;leaseMs?:number}) {
     this.store=options.store??new NativeVaultStore({root:options.root,readOnly:!!options.readOnly});
   }
   private serialize<T>(action:()=>Promise<T>):Promise<T> {
@@ -108,6 +108,21 @@ export class SqliteKnowledgeHost {
     const validate=async()=>{const now=await this.knowledgeEvidence(token,signal);if(now.session!==proof.session||now.indexEpoch!==proof.indexEpoch||now.revision!==proof.revision||now.policy!==proof.policy)throw Error('SQL read evidence superseded');};
     await validate();const result=await this.entry(token).client.readKnowledge({...request,revision:proof.revision},signal);await validate();return result;
   }
+  /** Canonical Entity authority is separate from saved-index coverage. Source context
+   * must still name one currently verified native resource in this vault. */
+  async entities(body:any,signal?:AbortSignal){
+    if(this.options.entitiesEnabled===false)throw Error('Canonical Entity service is disabled');
+    const e=this.entry(body.lease), source=body.source;
+    if(!e.client||!source||typeof source.resourceId!=='string'||!source.location||typeof source.byteHash!=='string')throw Error('Verified native source context required');
+    const fence=await this.store.readScopeFence(e.vault,signal),scan=await this.store.discover(e.vault,{signal});
+    const rows=scan.documents.filter((r:any)=>r.resourceId===source.resourceId);
+    if(!scan.complete||scan.operations.some((o:any)=>o.phase==='pending')||rows.length!==1||rows[0].state==='pending'||rows[0].state==='ambiguous'||JSON.stringify(rows[0].location)!==JSON.stringify(source.location)||rows[0].baseline?.nativeHash!==source.byteHash||await this.store.readScopeFence(e.vault,signal)!==fence)throw Error('Entity source identity/location evidence changed; Refresh required');
+    signal?.throwIfAborted();
+    const mutation=['create','rename','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(body.request?.op);
+    if(mutation&&this.options.readOnly)throw Error('Canonical Entity storage is read-only');
+    try{return await e.client.entities(body.request,signal);}
+    finally {if(mutation)this.enqueue(e,false);}
+  }
   async refresh(token:string,full=false){
     const e=this.entry(token);if(this.options.readOnly)throw Error('SQLite reconciliation is read-only');
     if(!e.client)throw Error('SQLite unavailable; close and reopen the vault to retry');
@@ -132,6 +147,11 @@ export class SqliteKnowledgeHost {
   router(){
     const router=Router();router.use(json({limit:'32kb'}));
     this.savedScopes??=new SqliteSavedScopes(this);router.use('/facts',this.savedScopes.router());
+    router.post('/entities',async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
+      try{const data=await this.entities(req.body??{},c.signal);if(!c.signal.aborted)res.json({Success:true,Data:data});}
+      catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error)});}
+      finally{req.off('aborted',cancel);res.off('close',cancel);}
+    });
     for(const [name,action]of Object.entries({open:(b:any)=>this.acquire(b.vault,b.policy),status:(b:any)=>this.status(b.lease),refresh:(b:any)=>this.refresh(b.lease,b.full===true),release:(b:any)=>this.release(b.lease)}))
       router.post('/'+name,async(req,res)=>{try{res.json({Success:true,Data:await action(req.body??{})});}catch(error){res.status(409).json({Success:false,Error:String(error)});}});
     return router;

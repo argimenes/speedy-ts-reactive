@@ -1,0 +1,30 @@
+
+ RUN  v2.1.9 /private/tmp/mutable-p3d-baseline-check
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ❯ src/application/flint-saved-knowledge.test.tsx (22 tests | 1 failed | 20 skipped) 6616ms
+   ✓ Flint saved composition sqlite=false > selected Open retains the existing owned-external dependency/ownership admission guard 362ms
+   × Flint saved composition sqlite=true > selected Open retains the existing owned-external dependency/ownership admission guard 6252ms
+     → expected 'Flint⌄WORKSPACEvaultSearchSave Docume…' to match /multiple semantic owners/i
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/application/flint-saved-knowledge.test.tsx > Flint saved composition sqlite=true > selected Open retains the existing owned-external dependency/ownership admission guard
+AssertionError: expected 'Flint⌄WORKSPACEvaultSearchSave Docume…' to match /multiple semantic owners/i
+
+- Expected: 
+/multiple semantic owners/i
+
++ Received: 
+"Flint⌄WORKSPACEvaultSearchSave Document☰ Libraryvault / NotesContext ☷LibraryYOUR COLLECTIONBrowseSearchChoose Vault…Choose a directory in the server Documents store.Open by managed relative pathManaged directoryOpen VaultRefreshClose VaultVault: vault Tag filterAll tagsTag filtering covers opened Documents only.vaultUntitleda.mutable.json · unenrolledc.mutable.jsonc.mutable.json · unenrollednestedSelected folder: vaultNew Document / importAuthored titleNative filenameNew DocumentStandalone MarkdownChoose sourcevault/input.mdImport into new native DocumentImport preserves the source. Choose a fresh destination filename in the selected folder.Create directoryDirectory nameCreate directoryRename / movevaultDestination foldervaultvault/nestedDirectory nameApply rename / moveThis changes physical location only. Authored titles and native reference IDs stay unchanged; existing Markdown links are not rewritten.SearchTitles and native textSearch vaultSaved knowledge: verified file fallback; SQLite unavailable. Refresh to retry SQLite.1 results · 2/2 Documents available. Incomplete coverage; zero results do not establish absence.Saved/live coverage is incomplete or rebuilding; zero results do not establish absence.: separate Document/reference body omitted.vault/c.mutable.json · text · resource-cDocument cError: Saved result is staleNotesIdeasFindEntitiesTimerCross-Block selection (experimental)BIUS̶x²x₂AAHighlightMarkerShow / HideRainbow□ RectangleSpikyBlurGlowRGBMotionGhostGraySepiaInvertContrastGrainInkTurbulenceAmber CRTFlipMirrorEntity referenceText Apply colourFill Apply fill≡≣≡☰H1H2H3H4⇥⇤To tab / + TabT×Block: — words Page: — words Document: — words  · Counts unavailableScopeWordsCharactersWithout whitespaceBlock———Page———Document———Main text, including inactive Pages and all tab alternatives. Margins, sticky notes, owned attachments and media are excluded from totals. Block counts are own text only. Repeated Blocks count per occurrence. Characters are graphemes, not annotation Cells; paragraph separators are excluded. Updates follow a typing pause.Notes — write here.⠿An ordinary Codex Document, shared across its views.⠿ContextAROUND THIS DOCUMENTBacklinksReferencesPropertiesBacklinksRefresh backlinksError: Backlinks target is unavailable or ambiguous in this vaultDocument referencesLink selected textReferences in this DocumentPropertiesAuthored titleTags (one per line)Apply propertiesTitle edits do not rename files.Canonical ID5db2bc38-534a-4723-9ca4-04ba68381a19FormatNativePhysical locationNo native file bindingSave statusNative Documents save individually; Workspace saving remains guarded.Native Documents save individually; Workspace saving remains guarded.1/2 loaded · search coverage is reported per queryStorage details"
+
+ ❯ src/application/flint-saved-knowledge.test.tsx:103:122
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed | 20 skipped (22)
+   Start at  14:14:11
+   Duration  10.28s (transform 2.24s, setup 0ms, collect 3.06s, tests 6.62s, environment 385ms, prepare 35ms)
+

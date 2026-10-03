@@ -1,0 +1,27 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-lifecycle.test.tsx (14 tests) 1833ms
+   ✓ Flint composite transient hosting > owns Entity panel focus and cancels asynchronous work when its tab disappears 306ms
+ ✓ src/features/entity-references/entity-candidates.test.ts (11 tests) 485ms
+   ✓ entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 317ms
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 404ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (7 tests) 716ms
+ ✓ src/features/entity-references/search-view.test.tsx (13 tests) 501ms
+ ✓ src/application/entity-service.test.ts (5 tests) 1767ms
+   ✓ real HTTP/worker resolves canonical names, curated aliases and live/saved mentions as independent evidence 710ms
+   ✓ read-only vault permits resolution but rejects canonical writes, and another vault cannot supply source authority 350ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 355ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 331ms
+ ✓ server/sqlite-knowledge-host.test.ts (3 tests) 896ms
+   ✓ real native/legacy publication routes schedule saved indexing without altering receipts or providers 534ms
+   ✓ partial pair and missing dependency cannot become complete index evidence; recovery retains exact publication 304ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 132ms
+ ✓ src/features/entity-references/document-entities.test.ts (2 tests) 48ms
+
+ Test Files  10 passed (10)
+      Tests  68 passed (68)
+   Start at  15:19:38
+   Duration  17.30s (transform 2.85s, setup 0ms, collect 4.90s, tests 7.14s, environment 3.34s, prepare 463ms)
+

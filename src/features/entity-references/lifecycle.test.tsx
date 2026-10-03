@@ -1,3 +1,4 @@
+import {mockResolver} from "./resolver-test-support";
 import { OverlayLayer } from "../../rendering/overlay-layer";
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
@@ -11,14 +12,14 @@ import type { AnnotationCapabilities } from "../../feature-api";
 import { createEntityReferencesFeature } from ".";
 import { openEntitySearch, chooseEntity, type EntitySearchData } from "./entity-search";
 const cleanup: (() => void)[] = [];
-afterEach(() => { cleanup.reverse().forEach(fn => fn()); cleanup.length = 0; document.body.replaceChildren(); vi.unstubAllGlobals(); localStorage.clear(); });
+afterEach(() => { cleanup.reverse().forEach(fn => fn()); cleanup.length = 0; document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); localStorage.clear(); });
 it("disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data", async () => {
-  let reply!: (response: unknown) => void, signal!: AbortSignal;
-  vi.stubGlobal("fetch", vi.fn((_url, options) => { signal = options.signal; return new Promise(resolve => reply = resolve); }));
+  let reply!: (response: any) => void, signal!: AbortSignal;
+  const {service}=mockResolver(); vi.mocked(service.search).mockImplementation((_query, abort) => { signal = abort; return new Promise(resolve => reply = resolve); });
   const editor = new ReactiveEditor({ type: "document-block", children: [{ type: "standoff-editor-block", text: "Blake", standoffProperties: [{ type: "codex/entity-reference", id: "old", start: 0, end: 4, value: "blake", opaque: { keep: true } }] }] });
   registerCoreViews(editor); const view = editor.createView("entity-lifetime"), key = view.node(view.state.rootKey)!.children[0];
   let api!: AnnotationCapabilities;
-  const activate = () => editor.featureHost.activate(createEntityReferencesFeature(scope => api = annotationCapabilities(editor, scope)));
+  const activate = () => editor.featureHost.activate(createEntityReferencesFeature(scope => {api = annotationCapabilities(editor, scope); api.entities=()=>service; return api;}));
   const release = activate(); const host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <><DocumentStyleBar editor={editor} /><ReactiveTreeView editor={editor} projection={view} /><OverlayLayer editor={editor} /></>, host);
   cleanup.push(() => { dispose(); editor.dispose(); });
@@ -33,7 +34,7 @@ it("disposes open UI, async lookup, bindings, effects and decorations; reactivat
   expect(Object.values(editor.decorations.nodes).flat()).toHaveLength(0);
   expect(document.querySelector('.reactive-entity-search')).toBeNull();
   expect(() => chooseEntity(api, panel.data as EntitySearchData, { id: "new", name: "New" })).toThrow("disposed");
-  reply({ ok: true, json: async () => ({ Success: true, Results: [{ id: "late", name: "Late" }] }) }); await Promise.resolve(); await Promise.resolve();
+  reply({ candidates:[], complete:true, diagnostics:[], current(){} }); await Promise.resolve(); await Promise.resolve();
   expect(editor.encodeDocument()).toEqual(before);
   const releaseAgain = activate(); release(); expect(editor.effects.get("codex/entity-reference")).toBeTruthy(); releaseAgain();
 });

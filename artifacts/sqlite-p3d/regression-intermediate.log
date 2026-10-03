@@ -1,0 +1,151 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ src/application/flint-knowledge.test.tsx (12 tests) 6698ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 653ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 448ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 691ms
+   ✓ creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 1253ms
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 388ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 390ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 348ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 577ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 990ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 382ms
+ ✓ src/application/flint-vault.test.tsx (14 tests) 5359ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 626ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 1169ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 300ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 309ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 1086ms
+ ✓ src/qualification/native-b1/resource.test.tsx (28 tests) 487ms
+ ✓ src/application/spatial-actions.test.ts (18 tests) 205ms
+ ✓ src/application/flint-lifecycle.test.tsx (14 tests) 1279ms
+ ✓ src/application/desktop-derivation.test.tsx (14 tests) 391ms
+ ✓ src/application/facts-query-provider.test.ts (33 tests) 739ms
+   ✓ preserves the 1,000 mention and search passage budgets 456ms
+ ✓ src/knowledge-sqlite/saved-projection.test.tsx (10 tests) 223ms
+ ❯ src/application/flint-saved-knowledge.test.tsx (22 tests | 1 failed) 38057ms
+   ✓ Flint saved composition sqlite=false > progressively searches saved resources without admission, then opens only the selected source in the invoking Window 1344ms
+   ✓ Flint saved composition sqlite=false > saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 1494ms
+   ✓ Flint saved composition sqlite=false > read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 822ms
+   ✓ Flint saved composition sqlite=true > progressively searches saved resources without admission, then opens only the selected source in the invoking Window 3939ms
+   × Flint saved composition sqlite=true > saved backlinks open and revalidate the logical mention rather than returning an unopened-source error 6132ms
+     → expected 'b4cbae1f-8770-4bf0-b45b-345f29ae767c' to be 'resource-0' // Object.is equality
+   ✓ Flint saved composition sqlite=true > rejects a saved result after changed bytes without admission or binding 3412ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after duplicate without admission or binding 3419ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after external move without admission or binding 3359ms
+   ✓ Flint saved composition sqlite=true > rejects a saved result after removed without admission or binding 3376ms
+   ✓ Flint saved composition sqlite=true > checks bytes returned by Open before admission and preserves a read-only source 327ms
+   ✓ Flint saved composition sqlite=true > read-only saved activation succeeds and subsequent dirty live semantics suppress the saved generation 840ms
+   ✓ Flint saved composition sqlite=true > a duplicate introduced while native Open is awaiting its response cannot be admitted 3505ms
+   ✓ Flint saved composition sqlite=true > an unrelated edit while selected Open is in flight cannot receive a fresh navigation ticket 3970ms
+   ✓ Flint saved composition sqlite=true > selected Open retains the existing owned-external dependency/ownership admission guard 418ms
+ ✓ src/qualification/native-b1/compatibility.test.ts (13 tests) 510ms
+ ✓ src/qualification/native-knowledge/boundary.test.ts (16 tests) 3806ms
+   ✓ returns ready cold evidence without enumerating either repository dictionary 376ms
+   ✓ matches general target and unrelated structure and expires every old token 706ms
+   ✓ retains unplaced definitions, rejects outside ownership and tracks retention changes 785ms
+   ✓ preserves nested Document boundaries and registration as non-owning retention 390ms
+   ✓ rejects resource ownership cycles and duplicate claims without expiring admitted tokens; reference cycles remain legal 685ms
+   ✓ preserves resolved external ownership, registration precedence and token-safe incoming evidence 581ms
+ ✓ src/qualification/native-knowledge/live-observer.test.ts (30 tests) 5203ms
+   ✓ repository boundary qualification=false > does not absorb a locally loaded owned child Document into its owner contribution 321ms
+   ✓ repository boundary qualification=true > does not absorb a locally loaded owned child Document into its owner contribution 334ms
+   ✓ repository boundary qualification=true > matches legacy Workspace definition provenance without adopting it as Document-owned 391ms
+ ✓ src/knowledge/session.test.ts (36 tests) 7311ms
+   ✓ shares one repository subscription and resource contribution across two Window leases 313ms
+   ✓ suppresses immediately on an edit, rejects spanning queries, and does no traversal or cleanup in the callback 330ms
+   ✓ hand-back retains suppression on read failure 326ms
+   ✓ hand-back retains suppression on unavailable boundary 324ms
+   ✓ rejects asynchronous hand-back completion spanning dispose 354ms
+   ✓ repeated editing and cleanup retains one current generation; repository replacement owns fresh evidence 607ms
+   ✓ a stalled saved verification is cancelled by the resource deadline without restoring stale Facts 341ms
+ ✓ src/features/entity-references/entity-candidates.test.ts (11 tests) 641ms
+   ✓ entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 401ms
+ ✓ src/qualification/native-b1/owned-resources.test.ts (10 tests) 456ms
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 480ms
+ ✓ src/application/workspace-session.test.ts (13 tests) 295ms
+ ✓ src/knowledge-sqlite/saved-facts.test.tsx (9 tests) 3688ms
+   ✓ SQL traversal applies the existing 10,000-visit budget and reports incomplete coverage 3270ms
+ ✓ src/qualification/native-knowledge/index.test.ts (13 tests) 1730ms
+   ✓ suppresses saved contribution immediately, defers capture, follows Undo/Redo and cannot resurrect stale disk on disposal 387ms
+ ✓ src/application/native-saved-scope.test.ts (16 tests) 9310ms
+   ✓ saved provider sqlite=false > saved-to-opening suppresses immediately, dirty live never falls back, and disappearance requires verified hand-back 372ms
+   ✓ saved provider sqlite=false > a failed saved scope withdraws its old results, keeps loaded operation usable, and explicit Refresh retries 313ms
+   ✓ saved provider sqlite=false > explicit selected Open can re-admit after admission Undo; retained binding is not mistaken for canonical presence 491ms
+   ✓ saved provider sqlite=true > shares a bounded saved cohort without Open, binding, projection, History or per-resource conservative endpoints 1877ms
+   ✓ saved provider sqlite=true > saved-to-opening suppresses immediately, dirty live never falls back, and disappearance requires verified hand-back 893ms
+   ✓ saved provider sqlite=true > a failed saved scope withdraws its old results, keeps loaded operation usable, and explicit Refresh retries 856ms
+   ✓ saved provider sqlite=true > memory/resource budget remains explicit incomplete coverage, not complete zero results 561ms
+   ✓ saved provider sqlite=true > repository/session replacement expires result tokens and releases derived state only 587ms
+   ✓ saved provider sqlite=true > explicit selected Open can re-admit after admission Undo; retained binding is not mistaken for canonical presence 1029ms
+   ✓ saved provider sqlite=true > closing the last scope cancels staged saved work; reacquisition starts with fresh read evidence 580ms
+   ✓ saved provider sqlite=true > SQL query expiry withdraws cached evidence and selects independently verified file fallback 643ms
+   ✓ saved provider sqlite=true > changed files cannot escape through cached SQL or file fallback, while valid live state survives 809ms
+ ✓ src/qualification/native-knowledge/lightweight.test.ts (38 tests) 11334ms
+   ✓ matches every fact in 24 seeded native fixtures with distinct resource/root IDs 1755ms
+   ✓ matches unsupported values, linked mention provenance, deleted/client-only and duplicate IDs 432ms
+   ✓ matches explicit annotation-budget failure and cancellation 1719ms
+   ✓ matches traversal truncation without claiming complete coverage 5549ms
+   ✓ preserves duplicate suppression even if the duplicate would exceed facts budgets 429ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (7 tests) 585ms
+ ✓ src/features/entity-references/search-view.test.tsx (13 tests) 331ms
+ ✓ src/application/flint-backlinks.test.tsx (2 tests) 2985ms
+   ✓ follows a live backlink in the invoking Window and refreshes reference removal/Undo without authoring navigation 1634ms
+   ✓ refreshes title and binding labels, preserves no-tab source and reports unopened coverage 1350ms
+ ✓ src/application/canonical-backlinks.test.ts (10 tests) 125ms
+ ✓ src/application/entity-service.test.ts (4 tests) 1026ms
+   ✓ real HTTP/worker resolves canonical names, curated aliases and live/saved mentions as independent evidence 440ms
+ ✓ src/application/workspace-presentation-view.test.tsx (6 tests) 312ms
+ ✓ src/knowledge/live-observer.test.ts (18 tests) 1835ms
+ ✓ src/qualification/native-b2/markdown.test.tsx (11 tests) 146ms
+ ✓ src/persistence/native-vault-session.test.ts (8 tests) 1605ms
+   ✓ changes only the resource binding with zero occurrences and rejects automatic same-ID adoption by another session 539ms
+   ✓ retains edits and shared identity across two occurrences and their disposal during relocation 309ms
+ ✓ src/application/canvas-actions.test.tsx (6 tests) 176ms
+ ✓ src/application/workspace-open.test.tsx (9 tests) 97ms
+ ✓ server/sqlite-saved-scope.test.ts (11 tests) 2140ms
+ ✓ src/application/jet-stage-a-proof.test.ts (5 tests) 77ms
+ ✓ src/application/flint-transient-proof.test.ts (5 tests) 58ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 325ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 301ms
+ ✓ server/sqlite-knowledge-host.test.ts (3 tests) 644ms
+   ✓ real native/legacy publication routes schedule saved indexing without altering receipts or providers 385ms
+ ✓ src/persistence/native-session.test.ts (5 tests) 513ms
+ ✓ src/application/feature-capabilities.test.tsx (2 tests) 43ms
+ ✓ src/application/spatial-document-preview.test.ts (3 tests) 65ms
+ ✓ src/application/canvas-derivation.test.ts (4 tests) 7ms
+ ✓ src/application/sqlite-saved-facts-client.test.ts (4 tests) 9ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 78ms
+ ✓ src/features/flint/backlinks-view.test.tsx (3 tests) 346ms
+ ✓ src/application/native-knowledge-scope.test.ts (1 test) 165ms
+ ✓ src/features/entity-references/document-entities.test.ts (2 tests) 30ms
+ ✓ src/qualification/native-knowledge/live-overlay.test.ts (2 tests) 1041ms
+   ✓ supports ten independently registered canonical resources without mounting them 777ms
+ ✓ src/application/document-formats.test.ts (3 tests) 209ms
+ ✓ src/application/document-vault.test.ts (3 tests) 5ms
+ ✓ src/application/sqlite-index-lifecycle.test.ts (3 tests) 7ms
+ ✓ src/knowledge-sqlite/live-input.test.tsx (1 test) 197ms
+ ✓ src/features/flint/query-results.test.tsx (1 test) 12ms
+ ✓ server/native-saved-scope.test.ts (15 tests) 454ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/application/flint-saved-knowledge.test.tsx > Flint saved composition sqlite=true > saved backlinks open and revalidate the logical mention rather than returning an unopened-source error
+AssertionError: expected 'b4cbae1f-8770-4bf0-b45b-345f29ae767c' to be 'resource-0' // Object.is equality
+
+Expected: "resource-0"
+Received: "b4cbae1f-8770-4bf0-b45b-345f29ae767c"
+
+ ❯ src/application/flint-saved-knowledge.test.tsx:67:181
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 52 passed (53)
+      Tests  1 failed | 552 passed (553)
+   Start at  14:04:02
+   Duration  147.04s (transform 4.11s, setup 0ms, collect 13.57s, tests 113.85s, environment 12.04s, prepare 1.80s)
+

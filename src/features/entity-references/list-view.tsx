@@ -47,13 +47,14 @@ export function EntityListWindow(props: { list: DocumentEntityList; panel: Panel
       onPointerMove={event => { if (drag?.id !== event.pointerId) return; setPosition(clamp(drag.left + event.clientX - drag.x, drag.top + event.clientY - drag.y)); }}
       onPointerUp={event => { if (drag?.id === event.pointerId) drag = undefined; }} onPointerCancel={() => { drag = undefined; }}>
       <strong>Entities in Document</strong>
+      <button type="button" disabled={state.pending} onClick={()=>list.refreshSummaries()}>Refresh summaries</button>
       <button type="button" aria-label="Close entity listing" onClick={() => list.close()}>×</button>
     </header>
     <div class="document-entity-list__body">
       <table aria-label="Document entities">
         <thead><tr>
           {heading("name", "Entity", "Sort by entity name")}
-          {heading("graph", "Graph", "Sort by indexed mentions across the graph")}
+          {heading("graph", "Vault", "Sort by qualified mentions across the vault")}
           {heading("document", "Document", "Sort by logical entity mentions in this Document")}
         </tr></thead>
         <tbody>
@@ -68,10 +69,10 @@ export function EntityListWindow(props: { list: DocumentEntityList; panel: Panel
       </table>
       <Show when={!state.rows.length && !state.pending}><p class="document-entity-list__empty">No entity references in this Document.</p></Show>
       <p class="document-entity-list__status" role="status" aria-live="polite">
-        {state.pending ? "Loading indexed Graph counts…" : state.error ? `Graph counts unavailable: ${state.error}` : `${state.rows.length} entities · ${state.rows.reduce((sum, row) => sum + row.documentMentions, 0)} logical mentions`}
+        {state.pending ? "Loading canonical names and vault counts…" : state.error ? `Entity summaries incomplete: ${state.error}` : `${state.rows.length} entities · ${state.rows.reduce((sum, row) => sum + row.documentMentions, 0)} logical mentions`}
       </p>
       <Show when={state.concertinaEntityId}><div class="document-entity-list__navigation"><button type="button" onClick={() => list.navigateConcertina(-1)}>Previous occurrence</button><span>{state.concertinaIndex + 1} of {list.pageOccurrenceCount(state.concertinaEntityId!)}</span><button type="button" onClick={() => list.navigateConcertina(1)}>Next occurrence</button></div></Show>
-      <small>Graph counts come from the saved index and may differ from live Document counts. Hover or focus a row to preview visible references.</small>
+      <small>Vault counts use verified eligible live/saved references; — means unknown. Document counts are live. Hover or focus a row to preview visible references.</small>
     </div>
     <FloatingWindowResizeHandle controller={windowResize} class="document-entity-list__resize" label="Resize Entity Listing window" />
   </section>;

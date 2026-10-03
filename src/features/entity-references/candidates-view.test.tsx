@@ -1,3 +1,4 @@
+import {mockResolver} from './resolver-test-support';
 import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { render } from "solid-js/web";
@@ -18,10 +19,12 @@ function setup(selected = true, unsupported = false) {
   cleanup.push(() => { dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
   editor.mounts.get(node("a").key)!.focus();
+  entityTestApi(editor).entities=()=>mockResolver().service;
   openEntitySearch(entityTestApi(editor),[{ nodeKey: node("a").key,start: 0,end: selected ? 2 : 0 }]);
-  const panel = () => document.querySelector<HTMLElement>('[aria-label="Search entities"][role=dialog]')!;
+  const panel = () => document.querySelector<HTMLElement>('[aria-label="Link Entity Reference"][role=dialog]')!;
   const button = (label: string) => [...panel().querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent?.startsWith(label))!;
   const field = (label: string) => panel().querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+  button("Find other occurrences").click();
   return { editor,node,panel,button,field };
 }
 describe("entity candidate review",() => {
@@ -34,10 +37,10 @@ describe("entity candidate review",() => {
     await vi.advanceTimersByTimeAsync(310);
     expect(panel().textContent).toContain("Search coverage is incomplete");
     expect(button("Select all eligible").disabled).toBe(true);
-    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true }));
+    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true })); await vi.advanceTimersByTimeAsync(0);
     panel().querySelector<HTMLInputElement>('[aria-label="Include mention: he"]')!.click();
     expect(button("Bind 1").disabled).toBe(false);
-    button("Bind 1").click(); expect(panel()).toBeNull();
+    button("Bind 1").click(); await vi.advanceTimersByTimeAsync(0); expect(panel()).toBeNull();
     expect(editor.encodeDocument().children![0].standoffProperties).toHaveLength(1);
     editor.repository.undo(); expect(editor.encodeDocument().children![0].standoffProperties).toBeUndefined();
   });
@@ -72,7 +75,7 @@ describe("entity candidate review",() => {
     field("Search entities").value = "Blake";
     field("Search entities").dispatchEvent(new InputEvent("input",{ bubbles: true }));
     await vi.advanceTimersByTimeAsync(310);
-    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true }));
+    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true })); await vi.advanceTimersByTimeAsync(0);
     expect(panel().querySelector('[role="alert"]')?.textContent).toContain("Enable Search additional occurrences");
     expect(editor.repository.canUndo()).toBe(false);
     expect(field("Mention text")).toBeTruthy();
@@ -101,7 +104,7 @@ describe("entity candidate review",() => {
     field("Search entities").value = "Blake";
     field("Search entities").dispatchEvent(new InputEvent("input",{ bubbles: true }));
     await vi.advanceTimersByTimeAsync(310);
-    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true }));
+    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true })); await vi.advanceTimersByTimeAsync(0);
     expect(editor.repository.canUndo()).toBe(false);
     expect(button("Bind 0").disabled).toBe(true);
     field("Mention text").value = "he";
@@ -110,7 +113,7 @@ describe("entity candidate review",() => {
     expect(panel().querySelectorAll('[data-candidate-row]')).toHaveLength(3);
     expect(panel().textContent).not.toContain("Original selection");
     button("Select all").click();
-    button("Bind 3").click();
+    button("Bind 3").click(); await vi.advanceTimersByTimeAsync(0);
     expect(panel()).toBeNull(); expect(editor.repository.canUndo()).toBe(true);
     editor.repository.undo(); expect(editor.encodeDocument().children!.every(d => !d.standoffProperties)).toBe(true);
   });
@@ -123,9 +126,9 @@ describe("entity candidate review",() => {
     expect(field("Mention text").value).toBe("he"); expect(panel().textContent).toContain("3 selected / 3 unique targets");
     field("Search entities").value = "Vernon Blake"; field("Search entities").dispatchEvent(new InputEvent("input",{ bubbles: true })); await vi.advanceTimersByTimeAsync(310);
     expect(field("Mention text").value).toBe("he");
-    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true }));
+    field("Search entities").dispatchEvent(new KeyboardEvent("keydown",{ key: "Enter",bubbles: true,cancelable: true })); await vi.advanceTimersByTimeAsync(0);
     expect(panel()).toBeTruthy(); expect(editor.repository.canUndo()).toBe(false); expect(button("Bind 3").disabled).toBe(false);
-    button("Bind 3").click(); expect(panel()).toBeNull(); expect(editor.repository.canUndo()).toBe(true);
+    button("Bind 3").click(); await vi.advanceTimersByTimeAsync(0); expect(panel()).toBeNull(); expect(editor.repository.canUndo()).toBe(true);
     editor.repository.undo(); expect(editor.encodeDocument().children!.every(d => !d.standoffProperties)).toBe(true);
   });
   it("checks across all rows, synchronizes exclusion/undo and stays open for document-side review",async () => {

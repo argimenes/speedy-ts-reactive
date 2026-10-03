@@ -27,6 +27,7 @@ if (store) {
         check();
         if(['inspect-saved','stage-saved'].includes(operation)&&payload.vaultGuid!==store.vaultGuid)throw Error('Saved indexing vault identity mismatch');
         switch (operation) {
+          case 'entities': { const {cancellation,...input}=payload; value=store.entities(input,check);break; }
           case 'knowledge-revision': value=store.knowledgeRevision();break;
           case 'knowledge-read': value=await store.readKnowledge(db=>sqlKnowledgeRead(db,payload,check));break;
           case 'finish-reconciliation': value=store.finishReconciliation();break;

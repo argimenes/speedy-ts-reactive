@@ -1,4 +1,5 @@
 import type { AnnotationCapabilities, CodexFeature, FeatureScope } from "../../feature-api";
+import type { EntitySummaryLoader } from "./entity-summary";
 import { EntitySearch } from "./search-view";
 import { openEntitySearch } from "./entity-search";
 import { DocumentEntityList } from "./document-entity-list";
@@ -6,13 +7,13 @@ import { EntityListWindow } from "./list-view";
 import { EntityPropertyDetails } from "./property-details";
 import { registerEntityBindings } from "./bindings";
 
-export function createEntityReferencesFeature(capabilities: (scope: FeatureScope) => AnnotationCapabilities): CodexFeature & { readonly list: DocumentEntityList | undefined } {
+export function createEntityReferencesFeature(capabilities: (scope: FeatureScope) => AnnotationCapabilities, summaries?: EntitySummaryLoader): CodexFeature & { readonly list: DocumentEntityList | undefined } {
   let list: DocumentEntityList | undefined;
   return {
     id: "entity-references", get list() { return list; },
     activate(scope) {
       const api = capabilities(scope);
-      list = new DocumentEntityList(api);
+      list = new DocumentEntityList(api, summaries);
       scope.own(() => list?.dispose());
       api.register.effect({ type: "codex/entity-reference", laneHeight: 2, render: ({ key, fragments, offset }) => fragments.map((fragment, index) => ({
         key: `${key}:underline:${index}`, path: `M ${fragment.x} ${fragment.y + fragment.height + 1.5 + offset} H ${fragment.x + fragment.width}`, stroke: "purple", fill: "none", strokeWidth: 2,

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { migrate, validateSchema, inspectDatabase, verifyDatabase, rebuildFts, clearDerived, hash } from './schema.mjs';
 import { regularFile, directory, prepareHome, writerLock } from './paths.mjs';
+import { canonicalEntities, entityMutation } from './entities.mjs';
 import * as indexing from './reconcile.mjs';
 function checkFiles(home, kind = 'mutable') {
   for (const suffix of ['', '-wal', '-shm', '-journal']) regularFile(path.join(home, `${kind}.db${suffix}`), true);
@@ -54,6 +55,7 @@ export function openFoundation({ vault, readOnly = false, initialize: create = f
     };
     return {
       vaultGuid: identity.vaultGuid,
+      entities(request, check) { active(); if(entityMutation(request.op))writable(); return canonicalEntities(mutable,request,check); },
       knowledgeRevision() { active(); return indexing.sqlRevision(mutable); },
       readKnowledge(reader) { active(); return reader(mutable); },
       inventory() { active(); return indexing.inventory(mutable); },

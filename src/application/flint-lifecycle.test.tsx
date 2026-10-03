@@ -1,3 +1,5 @@
+import * as canonicalEntities from "./entity-service";
+import {mockResolver} from "../features/entity-references/resolver-test-support";
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
@@ -7,7 +9,7 @@ import { ReactiveTreeView } from "../rendering/reactive-tree-view";
 import { materializeLocalWorkspace, createWorkspaceSaveBundle, materializeWorkspace } from "../reactive-editor/workspace-manifest";
 import type { ExistingBlockDto } from "../block-tree/types";
 const disposers: (() => void)[] = [];
-afterEach(() => { disposers.splice(0).reverse().forEach(d => d()); document.body.replaceChildren(); localStorage.clear(); vi.unstubAllGlobals(); });
+afterEach(() => { disposers.splice(0).reverse().forEach(d => d()); document.body.replaceChildren(); localStorage.clear(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function setup(enabled = true, saved?: ExistingBlockDto) {
   const editor = new ReactiveEditor(materializeLocalWorkspace(saved ?? { id: "workspace", type: "workspace-block", children: [] }), { features: { flint: enabled, compactEditorChrome: false } });
   registerApplicationViews(editor); const projection = editor.createView("workspace");
@@ -116,8 +118,9 @@ describe("Flint composite transient hosting", () => {
     expect(otherWindow.textContent).toContain("another document");
   });
   it("owns Entity panel focus and cancels asynchronous work when its tab disappears", async () => {
-    let reply!: (value: unknown) => void, signal: AbortSignal | undefined;
-    vi.stubGlobal("fetch", vi.fn((_url, options) => { signal = options.signal; return new Promise(resolve => reply = resolve); }));
+    let reply!: (value: any) => void, signal: AbortSignal | undefined;
+    const {service}=mockResolver(); vi.mocked(service.search).mockImplementation((_q, abort) => { signal=abort;return new Promise(resolve=>reply=resolve); });
+    vi.spyOn(canonicalEntities,"entityService").mockReturnValue(service);
     const f = setup(); await tick(); const n = f.text();
     f.editor.focus.request(n.key); f.editor.mounts.get(n.key)!.restoreInlineSelection!({ anchor: 0, head: 5 });
     f.editor.annotationUI.get("codex/entity-reference")!.apply([{ nodeKey: n.key, start: 0, end: 5 }], n.key);
@@ -132,7 +135,7 @@ describe("Flint composite transient hosting", () => {
     f.tabs()[1].click(); await tick();
     expect(signal?.aborted).toBe(true); expect(f.editor.overlays.overlays).toHaveLength(0);
     expect(document.querySelector('.reactive-entity-search')).toBeNull();
-    reply({ ok: true, json: async () => ({ Success: true, Results: [{ id: "late", name: "Late result" }] }) }); await tick();
+    reply({candidates:[],complete:true,diagnostics:[],current(){}}); await tick();
     expect(f.text().payload.standoffProperties ?? []).toEqual([]);
   });
   it("round-trips launched Windows with the unchanged server bundle and one object bank", async () => {

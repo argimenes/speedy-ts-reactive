@@ -10,7 +10,6 @@ import type { IBlockDto, StandoffEditorBlockDto, BlockType, IndexedBlock } from 
 import { createNativeDocumentStoreRouter } from "./native-document-store.mjs";
 import { createDocumentStoreRouter } from "./document-store.js";
 import { createHistoryService } from "./history-router.js";
-import { createEntitySearchRouter } from "./entity-search.js";
 import { createWorkspaceStoreRouter } from "./workspace-store.js";
 import { SqliteKnowledgeHost } from "./sqlite-knowledge-host.js";
 import { featureFlags } from "../src/configuration.js";
@@ -270,7 +269,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const sqliteKnowledge = featureFlags.sqliteKnowledge ? new SqliteKnowledgeHost({root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath), readOnly: publicHostedVersion}) : undefined;
+const sqliteKnowledge = featureFlags.sqliteKnowledge || featureFlags.sqliteEntities ? new SqliteKnowledgeHost({root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath), readOnly: publicHostedVersion, entitiesEnabled: featureFlags.sqliteEntities}) : undefined;
 const coordinateStorage = sqliteKnowledge ? <T>(action: () => Promise<T>) => sqliteKnowledge.foreground(action) : undefined;
 if (sqliteKnowledge) app.use("/api/sqlite/knowledge", sqliteKnowledge.router());
 
@@ -484,8 +483,8 @@ type AgentMention = {
   mentions: number;
 }
 
-// Keep the original entity-search API paths with validated, failure-safe handlers.
-app.use("/api", createEntitySearchRouter(() => db, { readOnly: publicHostedVersion }));
+// Canonical Entity operations are vault-scoped under /api/sqlite/knowledge/entities.
+// The legacy global Surreal Entity router is deliberately not mounted.
 
 
 app.post('/api/getEntitiesJson', async function(req: Request, res: Response) {

@@ -43,6 +43,13 @@ try {
     });
   }
   if (!stopping) {
+    const sqliteBuild = launch(["scripts/build-sqlite-foundation.mjs"]);
+    await new Promise((resolve, reject) => {
+      sqliteBuild.once("error", reject);
+      sqliteBuild.once("exit", code => code === 0 ? resolve() : reject(new Error("The SQLite worker build failed.")));
+    });
+  }
+  if (!stopping) {
     console.log(`Starting the document server on port ${process.env.PORT || 3002}…`);
     const server = launch(["dist/server/index.js"]);
     await new Promise((resolve, reject) => {

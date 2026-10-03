@@ -16,6 +16,10 @@ export interface AnnotationText {
   readonly properties: readonly JsonObject[];
 }
 export interface AnnotationCapabilities {
+  entities?(owner:string):import('./entities').EntityService;
+  replaceAndAnnotate?(range:SearchRange,text:string,type:string,value:string,metadata:JsonObject,revision:number):void;
+  focusRange?(range:SearchRange,revision:number):void;
+  recoverySelection?(owner:string):AnnotationTarget[];
   revision(): number;
   text(key: string): AnnotationText | undefined;
   path(key: string): { key: string; label: string }[];

@@ -1,4 +1,5 @@
 import { DocumentBrowser } from "../demo/document-browser";
+import {registerEntityContext} from './entity-service';
 import {SavedResultActivation} from './saved-result-activation';
 import {sqliteIndexLifecycle} from './sqlite-index-lifecycle';
 import {observeLive} from '../knowledge/live-observer';
@@ -239,6 +240,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         },
       };
       const facts = factsHost ? new FactsQueryProvider(factsHost) : undefined;
+      onCleanup(registerEntityContext(editor,{vault:lease,facts,accepts:key=>{const node=editor.node(key);return !!node&&[...liveViews.values()].some(view=>view.viewId===node.viewId);}}));
       createEffect(() => { const vault=selectedVault(); untrack(() => facts?.use(vault)); });
       const knowledge = native ? new VaultKnowledge(editor, native, knowledgeHost, undefined, facts) : undefined;
       // In Facts mode the legacy reader is used only for host-side activation validation.

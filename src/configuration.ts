@@ -30,6 +30,8 @@ export type FeatureFlags = Readonly<{
   nativeKnowledgeSaved: boolean;
   /** Vault-owned saved SQLite lifecycle only; does not change query/Entity providers. */
   sqliteKnowledge: boolean;
+  /** Canonical vault Entity resolver. Disabling never resumes legacy writes. */
+  sqliteEntities: boolean;
   /** Initial Document format arrangements and creation menu. */
   documentFormats: boolean;
   threeDObjects: boolean;
@@ -61,6 +63,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   nativeKnowledge: true,
   nativeKnowledgeSaved: false,
   sqliteKnowledge: true,
+  sqliteEntities: true,
   documentFormats: true,
   threeDObjects: true,
   anchorRelationships: true,

@@ -55,7 +55,10 @@ export class DocumentEntityList {
       queueMicrotask(() => {
         this.refreshQueued = false;
         if (!this.state.open) return;
-        try { this.refresh(); }
+        try {
+          for(const [id,summary] of this.summaries)this.summaries.set(id,{id:summary.id,name:summary.name});
+          this.refresh(undefined,false);
+        }
         catch { this.close(false); }
       });
     });
@@ -84,7 +87,9 @@ export class DocumentEntityList {
     }
   }
 
-  private refresh(prepared = collectDocumentEntities(this.editor, this.origin!)) {
+  refreshSummaries() { if(this.state.open){this.summaries.clear();this.refresh();} }
+
+  private refresh(prepared = collectDocumentEntities(this.editor, this.origin!), fetchSummaries = true) {
     const generation = ++this.generation;
     this.controller?.abort();
     const rows = prepared.rows.map(row => {
@@ -99,21 +104,29 @@ export class DocumentEntityList {
       else this.clearConcertina();
     }
     if (active) this.preview(active); else this.clearPreview();
+    if(!fetchSummaries){this.setState({pending:false,error:"Document changed. Refresh summaries to update vault counts."});return;}
     const missing = rows.map(row => row.id).filter(id => !this.summaries.has(id));
     if (!missing.length) { this.setState("pending", false); return; }
     const controller = this.controller = new AbortController();
     this.setState("pending", true);
-    void this.loader(missing, controller.signal).then(summaries => {
+    let coverage="";
+    const load=async()=>{
+      if(this.loader!==loadEntitySummaries||!this.editor.entities)return this.loader(missing,controller.signal);
+      const service=this.editor.entities(this.origin!);
+      try{const result=await service.summaries(missing.slice(0,100),controller.signal);coverage=[...result.diagnostics,...(missing.length>100?['Canonical names limited to 100 Entities']:[])].join('; ');return result.rows;}
+      finally{service.dispose();}
+    };
+    void load().then(summaries => {
       if (generation !== this.generation || !this.state.open || controller.signal.aborted) return;
       summaries.forEach(summary => this.summaries.set(summary.id, summary));
       this.setState("rows", rows => rows.map(row => {
         const summary = this.summaries.get(row.id);
         return summary ? { ...row, name: summary.name || row.name, graphMentions: summary.mentions } : row;
       }));
-      this.setState({ pending: false, error: "" });
+      this.setState({ pending: false, error: coverage });
     }).catch(error => {
       if (generation !== this.generation || controller.signal.aborted || !this.state.open) return;
-      this.setState({ pending: false, error: error instanceof Error ? error.message : "Graph entity summaries are unavailable." });
+      this.setState({ pending: false, error: error instanceof Error ? error.message : "Canonical Entity summaries are unavailable." });
     });
   }
 

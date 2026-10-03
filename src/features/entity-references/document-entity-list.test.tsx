@@ -12,7 +12,7 @@ const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(dispose => dispose()); document.body.replaceChildren(); vi.unstubAllGlobals(); localStorage.clear(); });
 
 function setup(fail = false, pageless = false) {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: !fail, json: async () => fail ? { Success: false, Error: "Graph offline" } : { Success: true, Results: [{ id: "alpha", name: "Alpha", mentions: 10 }, { id: "beta", name: "Beta", mentions: 2 }] } }));
+
   const page = { id: "page", type: "page-block", children: [
     { id: "a", type: "standoff-editor-block", text: "Alpha Beta", standoffProperties: [
       { id: "alpha-ref", type: "codex/entity-reference", value: "alpha", metadata: { entityName: "Alpha cached" }, start: 0, end: 4 },
@@ -22,13 +22,13 @@ function setup(fail = false, pageless = false) {
     { id: "c", type: "standoff-editor-block", text: "No entity" },
   ] };
   const editor = new ReactiveEditor({ type: pageless ? "main-list-block" : "document-block", children: pageless ? page.children : [page] });
-  registerEntityTestViews(editor); const projection = editor.createView("entity-list-test"), host = document.body.appendChild(document.createElement("div"));
+  const loader=vi.fn(async () => { if(fail) throw Error("Vault offline"); return [{id:"alpha",name:"Alpha",mentions:10},{id:"beta",name:"Beta",mentions:2}]; });registerEntityTestViews(editor, loader); const projection = editor.createView("entity-list-test"), host = document.body.appendChild(document.createElement("div"));
   const dispose = render(() => <><DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} /><ReactiveTreeView editor={editor} projection={projection} /></>, host);
   const uninstall = editor.installGateway(document); cleanup.push(() => { uninstall(); dispose(); editor.dispose(); });
   const node = (id: string) => Object.values(projection.state.nodes).find(node => node.payload.id === id)!;
   const panel = () => document.querySelector<HTMLElement>('[role="dialog"][aria-label="Entities in document"]')!;
   const rows = () => [...panel().querySelectorAll<HTMLTableRowElement>("tbody tr")];
-  return { editor, host, node, panel, rows };
+  return { editor, host, node, panel, rows, loader };
 }
 
 describe("document entity listing", () => {
@@ -59,12 +59,12 @@ describe("document entity listing", () => {
     expect(editor.encodeDocument()).toEqual(before); expect(editor.repository.canUndo()).toBe(false);
   });
 
-  it("opens from the browser-safe chord and keeps local rows when Graph summaries fail", async () => {
+  it("opens from the browser-safe chord and keeps local rows when Vault summaries fail", async () => {
     const { editor, node, panel, rows } = setup(true); const flow = editor.mounts.get(node("a").key)!.focusElement; flow.focus();
     const prefix = new KeyboardEvent("keydown", { key: ";", ctrlKey: true, bubbles: true, cancelable: true }); flow.dispatchEvent(prefix);
     expect(prefix.defaultPrevented).toBe(true); expect(document.querySelector(".binding-chord-hint")?.textContent).toContain("Entity listing");
     const finish = new KeyboardEvent("keydown", { key: "l", bubbles: true, cancelable: true }); flow.dispatchEvent(finish);
-    await vi.waitFor(() => expect(panel().textContent).toContain("Graph counts unavailable: Graph offline"));
+    await vi.waitFor(() => expect(panel().textContent).toContain("Entity summaries incomplete: Vault offline"));
     expect(finish.defaultPrevented).toBe(true); expect(panel()).toBeTruthy(); expect(rows()).toHaveLength(2);
     panel().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); expect(entityTestList(editor).state.open).toBe(false);
   });
@@ -92,11 +92,14 @@ describe("document entity listing", () => {
   });
 
   it("updates live Document counts when standoff properties change", async () => {
-    const { editor, host, node, rows } = setup();
+    const { editor, host, node, rows, loader, panel } = setup();
     toolbarControl(host, "button[title^='Entities in Document']").click();
     await vi.waitFor(() => expect(rows()).toHaveLength(2));
+    await vi.waitFor(() => expect(rows()[0].cells[0].textContent).toBe("Beta"));const requests=loader.mock.calls.length;
     editor.commands.setPayloadField(node("b").key, "standoffProperties", []);
     await vi.waitFor(() => expect(rows().find(row => row.cells[0].textContent === "Beta")?.cells[2].textContent).toBe("1"));
+    expect(rows().every(row=>row.cells[1].textContent==="—")).toBe(true);expect(loader).toHaveBeenCalledTimes(requests);
+    [...panel().querySelectorAll("button")].find(b=>b.textContent==="Refresh summaries")!.click();await vi.waitFor(()=>expect(loader).toHaveBeenCalledTimes(requests+1));
   });
 
   it("focuses an entity on the current Page and restores the Page on toggle", async () => {

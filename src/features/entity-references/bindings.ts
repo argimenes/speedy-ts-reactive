@@ -10,7 +10,7 @@ export function registerEntityBindings(api: AnnotationCapabilities, platform = t
   for (const [id,name,key] of [["next","Next candidate","ArrowDown"],["previous","Previous candidate","ArrowUp"],["toggle","Toggle candidate"," "]]) add(`entity.candidates.${id}`,name,"Navigate candidate rows; Space checks or excludes a mention.","Entities","entity-search/candidates",[k(key)],["selection"]);
   const entityReferenceChord = chord(k(";", "Ctrl"), k("r"));
   const entityListingChord = chord(k(";", "Ctrl"), k("l"));
-  add("entity.open", "Entity reference", "Search the graph for an entity to link to selected text.", "Entities", "editor/standoff", [entityReferenceChord]);
+  add("entity.open", "Entity reference", "Resolve a canonical Entity in this vault and link selected text.", "Entities", "editor/standoff", [entityReferenceChord]);
   add("cross.entity", "Entity reference across Blocks", "Search for one entity shared by the selected Block-local ranges.", "Entities", "cross-text", [entityReferenceChord]);
   add("entity.list.open", "Entity listing", "List entities referenced by standoff properties in the current Document.", "Entities", "editor", [entityListingChord], ["listing", "mentions"]);
   add("cross.entityList", "Entity listing from cross-Block selection", "List entities referenced by standoff properties in the current Document.", "Entities", "cross-text", [entityListingChord], ["listing", "mentions"]);

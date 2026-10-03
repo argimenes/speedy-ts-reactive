@@ -1,0 +1,33 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:33257) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+search evidence { hits: 1, unopened: true, views: 2, before: 2 }
+{"requestId":"33272.340","timestamp":251328.895623,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"33272.354","timestamp":251329.19899,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"33272.375","timestamp":251329.753508,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"33272.385","timestamp":251329.92829,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"33272.401","timestamp":251330.223679,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"33272.425","timestamp":251331.318837,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"33272.459","timestamp":251333.114922,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{"requestId":"33272.478","timestamp":251333.529129,"type":"Fetch","errorText":"net::ERR_ABORTED","canceled":true}
+{
+  "passed": 16,
+  "checks": [
+    "saved-enabled real worker searches unmounted Unicode text without mounting other resources",
+    "search and passage navigation do not change canonical state or History",
+    "keyboard Escape cancels picker and restores native selection",
+    "real pointer picker consumes a native selection into a stable reference",
+    "reference creation Undo removes the native annotation",
+    "reference target survives authored title change and pair relocation",
+    "two Windows do not duplicate canonical search results",
+    "result uses invoking Window occurrence and preserves the other Window",
+    "same reference follows through the second Window",
+    "edits immediately disable stale result actions",
+    "Undo does not resurrect an old query token",
+    "reopened reference reports its unopened target explicitly",
+    "native Save/Open plus restarted server preserves the canonical reference and relocated target",
+    "reference removal Undo restores the same mention",
+    "real external removal rejects activation without a mount or canonical mutation",
+    "no uncaught browser exceptions"
+  ]
+}

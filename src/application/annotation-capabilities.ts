@@ -6,6 +6,8 @@ import { ancestorPath, nodeLabel, resolveSearchScope, scopeNodes, TextSearch } f
 import { revealMatch, revealPositionMarker } from "../runtime/reveal-match";
 import { currentPageForScope, nodeKeysForPage } from "../runtime/minimap";
 import { panelSession } from "../runtime/panel-session";
+import { entityService } from './entity-service';
+import { graphemeBoundaries } from '../input/graphemes';
 
 export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureScope): AnnotationCapabilities {
   const check = () => { if (!scope.active()) throw new Error(`Feature ${scope.owner} is disposed`); };
@@ -29,6 +31,26 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     texts.set(key, snapshot); return snapshot;
   };
   return {
+    entities: owner=>{check();const service=entityService(editor,owner);return {...service,dispose:scope.own(()=>service.dispose())};},
+    replaceAndAnnotate(range,replacement,type,value,metadata,revision){
+      check();if(editor.repository.state.revision!==revision)throw Error('The Document changed. Select the text again.');
+      editor.textRanges.validate([range],'cell');const source=text(range.nodeKey)!;
+      const boundaries=graphemeBoundaries(source.cells.map(c=>c.text).join(''));
+      if(source.cells.some(c=>!c.plain)||!boundaries.includes(range.start)||!boundaries.includes(range.end))throw Error('Replace & Link requires a complete plain-text range');
+      editor.commands.replaceAndAnnotate(range.nodeKey,range.start,range.end,replacement,type,value,metadata);
+    },
+    focusRange(range,revision){
+      check();if(editor.repository.state.revision!==revision)throw Error('Selection changed before focus restoration');
+      editor.textRanges.validate([range],'cell');editor.focus.request(range.nodeKey,{reason:'annotation-selection'});editor.mounts.get(range.nodeKey)?.restoreInlineSelection?.({anchor:range.start,head:range.end});
+    },
+    recoverySelection(owner){
+      const focused=editor.focus.state.focusedKey;
+      const key=focused&&!editor.overlays.isOverlayKey(focused)?focused:editor.focus.state.lastFocusedKey??owner,node=editor.node(key),origin=editor.node(owner);
+      if(!node||!origin||node.viewId!==origin.viewId)throw Error('Select text in this Document occurrence');
+      const a=resolveSearchScope(editor,key,'document'),b=resolveSearchScope(editor,owner,'document');if(a.rootKey!==b.rootKey)throw Error('Select text in the same Document');
+      const cross=editor.crossText.range();if(cross){const ranges=editor.crossText.resolve(cross.anchor,cross.head);if(ranges.some(r=>editor.node(r.nodeKey)?.viewId!==origin.viewId||resolveSearchScope(editor,r.nodeKey,'document').rootKey!==b.rootKey))throw Error('Select text in the same Document occurrence');return ranges;}
+      const r=editor.mounts.get(key)?.captureInlineSelection?.();return r?[{nodeKey:key,start:Math.min(r.anchor,r.head),end:Math.max(r.anchor,r.head)}]:[];
+    },
     revision: () => editor.repository.state.revision, text,
     path: key => ancestorPath(editor, key).map(node => ({ key: node.key, label: nodeLabel(node) })),
     scope: (key, kind) => resolveSearchScope(editor, key, kind),

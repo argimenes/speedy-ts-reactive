@@ -1,144 +1,66 @@
-import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "solid-js/web";
-import { ReactiveEditor } from "../../reactive-editor/editor";
-import { registerCoreViews } from "../../rendering/register-core-views";
-import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
-import { DocumentStyleBar } from "../../rendering/document-style-bar";
-import { toolbarControl } from "../../rendering/toolbar-test-helpers";
-import { openEntitySearch } from "./entity-search";
-import { matchSources } from "../../runtime/search-matching";
-vi.mock("../../runtime/search-worker",() => ({ runSearchWorker: async (sources: Parameters<typeof matchSources>[0],query: string,options: Parameters<typeof matchSources>[2]) => matchSources(sources,query,options) }));
-const cleanup: (() => void)[] = [];
-beforeEach(() => vi.useFakeTimers());
-afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); localStorage.clear(); });
-const reply = (Results = [{ id: "Agent:blake", name: "Vernon Blake", mentions: 3 }], extra = {}) => ({ ok: true, json: async () => ({ Success: true, Results, Count: Results.length, Page: 1, MaxPage: 1, ...extra }) });
-function setup() {
-  const editor = new ReactiveEditor({ type: "document-block", children: [{ id: "a", type: "standoff-editor-block", text: "Vernon Blake" }, { id: "b", type: "standoff-editor-block", text: "writes on art" }] });
-  registerEntityTestViews(editor); const projection = editor.createView("entity-test"), host = document.body.appendChild(document.createElement("div"));
-  const dispose = render(() => <><DocumentStyleBar editor={editor} /><ReactiveTreeView editor={editor} projection={projection} /></>, host); editor.installGateway(document);
-  cleanup.push(() => { dispose(); editor.dispose(); });
-  const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
-  const select = () => { const mount = editor.mounts.get(node("a").key)!; mount.focus(); mount.restoreInlineSelection!({ anchor: 0, head: 6 }); };
-  const pause = () => document.querySelector<HTMLInputElement>('[aria-label="Search additional occurrences"]')!.click();
-  const open = () => { select(); toolbarControl(host, '[aria-label="Entity reference"]', 'Annotations').click(); pause(); };
-  const panel = () => document.querySelector<HTMLElement>('[role="dialog"][aria-label="Search entities"]');
-  const query = () => panel()!.querySelector<HTMLInputElement>('[aria-label="Search entities"]')!;
-  return { editor, node, select, open, panel, query, host, pause };
+import {entityTestApi,registerEntityTestViews} from './test-support';
+import {mockResolver} from './resolver-test-support';
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {render} from 'solid-js/web';
+import {ReactiveEditor} from '../../reactive-editor/editor';
+import {ReactiveTreeView} from '../../rendering/reactive-tree-view';
+import {openEntitySearch} from './entity-search';
+import {matchSources} from '../../runtime/search-matching';
+vi.mock('../../runtime/search-worker',()=>({runSearchWorker:async(s:any,q:string,o:any)=>matchSources(s,q,o)}));
+const cleanup:Array<()=>void>=[];
+beforeEach(()=>vi.useFakeTimers());afterEach(()=>{cleanup.splice(0).reverse().forEach(f=>f());document.body.replaceChildren();vi.restoreAllMocks();vi.useRealTimers();localStorage.clear();});
+function setup(text='he',name='Leonardo da Vinci'){
+ const editor=new ReactiveEditor({type:'document-block',children:[{id:'a',type:'standoff-editor-block',text},{id:'b',type:'standoff-editor-block',text:'another mention'}]});
+ registerEntityTestViews(editor);const view=editor.createView('ler'),host=document.body.appendChild(document.createElement('div'));
+ const dispose=render(()=><ReactiveTreeView editor={editor} projection={view}/>,host);editor.installGateway(document);cleanup.push(()=>{dispose();editor.dispose();});
+ const node=(id='a')=>Object.values(view.state.nodes).find(n=>n.payload.id===id)!;
+ const mock=mockResolver(name),api=entityTestApi(editor);api.entities=()=>mock.service;
+ const open=(ranges=[{nodeKey:node().key,start:0,end:[...text].length}])=>{editor.mounts.get(node().key)!.focus();openEntitySearch(api,ranges);};
+ const panel=()=>document.querySelector<HTMLElement>('[role=dialog][aria-label="Link Entity Reference"]')!;
+ const input=(label:string,value:string)=>{const e=panel().querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;e.value=value;e.dispatchEvent(new InputEvent('input',{bubbles:true}));};
+ const button=(label:string)=>[...panel().querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label)!;
+ const choose=async()=>{panel().querySelector<HTMLButtonElement>(`[aria-label="Select ${name}"]`)!.click();await vi.advanceTimersByTimeAsync(0);};
+ return {editor,api,node,open,panel,input,button,choose,...mock};
 }
-describe("entity search overlay", () => {
-  const createButton = () => [...document.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.startsWith('Create entity “'));
-  it("creates from the original selection and links immediately even with candidate mode enabled; Undo/Redo affects the annotation", async () => {
-    const fetch = vi.fn().mockImplementation(async (_url, init) => init?.method === "POST"
-      ? { ok: true, json: async () => ({ Success: true, Entity: JSON.parse(init.body) }) } : reply([]));
-    vi.stubGlobal("fetch", fetch);
-    const { editor, node, panel } = setup();
-    openEntitySearch(entityTestApi(editor), [{ nodeKey: node("a").key, start: 0, end: 6 }]);
-    expect(createButton()).toBeUndefined(); await vi.advanceTimersByTimeAsync(310);
-    createButton()!.click(); await vi.advanceTimersByTimeAsync(0);
-    const [url, request] = fetch.mock.calls.find(([, init]) => init?.method === "POST")!;
-    expect(url).toBe("/api/entities"); const entity = JSON.parse(request.body);
-    expect(entity.name).toBe("Vernon"); expect(entity.id).not.toContain("Agent:");
-    expect(panel()).toBeNull();
-    const properties = () => editor.encodeDocument().children![0].standoffProperties;
-    expect(properties()).toEqual([expect.objectContaining({ type: "codex/entity-reference", value: entity.id, start: 0, end: 5, metadata: { entityId: entity.id, entityName: "Vernon" } })]);
-    expect(document.activeElement).toBe(editor.mounts.get(node("a").key)!.focusElement);
-    editor.repository.undo(); expect(properties()).toBeUndefined();
-    editor.repository.redo(); expect(properties()).toEqual([expect.objectContaining({ value: entity.id })]);
-    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
-  });
-  it("does not mistake failed searches or a different lookup query for an unmatched selection", async () => {
-    const fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ Success: false, Error: "Offline" }) }); vi.stubGlobal("fetch", fetch);
-    const { open, query } = setup(); open(); await vi.advanceTimersByTimeAsync(310);
-    expect(createButton()).toBeUndefined();
-    fetch.mockResolvedValue(reply([])); query().value = "Another name"; query().dispatchEvent(new InputEvent("input", { bubbles: true }));
-    await vi.advanceTimersByTimeAsync(310); expect(createButton()).toBeUndefined();
-    query().value = "Vernon"; query().dispatchEvent(new InputEvent("input", { bubbles: true }));
-    expect(createButton()).toBeUndefined(); await vi.advanceTimersByTimeAsync(310); expect(createButton()).toBeDefined();
-  });
-  it("keeps the selection unchanged on creation failure and retries with the same entity ID", async () => {
-    let attempted = false;
-    const fetch = vi.fn().mockImplementation(async (_url, init) => {
-      if (init?.method !== "POST") return reply([]);
-      if (!attempted) { attempted = true; throw new Error("Response lost"); }
-      return { ok: true, json: async () => ({ Success: true, Entity: JSON.parse(init.body) }) };
-    }); vi.stubGlobal("fetch", fetch);
-    const { editor, open, panel } = setup(); open(); await vi.advanceTimersByTimeAsync(310);
-    createButton()!.click(); await vi.advanceTimersByTimeAsync(0);
-    expect(panel()!.textContent).toContain("Response lost"); expect(editor.repository.canUndo()).toBe(false);
-    createButton()!.click(); await vi.advanceTimersByTimeAsync(0);
-    const writes = fetch.mock.calls.filter(([, init]) => init?.method === "POST");
-    expect(writes).toHaveLength(2); expect(writes[0][1].body).toBe(writes[1][1].body); expect(panel()).toBeNull();
-  });
-  it.each(["cancel", "edit"])("ignores a late creation completion after %s", async action => {
-    let complete!: () => void;
-    const fetch = vi.fn().mockImplementation(async (_url, init) => {
-      if (init?.method !== "POST") return reply([]);
-      return new Promise(resolve => { complete = () => resolve({ ok: true, json: async () => ({ Success: true, Entity: JSON.parse(init.body) }) }); });
-    }); vi.stubGlobal("fetch", fetch);
-    const { editor, node, open, panel } = setup(); open(); await vi.advanceTimersByTimeAsync(310);
-    createButton()!.click();
-    if (action === "edit") editor.commands.replaceInlineRange(node("a").key, 0, 0, "New ");
-    else [...panel()!.querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent === 'Cancel')!.click();
-    expect(panel()).toBeNull(); complete(); await vi.advanceTimersByTimeAsync(0);
-    expect(editor.encodeDocument().children![0].standoffProperties).toBeUndefined();
-  });
-  it("seeds the query, searches existing API, commits local reference/name metadata and undoes atomically", async () => {
-    const fetch = vi.fn().mockResolvedValue(reply()); vi.stubGlobal("fetch", fetch);
-    const { editor, open, panel, query } = setup(); const before = editor.repository.snapshot(); open();
-    expect(query().value).toBe("Vernon"); expect(editor.repository.snapshot()).toEqual(before);
-    const resize = panel()!.querySelector<HTMLElement>(".reactive-entity-search__resize")!; resize.setPointerCapture = vi.fn();
-    resize.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 0, clientY: 0, bubbles: true, cancelable: true }));
-    resize.dispatchEvent(new MouseEvent("pointermove", { button: 0, clientX: -100, clientY: -40, bubbles: true, cancelable: true }));
-    resize.dispatchEvent(new MouseEvent("pointerup", { button: 0, clientX: -100, clientY: -40, bubbles: true, cancelable: true }));
-    expect(panel()!.style.width).toBe("900px"); expect(editor.repository.snapshot()).toEqual(before); expect(query().value).toBe("Vernon");
-    await vi.advanceTimersByTimeAsync(310);
-    expect(String(fetch.mock.calls[0][0])).toContain("/api/findAgentsByNameJson?search=Vernon");
-    panel()!.querySelector<HTMLButtonElement>('[aria-label="Select Vernon Blake"]')!.click();
-    expect(panel()).toBeNull();
-    expect(editor.encodeDocument().children![0].standoffProperties).toEqual([expect.objectContaining({ type: "codex/entity-reference", start: 0, end: 5, value: "Agent:blake", metadata: { entityId: "Agent:blake", entityName: "Vernon Blake" } })]);
-    const saved = editor.encodeDocument(), restored = new ReactiveEditor(saved); expect(restored.encodeDocument()).toEqual(saved); restored.dispose();
-    editor.repository.undo(); expect(editor.encodeDocument().children![0].standoffProperties).toBeUndefined();
-  });
-  it("cancels without history and supports the chord opener and result selection", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply()));
-    const { editor, select, panel, node } = setup(); editor.crossText.enable(true); select();
-    const target = editor.mounts.get(node("a").key)!.focusElement;
-    target.dispatchEvent(new KeyboardEvent("keydown", { key: ";", ctrlKey: true, bubbles: true, cancelable: true }));
-    target.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true, cancelable: true }));
-    expect(panel()).not.toBeNull(); await vi.advanceTimersByTimeAsync(310);
-    document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    expect(panel()).toBeNull(); expect(editor.repository.canUndo()).toBe(false);
-    await vi.advanceTimersByTimeAsync(0); expect(document.activeElement).toBe(editor.mounts.get(node("a").key)!.focusElement);
-  });
-  it("creates a shared entity annotation across Blocks and invalidates an open search on edits", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply()));
-    const { editor, node, panel, pause } = setup();
-    openEntitySearch(entityTestApi(editor), [{ nodeKey: node("a").key, start: 0, end: 12 }, { nodeKey: node("b").key, start: 0, end: 6 }]);
-    pause();
-    await vi.advanceTimersByTimeAsync(310);
-    document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
-    const a = (node("a").payload.standoffProperties as any[])[0], b = (node("b").payload.standoffProperties as any[])[0];
-    expect(a.annotationId).toBe(b.annotationId); expect(a.annotationId).toBeTruthy();
-    expect(editor.linkedAnnotations.resolve(b)).toMatchObject({ value: "Agent:blake", metadata: { entityName: "Vernon Blake" } });
-    editor.repository.undo(); expect(node("a").payload.standoffProperties).toBeUndefined(); expect(node("b").payload.standoffProperties).toBeUndefined();
-    openEntitySearch(entityTestApi(editor), [{ nodeKey: node("a").key, start: 0, end: 6 }]);
-    editor.commands.replaceInlineRange(node("a").key, 0, 0, "New "); expect(panel()).toBeNull();
-    await vi.advanceTimersByTimeAsync(500); expect(node("a").payload.standoffProperties).toBeUndefined();
-  });
-  it("debounces changes, rejects stale responses, supports alias options and displays server failures", async () => {
-    let finish!: (value: unknown) => void;
-    const fetch = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(reply([{ id: "Agent:new", name: "New entity", mentions: 0 }])); vi.stubGlobal("fetch", fetch);
-    const { open, panel, query } = setup(); open(); await vi.advanceTimersByTimeAsync(310);
-    query().value = "New"; query().dispatchEvent(new InputEvent("input", { bubbles: true }));
-    query().value = "New entity"; query().dispatchEvent(new InputEvent("input", { bubbles: true }));
-    await vi.advanceTimersByTimeAsync(310); expect(fetch).toHaveBeenCalledTimes(2);
-    finish(reply()); await vi.advanceTimersByTimeAsync(0);
-    expect(panel()!.textContent).toContain("New entity"); expect(panel()!.querySelector('[aria-label="Select Vernon Blake"]')).toBeNull();
-    fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ Success: false, Error: "Database offline" }) });
-    panel()!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click(); await vi.advanceTimersByTimeAsync(310);
-    expect(String(fetch.mock.calls.at(-1)![0])).toContain("findAgentsByAliasJson");
-    expect(panel()!.querySelector('[role="alert"]')!.textContent).toContain("Database offline");
-    expect(panel()!.querySelectorAll("tbody tr")).toHaveLength(0);
-  });
+it.each([['Leonardo','Leonardo'],['he','leonardo'],['Firenze','Florence']])('keeps target %s independent of resolver query %s',async(text,query)=>{
+ const f=setup(text,query==='Florence'?'Florence':'Leonardo da Vinci');f.open();const before=f.editor.repository.snapshot();f.input('Search entities',query);await vi.advanceTimersByTimeAsync(220);
+ expect(f.panel().querySelector('[data-entity-target]')!.textContent).toBe(text);expect(f.editor.repository.snapshot()).toEqual(before);expect(Object.values(f.editor.decorations.nodes).flat().some(d=>d.type==='editor/panel-selection')).toBe(true);
+ await f.choose();expect(f.panel()).toBeNull();expect(f.editor.encodeDocument().children![0].text).toBe(text);expect(f.node().payload.standoffProperties).toEqual([expect.objectContaining({value:'blake',start:0,end:[...text].length-1})]);expect(f.service.alias).not.toHaveBeenCalled();
+ f.editor.repository.undo();expect(f.node().payload.standoffProperties).toBeUndefined();f.editor.repository.redo();expect(f.node().payload.standoffProperties).toHaveLength(1);
+});
+it('creates under a separate canonical name without rewriting target; Undo leaves the Entity',async()=>{
+ const f=setup();f.open();f.input('Search entities','leonardo');f.button('+ Create Entity').click();expect(f.panel().querySelector<HTMLInputElement>('[aria-label="Canonical name"]')!.value).toBe('leonardo');f.input('Canonical name','Leonardo da Vinci');f.button('Create and link').click();await vi.advanceTimersByTimeAsync(0);
+ const input=vi.mocked(f.service.create).mock.calls[0][0];expect(input.name).toBe('Leonardo da Vinci');expect(f.entities.has(input.id)).toBe(true);expect(f.editor.encodeDocument().children![0].text).toBe('he');f.editor.repository.undo();expect(f.node().payload.standoffProperties).toBeUndefined();expect(f.entities.has(input.id)).toBe(true);
+});
+it('retries unconfirmed creation with the same supplied identity and request',async()=>{
+ const f=setup();vi.mocked(f.service.create).mockRejectedValueOnce(Error('Response lost'));f.open();f.button('+ Create Entity').click();f.button('Create and link').click();await vi.advanceTimersByTimeAsync(0);expect(f.panel().textContent).toContain('Creation outcome unconfirmed');expect(f.editor.repository.canUndo()).toBe(false);
+ f.button('Retry creation and link').click();await vi.advanceTimersByTimeAsync(0);expect(vi.mocked(f.service.create).mock.calls[1][0]).toEqual(vi.mocked(f.service.create).mock.calls[0][0]);
+});
+it('retains created-but-not-linked identity and binds a newly validated selection',async()=>{
+ const f=setup();let finish!:(e:any)=>void;vi.mocked(f.service.create).mockImplementation(input=>new Promise(r=>{finish=r;}));f.open();f.button('+ Create Entity').click();f.button('Create and link').click();
+ f.editor.commands.replaceInlineRange(f.node().key,0,0,'Now ');f.entities.set('created',{id:'created',name:'Leonardo',revision:0,aliases:[]});finish(f.entities.get('created'));await vi.advanceTimersByTimeAsync(0);expect(f.panel().textContent).toContain('created, but');expect(f.node().payload.standoffProperties).toBeUndefined();
+ f.api.recoverySelection=()=>[{nodeKey:f.node('b').key,start:0,end:7}];f.button('Bind to new selection').click();await vi.advanceTimersByTimeAsync(0);expect(f.node('b').payload.standoffProperties).toEqual([expect.objectContaining({value:'created',start:0,end:6})]);expect(f.service.create).toHaveBeenCalledTimes(1);expect(f.editor.focus.state.focusedKey).toBe(f.node('b').key);expect(f.editor.mounts.get(f.node('b').key)!.captureInlineSelection!()).toEqual({anchor:0,head:7});
+});
+it('cancel before dispatch writes nothing and cancel after dispatch never adds a late annotation',async()=>{
+ const f=setup();f.open();f.button('Cancel').click();expect(f.service.create).not.toHaveBeenCalled();f.open();let finish!:(e:any)=>void;vi.mocked(f.service.create).mockImplementation(()=>new Promise(r=>finish=r));f.button('+ Create Entity').click();f.button('Create and link').click();f.button('Cancel').click();finish({id:'created',name:'he',aliases:[],revision:0});await vi.advanceTimersByTimeAsync(0);expect(f.node().payload.standoffProperties).toBeUndefined();
+});
+it('Replace & Link is one undoable native edit and remaps other annotations',async()=>{
+ const f=setup('Leo writes');f.editor.commands.setPayloadField(f.node().key,'standoffProperties',[{id:'style',type:'style/bold',start:4,end:9}]);f.open([{nodeKey:f.node().key,start:0,end:3}]);f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);f.button('Replace & Link').click();await vi.advanceTimersByTimeAsync(0);
+ expect(f.editor.encodeDocument().children![0].text).toBe('Leonardo da Vinci writes');expect(f.node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({id:'style',start:18,end:23}),expect.objectContaining({value:'blake',start:0,end:16})]));f.editor.repository.undo();expect(f.editor.encodeDocument().children![0].text).toBe('Leo writes');expect(f.node().payload.standoffProperties).toHaveLength(1);
+});
+it('adjusts grapheme and word boundaries without authored brackets or query changes',async()=>{
+ const f=setup('e\u0301 city');f.open([{nodeKey:f.node().key,start:0,end:2}]);f.input('Search entities','Florence');f.button('end forward word').click();expect(f.panel().querySelector('[data-entity-target]')!.textContent).toBe('e\u0301 ');f.button('end forward word').click();expect(f.panel().querySelector('[data-entity-target]')!.textContent).toBe('e\u0301 city');expect(f.editor.repository.canUndo()).toBe(false);expect(f.panel().querySelector<HTMLInputElement>('[aria-label="Search entities"]')!.value).toBe('Florence');
+});
+it('preserves cross-Block identity and clears stale target on external edits',async()=>{
+ const f=setup();f.open([{nodeKey:f.node().key,start:0,end:2},{nodeKey:f.node('b').key,start:0,end:7}]);f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);await f.choose();const a=(f.node().payload.standoffProperties as any[])[0],b=(f.node('b').payload.standoffProperties as any[])[0];expect(a.annotationId).toBe(b.annotationId);f.editor.repository.undo();expect(f.node('b').payload.standoffProperties).toBeUndefined();f.open();f.editor.commands.replaceInlineRange(f.node().key,0,0,'x');expect(f.panel()).toBeNull();
+});
+it('passes stream, match and scope independently and rejects late search publication',async()=>{
+ const f=setup();let finish!:(e:any)=>void;vi.mocked(f.service.search).mockImplementationOnce(()=>new Promise(r=>finish=r));f.open();await vi.advanceTimersByTimeAsync(220);f.input('Search entities','leonardo');await vi.advanceTimersByTimeAsync(220);finish({candidates:[{id:'wrong',name:'Stale'}],complete:true,diagnostics:[],current(){}});await vi.advanceTimersByTimeAsync(0);expect(f.panel().textContent).not.toContain('Stale');
+ for(const [label,value]of [['Entity stream','mention'],['Entity match','exact'],['Entity scope','document']]){const e=f.panel().querySelector<HTMLSelectElement>(`[aria-label="${label}"]`)!;e.value=value;e.dispatchEvent(new Event('change',{bubbles:true}));}await vi.advanceTimersByTimeAsync(220);expect(vi.mocked(f.service.search).mock.calls.at(-1)![0]).toEqual({query:'leonardo',stream:'mention',match:'exact',scope:'document'});
+});
+it('supports explicit alias add/update/remove without linking or history',async()=>{
+ const f=setup();f.open();f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);f.button('Details / aliases').click();await vi.advanceTimersByTimeAsync(0);f.input('Explicit alias','Leo');f.button('Add alias').click();await vi.advanceTimersByTimeAsync(0);expect(f.entities.get('blake')!.aliases[0].name).toBe('Leo');f.button('Edit alias').click();f.input('Explicit alias','Leonardo');f.button('Update alias').click();await vi.advanceTimersByTimeAsync(0);expect(f.entities.get('blake')!.aliases[0].name).toBe('Leonardo');f.button('Remove alias').click();await vi.advanceTimersByTimeAsync(0);expect(f.entities.get('blake')!.aliases).toHaveLength(0);expect(f.editor.repository.canUndo()).toBe(false);
+});
+it('keeps Tab and numeric text input native; Enter links and Escape cancels',async()=>{
+ const f=setup();f.open();f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);const input=f.panel().querySelector<HTMLInputElement>('[aria-label="Search entities"]')!;for(const key of ['Tab','1']){const e=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});input.dispatchEvent(e);expect(e.defaultPrevented).toBe(false);}input.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));await vi.advanceTimersByTimeAsync(0);expect(f.panel()).toBeNull();
 });

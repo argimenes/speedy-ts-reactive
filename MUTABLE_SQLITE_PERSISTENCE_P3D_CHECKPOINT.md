@@ -1,5 +1,7 @@
 # SQLite P3d Entity UX and implementation checkpoint
 
+**Resolved:** the subsequent P3d implementation directive accepted independently committed Entity creation and the separate target/query/name model. This checkpoint is the historical archaeology and decision record; its pending-policy statements below are superseded. See [the P3d implementation and qualification report](MUTABLE_SQLITE_PERSISTENCE_P3D_REPORT.md) for the result and explicit regression exception.
+
 P3a–P3c remain the accepted baseline. The Codex interaction model can be adapted to vault-scoped SQLite without changing EntityReference semantics or Document persistence. **One transaction-policy conflict needs a decision before implementation:** the accepted P3d plan permits a committed Entity when linking subsequently fails; the new brief requires failed create-and-link without orphan Entity state. No production code has changed during this checkpoint.
 
 ## Codex Entity UX inventory
@@ -69,4 +71,4 @@ Extend existing SQLite worker/HTTP, Entity feature and Flint browser fixtures. R
 
 Run P3a–P3c/C2/C3 regressions, typecheck/build and a real Flint → HTTP → SQLite worker browser path without SurrealDB. Preserve source files during lookup/alias/Relationship operations. Exercise database backup/restore for canonical knowledge separately from rebuilding file-derived projections. Stop after the P3d report; no P6, Save optimization, compatibility Open or new file-format work.
 
-**Current status:** archaeology and implementation checkpoint complete; transaction-policy question pending. Production implementation and qualification have not begun.
+**Current status:** policy resolved; implementation and qualification are reported in [MUTABLE_SQLITE_PERSISTENCE_P3D_REPORT.md](MUTABLE_SQLITE_PERSISTENCE_P3D_REPORT.md). Stop for P3d review.

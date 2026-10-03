@@ -137,6 +137,18 @@ export class TreeCommands {
     return clone(next);
   }
 
+  /** One ordinary replacement and local annotation, with the normal range remapping. */
+  replaceAndAnnotate(key:NodeKey,start:number,end:number,text:string,type:string,value:string,metadata:Record<string,unknown>) {
+    if(!text.length||text.length>1000||!type)throw new TreeCommandError('Invalid replacement annotation');
+    this.transaction('Replace text and annotate',()=>{
+      this.replaceInlineRange(key,start,end,text);
+      const state=this.state(),content=state.contents[state.placements[this.placementKey(key,state)].contentKey];
+      const properties=clone(content.payload.standoffProperties as Record<string,unknown>[]??[]);
+      properties.push({id:crypto.randomUUID(),type,value,metadata:clone(metadata),start,end:start+[...text].length-1});
+      this.setPayloadField(key,'standoffProperties',properties);
+    });
+  }
+
   constructor(
     private readonly repository: CanonicalRepository,
     private readonly resolveOccurrence: (key: NodeKey | PlacementKey) => PlacementKey | undefined,

@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/qualification/native-b2/paired-save.test.mjs (22 tests) 3496ms
+   ✓ recovers after actual writer-process death at after-native with the OS lock released 416ms
+ ✓ src/qualification/native-b1/owned-resource-files.test.mjs (9 tests) 287ms
+ ✓ src/qualification/native-b1/server.test.mjs (1 test) 4ms
+
+ Test Files  3 passed (3)
+      Tests  32 passed (32)
+   Start at  14:02:41
+   Duration  6.59s (transform 614ms, setup 0ms, collect 1.15s, tests 3.79s, environment 1.10s, prepare 153ms)
+

@@ -34,3 +34,14 @@
 .entity-candidates small { display:block; }
 .entity-candidates [data-candidate-row]:focus { outline:2px solid #477f6a; outline-offset:-2px; }
 .entity-candidates td select { max-width:120px; }
+.reactive-entity-search:not(.reactive-entity-search--candidates) .entity-search-columns { grid-template-columns:minmax(0,1fr); }
+.reactive-entity-search:not(.reactive-entity-search--candidates) .entity-search-columns > .entity-candidates { display:none; }
+.entity-search-lookup > p:has([data-entity-target]) { padding:10px; background:#fff2bc; border-radius:4px; white-space:pre-wrap; }
+.entity-search-lookup section[aria-label] { margin:12px 0; padding:12px; border:1px solid #c5d3cd; border-radius:4px; }
+.entity-search-lookup section[aria-label] > small { display:block; overflow-wrap:anywhere; }
+.entity-search-lookup td button { margin:2px; }
+.reactive-entity-search input:not([type=checkbox]),.reactive-entity-search select { border:1px solid #9ab0a8; border-radius:4px; background:#fff; color:inherit; }
+.reactive-entity-search button { border:1px solid #aebeb7; border-radius:4px; background:#f4f8f6; }
+.reactive-entity-search button:focus-visible,.reactive-entity-search input:focus-visible,.reactive-entity-search select:focus-visible { outline:2px solid #426e61; outline-offset:2px; }
+.entity-search-lookup > small { display:block; margin-top:10px; color:#4e645c; }
+.entity-search-lookup section[aria-label] > strong,.entity-search-lookup section[aria-label] > label { display:block; margin-top:6px; }
