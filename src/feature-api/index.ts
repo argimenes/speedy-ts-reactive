@@ -84,3 +84,4 @@ export { rangesToPositionMarkers } from "../runtime/document-position-markers";
 export type { PresentationCapabilities } from "./presentation";
 export type { AnchorCapabilities, AnchorRecord } from "./anchors";
 export type { WindowPresentationPort, WindowPresentationInstance, WindowPresentationContribution } from "../runtime/window-presentation";
+export type { SemanticVaultServices, SemanticRecordType, SemanticCommand, SemanticQuery, CanonicalSemanticRecord } from './semantics';

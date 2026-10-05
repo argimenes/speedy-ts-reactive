@@ -11,6 +11,7 @@ export const nativeFlock = (...args) => nativeLock ? nativeLock(...args) : Promi
 const flock = nativeFlock;
 import { createHash, randomUUID } from "node:crypto";
 import { decodeNative } from "./native-resource";
+import { isNativeDocumentName, markdownProjectionName } from './document-file-names.mjs';
 export const hash = value => createHash("sha256").update(value).digest("hex");
 const bytes = text => new TextEncoder().encode(text);
 const sameHash = (value, expected) => (value === undefined ? null : hash(value)) === expected;
@@ -23,7 +24,7 @@ const fields = (value, keys) => value && typeof value === "object" && !Array.isA
 
 export class ManagedPair {
   constructor({ root, resourceId, nativeName, markdownName, locations = new Map(), fault = async () => {} }) {
-    if (![nativeName, markdownName].every(n => typeof n === "string" && !n.includes("\0") && /^[^./\\][^/\\]*$/.test(n)) || nativeName === markdownName || !nativeName.endsWith(".mutable.json") || !markdownName.endsWith(".md")) throw Error("Invalid pair locations");
+    if (![nativeName, markdownName].every(n => typeof n === "string" && !n.includes("\0") && /^[^./\\][^/\\]*$/.test(n)) || nativeName === markdownName || !isNativeDocumentName(nativeName) || !markdownName.endsWith(".md") || nativeName.endsWith('.ink') && markdownName !== markdownProjectionName(nativeName)) throw Error("Invalid pair locations");
     this.root = root; this.resourceId = resourceId; this.nativeName = nativeName; this.markdownName = markdownName;
     this.locations = new Map(locations); this.fault = fault;
     this.home = path.join(root, `.mutable-pair-${hash(resourceId)}`);

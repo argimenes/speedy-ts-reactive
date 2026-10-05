@@ -1,3 +1,4 @@
+import {isNativeDocumentName} from '../persistence/document-file-names.mjs';
 import type { Facts } from './facts';
 import type { ExtractionPolicy } from './policy';
 export interface Location {
@@ -57,7 +58,7 @@ export function eligibleRow(scope: KnowledgeScope, id: string): DiscoveryRow {
     const scan = scope.snapshot(), native = scope.native(id), rows = scan.documents.filter(d => d.resourceId === id), row = rows[0];
     if (native.closed || native.admitting || native.pending || !scan.complete || scan.operations.some(o => o.phase === 'pending'))
         throw Error('Knowledge scope, admission or operation evidence unavailable');
-    if (rows.length !== 1 || !['paired', 'unenrolled'].includes(row.state) || !row.location.filename.endsWith('.mutable.json'))
+    if (rows.length !== 1 || !['paired', 'unenrolled'].includes(row.state) || !isNativeDocumentName(row.location.filename))
         throw Error('Knowledge identity unavailable or ambiguous');
     const file = row.location.folder === '.' ? row.location.filename : row.location.folder + '/' + row.location.filename;
     if (scope.root !== '.' && !file.startsWith(scope.root + '/'))

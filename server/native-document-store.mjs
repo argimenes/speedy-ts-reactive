@@ -1,3 +1,4 @@
+import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName,isWorkspaceName} from '../src/persistence/document-file-names.mjs';
 /** Bounded native Document routes. No Workspace writer or global resource catalog. */
 import { RecognizedDocumentStore } from './recognized-document-store.mjs';
 import { verifyDocumentSource } from './recognized-source.mjs';
@@ -26,7 +27,7 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
   return dir;
  };
  const locate = async location => {
-  if(!fields(location,['folder','filename']) || typeof location.filename !== 'string' || !/^[^./\\\0][^/\\\0]*\.(mutable\.json|md)$/.test(location.filename)) fail('Choose a native .mutable.json or Markdown .md filename',400);
+  if(!fields(location,['folder','filename']) || typeof location.filename !== 'string' || !/^[^./\\\0][^/\\\0]*\.(ink|mutable\.json|md)$/.test(location.filename)) fail('Choose a native .ink/.mutable.json or Markdown .md filename',400);
   const dir = await directory(location.folder); return {dir, file:path.join(dir,location.filename)};
  };
  const guardedHome = async home => {
@@ -36,10 +37,10 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
   };await walk(home);
  };
  const store = async (location, resourceId, dependencies=[]) => {
-  const {dir}=await locate(location);if(!location.filename.endsWith('.mutable.json')||typeof resourceId!=='string'||!resourceId.trim())fail('Invalid native binding',400);
+  const {dir}=await locate(location);if(!isNativeDocumentName(location.filename)||typeof resourceId!=='string'||!resourceId.trim())fail('Invalid native binding',400);
   if(!Array.isArray(dependencies)||dependencies.length>256)fail('Too many dependency locations',400);
-  const locations=new Map();for(const item of dependencies){if(typeof item.resourceId!=='string'||locations.has(item.resourceId))fail('Ambiguous dependency location',400);const dep=await locate(item.location);if(!item.location.filename.endsWith('.mutable.json'))fail('Dependencies must be native files',400);await read(dep.file);locations.set(item.resourceId,dep.file);}
-  const pair=new ManagedPair({root:dir,resourceId,nativeName:location.filename,markdownName:location.filename.replace(/\.mutable\.json$/,'.md'),locations,fault});
+  const locations=new Map();for(const item of dependencies){if(typeof item.resourceId!=='string'||locations.has(item.resourceId))fail('Ambiguous dependency location',400);const dep=await locate(item.location);if(!isNativeDocumentName(item.location.filename))fail('Dependencies must be native files',400);await read(dep.file);locations.set(item.resourceId,dep.file);}
+  const pair=new ManagedPair({root:dir,resourceId,nativeName:location.filename,markdownName:markdownProjectionName(location.filename),locations,fault});
   await guardedHome(pair.home);await read(pair.file('native'));await read(pair.file('markdown'));return pair;
  };
  const lock = async (_dir, action) => vault.lock(action);
@@ -48,7 +49,7 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  const route = (method,name,action) => router[method](name,async(req,res)=>{try{const execute=()=>action(req,res);res.json({Success:true,Data:await (writes.has(name)?coordinate(execute):execute())});}catch(e){res.status(e.status??(e.conflict?409:e.code==='ENOENT'?404:500)).json({Success:false,Error:e.message,PublicationStarted:!!req.nativePublicationStarted||!!e.relocationStarted});}});
  installNativeKnowledgeRoutes(route,vault);
  const writable=()=>{if(readOnly)fail('Server Documents are read-only. Paired Save requires a writable managed server store.',403);};
- route('get','/list',async req=>{const dir=await directory(req.query.folder??'.');return {files:(await fs.readdir(dir,{withFileTypes:true})).filter(e=>e.isFile()&&!e.name.startsWith('.')&&/\.(mutable\.json|md)$/.test(e.name)).map(e=>e.name).sort(),readOnly};});
+ route('get','/list',async req=>{const dir=await directory(req.query.folder??'.');return {files:(await fs.readdir(dir,{withFileTypes:true})).filter(e=>e.isFile()&&!e.name.startsWith('.')&&!isDerivedMarkdownName(e.name)&&/\.(ink|mutable\.json|md)$/.test(e.name)).map(e=>e.name).sort(),readOnly};});
  route('get','/vault/default',async()=>({vault:defaultVault}));
  route('post','/vault/establish',async req=>{
   const root=await directory(req.body.vault);
@@ -69,7 +70,9 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  route('post','/recognize',async req=>{
   const location=req.body.location;
   if(!fields(location,['folder','filename'])||typeof location.filename!=='string'||!location.filename||/[/\\\0]/.test(location.filename)||location.filename.startsWith('.'))fail('Choose a regular vault file',400);
-  if(location.filename.endsWith('.mutable.json'))fail('Use native Open for enrolled native files',400);
+  if(isNativeDocumentName(location.filename))fail('Use native Open for enrolled native files',400);
+  if(isWorkspaceName(location.filename))fail('Use the workspace-specific Open handler',400);
+  if(isDerivedMarkdownName(location.filename))fail('Derived .ink.md files are projections; open the .ink Document',400);
   if(location.filename.endsWith('.md'))fail('Use explicit Import Markdown; the source will remain unchanged',400);
   await directory(location.folder);const relative=path.posix.join(location.folder||'.',location.filename);await vault.guardReadPath(relative);
   const bytes=await vault.read(relative);if(!bytes)fail('File not found',404);
@@ -81,8 +84,9 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
   return {text:bytes.toString('utf8'),byteHash:hash(bytes),format:recognized.format,resourceId:recognized.resource.resourceId,readOnly,saveCapability,saveReason};
  });
  route('post','/open',async req=>{
-  if(req.body.location?.filename?.endsWith('.mutable.json'))await vault.guardPath(req.body.location);
+  if(isNativeDocumentName(req.body.location?.filename))await vault.guardPath(req.body.location);
   const {file}=await locate(req.body.location),data=await read(file);if(!data)fail('File not found',404);
+  if(isDerivedMarkdownName(req.body.location.filename))fail('Derived .ink.md files are projections; open the .ink Document',400);
   if(req.body.location.filename.endsWith('.md'))return {kind:'markdown',text:data.toString(),readOnly};
   const native=data.toString(),resource=decodeNative(data),pair=await store(req.body.location,resource.resourceId);
   await fault('open-native-read',{file});

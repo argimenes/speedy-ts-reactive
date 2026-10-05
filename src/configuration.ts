@@ -28,6 +28,10 @@ export type FeatureFlags = Readonly<{
   sqliteKnowledge: boolean;
   /** Canonical vault Entity resolver. Disabling never resumes legacy writes. */
   sqliteEntities: boolean;
+  /** Typed canonical temporal, assertion and observation services. */
+  sqliteSemanticServices: boolean;
+  /** Source-preserving Codex migration into explicitly selected disposable vaults. */
+  legacyCodexImport: boolean;
   /** Initial Document format arrangements and creation menu. */
   documentFormats: boolean;
   threeDObjects: boolean;
@@ -59,6 +63,8 @@ export const featureFlags: FeatureFlags = Object.freeze({
   nativeKnowledgeSaved: false,
   sqliteKnowledge: true,
   sqliteEntities: true,
+  sqliteSemanticServices: true,
+  legacyCodexImport: true,
   documentFormats: true,
   threeDObjects: true,
   anchorRelationships: true,

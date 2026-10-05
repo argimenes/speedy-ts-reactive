@@ -1,3 +1,4 @@
+import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName} from '../persistence/document-file-names.mjs';
 import { DocumentBrowser } from "../demo/document-browser";
 import {registerEntityContext} from './entity-service';
 import {SavedResultActivation} from './saved-result-activation';
@@ -135,7 +136,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       };
       const destinationIn = (v: DocumentVaultLease, destination: VaultLocation) => {
         v.requireDirectory(destination.folder); vaultLeaf(destination.filename);
-        if (!destination.filename.endsWith('.mutable.json')) throw new Error('Choose a .mutable.json filename');
+        if (!isNativeDocumentName(destination.filename)) throw new Error('Choose a .ink or .mutable.json filename');
       };
       const vaultState = createMemo<ReturnType<ApplicationVault['state']>>(function deriveVaultState(previous) {
         revision(); const v = selectedVault(); if (!v || !native) return;
@@ -143,7 +144,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         // Presentation identity only: retain equal rows across equivalent discovery,
         // binding/status and repository publications. Never reuse storage evidence.
         const previousRows = new Map(previous?.documents.map(d => [vaultPath(d.location), d]));
-        return { root: v.root, folders: scan.folders, markdown: scan.markdown.filter(p => !scan.documents.some(d => vaultPath(d.location).replace(/\.mutable\.json$/, '.md') === p)), readOnly: scan.readOnly, complete: scan.complete,
+        return { root: v.root, folders: scan.folders, markdown: scan.markdown.filter(p => !scan.documents.some(d => markdownProjectionName(vaultPath(d.location)) === p)), readOnly: scan.readOnly, complete: scan.complete,
           busy: v.busy(), notice: v.notice(), operations: v.operations(), documentSaves:scan.documentSaves, candidates: [...(scan.other??[]),...scan.markdown],
           diagnostics: scan.diagnostics.map(d => `${d.path ?? d.resourceId ?? ''}: ${d.message}`),
           documents: scan.documents.map(d => {
@@ -190,8 +191,9 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         },
         async importMarkdown(source, destination) {
           const v = lease(); destinationIn(v, destination);
+          if (isDerivedMarkdownName(source.filename)) throw new Error('Open the .ink Document; .ink.md is a derived projection');
           if (!v.snapshot().markdown.includes(vaultPath(source))) throw new Error('Choose a discovered standalone Markdown file');
-          if (vaultPath(destination).replace(/\.mutable\.json$/, '.md') === vaultPath(source)) throw new Error('Choose a new destination to preserve the imported Markdown source');
+          if (markdownProjectionName(vaultPath(destination)) === vaultPath(source)) throw new Error('Choose a new destination to preserve the imported Markdown source');
           await v.mutate(async () => { const id = await native.open(source, true); if (mounted) openDocument(id); await native.save(id, destination); });
         },
         async createDirectory(parent, name) { const v = lease(); v.requireDirectory(parent); vaultLeaf(name); await v.mutate(() => native.createVaultDirectory(v.root, parent === '.' ? name : `${parent}/${name}`)); },

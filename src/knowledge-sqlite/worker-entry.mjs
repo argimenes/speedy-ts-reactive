@@ -28,6 +28,29 @@ if (store) {
         if(['inspect-saved','stage-saved'].includes(operation)&&payload.vaultGuid!==store.vaultGuid)throw Error('Saved indexing vault identity mismatch');
         switch (operation) {
           case 'entities': { const {cancellation,...input}=payload; value=store.entities(input,check);break; }
+          case 'semantics': { const {cancellation,...input}=payload; value=store.semantics(input,check);break; }
+          case 'audit-status': value=store.auditStatus();break;
+          case 'operation-outcome': value=store.operationOutcome(payload.operationId);break;
+          case 'audit-deliver': {const {cancellation,...input}=payload;value=store.deliverAudit(input,check);break;}
+          case 'evidence-source': {
+            if(payload.vaultGuid!==store.vaultGuid)throw Error('Evidence vault identity mismatch');
+            const projection=await projectSaved(payload.bytes,store.vaultGuid,undefined,undefined,check),e=payload.evidence;
+            if(projection.resourceId!==e.resourceGuid)throw Error('Evidence Resource identity changed');
+            if(projection.contentHash!==e.sourceContentHash){value={status:'stale',diagnostics:['Source generation changed']};break;}
+            const source=projection.blocks.find(x=>x.block.guid===e.blockGuid),b=source?.block;
+            if(!b){value={status:'missing',diagnostics:['Source Block missing']};break;}
+            if(e.authoredPropertyId!==null){
+              const properties=[...source.properties,...source.segments].filter(p=>p.authoredId===e.authoredPropertyId);
+              if(!properties.length){value={status:'missing',diagnostics:['Authored source property missing']};break;}
+              if(properties.length!==1){value={status:'unresolved',diagnostics:['Authored source property identity ambiguous']};break;}
+              const p=properties[0];if(p.coordinate!==undefined&&(p.coordinate!==e.coordinate||p.startIndex>e.startIndex||p.endIndex<e.endIndex)){value={status:'unresolved',diagnostics:['Evidence span differs from authored property scope']};break;}
+            }
+            const units=source.sourceUnits;
+            const zeroWidth=e.startIndex===e.endIndex&&e.coordinate==='utf16';
+            if(zeroWidth?e.endIndex>(b.text?.length??0):b.coordinate!==e.coordinate||e.endIndex>units.length)throw Error('Evidence coordinate/span unavailable');
+            const excerpt=zeroWidth?'':units.slice(e.startIndex,e.endIndex).join('');
+            value=e.excerpt!==null&&e.excerpt!==excerpt?{status:'unresolved',diagnostics:['Evidence excerpt differs from source span']}:{status:'resolved',excerpt,diagnostics:[]};break;
+          }
           case 'knowledge-revision': value=store.knowledgeRevision();break;
           case 'knowledge-read': value=await store.readKnowledge(db=>sqlKnowledgeRead(db,payload,check));break;
           case 'finish-reconciliation': value=store.finishReconciliation();break;

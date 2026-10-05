@@ -19,7 +19,8 @@
     "pretest": "node scripts/build-native-knowledge-worker.mjs",
     "pretest:watch": "node scripts/build-native-knowledge-worker.mjs",
     "sqlite": "node scripts/sqlite-foundation.mjs",
-    "test:sqlite": "node --test src/knowledge-sqlite/*.test.mjs",
+    "import:codex": "node scripts/legacy-codex-import.mjs",
+    "test:sqlite": "node --test --test-concurrency=1 src/knowledge-sqlite/*.test.mjs",
     "pretest:sqlite": "node scripts/build-sqlite-foundation.mjs"
   },
   "license": "MIT",

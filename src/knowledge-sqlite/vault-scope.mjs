@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import { isMainThread } from 'node:worker_threads';
 const require=createRequire(import.meta.url);
 const exists=p=>{try{return fs.lstatSync(p);}catch(e){if(e.code==='ENOENT')return;throw e;}};
-export function inspectVaultScope(vault,{maxEntries=10000,maxDepth=128,maxMs=5000}={}) {
+export function inspectVaultScope(vault,{maxEntries=100000,maxDepth=128,maxMs=5000}={}) {
  if(typeof vault!=='string'||!path.isAbsolute(vault))throw Error('Supply an absolute Vault directory');
  const stat=fs.lstatSync(vault);if(!stat.isDirectory()||stat.isSymbolicLink())throw Error('Vault must be a real directory');
  const root=fs.realpathSync(vault),start=Date.now();let count=0;

@@ -104,11 +104,11 @@ it('never attaches a newer file baseline to older bytes returned by Open',async(
 });
 it('recognizes content independently of suffix with no enrollment, source rewrite or generated sidecar',async()=>{
  const f=await fixture({readOnly:true}),legacy=await fs.readFile('data/raven.json','utf8'),g=await f.generation();
- for(const [filename,text,format]of [['raven.json',legacy,'legacy-block-tree'],['raven.unusual',legacy,'legacy-block-tree'],['native.json',g.native,'mutable-document'],['native.ink',g.native,'mutable-document']]){
+ for(const [filename,text,format]of [['raven.json',legacy,'legacy-block-tree'],['raven.unusual',legacy,'legacy-block-tree'],['native.json',g.native,'mutable-document'],['native.unusual',g.native,'mutable-document']]){
   await fs.writeFile(path.join(f.root,filename),text);
   const r=await f.call('native/recognize',{location:{folder:'.',filename}});expect(r.status).toBe(200);expect(r.Data.format).toBe(format);expect(r.Data.saveCapability).toBe('in-place');expect(r.Data.readOnly).toBe(true);expect(r.Data.text).toBe(text);expect(r.Data.byteHash).toBe(hash(text));
  }
- expect((await fs.readdir(f.root)).sort()).toEqual(['native.ink','native.json','raven.json','raven.unusual','workspaces']);
+ expect((await fs.readdir(f.root)).sort()).toEqual(['native.json','native.unusual','raven.json','raven.unusual','workspaces']);
 });
 it('rejects unsupported content, invented identity, native-pair bypass, traversal and symlinks during compatibility Open',async()=>{
  const f=await fixture(),location=filename=>({folder:'.',filename});
@@ -118,4 +118,15 @@ it('rejects unsupported content, invented identity, native-pair bypass, traversa
  expect((await f.call('native/recognize',{location:location('native.mutable.json')})).Error).toContain('native Open');
  expect((await f.call('native/recognize',{location:{folder:'..',filename:'outside.json'}})).status).toBe(400);
  await fs.symlink(path.join(f.root,'bad.json'),path.join(f.root,'link.json'));expect((await f.call('native/recognize',{location:location('link.json')})).Error).toContain('Symlink');
+});
+
+it('publishes .ink with .ink.md, protects original Markdown and excludes projections from Open/import',async()=>{
+ const f=await fixture(),g=await f.generation(),location={folder:'.',filename:'document.ink'};
+ await fs.writeFile(path.join(f.root,'document.md'),'independent Markdown');
+ const saved=await f.call('native/save',{location,generation:g,baseline:absent});expect(saved.Data.result.phase).toBe('saved');
+ expect(await fs.readFile(path.join(f.root,'document.ink.md'),'utf8')).toBe(g.markdown);expect(await fs.readFile(path.join(f.root,'document.md'),'utf8')).toBe('independent Markdown');
+ await f.restart();expect((await f.call('native/open',{location})).Data.native).toBe(g.native);
+ expect((await f.call('native/open',{location:{folder:'.',filename:'document.ink.md'}})).status).toBe(400);
+ expect((await f.call('native/recognize',{location:{folder:'.',filename:'document.ink.md'}})).status).toBe(400);
+ const scan=(await f.call('native/vault/discover',{vault:'.'})).Data;expect(scan.markdown).toEqual(['document.md']);expect(scan.other).not.toContain('document.ink.md');
 });

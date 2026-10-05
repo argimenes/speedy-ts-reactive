@@ -43,12 +43,13 @@ test('canonical audit failure rolls back Entity mutation; bounded outbox never d
  const {default:Database}=await import('better-sqlite3'),{canonicalEntities}=await import('./entities.mjs');
  const dir=await mkdtemp(path.join(os.tmpdir(),'entity-audit-')),vault=path.join(dir,'vault');await mkdir(vault);
  const client=await openSqliteFoundation({vault,initialize:true});await client.close();const db=new Database(path.join(vault,'.mutable/mutable.db'));db.pragma('foreign_keys=ON');
+ const audit=new Database(path.join(vault,'.mutable/audit.db'));const {canonicalLedger}=await import('./canonical-ledger.mjs');const ledger=canonicalLedger(db,()=>audit);
  try{
  const input=mutate('create',{id:uuid(),name:'Atomic'});let checks=0;
- assert.throws(()=>canonicalEntities(db,input,()=>{if(++checks===3)throw Error('interrupted before commit');}),/interrupted/);
+ assert.throws(()=>canonicalEntities(db,input,()=>{if(++checks===3)throw Error('interrupted before commit');},ledger),/interrupted/);
  assert.equal(db.prepare('SELECT count(*) AS n FROM Entity').get().n,0);assert.equal(db.prepare('SELECT count(*) AS n FROM PendingAuditMutation').get().n,0);
  db.prepare('INSERT INTO PendingAuditMutation VALUES(?,?,?)').run(uuid(),'now',JSON.stringify('x'.repeat(16*1024*1024)));
- assert.throws(()=>canonicalEntities(db,input),/outbox full/);assert.equal(db.prepare('SELECT count(*) AS n FROM Entity').get().n,0);
+ assert.throws(()=>canonicalEntities(db,input,undefined,ledger),/outbox full/);assert.equal(db.prepare('SELECT count(*) AS n FROM Entity').get().n,0);
  assert.equal(db.prepare('SELECT count(*) AS n FROM PendingAuditMutation').get().n,1);
- }finally{db.close();await rm(dir,{recursive:true,force:true});}
+ }finally{audit.close();db.close();await rm(dir,{recursive:true,force:true});}
 });

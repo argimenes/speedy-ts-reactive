@@ -1,3 +1,4 @@
+import {isNativeDocumentName} from '../src/persistence/document-file-names.mjs';
 /** Single-resource, read-only adapter. Discovery/storage authority stays in NativeVaultStore. */
 import path from 'node:path';
 import {hash} from '../src/persistence/managed-pair.mjs';
@@ -7,7 +8,7 @@ import {NativeSavedScopes} from './native-saved-scope.mjs';
 const fail=message=>{throw Object.assign(Error(message),{status:409});};
 export async function readSavedFacts(store,request,{signal,jobs=nativeKnowledgeJobs}={}) {
  const {vault,location,resourceId,byteHash}=request??{};
- if(!location||typeof location.folder!=='string'||typeof location.filename!=='string'||!location.filename.endsWith('.mutable.json')||location.filename.includes('/')||typeof resourceId!=='string'||!resourceId||! /^[a-f0-9]{64}$/.test(byteHash))fail('Expected native location, canonical identity and discovery byte evidence');
+ if(!location||typeof location.folder!=='string'||typeof location.filename!=='string'||!isNativeDocumentName(location.filename)||location.filename.includes('/')||typeof resourceId!=='string'||!resourceId||! /^[a-f0-9]{64}$/.test(byteHash))fail('Expected native location, canonical identity and discovery byte evidence');
  if(!request.policy)fail('Explicit Facts extraction policy required');
  const policy=normalizePolicy(request.policy),p=path.posix.join(location.folder,location.filename);
  const same=d=>d.location.folder===location.folder&&d.location.filename===location.filename;

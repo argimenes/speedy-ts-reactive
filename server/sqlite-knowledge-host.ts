@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { Router, json } from 'express';
 import { openSqliteFoundation } from '../src/knowledge-sqlite/client.mjs';
+import { entityCommand } from '../src/knowledge-sqlite/entities.mjs';
 import { NativeVaultStore } from './native-vault-store.mjs';
 import { createSavedIndexer } from './sqlite-saved-indexer';
 import {SqliteSavedScopes} from './sqlite-saved-scope';
@@ -18,7 +19,8 @@ export class SqliteKnowledgeHost {
   private control=Promise.resolve(); private running?:Promise<void>; private timer?:ReturnType<typeof setTimeout>;
   private foregrounds=0; private foregroundTail=Promise.resolve(); private closed=false;
   readonly metrics={sweeps:0,cancellations:0,foregroundWaitMs:0,maxForegroundWaitMs:0};
-  constructor(private options:{root:string;readOnly?:boolean;entitiesEnabled?:boolean;store?:any;open?:typeof openSqliteFoundation;indexer?:typeof createSavedIndexer;debounceMs?:number;leaseMs?:number}) {
+  private semanticLeases=new Set<string>();
+  constructor(private options:{root:string;readOnly?:boolean;entitiesEnabled?:boolean;semanticServicesEnabled?:boolean;store?:any;open?:typeof openSqliteFoundation;indexer?:typeof createSavedIndexer;debounceMs?:number;leaseMs?:number}) {
     this.store=options.store??new NativeVaultStore({root:options.root,readOnly:!!options.readOnly});
   }
   private serialize<T>(action:()=>Promise<T>):Promise<T> {
@@ -42,7 +44,7 @@ export class SqliteKnowledgeHost {
         if(this.entries.size>=8)throw Error('SQLite vault budget exceeded');
         e={root,vault,policy:normalized,policyKey:key,users:0,epoch:0,coverage:unknown('Current saved scope has not been verified'),pending:false,full:false};
         // Failed/missing/corrupt/read-only databases remain unavailable, never repaired by replacement.
-        try{e.client=await (this.options.open??openSqliteFoundation)({vault:root,initialize:!this.options.readOnly,readOnly:!!this.options.readOnly});
+        try{e.client=await (this.options.open??openSqliteFoundation)({vault:root,initialize:!this.options.readOnly,readOnly:!!this.options.readOnly,semanticServicesEnabled:this.options.semanticServicesEnabled!==false});
           e.vaultGuid=(await e.client.inspect()).mutable.vaultGuid;
           e.index=(this.options.indexer??createSavedIndexer)(e.client,{root:this.options.root,vault,store:this.store,policy:normalized,protect:this.protect});
         }catch(error){await e.client?.close().catch(()=>{});e.client=undefined;throw error;}
@@ -127,7 +129,7 @@ export class SqliteKnowledgeHost {
     await verifyDocumentSource(this.store,e.vault,source,signal);
     if(await new RecognizedDocumentStore(this.store).pending(e.vault,source.resourceId))throw Error('Document Save recovery is pending');
     signal?.throwIfAborted();
-    const mutation=['create','rename','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(body.request?.op);
+    const mutation=['create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(body.request?.op);
     if(mutation&&this.options.readOnly)throw Error('Canonical Entity storage is read-only');
     try{dispatched=true;return await e.client.entities(body.request,signal);}
     finally {if(mutation)this.enqueue(e,false);}
@@ -137,6 +139,48 @@ export class SqliteKnowledgeHost {
     const e=this.entry(token);if(this.options.readOnly)throw Error('SQLite reconciliation is read-only');
     if(!e.client)throw Error('SQLite unavailable; close and reopen the vault to retry');
     this.enqueue(e,full);await this.flush();return this.status(token);
+  }
+  /** Selected-vault semantic authoring capability, independent of a Document UI source. */
+  async openSemantics(vault:string,policy=normalizePolicy()){
+    if(this.options.semanticServicesEnabled===false)throw Error('Semantic services are disabled');
+    const opened=await this.acquireContext(vault,policy);this.semanticLeases.add(opened.lease);return opened;
+  }
+  private semanticEntry(body:any){
+    if(this.options.semanticServicesEnabled===false)throw Error('Semantic services are disabled');
+    if(!this.semanticLeases.has(body.lease))throw Error('Semantic vault capability required');
+    const e=this.entry(body.lease);if(!e.client||body.vaultGuid!==e.vaultGuid)throw Error('Semantic vault identity mismatch');return e;
+  }
+  async semantics(body:any,signal?:AbortSignal){
+    const e=this.semanticEntry(body),request=body.request;
+    if(request?.op==='resolve-evidence')return this.resolveEvidence(body,signal);
+    const mutation=['create','add','update','remove','batch','rename','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(request?.op);
+    if(mutation&&this.options.readOnly)throw Error('Canonical semantic storage is read-only');
+    signal?.throwIfAborted();
+    try{
+      const result=request?.recordType==='Entity'||request?.recordType==='Relationship'?
+        await e.client.entities(entityCommand(request),signal):await e.client.semantics(request,signal);
+      return {...result,session:this.session,vaultGuid:e.vaultGuid};
+    }finally{if(mutation)this.enqueue(e,false);}
+  }
+  async semanticAudit(body:any,signal?:AbortSignal){
+    const e=this.semanticEntry(body);signal?.throwIfAborted();
+    if(body.op==='status')return e.client.auditStatus();
+    if(body.op==='outcome')return e.client.operationOutcome(body.operationId);
+    if(body.op!=='deliver')throw Error('Unsupported semantic audit operation');
+    if(this.options.readOnly)throw Error('Audit delivery is read-only');
+    try{return await e.client.deliverAudit(body.options??{},signal);}finally{this.enqueue(e,false);}
+  }
+  private async resolveEvidence(body:any,signal?:AbortSignal){
+    const e=this.semanticEntry(body),result=await e.client.semantics({op:'get',recordType:'ClaimEvidence',guid:body.request.guid},signal),record=result.record;
+    if(!record)return {status:'missing',diagnostics:['Claim evidence missing'],revision:result.revision};
+    if(!body.source?.location||typeof body.source.byteHash!=='string')return {status:'not-verified',record,diagnostics:['Current Document source proof required'],revision:result.revision};
+    try{
+      const verified=await verifyDocumentSource(this.store,e.vault,{...body.source,resourceId:record.resourceGuid},signal);
+      const resolution=await e.client.evidenceSource({vaultGuid:e.vaultGuid,bytes:verified.bytes,evidence:record},signal);
+      const now=await e.client.knowledgeRevision();if(now!==result.revision)throw Error('Evidence canonical snapshot changed');
+      await verifyDocumentSource(this.store,e.vault,{...body.source,resourceId:record.resourceGuid},signal);
+      return {...resolution,record,revision:result.revision};
+    }catch(error){signal?.throwIfAborted();return {status:/ENOENT/.test(String(error))?'missing':'unresolved',record,diagnostics:[String(error)],revision:result.revision};}
   }
   /** Foreground routes retain all save/admission/locking authority. A notification is only a wakeup. */
   async foreground<T>(action:()=>Promise<T>):Promise<T>{
@@ -148,6 +192,7 @@ export class SqliteKnowledgeHost {
     finally{done!();this.foregrounds--;for(const e of this.entries.values())this.enqueue(e,false);this.schedule();}
   }
   async release(token:string){
+    this.semanticLeases.delete(token);
     return this.serialize(async()=>{const l=this.leases.get(token);if(!l)return {released:true};clearTimeout(l.timer);this.leases.delete(token);const e=l.entry;
       if(--e.users===0){e.pending=false;if(this.active===e){this.controller?.abort(Error('Vault lease closed'));await this.running;}this.entries.delete(e.root);await e.client?.close();}
       return {released:true};});
@@ -157,6 +202,16 @@ export class SqliteKnowledgeHost {
   router(){
     const router=Router();router.use(json({limit:'32kb'}));
     this.savedScopes??=new SqliteSavedScopes(this);router.use('/facts',this.savedScopes.router());
+    for(const [name,action]of Object.entries({
+      'semantic-open':(b:any,_s?:AbortSignal)=>this.openSemantics(b.vault,b.policy),
+      semantics:(b:any,s?:AbortSignal)=>this.semantics(b,s),
+      'semantic-audit':(b:any,s?:AbortSignal)=>this.semanticAudit(b,s)
+    }))router.post('/'+name,async(req,res)=>{
+      const c=new AbortController(),cancel=()=>{if(!res.writableEnded)c.abort(Error('Semantic request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
+      try{const data=await action(req.body??{},c.signal);if(!c.signal.aborted)res.json({Success:true,Data:data});}
+      catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),outcome:'unknown-after-dispatch'});}
+      finally{req.off('aborted',cancel);res.off('close',cancel);}
+    });
     router.post('/entities',async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
       try{const data=await this.entities(req.body??{},c.signal);if(!c.signal.aborted)res.json({Success:true,Data:data});}
       catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),...((error as any)?.entityCreationOutcome==='not-created'?{entityCreationOutcome:'not-created'}:{})});}

@@ -14,7 +14,8 @@ export function annotationCollector(facts:Facts,signal?:AbortSignal,policy?:Obse
    if(a.isDeleted||a.clientOnly)return;
    const documentIssue=!a.type||a.type==='codex/block-reference';
    if(raw.annotationId&&(!owner||!owner.root)){warn('Foreign/unresolved linked definition',documentIssue);return;}
-   if(!standoff||typeof raw.id!=='string'||!raw.id||typeof a.type!=='string'||!a.type||typeof a.start!=='number'||typeof a.end!=='number'||!Number.isInteger(a.start)||!Number.isInteger(a.end)||a.start<0||a.end<a.start||a.end>=length){warn('Unsupported annotation identity/range',documentIssue);return;}
+   const zeroWidth=raw.isZeroWidth===true;
+   if(!standoff||typeof raw.id!=='string'||!raw.id||typeof a.type!=='string'||!a.type||typeof a.start!=='number'||typeof a.end!=='number'||!Number.isInteger(a.start)||!Number.isInteger(a.end)||a.start<0||(zeroWidth?a.end!==a.start-1||a.start>length:a.end<a.start||a.end>=length)){warn('Unsupported annotation identity/range',documentIssue);return;}
    const segmentId=JSON.stringify([resourceId,blockId,raw.id]);
    const logicalId=JSON.stringify([resourceId,raw.annotationId?'linked':blockId,raw.annotationId??raw.id]);
    if(localIds.has(segmentId)){bad.add(logicalId);groups.delete(logicalId);warn('Duplicate segment identity',documentIssue);return;}localIds.add(segmentId);

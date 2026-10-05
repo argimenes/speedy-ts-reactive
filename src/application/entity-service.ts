@@ -5,6 +5,7 @@ import type {EntityService,EntityCandidate,EntityEvidence,CanonicalEntity} from 
 import {nativeDocumentSession} from '../persistence/native-session';
 import {WorkSlice} from '../knowledge/scheduler';
 import {observeLive} from '../knowledge/live-observer';
+import {encodeAuthoredValue,decodeAuthoredValue} from '../history/preplan-spike/wire';
 type Context={accepts(key:string):boolean;vault():DocumentVaultLease;facts?:FactsQueryProvider};
 const contexts=new WeakMap<ReactiveEditor,Set<Context>>();
 export function registerEntityContext(editor:ReactiveEditor,context:Context){let set=contexts.get(editor);if(!set)contexts.set(editor,set=new Set());set.add(context);return()=>set!.delete(context);}
@@ -37,7 +38,11 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
  const call=async(input:any,signal?:AbortSignal,onDispatch?:()=>void)=>{
   const source=check();signal?.throwIfAborted();
   if(!lease){opening??=request('open',{vault:vault!.root,policy:policy()}).then(async result=>{if(!alive){await request('release',{lease:result.lease});throw Error('Entity resolver closed');}lease=result.lease;}).finally(()=>opening=undefined);await opening;}
-  check();signal?.throwIfAborted();onDispatch?.();return request('entities',{lease,source,request:input},signal);
+  check();signal?.throwIfAborted();onDispatch?.();
+  const wireInput=Object.hasOwn(input,'attributes')?{...input,attributes:encodeAuthoredValue(input.attributes)}:input;
+  const result=await request('entities',{lease,source,request:wireInput},signal);
+  for(const entity of [result.entity,...(result.entities??[])])if(entity&&entity.attributes!==undefined)entity.attributes=decodeAuthoredValue(entity.attributes);
+  return result;
  };
  return {
   async get(id,signal){const result=await call({op:'get',id},signal);check();return result.entity;},
@@ -63,6 +68,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   },
   async create(input,signal){let dispatched=false;try{return (await call({op:'create',...input},signal,()=>{dispatched=true;})).entity;}catch(error){if(!dispatched)throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});throw error;}},
   async rename(input){return (await call({op:'rename',...input})).entity;},
+  async update(input,signal){return (await call({op:'update',...input},signal)).entity;},
   async alias(input){return (await call(input)).entity;},
   async search(query,signal){
    check();const revision=editor.repository.state.revision,signature=vault!.signature();

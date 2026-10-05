@@ -14,7 +14,8 @@ export function readProjection(db,id,check=()=>{}){
   });
   return {resource:withoutId(resource),tags:db.prepare('SELECT tag FROM ResourceTag WHERE resourceGuid=? ORDER BY tag').all(id).map(r=>r.tag),blocks};
 }
-const ordered=b=>({...b,...Object.fromEntries(Object.keys(children).map(k=>[k,[...b[k]].sort((a,b)=>k==='runs'?a.ordinal-b.ordinal:a.guid.localeCompare(b.guid))]))});
+// Compare persisted projection fields only; transient source-proof units are not SQL state.
+const ordered=b=>({block:b.block,...Object.fromEntries(Object.keys(children).map(k=>[k,[...b[k]].sort((a,b)=>k==='runs'?a.ordinal-b.ordinal:a.guid.localeCompare(b.guid))]))});
 
 /** Ephemeral worker-local SQL preparation. No publication or filesystem authority. */
 export const sqlRevision=db=>[db.pragma('data_version',{simple:true}),db.prepare('SELECT total_changes() AS n').get().n].join(':');

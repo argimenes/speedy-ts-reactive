@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { migrate, validateSchema, inspectDatabase, verifyDatabase, rebuildFts, clearDerived, hash } from './schema.mjs';
 import { regularFile, directory, prepareHome, writerLock } from './paths.mjs';
 import { canonicalEntities, entityMutation } from './entities.mjs';
+import { canonicalLedger } from './canonical-ledger.mjs';
+import { canonicalSemantics, semanticMutation } from './semantics.mjs';
 import * as indexing from './reconcile.mjs';
 function checkFiles(home, kind = 'mutable') {
   for (const suffix of ['', '-wal', '-shm', '-journal']) regularFile(path.join(home, `${kind}.db${suffix}`), true);
@@ -30,7 +32,7 @@ export function openFoundation(options = {}, context = {}) {
  if(!isMainThread){if(!context.scopeValidated)throw Error('Vault scope was not verified by the host');return openValidatedFoundation(options,context);}
  const release=lockVaultEstablishment();try{inspectVaultScope(options.vault);return openValidatedFoundation(options,context);}finally{release();}
 }
-function openValidatedFoundation({ vault, readOnly = false, initialize: create = false } = {}, { hostLeaseHeld = false } = {}) {
+function openValidatedFoundation({ vault, readOnly = false, initialize: create = false, semanticServicesEnabled = true } = {}, { hostLeaseHeld = false } = {}) {
   const { root, home } = prepareHome({ vault, readOnly, initialize: create }); checkFiles(home);
   let unlock, mutable, audit, closed = false, auditError;
   try {
@@ -59,9 +61,18 @@ function openValidatedFoundation({ vault, readOnly = false, initialize: create =
       if (closed) throw Error('SQLite foundation is closed'); directory(home); regularFile(currentFile); checkFiles(home);
       if (audit) try { regularFile(path.join(home, 'audit.db')); checkFiles(home, 'audit'); } catch (e) { audit.close(); audit = undefined; auditError = e.message; }
     };
+    const ledger = canonicalLedger(mutable, () => audit);
+    const semanticActive = () => {
+      active(); if (!semanticServicesEnabled) throw Error('Semantic services are disabled');
+      if (!mutable.prepare("SELECT 1 FROM sqlite_schema WHERE name='Claim'").get()) throw Error('Semantic schema upgrade required');
+    };
     return {
       vaultGuid: identity.vaultGuid,
-      entities(request, check) { active(); if(entityMutation(request.op))writable(); return canonicalEntities(mutable,request,check); },
+      entities(request, check) { active(); if(entityMutation(request.op))writable(); return canonicalEntities(mutable,request,check,ledger); },
+      semantics(request, check) { semanticActive(); if(semanticMutation(request))writable(); return canonicalSemantics(mutable,ledger,request,check); },
+      auditStatus() { active(); return ledger.status(); },
+      operationOutcome(id) { active(); return ledger.outcome(id); },
+      deliverAudit(options, check) { active(); writable(); return ledger.deliver(options,check); },
       knowledgeRevision() { active(); return indexing.sqlRevision(mutable); },
       readKnowledge(reader) { active(); return reader(mutable); },
       inventory() { active(); return indexing.inventory(mutable); },

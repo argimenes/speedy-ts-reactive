@@ -95,6 +95,7 @@ export function exportMarkdown(resource: DeepReadonly<ResourceSnapshot>, targets
     const properties = Array.isArray(c.payload.standoffProperties) ? c.payload.standoffProperties.filter(p => !p.isDeleted) : [];
     const supported: Array<{ start: number; end: number; open: string; close: string; body?: string }> = [];
     for (const raw of properties) {
+      if(raw.isZeroWidth===true){warn(c.payload.id,'annotation-omitted','Zero-width annotation retained in native document');continue;}
       const local = c.payload.linkedAnnotations as any;
       const root = resource.placements[resource.rootPlacementKey];
       const registry = root.target.kind === "local" ? resource.contents[root.target.contentKey].payload.linkedAnnotations as any : local;

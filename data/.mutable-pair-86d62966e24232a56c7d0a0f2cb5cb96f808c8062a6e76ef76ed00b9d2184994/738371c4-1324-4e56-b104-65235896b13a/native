@@ -1,0 +1,74 @@
+{
+  "definitionOwnerBlockIds": [],
+  "document": {
+    "blocks": [
+      {
+        "id": "0d8fca01-ccad-441c-97d3-095e40ec8c39",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "Ideas — write here."
+          }
+        ],
+        "properties": {},
+        "type": "standoff-editor-block"
+      },
+      {
+        "id": "2f09bf96-5326-43d8-840e-86d04d690f2f",
+        "inline": [
+          {
+            "kind": "text",
+            "text": "An ordinary Codex Document, shared across its views."
+          }
+        ],
+        "properties": {},
+        "type": "standoff-editor-block"
+      },
+      {
+        "children": [
+          {
+            "kind": "owned",
+            "placementId": "legacy:9ae72632-1381-4689-9b83-41b007b93d4c:placement:19900894-d800-4af8-9ea7-2c703ea08abd",
+            "target": {
+              "blockId": "0d8fca01-ccad-441c-97d3-095e40ec8c39",
+              "kind": "local"
+            }
+          },
+          {
+            "kind": "owned",
+            "placementId": "legacy:9ae72632-1381-4689-9b83-41b007b93d4c:placement:027e6a38-bfe1-4c63-af94-d2dc1ee15769",
+            "target": {
+              "blockId": "2f09bf96-5326-43d8-840e-86d04d690f2f",
+              "kind": "local"
+            }
+          }
+        ],
+        "id": "9ae72632-1381-4689-9b83-41b007b93d4c",
+        "properties": {
+          "metadata": {
+            "documentId": "9ae72632-1381-4689-9b83-41b007b93d4c",
+            "filename": "9ae72632-1381-4689-9b83-41b007b93d4c.json",
+            "folder": ".",
+            "title": "Ideas"
+          }
+        },
+        "type": "document-block"
+      }
+    ],
+    "format": "codex-portable-resource-gate",
+    "resourceId": "9ae72632-1381-4689-9b83-41b007b93d4c",
+    "root": {
+      "kind": "owned",
+      "placementId": "legacy:9ae72632-1381-4689-9b83-41b007b93d4c:placement:0989a703-2f27-494e-851e-893b59cdaa68",
+      "target": {
+        "blockId": "9ae72632-1381-4689-9b83-41b007b93d4c",
+        "kind": "local"
+      }
+    },
+    "version": 1
+  },
+  "format": "mutable-document",
+  "resourceId": "9ae72632-1381-4689-9b83-41b007b93d4c",
+  "valueEncoding": "codex-authored-value-v1",
+  "version": 1
+}

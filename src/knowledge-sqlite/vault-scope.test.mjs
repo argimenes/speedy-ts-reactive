@@ -36,3 +36,11 @@ test('cross-process concurrent parent/child establishment creates at most one pe
  const results=await Promise.all([run(root),run(child)]);assert.equal(results.filter(r=>r.code===0).length,1,JSON.stringify(results));
  assert.equal([root,child].filter(r=>fs.existsSync(path.join(r,'.mutable/mutable.db'))).length,1);
 });
+
+test('ordinary paired-save archive volume can exceed 10,000 entries without hiding descendants',t=>{
+ const root=fixture(t),archive=path.join(root,'.mutable-pair-volume');fs.mkdirSync(archive);
+ for(let i=0;i<10001;i++)fs.writeFileSync(path.join(archive,String(i)), '');
+ assert.ok(inspectVaultScope(root).entries>10000);
+ assert.throws(()=>inspectVaultScope(root,{maxEntries:10000}),/scan budget/);
+ fs.mkdirSync(path.join(archive,'.mutable'));assert.throws(()=>inspectVaultScope(root),/descendant/);
+});

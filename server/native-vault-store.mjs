@@ -1,3 +1,4 @@
+import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName} from '../src/persistence/document-file-names.mjs';
 import { RecognizedDocumentStore } from './recognized-document-store.mjs';
 /** C1a: tree-derived discovery and journalled, same-vault storage relocation.
  * No authored hierarchy, editor, save generation or global resource catalog. */
@@ -17,7 +18,7 @@ const inside=(base,p)=>base==='.'||p===base||p.startsWith(base+'/');
 const relative=p=>{if(typeof p!=='string'||!p||path.isAbsolute(p)||/[\\\0]/.test(p)||p.split('/').some(c=>!c||c==='..'||c==='.'&&p!=='.'))fail('Invalid managed relative path',400);return p;};
 const join=(a,b)=>!a||a==='.'?b:a+'/'+b;
 const location=p=>({folder:path.posix.dirname(p),filename:path.posix.basename(p)});
-const filename=l=>{if(!l||typeof l.folder!=='string'||typeof l.filename!=='string'||l.filename.includes('/')||!l.filename.endsWith('.mutable.json'))fail('Invalid native location',400);return relative(join(l.folder,l.filename));};
+const filename=l=>{if(!l||typeof l.folder!=='string'||typeof l.filename!=='string'||l.filename.includes('/')||!isNativeDocumentName(l.filename))fail('Invalid native location',400);return relative(join(l.folder,l.filename));};
 const operationId=id=>{if(typeof id!=='string'||! /^[a-zA-Z0-9-]{1,100}$/.test(id))fail('Invalid relocation operation ID',400);return id;};
 const absent=async p=>{try{await fs.lstat(p);return false;}catch(e){if(e.code==='ENOENT')return true;throw e;}};
 export class NativeVaultStore {
@@ -55,19 +56,37 @@ export class NativeVaultStore {
   * metadata and directory entries so a new duplicate or operation expires it.
   * ctime/inode evidence prevents mtime restoration from blessing changed bytes. */
  async readScopeFence(vault,signal) {
-  relative(vault);const rows=[];let count=0;
-  const walk=async p=>{
-   signal?.throwIfAborted();if(++count>100000)fail('Knowledge scope evidence budget exceeded');
-   const s=await fs.lstat(await this.resolve(p),{bigint:true});
-   if(!s.isDirectory()&&!s.isFile())fail('Unsupported Knowledge scope entry');
-   rows.push([p,String(s.dev),String(s.ino),String(s.size),String(s.mtimeNs),String(s.ctimeNs)]);
-   if(s.isDirectory())for(const name of (await fs.readdir(await this.resolve(p))).sort())if(name!=='.mutable')await walk(join(p,name));
+  relative(vault);let count=0,active=0;const waiting=[];
+  // Check each parent when entering its subtree and again before returning it.
+  // This retains all file/directory evidence without rewalking the same parents
+  // for every sibling. Replacement/rename/symlink races fail closed. Independent
+  // reads overlap, and child results retain the exact sorted sequential fence.
+  const bounded=async action=>{
+   if(active<16)active++;else await new Promise(resolve=>waiting.push(resolve));
+   try{signal?.throwIfAborted();return await action();}
+   finally{const next=waiting.shift();if(next)next();else active--;}
   };
-  await walk(vault);
+  const initialRoot=await this.resolve(vault);
+  const ancestors=[];if(vault!=='.'){let prefix='.';for(const piece of vault.split('/')){await this.resolve(prefix);ancestors.push({prefix,stamp:await this.stamp(prefix,'directory')});prefix=join(prefix,piece);}}
+  const evidence=(p,s)=>[p,String(s.dev),String(s.ino),String(s.size),String(s.mtimeNs),String(s.ctimeNs)];
+  const walk=async(p,full)=>{
+   signal?.throwIfAborted();if(++count>100000)fail('Knowledge scope evidence budget exceeded');
+   const {s,names}=await bounded(async()=>{
+    const s=await fs.lstat(full,{bigint:true});
+    if(s.isSymbolicLink()||!s.isDirectory()&&!s.isFile())fail('Symlink or unsupported Knowledge scope entry');
+    return {s,names:s.isDirectory()?(await fs.readdir(full)).sort().filter(name=>name!=='.mutable'):[]};
+   });
+   const children=await Promise.allSettled(names.map(name=>walk(join(p,name),path.join(full,name))));
+   const failed=children.find(result=>result.status==='rejected');if(failed)throw failed.reason;
+   if(s.isDirectory()){const after=await bounded(async()=>fs.lstat(full,{bigint:true}));if(!after.isDirectory()||JSON.stringify(evidence(p,after))!==JSON.stringify(evidence(p,s)))fail('Knowledge scope directory changed during traversal');}
+   return [evidence(p,s),...children.flatMap(result=>result.value)];
+  };
+  const rows=await walk(vault,initialRoot);
+  for(const parent of ancestors)if(await this.stamp(parent.prefix,'directory')!==parent.stamp)fail('Knowledge scope parent changed during traversal');
   // Relocation authority is store-wide, including moves entering this vault.
   if(vault!=='.'){
    rows.push(['managed-root',await this.stamp('.','directory')]);
-   if(!await absent(path.join(this.root,'.mutable-relocations')))await walk('.mutable-relocations');
+   if(!await absent(path.join(this.root,'.mutable-relocations')))rows.push(...await walk('.mutable-relocations',await this.resolve('.mutable-relocations')));
   }
   signal?.throwIfAborted();return hash(JSON.stringify(rows));
  }
@@ -116,9 +135,9 @@ export class NativeVaultStore {
  }}
  async guardReadPath(p){relative(p);for(const {intent,done}of await this.records())if(!done&&(inside(intent.source,p)||inside(intent.destination,p)||intent.moves.some(m=>m.from===p||m.to===p)))fail(`Relocation pending: ${intent.operationId}`);}
  async baseline(p,id) {
-  const loc=location(p), pair=new ManagedPair({root:await this.resolve(loc.folder),resourceId:id,nativeName:loc.filename,markdownName:loc.filename.replace(/\.mutable\.json$/,'.md')});
+  const loc=location(p), pair=new ManagedPair({root:await this.resolve(loc.folder),resourceId:id,nativeName:loc.filename,markdownName:markdownProjectionName(loc.filename)});
   const home=join(loc.folder,`.mutable-pair-${hash(id)}`);await this.resolve(home,{missing:true});
-  const receipt=await pair.receipt(),pending=await pair.pending(),native=await this.read(p),md=await this.read(p.replace(/\.mutable\.json$/,'.md'),true);
+  const receipt=await pair.receipt(),pending=await pair.pending(),native=await this.read(p),md=await this.read(markdownProjectionName(p),true);
   const revision=await this.guard(id,loc);
   return {pair,home,receipt,pending,baseline:{nativeHash:hash(native),markdownHash:md?hash(md):null,generation:receipt?.generation??null,...(revision?{locationRevision:revision}:{})}};
  }
@@ -130,7 +149,8 @@ export class NativeVaultStore {
   const walk=async dir=>{signal?.throwIfAborted();let entries;try{directories.push({path:dir,stamp:await this.stamp(dir,'directory')});entries=await fs.readdir(await this.resolve(dir),{withFileTypes:true});}catch(e){diagnostics.push({path:dir,message:e.message});return;}
    for(const e of entries.sort((a,b)=>a.name.localeCompare(b.name))){signal?.throwIfAborted();if(++count>LIMIT){diagnostics.push({path:dir,message:'Vault scan limit reached'});return;}if(e.name==='.mutable'){if(dir!==vault)diagnostics.push({path:join(dir,e.name),message:'Invalid Vault topology: overlapping descendant Mutable Vault'});continue;}if(e.name.startsWith('.mutable-'))continue;
     const p=join(dir,e.name);if(e.isSymbolicLink()){diagnostics.push({path:p,message:'Symlink excluded'});continue;}
-    if(e.isDirectory()){folders.push(p);await walk(p);}else if(e.isFile()&&e.name.endsWith('.mutable.json')){
+    if(e.isFile()&&isDerivedMarkdownName(e.name))continue;
+    if(e.isDirectory()){folders.push(p);await walk(p);}else if(e.isFile()&&isNativeDocumentName(e.name)){
      try{const stamp=await this.stamp(p),bytes=await this.read(p),byteHash=hash(bytes),result=await this.inspect(bytes,signal);signal?.throwIfAborted();
       if(typeof result?.inspection?.resourceId!=='string'||!result.inspection.resourceId||!result.inspection.rootBlockId||typeof result.inspection.rootBlockId!=='string'||typeof result.inspection.title!=='string'||result.byteHash!==byteHash)throw Error('Incomplete or stale native inspection');
       const resource=result.inspection;let info;try{info=await this.baseline(p,resource.resourceId);}catch(e){diagnostics.push({path:p,message:e.message});}
@@ -140,7 +160,7 @@ export class NativeVaultStore {
       documents.push({location:location(p),resourceId:resource.resourceId,title:resource.title,state:info?.pending?'pending':!info?.receipt?'unenrolled':info.receipt.nativeHash===info.baseline.nativeHash&&info.receipt.markdownHash===info.baseline.markdownHash?'paired':'changed',baseline:info?.baseline});
       inspected.push({path:p,stamp,byteHash,info,row:documents.at(-1)});
      }catch(e){uninspected.push(p);diagnostics.push({path:p,message:e.message});}
-    }else if(e.isFile()&&e.name.endsWith('.md'))markdown.push(p);else other.push(p);
+    }else if(e.isFile()&&e.name.endsWith('.md')&&!isDerivedMarkdownName(e.name))markdown.push(p);else other.push(p);
    }
   };await walk(vault);signal?.throwIfAborted();
   // A worker yield may let an already inspected file or enumerated directory
@@ -151,7 +171,7 @@ export class NativeVaultStore {
    if(item.info&&!equal({baseline:item.info.baseline,receipt:item.info.receipt,pending:item.info.pending},{baseline:latest.baseline,receipt:latest.receipt,pending:latest.pending}))throw Error('Pair evidence changed before discovery publication');
   }catch(e){uninspected.push(item.path);diagnostics.push({path:item.path,message:e.message});documents.splice(documents.indexOf(item.row),1);}}
   const ids=new Map();for(const d of documents){const a=ids.get(d.resourceId)??[];a.push(d);ids.set(d.resourceId,a);}for(const [id,rows]of ids)if(rows.length>1){rows.forEach(d=>d.state='ambiguous');diagnostics.push({resourceId:id,message:'Duplicate canonical identity'});}
-  const paired=new Set(documents.filter(d=>d.state==='paired').map(d=>filename(d.location).replace(/\.mutable\.json$/,'.md')));
+  const paired=new Set(documents.filter(d=>d.state==='paired').map(d=>markdownProjectionName(filename(d.location))));
   let operations=[];try{operations=(await this.records()).filter(r=>inside(vault,r.intent.source)||inside(vault,r.intent.destination)||inside(r.intent.source,vault)||inside(r.intent.destination,vault)).map(r=>({operationId:r.intent.operationId,phase:r.done?'relocated':'pending'}));}catch(e){diagnostics.push({path:'.mutable-relocations',message:e.message});}
   for(const dir of directories){signal?.throwIfAborted();try{if(await this.stamp(dir.path,'directory')!==dir.stamp)throw Error('Directory changed during discovery');}catch(e){diagnostics.push({path:dir.path,message:e.message});}}
   let documentSaves=[];try{documentSaves=await new RecognizedDocumentStore(this).operations(vault);}catch(e){diagnostics.push({message:'Document recovery evidence unavailable: '+e.message});}
@@ -179,7 +199,7 @@ export class NativeVaultStore {
  }
  async mkdir(vault,directory){this.writable();return this.lock(async()=>{relative(vault);relative(directory);if(!inside(vault,directory)||directory===vault)fail('Directory outside selected vault',400);await this.resolve(vault);await this.vacant(directory);for(const r of await this.records())if(!r.done)fail('Recover pending relocation first');await fs.mkdir(await this.resolve(directory,{missing:true}));await this.sync(path.posix.dirname(directory));return {directory};});}
  async checkResourceBytes(resources,moved=false) {
-  for(const r of resources){const loc=moved?r.to:r.from,native=await this.read(filename(loc)),markdown=await this.read(filename(loc).replace(/\.mutable\.json$/,'.md'));
+  for(const r of resources){const loc=moved?r.to:r.from,native=await this.read(filename(loc)),markdown=await this.read(markdownProjectionName(filename(loc)));
    if(hash(native)!==r.baseline.nativeHash||hash(markdown)!==r.baseline.markdownHash||decodeNative(native).resourceId!==r.resourceId)fail('Resource bytes changed from the reviewed relocation baseline');
   }
  }
@@ -192,7 +212,7 @@ export class NativeVaultStore {
    locations.set(item.resourceId,await this.resolve(p));
   }
   for(const r of resources){const loc=moved?r.to:r.from;
-   const pair=new ManagedPair({root:await this.resolve(loc.folder),resourceId:r.resourceId,nativeName:loc.filename,markdownName:loc.filename.replace(/\.mutable\.json$/,'.md'),locations});
+   const pair=new ManagedPair({root:await this.resolve(loc.folder),resourceId:r.resourceId,nativeName:loc.filename,markdownName:markdownProjectionName(loc.filename),locations});
    await pair.dependencies((await this.read(filename(loc))).toString());
   }
  }
@@ -205,7 +225,7 @@ export class NativeVaultStore {
   if(prior.some(r=>!r.done))fail('Recover pending relocation first');
   await this.vacant(destination,source);
   const scan=await this.discover(vault);if(!scan.complete)fail('Vault discovery incomplete or ambiguous; resolve diagnostics first');
-  const st=await fs.lstat(await this.resolve(source));if(kind==='directory'?!st.isDirectory():!st.isFile()||!source.endsWith('.mutable.json'))fail('Unexpected relocation source type',400);
+  const st=await fs.lstat(await this.resolve(source));if(kind==='directory'?!st.isDirectory():!st.isFile()||!isNativeDocumentName(source))fail('Unexpected relocation source type',400);
   const selected=scan.documents.filter(d=>kind==='pair'?filename(d.location)===source:inside(source,filename(d.location)));
   if(kind==='pair'&&selected.length!==1)fail('Canonical pair source missing or ambiguous');
   if(!Array.isArray(baselines)||baselines.length!==selected.length)fail('Exact caller baselines required',400);
@@ -221,7 +241,7 @@ export class NativeVaultStore {
   for(const item of dependencies){filename(item.location);if(located.has(item.resourceId)&&!equal(located.get(item.resourceId).location,item.location))fail('Ambiguous dependency location');located.set(item.resourceId,item);}
   const dependencyLocations=[...located.values()];await this.validateDependencies(resources,dependencyLocations);
   const moves=[];if(kind==='directory')moves.push({from:source,to:destination,signature:await this.signature(source)});
-  else {const r=resources[0],md=source.replace(/\.mutable\.json$/,'.md'),mdTo=destination.replace(/\.mutable\.json$/,'.md');await this.vacant(mdTo);
+  else {const r=resources[0],md=markdownProjectionName(source),mdTo=markdownProjectionName(destination);await this.vacant(mdTo);
    moves.push({from:source,to:destination,signature:await this.signature(source)},{from:md,to:mdTo,signature:await this.signature(md)});
    if(r.homeFrom!==r.homeTo){if(!await absent(await this.resolve(r.homeTo,{missing:true})))fail('Destination pair archive exists');moves.push({from:r.homeFrom,to:r.homeTo,signature:await this.signature(r.homeFrom)});}
   }
@@ -244,7 +264,7 @@ export class NativeVaultStore {
     if(await this.signature(m.to)!==m.signature)fail('External changes during relocation; actual files preserved');
     await this.fault(`relocation-after-${n}`,{intent:i,move:m});
    }
-   for(let n=0;n<i.resources.length;n++){const r=i.resources[n],p=r.homeTo+'/receipt.json',original=JSON.stringify(r.receipt),newReceipt=JSON.stringify({...r.receipt,nativeName:r.to.filename,markdownName:r.to.filename.replace(/\.mutable\.json$/,'.md')}),backup=prefix+`/receipt-${n}.previous`;
+   for(let n=0;n<i.resources.length;n++){const r=i.resources[n],p=r.homeTo+'/receipt.json',original=JSON.stringify(r.receipt),newReceipt=JSON.stringify({...r.receipt,nativeName:r.to.filename,markdownName:markdownProjectionName(r.to.filename)}),backup=prefix+`/receipt-${n}.previous`;
     const current=await this.read(p,true);if(current?.toString()===newReceipt)continue;
     if(current){if(current.toString()!==original)fail('External receipt changes');await this.move(p,backup);}
     if((await this.read(backup))?.toString()!==original)fail('Receipt recovery evidence differs');
@@ -254,7 +274,7 @@ export class NativeVaultStore {
    await this.validateDependencies(i.resources,i.dependencies,true);
    await this.checkResourceBytes(i.resources,true);
    for(const m of i.moves){if(!await absent(path.join(this.root,m.from))||await this.signature(m.to)!==m.signature)fail('External changes at relocation confirmation');}
-   for(const r of i.resources){const receipt=JSON.parse((await this.read(r.homeTo+'/receipt.json')).toString());if(!equal(receipt,{...r.receipt,nativeName:r.to.filename,markdownName:r.to.filename.replace(/\.mutable\.json$/,'.md')}))fail('Receipt changed at confirmation');}
+   for(const r of i.resources){const receipt=JSON.parse((await this.read(r.homeTo+'/receipt.json')).toString());if(!equal(receipt,{...r.receipt,nativeName:r.to.filename,markdownName:markdownProjectionName(r.to.filename)}))fail('Receipt changed at confirmation');}
    await this.write(prefix+'/complete.json',JSON.stringify({version:1,intentHash:hash(JSON.stringify(i))}));await this.fault('relocation-complete',{intent:i});return result();
   }catch(e){return {phase:'relocation-pending',operationId:i.operationId,error:e.message,conflict:true};}
  }

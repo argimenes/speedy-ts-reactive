@@ -29,12 +29,12 @@ it('external replacement during publication is preserved and cannot be confirmed
  await expect(f.writer.recover('.',f.resource.resourceId,f.input.generation)).rejects.toThrow();expect(await fs.readFile(path.join(f.root,'raven.json'),'utf8')).toBe('external writer');
 },async(stage:string,context:any)=>{if(once&&stage==='publish-document'){once=false;await fs.writeFile(context.file,'external writer');}});});
 it('duplicate identities and source format changes cannot authorize an in-place save',()=>fixture(async f=>{
- await fs.copyFile(path.join(f.root,'raven.json'),path.join(f.root,'copy.ink'));await expect(f.writer.save(f.input)).rejects.toThrow(/ambiguous/);expect(await fs.readFile(path.join(f.root,'raven.json'))).toEqual(f.bytes);
- await fs.rm(path.join(f.root,'copy.ink'));await expect(f.writer.save({...f.input,format:'mutable-document'})).rejects.toThrow(/codec differs/);expect(await fs.readFile(path.join(f.root,'raven.json'))).toEqual(f.bytes);
+ await fs.copyFile(path.join(f.root,'raven.json'),path.join(f.root,'copy.unusual'));await expect(f.writer.save(f.input)).rejects.toThrow(/ambiguous/);expect(await fs.readFile(path.join(f.root,'raven.json'))).toEqual(f.bytes);
+ await fs.rm(path.join(f.root,'copy.unusual'));await expect(f.writer.save({...f.input,format:'mutable-document'})).rejects.toThrow(/codec differs/);expect(await fs.readFile(path.join(f.root,'raven.json'))).toEqual(f.bytes);
 }));
 
 it('positively anonymous historical content does not claim another Document identity; duplicate authored identities still do',()=>fixture(async f=>{
- const media=await fs.open(path.join(f.root,'media.ink'),'w');try{await media.write(Buffer.from([0,0,0,24]));await media.truncate(21*1024*1024);}finally{await media.close();}
+ const media=await fs.open(path.join(f.root,'media.unusual'),'w');try{await media.write(Buffer.from([0,0,0,24]));await media.truncate(21*1024*1024);}finally{await media.close();}
  await fs.writeFile(path.join(f.root,'export.txt'),'Viewer\nText\n{"type":"document-block"}');
  await fs.writeFile(path.join(f.root,'anonymous.json'),JSON.stringify({type:'document-block',children:[]}));
  expect((await f.writer.save(f.input)).phase).toBe('saved');

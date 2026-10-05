@@ -61,6 +61,11 @@ export async function openSqliteFoundation(options) {
     // Internal host capabilities; not exposed through a browser/request route.
     inventory:()=>request('inventory'),resourceProjection:resourceId=>request('resource-projection',undefined,{resourceId}),
     entities:(payload,signal)=>cancellable('entities',payload,signal),
+    semantics:(payload,signal)=>cancellable('semantics',payload,signal),
+    auditStatus:()=>request('audit-status'),
+    operationOutcome:operationId=>request('operation-outcome',undefined,{operationId}),
+    deliverAudit:(payload={},signal)=>cancellable('audit-deliver',payload,signal),
+    evidenceSource:(payload,signal)=>cancellable('evidence-source',payload,signal),
     knowledgeRevision:()=>request('knowledge-revision'),
     readKnowledge:(payload,signal)=>cancellable('knowledge-read',payload,signal),
     indexStatus:()=>request('index-status'),

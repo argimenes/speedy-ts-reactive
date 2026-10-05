@@ -1,3 +1,4 @@
+import {isNativeDocumentName} from '../src/persistence/document-file-names.mjs';
 /** Single-file, codec-preserving publication. Existing paired resources stay on their own route. */
 import { constants as C, promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -27,7 +28,7 @@ export class RecognizedDocumentStore {
  async save(input,started=()=>{}){return this.store.lock(async()=>{
   const {vault,source,generation,native,format}=input;
   if(!validId(generation)||typeof native!=='string'||Buffer.byteLength(native)>20*1024*1024)throw Error('Invalid Document generation');
-  if(source.location.filename.endsWith('.mutable.json'))throw Error('Enrolled native pairs require their paired Save route');
+  if(isNativeDocumentName(source.location.filename))throw Error('Enrolled native pairs require their paired Save route');
   const resource=decodeNative(new TextEncoder().encode(native));if(resource.resourceId!==source.resourceId)throw Error('Captured resource identity differs from source');
   if(input.dependencies!==undefined&&(!Array.isArray(input.dependencies)||input.dependencies.length>256))throw Error('Invalid dependency locations');
   const locations=new Map();for(const d of input.dependencies??[]){if(locations.has(d.resourceId))throw Error('Ambiguous dependency location');locations.set(d.resourceId,await this.store.resolve(path.posix.join(d.location.folder,d.location.filename)));}

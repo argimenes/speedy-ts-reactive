@@ -78,7 +78,8 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
       ...(manifest&&c===root?{workspaceDocuments:manifest.documents}: {})};
     const row={guid:blockId,resourceGuid:resourceId,typename:c.viewType,authoredType:String(p.type??c.viewType),text,coordinate,cellCount:c.inlineKind==='standoff'?units.length:null,
       explicitlyRetained:c.definitionOwnerKey===undefined?0:1,attributes:json(attrs),...attribution(p)};
-    const out={block:row,properties:[] as any[],relations:[] as any[],definitions:[] as any[],segments:[] as any[],runs:[] as any[]};
+    // Exact source units are transient proof data, not canonical or derived SQL rows.
+    const out={block:row,sourceUnits:coordinate==='cell'?units.map(c=>c.viewType==='text-cell'?String(c.payload.text):'\ufffc'):coordinate==='utf16'?text!.split(''):[],properties:[] as any[],relations:[] as any[],definitions:[] as any[],segments:[] as any[],runs:[] as any[]};
     const counts=(values:any)=>{const m=new Map<string,number>();for(const v of Array.isArray(values)?values:[])if(id(v?.id))m.set(v.id,(m.get(v.id)??0)+1);return m;};
     const propertyIds=counts(p.blockProperties),segmentIds=counts(p.standoffProperties);
     const propertyKey=(kind:string,raw:any,ordinal:number)=>{
@@ -117,12 +118,17 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
       const definition=owner?.payload.linkedAnnotations?.[raw.annotationId];
       const resolved=!!definition&&!external;
       requireValue(coordinate&&Number.isSafeInteger(raw.start)&&Number.isSafeInteger(raw.end)&&raw.start>=0&&raw.end+1>=raw.start&&raw.end+1<=(coordinate==='cell'?units.length:text!.length),'invalid or unrepresentable standoff range');
+      const zeroWidth=raw.isZeroWidth===true;
+      if(zeroWidth)requireValue(raw.end===raw.start-1,'marked zero-width annotation is not collapsed');
+      const segmentCoordinate=zeroWidth?'utf16':coordinate;
+      const startIndex=zeroWidth&&coordinate==='cell'?units.slice(0,raw.start).map(c=>c.viewType==='text-cell'?String(c.payload.text):'\ufffc').join('').length:raw.start;
+      const endIndex=zeroWidth?startIndex:raw.end+1;
       if(raw.annotationId&&!resolved)warn('Unresolved external or missing annotation definition');
       const definitionResourceGuid=external&&'resourceId'in external.source?external.source.resourceId:owner?resourceId:null;
       out.segments.push({guid:propertyKey('segment',raw,ordinal),resourceGuid:resourceId,sourceBlockGuid:blockId,authoredId:id(raw.id)?raw.id:null,identityKind:id(raw.id)?'authored':'derived',
         logicalGuid:raw.annotationId?key('logical',definitionResourceGuid,owner?.payload.id??null,external??null,raw.annotationId):propertyKey('logical',raw,ordinal),
-        typename:typeof a.type==='string'?a.type:null,startIndex:raw.start,endIndex:raw.end+1,coordinate,
-        text:coordinate==='cell'?units.slice(raw.start,raw.end+1).map(c=>c.viewType==='text-cell'?c.payload.text:'\ufffc').join(''):text!.slice(raw.start,raw.end+1),
+        typename:typeof a.type==='string'?a.type:null,startIndex,endIndex,coordinate:segmentCoordinate,
+        text:zeroWidth?'':coordinate==='cell'?units.slice(raw.start,raw.end+1).map(c=>c.viewType==='text-cell'?c.payload.text:'\ufffc').join(''):text!.slice(raw.start,raw.end+1),
         value:scalar(a.value),valueJson:json(a.value),targetEntityGuid:a.type==='codex/entity-reference'&&id(a.value)?a.value:null,
         targetBlockGuid:a.type==='codex/block-reference'&&id(a.value)?a.value:null,targetResourceGuid:a.type==='codex/block-reference'&&id(bag(a.metadata).documentId)?bag(a.metadata).documentId:null,
         definitionResourceGuid:raw.annotationId?definitionResourceGuid:null,definitionBlockGuid:raw.annotationId?owner?.payload.id??null:null,definitionAnnotationId:raw.annotationId??null,

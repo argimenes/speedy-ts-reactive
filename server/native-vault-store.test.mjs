@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -121,4 +121,27 @@ it('cancels a directory query without any storage or authored mutation',async()=
 it('never substitutes fresh filesystem signatures for the caller reviewed content hashes',async()=>{
  const f=await fixture(),q=await f.request(),changed=structuredClone(decodeNative(new TextEncoder().encode(f.generation.native)));const root=changed.contents[changed.placements[changed.rootPlacementKey].target.contentKey];root.payload.metadata={...root.payload.metadata,title:'External change after discovery'};const outside=nativeText(changed);
  f.store.fault=async stage=>{if(stage==='relocation-captured')await fs.writeFile(path.join(f.root,q.source),outside);};await expect(f.store.relocate(q)).rejects.toThrow('reviewed relocation baseline');expect(await f.read(q.source)).toBe(outside);expect(await fs.stat(path.join(f.root,q.destination)).catch(()=>null)).toBeNull();expect(await f.store.records()).toEqual([]);
+});
+
+it('relocates and recovers .ink and .ink.md together while preserving standalone Markdown',async()=>{
+ const f=await fixture();await fs.rm(path.join(f.root,'vault/notes/paper.mutable.json'));await fs.rm(path.join(f.root,'vault/notes/paper.md'));await fs.rm(f.pair.home,{recursive:true});
+ const pair=new ManagedPair({root:path.join(f.root,'vault/notes'),resourceId:f.generation.resourceId,nativeName:'paper.ink',markdownName:'paper.ink.md'});expect((await pair.save(f.generation)).phase).toBe('saved');
+ await fs.writeFile(path.join(f.root,'vault/notes/paper.md'),'original');await fs.writeFile(path.join(f.root,'vault/other/renamed.md'),'destination source');
+ const q=await f.request('pair','vault/notes/paper.ink','vault/other/renamed.ink');let once=true;f.store.fault=async stage=>{if(once&&stage==='relocation-after-0'){once=false;throw Error('restart');}};
+ expect((await f.store.relocate(q)).phase).toBe('relocation-pending');expect((await new NativeVaultStore({root:f.root}).recover(q.operationId)).phase).toBe('relocated');
+ expect(await f.read(q.destination)).toBe(f.generation.native);expect(await f.read('vault/other/renamed.ink.md')).toBe(f.generation.markdown);expect(await f.read('vault/notes/paper.md')).toBe('original');expect(await f.read('vault/other/renamed.md')).toBe('destination source');
+ const scan=await f.store.discover('vault');expect(scan.complete).toBe(true);expect(scan.documents[0].state).toBe('paired');expect(scan.markdown).toEqual(['vault/notes/paper.md','vault/other/renamed.md']);
+});
+
+it('parallel scope fencing retains the exact sequential evidence and rejects symlinks',async()=>{
+ const f=await fixture();await fs.mkdir(path.join(f.root,'vault/notes/deep'));await fs.writeFile(path.join(f.root,'vault/notes/deep/file.txt'),'source');
+ const rows=[];async function sequential(p){const st=await fs.lstat(await f.store.resolve(p),{bigint:true});rows.push([p,String(st.dev),String(st.ino),String(st.size),String(st.mtimeNs),String(st.ctimeNs)]);if(st.isDirectory())for(const name of (await fs.readdir(await f.store.resolve(p))).sort())if(name!=='.mutable')await sequential(p==='.'?name:p+'/'+name);}
+ await sequential('.');expect(await f.store.readScopeFence('.')).toBe(hash(JSON.stringify(rows)));
+ await fs.symlink('notes',path.join(f.root,'vault/alias'));await expect(f.store.readScopeFence('.')).rejects.toThrow(/Symlink/);
+});
+
+it('scope fencing fails closed when a checked directory is replaced before its final guard',async()=>{
+ const f=await fixture(),lstat=fs.lstat.bind(fs),directory=path.join(f.store.root,'vault/notes');let count=0;
+ const spy=vi.spyOn(fs,'lstat').mockImplementation(async(p,options)=>{if(p===directory&&options?.bigint&&++count===2){await fs.rename(directory,directory+'-kept');await fs.mkdir(directory);}return lstat(p,options);});
+ try{await expect(f.store.readScopeFence('.')).rejects.toThrow(/directory changed/);expect(await f.read('vault/notes-kept/paper.mutable.json')).toBe(f.generation.native);}finally{spy.mockRestore();}
 });

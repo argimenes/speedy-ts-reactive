@@ -13,3 +13,6 @@ data/appdb
 .memory/
 # Vault-local SQLite current knowledge, audit, locks and WAL sidecars.
 .mutable/
+vaults/
+artifacts/
+writer.lock

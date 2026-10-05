@@ -157,7 +157,7 @@ export function createWorkspaceStoreRouter(options: {
   router.post("/saveWorkspaceJson", async (req, res) => coordinate(async () => {
     let temporary: string | undefined;
     try {
-      if (/\.mutable\.json$/i.test(String(req.body?.filename ?? ""))) throw new WorkspaceStoreError(409, "Native destinations require paired resource Save.", "native-resource-guard");
+      if (/\.(ink|mutable\.json)$/i.test(String(req.body?.filename ?? ""))) throw new WorkspaceStoreError(409, "Native destinations require paired resource Save.", "native-resource-guard");
       if (options.readOnly) throw new WorkspaceStoreError(403, "Server Workspaces are read-only in the public hosted version. Save to a Local JSON file instead.", "read-only");
       const directory = await confinedDirectory(options.workspaceRoot);
       const target = path.join(directory, safeFilename(req.body?.filename, "Workspace"));
@@ -173,7 +173,7 @@ export function createWorkspaceStoreRouter(options: {
     const staged: Array<{ target: string; temporary: string; document?: any }> = [];
     const committed: Array<{ target: string; previous?: Buffer }> = [];
     try {
-      if (/\.mutable\.json$/i.test(String(req.body?.filename ?? ""))) throw new WorkspaceStoreError(409, "Native destinations require paired resource Save.", "native-resource-guard");
+      if (/\.(ink|mutable\.json)$/i.test(String(req.body?.filename ?? ""))) throw new WorkspaceStoreError(409, "Native destinations require paired resource Save.", "native-resource-guard");
       if (options.readOnly) throw new WorkspaceStoreError(403, "Server Workspaces are read-only in the public hosted version. Save to a Local JSON file instead.", "read-only");
       const manifest = validateManifest(req.body?.workspace);
       const writes = Array.isArray(req.body?.documents) ? req.body.documents : [];
@@ -185,7 +185,7 @@ export function createWorkspaceStoreRouter(options: {
         seen.add(documentId);
         const resource = record(manifest.documents[documentId], `Document write ${documentId} has no resource entry.`);
         const expectedSource = source(resource);
-        if (/\.mutable\.json$/i.test(expectedSource.filename) || write.document?.format === "mutable-document") throw new WorkspaceStoreError(409, "Native Documents must be saved individually through their resource binding.", "native-resource-guard");
+        if (/\.(ink|mutable\.json)$/i.test(expectedSource.filename) || write.document?.format === "mutable-document") throw new WorkspaceStoreError(409, "Native Documents must be saved individually through their resource binding.", "native-resource-guard");
         const actualSource = source({ source: write.source });
         if (JSON.stringify(expectedSource) !== JSON.stringify(actualSource)) throw new WorkspaceStoreError(400, `Document write ${documentId} does not match its manifest location.`, "document-location-mismatch");
         validateDocument(write.document);
