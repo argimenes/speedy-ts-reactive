@@ -3,6 +3,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
 import App from "../App";
 
+// These existing checks exercise the workspace host after startup has been resolved.
+vi.mock('../configuration', async importOriginal => {
+  const actual = await importOriginal<typeof import('../configuration')>();
+  return { ...actual, featureFlags: { ...actual.featureFlags, cavernStartup: false } };
+});
+
 const cleanup: Array<() => void> = [];
 afterEach(() => {
   cleanup.splice(0).reverse().forEach(dispose => dispose());

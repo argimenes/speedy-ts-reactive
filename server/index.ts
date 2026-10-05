@@ -13,6 +13,7 @@ import { createHistoryService } from "./history-router.js";
 import { createWorkspaceStoreRouter } from "./workspace-store.js";
 import { SqliteKnowledgeHost } from "./sqlite-knowledge-host.js";
 import { featureFlags } from "../src/configuration.js";
+import { createCavernLifecycle } from "./cavern-lifecycle.js";
 //import { BlockType } from "./types";
 let db: Surreal | undefined;
 
@@ -227,7 +228,7 @@ export async function closeDb(): Promise<void> {
   db = undefined;
 }
 
-if (process.env.SPEEDY_DISABLE_DATABASE !== "1") {
+if (!featureFlags.cavernStartup && process.env.SPEEDY_DISABLE_DATABASE !== "1") {
   await initDb().catch(() => { db = undefined; });
 }
 
@@ -244,17 +245,29 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static('dist'));
 app.use("/templates", express.static('data/templates'));
-app.use('/uploads', express.static('uploads'));
+if (!featureFlags.cavernStartup) app.use('/uploads', express.static('uploads'));
 app.use('/video-backgrounds', express.static(path.join(__dirname, baseBackgroundPath, 'video')));
 app.use('/image-backgrounds', express.static(path.join(__dirname, baseBackgroundPath, 'images')));
 app.use(express.json({limit: '50mb'}));
 app.use(express.urlencoded({limit: '50mb'}));
 
-const sqliteKnowledge = featureFlags.sqliteKnowledge || featureFlags.sqliteEntities ? new SqliteKnowledgeHost({root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),  entitiesEnabled: featureFlags.sqliteEntities}) : undefined;
+const cavern = featureFlags.cavernStartup ? createCavernLifecycle() : undefined;
+if (cavern) {
+  app.use('/api/cavern', cavern.router);
+  app.use('/api', cavern.middleware, (_req, res) => { res.status(404).json({ Success: false, Error: 'This service is unavailable in the current Cavern.' }); });
+  app.use('/upload', cavern.middleware);
+  app.use('/uploads', (req, res, next) => {
+    const selected = cavern.current();
+    if (!selected) { res.sendStatus(409); return; }
+    express.static(path.join(selected.path, 'uploads'))(req, res, next);
+  });
+}
+const sqliteKnowledge = !cavern && (featureFlags.sqliteKnowledge || featureFlags.sqliteEntities) ? new SqliteKnowledgeHost({root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),  entitiesEnabled: featureFlags.sqliteEntities}) : undefined;
 const coordinateStorage = sqliteKnowledge ? <T>(action: () => Promise<T>) => sqliteKnowledge.foreground(action) : undefined;
 if (sqliteKnowledge) app.use("/api/sqlite/knowledge", sqliteKnowledge.router());
 
-const documentHistory = createHistoryService({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath) });
+const documentHistory = !cavern ? createHistoryService({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath) }) : undefined;
+if (!cavern) {
 app.use("/api/history", documentHistory.router);
 if (featureFlags.nativeDocumentPersistence) app.use("/api/native", createNativeDocumentStoreRouter({ root: process.env.SPEEDY_DOCUMENT_ROOT || path.join(__dirname, baseDocumentPath),  coordinate: coordinateStorage, defaultVault:process.env.MUTABLE_DEFAULT_VAULT || ".", establishVault:sqliteKnowledge ? vault => sqliteKnowledge.establish(vault) : undefined }));
 app.use("/api", createDocumentStoreRouter({
@@ -282,10 +295,18 @@ app.use("/api", createWorkspaceStoreRouter({
     await saveDocumentIndex(doc as IBlockDto);
   },
 }));
+}
 
 
 const storage = multer.diskStorage({
   destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
+    if (cavern) {
+      const selected = cavern.current();
+      if (!selected || req.header('X-Mutable-Cavern') !== selected.session) { cb(new Error('Choose the current Cavern before uploading.'), ''); return; }
+      const directory = path.join(selected.path, 'uploads');
+      fs.promises.mkdir(directory, { recursive: true }).then(() => cb(null, directory), error => cb(error, ''));
+      return;
+    }
     cb(null, 'uploads');
   },
   filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
@@ -653,5 +674,5 @@ console.log('Running at Port ' + port);
 let stopping = false;
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => {
   if (stopping) return; stopping = true;
-  httpServer.close(() => { void (async () => { await sqliteKnowledge?.close(); await closeDb(); process.exit(0); })().catch(error => { console.error(error); process.exit(1); }); });
+  httpServer.close(() => { void (async () => { await cavern?.close(); await sqliteKnowledge?.close(); await documentHistory?.dispose(); await closeDb(); process.exit(0); })().catch(error => { console.error(error); process.exit(1); }); });
 });

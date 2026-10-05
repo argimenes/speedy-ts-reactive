@@ -1,6 +1,7 @@
 import { Show, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import codexLogo from "../assets/codex-system-logo.png";
 import "./codex-system-bar.css";
+import { CavernControl } from "../application/cavern-startup";
 
 type MenuName = "codex" | "workspace";
 const itemSelector = '[role="menuitem"], [role="menuitemradio"]';
@@ -114,6 +115,7 @@ export function CodexSystemBar(props: { children: JSX.Element }) {
         <img src={codexLogo} alt="" />
       </button>
       <button type="button" class="codex-system-bar__trigger" data-system-menu-trigger="workspace" aria-haspopup="menu" aria-expanded={open() === "workspace"} onClick={() => toggle("workspace")}>Workspace</button>
+      <CavernControl />
     </div>
 
     <div class="codex-system-bar__status">

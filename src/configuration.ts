@@ -14,6 +14,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Explicit global Cavern setup and startup lifecycle. */
+  cavernStartup: boolean;
   /** Generic Desktop Window maximize/restore; normal geometry is retained. */
   windowMaximize: boolean;
   /** Composite Document application; transient tabs share canonical content. */
@@ -56,6 +58,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  cavernStartup: true,
   windowMaximize: true,
   flint: true,
   nativeDocumentPersistence: true,

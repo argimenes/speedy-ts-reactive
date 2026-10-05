@@ -1,10 +1,12 @@
 import { For, Show, createEffect, createMemo, createSignal, on } from 'solid-js';
 import type { ApplicationVault, DocumentApplicationInstance } from '../../feature-api/document-application';
+import { useCurrentCavern } from '../../application/cavern-startup';
 const path = (l: {folder:string;filename:string}) => l.folder === '.' ? l.filename : `${l.folder}/${l.filename}`;
 const location = (p:string) => { const parts=p.split('/'), filename=parts.pop()!; return {folder:parts.join('/')||'.',filename}; };
 const join = (folder:string,name:string) => folder==='.'?name:`${folder}/${name}`;
 
 export function VaultView(props:{vault:ApplicationVault}) {
+  const cavern = useCurrentCavern();
   const [root,setRoot]=createSignal('.'), [folder,setFolder]=createSignal('.'), [selected,setSelected]=createSignal('');
   const [name,setName]=createSignal('Document.mutable.json'), [title,setTitle]=createSignal('Untitled'), [directory,setDirectory]=createSignal('New folder');
   const [destination,setDestination]=createSignal('.'), [moveName,setMoveName]=createSignal(''), [importSource,setImportSource]=createSignal(''), [tag,setTag]=createSignal('');
@@ -21,15 +23,15 @@ export function VaultView(props:{vault:ApplicationVault}) {
     <For each={state()?.folders.filter(f=>location(f).folder===p.path)}>{f=><Folder path={f}/>}</For>
     <For each={state()?.candidates?.filter(candidate=>location(candidate).folder===p.path)}>{candidate=><div class="flint-tree-document"><button aria-label={`Open ${candidate}`} disabled={busy()} onClick={()=>{setSelected('');setFolder(location(candidate).folder);void run(async()=>{if(!props.vault.openCandidate)throw Error('Content recognition is unavailable');await props.vault.openCandidate(location(candidate));});}}>{location(candidate).filename}<small>File · recognize on Open</small></button></div>}</For>
   </details>;
-  return <section class="flint-vault-controls" aria-label="Filesystem vault">
-    <Show when={props.vault.choose}><button disabled={busy()} onClick={()=>props.vault.choose!()}>Choose Vault…</button><p>Choose a directory in the server Documents store.</p></Show>
-    <details><summary>Open by managed relative path</summary><label>Managed directory<input aria-label="Vault directory" value={root()} onInput={e=>setRoot(e.currentTarget.value)}/></label>
-    <button disabled={busy()} onClick={()=>void run(()=>props.vault.open(root()))}>Open Vault</button></details>
-    <Show when={state()}><button disabled={busy()} onClick={()=>void run(()=>props.vault.refresh())}>Refresh</button><button disabled={busy()} onClick={()=>props.vault.close()}>Close Vault</button>
+  return <section class="flint-vault-controls" aria-label="Filesystem Cavern">
+    <Show when={props.vault.choose}><button disabled={busy()} onClick={()=>props.vault.choose!()}>Open Another Cavern…</button><p>{cavern?.current()?.path ?? 'Choose a directory in the server Documents store.'}</p></Show>
+    <Show when={!cavern}><details><summary>Open by managed relative path</summary><label>Managed directory<input aria-label="Vault directory" value={root()} onInput={e=>setRoot(e.currentTarget.value)}/></label>
+    <button disabled={busy()} onClick={()=>void run(()=>props.vault.open(root()))}>Open Cavern</button></details></Show>
+    <Show when={state()}><button disabled={busy()} onClick={()=>void run(()=>props.vault.refresh())}>Refresh</button><Show when={!cavern}><button disabled={busy()} onClick={()=>props.vault.close()}>Close Cavern</button></Show>
       <p>Vault: {state()!.root} <Show when={readOnly()}><strong>Read-only storage. Local edits cannot be saved.</strong></Show></p>
       <label>Tag filter<select aria-label="Tag filter" value={tag()} onChange={e=>setTag(e.currentTarget.value)}><option value="">All tags</option><For each={tags()}>{t=><option value={t}>{t}</option>}</For></select></label>
       <Show when={state()!.documents.some(d=>!d.loaded)}><p>Tag filtering covers opened Documents only.</p></Show>
-      <Show when={state()!.complete&&!state()!.documents.length}><p role="status">No enrolled native Documents in this vault. Existing files remain browsable; Open recognizes compatible Document content without converting the source.</p></Show>
+      <Show when={state()!.complete&&!state()!.documents.length}><p role="status">No enrolled native Documents in this Cavern. Existing files remain browsable; Open recognizes compatible Document content without converting the source.</p></Show>
       <Folder path={state()!.root}/>
       <p>Selected folder: <output aria-label="Selected folder">{folder()}</output></p>
       <details><summary>New Document / import</summary>
@@ -52,7 +54,7 @@ export function VaultView(props:{vault:ApplicationVault}) {
       <For each={state()!.documentSaves??[]}>{o=><p>Document Save pending: {o.path}<button disabled={busy()} onClick={()=>void run(()=>props.vault.recoverDocumentSave!(o.resourceId,o.generation))}>Recover Document</button></p>}</For>
       <For each={state()!.operations.filter(o=>o.phase==='pending')}>{o=><p>Pending relocation: {o.operationId}<button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.recoverOperation(o.operationId))}>Recover relocation</button></p>}</For>
       <For each={state()!.diagnostics}>{d=><p role="alert">{d}</p>}</For>
-      <p role="status">{busy()?'Vault operation in progress…':state()!.notice}</p>
+      <p role="status">{busy()?'Cavern operation in progress…':state()!.notice}</p>
     </Show><Show when={error()}><p role="alert">{error()}</p></Show>
   </section>;
 }
@@ -67,6 +69,6 @@ export function DocumentProperties(props:{application:DocumentApplicationInstanc
     <button disabled={!app.properties()!.tagsValid} onClick={()=>{try{app.setProperties(app.properties()!.id,{title:title(),tags:tags().split('\n')});setError('');}catch(e){setError(String(e));}}}>Apply properties</button>
     <p>Title edits do not rename files.</p><Show when={error()}><p role="alert">{error()}</p></Show>
     <dl><dt>Canonical ID</dt><dd data-flint-property="id">{app.properties()!.id}</dd><dt>Format</dt><dd>{app.properties()!.format}</dd><dt>Physical location</dt><dd data-flint-property="location">{app.properties()!.location?path(app.properties()!.location!):'No native file binding'}</dd><dt>Save status</dt><dd>{app.properties()!.status}</dd></dl>
-    <Show when={app.properties()!.unsaved}><p>Unsaved native candidate. Use Storage details to choose a fresh native filename, then Save to selected destination. It is not yet a vault file.</p></Show>
+    <Show when={app.properties()!.unsaved}><p>Unsaved native candidate. Use Storage details to choose a fresh native filename, then Save to selected destination. It is not yet a Cavern file.</p></Show>
   </aside></Show>;
 }

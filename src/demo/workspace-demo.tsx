@@ -31,6 +31,7 @@ import { resolveFeatureFlags, type ReactiveEditorConfiguration } from "../config
 import { backgroundImages } from "../rendering/backgrounds";
 import { CodexSystemBar } from "./codex-system-bar";
 import { createWorkspaceOpenControls } from "./workspace-open-controls";
+import { CavernControl, useCurrentCavern } from "../application/cavern-startup";
 
 type DemoWindowState = "normal" | "minimized" | "maximized" | "closed";
 interface DemoWindowSnapshot { state: DemoWindowState; position: { x: number; y: number }; size: { w: number; h: number } }
@@ -233,6 +234,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   return (
     <main data-window-work-area class="workspace-demo" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }} data-demo-state={loaded() ? "loaded" : "loading"}>
       <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Demo controls">
+          <CavernControl />
         {<>
           <span class="workspace-demo__toolbar-group" aria-label="Server files">
             <strong>Server</strong>
@@ -394,6 +396,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
 }
 
 function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
+  const cavern = useCurrentCavern();
   const session = new WorkspaceSession(props.loaded, props.configuration);
   const { editor, projection } = session;
   const opening = createWorkspaceOpenControls(session, () => !props.workspaceBusy);
@@ -401,12 +404,22 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave], ["workspace.saveAs", props.onWorkspaceSave, props.onLocalWorkspaceSaveAs]] as const) {
     editor.commandRegistry.register({ id, label: id, canExecute: () => !props.workspaceBusy, execute: serverExecute });
   }
-  onMount(() => editor.installGateway(document));
+  onMount(() => {
+    editor.installGateway(document);
+    if (cavern) {
+      const beforeUnload = (event: BeforeUnloadEvent) => {
+        if (session.dirty() || props.workspaceBusy || editor.blockHistory.hasPendingCapture()) { event.preventDefault(); event.returnValue = ''; }
+      };
+      window.addEventListener('beforeunload', beforeUnload);
+      onCleanup(() => window.removeEventListener('beforeunload', beforeUnload));
+    }
+  });
   onCleanup(() => { release(); session.dispose(); });
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
   return <main data-window-work-area class="workspace-demo workspace-demo--canonical" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
     <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Workspace controls">
+      <CavernControl />
       <opening.Buttons />
       <Show when={editor.features.flint}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>
       {<>
@@ -463,6 +476,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
 }
 
 export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfiguration; initialWorkspace?: ExistingBlockDto } = {}) {
+  const cavern = useCurrentCavern();
   const features = resolveFeatureFlags(props.configuration);
   const configuration: ReactiveEditorConfiguration = { ...props.configuration, features };
   const [session, setSession] = createSignal<{ document?: ExistingBlockDto; location?: DocumentLocation; localFile?: LocalDocumentFile; closed?: boolean; window?: Partial<DemoWindowSnapshot> }>({});
@@ -483,7 +497,10 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
     canExecute: () => !!activeEditor?.commandRegistry.canExecute(id, { targetKey: activeEditor.projections.values().next().value!.state.rootKey, args: undefined }),
     execute: () => activeEditor?.commandRegistry.execute(id, { targetKey: activeEditor.projections.values().next().value!.state.rootKey, args: undefined }),
   });
-  onMount(() => background.installGateway(document));
+  onMount(() => {
+    background.installGateway(document);
+    cavern?.reconcile({ version: 1, opaqueTypes: background.registry.typesWithCapability('opaque-widget') });
+  });
   onCleanup(() => background.dispose());
   const openBackground = (event: MouseEvent) => {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();

@@ -1,0 +1,199 @@
+import { For, Show, createContext, createSignal, onCleanup, onMount, useContext, untrack, type JSX } from 'solid-js';
+import './cavern-startup.css';
+
+export type CurrentCavern = { path: string; name: string; cavernGuid: string; session: string };
+type Target = { path: string; name: string; state: 'missing' | 'folder' | 'cavern' };
+type Recovery = { path: string; error: string };
+type CavernContext = {
+  current: () => CurrentCavern | undefined;
+  choose: (mode?: 'open' | 'create') => void;
+  reconcile: (policy: { version: 1; opaqueTypes: readonly string[] }) => void;
+  recent: () => Array<Omit<CurrentCavern, 'session'>>;
+  open: (path: string) => void;
+  reveal: () => void;
+  status: () => string;
+};
+const Context = createContext<CavernContext>();
+export const useCurrentCavern = () => useContext(Context);
+
+async function request(action: string, body?: unknown) {
+  const response = await fetch(`/api/cavern/${action}`, body === undefined ? undefined : {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.Success) throw new Error(result.Error || 'Mutable could not open the Cavern.');
+  return result.Data;
+}
+
+/** The workspace is mounted only after an explicitly selected folder is established. */
+export function CavernStartup(props: { children: (cavern: CurrentCavern) => JSX.Element }) {
+  const [current, setCurrent] = createSignal<CurrentCavern>();
+  const [recent, setRecent] = createSignal<Array<Omit<CurrentCavern, 'session'>>>([]);
+  const [recovery, setRecovery] = createSignal<Recovery>();
+  const [choosing, setChoosing] = createSignal(false), [mode, setMode] = createSignal<'open' | 'create'>('open');
+  const [busy, setBusy] = createSignal(true), [error, setError] = createSignal('');
+  const [folder, setFolder] = createSignal(''), [name, setName] = createSignal('');
+  const [target, setTarget] = createSignal<Target>(), [index, setIndex] = createSignal<any>();
+  let alive = true, polling = false, generation: string | undefined;
+  // Every managed request is bound to the active server context, fencing stale tabs.
+  const originalFetch = window.fetch;
+  const boundFetch: typeof window.fetch = (input, init) => {
+    const address = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    if (address.origin === window.location.origin && ((address.pathname.startsWith('/api/') && !address.pathname.startsWith('/api/cavern/')) || address.pathname === '/upload')) {
+      const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+      if (generation) headers.set('X-Mutable-Cavern', generation);
+      return originalFetch.call(window, input, { ...init, headers });
+    }
+    return originalFetch.call(window, input, init);
+  };
+  window.fetch = boundFetch;
+  const apply = (value: any) => {
+    if (!alive) return;
+    if (value.recentCaverns) setRecent(value.recentCaverns);
+    setRecovery(value.recovery); setIndex(value.index);
+    generation = value.current?.session; setCurrent(value.current);
+  };
+  const startup = async () => {
+    setBusy(true); setError('');
+    try { apply(await request('startup', {})); }
+    catch (e) { if (alive) setError(String(e)); }
+    finally { if (alive) setBusy(false); }
+  };
+  const choose = (next: 'open' | 'create' = 'open') => {
+    if (busy()) return;
+    setMode(next); setFolder(''); setName(''); setTarget(undefined); setError(''); setChoosing(true);
+  };
+  const safeToSwitch = () => {
+    if (!current()) return true;
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    return !event.defaultPrevented || window.confirm('There is unsaved or pending work. Switch Caverns and close this workspace? Cancel to save or recover it first.');
+  };
+  const establish = async (resolved: Target, intent: 'open' | 'create', confirmed = false) => {
+    if (current()?.path === resolved.path) { setChoosing(false); setTarget(undefined); setError(''); return; }
+    if (!safeToSwitch()) return;
+    // Freeze the workspace during establishment; failed opens retain its live work.
+    // A successful context replacement disposes the old workspace through keyed Show.
+    setChoosing(true); setBusy(true); setError('');
+    try {
+      const value = await request('establish', { path: resolved.path, intent, confirmed });
+      if (!alive) return;
+      if (value.confirmation) { setTarget(value.target); return; }
+      apply(value); setChoosing(false); setTarget(undefined);
+    } catch (e) { if (alive) setError(String(e)); }
+    finally { if (alive) setBusy(false); }
+  };
+  const inspect = async (path: string, intent: 'open' | 'create') => {
+    if (current() && !choosing()) { setMode(intent); setFolder(path); setTarget(undefined); setChoosing(true); }
+    setBusy(true); setError('');
+    let resolved: Target | undefined;
+    try {
+      resolved = await request('inspect', { path });
+      if (!alive) return;
+      if (resolved!.state === 'missing' && intent === 'open') throw new Error('This folder could not be found. Locate the Cavern or choose another folder.');
+      setMode(intent);
+      if (resolved!.state === 'folder') { setTarget(resolved); setChoosing(true); return; }
+    } catch (e) { if (alive) setError(String(e)); resolved = undefined; }
+    finally { if (alive) setBusy(false); }
+    if (resolved && alive) await establish(resolved, intent);
+  };
+  const select = async () => {
+    setBusy(true); setError('');
+    let selected: string | undefined;
+    try { selected = (await request('select-folder', {})).path; if (alive && selected) setFolder(selected); }
+    catch (e) { if (alive) setError(String(e)); }
+    finally { if (alive) setBusy(false); }
+    if (alive && selected && mode() === 'open') await inspect(selected, 'open');
+  };
+  const createPath = () => `${folder().replace(/[\\/]$/, '')}/${name().trim()}`;
+  const submit = () => {
+    if (mode() === 'create' && (!name().trim() || name().trim() === '.' || name().trim() === '..' || /[\\/\0]/.test(name()))) { setError('Enter a Cavern name without path separators.'); return; }
+    void inspect(mode() === 'create' ? createPath() : folder(), mode());
+  };
+  const context: CavernContext = {
+    current, choose, recent,
+    open: path => { if (!busy()) void inspect(path, 'open'); },
+    reveal: () => { void request('reveal', {}).catch(e => { if (alive) { setError(String(e)); setChoosing(true); } }); },
+    status: () => index()?.pending ? 'Indexing Cavern…' : index()?.coverage?.state === 'incomplete' || index()?.coverage?.state === 'unknown' ? 'Cavern index needs attention' : '',
+    reconcile: policy => {
+      const selected = current(); if (!selected) return;
+      void request('index', { session: selected.session, policy }).then(value => {
+        if (alive && current()?.session === selected.session) setIndex(value);
+      }).catch(e => { if (alive && current()?.session === selected.session) setIndex({ coverage: { state: 'unknown', diagnostics: [String(e)] } }); });
+    },
+  };
+  onMount(() => {
+    void startup();
+    const timer = setInterval(() => {
+      const selected = untrack(current); if (!selected || polling || untrack(busy)) return;
+      polling = true;
+      void request('status').then(value => {
+        if (!alive || current()?.session !== selected.session) return;
+        if (value.current?.session !== selected.session) { generation = undefined; setCurrent(undefined); setRecovery({ path: selected.path, error: 'The current Cavern changed in another Mutable window. Reopen it to continue.' }); }
+        else { setIndex(value.index); if (value.recentCaverns) setRecent(value.recentCaverns); }
+      }).catch(e => { if (alive) setIndex({ coverage: { state: 'unknown', diagnostics: [String(e)] } }); }).finally(() => { polling = false; });
+    }, 3000);
+    onCleanup(() => clearInterval(timer));
+  });
+  onCleanup(() => { alive = false; if (window.fetch === boundFetch) window.fetch = originalFetch; });
+  const recents = () => <Show when={recent().length}><div class="cavern-recents"><h2>Recent Caverns</h2><For each={recent()}>{c =>
+    <button type="button" disabled={busy()} onClick={() => void inspect(c.path, 'open')}><strong>{c.name}</strong><small>{c.path}</small></button>
+  }</For></div></Show>;
+  const chooser = () => <section class="cavern-card" role={current() ? 'dialog' : undefined} aria-modal={current() ? true : undefined} aria-label="Cavern setup" aria-busy={busy()}>
+    <Show when={!choosing()} fallback={<>
+      <h1>{target() ? 'Set up this folder as a Cavern?' : mode() === 'create' ? 'Create New Cavern' : 'Open Cavern'}</h1>
+      <Show when={target()} keyed fallback={<form onSubmit={e => { e.preventDefault(); submit(); }}>
+        <Show when={mode() === 'create'}><label>Cavern Name<input autofocus value={name()} disabled={busy()} onInput={e => setName(e.currentTarget.value)} placeholder="Leonardo Research" /></label></Show>
+        <label>{mode() === 'create' ? 'Location (parent folder)' : 'Folder location'}<div class="cavern-location"><input autofocus={mode() === 'open'} value={folder()} disabled={busy()} onInput={e => setFolder(e.currentTarget.value)} placeholder="Choose a folder or enter its path" /><button type="button" disabled={busy()} onClick={() => void select()}>Browse…</button></div></label>
+        <Show when={mode() === 'create' && folder() && name().trim()}><p>Resulting location: <code>{createPath()}</code></p></Show>
+        <div class="cavern-actions"><button type="submit" class="cavern-primary" disabled={busy() || !folder().trim() || (mode() === 'create' && !name().trim())}>{mode() === 'create' ? 'Create Cavern' : 'Open Cavern'}</button><button type="button" disabled={busy()} onClick={() => { setChoosing(false); setError(''); }}>Cancel</button></div>
+      </form>}>{resolved => <>
+        <p>{mode() === 'create' ? 'This folder already exists. Mutable can set it up as a Cavern.' : 'Mutable will add the infrastructure it needs to this folder.'} Existing files will remain in place.</p><code>{resolved.path}</code>
+        <div class="cavern-actions"><button class="cavern-primary" disabled={busy()} onClick={() => void establish(resolved, mode(), true)}>Set Up as Cavern</button><button disabled={busy()} onClick={() => { setTarget(undefined); setError(''); }}>{mode() === 'create' ? 'Choose Another Location' : 'Cancel'}</button></div>
+      </>}</Show>
+    </>}>
+      <Show when={recovery()} keyed fallback={<><small>MUTABLE OS</small><h1>Welcome to Mutable OS</h1><p>Mutable stores your documents, objects and knowledge in a Cavern: an ordinary folder on your computer.</p></>}>{r => <><h1>Cavern unavailable</h1><p>Mutable could not open the previously selected Cavern:</p><code>{r.path}</code><p>{r.error}</p><button disabled={busy()} onClick={() => { choose('open'); void select(); }}>Locate Cavern…</button></>}</Show>
+      <div class="cavern-options"><div><h2>Create a New Cavern</h2><p>Create a new folder and set it up for Mutable OS.</p><button class="cavern-primary" disabled={busy()} onClick={() => choose('create')}>Create</button></div><div><h2>Open a Folder as a Cavern</h2><p>Use an existing folder as a Mutable Cavern.</p><button class="cavern-primary" disabled={busy()} onClick={() => { choose('open'); void select(); }}>Open</button></div></div>
+      {recents()}
+      <Show when={current()}><button disabled={busy()} onClick={() => { setChoosing(false); setError(''); }}>Return to Mutable OS</button></Show>
+    </Show>
+    <Show when={busy()}><p role="status">Opening Cavern…</p></Show>
+    <Show when={error()}><p class="cavern-error" role="alert">{error()}</p><Show when={!current() && !choosing()}><button disabled={busy()} onClick={() => void startup()}>Retry startup</button></Show></Show>
+  </section>;
+  return <Context.Provider value={context}>
+    <Show when={current()} keyed fallback={<main class="cavern-startup">{chooser()}</main>}>{selected => <>
+      <div inert={choosing()}>{props.children(selected)}</div>
+      <Show when={choosing()}><div class="cavern-overlay" ref={el => queueMicrotask(() => el.querySelector<HTMLInputElement>('input')?.focus())} onKeyDown={e => {
+        if (e.key === 'Escape' && !busy()) { setChoosing(false); setTarget(undefined); setError(''); }
+        if (e.key === 'Tab') {
+          const controls = [...e.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled)')];
+          const first = controls[0], last = controls.at(-1);
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+        }
+      }}>{chooser()}</div></Show>
+    </>}</Show>
+  </Context.Provider>;
+}
+
+export function CavernControl() {
+  const cavern = useCurrentCavern();
+  const [open, setOpen] = createSignal(false);
+  let root!: HTMLDivElement;
+  onMount(() => {
+    if (!cavern) return;
+    const outside = (event: PointerEvent) => { if (root && !root.contains(event.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', outside);
+    onCleanup(() => document.removeEventListener('pointerdown', outside));
+  });
+  const act = (action: () => void) => { setOpen(false); action(); };
+  return <Show when={cavern?.current()}><div ref={root} class="cavern-control" onKeyDown={e => { if (e.key === 'Escape') { setOpen(false); root.querySelector('button')?.focus(); } }}>
+    <button class="codex-system-bar__trigger" aria-label="Current Cavern" aria-expanded={open()} onClick={() => setOpen(!open())}>{cavern!.current()!.name} ▾</button>
+    <span role="status" title={cavern!.status()}>{cavern!.status()}</span>
+    <Show when={open()}><section class="cavern-menu" aria-label="Current Cavern settings"><strong>{cavern!.current()!.name}</strong><code>{cavern!.current()!.path}</code>
+      <button onClick={() => act(() => cavern!.choose('open'))}>Open Another Cavern…</button><button onClick={() => act(() => cavern!.choose('create'))}>Create New Cavern…</button>
+      <button onClick={() => act(() => cavern!.reveal())}>Reveal Cavern in {navigator.platform.includes('Mac') ? 'Finder' : 'File Manager'}</button>
+      <Show when={cavern!.recent().length > 1}><h3>Recent Caverns</h3><For each={cavern!.recent()}>{c => <button disabled={c.cavernGuid === cavern!.current()!.cavernGuid} onClick={() => act(() => cavern!.open(c.path))}><strong>{c.name}</strong><small>{c.path}</small></button>}</For></Show>
+    </section></Show>
+  </div></Show>;
+}

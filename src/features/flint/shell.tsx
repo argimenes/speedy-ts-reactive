@@ -4,10 +4,12 @@ import { BacklinksPanel } from './backlinks-view';
 import { KnowledgeView } from './knowledge-view';
 import { VaultView, DocumentProperties } from './vault-view';
 import { StorageSheet } from './storage-sheet';
+import { useCurrentCavern } from '../../application/cavern-startup';
 
 // A runtime crop of the supplied, unmodified master: no generated substitute artwork.
 const identity = new URL('../../../docs/assets/flint/flint-app-icon-master.png', import.meta.url).href;
 export function FlintView(props:{application:DocumentApplicationInstance}) {
+  const cavern = useCurrentCavern();
   const app=props.application;
   const [library,setLibrary]=createSignal(true),[context,setContext]=createSignal(true);
   const [browse,setBrowse]=createSignal<'browse'|'search'>('browse');
@@ -33,19 +35,19 @@ export function FlintView(props:{application:DocumentApplicationInstance}) {
     <header class="flint-application__header">
       <div class="flint-menu-anchor" onKeyDown={e=>{if(menu()&&e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}><button ref={menuButton} class="flint-brand" aria-label="Flint application menu" aria-expanded={menu()} onClick={()=>setMenu(!menu())}><span class="flint-mark"><img src={identity} alt=""/></span><strong>Flint</strong><span aria-hidden="true">⌄</span></button>
         <Show when={menu()}><div class="flint-menu" role="group" aria-label="Flint actions" onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}>
-          <button disabled={!app.vault} onClick={()=>{setMenu(false);chooseVault();}}>Open Vault</button>
+          <button disabled={!app.vault} onClick={()=>{setMenu(false);chooseVault();}}>Open Another Cavern…</button>
           <button onClick={()=>openStorage()}>Files</button>
           <button disabled={!app.properties()} onClick={()=>{app.closeActiveTab();setMenu(false);menuButton.focus();}}>Close tab</button>
           <button onClick={()=>{setMenu(false);menuButton.focus();}}>Dismiss menu</button>
         </div></Show>
       </div>
-      <div class="flint-vault-name"><small>WORKSPACE</small><span>{vault()?.root??'A space for ideas'}</span></div>
+      <div class="flint-vault-name"><small>{cavern ? 'CAVERN' : 'WORKSPACE'}</small><span>{cavern?.current()?.name ?? vault()?.root??'A space for ideas'}</span></div>
       <button class="flint-search-launch" onClick={showSearch}>Search</button>
       <button disabled={!app.files||!app.properties()||busy()||vault()?.readOnly||vault()?.busy} onPointerDown={e=>e.preventDefault()} onClick={()=>void save()}>Save Document</button>
     </header>
     <div class="flint-workspace-tools">
       <button aria-label="Toggle Library" aria-pressed={library()} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle('library')}>☰ Library</button>
-      <div class="flint-current"><span>{vault()?.root??'Open Documents'}</span><span aria-hidden="true"> / </span><strong>{app.properties()?.title??'Choose a Document'}</strong></div>
+      <div class="flint-current"><span>{cavern?.current()?.name ?? vault()?.root??'Open Documents'}</span><span aria-hidden="true"> / </span><strong>{app.properties()?.title??'Choose a Document'}</strong></div>
       <button aria-label="Toggle Context" aria-pressed={context()} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle('context')}>Context ☷</button>
     </div>
     <div class="flint-application__body">
@@ -53,13 +55,13 @@ export function FlintView(props:{application:DocumentApplicationInstance}) {
         <div class="flint-rail-heading"><h2>Library</h2><small>YOUR COLLECTION</small></div>
         <div class="flint-segments" role="group" aria-label="Library views"><button aria-pressed={browse()==='browse'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('browse')}>Browse</button><button aria-pressed={browse()==='search'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('search')}>Search</button></div>
         <div hidden={browse()!=='browse'}>
-          <Show when={app.vault} fallback={<p>Vault browsing is unavailable in this host.</p>}><VaultView vault={app.vault!}/></Show>
+          <Show when={app.vault} fallback={<p>Cavern browsing is unavailable in this host.</p>}><VaultView vault={app.vault!}/></Show>
           <Show when={!vault()}><h3>Open Documents</h3><p class="flint-hint">Open a managed directory above, or continue with a Document already in this workspace.</p><For each={app.documents()}>{doc=><button class="flint-open-document" onClick={()=>app.openDocument(doc.id)}><span>{doc.title}</span></button>}</For></Show>
         </div>
-        <div hidden={browse()!=='search'}><Show when={vault()&&app.knowledge} fallback={<p>Open a vault in Browse to search its available native Documents.</p>}><KnowledgeView knowledge={app.knowledge!} mode="search"/></Show></div>
+        <div hidden={browse()!=='search'}><Show when={vault()&&app.knowledge} fallback={<p>Open a Cavern to search its available native Documents.</p>}><KnowledgeView knowledge={app.knowledge!} mode="search"/></Show></div>
       </nav>
       <main class="flint-application__editor">
-        <Show when={!app.properties()}><section class="flint-welcome"><img src={identity} alt="Flint — a space for ideas"/><div><small>A SPACE FOR IDEAS</small><h1>Make room for your next thought.</h1><p>{vault()?'Choose a Document from your Library, or create one in the selected folder.':'Bring your Documents together. Open a vault to browse, write and follow connections.'}</p><button onClick={()=>vault()?focusLibrary():chooseVault()}>{vault()?'Browse / New Document':'Open a vault'}</button><button onClick={e=>openStorage(e.currentTarget)}>Open native file</button></div></section></Show>
+        <Show when={!app.properties()}><section class="flint-welcome"><img src={identity} alt="Flint — a space for ideas"/><div><small>A SPACE FOR IDEAS</small><h1>Make room for your next thought.</h1><p>{vault()?'Choose a Document from your Library, or create one in the selected folder.':'Bring your Documents together. Open a Cavern to browse, write and follow connections.'}</p><button onClick={()=>vault()?focusLibrary():chooseVault()}>{vault()?'Browse / New Document':'Open a Cavern'}</button><button onClick={e=>openStorage(e.currentTarget)}>Open native file</button></div></section></Show>
         {/* This slot is unconditional. Shell presentation never reparents or remounts it. */}
         <app.tabs />
       </main>

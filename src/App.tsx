@@ -8,6 +8,8 @@ import { WorkspaceDemo } from "./demo/workspace-demo";
 import { StandoffEffectsDemo } from "./demo/standoff-effects-demo";
 import { TextSuperpositionDemo } from "./demo/text-superposition-demo";
 import { createInitialWorkspace } from "./application/initial-workspace";
+import { featureFlags } from "./configuration";
+import { CavernStartup } from "./application/cavern-startup";
 
 const pilotDocument: ExistingBlockDto = {
   id: "reactive-pilot-document",
@@ -150,6 +152,7 @@ export default function App() {
   if (route === `${import.meta.env.BASE_URL}pilot`) return <PilotApp />;
   // Accepted application capability; hosts can still explicitly disable it.
   const configuration = { features: { canvasWorkspace: import.meta.env.VITE_CANVAS_WORKSPACE !== "0", spatialWorkspace: import.meta.env.VITE_SPATIAL_WORKSPACE === "1" } };
-  return <WorkspaceDemo configuration={configuration}
+  const workspace = () => <WorkspaceDemo configuration={configuration}
     initialWorkspace={new URLSearchParams(window.location.search).get("demo") === "1" ? undefined : createInitialWorkspace()} />;
+  return featureFlags.cavernStartup ? <CavernStartup>{() => workspace()}</CavernStartup> : workspace();
 }

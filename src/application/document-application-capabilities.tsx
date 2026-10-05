@@ -1,5 +1,6 @@
 import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName} from '../persistence/document-file-names.mjs';
 import { DocumentBrowser } from "../demo/document-browser";
+import { useCurrentCavern } from './cavern-startup';
 import {registerEntityContext} from './entity-service';
 import {SavedResultActivation} from './saved-result-activation';
 import {sqliteIndexLifecycle} from './sqlite-index-lifecycle';
@@ -62,6 +63,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       scope.defer(() => { for (const [owner, value] of viewBookmarks) for (const key of value.tabs.keys()) if (!editor.node(key) && !navigationTabs.get(owner)?.tabs.has(key)) value.tabs.delete(key); });
     }));
     const Instance = (props: { nodeKey: string }) => {
+      const cavern = useCurrentCavern();
       // Stage A hosts a Window application, never an application recursively inside a Document.
       if (editor.blockQueries.ancestors(props.nodeKey).some(n => n.viewType === "document-block")) return <p role="status">This application requires a Window outside a Document.</p>;
       const [revision, setRevision] = createSignal(0);
@@ -158,8 +160,9 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const [choosingVault,setChoosingVault]=createSignal(false),[chooserBusy,setChooserBusy]=createSignal(false),[chooserError,setChooserError]=createSignal('');
       const vault: ApplicationVault | undefined = native && vaults ? {
         state: vaultState,
-        choose() { guard(); setChooserError(''); setChoosingVault(true); },
+        choose() { guard(); if (cavern) { cavern.choose('open'); return; } setChooserError(''); setChoosingVault(true); },
         async open(root) {
+          if (cavern && root !== '.') throw new Error('Use the current Cavern. Open another Cavern from the Mutable system control.');
           guard(); openQuery?.abort(); openQuery = new AbortController();
           const request = ++opening, next = await vaults.acquire(root, openQuery.signal);
           if (!mounted || request !== opening) { next.release(); return; }
@@ -272,7 +275,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         },
       } : undefined;
       onCleanup(()=>{ knowledge?.dispose(); backlinkService?.dispose(); canonical?.dispose(); facts?.dispose(); });
-      onMount(() => { if(vault&&native)void (async()=>{const root=vaultRoots.get(props.nodeKey)??await native.defaultVault();if(root&&mounted)await vault.open(root);})().catch(e=>{if(mounted){setChooserError(String(e));setChoosingVault(true);}}); });
+      onMount(() => { if(vault&&native)void (async()=>{const root=cavern ? '.' : vaultRoots.get(props.nodeKey)??await native.defaultVault();if(root&&mounted)await vault.open(root);})().catch(e=>{if(mounted){setChooserError(String(e));if(!cavern)setChoosingVault(true);}}); });
       const files = native ? {
         list: (folder: string) => { selectedVault()?.requireDirectory(folder); return native.list(folder); },
         async open(location: {folder: string; filename: string}, importMarkdown = false) {
