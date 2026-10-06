@@ -3,7 +3,9 @@ import type { Lighting } from '../lighting';
 import type { MaterialInteractions } from '../material-interaction';
 import { fixtureNodes, type FixtureNode } from './material-fixture';
 import { installReliefDefinitions, svgElement } from '../relief-defs';
-import { LIMESTONE, materialForFinish, type MaterialResponse, type Position, type StoneFinish } from '../material-response';
+import { type MaterialResponse, type Position, type StoneFinish } from '../material-response';
+import { materialForForm } from '../relief-vocabulary';
+import { installReliefShadow } from '../relief-shadow';
 import type { TextureLayers } from '../material-textures';
 
 export type DetailLevel = 'full' | 'simple' | 'flat';
@@ -15,7 +17,7 @@ export function createMaterialGraph(options: {
   const prefix = `flint-relief-${crypto.randomUUID()}`;
   let registrations: (() => void)[] = [], ownedLocalDefs: Element[] = [], nodes: readonly FixtureNode[] = [];
   let selectedId: string | undefined, detail: DetailLevel = 'full', disposed = false;
-  let material = LIMESTONE;
+  let finish: StoneFinish = 'limestone';
   const graph = new Graph({
     container, width: container.clientWidth, height: container.clientHeight, async: false,
     grid: false, background: false,
@@ -52,12 +54,14 @@ export function createMaterialGraph(options: {
     const glow = svgElement('radialGradient', { id: `${localId}-glow`, cx: '50%', cy: '50%', r: '70%' });
     glow.append(svgElement('stop', { offset: 0, 'stop-color': '#fffdf0', 'stop-opacity': 1 }), svgElement('stop', { offset: 1, 'stop-color': '#fffdf0', 'stop-opacity': 0 }));
     const filter = svgElement('filter', { id: `${localId}-shadow`, x: '-100%', y: '-100%', width: '300%', height: '300%', 'color-interpolation-filters': 'sRGB' });
-    const shadow = svgElement('feDropShadow', { 'flood-color': '#504735' }); filter.append(shadow);
+    const contactFilter = svgElement('filter', { id: `${localId}-contact-shadow`, x: '-20%', y: '-20%', width: '140%', height: '140%', 'color-interpolation-filters': 'sRGB' });
+    const applyShadow = installReliefShadow(filter, contactFilter);
     // Only selected/local targets need private definitions; attach lazily on interaction.
     let localAttached = false;
     const markup: NodeMetadata['markup'] = [
       { tagName: 'rect', selector: 'hit', className: 'flint-graph-hit' },
       { tagName: 'g', selector: 'sculpture', className: 'flint-graph-sculpture', children: [
+        { tagName: 'g', selector: 'seat', className: 'flint-graph-seat', children: [{ tagName: 'g', selector: 'footprintScale', children: [{ tagName: 'use', selector: 'footprint' }] }] },
         { tagName: 'g', selector: 'relief', className: 'flint-graph-relief', children: [{ tagName: 'g', selector: 'form', children: [{ tagName: 'use', selector: 'art' }] }] },
         { tagName: 'g', selector: 'field', children: [{ tagName: 'rect', selector: 'contact' }, { tagName: 'ellipse', selector: 'wave' }] },
       ] },
@@ -70,6 +74,9 @@ export function createMaterialGraph(options: {
         root: { 'data-fixture-id': spec.id, 'aria-label': `${spec.label}, ${spec.relation}`, role: 'img' },
         hit: { width: spec.width, height: spec.height, rx: 10, fill: 'transparent', stroke: 'none' },
         sculpture: { 'pointer-events': 'none' },
+        seat: { filter: `url(#${prefix}-${elevation}-contact)` },
+        footprintScale: { transform: `scale(${spec.width / 100},${spec.height / 100})` },
+        footprint: { href: `#${prefix}-contact-${spec.form}`, width: 100, height: 100 },
         relief: { filter: `url(#${prefix}-${elevation})` },
         form: { transform: `scale(${spec.width / 100},${spec.height / 100})` },
         art: { href: `#${prefix}-${spec.form}`, width: 100, height: 100 },
@@ -80,12 +87,13 @@ export function createMaterialGraph(options: {
       },
     });
     const apply = (r: MaterialResponse, active: boolean) => {
-      if (active && !localAttached) { graph.view.defs.append(glow, filter); ownedLocalDefs.push(glow, filter); localAttached = true; }
+      if (active && !localAttached) { graph.view.defs.append(glow, filter, contactFilter); ownedLocalDefs.push(glow, filter, contactFilter); localAttached = true; }
       if (active) {
         glow.setAttribute('cx', `${r.normalisedPosition.x * 100}%`); glow.setAttribute('cy', `${r.normalisedPosition.y * 100}%`);
-        shadow.setAttribute('dx', String(r.shadow.x)); shadow.setAttribute('dy', String(r.shadow.y)); shadow.setAttribute('stdDeviation', String(r.shadow.blur / 2)); shadow.setAttribute('flood-opacity', String(r.shadow.opacity));
+        applyShadow(r);
       }
       node.attr({
+        seat: { filter: `url(#${active ? `${localId}-contact-shadow` : `${prefix}-${elevation}-contact`})` },
         relief: { filter: `url(#${active ? `${localId}-shadow` : `${prefix}-${elevation}`})`, transform: `translate(0,${-r.travel})` },
         contact: { opacity: r.glow }, wave: { cx: r.wave.x * 100 / spec.width, cy: r.wave.y * 100 / spec.height, rx: r.wave.radius * 100 / spec.width, ry: r.wave.radius * 100 / spec.height, opacity: r.wave.opacity },
         root: { 'data-local-active': String(active) },
@@ -96,7 +104,7 @@ export function createMaterialGraph(options: {
       const local = graph.clientToLocal(p), position = node.position();
       return { x: local.x - position.x, y: local.y - position.y };
     };
-    registrations.push(interactions.register({ id: spec.id, material, elevation, geometry: () => localGeometry, apply, clientToLocal,
+    registrations.push(interactions.register({ id: spec.id, material: materialForForm(spec.form, finish), elevation, geometry: () => localGeometry, apply, clientToLocal,
       capabilities: [{ kind: 'drag', label: 'Move relief', available: true }, { kind: 'inspect', label: 'Inspect fixture node', available: true }],
     }));
     return node;
@@ -150,10 +158,10 @@ export function createMaterialGraph(options: {
     setTextureLayers(layers: TextureLayers) { definitions.setTextureLayers(layers); },
     get nodes() { return nodes; }, get selectedId() { return selectedId; }, get disposed() { return disposed; },
     setDetail(value: DetailLevel) { detail = value; container.dataset.detail = value; options.minimap.dataset.detail = 'flat'; definitions.setDetail(value); },
-    setFinish(finish: StoneFinish) {
-      material = materialForFinish(finish); container.dataset.finish = finish;
+    setFinish(value: StoneFinish) {
+      finish = value; container.dataset.finish = finish;
       definitions.setFinish(finish);
-      for (const spec of nodes) { const target = interactions.target(spec.id); if (target) target.material = material; if (interactions.state(spec.id)) interactions.refresh(spec.id); }
+      for (const spec of nodes) { const target = interactions.target(spec.id); if (target) target.material = materialForForm(spec.form, finish); if (interactions.state(spec.id)) interactions.refresh(spec.id); }
     },
     zoomBy(delta: number) { graph.zoomTo(Math.max(.15, Math.min(2.5, graph.zoom() + delta))); },
     pan(dx: number, dy: number) { const p = graph.translate(); graph.translate(p.tx + dx, p.ty + dy); },

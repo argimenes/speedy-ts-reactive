@@ -6,10 +6,10 @@ import type { Lighting } from './lighting';
  */
 export function resolveLightField(input: Light, effects: Effects) {
   const light = normaliseLight(input), vector = lightVector(light);
-  const penumbra = 1.2 + light.softness * 5.5;
+  const penumbra = .7 + light.softness * 3.6;
   const projection = bound(42 / light.elevation, .55, 1.8);
-  const shadow = effects.reducedEffects ? 0 : bound(.055 + light.intensity * .15, 0, .23);
-  const stops = [[24, 9], [52, 7], [82, 9]].flatMap(([centre, width]) => [
+  const shadow = effects.reducedEffects ? 0 : bound(.06 + light.intensity * .18, 0, .27);
+  const stops = [[23, 8], [53, 6], [83, 10]].flatMap(([centre, width]) => [
     `transparent ${centre - width * projection - penumbra}%`,
     `rgb(83 72 53 / ${shadow}) ${centre - width * projection}%`,
     `rgb(83 72 53 / ${shadow}) ${centre + width * projection}%`,

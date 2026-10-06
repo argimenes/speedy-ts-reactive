@@ -100,6 +100,8 @@
 .flint-material-playground .x6-widget-minimap .flint-graph-hit { fill: #8c8067; rx: 30; }
 .flint-material-playground .x6-widget-minimap .x6-edge { opacity: .35; }
 .flint-material-playground .flint-material-graph[data-detail='simple'] .flint-graph-relief { filter: none; }
+.flint-material-playground .flint-material-graph:not([data-detail='full']) .flint-graph-seat,
+.flint-material-playground[data-reduced-effects='true'] .flint-graph-seat { display: none; }
 .flint-material-playground .flint-material-graph[data-detail='flat'] .flint-graph-relief { filter: none; opacity: .75; }
 .flint-material-playground .flint-material-graph[data-detail='flat'] { --flint-body-fill: var(--flint-limestone); --flint-facet-left: var(--flint-limestone); --flint-facet-right: var(--flint-limestone); --flint-facet-top: var(--flint-limestone); --flint-facet-front: var(--flint-limestone); }
 .flint-material-playground[data-reduced-effects='true'] .flint-graph-relief { filter: none; }

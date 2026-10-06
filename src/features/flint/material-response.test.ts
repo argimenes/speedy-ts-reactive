@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LIGHT, ELEVATIONS, LIMESTONE, MARBLE, lightVector, normaliseLight, resolveMaterialResponse } from './material-response';
+import { DEFAULT_LIGHT, ELEVATIONS, LIMESTONE, MARBLE, facetTone, lightVector, normaliseLight, resolveMaterialResponse } from './material-response';
+import { FORM_NORMALS, materialForForm } from './relief-vocabulary';
 
 const response = (patch: Partial<Parameters<typeof resolveMaterialResponse>[0]> = {}) => resolveMaterialResponse({ elevation: 'relief', geometry: { width: 200, height: 100 }, light: DEFAULT_LIGHT, ...patch });
 describe('shared material response', () => {
+  it('disperses and weakens contact on lift while separating and softening the cast', () => {
+    const seated = response(), lifted = response({ interaction: { lift: 1 } });
+    expect(lifted.contactShadow.opacity).toBeLessThan(seated.contactShadow.opacity);
+    expect(lifted.contactShadow.blur).toBeGreaterThan(seated.contactShadow.blur);
+    expect(lifted.contactShadow.x).toEqual(seated.contactShadow.x);
+    expect(Math.hypot(lifted.castShadow.x, lifted.castShadow.y)).toBeGreaterThan(Math.hypot(seated.castShadow.x, seated.castShadow.y));
+    expect(lifted.castShadow.blur).toBeGreaterThan(seated.castShadow.blur);
+    expect(response({ effects: { reducedMotion: true, reducedEffects: true } }).contactShadow.opacity).toBe(0);
+  });
+  it('relights depicted pyramid planes and keeps related material identity across adapters', () => {
+    const material = materialForForm('pyramids', 'limestone'), normals = FORM_NORMALS.pyramids;
+    const east = { ...DEFAULT_LIGHT, azimuth: 0 }, west = { ...DEFAULT_LIGHT, azimuth: 180 };
+    expect(facetTone(normals.left, east, material)).toEqual(facetTone(normals.right, west, material));
+    expect(facetTone(normals.left, east, material)).not.toEqual(facetTone(normals.right, east, material));
+    expect(materialForForm('mask', 'limestone').name).not.toEqual(material.name);
+    expect(materialForForm('pyramids', 'marble')).toBe(materialForForm('mask', 'marble'));
+  });
   it('lights distinct stone albedos without changing elevation or interaction travel', () => {
     const limestone = response({ material: LIMESTONE, interaction: { lift: .5 } });
     const marble = response({ material: MARBLE, interaction: { lift: .5 } });

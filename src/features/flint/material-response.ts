@@ -14,6 +14,7 @@ export type Material = Readonly<{
   name: string; depression: number; lift: number; minHeight: number; maxHeight: number;
   contactGain: number; proximityGain: number; maxGlow: number; waveDuration: number; maxWaveRadius: number; maxImpulses: number;
   albedo?: Readonly<{ hue: number; saturation: number; ambient: number; diffuse: number }>;
+  relief?: Readonly<{ texture: number; ao: number; bevel: number }>;
 }>;
 export type StoneFinish = 'limestone' | 'marble' | 'untextured';
 const LIMESTONE_ALBEDO = Object.freeze({ hue: 38, saturation: 19, ambient: 62, diffuse: 25 });
@@ -36,6 +37,14 @@ export const LIMESTONE: Material = Object.freeze({
 });
 export const MARBLE: Material = Object.freeze({ ...LIMESTONE, name: 'marble', albedo: Object.freeze({ hue: 40, saturation: 10, ambient: 73, diffuse: 18 }) });
 export function materialForFinish(finish: StoneFinish) { return finish === 'marble' ? MARBLE : LIMESTONE; }
+/** Sculptural response presets; ordinary DOM controls retain the quiet base material. */
+export const SCULPTURAL_STONE = Object.freeze({
+  fine: Object.freeze({ ...LIMESTONE, name: 'limestone-fine', albedo: { hue: 38, saturation: 16, ambient: 58, diffuse: 34 }, relief: { texture: .62, ao: .28, bevel: 1.35 } }),
+  porous: Object.freeze({ ...LIMESTONE, name: 'limestone-porous', albedo: { hue: 38, saturation: 17, ambient: 55, diffuse: 35 }, relief: { texture: .84, ao: .33, bevel: 1.25 } }),
+  weathered: Object.freeze({ ...LIMESTONE, name: 'limestone-weathered', albedo: { hue: 37, saturation: 14, ambient: 53, diffuse: 35 }, relief: { texture: .74, ao: .36, bevel: 1.55 } }),
+  chalk: Object.freeze({ ...LIMESTONE, name: 'chalk', albedo: { hue: 40, saturation: 11, ambient: 63, diffuse: 30 }, relief: { texture: .42, ao: .23, bevel: 1.65 } }),
+  marble: Object.freeze({ ...MARBLE, name: 'marble-pale', albedo: { hue: 40, saturation: 10, ambient: 62, diffuse: 31 }, relief: { texture: .65, ao: .27, bevel: 1.25 } }),
+}) satisfies Readonly<Record<string, Material>>;
 export function bound(value: number, min: number, max: number, fallback = min): number {
   return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
@@ -77,6 +86,14 @@ export function resolveMaterialResponse(input: {
     blur: 1 + Math.abs(effectiveHeight) * (.22 + light.softness * .6),
     opacity: effects.reducedEffects ? 0 : bound(.16 + light.intensity * .13, 0, .35), inset: effectiveHeight < 0,
   };
+  // Contact is anchored close to the footprint. Lift disperses it while the
+  // directional cast continues to use height and solar elevation above.
+  const separation = Math.max(0, travel);
+  const contactShadow = {
+    x: -vector.x * .45, y: .65 - vector.y * .45,
+    blur: 1.4 + separation * .3,
+    opacity: effects.reducedEffects || effectiveHeight <= 0 ? 0 : .32 / (1 + separation * .22),
+  };
   const glow = effects.reducedEffects ? 0 : bound(bound(local.contact ?? 0, 0, 1) * material.contactGain + bound(local.proximity ?? 0, 0, 1) * material.proximityGain, 0, material.maxGlow);
   const impulse = local.wave;
   const duration = bound(impulse?.duration ?? material.waveDuration, 100, 1500, material.waveDuration);
@@ -86,7 +103,7 @@ export function resolveMaterialResponse(input: {
   const progress = bound(age / duration, 0, 1);
   const waveActive = !!impulse && age < duration && !effects.reducedMotion && !effects.reducedEffects;
   return {
-    effectiveHeight, travel, shadow, position,
+    effectiveHeight, travel, shadow, castShadow: shadow, contactShadow, position,
     normalisedPosition: { x: position.x / width, y: position.y / height },
     glow,
     wave: {
