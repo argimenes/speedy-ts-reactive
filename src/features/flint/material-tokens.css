@@ -1,0 +1,68 @@
+/* Phase A is scoped: these tokens never style authored Documents or existing Flint windows. */
+.flint-material-playground {
+  --flint-chalk: #f7f5ee;
+  --flint-ivory: #efebe1;
+  --flint-limestone: #e5dfd2;
+  --flint-marble: #f4f1e8;
+  --flint-parchment: #ebe4d5;
+  --flint-ink: #292820;
+  --flint-muted: #645e52;
+  --flint-definition: #aaa18f;
+  --flint-mineral: #75664e;
+  --flint-focus: #635b49;
+  --flint-radius: 9px;
+  --flint-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23807868' opacity='.12' filter='url(%23g)' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
+  --flint-shadow-x: -0.8px;
+  --flint-shadow-y: 0.8px;
+  --flint-softness: .55;
+  --flint-shadow-opacity: .26;
+  --flint-light-angle: 405deg;
+  --flint-light-intensity: .85;
+  --flint-facet-left: #b9ad97;
+  --flint-facet-right: #e7ddc8;
+  --flint-facet-top: #e7ddc8;
+  --flint-facet-front: #e4d9c3;
+  color: var(--flint-ink);
+  background: var(--flint-ivory);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 400;
+}
+.flint-material-playground *, .flint-material-playground *::before, .flint-material-playground *::after { box-sizing: border-box; }
+.flint-material-playground .flint-material {
+  --flint-height: 0;
+  --flint-travel: 0px;
+  --flint-contact-x: 50%;
+  --flint-contact-y: 50%;
+  --flint-contact: 0;
+  position: relative;
+  background-color: var(--flint-marble);
+  background-image: var(--flint-grain), linear-gradient(var(--flint-light-angle), #f8f5edcc, #d8d0bf40);
+  border: 1px solid #fff9;
+  border-radius: var(--flint-radius);
+  box-shadow: calc(var(--flint-shadow-x) * var(--flint-height)) calc(var(--flint-shadow-y) * var(--flint-height)) calc(1px + var(--flint-height) * 0.55px) rgb(74 64 47 / var(--flint-shadow-opacity));
+}
+.flint-material-playground [data-elevation='etched'] { --flint-height: 1; box-shadow: inset var(--flint-shadow-x) var(--flint-shadow-y) 2px #75674a35; }
+.flint-material-playground [data-elevation='carved'] { --flint-height: 3; box-shadow: inset calc(var(--flint-shadow-x) * 3) calc(var(--flint-shadow-y) * 3) 5px #75674a40; border-color: #bdb4a588; }
+.flint-material-playground [data-elevation='relief'] { --flint-height: 4; }
+.flint-material-playground [data-elevation='raised'] { --flint-height: 8; }
+.flint-material-playground [data-elevation='object'] { --flint-height: 15; }
+.flint-material-playground .flint-local-field {
+  position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(circle 100px at var(--flint-contact-x) var(--flint-contact-y), #fffdf4, transparent);
+  opacity: var(--flint-contact);
+}
+.flint-material-playground .flint-dom-wave { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.flint-material-playground .flint-dom-wave circle { fill: none; stroke: #fffdf3; stroke-width: 2; }
+.flint-material-playground button, .flint-material-playground input, .flint-material-playground select { font: inherit; color: inherit; }
+.flint-material-playground button { cursor: pointer; }
+.flint-material-playground button:focus-visible, .flint-material-playground input:focus-visible, .flint-material-playground select:focus-visible, .flint-material-playground a:focus-visible, .flint-material-playground [tabindex]:focus-visible { outline: 2px solid var(--flint-focus); outline-offset: 4px; }
+.flint-material-playground .flint-material-button { padding: 10px 14px; min-height: 38px; }
+.flint-material-playground .flint-material-button[aria-pressed='true'] { border-color: var(--flint-mineral); }
+.flint-material-playground .flint-material-content { position: relative; transform: translateY(var(--flint-travel)); }
+.flint-material-playground[data-reduced-effects='true'] .flint-material { background-image: none; box-shadow: none !important; border-color: var(--flint-definition); }
+.flint-material-playground[data-reduced-effects='true'] .flint-local-field { display: none; }
+@media (forced-colors: active) {
+  .flint-material-playground, .flint-material-playground .flint-material { background: Canvas; color: CanvasText; box-shadow: none !important; border: 1px solid CanvasText; }
+  .flint-material-playground .flint-local-field, .flint-material-playground .flint-dom-wave { display: none; }
+  .flint-material-playground button:focus-visible { outline-color: Highlight; }
+}

@@ -1,0 +1,99 @@
+.flint-material-playground { display: grid; grid-template-columns: 218px minmax(0, 1fr); min-height: 100vh; background-image: var(--flint-grain), linear-gradient(128deg, #f5f2ea, #e5dfd2 47%, #f7f5ee 72%, #e7e1d5); }
+.flint-material-library { display: flex; flex-direction: column; padding: 22px 14px; border-right: 1px solid #fff9; background: #f7f3e642; }
+.flint-material-identity { display: flex; align-items: center; gap: 17px; padding: 0 16px 27px; }
+.flint-material-identity svg { width: 48px; height: 88px; filter: drop-shadow(calc(var(--flint-shadow-x) * 6) calc(var(--flint-shadow-y) * 6) 4px #66553b35); }
+.flint-material-identity > span { font: 23px Georgia, serif; letter-spacing: .29em; }
+.flint-material-identity small { display: block; text-align: center; margin-top: 12px; font: 13px Georgia, serif; }
+.flint-material-library nav { display: grid; gap: 2px; font-size: 15px; }
+.flint-material-library nav > * { display: flex; align-items: center; gap: 17px; padding: 11px 18px; color: inherit; text-decoration: none; }
+.flint-material-library-tree { border-top: 1px solid #b7ae9855; margin: 26px 10px 0; padding-top: 16px; font-size: 14px; }
+.flint-material-library-tree h2 { font-size: 15px; font-weight: 400; margin: 0 0 19px; }
+.flint-material-library-tree p { margin: 14px 0; }
+.flint-material-library-tree .flint-material { margin-left: -10px; padding: 8px 10px; }
+.flint-material-indent { padding-left: 15px; }
+.flint-material-library blockquote { margin: auto 12px 14px; padding-top: 80px; font: italic 17px/1.5 Georgia, serif; }
+.flint-material-library cite { display: block; font: 12px/2.8 Georgia, serif; letter-spacing: .23em; }
+.flint-material-workspace { min-width: 0; }
+.flint-material-header { display: flex; justify-content: space-between; align-items: center; padding: 21px 26px 18px; min-height: 86px; gap: 20px; border-bottom: 1px solid #fff9; }
+.flint-material-header h1 { font: 24px/1.2 Georgia, serif; margin: 7px 0 0; }
+.flint-material-header a { font-size: 13px; color: var(--flint-muted); white-space: nowrap; }
+.flint-material-kicker { font-size: 10px; font-weight: 500; letter-spacing: .18em; color: var(--flint-muted); }
+.flint-material-tabs { display: flex; align-items: center; height: 48px; padding: 5px 16px 0; gap: 3px; border-bottom: 1px solid #fff9; }
+.flint-material-tabs > .flint-material { padding: 11px 22px; border-radius: 7px 7px 0 0; font-size: 14px; }
+.flint-material-tabs > span { padding-left: 14px; }
+.flint-material-stage { display: grid; grid-template-columns: minmax(0, 1fr) 285px; gap: 12px; padding: 12px 14px 0; }
+.flint-material-graph-panel { position: relative; min-height: 690px; height: calc(100vh - 167px); max-height: 930px; border: 1px solid #fff9; border-radius: 8px; overflow: hidden; background: linear-gradient(var(--flint-light-angle), #ffffef35, transparent 25%, #85725510 44%, #fdfbec50 67%, transparent 86%); }
+.flint-material-graph { width: 100%; height: 100%; }
+.flint-material-playground .flint-stone-texture { pointer-events: none; }
+.flint-material-playground .flint-material-graph:not([data-detail='full']) .flint-stone-texture,
+.flint-material-playground .flint-material-graph[data-finish='untextured'] .flint-stone-texture,
+.flint-material-playground[data-reduced-effects='true'] .flint-stone-texture { display: none; }
+.flint-material-playground .flint-graph-label { user-select: text; cursor: text; }
+/* SVG consumes the shared resolver through definitions. Blocking only dynamic light
+   variables here prevents cascade invalidation through every <use> shadow tree. */
+.flint-material-graph, .flint-material-minimap .x6-graph {
+  --flint-shadow-x: initial; --flint-shadow-y: initial; --flint-softness: initial;
+  --flint-shadow-opacity: initial; --flint-light-angle: initial; --flint-light-intensity: initial;
+  --flint-facet-left: initial; --flint-facet-right: initial; --flint-facet-top: initial; --flint-facet-front: initial;
+}
+.flint-material-graph-toolbar { position: absolute; display: flex; align-items: center; top: 15px; left: 15px; z-index: 2; gap: 4px; }
+.flint-material-graph-toolbar button { padding: 7px 12px; font-size: 19px; }
+.flint-material-graph-toolbar > span { margin-left: 12px; font-size: 11px; color: var(--flint-muted); }
+.flint-material-minimap { position: absolute !important; bottom: 15px; left: 15px; padding: 5px; }
+.flint-material-zoom { position: absolute; bottom: 15px; right: 15px; display: flex; align-items: center; gap: 6px; }
+.flint-material-zoom output { min-width: 44px; text-align: center; font-size: 13px; }
+.flint-material-zoom button { font-size: 19px; padding: 6px 13px; }
+.flint-material-inspector { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 167px); min-height: 690px; overflow-y: auto; padding: 0 3px 12px; scrollbar-width: thin; }
+.flint-material-inspector .flint-material { flex-shrink: 0; }
+.flint-material-description, .flint-material-controls { padding: 18px 17px; }
+.flint-material-inspector h2 { font-size: 16px; font-weight: 400; margin: 3px 0 12px; }
+.flint-material-description h2 { font: 24px Georgia, serif; margin: 14px 0 6px; }
+.flint-material-description p { font-size: 13px; color: var(--flint-muted); margin: 0; }
+.flint-material-description .flint-material-description-text { color: var(--flint-ink); font-size: 14px; line-height: 1.55; margin-top: 19px; }
+.flint-material-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 15px; }
+.flint-material-tags span { border-radius: 5px; padding: 5px 8px; background: #d9d1c170; font-size: 12px; }
+.flint-material-range { display: grid; gap: 6px; margin: 13px 0; font-size: 12px; }
+.flint-material-range > span { display: flex; justify-content: space-between; gap: 8px; }
+.flint-material-range output { color: var(--flint-muted); font-variant-numeric: tabular-nums; }
+.flint-material-range input { width: 100%; height: 12px; margin: 0; accent-color: var(--flint-mineral); cursor: pointer; }
+.flint-material-range-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.flint-material-reset { width: 100%; margin-top: 8px; font-size: 12px !important; }
+.flint-material-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.flint-material-actions button { font-size: 12px; padding: 8px 10px; }
+.flint-material-playground button:disabled { opacity: .55; cursor: default; }
+.flint-material-hint { color: var(--flint-muted); font-size: 11px; line-height: 1.5; margin: 12px 0 0; }
+.flint-material-select { display: grid; gap: 7px; font-size: 12px; margin: 14px 0; }
+.flint-material-select select { min-width: 0; width: 100%; padding: 7px; border: 1px solid #b8ad9866; border-radius: 5px; background: var(--flint-chalk); }
+.flint-material-settings, .flint-material-connections { padding: 15px 16px; border: 1px solid #fff9; border-radius: 9px; }
+.flint-material-settings summary, .flint-material-connections summary { cursor: pointer; font-size: 14px; }
+.flint-material-settings > label:not(.flint-material-select) { display: flex; gap: 8px; align-items: center; margin-top: 15px; font-size: 12px; }
+.flint-material-settings input { accent-color: var(--flint-mineral); }
+.flint-material-connections ul { list-style: none; padding: 0; margin: 12px 0; }
+.flint-material-connections li button { display: flex; width: 100%; justify-content: space-between; padding: 8px 0; border: 0; background: transparent; text-align: left; font-size: 13px; }
+.flint-material-connections li button[aria-pressed='true'] { font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.flint-material-connections small { color: var(--flint-muted); font-size: 11px; }
+.flint-material-connections > label { display: grid; gap: 5px; font-size: 11px; margin-top: 13px; }
+.flint-material-connections input { background: var(--flint-chalk); border: 1px solid #b8ad9866; border-radius: 5px; padding: 7px; width: 100%; }
+.flint-material-samples { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; padding: 23px 20px 10px; }
+.flint-material-sample-panel { padding: 25px; overflow: hidden; }
+.flint-material-sample-panel h2 { font: 22px/1.4 Georgia, serif; max-width: 440px; margin: 13px 0; }
+.flint-material-sample-panel p { color: var(--flint-muted); font-size: 13px; line-height: 1.6; }
+.flint-material-sample-buttons { display: flex; flex-wrap: wrap; align-content: center; gap: 17px; }
+.flint-material-swatches { display: flex; gap: 5px; width: 100%; margin-top: 10px; }
+.flint-material-swatches span { flex: 1; padding: 19px 4px 7px; border: 1px solid #c3b9a577; border-radius: 4px; text-align: center; font-size: 10px; }
+.flint-material-footer { display: flex; justify-content: space-between; gap: 15px; padding: 16px 22px; font-size: 11px; color: var(--flint-muted); }
+.flint-material-footer > span:first-child { font-family: Georgia, serif; letter-spacing: .28em; text-transform: uppercase; }
+.flint-material-playground .x6-widget-selection-box { border: 1px solid var(--flint-mineral); border-radius: 9px; box-shadow: none; }
+.flint-material-playground .x6-widget-minimap, .flint-material-playground .x6-widget-minimap .x6-graph { background: transparent; box-shadow: none; }
+.flint-material-playground .x6-widget-minimap-viewport { border: 1px solid var(--flint-mineral); }
+.flint-material-playground .x6-widget-minimap .flint-graph-sculpture, .flint-material-playground .x6-widget-minimap .flint-graph-label { display: none; }
+.flint-material-playground .x6-widget-minimap .flint-graph-hit { fill: #8c8067; rx: 30; }
+.flint-material-playground .x6-widget-minimap .x6-edge { opacity: .35; }
+.flint-material-playground .flint-material-graph[data-detail='simple'] .flint-graph-relief { filter: none; }
+.flint-material-playground .flint-material-graph[data-detail='flat'] .flint-graph-relief { filter: none; opacity: .75; }
+.flint-material-playground .flint-material-graph[data-detail='flat'] { --flint-body-fill: var(--flint-limestone); --flint-facet-left: var(--flint-limestone); --flint-facet-right: var(--flint-limestone); --flint-facet-top: var(--flint-limestone); --flint-facet-front: var(--flint-limestone); }
+.flint-material-playground[data-reduced-effects='true'] .flint-graph-relief { filter: none; }
+@media (max-width: 1150px) { .flint-material-playground { grid-template-columns: 170px minmax(0, 1fr); } .flint-material-stage { grid-template-columns: minmax(0, 1fr) 260px; } .flint-material-identity { gap: 9px; padding-left: 0; } .flint-material-identity > span { font-size: 18px; } .flint-material-graph-toolbar > span { display: none; } }
+@media (max-width: 850px) { .flint-material-playground { grid-template-columns: 1fr; } .flint-material-library { display: none; } .flint-material-header h1 { font-size: 20px; } .flint-material-stage { grid-template-columns: 1fr; } .flint-material-graph-panel { min-height: 500px; height: 70vh; } .flint-material-inspector { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; min-height: 0; } }
+@media (max-width: 550px) { .flint-material-header { padding: 18px 14px; } .flint-material-header a { font-size: 11px; } .flint-material-inspector, .flint-material-samples { grid-template-columns: 1fr; } .flint-material-tabs > .flint-material { padding: 10px 12px; } .flint-material-footer { flex-direction: column; } .flint-material-minimap { transform: scale(.8); transform-origin: bottom left; } }
+@media (forced-colors: active) { .flint-material-playground .flint-graph-relief { filter: none; } .flint-material-playground .flint-stone-texture { display: none; } .flint-material-playground .flint-graph-label { fill: CanvasText; } .flint-material-playground .x6-widget-selection-box, .flint-material-playground .x6-widget-minimap-viewport { border-color: Highlight; } .flint-material-playground .flint-contextual-outlines { display: none; } }

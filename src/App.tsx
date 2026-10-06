@@ -8,7 +8,7 @@ import { WorkspaceDemo } from "./demo/workspace-demo";
 import { StandoffEffectsDemo } from "./demo/standoff-effects-demo";
 import { TextSuperpositionDemo } from "./demo/text-superposition-demo";
 import { createInitialWorkspace } from "./application/initial-workspace";
-import { featureFlags } from "./configuration";
+import { featureFlags, resolveFeatureFlags, type ReactiveEditorConfiguration } from "./configuration";
 import { CavernStartup } from "./application/cavern-startup";
 
 const pilotDocument: ExistingBlockDto = {
@@ -141,8 +141,14 @@ export function PilotApp() {
   );
 }
 
-export default function App() {
+export default function App(props: { configuration?: ReactiveEditorConfiguration } = {}) {
   const route = window.location.pathname.replace(/\/+$/, "");
+  const features = resolveFeatureFlags(props.configuration);
+  if (route === `${import.meta.env.BASE_URL}flint-material`) {
+    if (!features.flintMaterialLighting) return <main class="reactive-pilot"><h1>Material playground disabled</h1><a href={import.meta.env.BASE_URL}>Return to Mutable</a></main>;
+    const Playground = lazy(() => import("./features/flint/material-playground"));
+    return <Playground />;
+  }
   if (import.meta.env.DEV && import.meta.env.VITE_CANVAS_MILESTONE_A === "1" && route === `${import.meta.env.BASE_URL}scaled-window-prototype`) {
     const Prototype = lazy(() => import("./demo/scaled-window-prototype"));
     return <Prototype />;

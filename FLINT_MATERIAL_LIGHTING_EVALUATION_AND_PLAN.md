@@ -1,12 +1,12 @@
 # Flint Material Lighting Evaluation and Implementation Plan
 
 **Updated:** 6 October 2026  
-**Status:** Evaluation and staged implementation plan  
+**Status:** Phase A implemented; later phases remain planned
 **Scope:** Flint presentation, material lighting and graph visualisation
 
-The limestone and sculptural relief design is feasible within Mutable's existing SolidJS application. Use an existing graph engine for graph behaviour and build Flint's material, artwork and lighting layer around it. **AntV X6 is the first package to prototype.** The initial prototype should reproduce the supplied mockup's small graph composition closely enough to judge visual fidelity before extending it to automatic layout or large datasets.
+The limestone and sculptural relief design is feasible within Mutable's existing SolidJS application. Use an existing graph engine for graph behaviour and build Flint's material, artwork and lighting layer around it. **The Phase A playground now uses AntV X6 3.1.8 at `/flint-material`.** It reproduces the small reference composition with hand-authored SVG artwork, limestone grain and pale marble veins. See the [Phase A results](FLINT_MATERIAL_LIGHTING_PHASE_A_RESULTS.md) for validation and performance limits. Visual acceptance against the mockup and Safari comparison remain outstanding before adopting the treatment in production Flint chrome.
 
-The principal visual work is the relief vocabulary, material treatment, typography, spacing and coherent illumination. Package configuration alone will not produce those qualities. Phase A also establishes optional local interaction inputs so a later Flint Probe can consume the same materials and lighting. This plan defines that work without beginning the application rewrite, implementing a custom cursor or committing to an engine before the prototype establishes its suitability.
+The principal visual work is the relief vocabulary, material treatment, typography, spacing and coherent illumination. Package configuration alone will not produce those qualities. Phase A also establishes optional local interaction inputs so a later Flint Probe can consume the same materials and lighting. X6 supports the prototype's required artwork and interactions; large continuously relit graphs still need rendering optimisation. The playground does not begin the application rewrite or implement a custom cursor.
 
 ## Current application architecture
 
@@ -24,14 +24,14 @@ Existing [3D Object views](src/features/three-d-object/view.tsx) load their [Thr
 
 | Candidate | Fit for this design | Planning decision |
 | --- | --- | --- |
-| AntV X6 | SVG and HTML node rendering, custom geometry and interactions, selection and minimap extensions. Its JavaScript core can be hosted within a SolidJS component. | Prototype first. Use its existing graph behaviour while supplying Flint node and edge artwork. |
+| AntV X6 | SVG and HTML node rendering, custom geometry and interactions, selection and minimap extensions. Its JavaScript core can be hosted within a SolidJS component. | Retain for the Phase A prototype. Required interactions and textured SVG forms work. Full-relief scale is not yet qualified for a live graph. |
 | D3 modules | Force simulation is independent of rendering; zoom and drag behaviours can support custom SVG/DOM presentation. More graph UI must be assembled by the application. | Use `d3-force` for automatic layout if needed. Retain D3 with a custom presentation adapter as the alternative if X6 imposes a demonstrated constraint. |
 | React Flow | Custom React nodes and interactive graph containers support extensive visual customisation. | Do not introduce a React runtime solely for the graph while a framework-independent candidate fits the architecture. |
 | Cytoscape.js | Supports SVG node images and HTML/SVG extensions, with strong graph functionality. Its default canvas rendering makes inherited CSS lighting less direct. | Retain as an alternative if network functionality or measured scale requirements justify the additional presentation integration. |
 
 The package capabilities are documented in [X6](https://github.com/antvis/X6), [X6 node rendering](https://x6.antv.antgroup.com/en/tutorial/basic/node), [D3 force](https://d3js.org/d3-force), [D3 zoom](https://d3js.org/d3-zoom), [React Flow custom nodes](https://reactflow.dev/learn/customization/custom-nodes), and [Cytoscape.js](https://js.cytoscape.org/). X6 is a candidate for this presentation, not an assumption of proven relief performance.
 
-X6 should own its graph viewport and graph elements inside one dedicated container. SolidJS should own the surrounding Flint shell, controls and lifecycle. Dispose graph resources on unmount; avoid having both systems mutate the same node subtree. Solid-rendered HTML inside a graph node should be introduced only where needed and must have an explicit mount and cleanup adapter.
+X6 owns its graph viewport and graph elements inside one dedicated container. SolidJS owns the playground's surrounding surfaces, controls and lifecycle. Graph resources are disposed on unmount; the two systems do not mutate the same node subtree. Solid-rendered HTML inside a graph node should be introduced only where needed and must have an explicit mount and cleanup adapter.
 
 ## Visual fidelity to the mockup
 
@@ -40,6 +40,10 @@ Reproduce the reference through custom SVG geometry and CSS materials: the centr
 The first visual comparison should use deliberate positions approximating the mockup, with similar whitespace, symbol proportions and label placement. An unconstrained force layout would change the composition before its appearance could be judged. Add automatic layout afterward, preserving user-pinned positions and allowing the simulation to settle.
 
 Use real DOM or SVG typography for labels and real DOM controls for the surrounding interface. Keep reading and editing surfaces visually quiet. The broad diagonal illumination should remain a subtle, non-interactive presentation layer.
+
+The mockup is the current authority for colour as well as relief and light. Evaluate a restrained Cycladic/Aegean palette of warm chalk, ivory, limestone, pale marble and parchment together with charcoal typography, fine definition and occasional mineral/earth state accents. Existing Flint colour tokens do not constrain this experiment. Prefer carved forms, directional sunlight and a hierarchy of mostly flush surfaces over making every control a raised, softly shadowed beige tile. Phase A compares colour, typography, material, illumination and relief together.
+
+Scope the palette to Flint presentation. Authored Document colours and formatting remain their authors' choices. If the study succeeds, Phase C migrates Flint chrome to the resulting scoped palette rather than retaining its current colours underneath new lighting effects.
 
 The supplied head artwork is a raster asset with baked illumination. Moving an external shadow cannot relight its internal shading. Preserve the existing identity artwork; evaluate a suitable SVG relief representation or an optional genuine 3D asset where changing internal illumination is essential. Asset quality and composition will determine how closely the result resembles the reference.
 
@@ -51,7 +55,7 @@ Coalesce light changes into at most one `requestAnimationFrame` update. Write de
 
 | Token family | Responsibility |
 | --- | --- |
-| Material | Limestone first; paper and charcoal as later extensions. |
+| Material | Limestone and pale marble in Phase A; paper and charcoal as later extensions. |
 | Surface and texture | Base colours, restrained grain and low-opacity variation. |
 | Elevation | `etched`, `carved`, `flush`, `relief`, `raised`, `object`. |
 | Lighting | Direction, bounded intensity, elevation and softness. |
@@ -61,7 +65,9 @@ Coalesce light changes into at most one `requestAnimationFrame` update. Write de
 
 Use elevation classes or attributes on existing semantic elements. Small `FlintSurface`, `FlintPanel`, `FlintButton` and `FlintRelief` primitives can standardise new components without requiring replacement wrappers around every working control.
 
-Start with procedural gradients. Introduce a small seamless texture only if it materially improves the visual comparison. Keep text colours independent of light intensity, bound blur and displacement, and provide Reset to Flint Default.
+Phase A separates directional shading from neutral surface variation. Reusable SVG patterns provide fine limestone grain and pores or restrained marble veins; static alpha masks keep the texture inside filled and stroked forms. Material albedo supplies the stone's response to light. A shading-only comparison remains available, and simplified/flat detail and reduced effects suppress object texture. Text colours remain independent of light intensity, blur and displacement are bounded, and Reset to Flint Default restores limestone, light and local inputs.
+
+The grain is an embedded reusable SVG image; there is no live turbulence filter on each node. Finish and texture visibility update shared definitions only when those settings change. Explicit attributes reach SVG `<use>` instance trees reliably. Texture therefore uses the same material/SVG adapter as relief and a later Probe, rather than a separate renderer. [SVG patterns](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/pattern), [SVG alpha masks](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/mask-type)
 
 ## Shared material response and future Flint Probe
 
@@ -100,7 +106,7 @@ Register custom X6 node forms and edge treatments through supported extension po
 
 Where SVG filter parameters require attributes, update the shared definitions directly from the lighting controller instead of assuming every attribute accepts `var()`. [SVG drop shadow documentation](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDropShadow)
 
-Share immutable geometry and global lighting definitions. Target-local effects need scoped variables, overlays or definitions so contact with one node cannot alter every node using a shared filter. Keep these within the graph's rendering ownership; SolidJS supplies inputs through the adapter rather than mutating X6-owned node subtrees independently.
+Share immutable geometry and global lighting definitions. The prototype updates gradient/filter attributes from the common response resolver and stops dynamic root light variables at the SVG boundary to limit inherited style invalidation. Target-local effects have private definitions attached lazily, so contact with one node cannot alter every node using a shared filter. Keep these within the graph's rendering ownership; SolidJS supplies inputs through the adapter rather than mutating X6-owned node subtrees independently.
 
 Shared definitions reduce repeated markup; every filtered node still incurs rendering work. Use full relief, simplified relief and flat vector detail levels according to measured visible-node counts and zoom. Keep layout, viewport movement and lighting updates independent so moving the light does not restart a layout or reconstruct graph nodes.
 
@@ -132,9 +138,9 @@ The current Object model has authored `neutral`, `warm` and `dramatic` lighting 
 
 | Phase | Work | Completion criterion |
 | --- | --- | --- |
-| A | Build an isolated material playground containing a limestone surface, panel, raised and recessed controls, an X6 reference graph, sculptural SVG forms, one shared movable light and reset. Exercise optional local contact, press, lift and wave inputs through ordinary controls. | A browser comparison demonstrates coherent global and local material response while selection, pan, zoom and dragging work. Local effects remain target-scoped and reset to neutral. No custom cursor is implemented. |
+| A | Implemented: isolated material playground, Cycladic tokens, DOM samples, X6 reference graph, textured sculptural SVG forms, shared light and local response controls. | Chromium functional and scale checks recorded in the results document. Visual acceptance and Safari comparison remain open; no custom cursor is implemented. |
 | B | Formalise the lighting controller, shared response resolver, local interaction contract, tokens, relief vocabulary, primitives and reduced-effects treatment. | Existing and new primitives share one bounded material model with explicit lifecycle ownership and renderer adapters usable by a later Probe. |
-| C | Apply the material system to Flint's sidebar, tabs, toolbar, search and inspector. | Chrome approaches the reference without remounting Document editors or changing authored typography. Preserve core Window controls and geometry. |
+| C | Migrate Flint's sidebar, tabs, toolbar, search and inspector to the successful Cycladic palette and material system through scoped tokens. | Colour, typography, relief and light approach the reference without remounting Document editors or changing authored Document colours, formatting or typography. Preserve core Window controls and geometry. |
 | D | Add the live graph adapter, semantic navigation, appropriate edge meanings, automatic layout, pinned positions and measured detail degradation. | The graph uses canonical services and identities, remains usable at the supported sizes, and preserves semantic roles and provenance. |
 | E | Evaluate one optional genuine 3D object receiving the shared light. | Direction agrees with CSS/SVG and the ordinary graph and shell remain independent of Three.js. |
 | F | Polish lighting controls, reset and user-preference persistence. | Preferences restore through application settings without becoming semantic data. |
@@ -159,10 +165,12 @@ The current Object model has authored `neutral`, `warm` and `dramatic` lighting 
 | `src/features/flint/material-tokens.css` | Material, elevation, texture, shadow, highlight, local response limits, radius and motion tokens. |
 | `src/features/flint/material-primitives.tsx` | Small semantic primitives for new material UI. |
 | `src/features/flint/relief-defs.tsx` | Reusable SVG forms and scoped lighting definitions. |
+| `src/features/flint/material-textures.ts` | Reusable neutral limestone grain and marble vein patterns, separate from directional shading. |
 | `src/features/flint/material-playground.tsx` | Isolated Phase A fixture, lighting controls and local response demonstrations using the native cursor. |
 | `src/features/flint/graph/` | X6 lifecycle, coordinate and material adapters and fixture first; layout and live projection in later stages. |
 | `src/features/flint/shell.tsx`, `flint.css` | Phase C chrome integration and the shared root boundary. |
 | `src/App.tsx`, `src/configuration.ts` | Playground route and explicit feature composition. |
+| `scripts/check-flint-material-browser.mjs` | Isolated Chromium checks, screenshots and fixture performance measurements. |
 | `package.json`, lockfile | Pinned graph package and later layout dependencies when implemented. |
 | `src/feature-api/document-application.ts`, `src/application/document-application-capabilities.tsx` | Bounded live graph capability in Phase D if the existing contracts need extension. |
 | `src/features/three-d-object/view.tsx`, `scene-runtime.ts` | Optional Phase E presentation bridge. |
