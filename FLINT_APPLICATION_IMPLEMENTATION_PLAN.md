@@ -4,6 +4,8 @@
 
 The original 1 October plan moved existing capabilities into a Library → Document → Context shell. The [F1 report](FLINT_F1_IMPLEMENTATION_REPORT.md) and [manual-review correction report](FLINT_F1_MANUAL_REVIEW_CORRECTION_REPORT.md) record delivery. The stage designs below remain the application roadmap; their original F1 recommendation is historical, not a request to implement F1 again. Earlier Stage A/B/C and Native Knowledge P1–P5 work are foundations, not incomplete Flint application stages.
 
+The [Flint material lighting evaluation and implementation plan](FLINT_MATERIAL_LIGHTING_EVALUATION_AND_PLAN.md), updated 6 October 2026, defines the limestone presentation work and the proposed graph rendering approach. It starts with an isolated AntV X6 prototype using custom SVG relief and shared lighting to compare against the supplied mockup. This presentation plan does not change the implementation status of F2–F4 below.
+
 ## 1. Close the Native Knowledge programme
 
 P1–P5 and the [bounded responsiveness correction](NATIVE_KNOWLEDGE_P5_RESPONSIVENESS_REPORT.md) are accepted as completing the Native Knowledge infrastructure programme needed for current Flint development.
