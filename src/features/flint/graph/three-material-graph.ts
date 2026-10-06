@@ -3,7 +3,10 @@ import { createSculpture } from './three/sculpture';
 import { fixtureNodes, type FixtureNode } from './material-fixture';
 import type { createMaterialGraph, DetailLevel } from './material-graph';
 import { materialForForm, type ReliefForm } from '../relief-vocabulary';
-import { lightVector, type MaterialResponse, type Position, type StoneFinish } from '../material-response';
+import { type MaterialResponse, type Position, type StoneFinish } from '../material-response';
+import { applyFlintLight, configureMaterialRenderer } from '../material/scene-light';
+import { createOcclusionRig, CYCLADIC_APERTURE, type LightEnvironment } from '../material/light-environment';
+import { createMaterialRegistry } from '../material/material-registry';
 import { DEFAULT_TEXTURE_LAYERS, type TextureLayers } from '../material-textures';
 import limestoneURL from '../assets/limestone-albedo.png';
 import marbleURL from '../assets/marble-albedo.png';
@@ -14,14 +17,12 @@ type NodeView = { spec: FixtureNode; group: T.Group; label: HTMLSpanElement; wav
 /** Graph-only orthographic adapter. One existing Flint scheduler owns all
  * rendering; static scenes have no animation loop. No X6 instance is created.
  */
-export const createThreeMaterialGraph: GraphFactory = options => {
+export const createThreeMaterialGraph = (options: Parameters<GraphFactory>[0], environmentRoot?: HTMLElement) => {
   const { container, lighting, interactions } = options;
   const canvas = document.createElement('canvas'); canvas.className = 'flint-three-canvas'; canvas.setAttribute('aria-hidden','true');
   const labels = document.createElement('div'); labels.className = 'flint-three-labels'; container.append(canvas,labels); container.dataset.renderer='three';
   const renderer = new T.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1,1.5)); renderer.setClearColor(0x000000,0);
-  renderer.outputColorSpace=T.SRGBColorSpace; renderer.toneMapping=T.NeutralToneMapping; renderer.toneMappingExposure=1;
-  renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFShadowMap; renderer.shadowMap.autoUpdate=false;
+  configureMaterialRenderer(renderer);
   const scene=new T.Scene(), world=new T.Group(), edges=new T.Group();scene.add(world,edges);
   const camera=new T.OrthographicCamera(-1,1,1,-1,.1,4000);camera.position.set(450,-380,1600);
   const sunlight=new T.DirectionalLight(0xfff6e8,3), ambient=new T.HemisphereLight(0xfff9ef,0xc3b7a2,1.65); scene.add(sunlight,sunlight.target,ambient);
@@ -29,7 +30,7 @@ export const createThreeMaterialGraph: GraphFactory = options => {
   sunlight.shadow.camera.near=10;sunlight.shadow.camera.far=3600;
   const contact=new T.PointLight(0xfff4d8,0,160,2);scene.add(contact);let contactId:string|undefined;
   const floorMaterial=new T.ShadowMaterial({color:0x4d4538,opacity:.38});
-  const floor=new T.Mesh(new T.PlaneGeometry(16000,16000),floorMaterial);floor.receiveShadow=true;scene.add(floor);
+  const floor=new T.Mesh<T.PlaneGeometry, T.Material>(new T.PlaneGeometry(16000,16000),floorMaterial);floor.receiveShadow=true;scene.add(floor);
   let width=1,height=1,zoom=1,centre=new T.Vector2(450,-380),dirty=true,disposed=false,lost=false,selectedId:string|undefined,hoverId:string|undefined;
   let finish:StoneFinish='limestone',detail:DetailLevel='full',layers:TextureLayers=DEFAULT_TEXTURE_LAYERS;
   let nodes:readonly FixtureNode[]=[],views=new Map<string,NodeView>();
@@ -37,6 +38,12 @@ export const createThreeMaterialGraph: GraphFactory = options => {
   const plain=new T.MeshBasicMaterial({color:0xe5dfd2}),lineMaterial=new T.LineBasicMaterial({color:0x847a68,transparent:true,opacity:.68}),waveMaterial=new T.MeshBasicMaterial({color:0xfff8de,transparent:true,opacity:0,depthWrite:false});
   const metrics={frames:0,lastRenderMs:0,calls:0,triangles:0,geometries:0,textures:0,loadedTextures:0};
   const request=(shadows=true)=>{if(disposed||lost)return;dirty=true;if(shadows)renderer.shadowMap.needsUpdate=true;lighting.request()};
+  // The graph keeps its independent XY pan/zoom camera. The architectural rig
+  // is transformed from the shell's coordinates into that camera's world, so
+  // sculpture and receiving plane see the same environment and FlintLight.
+  const environmentRig = environmentRoot ? createOcclusionRig(scene) : undefined;
+  const surfaceRegistry = environmentRoot ? createMaterialRegistry(request, 2.6 / 1.65) : undefined;
+  if (surfaceRegistry) { floor.material = surfaceRegistry.get('limestone'); ambient.groundColor.set(0xd7d0c4); ambient.color.set(0xfffcf5); sunlight.shadow.mapSize.set(4096,4096); sunlight.shadow.bias = -.00003; }
   const loader=new T.TextureLoader();
   const maps=[limestoneURL,marbleURL].map(url=>{
     const albedo=loader.load(url,()=>{if(disposed)return;metrics.loadedTextures++;bump.needsUpdate=true;request()},undefined,()=>{if(!disposed){metrics.loadedTextures++;request()}});
@@ -109,18 +116,52 @@ export const createThreeMaterialGraph: GraphFactory = options => {
   function hit(p:Position){const b=canvas.getBoundingClientRect();raycaster.setFromCamera(new T.Vector2((p.x-b.left)/b.width*2-1,1-(p.y-b.top)/b.height*2),camera);return raycaster.intersectObjects(world.children,true).find(h=>h.object.userData.nodeId)?.object.userData.nodeId as string|undefined}
   function select(id?:string){selectedId=id;options.onSelection(nodes.find(n=>n.id===id));request(false)}
   function updateLighting(){
-    const v=lightVector(lighting.light);sunlight.position.set(centre.x+v.x*1400,centre.y-v.y*1400,v.z*1400);sunlight.target.position.set(centre.x,centre.y,0);
-    sunlight.intensity=lighting.light.intensity*3;sunlight.shadow.radius=.6+lighting.light.softness*4;
+    applyFlintLight(sunlight, lighting.light, centre);
     configureMaterials();request();
   }
   const stopLight=lighting.subscribe(updateLighting);
   const stopRender=lighting.addTask(()=>{
     if(!dirty||disposed||lost)return;dirty=false;
     camera.left=-width/(2*zoom);camera.right=width/(2*zoom);camera.top=height/(2*zoom);camera.bottom=-height/(2*zoom);camera.position.set(centre.x,centre.y,1600);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+    if (environmentRoot && environmentRig) {
+      renderer.shadowMap.needsUpdate = true;
+      const rootRect = environmentRoot.getBoundingClientRect(), graphRect = container.getBoundingClientRect();
+      const left = centre.x - width / (2 * zoom), top = centre.y + height / (2 * zoom);
+      const ox = left - (graphRect.left - rootRect.left) / zoom, oy = top + (graphRect.top - rootRect.top) / zoom;
+      environmentRig.layout(rootRect.width / zoom, rootRect.height / zoom, ox, oy);
+      environmentRig.group.visible = environmentRig.environment.enabled && !lighting.effects.reducedEffects;
+      const span = Math.max(rootRect.width, rootRect.height) / zoom * 1.25;
+      Object.assign(sunlight.shadow.camera, { left: -span, right: span, top: span, bottom: -span, near: 1, far: 16000 });
+      sunlight.shadow.camera.updateProjectionMatrix();
+      applyFlintLight(sunlight, lighting.light, new T.Vector2(ox + rootRect.width / zoom / 2, oy - rootRect.height / zoom / 2), Math.max(rootRect.width, rootRect.height) / zoom * 2);
+      // Match shell texture coordinates through pan/zoom, rather than stretching
+      // the material when Graph camera geometry changes.
+      const uv = floor.geometry.getAttribute('uv'), positions = floor.geometry.getAttribute('position');
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, (positions.getX(i) - ox) * zoom / 640, (positions.getY(i) - oy + rootRect.height / zoom) * zoom / 640);
+      uv.needsUpdate = true;
+    }
     for(const v of views.values()){
       const p=project(new T.Vector3(v.group.position.x,v.group.position.y-v.spec.height/2-23,0));v.label.style.transform=`translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${zoom})`;v.label.dataset.selected=String(v.spec.id===selectedId);v.label.dataset.hover=String(v.spec.id===hoverId);
     }
-    const start=performance.now();renderer.render(scene,camera);metrics.lastRenderMs=performance.now()-start;metrics.frames++;metrics.calls=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.geometries=renderer.info.memory.geometries;metrics.textures=renderer.info.memory.textures;
+    const start=performance.now();renderer.render(scene,camera);
+    if (environmentRig && detail === 'full' && !lighting.effects.reducedEffects) {
+      // Keep the spike's fine contact shadows. An additional floor-only colour
+      // pass excludes the distant architecture from this contact map; all casts
+      // still use the same sun. This avoids blurring tiny sculpture footprints
+      // with the broad architectural penumbra or double-darkening the environment.
+      const environmentVisible = environmentRig.group.visible, surface = floor.material;
+      environmentRig.group.visible = false; floor.material = floorMaterial;
+      const suppressed = new Set<T.Material>();
+      scene.traverse(object => { if (object instanceof T.Mesh || object instanceof T.Line) {
+        if (object === floor) return;
+        for (const material of Array.isArray(object.material) ? object.material : [object.material]) if (material.colorWrite) { suppressed.add(material); material.colorWrite = false; }
+      } });
+      renderer.autoClear = false; renderer.shadowMap.needsUpdate = true;
+      renderer.render(scene,camera);
+      renderer.autoClear = true; suppressed.forEach(material => { material.colorWrite = true; });
+      floor.material = surface; environmentRig.group.visible = environmentVisible;
+    }
+    metrics.lastRenderMs=performance.now()-start;metrics.frames++;metrics.calls=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.geometries=renderer.info.memory.geometries;metrics.textures=renderer.info.memory.textures;
   });
   function fit(){if(!nodes.length)return;const left=Math.min(...nodes.map(n=>n.x)),top=Math.min(...nodes.map(n=>n.y)),right=Math.max(...nodes.map(n=>n.x+n.width)),bottom=Math.max(...nodes.map(n=>n.y+n.height+40));centre.set((left+right)/2,-(top+bottom)/2);zoom=Math.min(1.15,(width-120)/(right-left),(height-120)/(bottom-top));zoom=Math.max(.15,zoom);options.onZoom(zoom);updateLighting()}
   function setFixture(count=13){
@@ -161,12 +202,13 @@ export const createThreeMaterialGraph: GraphFactory = options => {
     renderer,scene,camera,metrics,hit,clientToWorld,project,views,
     get nodes(){return nodes},get selectedId(){return selectedId},get disposed(){return disposed},get zoom(){return zoom},
     setFixture,select,fit,
+    setEnvironment(value: LightEnvironment = CYCLADIC_APERTURE) { environmentRig?.setEnvironment(value); request(); },
     setTextureLayers(value:TextureLayers){layers=value;configureMaterials();request(false)},
     setDetail(value:DetailLevel){detail=value;container.dataset.detail=value;configureMaterials();for(const v of views.values())v.group.traverse(o=>{if(o instanceof T.Mesh)o.material=value==='flat'?plain:material(v.spec.form)});request()},
     setFinish(value:StoneFinish){finish=value;container.dataset.finish=value;for(const v of views.values()){v.group.traverse(o=>{if(o instanceof T.Mesh)o.material=detail==='flat'?plain:material(v.spec.form)});const target=interactions.target(v.spec.id);if(target)target.material=materialForForm(v.spec.form,finish)}contextual.traverse(o=>{if(o instanceof T.Mesh)o.material=material('beads')});configureMaterials();request()},
     zoomBy(delta:number){zoom=Math.max(.15,Math.min(2.5,zoom+delta));options.onZoom(zoom);request(false)},
     pan(dx:number,dy:number){centre.x-=dx/zoom;centre.y+=dy/zoom;updateLighting()},move(dx:number,dy:number){if(selectedId)translateNode(selectedId,dx,dy)},
-    dispose(){if(disposed)return;disposed=true;resize.disconnect();stopLight();stopRender();for(const v of views.values()){v.stop();scene.remove(v.wave);v.wave.geometry.dispose();(v.wave.material as T.Material).dispose()}views.clear();for(const g of ownedGeometries)g.dispose();for(const m of materials.values())m.dispose();for(const t of textures)t.dispose();for(const e of edges.children)(e as T.Line).geometry.dispose();floor.geometry.dispose();floorMaterial.dispose();plain.dispose();lineMaterial.dispose();waveMaterial.dispose();outlineMaterial.dispose();sunlight.shadow.dispose();renderer.dispose();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('webglcontextlost',contextLost);container.removeEventListener('keydown',key);renderer.forceContextLoss();canvas.remove();labels.remove();options.minimap.replaceChildren();},
+    dispose(){if(disposed)return;disposed=true;resize.disconnect();stopLight();stopRender();environmentRig?.dispose();surfaceRegistry?.dispose();for(const v of views.values()){v.stop();scene.remove(v.wave);v.wave.geometry.dispose();(v.wave.material as T.Material).dispose()}views.clear();for(const g of ownedGeometries)g.dispose();for(const m of materials.values())m.dispose();for(const t of textures)t.dispose();for(const e of edges.children)(e as T.Line).geometry.dispose();floor.geometry.dispose();floorMaterial.dispose();plain.dispose();lineMaterial.dispose();waveMaterial.dispose();outlineMaterial.dispose();sunlight.shadow.dispose();renderer.dispose();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('webglcontextlost',contextLost);container.removeEventListener('keydown',key);renderer.forceContextLoss();canvas.remove();labels.remove();options.minimap.replaceChildren();},
   };
   return api;
 };

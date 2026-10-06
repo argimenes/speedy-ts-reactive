@@ -10,8 +10,8 @@ import { materializeLocalWorkspace, createWorkspaceSaveBundle, materializeWorksp
 import type { ExistingBlockDto } from "../block-tree/types";
 const disposers: (() => void)[] = [];
 afterEach(() => { disposers.splice(0).reverse().forEach(d => d()); document.body.replaceChildren(); localStorage.clear(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
-function setup(enabled = true, saved?: ExistingBlockDto) {
-  const editor = new ReactiveEditor(materializeLocalWorkspace(saved ?? { id: "workspace", type: "workspace-block", children: [] }), { features: { flint: enabled, compactEditorChrome: false } });
+function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true) {
+  const editor = new ReactiveEditor(materializeLocalWorkspace(saved ?? { id: "workspace", type: "workspace-block", children: [] }), { features: { flint: enabled, flintMaterialChrome: materialChrome, compactEditorChrome: false } });
   registerApplicationViews(editor); const projection = editor.createView("workspace");
   disposers.push(() => editor.dispose());
   if (!saved && enabled) editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined });
@@ -25,6 +25,14 @@ function setup(enabled = true, saved?: ExistingBlockDto) {
 }
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 describe("Flint composite transient hosting", () => {
+  it("keeps the original shell and native editor when material chrome is disabled", async () => {
+    const f = setup(true, undefined, false); await tick();
+    const shell = f.host.querySelector<HTMLElement>('.flint-application')!;
+    expect(shell.dataset.materialChrome).toBe('false');
+    expect(shell.querySelector('.flint-light-controls')).toBeNull();
+    expect(shell.querySelector('canvas')).toBeNull();
+    expect(f.editor.mounts.get(f.text().key)!.inputPolicy).toBe('standoff');
+  });
   it("keeps the editor and canonical History stable across F1 shell controls", async () => {
     const f=setup(); await tick();
     const shell=f.host.querySelector<HTMLElement>('.flint-application')!;

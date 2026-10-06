@@ -147,7 +147,7 @@ export default function App(props: { configuration?: ReactiveEditorConfiguration
   if (route === `${import.meta.env.BASE_URL}flint-material-three`) {
     if (!features.flintMaterialLighting || !features.flintThreeGraphSpike) return <main class="reactive-pilot"><h1>Three.js Graph spike disabled</h1><a href={`${import.meta.env.BASE_URL}flint-material`}>Return to SVG study</a></main>;
     const Spike = lazy(() => import("./features/flint/three-material-playground"));
-    return <Spike lightFieldEnabled={features.flintLightField} />;
+    return <Spike lightFieldEnabled={features.flintLightField} materialChrome={features.flintMaterialChrome} />;
   }
   if (route === `${import.meta.env.BASE_URL}flint-material`) {
     if (!features.flintMaterialLighting) return <main class="reactive-pilot"><h1>Material playground disabled</h1><a href={import.meta.env.BASE_URL}>Return to Mutable</a></main>;

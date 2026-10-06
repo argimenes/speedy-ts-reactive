@@ -1,0 +1,52 @@
+/* The fallback is the same quiet palette. Only the explicit ready state opens
+   the application-owned editor backdrop; authored formatting stays untouched. */
+.flint-application[data-material-chrome=true] {
+  --flint-coal:#f0ece2; --flint-stone:#e7e2d6; --flint-line:#9b907733;
+  --flint-chalk:#34332e; --flint-muted:#696456; --flint-ochre:#75674c; --flint-mineral:#526c74;
+  background:#f0ece2; color:var(--flint-chalk);
+}
+.flint-material-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; pointer-events:none; z-index:0; }
+.flint-material-canvas[hidden] { display:none; }
+.flint-application[data-material-chrome=true] > .flint-surfaces { position:relative; z-index:1; }
+.flint-application[data-material-chrome=true] :is(.flint-application__header,.flint-workspace-tools,.flint-rail,.flint-status,.flint-welcome) { background:transparent; color:var(--flint-chalk); }
+.flint-application[data-material-chrome=true] :is(.flint-application__header,.flint-workspace-tools,.flint-rail,.flint-status,.flint-sheet,.flint-welcome,.flint-attention) button {
+  background:#fffdf333; border-color:#8d826b40; color:var(--flint-chalk); box-shadow:none;
+}
+.flint-application[data-material-chrome=true] :is(.flint-application__header,.flint-workspace-tools,.flint-rail,.flint-status,.flint-sheet,.flint-welcome) button:hover:not(:disabled) { background:#fffdf580; border-color:#8d826b80; }
+.flint-application[data-material-chrome=true] :is(.flint-rail,.flint-sheet) :is(input,select,textarea) { background:#fffdf5c9; color:#34332e; border-color:#9b907766; }
+.flint-application[data-material-chrome=true] :is(.flint-rail,.flint-sheet) label,
+.flint-application[data-material-chrome=true] :is(.flint-welcome,.flint-sheet) p,
+.flint-application[data-material-chrome=true] :is(.flint-search-hit,.flint-backlink) span { color:var(--flint-muted); }
+.flint-application[data-material-chrome=true] .flint-segments button[aria-pressed=true] { background:#faf8f080; color:#34332e; border-color:#95876d60; }
+.flint-application[data-material-chrome=true] .flint-tree-folder button[aria-pressed=true] { color:#625037; text-decoration:underline; text-underline-offset:4px; }
+.flint-application[data-material-chrome=true] :is(.flint-menu,.flint-sheet) { background:#f4f0e7; color:#34332e; border-color:#a69c87; box-shadow:0 12px 36px #51462e26; }
+.flint-application[data-material-chrome=true] .flint-menu button { color:#34332e; background:transparent; }
+.flint-application[data-material-chrome=true] .flint-attention { background:#eee4cc; color:#5e4a29; }
+.flint-application[data-material-chrome=true] .flint-application__editor { background:#faf7ef; }
+.flint-application[data-material-chrome=true][data-material-ready=true] .flint-application__editor,
+.flint-application[data-material-chrome=true][data-material-ready=true] .reactive-document-occurrence { background:transparent; }
+.flint-application[data-material-chrome=true] .reactive-tabs > .reactive-tabs__labels { background:#eee9dd66; border-color:#9b907733; }
+.flint-application[data-material-chrome=true] .reactive-tabs > .reactive-tabs__labels button { background:transparent; color:#696456; border-color:transparent; }
+.flint-application[data-material-chrome=true] .reactive-tabs > .reactive-tabs__labels button[aria-selected=true] { background:#fffdf58c; color:#34332e; border:1px solid #9b907744; box-shadow:inset 0 1px #fff9; }
+.flint-light-controls { position:relative; font:12px/1.5 system-ui,sans-serif; color:#34332e; }
+.flint-light-controls summary { cursor:pointer; padding:6px 8px; white-space:nowrap; border:1px solid #9b907744; border-radius:4px; }
+.flint-light-controls summary:focus-visible,.flint-light-controls :is(input,select,button):focus-visible { outline:2px solid #526c74; outline-offset:3px; }
+.flint-light-controls__panel { position:absolute; right:0; top:calc(100% + 8px); width:236px; padding:18px; z-index:40; background:#f7f4ec; border:1px solid #b8ad96; border-radius:6px; box-shadow:0 12px 32px #51462e26; }
+.flint-light-controls__panel label { display:block; margin:0 0 13px; }
+.flint-light-controls__panel input[type=range],.flint-light-controls__panel select { display:block; width:100%; margin-top:5px; accent-color:#82755b; }
+.flint-light-controls__panel input[type=checkbox] { accent-color:#82755b; }
+.flint-light-controls__panel output { float:right; color:#696456; }
+.flint-light-controls__panel small { display:block; margin-top:12px; color:#696456; }
+@container flint (max-width:939px) {
+  .flint-application[data-material-chrome=true] .flint-rail { background:#f3efe5; box-shadow:8px 0 30px #51462e26; }
+}
+@container flint (max-width:520px) {
+  .flint-light-controls summary { max-width:55px; white-space:normal; line-height:1.2; }
+}
+@media (forced-colors:active) {
+  .flint-material-canvas { display:none; }
+  .flint-application[data-material-chrome=true],.flint-light-controls__panel { background:Canvas; color:CanvasText; }
+}
+.flint-material-playground[data-material-chrome=true][data-material-ready=true] > .flint-material-picture { display:none; }
+.flint-material-playground[data-material-chrome=true] .flint-material-graph-panel { border-color:#fdfaf0a0; }
+.flint-material-playground[data-material-chrome=true] .flint-material-inspector .flint-material { background:#f8f5ec55; }

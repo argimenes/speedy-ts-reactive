@@ -3,9 +3,9 @@ import type { DocumentApplicationCapabilities } from "../../feature-api/document
 import { FlintView } from "./shell";
 import "./flint.css";
 
-export function createFlintFeature(capabilities: (scope: FeatureScope) => DocumentApplicationCapabilities): CodexFeature {
+export function createFlintFeature(capabilities: (scope: FeatureScope) => DocumentApplicationCapabilities, materialChrome = true): CodexFeature {
   return { id: "flint", activate(scope) {
-    capabilities(scope).register({ type: "flint-application-block", view: FlintView,
+    capabilities(scope).register({ type: "flint-application-block", view: props => <FlintView {...props} materialChrome={materialChrome} />,
       create(documents) {
         return { id: crypto.randomUUID(), type: "flint-application-block", metadata: {}, children: [{ id: crypto.randomUUID(), type: "tab-row-block", children: documents.map(doc => ({ id: crypto.randomUUID(), type: "tab-block", metadata: { name: doc.title, documentTarget: { version: 1, documentId: doc.id } } })) }] };
       },

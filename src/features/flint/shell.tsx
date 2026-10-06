@@ -5,10 +5,11 @@ import { KnowledgeView } from './knowledge-view';
 import { VaultView, DocumentProperties } from './vault-view';
 import { StorageSheet } from './storage-sheet';
 import { useCurrentCavern } from '../../application/cavern-startup';
+import { MaterialChrome } from './material/material-chrome';
 
 // A runtime crop of the supplied, unmodified master: no generated substitute artwork.
 const identity = new URL('../../../docs/assets/flint/flint-app-icon-master.png', import.meta.url).href;
-export function FlintView(props:{application:DocumentApplicationInstance}) {
+export function FlintView(props:{application:DocumentApplicationInstance; materialChrome?:boolean}) {
   const cavern = useCurrentCavern();
   const app=props.application;
   const [library,setLibrary]=createSignal(true),[context,setContext]=createSignal(true);
@@ -18,7 +19,7 @@ export function FlintView(props:{application:DocumentApplicationInstance}) {
   const [menu,setMenu]=createSignal(false),[storage,setStorage]=createSignal(false);
   const [destination,setDestination]=createSignal({folder:'.',filename:'Document.mutable.json'});
   const [busy,setBusy]=createSignal(false),[error,setError]=createSignal('');
-  let shell!:HTMLDivElement, menuButton!:HTMLButtonElement, storageInvoker:HTMLElement|undefined;
+  let shell!:HTMLDivElement, viewport!:HTMLElement, menuButton!:HTMLButtonElement, storageInvoker:HTMLElement|undefined;
   const vault=()=>app.vault?.state();
   const showLibrary=()=>{setLibrary(true);setNarrowPanel('library');};
   const focusLibrary=()=>{showLibrary();setBrowse('browse');queueMicrotask(()=>shell.querySelector<HTMLInputElement>('[aria-label="Vault directory"]')?.focus());};
@@ -30,7 +31,7 @@ export function FlintView(props:{application:DocumentApplicationInstance}) {
   const toggle=(rail:'library'|'context')=>{const open=rail==='library'?library():context(),set=rail==='library'?setLibrary:setContext;
     if(shell.clientWidth<940){set(true);setNarrowPanel(narrowPanel()===rail?'':rail);}else set(!open);
   };
-  return <div ref={shell} class="flint-application" data-library={library()} data-context={context()} data-narrow-panel={narrowPanel()}>
+  return <div ref={shell} class="flint-application" data-material-chrome={props.materialChrome !== false} data-library={library()} data-context={context()} data-narrow-panel={narrowPanel()}>
     <div class="flint-surfaces" inert={storage()}>
     <header class="flint-application__header">
       <div class="flint-menu-anchor" onKeyDown={e=>{if(menu()&&e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}><button ref={menuButton} class="flint-brand" aria-label="Flint application menu" aria-expanded={menu()} onClick={()=>setMenu(!menu())}><span class="flint-mark"><img src={identity} alt=""/></span><strong>Flint</strong><span aria-hidden="true">⌄</span></button>
@@ -43,6 +44,7 @@ export function FlintView(props:{application:DocumentApplicationInstance}) {
       </div>
       <div class="flint-vault-name"><small>{cavern ? 'CAVERN' : 'WORKSPACE'}</small><span>{cavern?.current()?.name ?? vault()?.root??'A space for ideas'}</span></div>
       <button class="flint-search-launch" onClick={showSearch}>Search</button>
+      <Show when={props.materialChrome !== false}><MaterialChrome root={()=>shell} viewport={()=>viewport} layout={()=>[library(),context(),narrowPanel()]} /></Show>
       <button disabled={!app.files||!app.properties()||busy()||vault()?.readOnly||vault()?.busy} onPointerDown={e=>e.preventDefault()} onClick={()=>void save()}>Save Document</button>
     </header>
     <div class="flint-workspace-tools">
@@ -60,7 +62,7 @@ export function FlintView(props:{application:DocumentApplicationInstance}) {
         </div>
         <div hidden={browse()!=='search'}><Show when={vault()&&app.knowledge} fallback={<p>Open a Cavern to search its available native Documents.</p>}><KnowledgeView knowledge={app.knowledge!} mode="search"/></Show></div>
       </nav>
-      <main class="flint-application__editor">
+      <main ref={viewport} class="flint-application__editor">
         <Show when={!app.properties()}><section class="flint-welcome"><img src={identity} alt="Flint — a space for ideas"/><div><small>A SPACE FOR IDEAS</small><h1>Make room for your next thought.</h1><p>{vault()?'Choose a Document from your Library, or create one in the selected folder.':'Bring your Documents together. Open a Cavern to browse, write and follow connections.'}</p><button onClick={()=>vault()?focusLibrary():chooseVault()}>{vault()?'Browse / New Document':'Open a Cavern'}</button><button onClick={e=>openStorage(e.currentTarget)}>Open native file</button></div></section></Show>
         {/* This slot is unconditional. Shell presentation never reparents or remounts it. */}
         <app.tabs />
