@@ -1,0 +1,172 @@
+import * as T from 'three';
+import { createSculpture } from './three/sculpture';
+import { fixtureNodes, type FixtureNode } from './material-fixture';
+import type { createMaterialGraph, DetailLevel } from './material-graph';
+import { materialForForm, type ReliefForm } from '../relief-vocabulary';
+import { lightVector, type MaterialResponse, type Position, type StoneFinish } from '../material-response';
+import { DEFAULT_TEXTURE_LAYERS, type TextureLayers } from '../material-textures';
+import limestoneURL from '../assets/limestone-albedo.png';
+import marbleURL from '../assets/marble-albedo.png';
+
+export type MaterialGraphAdapter = Pick<ReturnType<typeof createMaterialGraph>, 'setFixture'|'select'|'fit'|'setTextureLayers'|'nodes'|'selectedId'|'disposed'|'setDetail'|'setFinish'|'zoomBy'|'pan'|'move'|'dispose'>;
+export type GraphFactory = (options: Parameters<typeof createMaterialGraph>[0]) => MaterialGraphAdapter;
+type NodeView = { spec: FixtureNode; group: T.Group; label: HTMLSpanElement; wave: T.Mesh; stop: () => void };
+/** Graph-only orthographic adapter. One existing Flint scheduler owns all
+ * rendering; static scenes have no animation loop. No X6 instance is created.
+ */
+export const createThreeMaterialGraph: GraphFactory = options => {
+  const { container, lighting, interactions } = options;
+  const canvas = document.createElement('canvas'); canvas.className = 'flint-three-canvas'; canvas.setAttribute('aria-hidden','true');
+  const labels = document.createElement('div'); labels.className = 'flint-three-labels'; container.append(canvas,labels); container.dataset.renderer='three';
+  const renderer = new T.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1,1.5)); renderer.setClearColor(0x000000,0);
+  renderer.outputColorSpace=T.SRGBColorSpace; renderer.toneMapping=T.NeutralToneMapping; renderer.toneMappingExposure=1;
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFShadowMap; renderer.shadowMap.autoUpdate=false;
+  const scene=new T.Scene(), world=new T.Group(), edges=new T.Group();scene.add(world,edges);
+  const camera=new T.OrthographicCamera(-1,1,1,-1,.1,4000);camera.position.set(450,-380,1600);
+  const sunlight=new T.DirectionalLight(0xfff6e8,3), ambient=new T.HemisphereLight(0xfff9ef,0xc3b7a2,1.65); scene.add(sunlight,sunlight.target,ambient);
+  sunlight.castShadow=true; sunlight.shadow.mapSize.set(2048,2048); sunlight.shadow.normalBias=.15;sunlight.shadow.bias=-.00018;
+  sunlight.shadow.camera.near=10;sunlight.shadow.camera.far=3600;
+  const contact=new T.PointLight(0xfff4d8,0,160,2);scene.add(contact);let contactId:string|undefined;
+  const floorMaterial=new T.ShadowMaterial({color:0x4d4538,opacity:.38});
+  const floor=new T.Mesh(new T.PlaneGeometry(16000,16000),floorMaterial);floor.receiveShadow=true;scene.add(floor);
+  let width=1,height=1,zoom=1,centre=new T.Vector2(450,-380),dirty=true,disposed=false,lost=false,selectedId:string|undefined,hoverId:string|undefined;
+  let finish:StoneFinish='limestone',detail:DetailLevel='full',layers:TextureLayers=DEFAULT_TEXTURE_LAYERS;
+  let nodes:readonly FixtureNode[]=[],views=new Map<string,NodeView>();
+  const textures=new Set<T.Texture>(),materials=new Map<string,T.MeshStandardMaterial>(),geometryCache=new Map<string,T.Group>(),ownedGeometries=new Set<T.BufferGeometry>();
+  const plain=new T.MeshBasicMaterial({color:0xe5dfd2}),lineMaterial=new T.LineBasicMaterial({color:0x847a68,transparent:true,opacity:.68}),waveMaterial=new T.MeshBasicMaterial({color:0xfff8de,transparent:true,opacity:0,depthWrite:false});
+  const metrics={frames:0,lastRenderMs:0,calls:0,triangles:0,geometries:0,textures:0,loadedTextures:0};
+  const request=(shadows=true)=>{if(disposed||lost)return;dirty=true;if(shadows)renderer.shadowMap.needsUpdate=true;lighting.request()};
+  const loader=new T.TextureLoader();
+  const maps=[limestoneURL,marbleURL].map(url=>{
+    const albedo=loader.load(url,()=>{if(disposed)return;metrics.loadedTextures++;bump.needsUpdate=true;request()},undefined,()=>{if(!disposed){metrics.loadedTextures++;request()}});
+    albedo.colorSpace=T.SRGBColorSpace;albedo.wrapS=albedo.wrapT=T.RepeatWrapping;albedo.repeat.set(.85,.85);albedo.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
+    const bump=albedo.clone();bump.colorSpace=T.NoColorSpace;textures.add(albedo);textures.add(bump);return {albedo,bump};
+  });
+  // Static concavity only, without a baked light direction. The recesses also
+  // exist in the head's geometry and can self-shadow under FlintLight.
+  const aoCanvas=document.createElement('canvas');aoCanvas.width=aoCanvas.height=256;
+  const aoContext=aoCanvas.getContext('2d')!,aoPixels=aoContext.createImageData(256,256);
+  const gaussian=(x:number,y:number,cx:number,cy:number,sx:number,sy:number)=>Math.exp(-Math.pow((x-cx)/sx,2)-Math.pow((y-cy)/sy,2));
+  for(let y=0;y<256;y++)for(let x=0;x<256;x++){
+    const nx=(x/255-.5)*100/34,ny=(.5-y/255)*100/47;
+    const depth=.18*(gaussian(nx,ny,-.37,.26,.15,.055)+gaussian(nx,ny,.37,.26,.15,.055))+.18*gaussian(nx,ny,0,-.51,.18,.04)+.09*gaussian(nx,ny,0,-.26,.16,.06);
+    const i=(y*256+x)*4,c=Math.round(255*(1-depth));aoPixels.data.set([c,c,c,255],i);
+  }
+  aoContext.putImageData(aoPixels,0,0);const headAO=new T.CanvasTexture(aoCanvas);headAO.colorSpace=T.NoColorSpace;headAO.channel=1;textures.add(headAO);
+  const albedoAmounts=new Map<T.MeshStandardMaterial,{value:number}>();
+  const material=(form:ReliefForm)=>{
+    const preset=materialForForm(form,finish),key=preset.name+(form==='mask'?'-head':'');
+    if(!materials.has(key)) {
+      const map=maps[preset.name==='marble-pale'?1:0],a=preset.albedo!;
+      const m=new T.MeshStandardMaterial({color:new T.Color().setHSL(a.hue/360,a.saturation/100*.3,.92+(a.ambient-58)*.002),roughness:key.includes('marble')?.75:.91,metalness:0,map:map.albedo,bumpMap:map.bump,bumpScale:key.includes('porous')?.42:.25,aoMap:form==='mask'?headAO:null,aoMapIntensity:.7});
+      const amount={value:preset.relief!.texture*.6};albedoAmounts.set(m,amount);
+      // Albedo strength remains distinct from physical bump/roughness response.
+      // This tiny standard-material adapter avoids overwhelming the carving.
+      m.onBeforeCompile=shader=>{shader.uniforms.flintAlbedoAmount=amount;shader.fragmentShader='uniform float flintAlbedoAmount;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',T.ShaderChunk.map_fragment.replace('diffuseColor *= sampledDiffuseColor;','diffuseColor *= vec4(mix(vec3(1.0), sampledDiffuseColor.rgb, flintAlbedoAmount), sampledDiffuseColor.a);'));};
+      m.customProgramCacheKey=()=> 'flint-stone-albedo-v1';
+      materials.set(key,m);
+    }
+    return materials.get(key)!;
+  };
+  const configureMaterials=()=>{
+    for(const [name,m] of materials){const map=maps[name.startsWith('marble-pale')?1:0],visible=detail==='full'&&!lighting.effects.reducedEffects&&finish!=='untextured';
+      const nextMap=visible?map.albedo:null,nextBump=visible?map.bump:null;
+      if(m.map!==nextMap||m.bumpMap!==nextBump){m.map=nextMap;m.bumpMap=nextBump;m.needsUpdate=true;}
+      m.bumpScale=(name.includes('porous')?.42:.25)*layers.grain/DEFAULT_TEXTURE_LAYERS.grain;
+      albedoAmounts.get(m)!.value=(name.includes('porous')?.5:.37)*layers.grain/DEFAULT_TEXTURE_LAYERS.grain;
+    }
+    renderer.shadowMap.enabled=detail==='full'&&!lighting.effects.reducedEffects;
+  };
+  const cloneSculpture=(spec:FixtureNode)=>{
+    // The sanity fixtures use simpler genuine volumes; the reference retains
+    // the carved head and grooves. This is a spike fixture, not production LOD.
+    const form=nodes.length>13&&spec.form==='mask'?'stone':spec.form;
+    const key=form+'-'+materialForForm(spec.form,finish).name;
+    if(!geometryCache.has(key)) {const g=createSculpture(form,material(spec.form));g.traverse(o=>{if(o instanceof T.Mesh){ownedGeometries.add(o.geometry);if(o.geometry.getAttribute('uv'))o.geometry.setAttribute('uv1',o.geometry.getAttribute('uv').clone())}});geometryCache.set(key,g);}
+    const g=geometryCache.get(key)!.clone(true);g.scale.x=spec.width/100;g.scale.y=spec.height/100;
+    g.position.set(spec.x+spec.width/2,-spec.y-spec.height/2,.6);
+    g.traverse(o=>{o.userData.nodeId=spec.id;if(o instanceof T.Mesh&&detail==='flat')o.material=plain});return g;
+  };
+  const contextual=new T.Group();scene.add(contextual);
+  const outlineMaterial=new T.LineDashedMaterial({color:0x817562,dashSize:4,gapSize:5,transparent:true,opacity:.72});
+  for(const [cx,cy,rx,ry] of [[348,191,94,99],[774,342,91,91],[551,619,118,91]]){
+    const points=Array.from({length:97},(_,i)=>{const a=i/96*Math.PI*2;return new T.Vector3(cx+Math.cos(a)*rx,-cy-Math.sin(a)*ry,.07)});
+    const g=new T.BufferGeometry().setFromPoints(points);ownedGeometries.add(g);const line=new T.Line(g,outlineMaterial);line.computeLineDistances();contextual.add(line);
+  }
+  const beadGeometry=new T.SphereGeometry(6,16,10);ownedGeometries.add(beadGeometry);
+  for(const [x,y] of [[257,151],[242,329],[267,413],[434,224],[534,210],[687,264],[697,334],[523,523],[397,552],[355,499],[474,647]]){
+    const bead=new T.Mesh(beadGeometry,material('beads'));bead.scale.z=.65;bead.position.set(x,-y,4);bead.castShadow=bead.receiveShadow=true;contextual.add(bead);
+  }
+  function updateEdges(){
+    while(edges.children.length){const e=edges.children[0] as T.Line;e.geometry.dispose();edges.remove(e)}
+    for(let i=1;i<nodes.length;i++){const source=views.get(nodes[nodes.length===13?0:i-1].id)!,target=views.get(nodes[i].id)!;
+      const g=new T.BufferGeometry().setFromPoints([new T.Vector3(source.group.position.x,source.group.position.y,.08),new T.Vector3(target.group.position.x,target.group.position.y,.08)]);edges.add(new T.Line(g,lineMaterial));}
+  }
+  function project(p:T.Vector3){const v=p.clone().project(camera);return {x:(v.x+1)*width/2,y:(1-v.y)*height/2}}
+  function clientToWorld(p:Position){const b=canvas.getBoundingClientRect();return new T.Vector3((p.x-b.left)/b.width*2-1,1-(p.y-b.top)/b.height*2,0).unproject(camera)}
+  const raycaster=new T.Raycaster();
+  function hit(p:Position){const b=canvas.getBoundingClientRect();raycaster.setFromCamera(new T.Vector2((p.x-b.left)/b.width*2-1,1-(p.y-b.top)/b.height*2),camera);return raycaster.intersectObjects(world.children,true).find(h=>h.object.userData.nodeId)?.object.userData.nodeId as string|undefined}
+  function select(id?:string){selectedId=id;options.onSelection(nodes.find(n=>n.id===id));request(false)}
+  function updateLighting(){
+    const v=lightVector(lighting.light);sunlight.position.set(centre.x+v.x*1400,centre.y-v.y*1400,v.z*1400);sunlight.target.position.set(centre.x,centre.y,0);
+    sunlight.intensity=lighting.light.intensity*3;sunlight.shadow.radius=.6+lighting.light.softness*4;
+    configureMaterials();request();
+  }
+  const stopLight=lighting.subscribe(updateLighting);
+  const stopRender=lighting.addTask(()=>{
+    if(!dirty||disposed||lost)return;dirty=false;
+    camera.left=-width/(2*zoom);camera.right=width/(2*zoom);camera.top=height/(2*zoom);camera.bottom=-height/(2*zoom);camera.position.set(centre.x,centre.y,1600);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+    for(const v of views.values()){
+      const p=project(new T.Vector3(v.group.position.x,v.group.position.y-v.spec.height/2-23,0));v.label.style.transform=`translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${zoom})`;v.label.dataset.selected=String(v.spec.id===selectedId);v.label.dataset.hover=String(v.spec.id===hoverId);
+    }
+    const start=performance.now();renderer.render(scene,camera);metrics.lastRenderMs=performance.now()-start;metrics.frames++;metrics.calls=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.geometries=renderer.info.memory.geometries;metrics.textures=renderer.info.memory.textures;
+  });
+  function fit(){if(!nodes.length)return;const left=Math.min(...nodes.map(n=>n.x)),top=Math.min(...nodes.map(n=>n.y)),right=Math.max(...nodes.map(n=>n.x+n.width)),bottom=Math.max(...nodes.map(n=>n.y+n.height+40));centre.set((left+right)/2,-(top+bottom)/2);zoom=Math.min(1.15,(width-120)/(right-left),(height-120)/(bottom-top));zoom=Math.max(.15,zoom);options.onZoom(zoom);updateLighting()}
+  function setFixture(count=13){
+    for(const v of views.values()){v.stop();v.label.remove();scene.remove(v.wave);v.wave.geometry.dispose();(v.wave.material as T.Material).dispose();world.remove(v.group)}views.clear();contactId=undefined;contact.intensity=0;
+    nodes=fixtureNodes(count).map(n=>({...n,form:count>13&&n.form==='mask'?'stone':n.form}));contextual.visible=count===13;
+    for(const spec of nodes){const group=cloneSculpture(spec);world.add(group);
+      const label=document.createElement('span');label.className='flint-three-label';label.textContent=spec.label;label.tabIndex=0;label.setAttribute('role','button');label.setAttribute('aria-label',`${spec.label}, ${spec.relation}`);label.style.fontSize=spec.form==='mask'?'24px':'18px';labels.append(label);
+      label.addEventListener('click',()=>{if(window.getSelection()?.isCollapsed!==false)select(spec.id)});label.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){select(spec.id);e.preventDefault()}});
+      const wave=new T.Mesh(new T.RingGeometry(.98,1,64),waveMaterial.clone());wave.visible=false;wave.position.z=1;scene.add(wave);
+      const apply=(r:MaterialResponse,active:boolean)=>{
+        group.position.z=.6+r.travel;wave.visible=r.wave.active;wave.scale.setScalar(Math.max(.001,r.wave.radius));wave.position.x=group.position.x-spec.width/2+r.wave.x;wave.position.y=group.position.y+spec.height/2-r.wave.y;(wave.material as T.MeshBasicMaterial).opacity=r.wave.opacity;
+        if(active&&r.glow){contactId=spec.id;contact.position.set(group.position.x-spec.width/2+r.position.x,group.position.y+spec.height/2-r.position.y,group.position.z+28);contact.intensity=r.glow*1600}
+        else if(contactId===spec.id){contact.intensity=0;contactId=undefined}
+        request();
+      };
+      const stop=interactions.register({id:spec.id,elevation:spec.form==='mask'?'object':'relief',material:materialForForm(spec.form,finish),geometry:()=>({width:spec.width,height:spec.height}),clientToLocal:p=>{const q=clientToWorld(p);return {x:q.x-group.position.x+spec.width/2,y:group.position.y+spec.height/2-q.y}},apply,capabilities:[{kind:'drag',available:true,label:'Move relief'},{kind:'inspect',available:true,label:'Inspect fixture node'}]});
+      views.set(spec.id,{spec,group,label,wave,stop});
+    }
+    const extent=Math.max(900,...nodes.map(n=>n.x+n.width),...nodes.map(n=>n.y+n.height));for(const side of ['left','bottom'] as const)sunlight.shadow.camera[side]=-extent*.8;for(const side of ['right','top'] as const)sunlight.shadow.camera[side]=extent*.8;sunlight.shadow.camera.updateProjectionMatrix();
+    configureMaterials();updateEdges();select(nodes[0]?.id);fit();
+    options.minimap.replaceChildren();const mini=document.createElement('div');mini.className='flint-three-minimap';mini.setAttribute('aria-hidden','true');for(const spec of nodes){const dot=document.createElement('i');dot.style.left=`${spec.x/extent*100}%`;dot.style.top=`${spec.y/extent*100}%`;mini.append(dot)}options.minimap.append(mini);
+  }
+  function translateNode(id:string,dx:number,dy:number){const v=views.get(id);if(!v)return;v.spec.x+=dx;v.spec.y+=dy;v.group.position.x+=dx;v.group.position.y-=dy;updateEdges();request()}
+  let drag:{pointer:number;id?:string;start:Position;last:Position;world:T.Vector3;moved:boolean}|undefined;
+  const down=(e:PointerEvent)=>{if(e.button!==0)return;const id=hit({x:e.clientX,y:e.clientY});drag={pointer:e.pointerId,id,start:{x:e.clientX,y:e.clientY},last:{x:e.clientX,y:e.clientY},world:clientToWorld({x:e.clientX,y:e.clientY}),moved:false};canvas.setPointerCapture(e.pointerId);container.focus({preventScroll:true});if(id)select(id)};
+  const move=(e:PointerEvent)=>{const p={x:e.clientX,y:e.clientY};if(!drag){const id=hit(p);if(id!==hoverId){hoverId=id;request(false)}return}if(e.pointerId!==drag.pointer)return;
+    if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>3)drag.moved=true;
+    if(drag.id){const q=clientToWorld(p),dx=q.x-drag.world.x,dy=drag.world.y-q.y;translateNode(drag.id,dx,dy);drag.world=q;if(!lighting.effects.reducedMotion)interactions.set(drag.id,{lift:.5,contact:.15})}
+    else {centre.x-=(p.x-drag.last.x)/zoom;centre.y+=(p.y-drag.last.y)/zoom;updateLighting()}drag.last=p;
+  };
+  const end=(e:PointerEvent)=>{if(!drag||e.pointerId!==drag.pointer)return;const current=drag;drag=undefined;if(current.id)interactions.clear(current.id);else if(!current.moved)select();if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId)};
+  const wheel=(e:WheelEvent)=>{e.preventDefault();if(e.ctrlKey||e.metaKey){zoom=Math.max(.15,Math.min(2.5,zoom*Math.exp(-e.deltaY*.003)));options.onZoom(zoom);request(false)}else{centre.x+=e.deltaX/zoom;centre.y-=e.deltaY/zoom;updateLighting()}};
+  const key=(e:KeyboardEvent)=>{if(e.target!==container)return;if(e.key==='Escape'){select();e.preventDefault()}const d=e.shiftKey?20:5,dx=e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0,dy=e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0;if(dx||dy){e.preventDefault();if(selectedId)translateNode(selectedId,dx,dy);else{centre.x+=dx;centre.y-=dy;updateLighting()}}};
+  const contextLost=(e:Event)=>{e.preventDefault();lost=true;const message=document.createElement('p');message.className='flint-three-error';message.setAttribute('role','status');message.textContent='Graph graphics paused. Reload the study or return to the SVG baseline.';container.append(message)};
+  canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);canvas.addEventListener('lostpointercapture',end);canvas.addEventListener('wheel',wheel,{passive:false});canvas.addEventListener('webglcontextlost',contextLost);container.addEventListener('keydown',key);
+  const resize=new ResizeObserver(()=>{width=Math.max(1,container.clientWidth);height=Math.max(1,container.clientHeight);renderer.setSize(width,height,false);fit()});resize.observe(container);
+  const api={
+    renderer,scene,camera,metrics,hit,clientToWorld,project,views,
+    get nodes(){return nodes},get selectedId(){return selectedId},get disposed(){return disposed},get zoom(){return zoom},
+    setFixture,select,fit,
+    setTextureLayers(value:TextureLayers){layers=value;configureMaterials();request(false)},
+    setDetail(value:DetailLevel){detail=value;container.dataset.detail=value;configureMaterials();for(const v of views.values())v.group.traverse(o=>{if(o instanceof T.Mesh)o.material=value==='flat'?plain:material(v.spec.form)});request()},
+    setFinish(value:StoneFinish){finish=value;container.dataset.finish=value;for(const v of views.values()){v.group.traverse(o=>{if(o instanceof T.Mesh)o.material=detail==='flat'?plain:material(v.spec.form)});const target=interactions.target(v.spec.id);if(target)target.material=materialForForm(v.spec.form,finish)}contextual.traverse(o=>{if(o instanceof T.Mesh)o.material=material('beads')});configureMaterials();request()},
+    zoomBy(delta:number){zoom=Math.max(.15,Math.min(2.5,zoom+delta));options.onZoom(zoom);request(false)},
+    pan(dx:number,dy:number){centre.x-=dx/zoom;centre.y+=dy/zoom;updateLighting()},move(dx:number,dy:number){if(selectedId)translateNode(selectedId,dx,dy)},
+    dispose(){if(disposed)return;disposed=true;resize.disconnect();stopLight();stopRender();for(const v of views.values()){v.stop();scene.remove(v.wave);v.wave.geometry.dispose();(v.wave.material as T.Material).dispose()}views.clear();for(const g of ownedGeometries)g.dispose();for(const m of materials.values())m.dispose();for(const t of textures)t.dispose();for(const e of edges.children)(e as T.Line).geometry.dispose();floor.geometry.dispose();floorMaterial.dispose();plain.dispose();lineMaterial.dispose();waveMaterial.dispose();outlineMaterial.dispose();sunlight.shadow.dispose();renderer.dispose();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('webglcontextlost',contextLost);container.removeEventListener('keydown',key);renderer.forceContextLoss();canvas.remove();labels.remove();options.minimap.replaceChildren();},
+  };
+  return api;
+};

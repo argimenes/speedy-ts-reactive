@@ -4,19 +4,20 @@ import { createMaterialInteraction, type MaterialInteractions } from './material
 import { DEFAULT_LIGHT, type Light, type StoneFinish } from './material-response';
 import { FlintButton, FlintPanel, FlintSurface, registerDomMaterial } from './material-primitives';
 import { createMaterialGraph, type DetailLevel, type MaterialGraph } from './graph/material-graph';
+import type { GraphFactory, MaterialGraphAdapter } from './graph/three-material-graph';
 import { REFERENCE_NODES, type FixtureNode } from './graph/material-fixture';
 import { DEFAULT_TEXTURE_LAYERS, STONE_MACRO, STONE_MINERAL, STONE_GRAIN, type TextureLayers } from './material-textures';
 import { registerLightField } from './light-field';
 import './material-tokens.css';
 import './material-playground.css';
 
-type PlaygroundPresentation = { lighting: Lighting; interactions: MaterialInteractions; graph: MaterialGraph };
+type PlaygroundPresentation = { lighting: Lighting; interactions: MaterialInteractions; graph: MaterialGraphAdapter };
 const presentations = new WeakMap<HTMLElement, PlaygroundPresentation>();
 /** Instance-scoped playground inspection, also used by the browser qualification. */
 export function materialPlaygroundPresentation(root: HTMLElement) { return presentations.get(root); }
 
 const neutralLocal = { x: 50, y: 50, proximity: 0, contact: 0, press: 0, lift: 0 };
-export default function MaterialPlayground(props: { lightFieldEnabled?: boolean } = {}) {
+export default function MaterialPlayground(props: { lightFieldEnabled?: boolean; graphFactory?: GraphFactory; threeSpike?: boolean } = {}) {
   let root!: HTMLElement, container!: HTMLDivElement, minimap!: HTMLDivElement, panel!: HTMLDivElement, button!: HTMLButtonElement;
   let presentation: PlaygroundPresentation | undefined;
   let field!: HTMLDivElement;
@@ -49,7 +50,7 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean 
   onMount(() => {
     const lighting = createLighting(root), interactions = createMaterialInteraction(lighting);
     const stopField = props.lightFieldEnabled !== false ? registerLightField(field, lighting) : undefined;
-    const graph = createMaterialGraph({ container, minimap, lighting, interactions, onZoom: setZoom, onSelection: node => {
+    const graph = (props.graphFactory ?? createMaterialGraph)({ container, minimap, lighting, interactions, onZoom: setZoom, onSelection: node => {
       if (target() === 'relief') clearLocal(); setSelected(node);
     } });
     presentation = { lighting, interactions, graph }; presentations.set(root, presentation);
@@ -88,7 +89,7 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean 
       <blockquote>“We shape our tools<br />and thereafter<br />they shape us.”<cite>— McLuhan</cite></blockquote>
     </aside>
     <div class="flint-material-workspace">
-      <header class="flint-material-header"><div><span class="flint-material-kicker">MATERIAL STUDY · PHASE A</span><h1>A space for ideas, carved in light.</h1></div><a href={import.meta.env.BASE_URL}>Return to Mutable ↗</a></header>
+      <header class="flint-material-header"><div><span class="flint-material-kicker">MATERIAL STUDY · {props.threeSpike ? 'PHASE A.5 · THREE.JS GRAPH' : 'PHASE A'}</span><h1>A space for ideas, carved in light.</h1></div><a href={`${import.meta.env.BASE_URL}${props.threeSpike ? 'flint-material' : 'flint-material-three'}`}>{props.threeSpike ? 'Compare SVG baseline ↗' : 'Compare Three.js spike ↗'}</a></header>
       <div class="flint-material-tabs" aria-label="Reference composition"><FlintSurface elevation="raised">▤　The Waste Land</FlintSurface><FlintSurface elevation="relief">♧　Graph</FlintSurface><span aria-hidden="true">＋</span></div>
       <div class="flint-material-stage">
         <section class="flint-material-graph-panel" aria-label="Material graph study">
@@ -108,7 +109,7 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean 
             <Range label="Softness" value={() => light().softness} max={1} step={.01} change={v => updateLight('softness', v)} />
             <FlintButton class="flint-material-reset" onClick={reset}>Reset to Flint Default</FlintButton>
           </FlintPanel>
-          <FlintPanel elevation="flush" class="flint-material-controls"><h2>Local response</h2><label class="flint-material-select">Surface<select aria-label="Local response surface" value={target()} onChange={e => { clearLocal(); setTarget(e.currentTarget.value as 'panel' | 'relief'); }}><option value="panel">DOM limestone panel</option><option value="relief" disabled={!selected()}>Selected SVG relief</option></select></label>
+          <FlintPanel elevation="flush" class="flint-material-controls"><h2>Local response</h2><label class="flint-material-select">Surface<select aria-label="Local response surface" value={target()} onChange={e => { clearLocal(); setTarget(e.currentTarget.value as 'panel' | 'relief'); }}><option value="panel">DOM limestone panel</option><option value="relief" disabled={!selected()}>Selected {props.threeSpike ? 'stone' : 'SVG relief'}</option></select></label>
             <Range label="Contact X" value={() => local().x} max={100} unit="%" change={v => updateLocal('x', v)} />
             <Range label="Contact Y" value={() => local().y} max={100} unit="%" change={v => updateLocal('y', v)} />
             <Range label="Proximity" value={() => local().proximity} max={1} step={.01} change={v => updateLocal('proximity', v)} />

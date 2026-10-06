@@ -24,6 +24,8 @@ export type FeatureFlags = Readonly<{
   flintMaterialLighting: boolean;
   /** Experimental workspace sunlight/occlusion field within the material study. */
   flintLightField: boolean;
+  /** Isolated Three.js Graph materiality spike; no production Graph migration. */
+  flintThreeGraphSpike: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
   nativeDocumentPersistence: boolean;
   /** Accepted loaded-resource provider; false retains the legacy rollback. */
@@ -67,6 +69,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   flint: true,
   flintMaterialLighting: true,
   flintLightField: true,
+  flintThreeGraphSpike: true,
   nativeDocumentPersistence: true,
   nativeKnowledge: true,
   nativeKnowledgeSaved: false,

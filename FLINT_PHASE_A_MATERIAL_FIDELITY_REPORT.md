@@ -2,6 +2,8 @@
 
 **Date:** 6 October 2026
 
+**Follow-up:** The latest SVG baseline now also contains conceptual face normals, related stone response presets, directional edge highlights, static crease AO and a tight plain-silhouette contact shadow separate from its cast shadow. A combined two-shadow filter was rejected after increasing measured cost. The sharpened macro penumbra and all existing response/coordinate/cleanup boundaries are retained. Actual updated baseline captures, performance limits and the separately authorized Graph-only Three.js experiment are recorded in the [Phase A.5 comparison report](FLINT_PHASE_A5_THREEJS_GRAPH_RESULTS.md). The earlier captures below remain historical evidence of the texture pass.
+
 The fidelity pass is implemented in the isolated `/flint-material` playground. It adds material variation at three scales and one workspace illumination/occlusion field, while retaining the Phase A response model, native cursor and graph interactions. Phase B and Phase C have not begun.
 
 ## Source-kit decision

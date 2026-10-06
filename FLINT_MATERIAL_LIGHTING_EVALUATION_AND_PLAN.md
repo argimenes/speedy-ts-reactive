@@ -1,10 +1,12 @@
 # Flint Material Lighting Evaluation and Implementation Plan
 
 **Updated:** 6 October 2026  
-**Status:** Phase A implemented; later phases remain planned
+**Status:** Phase A retained; Phase A.5 Graph-only Three.js spike implemented for review; later phases remain planned
 **Scope:** Flint presentation, material lighting and graph visualisation
 
 The subsequent [Phase A material fidelity report](FLINT_PHASE_A_MATERIAL_FIDELITY_REPORT.md) records the texture-kit pass, three-scale compositing, experimental macro light field and actual browser captures. The study remains at Phase A for visual review.
+
+The authorized [Phase A.5 results](FLINT_PHASE_A5_THREEJS_GRAPH_RESULTS.md) compare the latest SVG baseline with a separate orthographic Three.js Graph adapter at `/flint-material-three`. The current recommendation is Three.js for sculptural Graph, HTML for shell/labels and retained SVG for simpler representations/fallback. This is a review recommendation, not a production migration decision; Phase B/C and Probe work remain deferred. The original restriction on introducing Three.js during the SVG correction does not constrain this explicitly authorized Graph-only spike.
 
 The limestone and sculptural relief design is feasible within Mutable's existing SolidJS application. Use an existing graph engine for graph behaviour and build Flint's material, artwork and lighting layer around it. **The Phase A playground now uses AntV X6 3.1.8 at `/flint-material`.** It reproduces the small reference composition with hand-authored SVG artwork, limestone grain and pale marble veins. See the [Phase A results](FLINT_MATERIAL_LIGHTING_PHASE_A_RESULTS.md) for validation and performance limits. Visual acceptance against the mockup and Safari comparison remain outstanding before adopting the treatment in production Flint chrome.
 
@@ -20,24 +22,25 @@ The [Flint shell](src/features/flint/shell.tsx) uses semantic DOM controls and c
 
 Flint has no active graph view or public graph capability in [DocumentApplicationInstance](src/feature-api/document-application.ts). Legacy Cytoscape modules use older APIs and are not an integrated Flint renderer. Graph functionality therefore needs its own bounded integration stage, alongside the presentation work.
 
-Existing [3D Object views](src/features/three-d-object/view.tsx) load their [Three.js runtime](src/features/three-d-object/scene-runtime.ts) separately and already manage visibility, motion preferences and disposal. Ordinary Flint chrome and the proposed graph should continue to render without Three.js.
+Existing [3D Object views](src/features/three-d-object/view.tsx) load their [Three.js runtime](src/features/three-d-object/scene-runtime.ts) separately and already manage visibility, motion preferences and disposal. Ordinary Flint chrome and the SVG Graph baseline continue to render without a WebGL context. The separately authorized Phase A.5 viewport now evaluates Three.js for sculptural Graph only; its production adoption remains a review decision.
 
 ## Graph package evaluation
 
 | Candidate | Fit for this design | Planning decision |
 | --- | --- | --- |
 | AntV X6 | SVG and HTML node rendering, custom geometry and interactions, selection and minimap extensions. Its JavaScript core can be hosted within a SolidJS component. | Retain for the Phase A prototype. Required interactions and textured SVG forms work. Full-relief scale is not yet qualified for a live graph. |
+| Three.js | Genuine geometry, normals, bump/roughness response and cast/self shadows in an orthographic viewport; requires its own bounded Graph interaction adapter. | Phase A.5 implemented for review. Recommended for sculptural Graph after visual acceptance; retain SVG baseline and HTML chrome/labels. No production migration yet. |
 | D3 modules | Force simulation is independent of rendering; zoom and drag behaviours can support custom SVG/DOM presentation. More graph UI must be assembled by the application. | Use `d3-force` for automatic layout if needed. Retain D3 with a custom presentation adapter as the alternative if X6 imposes a demonstrated constraint. |
 | React Flow | Custom React nodes and interactive graph containers support extensive visual customisation. | Do not introduce a React runtime solely for the graph while a framework-independent candidate fits the architecture. |
 | Cytoscape.js | Supports SVG node images and HTML/SVG extensions, with strong graph functionality. Its default canvas rendering makes inherited CSS lighting less direct. | Retain as an alternative if network functionality or measured scale requirements justify the additional presentation integration. |
 
 The package capabilities are documented in [X6](https://github.com/antvis/X6), [X6 node rendering](https://x6.antv.antgroup.com/en/tutorial/basic/node), [D3 force](https://d3js.org/d3-force), [D3 zoom](https://d3js.org/d3-zoom), [React Flow custom nodes](https://reactflow.dev/learn/customization/custom-nodes), and [Cytoscape.js](https://js.cytoscape.org/). X6 is a candidate for this presentation, not an assumption of proven relief performance.
 
-X6 owns its graph viewport and graph elements inside one dedicated container. SolidJS owns the playground's surrounding surfaces, controls and lifecycle. Graph resources are disposed on unmount; the two systems do not mutate the same node subtree. Solid-rendered HTML inside a graph node should be introduced only where needed and must have an explicit mount and cleanup adapter.
+X6 owns the SVG baseline viewport and graph elements inside one dedicated container. The Three.js spike owns a separate orthographic viewport, raycasting and XY interaction; it does not synchronise an X6 instance. SolidJS owns the shared surrounding surfaces, controls and lifecycle. Graph resources are disposed on unmount; the systems do not mutate the same node subtree. HTML labels have explicit adapter ownership and cleanup.
 
 ## Visual fidelity to the mockup
 
-Reproduce the reference through custom SVG geometry and CSS materials: the central mask, spiral, leaf, pyramids, moon, disc, diamond, stone spheres and small connecting beads. Give those forms body shading, edge highlights, contact shadows and restrained texture. Keep graph edges fine, with straight, curved and dashed treatments appropriate to their meaning. Contextual outlines can be a separate SVG layer aligned with the graph viewport.
+The Phase A baseline reproduces the reference through custom SVG geometry and CSS materials: the central mask, spiral, leaf, pyramids, moon, disc, diamond, stone spheres and small connecting beads. Phase A.5 compares genuine shallow sculptural geometry with that baseline, using the same reference positions and logical light. Keep graph edges fine, with contextual outlines aligned with their viewport. The renderer decision must follow visual review of both actual implementations against the original concept.
 
 The first visual comparison should use deliberate positions approximating the mockup, with similar whitespace, symbol proportions and label placement. An unconstrained force layout would change the composition before its appearance could be judged. Add automatic layout afterward, preserving user-pinned positions and allowing the simulation to settle.
 
@@ -75,7 +78,7 @@ The grain is an embedded reusable SVG image; there is no live turbulence filter 
 
 Treat interaction as an optional input to material response. Conventional hover and active states are useful input adapters, but do not define the complete interaction vocabulary. Pointer proximity, contact, press, lift, keyboard activation and programmatic demonstrations can supply the same presentation contract. The future Probe is a consumer of that contract, alongside panels, buttons and graph reliefs.
 
-Use a shared response resolver with the following inputs: the material and its response limits, baseline surface elevation and geometry, global light, optional local interaction state, and motion/effects preferences. It derives body shading, highlights, shadows, effective elevation and local decorative fields. DOM/CSS and SVG adapters apply those outputs through their existing primitives; an optional Three.js adapter can consume the same logical inputs later. This is one material model with renderer adapters. It does not require a separate pointer rendering engine.
+Use a shared response resolver with the following inputs: the material and its response limits, baseline surface elevation and geometry, global light, optional local interaction state, and motion/effects preferences. It derives body shading, highlights, shadows, effective elevation and local decorative fields. DOM/CSS and SVG adapters apply those outputs through their existing primitives. The Phase A.5 Three.js adapter consumes the same logical light, materials and interaction travel, while real geometry supplies its normals and physical shading/shadows. This is one logical material model with renderer adapters. It does not require a separate pointer rendering engine.
 
 ### Proposed presentation contract
 
@@ -132,7 +135,7 @@ Keyboard and touch input may supply contact/press feedback without a pointer scu
 
 ## Three.js presentation boundary
 
-Only a genuinely dimensional object should create a WebGL context. A later bridge may pass the same logical direction and strength to the existing Object scene through a host presentation input, with lazy loading and cleanup preserved.
+A WebGL context is limited to genuinely dimensional rendering: the existing Object scene or the authorized shallow Graph spike. The Phase A.5 graph uses one context per viewport, a straight-on orthographic camera and XY navigation. HTML chrome, Document/editor and the macro architectural field remain outside Three.js. A later bridge may pass the same logical direction and strength to the existing Object scene through a host presentation input, with lazy loading and cleanup preserved.
 
 The current Object model has authored `neutral`, `warm` and `dramatic` lighting presets. Define their precedence explicitly: the proposed default is for Flint to supply environment direction and modulation while retaining authored object characteristics. Do not silently rewrite those presets or persist incidental Flint lighting in `.ink` semantic records.
 
@@ -141,10 +144,11 @@ The current Object model has authored `neutral`, `warm` and `dramatic` lighting 
 | Phase | Work | Completion criterion |
 | --- | --- | --- |
 | A | Implemented: isolated material playground, Cycladic tokens, DOM samples, X6 reference graph, textured sculptural SVG forms, shared light and local response controls. | Chromium functional and scale checks recorded in the results document. Visual acceptance and Safari comparison remain open; no custom cursor is implemented. |
+| A.5 | Implemented: separate Three.js Graph materiality spike, real shallow geometry, shared FlintLight, DOM labels and direct XY interaction. | Actual browser comparison and lightweight 13/50/250-node sanity checks recorded. Stop for renderer/visual review before production migration or B/C. |
 | B | Formalise the lighting controller, shared response resolver, local interaction contract, tokens, relief vocabulary, primitives and reduced-effects treatment. | Existing and new primitives share one bounded material model with explicit lifecycle ownership and renderer adapters usable by a later Probe. |
 | C | Migrate Flint's sidebar, tabs, toolbar, search and inspector to the successful Cycladic palette and material system through scoped tokens. | Colour, typography, relief and light approach the reference without remounting Document editors or changing authored Document colours, formatting or typography. Preserve core Window controls and geometry. |
 | D | Add the live graph adapter, semantic navigation, appropriate edge meanings, automatic layout, pinned positions and measured detail degradation. | The graph uses canonical services and identities, remains usable at the supported sizes, and preserves semantic roles and provenance. |
-| E | Evaluate one optional genuine 3D object receiving the shared light. | Direction agrees with CSS/SVG and the ordinary graph and shell remain independent of Three.js. |
+| E | Evaluate one optional authored 3D Object receiving the shared light. | Direction agrees with the logical FlintLight; authored Object characteristics remain intact and HTML chrome stays independent of WebGL. |
 | F | Polish lighting controls, reset and user-preference persistence. | Preferences restore through application settings without becoming semantic data. |
 
 ### Phase A sequence

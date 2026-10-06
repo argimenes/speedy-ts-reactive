@@ -63,6 +63,9 @@ try {
   check('scoped Cycladic tokens replace the old palette within the study', await evaluate(`getComputedStyle(study.root).getPropertyValue('--flint-chalk').trim()==='#f7f5ee'`));
   check('SVG typography supports native text selection', await evaluate(`(()=>{const label=study.root.querySelector('[data-fixture-id="waste-land"] .flint-graph-label'),range=document.createRange();range.selectNodeContents(label);const s=window.getSelection();s.removeAllRanges();s.addRange(range);const selected=s.toString().split(String.fromCharCode(160)).join(' ')==='The Waste Land'&&getComputedStyle(label).userSelect==='text';s.removeAllRanges();return selected})()`));
   await shot('reference-default');
+  await evaluate(`study.faceTones=[...study.root.querySelectorAll('linearGradient[data-normal] stop')].map(s=>s.getAttribute('stop-color'));study.ao=[...study.root.querySelectorAll('[data-relief-ao]')].map(g=>g.getAttribute('opacity'));study.bevelDirection=study.root.querySelector('linearGradient[id*="-bevel-limestone"]').getAttribute('x1')`);
+  check('forms share explicit normals and related stone presets', await evaluate(`study.faceTones.length>10 && new Set(study.p.graph.nodes.map(n=>study.p.interactions.target(n.id).material.name)).size===5 && study.root.querySelectorAll('[data-relief-bevel]').length===11`));
+  check('contact uses a plain silhouette and a tighter independent filter', await evaluate(`(()=>{const p=study.p.graph.prefix,s=document.getElementById(p+'-object'),c=document.getElementById(p+'-object-contact');return !!study.root.querySelector('.flint-graph-seat use')&&Number(c.querySelector('feGaussianBlur').getAttribute('stdDeviation'))<Number(s.querySelector('feDropShadow').getAttribute('stdDeviation'))&&!!document.getElementById(p+'-contact-mask')})()`));
   check('one decorative workspace field renders above the material plane', await evaluate(`study.root.querySelectorAll('.flint-light-field-plane').length===1&&getComputedStyle(study.root.querySelector('.flint-light-field')).pointerEvents==='none'&&study.root.querySelector('.flint-light-field-plane').style.backgroundImage.includes('135deg')`));
   await evaluate(`study.input('Cloud variation',0);study.input('Mineral marks',0);study.input('Fine grain',0);await study.wait(100)`);
   const sampleClip = await evaluate(`(()=>{const n=study.p.graph.graph.getCellById('waste-land'),p=n.position(),s=n.size(),c=study.p.graph.graph.localToClient({x:p.x+s.width*.4,y:p.y+s.height*.35});return {x:c.x,y:c.y,width:20,height:25,scale:1}})()`);
@@ -87,13 +90,16 @@ try {
   await shot('reference-untextured');
   await evaluate(`study.input('Stone finish','limestone');study.input('Graph detail','simple');await study.wait(80)`);
   check('simplified detail removes texture cost', await evaluate(`getComputedStyle(study.root.querySelector('.flint-stone-texture')).display==='none'`));
+  check('simplified detail omits secondary AO, bevel and contact-shadow cues', await evaluate(`[...study.root.querySelectorAll('[data-relief-ao], [data-relief-bevel]')].every(g=>g.getAttribute('display')==='none')&&getComputedStyle(study.root.querySelector('.flint-graph-seat')).display==='none'`));
   await evaluate(`study.input('Graph detail','full');await study.wait(80)`);
   await evaluate(`study.input('Direction',135);await study.wait(100)`);
   check('shared light changes facet tones and SVG shadow direction without remounting nodes', await evaluate(`study.root.style.getPropertyValue('--flint-facet-left')!==study.root.style.getPropertyValue('--flint-facet-right') && Number(study.root.querySelector('filter[id$="-object"] feDropShadow').getAttribute('dx'))>0 && study.nodes.every((n,i)=>n===study.root.querySelectorAll('.flint-material-graph .x6-node')[i])`));
+  check('light changes internal normal shading and bevels while AO remains independent', await evaluate(`[...study.root.querySelectorAll('linearGradient[data-normal] stop')].some((s,i)=>s.getAttribute('stop-color')!==study.faceTones[i])&&study.root.querySelector('linearGradient[id*="-bevel-limestone"]').getAttribute('x1')!==study.bevelDirection&&[...study.root.querySelectorAll('[data-relief-ao]')].every((g,i)=>g.getAttribute('opacity')===study.ao[i])`));
   await shot('reference-light-reversed');
   check('macro illumination follows the same reversed light as relief shadows', await evaluate(`study.root.querySelector('.flint-light-field-plane').style.backgroundImage.includes('315deg')`));
   await evaluate(`study.click('Reset to Flint Default');study.input('Local response surface','relief');study.input('Contact',1);study.input('Lift',.75);await study.wait(100)`);
   check('local response affects only the selected relief', await evaluate(`study.root.querySelectorAll('.flint-material-graph [data-local-active="true"]').length===1 && study.p.interactions.state('waste-land').lift===.75`));
+  check('local lift weakens and spreads contact while separating the cast', await evaluate(`(()=>{const p=study.p.graph.prefix,c=document.getElementById(p+'-local-waste-land-contact-shadow'),s=document.getElementById(p+'-local-waste-land-shadow'),base=document.getElementById(p+'-object-contact');return Number(c.querySelector('feFuncA').getAttribute('slope'))<Number(base.querySelector('feFuncA').getAttribute('slope'))&&Number(c.querySelector('feGaussianBlur').getAttribute('stdDeviation'))>Number(base.querySelector('feGaussianBlur').getAttribute('stdDeviation'))&&Math.abs(Number(s.querySelector('feDropShadow').getAttribute('dx')))>Math.abs(Number(document.getElementById(p+'-object').querySelector('feDropShadow').getAttribute('dx')))})()`));
   await shot('reference-local-relief');
   await evaluate(`study.click('Clear local');study.click('Send wave');await study.wait(150)`);
   check('finite wave is visible on its target', await evaluate(`Number(study.p.graph.graph.getCellById('waste-land').attr('wave/opacity'))>0`));
@@ -146,8 +152,12 @@ try {
   const baselineCadence = await evaluate(`(async()=>{const a=[];let previous;for(let i=0;i<30;i++){const now=await new Promise(requestAnimationFrame);if(previous!==undefined)a.push(now-previous);previous=now;}a.sort((x,y)=>x-y);return {medianMs:a[Math.floor(a.length/2)],p95Ms:a[Math.ceil(a.length*.95)-1]}})()`);
   const measurements = [];
   const benchmarkCounts = process.env.MATERIAL_BENCH_COUNTS ? process.env.MATERIAL_BENCH_COUNTS.split(',').map(Number) : [13, 50, 250, 1000];
-  for (const count of process.env.MATERIAL_BENCH === '0' ? [] : benchmarkCounts) for (const detail of ['full', 'simple', 'flat']) for (const zoom of ['fit', 'closer']) {
+  const benchmarkDetails = process.env.MATERIAL_BENCH_DETAILS?.split(',') ?? ['full', 'simple', 'flat'];
+  for (let repeat = 0; repeat < Number(process.env.MATERIAL_BENCH_REPEATS ?? 1); repeat++) for (const count of process.env.MATERIAL_BENCH === '0' ? [] : benchmarkCounts) for (const detail of benchmarkDetails) for (const zoom of ['fit', 'closer']) {
     await evaluate(`study.input('Graph fixture size',${count});study.input('Graph detail',${JSON.stringify(detail)});await study.wait(120);if(${JSON.stringify(zoom)}==='closer')study.p.graph.graph.zoomTo(Math.min(1.2,study.p.graph.graph.zoom()*1.6));study.p.interactions.set(study.p.graph.nodes[0].id,{contact:1,lift:.5});await study.wait(80)`);
+    // Warm the new fixture/filter raster caches before tracing. This matters
+    // especially for the first full-detail case after the teardown checks.
+    await evaluate(`(async()=>{for(let i=0;i<12;i++){await new Promise(requestAnimationFrame);study.p.lighting.setLight({azimuth:(i*9)%360})}await study.wait(120)})()`);
     const beforeMetrics = await send('Performance.getMetrics', {}, sessionId);
     paintEvents.length = 0;
     await send('Tracing.start', { categories: 'devtools.timeline', transferMode: 'ReportEvents' });
@@ -162,7 +172,7 @@ try {
     await send('Tracing.end'); await complete; traceComplete = undefined;
     const afterMetrics = await send('Performance.getMetrics', {}, sessionId);
     const metric = (list, name) => list.metrics.find(m => m.name === name)?.value ?? 0;
-    measurements.push({ count, detail, view: zoom, ...result, paintCpuMs: paintEvents.reduce((sum,e)=>sum+e.dur/1000,0), paintEvents: paintEvents.length, styleMs: (metric(afterMetrics, 'RecalcStyleDuration') - metric(beforeMetrics, 'RecalcStyleDuration')) * 1000, layoutMs: (metric(afterMetrics, 'LayoutDuration') - metric(beforeMetrics, 'LayoutDuration')) * 1000 });
+    measurements.push({ repeat, count, detail, view: zoom, ...result, paintCpuMs: paintEvents.reduce((sum,e)=>sum+e.dur/1000,0), paintEvents: paintEvents.length, styleMs: (metric(afterMetrics, 'RecalcStyleDuration') - metric(beforeMetrics, 'RecalcStyleDuration')) * 1000, layoutMs: (metric(afterMetrics, 'LayoutDuration') - metric(beforeMetrics, 'LayoutDuration')) * 1000 });
     console.log(JSON.stringify(measurements.at(-1)));
     check(`${count}/${detail}/${zoom}: stable mounts and idle scheduler`, result.stableMounts && result.idle);
   }

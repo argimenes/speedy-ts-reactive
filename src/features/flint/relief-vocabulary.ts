@@ -39,8 +39,8 @@ const pyramids = [pyramid(48, 9, 47, 48), pyramid(25, 34, 45, 49), pyramid(75, 3
 export const RELIEF_ARTWORK: Record<ReliefForm, ReliefArtwork> = {
   mask: {
     body: `<path ${body} d="${maskOutline}"/><path ${face('left')} opacity=".35" d="M49 6C20 7 16 25 19 51c4 25 17 39 29 44L43 59Z"/><path ${face('right')} opacity=".3" d="M53 6c26 2 30 28 25 47-5 20-13 35-24 41l4-35Z"/><path ${face('noseLeft')} d="m49 24-7 37 8 4Z"/><path ${face('noseRight')} d="m52 24 8 37-10 4Z"/><path ${face('nose')} d="m49 24 3 0 2 35-4 6-3-6Z"/>`,
-    ao: ao('M42 60q3 5 8 5t10-5M30 31q5-3 10 0m21 0q5-3 10 0M40 73q9-5 17 0m-15 0q7 4 13 0', 1.8) + ao('M45 28 42 60m13-32 5 32', 1.1),
-    bevel: bevel(maskOutline) + bevel('M49 25 47 59l3 3m-9 11q8-3 15 0', 1.1),
+    ao: ao('M42 60q3 5 8 5t10-5', 1.6) + ao('M45 28 42 60m13-32 5 32M31 31q4-1 8 0m23 0q4-1 8 0', 1.1) + '<path d="m43 73 13-1-7 3Z" fill="#443d30"/>',
+    bevel: bevel(maskOutline) + bevel('M49 25 47 59l3 3m-6 11 11-1', 1.1),
   },
   pyramids: { body: pyramids.map(p => p.body).join(''), ao: pyramids.map(p => p.ao).join(''), bevel: pyramids.map(p => p.bevel).join('') },
   disc: {

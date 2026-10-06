@@ -105,7 +105,7 @@ export function installReliefDefinitions(defs: SVGDefsElement, prefix: string, l
     // is removed by its explicit definition attributes and adapter boundary.
     for (const { form, normal, stop } of facets.values()) {
       const material = materialForForm(form, finish);
-      attribute(stop, 'stop-color', facetTone(detail === 'flat' ? { x: 0, y: 0, z: 1 } : normal, lighting.light, material));
+      attribute(stop, 'stop-color', facetTone(detail === 'flat' ? { x: normal.x * .15, y: normal.y * .15, z: 1 } : normal, lighting.light, material));
     }
     const vector = lightVector(lighting.light), a = lighting.light.azimuth * Math.PI / 180;
     for (const { form, body, bevel } of profiles.values()) {
