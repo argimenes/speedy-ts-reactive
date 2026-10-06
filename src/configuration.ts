@@ -22,6 +22,8 @@ export type FeatureFlags = Readonly<{
   flint: boolean;
   /** Isolated material/lighting playground; does not replace Flint chrome. */
   flintMaterialLighting: boolean;
+  /** Experimental workspace sunlight/occlusion field within the material study. */
+  flintLightField: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
   nativeDocumentPersistence: boolean;
   /** Accepted loaded-resource provider; false retains the legacy rollback. */
@@ -64,6 +66,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   windowMaximize: true,
   flint: true,
   flintMaterialLighting: true,
+  flintLightField: true,
   nativeDocumentPersistence: true,
   nativeKnowledge: true,
   nativeKnowledgeSaved: false,

@@ -1,4 +1,14 @@
-.flint-material-playground { display: grid; grid-template-columns: 218px minmax(0, 1fr); min-height: 100vh; background-image: var(--flint-grain), linear-gradient(128deg, #f5f2ea, #e5dfd2 47%, #f7f5ee 72%, #e7e1d5); }
+.flint-material-playground { position: relative; isolation: isolate; display: grid; grid-template-columns: 218px minmax(0, 1fr); min-height: 100vh; background: #eee9df; }
+.flint-material-library, .flint-material-workspace { position: relative; z-index: 1; }
+.flint-material-picture { position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+.flint-material-picture > span { position: absolute; inset: -120px; pointer-events: none; }
+.flint-material-cloud { background-image: var(--flint-macro-image); background-size: cover; background-repeat: no-repeat; background-position: center; opacity: calc(var(--flint-macro-amount) * .7); }
+.flint-material-minerals { background-image: var(--flint-mineral-image); background-size: cover; background-repeat: no-repeat; background-position: center; opacity: calc(var(--flint-mineral-amount) * .45); transform: rotate(-9deg) scale(1.15); }
+.flint-material-pores { background-image: var(--flint-micro-image); background-size: 220px; background-position: 53px 31px; opacity: calc(var(--flint-grain-amount) * .3); }
+.flint-light-field { position: absolute; inset: 0; overflow: hidden; z-index: 2; pointer-events: none; }
+.flint-light-field-plane { position: absolute; inset: -2%; pointer-events: none; transform-origin: center; }
+.flint-material-playground[data-reduced-effects='true'] .flint-material-picture,
+.flint-material-playground[data-reduced-effects='true'] .flint-light-field { display: none; }
 .flint-material-library { display: flex; flex-direction: column; padding: 22px 14px; border-right: 1px solid #fff9; background: #f7f3e642; }
 .flint-material-identity { display: flex; align-items: center; gap: 17px; padding: 0 16px 27px; }
 .flint-material-identity svg { width: 48px; height: 88px; filter: drop-shadow(calc(var(--flint-shadow-x) * 6) calc(var(--flint-shadow-y) * 6) 4px #66553b35); }
@@ -22,7 +32,7 @@
 .flint-material-tabs > .flint-material { padding: 11px 22px; border-radius: 7px 7px 0 0; font-size: 14px; }
 .flint-material-tabs > span { padding-left: 14px; }
 .flint-material-stage { display: grid; grid-template-columns: minmax(0, 1fr) 285px; gap: 12px; padding: 12px 14px 0; }
-.flint-material-graph-panel { position: relative; min-height: 690px; height: calc(100vh - 167px); max-height: 930px; border: 1px solid #fff9; border-radius: 8px; overflow: hidden; background: linear-gradient(var(--flint-light-angle), #ffffef35, transparent 25%, #85725510 44%, #fdfbec50 67%, transparent 86%); }
+.flint-material-graph-panel { position: relative; min-height: 690px; height: calc(100vh - 167px); max-height: 930px; border: 1px solid #fff9; border-radius: 8px; overflow: hidden; background: transparent; }
 .flint-material-graph { width: 100%; height: 100%; }
 .flint-material-playground .flint-stone-texture { pointer-events: none; }
 .flint-material-playground .flint-material-graph:not([data-detail='full']) .flint-stone-texture,

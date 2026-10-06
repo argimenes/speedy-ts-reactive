@@ -18,6 +18,8 @@ describe('shared material response', () => {
     expect(response({ light: west }).shadow.x).toBeGreaterThan(0);
     expect(response({ light: east }).facets.left).toEqual(response({ light: west }).facets.right);
     expect(response({ light: east }).shadow.y).toBeCloseTo(0);
+    expect(response({ light: east }).body).toEqual(response({ light: west }).body);
+    expect(response({ light: east }).body.lit).not.toEqual(response({ light: east }).body.shaded);
   });
   it('retains baseline identity while bounding local travel, contact and positions', () => {
     const baseline = response(), local = response({ interaction: { press: 1, lift: 1, contact: 5, proximity: 5, position: { x: -40, y: 1000 } } });

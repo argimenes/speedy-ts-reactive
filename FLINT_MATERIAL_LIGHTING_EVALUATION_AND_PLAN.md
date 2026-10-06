@@ -4,6 +4,8 @@
 **Status:** Phase A implemented; later phases remain planned
 **Scope:** Flint presentation, material lighting and graph visualisation
 
+The subsequent [Phase A material fidelity report](FLINT_PHASE_A_MATERIAL_FIDELITY_REPORT.md) records the texture-kit pass, three-scale compositing, experimental macro light field and actual browser captures. The study remains at Phase A for visual review.
+
 The limestone and sculptural relief design is feasible within Mutable's existing SolidJS application. Use an existing graph engine for graph behaviour and build Flint's material, artwork and lighting layer around it. **The Phase A playground now uses AntV X6 3.1.8 at `/flint-material`.** It reproduces the small reference composition with hand-authored SVG artwork, limestone grain and pale marble veins. See the [Phase A results](FLINT_MATERIAL_LIGHTING_PHASE_A_RESULTS.md) for validation and performance limits. Visual acceptance against the mockup and Safari comparison remain outstanding before adopting the treatment in production Flint chrome.
 
 The principal visual work is the relief vocabulary, material treatment, typography, spacing and coherent illumination. Package configuration alone will not produce those qualities. Phase A also establishes optional local interaction inputs so a later Flint Probe can consume the same materials and lighting. X6 supports the prototype's required artwork and interactions; large continuously relit graphs still need rendering optimisation. The playground does not begin the application rewrite or implement a custom cursor.
@@ -166,6 +168,7 @@ The current Object model has authored `neutral`, `warm` and `dramatic` lighting 
 | `src/features/flint/material-primitives.tsx` | Small semantic primitives for new material UI. |
 | `src/features/flint/relief-defs.tsx` | Reusable SVG forms and scoped lighting definitions. |
 | `src/features/flint/material-textures.ts` | Reusable neutral limestone grain and marble vein patterns, separate from directional shading. |
+| `src/features/flint/light-field.ts` | Experimental workspace-scale sunlight/occlusion field consuming the existing global light, independent of graph geometry. |
 | `src/features/flint/material-playground.tsx` | Isolated Phase A fixture, lighting controls and local response demonstrations using the native cursor. |
 | `src/features/flint/graph/` | X6 lifecycle, coordinate and material adapters and fixture first; layout and live projection in later stages. |
 | `src/features/flint/shell.tsx`, `flint.css` | Phase C chrome integration and the shared root boundary. |

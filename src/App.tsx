@@ -147,7 +147,7 @@ export default function App(props: { configuration?: ReactiveEditorConfiguration
   if (route === `${import.meta.env.BASE_URL}flint-material`) {
     if (!features.flintMaterialLighting) return <main class="reactive-pilot"><h1>Material playground disabled</h1><a href={import.meta.env.BASE_URL}>Return to Mutable</a></main>;
     const Playground = lazy(() => import("./features/flint/material-playground"));
-    return <Playground />;
+    return <Playground lightFieldEnabled={features.flintLightField} />;
   }
   if (import.meta.env.DEV && import.meta.env.VITE_CANVAS_MILESTONE_A === "1" && route === `${import.meta.env.BASE_URL}scaled-window-prototype`) {
     const Prototype = lazy(() => import("./demo/scaled-window-prototype"));

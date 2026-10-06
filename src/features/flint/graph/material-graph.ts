@@ -4,6 +4,7 @@ import type { MaterialInteractions } from '../material-interaction';
 import { fixtureNodes, type FixtureNode } from './material-fixture';
 import { installReliefDefinitions, svgElement } from '../relief-defs';
 import { LIMESTONE, materialForFinish, type MaterialResponse, type Position, type StoneFinish } from '../material-response';
+import type { TextureLayers } from '../material-textures';
 
 export type DetailLevel = 'full' | 'simple' | 'flat';
 export function createMaterialGraph(options: {
@@ -146,6 +147,7 @@ export function createMaterialGraph(options: {
   container.dataset.finish = 'limestone';
   return {
     graph, prefix, setFixture, select, fit,
+    setTextureLayers(layers: TextureLayers) { definitions.setTextureLayers(layers); },
     get nodes() { return nodes; }, get selectedId() { return selectedId; }, get disposed() { return disposed; },
     setDetail(value: DetailLevel) { detail = value; container.dataset.detail = value; options.minimap.dataset.detail = 'flat'; definitions.setDetail(value); },
     setFinish(finish: StoneFinish) {

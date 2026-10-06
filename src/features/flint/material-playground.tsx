@@ -5,6 +5,8 @@ import { DEFAULT_LIGHT, type Light, type StoneFinish } from './material-response
 import { FlintButton, FlintPanel, FlintSurface, registerDomMaterial } from './material-primitives';
 import { createMaterialGraph, type DetailLevel, type MaterialGraph } from './graph/material-graph';
 import { REFERENCE_NODES, type FixtureNode } from './graph/material-fixture';
+import { DEFAULT_TEXTURE_LAYERS, STONE_MACRO, STONE_MINERAL, STONE_GRAIN, type TextureLayers } from './material-textures';
+import { registerLightField } from './light-field';
 import './material-tokens.css';
 import './material-playground.css';
 
@@ -14,11 +16,13 @@ const presentations = new WeakMap<HTMLElement, PlaygroundPresentation>();
 export function materialPlaygroundPresentation(root: HTMLElement) { return presentations.get(root); }
 
 const neutralLocal = { x: 50, y: 50, proximity: 0, contact: 0, press: 0, lift: 0 };
-export default function MaterialPlayground() {
+export default function MaterialPlayground(props: { lightFieldEnabled?: boolean } = {}) {
   let root!: HTMLElement, container!: HTMLDivElement, minimap!: HTMLDivElement, panel!: HTMLDivElement, button!: HTMLButtonElement;
   let presentation: PlaygroundPresentation | undefined;
+  let field!: HTMLDivElement;
   const [light, setLight] = createSignal<Light>(DEFAULT_LIGHT);
   const [finish, setFinish] = createSignal<StoneFinish>('limestone');
+  const [textureLayers, setTextureLayers] = createSignal<TextureLayers>(DEFAULT_TEXTURE_LAYERS);
   const [selected, setSelected] = createSignal<FixtureNode | undefined>(REFERENCE_NODES[0]);
   const [zoom, setZoom] = createSignal(1), [count, setCount] = createSignal(13), [detail, setDetail] = createSignal<DetailLevel>('full');
   const [target, setTarget] = createSignal<'panel' | 'relief'>('relief');
@@ -39,10 +43,12 @@ export default function MaterialPlayground() {
   function updateEffects() { presentation?.lighting.setEffects({ reducedEffects: reduced() || systemEffects(), reducedMotion: motion() || systemMotion() }); }
   function changeFixture(value: number) { clearLocal(); presentation?.graph.setFixture(value); setCount(value); setSearch(''); }
   function changeFinish(value: StoneFinish) { setFinish(value); presentation?.graph.setFinish(value); }
-  function reset() { presentation?.interactions.reset(); presentation?.lighting.reset(); changeFinish('limestone'); setLocal({ ...neutralLocal }); setLight(DEFAULT_LIGHT); }
+  function changeTexture(layer: keyof TextureLayers, value: number) { const next = { ...textureLayers(), [layer]: value }; setTextureLayers(next); presentation?.graph.setTextureLayers(next); }
+  function reset() { presentation?.interactions.reset(); presentation?.lighting.reset(); changeFinish('limestone'); setTextureLayers(DEFAULT_TEXTURE_LAYERS); presentation?.graph.setTextureLayers(DEFAULT_TEXTURE_LAYERS); setLocal({ ...neutralLocal }); setLight(DEFAULT_LIGHT); }
 
   onMount(() => {
     const lighting = createLighting(root), interactions = createMaterialInteraction(lighting);
+    const stopField = props.lightFieldEnabled !== false ? registerLightField(field, lighting) : undefined;
     const graph = createMaterialGraph({ container, minimap, lighting, interactions, onZoom: setZoom, onSelection: node => {
       if (target() === 'relief') clearLocal(); setSelected(node);
     } });
@@ -65,7 +71,7 @@ export default function MaterialPlayground() {
       button.removeEventListener('pointerdown', down); button.removeEventListener('pointerup', up); button.removeEventListener('pointercancel', up); button.removeEventListener('lostpointercapture', up); button.removeEventListener('blur', up); button.removeEventListener('keydown', keyDown); button.removeEventListener('keyup', up);
       window.removeEventListener('pointerup', windowUp); window.removeEventListener('blur', windowUp);
       motionQuery.removeEventListener('change', preferences); colours.removeEventListener('change', preferences);
-      stopPanel(); stopButton(); graph.dispose(); interactions.dispose(); lighting.dispose(); presentation = undefined;
+      stopField?.(); stopPanel(); stopButton(); graph.dispose(); interactions.dispose(); lighting.dispose(); presentation = undefined;
     });
   });
 
@@ -73,6 +79,8 @@ export default function MaterialPlayground() {
     <label class="flint-material-range"><span>{props.label}<output>{props.value().toFixed(props.step && props.step < 1 ? 2 : 0)}{props.unit ?? ''}</output></span><input type="range" aria-label={props.label} min={props.min ?? 0} max={props.max} step={props.step ?? 1} value={props.value()} onInput={e => props.change(Number(e.currentTarget.value))} /></label>;
 
   return <main ref={root} class="flint-material-playground" data-ready={ready()}>
+    <div class="flint-material-picture" aria-hidden="true" style={{ '--flint-macro-image': `url("${STONE_MACRO}")`, '--flint-mineral-image': `url("${STONE_MINERAL}")`, '--flint-micro-image': `url("${STONE_GRAIN}")`, '--flint-macro-amount': textureLayers().macro, '--flint-mineral-amount': textureLayers().mineral, '--flint-grain-amount': textureLayers().grain }}><span class="flint-material-cloud" /><span class="flint-material-minerals" /><span class="flint-material-pores" /></div>
+    <Show when={props.lightFieldEnabled !== false}><div class="flint-light-field" aria-hidden="true"><div ref={field} class="flint-light-field-plane" /></div></Show>
     <aside class="flint-material-library" aria-label="Reference library">
       <div class="flint-material-identity"><svg viewBox="0 0 72 100" aria-hidden="true"><path d="M36 4C8 4 7 27 11 52c4 23 14 38 26 43 14-8 23-27 25-50C65 15 52 4 36 4Z" fill="var(--flint-facet-front)"/><path d="M36 4C8 4 7 27 11 52c4 23 14 38 26 43Z" fill="var(--flint-facet-left)"/><path d="m37 24-4 37 9 0-2-37Z" fill="var(--flint-facet-top)"/><path d="m31 70 12 0-7 3Z" fill="#8c806a"/></svg><span>FLINT<small>—</small></span></div>
       <nav aria-label="Playground navigation"><a href={import.meta.env.BASE_URL}>⌂ <span>Mutable</span></a><span>▤ <span>Notes</span></span><FlintSurface class="flint-material-nav-current" elevation="relief">♧ <span>Graph</span></FlintSurface><span>▧ <span>Canvas</span></span><span>▢ <span>Templates</span></span><span>♙ <span>Archive</span></span></nav>
@@ -109,7 +117,7 @@ export default function MaterialPlayground() {
             <div class="flint-material-actions"><FlintButton disabled={!targetId() || motion() || systemMotion() || reduced() || systemEffects()} onClick={() => { const id = targetId(); if (id) presentation?.interactions.wave(id); }}>Send wave</FlintButton><FlintButton onClick={() => clearLocal()}>Clear local</FlintButton></div>
             <p class="flint-material-hint">{target() === "panel" ? "DOM sample below the graph. " : ""}Native pointer. Shared surface response.</p>
           </FlintPanel>
-          <details class="flint-material-settings"><summary>Effects and graph detail</summary><label><input type="checkbox" checked={reduced()} onChange={e => { setReduced(e.currentTarget.checked); updateEffects(); }} /> Reduced effects</label><label><input type="checkbox" checked={motion()} onChange={e => { setMotion(e.currentTarget.checked); updateEffects(); }} /> Reduced motion</label><Show when={systemMotion() || systemEffects()}><p class="flint-material-hint">System accessibility preferences also apply.</p></Show><label class="flint-material-select">Detail<select aria-label="Graph detail" value={detail()} onChange={e => { const v = e.currentTarget.value as DetailLevel; setDetail(v); presentation?.graph.setDetail(v); }}><option value="full">Full relief</option><option value="simple">Simplified relief</option><option value="flat">Flat vector</option></select></label><label class="flint-material-select">Fixture<select aria-label="Graph fixture size" value={count()} onChange={e => changeFixture(Number(e.currentTarget.value))}><option value={13}>Reference · 13 reliefs</option><option value={50}>50 reliefs</option><option value={250}>250 reliefs</option><option value={1000}>1,000 reliefs</option></select></label></details>
+          <details class="flint-material-settings"><summary>Effects and graph detail</summary><Range label="Cloud variation" value={() => textureLayers().macro} max={1} step={.01} change={v => changeTexture('macro', v)} /><Range label="Mineral marks" value={() => textureLayers().mineral} max={1} step={.01} change={v => changeTexture('mineral', v)} /><Range label="Fine grain" value={() => textureLayers().grain} max={1} step={.01} change={v => changeTexture('grain', v)} /><label><input type="checkbox" checked={reduced()} onChange={e => { setReduced(e.currentTarget.checked); updateEffects(); }} /> Reduced effects</label><label><input type="checkbox" checked={motion()} onChange={e => { setMotion(e.currentTarget.checked); updateEffects(); }} /> Reduced motion</label><Show when={systemMotion() || systemEffects()}><p class="flint-material-hint">System accessibility preferences also apply.</p></Show><label class="flint-material-select">Detail<select aria-label="Graph detail" value={detail()} onChange={e => { const v = e.currentTarget.value as DetailLevel; setDetail(v); presentation?.graph.setDetail(v); }}><option value="full">Full relief</option><option value="simple">Simplified relief</option><option value="flat">Flat vector</option></select></label><label class="flint-material-select">Fixture<select aria-label="Graph fixture size" value={count()} onChange={e => changeFixture(Number(e.currentTarget.value))}><option value={13}>Reference · 13 reliefs</option><option value={50}>50 reliefs</option><option value={250}>250 reliefs</option><option value={1000}>1,000 reliefs</option></select></label></details>
           <details class="flint-material-connections" open><summary>Connections ({count() - 1})</summary><label>Find a relief<input type="search" aria-label="Find a relief" value={search()} onInput={e => setSearch(e.currentTarget.value)} /></label><ul><For each={(count() === 13 ? REFERENCE_NODES : presentation?.graph.nodes ?? []).filter(n => n.label.toLowerCase().includes(search().toLowerCase())).slice(0, 30)}>{n => <li><button type="button" aria-pressed={selected()?.id === n.id} onClick={() => presentation?.graph.select(n.id)}><span>{n.label}</span><small>{n.relation}</small></button></li>}</For></ul><Show when={count() > 30}><p class="flint-material-hint">Search to select a relief beyond the first 30.</p></Show><div class="flint-material-actions"><FlintButton aria-label="Move selected relief left" disabled={!selected()} onClick={() => presentation?.graph.move(-10, 0)}>←</FlintButton><FlintButton aria-label="Move selected relief up" disabled={!selected()} onClick={() => presentation?.graph.move(0, -10)}>↑</FlintButton><FlintButton aria-label="Move selected relief down" disabled={!selected()} onClick={() => presentation?.graph.move(0, 10)}>↓</FlintButton><FlintButton aria-label="Move selected relief right" disabled={!selected()} onClick={() => presentation?.graph.move(10, 0)}>→</FlintButton></div></details>
         </aside>
       </div>

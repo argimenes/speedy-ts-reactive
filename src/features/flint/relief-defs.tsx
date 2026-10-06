@@ -1,6 +1,6 @@
 import { ELEVATIONS, LIMESTONE, materialForFinish, resolveMaterialResponse, type Elevation, type StoneFinish } from './material-response';
 import type { Lighting } from './lighting';
-import { installStoneTextures } from './material-textures';
+import { DEFAULT_TEXTURE_LAYERS, installStoneTextures, type TextureLayers } from './material-textures';
 
 const NS = 'http://www.w3.org/2000/svg';
 export function svgElement(tag: string, attributes: Record<string, string | number> = {}) {
@@ -31,7 +31,8 @@ export function installReliefDefinitions(defs: SVGDefsElement, prefix: string, l
   let finish: StoneFinish = 'limestone';
   let textureState = '';
   const textures: Element[] = [];
-  const stopTextures = installStoneTextures(defs, prefix);
+  const stoneTextures = installStoneTextures(defs, prefix);
+  stoneTextures.setLayers(DEFAULT_TEXTURE_LAYERS);
   const owned: Element[] = [];
   const append = <T extends Element>(el: T): T => { defs.append(el); owned.push(el); return el; };
   const gradient = append(svgElement('linearGradient', { id: `${prefix}-body`, x1: '90%', y1: '0%', x2: '10%', y2: '100%' }));
@@ -59,7 +60,13 @@ export function installReliefDefinitions(defs: SVGDefsElement, prefix: string, l
     for (const el of silhouette.querySelectorAll('[fill]')) if (el.getAttribute('fill') !== 'none') el.setAttribute('fill', 'white');
     for (const el of silhouette.querySelectorAll('[stroke]')) if (el.getAttribute('stroke') !== 'none') el.setAttribute('stroke', 'white');
     mask.append(silhouette);
-    const texture = svgElement('rect', { width: 100, height: 100, mask: `url(#${prefix}-mask-${name})`, class: 'flint-stone-texture', opacity: .65, 'pointer-events': 'none' });
+    for (const finish of ['limestone', 'marble']) append(svgElement('pattern', {
+      id: `${prefix}-texture-${finish}-${name}`, href: `#${prefix}-texture-${finish}`,
+      patternTransform: `translate(${textures.length * 19},${textures.length * 31}) rotate(${textures.length * 37})`,
+    }));
+    // Albedo multiplies the already illuminated body rather than hiding its
+    // directional gradient beneath an opaque photographic fill.
+    const texture = svgElement('rect', { width: 100, height: 100, mask: `url(#${prefix}-mask-${name})`, class: 'flint-stone-texture', opacity: .85, style: 'mix-blend-mode: multiply', 'pointer-events': 'none' });
     textures.push(texture); symbol.append(texture);
   }
   const update = (force = false) => {
@@ -68,15 +75,15 @@ export function installReliefDefinitions(defs: SVGDefsElement, prefix: string, l
     const nextTextureState = `${finish}/${detail}/${lighting.effects.reducedEffects}`;
     if (textureState !== nextTextureState) {
       textureState = nextTextureState;
-      for (const texture of textures) {
-        texture.setAttribute('fill', finish === 'untextured' ? 'none' : `url(#${prefix}-texture-${finish})`);
+      for (const [i, texture] of textures.entries()) {
+        texture.setAttribute('fill', finish === 'untextured' ? 'none' : `url(#${prefix}-texture-${finish}-${Object.keys(forms)[i]})`);
         texture.setAttribute('display', detail === 'full' && !lighting.effects.reducedEffects && finish !== 'untextured' ? 'inline' : 'none');
       }
     }
     if (detail === 'flat' && !force) return;
     const response = resolveMaterialResponse({ material, elevation: 'relief', geometry: { width: 100, height: 100 }, light: lighting.light, effects: lighting.effects });
     for (const [name, stops] of facets) for (const stop of stops) stop.setAttribute('stop-color', detail === 'flat' ? '#e5dfd2' : response.facets[name as keyof typeof response.facets]);
-    for (const [i, name] of ['top', 'front', 'left'].entries()) bodyStops[i].setAttribute('stop-color', detail === 'flat' ? '#e5dfd2' : response.facets[name as keyof typeof response.facets]);
+    for (const [i, tone] of Object.values(response.body).entries()) bodyStops[i].setAttribute('stop-color', detail === 'flat' ? '#e5dfd2' : tone);
     if (detail === 'flat') return;
     const a = lighting.light.azimuth * Math.PI / 180;
     gradient.setAttribute('x1', `${50 + Math.cos(a) * 50}%`); gradient.setAttribute('y1', `${50 + Math.sin(a) * 50}%`);
@@ -88,5 +95,5 @@ export function installReliefDefinitions(defs: SVGDefsElement, prefix: string, l
     }
   };
   const stop = lighting.subscribe(() => update());
-  return { setDetail(value: typeof detail) { detail = value; update(true); }, setFinish(value: StoneFinish) { finish = value; material = materialForFinish(finish); update(true); }, dispose() { stop(); stopTextures(); for (const el of owned) el.remove(); } };
+  return { setDetail(value: typeof detail) { detail = value; update(true); }, setFinish(value: StoneFinish) { finish = value; material = materialForFinish(finish); update(true); }, setTextureLayers(layers: TextureLayers) { stoneTextures.setLayers(layers); }, dispose() { stop(); stoneTextures.dispose(); for (const el of owned) el.remove(); } };
 }

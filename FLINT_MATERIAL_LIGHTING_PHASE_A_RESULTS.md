@@ -2,6 +2,8 @@
 
 **Date:** 6 October 2026
 
+This document records the initial Phase A implementation and its scale measurements. The later [material fidelity pass](FLINT_PHASE_A_MATERIAL_FIDELITY_REPORT.md) adds three-scale textures and a workspace light field, with updated captures and functional checks. The timings below were not remeasured for that pass.
+
 Phase A is implemented as an isolated study at `/flint-material`. AntV X6 3.1.8 supplies graph selection, dragging, pan, zoom and minimap behaviour within Mutable's SolidJS application. Flint supplies the sculptural SVG forms, Cycladic palette, typography, materials and lighting. An existing graph package can support this treatment; writing a new graph library is not necessary to add stone texture.
 
 The default-enabled `flintMaterialLighting` feature flag controls the lazy playground route. Hosts can opt out through `App`'s configuration, for example `{ features: { flintMaterialLighting: false } }`. This study does not replace production Flint chrome or change authored Document colours, formatting, semantic records or persistence.

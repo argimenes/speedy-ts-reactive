@@ -11,7 +11,6 @@
   --flint-mineral: #75664e;
   --flint-focus: #635b49;
   --flint-radius: 9px;
-  --flint-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23807868' opacity='.12' filter='url(%23g)' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
   --flint-shadow-x: -0.8px;
   --flint-shadow-y: 0.8px;
   --flint-softness: .55;
@@ -36,7 +35,7 @@
   --flint-contact: 0;
   position: relative;
   background-color: var(--flint-marble);
-  background-image: var(--flint-grain), linear-gradient(var(--flint-light-angle), #f8f5edcc, #d8d0bf40);
+  background-image: linear-gradient(var(--flint-light-angle), #f8f5edcc, #d8d0bf25);
   border: 1px solid #fff9;
   border-radius: var(--flint-radius);
   box-shadow: calc(var(--flint-shadow-x) * var(--flint-height)) calc(var(--flint-shadow-y) * var(--flint-height)) calc(1px + var(--flint-height) * 0.55px) rgb(74 64 47 / var(--flint-shadow-opacity));

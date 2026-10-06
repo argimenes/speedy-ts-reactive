@@ -96,6 +96,13 @@ export function resolveMaterialResponse(input: {
       opacity: waveActive ? bound(impulse?.amplitude ?? 0, 0, 1) * (1 - progress) ** 2 * .7 : 0,
     },
     facets: { left: facetTone({ x: -1, y: 0, z: 1 }, light, material), right: facetTone({ x: 1, y: 0, z: 1 }, light, material), top: facetTone({ x: 0, y: -1, z: 1 }, light, material), front: facetTone({ x: 0, y: 0, z: 1 }, light, material) },
+    // A curved body's gradient rotates with the source. Its lit/shaded stops
+    // must not swap merely because a fixed world-space facet changes direction.
+    body: {
+      lit: facetTone({ x: vector.x, y: vector.y, z: .7 }, light, material),
+      front: facetTone({ x: 0, y: 0, z: 1 }, light, material),
+      shaded: facetTone({ x: -vector.x, y: -vector.y, z: .7 }, light, material),
+    },
   };
 }
 export type MaterialResponse = ReturnType<typeof resolveMaterialResponse>;
