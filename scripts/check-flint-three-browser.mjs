@@ -77,7 +77,7 @@ try {
   await send('Input.dispatchMouseEvent',{type:'mouseMoved',button:'left',buttons:1,x:client.x+30,y:client.y+20},sessionId);
   await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:client.x+30,y:client.y+20},sessionId);
   await evaluate(`await study.wait(80)`);
-  check('real mouse selection and XY dragging work',await evaluate(`study.p.graph.selectedId==='waste-land'&&study.p.graph.views.get('waste-land').group.position.x>${before}&&study.p.graph.views.get('waste-land').group.position.z===.6`));
+  check('real mouse selection and XY dragging work',await evaluate(`study.p.graph.selectedId==='waste-land'&&study.p.graph.views.get('waste-land').group.position.x>${before}&&study.p.graph.views.get('waste-land').group.position.z===.12`));
   const cameraBefore=await evaluate(`study.p.graph.camera.position.x`);
   await evaluate(`study.p.graph.pan(30,10);study.p.graph.zoomBy(.1);await study.wait(100)`);
   check('pan and zoom remain two-dimensional',await evaluate(`study.p.graph.camera.position.x!==${cameraBefore}&&study.p.graph.camera.position.z===1600&&study.p.graph.zoom>1`));
@@ -89,7 +89,7 @@ try {
   await evaluate(`await study.wait(80);study.p.graph.select('waste-land')`);
   check('real blank-canvas dragging pans the camera',await evaluate(`study.p.graph.camera.position.x!==${beforePan}`));
   await evaluate(`study.input('Lift',.75);await study.wait(100)`);
-  check('shared local lift drives actual Z elevation',await evaluate(`study.p.graph.views.get('waste-land').group.position.z===9.6`));
+  check('shared local lift drives actual Z elevation',await evaluate(`study.p.graph.views.get('waste-land').group.position.z===9.12`));
   await shot('three-lift');
   await evaluate(`study.click('Clear local');study.click('Send wave');await study.wait(120)`);
   check('finite wave uses the shared response scheduler',await evaluate(`study.p.graph.views.get('waste-land').wave.visible`));

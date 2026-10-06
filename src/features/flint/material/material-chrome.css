@@ -50,3 +50,21 @@
 .flint-material-playground[data-material-chrome=true][data-material-ready=true] > .flint-material-picture { display:none; }
 .flint-material-playground[data-material-chrome=true] .flint-material-graph-panel { border-color:#fdfaf0a0; }
 .flint-material-playground[data-material-chrome=true] .flint-material-inspector .flint-material { background:#f8f5ec55; }
+/* Convergence: quiet stone edges, with no haze over the semantic layer. */
+.flint-material-playground[data-material-chrome=true] { grid-template-columns:256px minmax(0,1fr); }
+.flint-material-playground[data-material-chrome=true] .flint-material-header { min-height:70px; padding-top:13px; padding-bottom:12px; }
+.flint-material-playground[data-material-chrome=true] .flint-material-header h1 { font-size:21px; margin-top:5px; }
+.flint-material-playground[data-material-chrome=true] .flint-material-library { background:#eee9df48; }
+.flint-material-playground[data-material-chrome=true] .flint-material-inspector .flint-material { background:#f0ece280; border-color:#fff9; }
+.flint-material-playground[data-material-chrome=true] :is(.flint-material-button,.flint-material-tabs .flint-material,.flint-material-nav-current) { background:#e4ded166; background-image:none; border-color:#fff9; }
+.flint-application[data-material-chrome=true] .flint-rail { background:#f0ece240; }
+@media (max-width:1150px) {
+  .flint-material-playground[data-material-chrome=true] { grid-template-columns:170px minmax(0,1fr); }
+}
+@container flint (max-width:939px) {
+  .flint-application[data-material-chrome=true] .flint-rail { background:#f3efe5; }
+}
+
+@media (max-width:850px) {
+  .flint-material-playground[data-material-chrome=true] { grid-template-columns:1fr; }
+}

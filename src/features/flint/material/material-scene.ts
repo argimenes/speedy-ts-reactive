@@ -1,6 +1,7 @@
 import * as T from 'three';
+import { STONE_TILE } from './stone-detail';
 import type { Lighting } from '../lighting';
-import { applyFlintLight, configureMaterialRenderer } from './scene-light';
+import { applyFlintLight, configureMaterialRenderer, createFlintAmbient, FLINT_SUN_COLOR } from './scene-light';
 import { createOcclusionRig, type LightEnvironment } from './light-environment';
 import { createMaterialRegistry, type SurfaceMaterial } from './material-registry';
 
@@ -14,7 +15,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
   configureMaterialRenderer(renderer);
   const scene = new T.Scene(), camera = new T.OrthographicCamera(0, 1, 0, -1, .1, 6000);
   camera.position.z = 2400;
-  const sunlight = new T.DirectionalLight(0xfff6e8, 3), ambient = new T.HemisphereLight(0xfffcf5, 0xd7d0c4, 2.6);
+  const sunlight = new T.DirectionalLight(FLINT_SUN_COLOR, 3), ambient = createFlintAmbient();
   sunlight.castShadow = true; sunlight.shadow.mapSize.set(2048, 2048);
   sunlight.shadow.bias = -.00015; sunlight.shadow.normalBias = .2;
   sunlight.shadow.camera.near = 1; sunlight.shadow.camera.far = 6500;
@@ -22,7 +23,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
   let dirty = true, layoutDirty = true, disposed = false, lost = false, width = 1, height = 1;
   const metrics = { frames: 0, surfaces: 0 };
   const request = () => { if (!disposed && !lost) { dirty = true; renderer.shadowMap.needsUpdate = true; lighting.request(); } };
-  const registry = createMaterialRegistry(request), rig = createOcclusionRig(scene);
+  const registry = createMaterialRegistry(request, .72), rig = createOcclusionRig(scene);
   const geometry = new T.PlaneGeometry(1, 1);
   const substrate = new T.Mesh(geometry, registry.get('limestone')); substrate.receiveShadow = true; scene.add(substrate);
   const surfaces = new Map<HTMLElement, T.Mesh<T.PlaneGeometry, T.MeshStandardMaterial>>();
@@ -37,7 +38,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
     // World-sized texture repeat, not stretched to each surface's aspect ratio.
     if (mesh.geometry !== geometry) mesh.geometry.dispose();
     const plane = new T.PlaneGeometry(1, 1), uv = plane.getAttribute('uv');
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, (x + uv.getX(i) * w) / 640, (-y + uv.getY(i) * h) / 640);
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (x + uv.getX(i) * w) / STONE_TILE, (-y + uv.getY(i) * h) / STONE_TILE);
     mesh.geometry = plane;
   }
   const stopRender = lighting.addTask(() => {
@@ -63,6 +64,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
       sunlight.shadow.camera.updateProjectionMatrix();
     }
     applyFlintLight(sunlight, lighting.light, new T.Vector2(width / 2, -height / 2), Math.max(width, height) * 2);
+    registry.setShadowCamera(sunlight.shadow.camera);
     renderer.render(scene, camera); metrics.frames++; onAvailable(true);
   });
   const contextLost = (event: Event) => { event.preventDefault(); lost = true; canvas.hidden = true; onAvailable(false); };

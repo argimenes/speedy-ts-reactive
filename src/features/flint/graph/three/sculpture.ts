@@ -12,7 +12,7 @@ export function createSculpture(form: ReliefForm, material: T.MeshStandardMateri
   const tube = (points: T.Vector3[], radius: number, segments = 72) => mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points), segments, radius, 10, false));
   const sphere = (x: number, y: number, radius: number, depth: number) => { const m = mesh(new T.SphereGeometry(radius, 28, 18), x, y, depth); m.scale.z = depth / radius; return m; };
   if (form === 'mask') {
-    mesh(heightSculpture((x,y) => ({ x: x * 34 * (1 + y * .13), y: y * 47 }), maskHeight, 52, 112));
+    mesh(heightSculpture((x,y) => ({ x: x * 39 * (1 + y * .13), y: y * 47 }), maskHeight, 52, 112));
   } else if (form === 'disc') {
     mesh(heightSculpture((x,y) => ({ x: x * 32, y: y * 32 }), (x,y,r) => {
       const angle = Math.atan2(y,x), line = Math.abs(Math.sin(angle * 8));
@@ -20,9 +20,9 @@ export function createSculpture(form: ReliefForm, material: T.MeshStandardMateri
       return 3 + 4 * Math.sqrt(Math.max(0, 1-r*r)) - grooves;
     }, 34, 144));
   } else if (form === 'leaf') {
-    mesh(heightSculpture((x,y) => ({ x: x * 26 * (1 - Math.abs(y) * .35), y: y * 44 }), (x,y,r) => {
+    mesh(heightSculpture((x,y) => ({ x: x * 34 * (1 - Math.abs(y) * .35), y: y * 44 }), (x,y,r) => {
       const trunk = Math.exp(-Math.pow(x/.045,2)), branch = Math.exp(-Math.pow((Math.abs(x) * .7 - ((y+1)*2.6 % 1) * .24) / .035,2));
-      return 2.4 + 6 * Math.sqrt(Math.max(0,1-r*r)) - (trunk * 1.7 + branch * 1.3) * Math.min(1,(1-r)*10);
+      return 2.4 + 8 * Math.sqrt(Math.max(0,1-r*r)) - (trunk * 2.3 + branch * 1.8) * Math.min(1,(1-r)*10);
     }, 42, 112));
   } else if (form === 'pyramids') {
     for (const [x,y,w,h,d] of [[0,20,47,48,28],[-23,-5,45,49,23],[27,-4,45,52,26]]) {
@@ -35,10 +35,10 @@ export function createSculpture(form: ReliefForm, material: T.MeshStandardMateri
       geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2)); geometry.computeVertexNormals(); mesh(geometry,x,y,1.2);
     }
   } else if (form === 'spiral') {
-    const points = Array.from({length:121},(_,i) => { const t = i/120, a = t*Math.PI*3.7+.5, r = 5+t*30; return new T.Vector3(Math.cos(a)*r,Math.sin(a)*r,5.5); });
-    tube(points,4.7,144);
+    const points = Array.from({length:121},(_,i) => { const t = i/120, a = t*Math.PI*3.35+.5, r = 4+t*29; return new T.Vector3(Math.cos(a)*r,Math.sin(a)*r,6.2); });
+    tube(points,6.2,144);
   } else if (form === 'moon') {
-    const R = 42, inner = 39, offset = 18, x = (R*R-inner*inner+offset*offset)/(2*offset), y = Math.sqrt(R*R-x*x);
+    const R = 42, inner = 36, offset = 18, x = (R*R-inner*inner+offset*offset)/(2*offset), y = Math.sqrt(R*R-x*x);
     const outerAngle = Math.atan2(y,x), innerAngle = Math.atan2(y,x-offset), shape = new T.Shape();
     shape.absarc(0,0,R,outerAngle,Math.PI*2-outerAngle,false);
     shape.absarc(offset,0,inner,Math.PI*2-innerAngle,innerAngle,true); shape.closePath();
@@ -47,13 +47,17 @@ export function createSculpture(form: ReliefForm, material: T.MeshStandardMateri
     const outer = [[0,45],[38,0],[0,-45],[-38,0]], inner = [[0,21],[20,0],[0,-21],[-20,0]], points: T.Vector3[] = [];
     for (let i=0;i<4;i++) { const j=(i+1)%4,a=new T.Vector3(...outer[i] as [number,number],1),b=new T.Vector3(...outer[j] as [number,number],1),c=new T.Vector3(...inner[j] as [number,number],13),d=new T.Vector3(...inner[i] as [number,number],13); points.push(a,b,d,b,c,d); }
     const geometry = new T.BufferGeometry().setFromPoints(points), uv:number[]=[];
+    // The outline runs clockwise; reverse each triangle so the carved rim
+    // faces the camera and receives sunlight instead of only casting a shadow.
+    for (let i = 0; i < points.length; i += 3) [points[i + 1], points[i + 2]] = [points[i + 2], points[i + 1]];
+    geometry.setFromPoints(points);
     for (const p of points) uv.push(p.x/100+.5,p.y/100+.5); geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2)); geometry.computeVertexNormals(); mesh(geometry);
     const shape=new T.Shape(); inner.forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();
     mesh(new T.ExtrudeGeometry(shape,{depth:1,bevelEnabled:true,bevelSize:.8,bevelThickness:.6,bevelSegments:2}),0,0,12.5);
   } else if (form === 'waves') {
-    for (const y of [-14,12]) tube(Array.from({length:45},(_,i)=>{const x=-42+i*84/44;return new T.Vector3(x,y+Math.sin(x/5)*3.8,4.2)}),3.4);
+    for (const y of [-14,12]) tube(Array.from({length:45},(_,i)=>{const x=-42+i*84/44;return new T.Vector3(x,y+Math.sin(x/5)*3.8,4.2)}),4.2);
   } else if (form === 'star') {
-    for (let i=0;i<4;i++) { const a=i*Math.PI/4,x=Math.cos(a)*37,y=Math.sin(a)*37; tube([new T.Vector3(-x,-y,4),new T.Vector3(x,y,4)],3.2,8); sphere(x,y,3.2,4); sphere(-x,-y,3.2,4); }
+    for (let i=0;i<4;i++) { const a=i*Math.PI/4,x=Math.cos(a)*37,y=Math.sin(a)*37; tube([new T.Vector3(-x,-y,4.2),new T.Vector3(x,y,4.2)],4.1,8); sphere(x,y,4.1,4.2); sphere(-x,-y,4.1,4.2); }
   } else if (form === 'beads') {
     for (const [x,y] of [[0,22],[-19,1],[20,1],[0,-20]]) sphere(x,y,8.5,7.2);
   } else { sphere(0,0,28,12); }
@@ -64,20 +68,25 @@ export function createSculpture(form: ReliefForm, material: T.MeshStandardMateri
     for(let i=0;i<p.count;i++)uv.push(p.getX(i)/100+.5,p.getY(i)/100+.5);
     o.geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
   }});
-  group.scale.z = .65;
+  group.scale.z = form === 'mask' ? .82 : .7;
   return group;
 }
 const gauss = (x:number,y:number,cx:number,cy:number,sx:number,sy:number) => Math.exp(-Math.pow((x-cx)/sx,2)-Math.pow((y-cy)/sy,2));
 function maskHeight(x:number,y:number,r:number) {
-  const dome = 12*Math.sqrt(Math.max(0,1-r*r));
+  // A broad carved facial plane, turning into a steeper side bevel. The old
+  // elliptical dome read as a thin oval rather than a substantial stone mask.
+  const dome = 22 * Math.pow(Math.max(0,1-r*r), .65);
+  const cheekPlanes = 4 * Math.max(0, 1 - Math.abs(x) / .82) * Math.max(0, 1 - Math.abs(y + .12) / 1.15);
   const cheeks = 1.5*(gauss(x,y,-.43,-.04,.27,.32)+gauss(x,y,.43,-.04,.27,.32));
   const brow = 1.6*gauss(x,y,0,.36,.7,.1);
-  const eyes = 4.2*(gauss(x,y,-.37,.26,.15,.035)+gauss(x,y,.37,.26,.15,.035));
-  const noseWidth = .105 + .05*gauss(x,y,0,-.17,.4,.1);
-  const nose = 15*Math.max(0,1-Math.abs(x)/noseWidth)*Math.exp(-Math.pow((y-.07)/.37,6));
+  const eyes = 3.2*(gauss(x,y,-.37,.26,.16,.055)+gauss(x,y,.37,.26,.16,.055));
+  // A narrow frontal plane catches the light between the sloping nose sides.
+  // A triangular ridge alone left an almost black line at the default azimuth.
+  const noseWidth = .14 + .07*gauss(x,y,0,-.17,.4,.1);
+  const nose = 9.5*Math.min(1,Math.max(0,2*(1-Math.abs(x)/noseWidth)))*Math.exp(-Math.pow((y-.07)/.37,6));
   const nostril = 1.9*(gauss(x,y,-.1,-.24,.04,.04)+gauss(x,y,.1,-.24,.04,.04));
-  const mouth = 2.8*gauss(x,y,0,-.51,.17,.024), chin = 1.1*gauss(x,y,0,-.72,.31,.13);
-  return 3 + dome + cheeks + brow + nose - eyes - mouth - nostril + chin;
+  const mouth = 2*gauss(x,y,0,-.51,.17,.024), chin = 1.1*gauss(x,y,0,-.72,.31,.13);
+  return 3 + dome + cheekPlanes + cheeks + brow + nose - eyes - mouth - nostril + chin;
 }
 /** Polar front topology plus a closed bevel/back skirt. Normals are calculated
  * from the displaced geometry: grooves/eyes/nose all change raking-light response.

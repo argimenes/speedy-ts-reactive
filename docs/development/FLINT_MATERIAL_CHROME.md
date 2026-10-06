@@ -29,10 +29,14 @@ are unchanged. No Graph fixture is added to production Document navigation.
 ## Materials and environment
 
 `material/material-registry.ts` supplies limestone, marble, paper, parchment and
-chalk using the existing nondirectional bitmap albedos, roughness and bump.
-A local standard-material shader adapter controls albedo strength and broadens
-receiving-surface PCF sampling. Graph carvings retain fine self shadows. A floor-only colour pass excludes the
-distant architecture to preserve the spike’s fine contact shadows under the same sun.
+chalk using nondirectional bitmap albedos and separate linear height/roughness data.
+`stone-detail.ts` defines five related stone finishes at a shared material scale,
+with deterministic per-object UV variation. Neutral ambient fill and warmer direct
+sunlight are shared by the shell and Graph. A local standard-material shader adapter
+controls albedo strength and estimates blocker distance for contact-hardening PCF.
+Graph carvings retain fine self shadows. A floor-only colour pass excludes distant
+architecture and uses near-normal visibility for a tight ambient contact footprint,
+separate from the directional sunlight cast.
 This is an approximate soft-shadow filter, not a full area-light simulation.
 
 `material/light-environment-config.ts` contains `CYCLADIC_APERTURE`, `OPEN_ENVIRONMENT`
@@ -40,7 +44,7 @@ and the `LightEnvironment`/`Occluder` types. To supply a custom composition, cal
 `scene.setEnvironment({ name, enabled, occluders })`. Positions and scale are
 normalised to the application rectangle; height/depth use its smaller dimension.
 Rotation is degrees about Z. Each form can opt out of casting shadows. Sparse
-slabs and beams surround the viewport at unequal heights. They write shadow depth
+slabs, beams and an irregular aperture surround the viewport at unequal heights. They write shadow depth
 but neither colour nor picture-plane depth. No decorative light bands are used
 in the enhanced study.
 
