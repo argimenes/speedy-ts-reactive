@@ -6,7 +6,7 @@
 
 The limestone and sculptural relief design is feasible within Mutable's existing SolidJS application. Use an existing graph engine for graph behaviour and build Flint's material, artwork and lighting layer around it. **AntV X6 is the first package to prototype.** The initial prototype should reproduce the supplied mockup's small graph composition closely enough to judge visual fidelity before extending it to automatic layout or large datasets.
 
-The principal visual work is the relief vocabulary, material treatment, typography, spacing and coherent illumination. Package configuration alone will not produce those qualities. This plan defines that work without beginning the application rewrite or committing to an engine before the prototype establishes its suitability.
+The principal visual work is the relief vocabulary, material treatment, typography, spacing and coherent illumination. Package configuration alone will not produce those qualities. Phase A also establishes optional local interaction inputs so a later Flint Probe can consume the same materials and lighting. This plan defines that work without beginning the application rewrite, implementing a custom cursor or committing to an engine before the prototype establishes its suitability.
 
 ## Current application architecture
 
@@ -56,17 +56,51 @@ Coalesce light changes into at most one `requestAnimationFrame` update. Write de
 | Elevation | `etched`, `carved`, `flush`, `relief`, `raised`, `object`. |
 | Lighting | Direction, bounded intensity, elevation and softness. |
 | Shadow, highlight and border | Derived responses for each elevation. |
+| Local response | Bounded contact illumination, depression, lift and wave response for each material. |
 | Radius and motion | Consistent geometry and restrained interaction transitions. |
 
 Use elevation classes or attributes on existing semantic elements. Small `FlintSurface`, `FlintPanel`, `FlintButton` and `FlintRelief` primitives can standardise new components without requiring replacement wrappers around every working control.
 
 Start with procedural gradients. Introduce a small seamless texture only if it materially improves the visual comparison. Keep text colours independent of light intensity, bound blur and displacement, and provide Reset to Flint Default.
 
+## Shared material response and future Flint Probe
+
+Treat interaction as an optional input to material response. Conventional hover and active states are useful input adapters, but do not define the complete interaction vocabulary. Pointer proximity, contact, press, lift, keyboard activation and programmatic demonstrations can supply the same presentation contract. The future Probe is a consumer of that contract, alongside panels, buttons and graph reliefs.
+
+Use a shared response resolver with the following inputs: the material and its response limits, baseline surface elevation and geometry, global light, optional local interaction state, and motion/effects preferences. It derives body shading, highlights, shadows, effective elevation and local decorative fields. DOM/CSS and SVG adapters apply those outputs through their existing primitives; an optional Three.js adapter can consume the same logical inputs later. This is one material model with renderer adapters. It does not require a separate pointer rendering engine.
+
+### Proposed presentation contract
+
+| Input | Meaning and bounds |
+| --- | --- |
+| Surface identity and geometry | Instance-local target ID, material, baseline elevation, dimensions and local coordinate frame. These are presentation identities, separate from canonical record identities. |
+| Local position | Contact anchor in surface-local CSS pixels, plus normalised coordinates for scaling a decorative field. Record the coordinate frame explicitly. |
+| Proximity and contact | Separate strengths in `[0, 1]`; proximity can illuminate before contact. Neither implies that an action has occurred. |
+| Press and lift | Separate strengths in `[0, 1]`, resolved through material-specific travel limits. Effective elevation is baseline height minus depression plus lift, bounded by the surface's allowed range. |
+| Wave impulse | Optional event ID, local origin, start time, bounded amplitude and finite duration. The material defines radius, propagation and decay; an impulse expires rather than creating an idle animation loop. |
+| Capabilities | Typed presentation descriptors supplied by the owning control or graph adapter, such as activate, drag or inspect, with availability. Material cues express these descriptors; they do not authorise or dispatch actions. |
+
+Keep surface elevation distinct from the light's elevation angle. Resolve named elevation levels to visual height and shadow/highlight profiles; retain the baseline level when interaction temporarily changes effective height. Defaults for every optional interaction input are neutral, preserving the unmodified material appearance. Response limits belong to the material vocabulary, not to a future cursor's private palette or animation constants.
+
+Global illumination supplies the common directional light. Local contact illumination adds a bounded, surface-local contribution; it does not overwrite the root light or recolour text. Waves modulate the same material response within a bounded region. Press and lift alter presentation height, relief and shadow while keeping layout and hit areas stable. Capability indicators use the shared relief, material and light treatment, with text or accessible descriptions available independently of decorative cues.
+
+A later sculptural Probe should declare its own material, elevation and facet normals in the common screen-space lighting basis. Its facets then receive the global light through the same response model, while its contact with a surface supplies local interaction inputs to that surface. SVG facet shading is a suitable first rendering approach; actual Probe geometry, tracking and interaction behaviour remain a later experiment. Phase A does not create a pointer-following object, hide or replace the native cursor, or change editor caret behaviour.
+
+### Ownership and Phase A boundary
+
+Keep global light at the Flint root and local interaction state scoped to affected surfaces. A small interaction coordinator supplies target-local inputs to the shared resolver and uses the same coalesced frame scheduler as lighting. Clear transient state on target disposal, cancellation, lost capture or application teardown. Reset clears local demonstrations and pending impulses as well as restoring global light.
+
+The X6 adapter converts client coordinates through the current pan/zoom transform into graph and then surface-local coordinates. DOM surfaces use their own local geometry adapter. Geometry updates follow resize, viewport and layout changes; do not read every node's bounds on every pointer event. Overlays are decorative and do not intercept pointer events or determine which semantic action is available.
+
+Phase A proves the contract using ordinary playground controls that inject contact position/strength, press, lift and a finite wave impulse into a panel and an SVG graph relief. This exercises the common response path without a custom cursor. Acceptance requires neutral inputs to restore the baseline, local effects to remain confined to the target, and global light changes to remain coherent during local effects. Reduced-effects mode and keyboard operation must work through the same contract. Probe tracking, sculptural pointer assets and production capability indicators are deferred; a later Probe feature receives its own feature flag under the project convention.
+
 ## SVG and graph integration
 
 Register custom X6 node forms and edge treatments through supported extension points. Keep reusable symbols, gradients and filter definitions within the owned graph SVG scope, with identifiers unique to each Flint instance. Verify access to those definitions, filter bounds and CSS-variable inheritance in the prototype.
 
 Where SVG filter parameters require attributes, update the shared definitions directly from the lighting controller instead of assuming every attribute accepts `var()`. [SVG drop shadow documentation](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDropShadow)
+
+Share immutable geometry and global lighting definitions. Target-local effects need scoped variables, overlays or definitions so contact with one node cannot alter every node using a shared filter. Keep these within the graph's rendering ownership; SolidJS supplies inputs through the adapter rather than mutating X6-owned node subtrees independently.
 
 Shared definitions reduce repeated markup; every filtered node still incurs rendering work. Use full relief, simplified relief and flat vector detail levels according to measured visible-node counts and zoom. Keep layout, viewport movement and lighting updates independent so moving the light does not restart a layout or reconstruct graph nodes.
 
@@ -80,9 +114,13 @@ Root CSS updates avoid per-node application subscriptions, but they can still ca
 
 Compare 50, 250 and 1,000 visible nodes in full, simplified and flat modes, varying zoom and light direction. Record frame-time distribution, lighting-controller work, paint cost, input responsiveness and DOM stability. Establish the practical detail thresholds from those results. A 60 Hz display has approximately 16.7 ms per frame; this is a design budget, not a claimed benchmark result.
 
+Measure local effects during pan, zoom and dragging as well as at rest. Update only affected surfaces, cap simultaneous impulses and their filter area, and stop scheduling frames when no light update or transient effect remains. Under load, simplify or suppress decorative fields while preserving the interaction and its semantic feedback. Local contact must not rebuild graph nodes, restart layout or notify every surface of each pointer movement.
+
 Preserve focus outlines, keyboard navigation, selectable labels and screen-reader semantics. Selection must remain clear without relying on shadows or colour alone. Provide keyboard alternatives to graph dragging and light movement, plus an accessible connections list. Package interaction support does not establish accessibility by itself.
 
 Respect reduced motion and provide reduced effects. Forced-colour treatment should remove decorative textures and filters while retaining controls, labels, selected states and focus. Check readable contrast across the bounded lighting range. Compare Chrome and Safari, including SVG filter clipping, HTML inside SVG where used, scaled labels and pointer interactions.
+
+Keyboard and touch input may supply contact/press feedback without a pointer sculpture. Reduced motion suppresses propagating waves and animated travel; reduced effects can use static outlines or state cues. Capability and activation feedback must remain available through native control semantics and accessible labels. Decorative interaction must preserve text selection, caret placement, focus and native hit testing, and must never dirty a Document or persist transient state in `.ink` records.
 
 ## Three.js presentation boundary
 
@@ -94,8 +132,8 @@ The current Object model has authored `neutral`, `warm` and `dramatic` lighting 
 
 | Phase | Work | Completion criterion |
 | --- | --- | --- |
-| A | Build an isolated material playground containing a limestone surface, panel, raised and recessed controls, an X6 graph approximating the reference composition, representative sculptural SVG forms, one shared movable light and reset. | A browser comparison demonstrates coherent material direction and a convincing visual approach while selection, pan, zoom and dragging continue to work. The prototype is isolated and disposable. |
-| B | Formalise the lighting controller, tokens, relief vocabulary, primitives and reduced-effects treatment. | Existing and new primitives share one bounded lighting model with explicit lifecycle ownership. |
+| A | Build an isolated material playground containing a limestone surface, panel, raised and recessed controls, an X6 reference graph, sculptural SVG forms, one shared movable light and reset. Exercise optional local contact, press, lift and wave inputs through ordinary controls. | A browser comparison demonstrates coherent global and local material response while selection, pan, zoom and dragging work. Local effects remain target-scoped and reset to neutral. No custom cursor is implemented. |
+| B | Formalise the lighting controller, shared response resolver, local interaction contract, tokens, relief vocabulary, primitives and reduced-effects treatment. | Existing and new primitives share one bounded material model with explicit lifecycle ownership and renderer adapters usable by a later Probe. |
 | C | Apply the material system to Flint's sidebar, tabs, toolbar, search and inspector. | Chrome approaches the reference without remounting Document editors or changing authored typography. Preserve core Window controls and geometry. |
 | D | Add the live graph adapter, semantic navigation, appropriate edge meanings, automatic layout, pinned positions and measured detail degradation. | The graph uses canonical services and identities, remains usable at the supported sizes, and preserves semantic roles and provenance. |
 | E | Evaluate one optional genuine 3D object receiving the shared light. | Direction agrees with CSS/SVG and the ordinary graph and shell remain independent of Three.js. |
@@ -104,22 +142,25 @@ The current Object model has authored `neutral`, `warm` and `dramatic` lighting 
 ### Phase A sequence
 
 1. Pin an X6 version during implementation and create a lazy, isolated playground route. Add the proposed `flintMaterialLighting` feature flag, enabled by default under the project convention; at this stage it enables the playground without replacing current Flint chrome.
-2. Build the shared root controller and material/elevation tokens. Implement the DOM panel and controls alongside representative SVG relief geometry.
+2. Build the shared root controller, response resolver and material/elevation tokens. Define optional local interaction inputs and neutral defaults. Implement the DOM panel and controls alongside representative SVG relief geometry.
 3. Place the graph fixture deliberately to resemble the reference. Connect shared lighting to its node artwork and edges through supported X6 extension points.
 4. Add selection, dragging, pan, zoom and minimap behaviour through the engine and its extensions. Add application-specific keyboard and accessible-list behaviour.
-5. Compare the visual result with the mockup at the default light and at several changed directions. Inspect material consistency, body shading, shadow clipping, typography and spacing.
-6. Measure the representative graph sizes and document whether X6 meets the rendering and interaction needs. Retain X6 if it fits; move to the D3 alternative only for a concrete constraint. Formalise the reusable primitives after this decision.
+5. Add ordinary fixture controls for target-local contact, press, lift and a finite wave impulse. Verify the same response vocabulary on DOM and SVG surfaces, including reset, keyboard operation and reduced effects. Keep the native cursor.
+6. Compare the visual result with the mockup at the default light and at several changed directions, including during local effects. Inspect material consistency, body shading, shadow clipping, typography and spacing.
+7. Measure the representative graph sizes and local effects, and document whether X6 meets the rendering and interaction needs. Retain X6 if it fits; move to the D3 alternative only for a concrete constraint. Formalise the reusable primitives after this decision.
 
 ## Files and modules
 
 | Location | Planned responsibility |
 | --- | --- |
-| `src/features/flint/lighting.ts` | Shared light state, bounded derivation, coalesced root writes and subscriptions for optional adapters. |
-| `src/features/flint/material-tokens.css` | Material, elevation, texture, shadow, highlight, radius and motion tokens. |
+| `src/features/flint/lighting.ts` | Shared light state, coordinate conventions and coalesced scheduling for global and local presentation updates. |
+| `src/features/flint/material-response.ts` | Pure, bounded response resolution from material, elevation, geometry, light, optional local inputs and effects preferences. |
+| `src/features/flint/material-interaction.ts` | Presentation input contract, target registration, transient interaction coordination and cleanup; no custom cursor. |
+| `src/features/flint/material-tokens.css` | Material, elevation, texture, shadow, highlight, local response limits, radius and motion tokens. |
 | `src/features/flint/material-primitives.tsx` | Small semantic primitives for new material UI. |
 | `src/features/flint/relief-defs.tsx` | Reusable SVG forms and scoped lighting definitions. |
-| `src/features/flint/material-playground.tsx` | Isolated Phase A fixture and controls. |
-| `src/features/flint/graph/` | X6 lifecycle adapter and fixture first; layout and live projection in later stages. |
+| `src/features/flint/material-playground.tsx` | Isolated Phase A fixture, lighting controls and local response demonstrations using the native cursor. |
+| `src/features/flint/graph/` | X6 lifecycle, coordinate and material adapters and fixture first; layout and live projection in later stages. |
 | `src/features/flint/shell.tsx`, `flint.css` | Phase C chrome integration and the shared root boundary. |
 | `src/App.tsx`, `src/configuration.ts` | Playground route and explicit feature composition. |
 | `package.json`, lockfile | Pinned graph package and later layout dependencies when implemented. |
@@ -131,5 +172,7 @@ Pass feature settings explicitly through the application composition so individu
 ## Decisions for later stages
 
 Phase A can proceed with temporary per-instance lighting state and the fixed reference fixture. Before Phase D, settle the first live graph scope: Documents, Entity mentions, canonical Relationships, Claims or a defined combination, including the meaning of each edge type. Before Phase F, settle whether lighting preferences apply across all Flint windows or are remembered per Cavern.
+
+Before a later Flint Probe experiment, decide its sculptural geometry, input-device eligibility, capability vocabulary and exact proximity/contact behaviour. These choices consume the Phase A response contract; they do not require a second material system or block the playground.
 
 The material system remains scoped to Flint. It does not require a new graph library, a React migration, a semantic-schema redesign or a full Three.js interface.
