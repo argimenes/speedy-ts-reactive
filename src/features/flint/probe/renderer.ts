@@ -26,15 +26,15 @@ export function createProbeRenderer(onFailure: () => void, size = PROBE_STANDARD
 
   const diodeMaterial=new T.MeshStandardMaterial({color:0x424247,roughness:.25,emissive:0x000000,envMapIntensity:.25});
   const diodeGeometry=new T.SphereGeometry(.85,16,10),diode=new T.Mesh(diodeGeometry,diodeMaterial);
-  diode.position.set(0,7.2,3.25);diode.scale.z=.55;body.add(diode);
+  diode.position.set(0,7.2-PROBE_STANDARD_HEIGHT,3.25);diode.scale.z=.55;body.add(diode);
   const socketGeometry=new T.TorusGeometry(1.25,.24,8,32),socketMaterial=new T.MeshStandardMaterial({color:0x55514b,metalness:.35,roughness:.48});
-  const socket=new T.Mesh(socketGeometry,socketMaterial);socket.position.set(0,7.2,3.05);body.add(socket);
+  const socket=new T.Mesh(socketGeometry,socketMaterial);socket.position.set(0,7.2-PROBE_STANDARD_HEIGHT,3.05);body.add(socket);
   const lensGeometry=new T.SphereGeometry(1.12,16,10),lensMaterial=new T.MeshPhysicalMaterial({color:0x7a746c,roughness:.3,transmission:.35,thickness:.5,ior:1.45,transparent:true,opacity:.42,depthWrite:false});
   const lens=new T.Mesh(lensGeometry,lensMaterial);lens.position.copy(diode.position);lens.scale.z=.6;body.add(lens);
   const haloMaterial=createDiodeHalo(),haloGeometry=new T.PlaneGeometry(8,8),halo=new T.Mesh(haloGeometry,haloMaterial);
-  halo.position.set(0,7.2,4.05);body.add(halo);
+  halo.position.set(0,7.2-PROBE_STANDARD_HEIGHT,4.05);body.add(halo);
   // A real short-range source illuminates adjacent facets and the socket.
-  const diodeLight=new T.PointLight(0xffffff,0,13,2);diodeLight.position.set(0,7.2,4.4);body.add(diodeLight);
+  const diodeLight=new T.PointLight(0xffffff,0,13,2);diodeLight.position.set(0,7.2-PROBE_STANDARD_HEIGHT,4.4);body.add(diodeLight);
   const loss=(event:Event)=>{event.preventDefault();onFailure();};canvas.addEventListener('webglcontextlost',loss);
   document.body.append(canvas);
   // Let the body extend behind its hotspot at the host boundary. The managed
@@ -58,7 +58,10 @@ export function createProbeRenderer(onFailure: () => void, size = PROBE_STANDARD
         camera.left=-padding;camera.top=padding;camera.right=width+padding;camera.bottom=-height-padding;camera.updateProjectionMatrix();
       }
       canvas.style.left=rect.left-padding+'px';canvas.style.top=rect.top-padding+'px';canvas.style.width=width+padding*2+'px';canvas.style.height=height+padding*2+'px';
-      body.position.set(x-rect.left,-(y-rect.top),0);body.rotation.set(angle,0,.2);
+      body.position.set(x-rect.left,-(y-rect.top),0);
+      // The authored crystal's long axis is Y. Turn around that axis first,
+      // then apply the cursor's fixed lean so the upper tip stays upright.
+      body.rotation.set(0,angle,.2,'ZYX');
       // Size, proximity and rotation never translate the model's tip origin.
       applyFlintLight(sunlight,light,new T.Vector2(body.position.x,body.position.y));
       const colour=kind==='flint-eikon'?amber:blue,core=kind==='flint-eikon'?amberCore:blueCore;

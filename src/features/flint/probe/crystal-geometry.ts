@@ -1,10 +1,11 @@
 import * as T from 'three';
+import { PROBE_STANDARD_HEIGHT } from './size';
 
 export { PROBE_STANDARD_HEIGHT } from './size';
 type Point = [number, number, number];
 
 /** Five quiet front planes and a four-plane reverse. Only the recessed sigil
- * uses curved topology. The lower point is the exact (0, 0, 0) hotspot. */
+ * uses curved topology. The upper point becomes the exact (0, 0, 0) hotspot. */
 export function createCrystalGeometry() {
   const face: number[] = [], recess: number[] = [];
   const triangle = (a: Point, b: Point, c: Point, dark = false) => (dark ? recess : face).push(...a, ...b, ...c);
@@ -49,5 +50,6 @@ export function createCrystalGeometry() {
   geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
   geometry.addGroup(0,face.length/3,0);geometry.addGroup(face.length/3,recess.length/3,1);
   geometry.computeVertexNormals();
+  geometry.translate(0,-PROBE_STANDARD_HEIGHT,0);
   return geometry;
 }

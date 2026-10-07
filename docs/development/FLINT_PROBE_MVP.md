@@ -5,9 +5,10 @@ Flint application and `/flint-material-three`. Set the feature to `false` to
 omit its controller, controls and renderer. The **Probe experiment → Stone
 pointer** checkbox disables it immediately within one Flint instance.
 
-Move over Flint to show the Probe. Its lower tip is the actual client-coordinate
-hotspot, including during rotation. **Alt + wheel** rotates about that tip on
-the X axis. **Space** smoothly turns it over by 180° per press while the Probe
+Move over Flint to show the Probe. Its upper tip is the actual client-coordinate
+hotspot, including during rotation. **Alt + wheel** turns it around its long
+axis, front → side → back, with the upper tip staying upright. This axis is Y
+in the authored Three.js geometry. **Space** smoothly turns it by 180° per press while the Probe
 is visible; holding Space does not repeat the turn. Spaces in editors and
 Space activation of focused controls keep their normal behaviour. Ordinary
 wheel/Control/Command zoom input retains its existing meaning. Typing or
@@ -39,7 +40,7 @@ The latest crystalline reference is a rendered presentation sheet, not a GLB
 or discrete PBR maps. `crystal-geometry.ts` reconstructs its narrow silhouette
 with five broad front planes and four reverse planes; the curved geometry is
 confined to the sigil's actual recess walls, floor and central island. The
-42 CSS pixel standard size puts visual mass above the exact tip origin and
+42 CSS pixel standard size puts visual mass below the exact upper-tip origin and
 does not change with proximity. The **Probe** section above **Light** in the material playground adjusts its
 height live from 16 to 128 CSS pixels, with **Reset size** restoring 42 pixels.
 Size stays with the instance when its pointer is disabled and re-enabled.

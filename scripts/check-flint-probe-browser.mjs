@@ -123,7 +123,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('Three target projection produces blue proximity',await evaluate(`probe.state.proximity==='graph-node'&&probe.renderer.diode.material.emissive.b>probe.renderer.diode.material.emissive.r&&probe.renderer.diode.material.emissiveIntensity>2`));
  await evaluate(`p.graph.select(undefined)`);await press(nodePoint);
  check('Probe hotspot clicks the actual Graph node',await evaluate(`p.graph.selectedId==='waste-land'`));
- const clip={x:nodePoint.x-25,y:nodePoint.y-55,width:80,height:115,scale:4};
+ const clip={x:nodePoint.x-25,y:nodePoint.y-15,width:80,height:115,scale:4};
  const detailShot=async name=>{
    // Render real extra samples at high DPI; do not enlarge the physical model.
    await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:3,mobile:false},sessionId);
@@ -149,6 +149,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('Space flips once per press without repeat, page scroll or Graph movement',await evaluate(`Math.abs(probe.targetRotation-spaceAngle-Math.PI)<.001&&Math.abs(probe.rotation-probe.targetRotation)<.001&&scrollY===spaceScroll&&p.graph.camera.position.x===cameraX&&p.graph.camera.position.y===cameraY&&p.graph.zoom===zoom`));
  await space();await settleRotation();
  check('a second Space turns Probe over again and rendering settles',await evaluate(`Math.abs(probe.targetRotation-spaceAngle-2*Math.PI)<.001&&Math.abs(probe.rotation-probe.targetRotation)<.001&&!probe.pending`));
+ check('upper tip owns the hotspot and long axis stays upright through a turn',await evaluate(`(()=>{const body=probe.renderer.body,geometry=probe.renderer.geometry;geometry.computeBoundingBox();body.updateMatrixWorld(true);const origin=body.position.clone().set(0,0,0),tip=body.localToWorld(origin.clone()),bottom=body.localToWorld(origin.clone().set(0,-42,0));return geometry.boundingBox.max.y===0&&geometry.boundingBox.min.y===-42&&tip.distanceTo(body.position)<.001&&bottom.y<tip.y&&Math.abs(bottom.z-tip.z)<.001})()`));
  await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:30,modifiers:2},sessionId);await pause(150);
  check('ordinary Ctrl-wheel still zooms Graph',await evaluate(`p.graph.zoom!==zoom`));
  await mouse(330,900);await pause(200);
