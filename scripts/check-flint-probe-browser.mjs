@@ -84,7 +84,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const chromePoint=await point('.flint-vault-name');await mouse(chromePoint.x,chromePoint.y);
  await wait(`proof.probe.state.visibility==='visible'`);await shot('01-chrome');
  check('precise tip follows client coordinates; overlay never owns input',await evaluate(`(()=>{const r=proof.win.getBoundingClientRect(),p=proof.probe.renderer;return Math.abs(p.body.position.x+r.left-${chromePoint.x})<.1&&Math.abs(r.top-p.body.position.y-${chromePoint.y})<.1&&getComputedStyle(p.canvas).pointerEvents==='none'&&p.canvas.getAttribute('aria-hidden')==='true'})()`));
- const eikon=await point('[data-probe-eikon]');await mouse(eikon.x,eikon.y);await wait(`proof.probe.state.proximity==='flint-eikon'`);await shot('02-eikon-amber');
+ const eikon=await point('[data-probe-eikon]');await mouse(eikon.x+30,eikon.y+20);await wait(`proof.probe.state.proximity==='flint-eikon'`);await shot('02-eikon-amber');
  check('eikon emits amber through registered DOM bounds',await evaluate(`proof.probe.renderer.diode.material.emissive.r>proof.probe.renderer.diode.material.emissive.b&&proof.probe.renderer.diode.material.emissiveIntensity>2`));
  const toggle=await point('[aria-label="Toggle Library"]');await press(toggle);
  check('ordinary DOM buttons receive real clicks',await evaluate(`proof.win.dataset.library==='false'`));await press(toggle);
@@ -116,13 +116,26 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await evaluate(`p.graph.select(undefined)`);await press(nodePoint);
  check('Probe hotspot clicks the actual Graph node',await evaluate(`p.graph.selectedId==='waste-land'`));
  const clip={x:nodePoint.x-25,y:nodePoint.y-55,width:80,height:115,scale:4};
- const detailShot=async name=>{const {data}=await send('Page.captureScreenshot',{format:'png',clip},sessionId);await writeFile(path.join(artifacts,name+'.png'),Buffer.from(data,'base64'));};
+ const detailShot=async name=>{
+   // Render real extra samples at high DPI; do not enlarge the physical model.
+   await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:3,mobile:false},sessionId);
+   await evaluate(`probe.renderer.renderer.setPixelRatio(3);p.lighting.setLight({})`);await pause(200);
+   const {data}=await send('Page.captureScreenshot',{format:'png',clip:{...clip,scale:1}},sessionId);await writeFile(path.join(artifacts,name+'.png'),Buffer.from(data,'base64'));
+   await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:1,mobile:false},sessionId);
+   await evaluate(`probe.renderer.renderer.setPixelRatio(1);p.lighting.setLight({})`);await pause(100);
+ };
  await detailShot('08-probe-front-detail');
  await evaluate(`window.cameraX=p.graph.camera.position.x;window.cameraY=p.graph.camera.position.y;window.zoom=p.graph.zoom;window.angle=probe.rotation`);
  await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:380,modifiers:1},sessionId);await pause(35);
  check('Alt-wheel eases toward target without scrolling or Graph zoom',await evaluate(`probe.targetRotation>angle+2&&probe.rotation>angle&&probe.rotation<probe.targetRotation&&p.graph.camera.position.x===cameraX&&p.graph.camera.position.y===cameraY&&p.graph.zoom===zoom`));await detailShot('09-probe-turning-detail');
  await pause(800);await shot('10-probe-reverse');await detailShot('11-probe-reverse-detail');
  check('rotation reveals reverse while hotspot stays fixed',await evaluate(`Math.abs(probe.rotation-probe.targetRotation)<.001&&Math.abs(probe.renderer.body.position.x+root.getBoundingClientRect().left-${nodePoint.x})<.1`));
+ for(const [name,target] of [['12-three-quarter',.8],['13-side',Math.PI/2],['14-back',Math.PI]]) {
+   const current=await evaluate('probe.targetRotation');
+   await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:(target-current)/.008,modifiers:1},sessionId);
+   await pause(800);await detailShot(name);
+ }
+ console.log('Probe render sanity:',await evaluate(`({triangles:probe.renderer.renderer.info.render.triangles,lastSubmitMs:probe.renderer.metrics.lastRenderMs,idle:!probe.pending})`));
  await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:30,modifiers:2},sessionId);await pause(150);
  check('ordinary Ctrl-wheel still zooms Graph',await evaluate(`p.graph.zoom!==zoom`));
  await mouse(330,900);await pause(200);
