@@ -14,7 +14,7 @@ import './material/material-chrome.css';
 import './material-tokens.css';
 import './material-playground.css';
 import { FlintProbe } from './probe/probe';
-import { PROBE_STANDARD_HEIGHT, PROBE_MIN_HEIGHT, PROBE_MAX_HEIGHT } from './probe/size';
+import { PROBE_DEFAULT_HEIGHT, PROBE_MIN_HEIGHT, PROBE_MAX_HEIGHT } from './probe/size';
 
 type PlaygroundPresentation = { lighting: Lighting; interactions: MaterialInteractions; graph: MaterialGraphAdapter; materialScene?: MaterialScene };
 const presentations = new WeakMap<HTMLElement, PlaygroundPresentation>();
@@ -26,7 +26,7 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean;
   let root!: HTMLElement, container!: HTMLDivElement, minimap!: HTMLDivElement, panel!: HTMLDivElement, button!: HTMLButtonElement;
   let presentation: PlaygroundPresentation | undefined;
   let field!: HTMLDivElement;
-  const [probeSize, setProbeSize] = createSignal(PROBE_STANDARD_HEIGHT);
+  const [probeSize, setProbeSize] = createSignal(PROBE_DEFAULT_HEIGHT);
   const [light, setLight] = createSignal<Light>(DEFAULT_LIGHT);
   const [finish, setFinish] = createSignal<StoneFinish>('limestone');
   const [textureLayers, setTextureLayers] = createSignal<TextureLayers>(DEFAULT_TEXTURE_LAYERS);
@@ -120,7 +120,7 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean;
           <Show when={props.probe}>
             <FlintPanel elevation="flush" class="flint-material-controls"><h2>Probe</h2>
               <Range label="Probe size" value={probeSize} min={PROBE_MIN_HEIGHT} max={PROBE_MAX_HEIGHT} unit=" px" change={setProbeSize} />
-              <FlintButton class="flint-material-reset" onClick={() => setProbeSize(PROBE_STANDARD_HEIGHT)}>Reset size</FlintButton>
+              <FlintButton class="flint-material-reset" onClick={() => setProbeSize(PROBE_DEFAULT_HEIGHT)}>Reset size</FlintButton>
             </FlintPanel>
           </Show>
           <FlintPanel elevation="flush" class="flint-material-controls"><h2>Light</h2>

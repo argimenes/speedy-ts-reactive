@@ -2,14 +2,14 @@ import { DEFAULT_LIGHT } from '../material-response';
 import type { Lighting } from '../lighting';
 import { probeTargets, type ProbeKind } from './targets';
 import { createProbeRenderer, type ProbeRenderer } from './renderer';
-import { clampProbeSize, PROBE_STANDARD_HEIGHT } from './size';
+import { clampProbeSize, PROBE_DEFAULT_HEIGHT } from './size';
 
 export type ProbeState = { visibility:'visible'|'suppressed-while-typing'|'disabled'|'outside'; mode:'default'; proximity:ProbeKind|'none' };
 export function createProbeController(root:HTMLElement,getLighting:()=>Lighting|undefined,changed:(state:ProbeState)=>void) {
   const registry=probeTargets(root),colours=window.matchMedia('(forced-colors: active)'),motion=window.matchMedia('(prefers-reduced-motion: reduce)');
   let enabled=true,inside=false,suppressed=false,disposed=false,failed=false,x=0,y=0,seen=false;
   let frame:number|undefined,renderer:ProbeRenderer|undefined,rotation=.12,targetRotation=.12,lastTime=0;
-  let size=PROBE_STANDARD_HEIGHT;
+  let size=PROBE_DEFAULT_HEIGHT;
   let light:Lighting|undefined,stopLight:(()=>void)|undefined;
   let state:ProbeState={visibility:'outside',mode:'default',proximity:'none'};
   const metrics={frames:0};

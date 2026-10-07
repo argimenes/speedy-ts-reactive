@@ -4,9 +4,9 @@ import type { Light } from '../material-response';
 import type { ProbeKind } from './targets';
 import { createCrystalGeometry, PROBE_STANDARD_HEIGHT } from './crystal-geometry';
 import { createCrystalEnvironment, createCrystalMaps, createDiodeHalo } from './crystal-optics';
-import { clampProbeSize } from './size';
+import { clampProbeSize, PROBE_DEFAULT_HEIGHT } from './size';
 
-export function createProbeRenderer(onFailure: () => void, size = PROBE_STANDARD_HEIGHT) {
+export function createProbeRenderer(onFailure: () => void, size = PROBE_DEFAULT_HEIGHT) {
   size=clampProbeSize(size);
   const canvas=document.createElement('canvas');canvas.className='flint-probe-canvas';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;
   const renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});

@@ -40,9 +40,9 @@ The latest crystalline reference is a rendered presentation sheet, not a GLB
 or discrete PBR maps. `crystal-geometry.ts` reconstructs its narrow silhouette
 with five broad front planes and four reverse planes; the curved geometry is
 confined to the sigil's actual recess walls, floor and central island. The
-42 CSS pixel standard size puts visual mass below the exact upper-tip origin and
+82 CSS pixel default size puts visual mass below the exact upper-tip origin and
 does not change with proximity. The **Probe** section above **Light** in the material playground adjusts its
-height live from 16 to 128 CSS pixels, with **Reset size** restoring 42 pixels.
+height live from 16 to 128 CSS pixels, with **Reset size** restoring 82 pixels.
 Size stays with the instance when its pointer is disabled and re-enabled.
 Scaling preserves the tip hotspot, rotation, and proportional diode lighting.
 

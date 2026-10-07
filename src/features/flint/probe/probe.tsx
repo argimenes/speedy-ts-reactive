@@ -2,16 +2,16 @@ import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { Lighting } from '../lighting';
 import type { ProbeController, ProbeState } from './controller';
 import './probe.css';
-import { PROBE_STANDARD_HEIGHT } from './size';
+import { PROBE_DEFAULT_HEIGHT } from './size';
 const presentations=new WeakMap<HTMLElement,ProbeController>();
 export const probePresentation=(root:HTMLElement)=>presentations.get(root);
 export function FlintProbe(props:{root:()=>HTMLElement;lighting:()=>Lighting|undefined;size?:number}) {
   const [enabled,setEnabled]=createSignal(true),[state,setState]=createSignal<ProbeState>({visibility:'outside',mode:'default',proximity:'none'});
   let controller:ProbeController|undefined,disposed=false;
-  createEffect(()=>{const size=props.size??PROBE_STANDARD_HEIGHT;controller?.setSize(size);});
+  createEffect(()=>{const size=props.size??PROBE_DEFAULT_HEIGHT;controller?.setSize(size);});
   onMount(()=>{
     const root=props.root();
-    void import('./controller').then(module=>{if(disposed)return;controller=module.createProbeController(root,props.lighting,setState);controller.setSize(props.size??PROBE_STANDARD_HEIGHT);controller.setEnabled(enabled());presentations.set(root,controller);}).catch(()=>{if(!disposed)setState({visibility:'disabled',mode:'default',proximity:'none'});});
+    void import('./controller').then(module=>{if(disposed)return;controller=module.createProbeController(root,props.lighting,setState);controller.setSize(props.size??PROBE_DEFAULT_HEIGHT);controller.setEnabled(enabled());presentations.set(root,controller);}).catch(()=>{if(!disposed)setState({visibility:'disabled',mode:'default',proximity:'none'});});
     onCleanup(()=>{disposed=true;controller?.dispose();presentations.delete(root);});
   });
   return <details class="flint-probe-controls"><summary>Probe experiment</summary><div>
