@@ -4,8 +4,10 @@ import type { Light } from '../material-response';
 import type { ProbeKind } from './targets';
 import { createCrystalGeometry, PROBE_STANDARD_HEIGHT } from './crystal-geometry';
 import { createCrystalEnvironment, createCrystalMaps, createDiodeHalo } from './crystal-optics';
+import { clampProbeSize } from './size';
 
 export function createProbeRenderer(onFailure: () => void, size = PROBE_STANDARD_HEIGHT) {
+  size=clampProbeSize(size);
   const canvas=document.createElement('canvas');canvas.className='flint-probe-canvas';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;
   const renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
   configureMaterialRenderer(renderer);renderer.shadowMap.enabled=false;
@@ -37,13 +39,18 @@ export function createProbeRenderer(onFailure: () => void, size = PROBE_STANDARD
   document.body.append(canvas);
   // Let the body extend behind its hotspot at the host boundary. The managed
   // pointer region stays with the controller; only the transparent viewport grows.
-  const padding=size+6;
+  let padding=size+6;
   let width=0,height=0,disposed=false;
   const blue=new T.Color(0x168bff),amber=new T.Color(0xffab32);
   const blueCore=new T.Color(0x9edaff),amberCore=new T.Color(0xffdf96);
   const metrics={frames:0,lastRenderMs:0};
   return {
     canvas,renderer,body,diode,diodeLight,geometry,metrics,
+    setSize(value:number) {
+      const next=clampProbeSize(value);if(disposed||next===size)return;
+      size=next;body.scale.setScalar(size/PROBE_STANDARD_HEIGHT);
+      padding=size+6;width=0;height=0;
+    },
     draw(rect:DOMRect,x:number,y:number,angle:number,kind:ProbeKind|'none',intensity:number,light:Light,visible:boolean) {
       if(disposed)return;
       if(width!==rect.width||height!==rect.height) {
@@ -56,7 +63,8 @@ export function createProbeRenderer(onFailure: () => void, size = PROBE_STANDARD
       applyFlintLight(sunlight,light,new T.Vector2(body.position.x,body.position.y));
       const colour=kind==='flint-eikon'?amber:blue,core=kind==='flint-eikon'?amberCore:blueCore;
       diodeMaterial.emissive.copy(core);diodeMaterial.emissiveIntensity=intensity*4.2;
-      diodeLight.color.copy(colour);diodeLight.intensity=intensity*220;
+      const scale=size/PROBE_STANDARD_HEIGHT;
+      diodeLight.color.copy(colour);diodeLight.distance=13*scale;diodeLight.intensity=intensity*220*scale*scale;
       haloMaterial.uniforms.colour.value.copy(colour);haloMaterial.uniforms.strength.value=intensity;
       halo.visible=intensity>0;lensMaterial.color.set(0x7a746c).lerp(colour,intensity*.55);
       canvas.hidden=!visible;

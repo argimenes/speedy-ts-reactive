@@ -1,6 +1,6 @@
 import * as T from 'three';
 
-export const PROBE_STANDARD_HEIGHT = 42;
+export { PROBE_STANDARD_HEIGHT } from './size';
 type Point = [number, number, number];
 
 /** Five quiet front planes and a four-plane reverse. Only the recessed sigil

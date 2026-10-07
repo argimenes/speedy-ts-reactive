@@ -2,12 +2,14 @@ import { DEFAULT_LIGHT } from '../material-response';
 import type { Lighting } from '../lighting';
 import { probeTargets, type ProbeKind } from './targets';
 import { createProbeRenderer, type ProbeRenderer } from './renderer';
+import { clampProbeSize, PROBE_STANDARD_HEIGHT } from './size';
 
 export type ProbeState = { visibility:'visible'|'suppressed-while-typing'|'disabled'|'outside'; mode:'default'; proximity:ProbeKind|'none' };
 export function createProbeController(root:HTMLElement,getLighting:()=>Lighting|undefined,changed:(state:ProbeState)=>void) {
   const registry=probeTargets(root),colours=window.matchMedia('(forced-colors: active)'),motion=window.matchMedia('(prefers-reduced-motion: reduce)');
   let enabled=true,inside=false,suppressed=false,disposed=false,failed=false,x=0,y=0,seen=false;
   let frame:number|undefined,renderer:ProbeRenderer|undefined,rotation=.12,targetRotation=.12,lastTime=0;
+  let size=PROBE_STANDARD_HEIGHT;
   let light:Lighting|undefined,stopLight:(()=>void)|undefined;
   let state:ProbeState={visibility:'outside',mode:'default',proximity:'none'};
   const metrics={frames:0};
@@ -22,7 +24,7 @@ export function createProbeController(root:HTMLElement,getLighting:()=>Lighting|
     if(!enabled||failed||colours.matches){nativeCursor();if(renderer)renderer.canvas.hidden=true;publish('disabled','none');return;}
     if(!inside){nativeCursor();if(renderer)renderer.canvas.hidden=true;publish('outside','none');return;}
     try {
-      renderer??=createProbeRenderer(fail);
+      renderer??=createProbeRenderer(fail,size);
       const current=getLighting();if(current!==light){stopLight?.();light=current;stopLight=light?.subscribe(request);}
       const rect=root.getBoundingClientRect(),proximity=registry.resolve(x,y);
       const dt=Math.min(50,lastTime?now-lastTime:16);lastTime=now;
@@ -78,6 +80,8 @@ export function createProbeController(root:HTMLElement,getLighting:()=>Lighting|
   function preferences(){if(colours.matches){nativeCursor();renderer?.dispose();renderer=undefined;}request();}
   return {
     get state(){return state;},get renderer(){return renderer;},get rotation(){return rotation;},get targetRotation(){return targetRotation;},get pending(){return frame!==undefined;},get disposed(){return disposed;},metrics,
+    get size(){return size;},
+    setSize(value:number){if(disposed)return;const next=clampProbeSize(value);if(next===size)return;size=next;renderer?.setSize(size);request();},
     setEnabled(value:boolean){enabled=value;if(!value){nativeCursor();renderer?.dispose();renderer=undefined;publish('disabled','none');}else failed=false;request();},
     dispose(){if(disposed)return;disposed=true;if(frame!==undefined)cancelAnimationFrame(frame);frame=undefined;
       window.removeEventListener('pointermove',pointer,true);document.removeEventListener('pointerout',out);window.removeEventListener('blur',leave);

@@ -14,6 +14,7 @@ import './material/material-chrome.css';
 import './material-tokens.css';
 import './material-playground.css';
 import { FlintProbe } from './probe/probe';
+import { PROBE_STANDARD_HEIGHT, PROBE_MIN_HEIGHT, PROBE_MAX_HEIGHT } from './probe/size';
 
 type PlaygroundPresentation = { lighting: Lighting; interactions: MaterialInteractions; graph: MaterialGraphAdapter; materialScene?: MaterialScene };
 const presentations = new WeakMap<HTMLElement, PlaygroundPresentation>();
@@ -25,6 +26,7 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean;
   let root!: HTMLElement, container!: HTMLDivElement, minimap!: HTMLDivElement, panel!: HTMLDivElement, button!: HTMLButtonElement;
   let presentation: PlaygroundPresentation | undefined;
   let field!: HTMLDivElement;
+  const [probeSize, setProbeSize] = createSignal(PROBE_STANDARD_HEIGHT);
   const [light, setLight] = createSignal<Light>(DEFAULT_LIGHT);
   const [finish, setFinish] = createSignal<StoneFinish>('limestone');
   const [textureLayers, setTextureLayers] = createSignal<TextureLayers>(DEFAULT_TEXTURE_LAYERS);
@@ -104,7 +106,7 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean;
       <blockquote>“We shape our tools<br />and thereafter<br />they shape us.”<cite>— McLuhan</cite></blockquote>
     </aside>
     <div class="flint-material-workspace">
-      <header class="flint-material-header"><div><span class="flint-material-kicker">MATERIAL STUDY · {props.materialChrome ? '2.5D MATERIAL ENVIRONMENT' : props.threeSpike ? 'PHASE A.5 · THREE.JS GRAPH' : 'PHASE A'}</span><h1>A space for ideas, carved in light.</h1></div><Show when={props.probe}><FlintProbe root={()=>root} lighting={()=>presentation?.lighting}/></Show><a href={`${import.meta.env.BASE_URL}${props.threeSpike ? 'flint-material' : 'flint-material-three'}`}>{props.threeSpike ? 'Compare SVG baseline ↗' : 'Compare Three.js spike ↗'}</a></header>
+      <header class="flint-material-header"><div><span class="flint-material-kicker">MATERIAL STUDY · {props.materialChrome ? '2.5D MATERIAL ENVIRONMENT' : props.threeSpike ? 'PHASE A.5 · THREE.JS GRAPH' : 'PHASE A'}</span><h1>A space for ideas, carved in light.</h1></div><Show when={props.probe}><FlintProbe root={()=>root} lighting={()=>presentation?.lighting} size={probeSize()}/></Show><a href={`${import.meta.env.BASE_URL}${props.threeSpike ? 'flint-material' : 'flint-material-three'}`}>{props.threeSpike ? 'Compare SVG baseline ↗' : 'Compare Three.js spike ↗'}</a></header>
       <div class="flint-material-tabs" aria-label="Reference composition"><FlintSurface elevation="raised">▤　The Waste Land</FlintSurface><FlintSurface elevation="relief">♧　Graph</FlintSurface><span aria-hidden="true">＋</span></div>
       <div class="flint-material-stage">
         <section class="flint-material-graph-panel" aria-label="Material graph study">
@@ -115,6 +117,12 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean;
         </section>
         <aside class="flint-material-inspector" aria-label="Material controls">
           <FlintPanel elevation="flush" class="flint-material-description"><span class="flint-material-kicker">NODE · FIXTURE</span><h2>{selected()?.label ?? 'Select a relief'}</h2><p>{selected()?.relation ?? 'Use the graph or connections list.'}</p><Show when={count() === 13 && selected()?.id === "waste-land"}><p class="flint-material-description-text">A landmark modernist poem by T. S. Eliot (1922). Fragments, loss, spiritual desolation, and the search for renewal.</p><div class="flint-material-tags"><span>#poetry</span><span>#modernism</span><span>#rebirth</span></div></Show></FlintPanel>
+          <Show when={props.probe}>
+            <FlintPanel elevation="flush" class="flint-material-controls"><h2>Probe</h2>
+              <Range label="Probe size" value={probeSize} min={PROBE_MIN_HEIGHT} max={PROBE_MAX_HEIGHT} unit=" px" change={setProbeSize} />
+              <FlintButton class="flint-material-reset" onClick={() => setProbeSize(PROBE_STANDARD_HEIGHT)}>Reset size</FlintButton>
+            </FlintPanel>
+          </Show>
           <FlintPanel elevation="flush" class="flint-material-controls"><h2>Light</h2>
             <Show when={props.materialChrome}><label><input type="checkbox" aria-label="Environmental occlusion" checked={occlusion()} onChange={e => changeEnvironment(e.currentTarget.checked)} /> Environmental occlusion</label></Show>
             <label class="flint-material-select">Stone finish<select aria-label="Stone finish" value={finish()} onChange={e => changeFinish(e.currentTarget.value as StoneFinish)}><option value="limestone">Limestone · fine grain</option><option value="marble">Pale marble · veined</option><option value="untextured">Limestone · shading only</option></select></label>

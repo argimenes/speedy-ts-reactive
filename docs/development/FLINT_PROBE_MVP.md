@@ -40,8 +40,10 @@ or discrete PBR maps. `crystal-geometry.ts` reconstructs its narrow silhouette
 with five broad front planes and four reverse planes; the curved geometry is
 confined to the sigil's actual recess walls, floor and central island. The
 42 CSS pixel standard size puts visual mass above the exact tip origin and
-does not change with proximity. The size is a renderer parameter for future
-accessibility options, with no extra controls added in this pass.
+does not change with proximity. The **Probe** section above **Light** in the material playground adjusts its
+height live from 16 to 128 CSS pixels, with **Reset size** restoring 42 pixels.
+Size stays with the instance when its pointer is disabled and re-enabled.
+Scaling preserves the tip hotspot, rotation, and proportional diode lighting.
 
 `crystal-optics.ts` supplies restrained roughness and thickness variation and
 a small neutral PMREM lighting environment, generated once. The physical
