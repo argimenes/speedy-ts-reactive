@@ -11,6 +11,7 @@ import { createMaterialRegistry } from '../material/material-registry';
 import { DEFAULT_TEXTURE_LAYERS, type TextureLayers } from '../material-textures';
 import limestoneURL from '../assets/limestone-fine-albedo.png';
 import marbleURL from '../assets/marble-albedo.png';
+import { probeTargets } from '../probe/targets';
 
 export type MaterialGraphAdapter = Pick<ReturnType<typeof createMaterialGraph>, 'setFixture'|'select'|'fit'|'setTextureLayers'|'nodes'|'selectedId'|'disposed'|'setDetail'|'setFinish'|'zoomBy'|'pan'|'move'|'dispose'>;
 export type GraphFactory = (options: Parameters<typeof createMaterialGraph>[0]) => MaterialGraphAdapter;
@@ -20,6 +21,8 @@ type NodeView = { spec: FixtureNode; group: T.Group; label: HTMLSpanElement; wav
  */
 export const createThreeMaterialGraph = (options: Parameters<GraphFactory>[0], environmentRoot?: HTMLElement) => {
   const { container, lighting, interactions } = options;
+  const probeRoot=container.closest<HTMLElement>('.flint-material-playground,.flint-application');
+  const targets=probeRoot?probeTargets(probeRoot):undefined,stopProbeTargets:Array<()=>void>=[];
   const canvas = document.createElement('canvas'); canvas.className = 'flint-three-canvas'; canvas.setAttribute('aria-hidden','true');
   const labels = document.createElement('div'); labels.className = 'flint-three-labels'; container.append(canvas,labels); container.dataset.renderer='three';
   const renderer = new T.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
@@ -182,9 +185,11 @@ export const createThreeMaterialGraph = (options: Parameters<GraphFactory>[0], e
       renderer.shadowMap.needsUpdate = true;
     }
     metrics.lastRenderMs=performance.now()-start;metrics.frames++;metrics.calls=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.geometries=renderer.info.memory.geometries;metrics.textures=renderer.info.memory.textures;
+    targets?.invalidate();
   });
   function fit(){if(!nodes.length)return;const left=Math.min(...nodes.map(n=>n.x)),top=Math.min(...nodes.map(n=>n.y)),right=Math.max(...nodes.map(n=>n.x+n.width)),bottom=Math.max(...nodes.map(n=>n.y+n.height+40));centre.set((left+right)/2,-(top+bottom)/2);zoom=Math.min(1.15,(width-120)/(right-left),(height-120)/(bottom-top));zoom=Math.max(.15,zoom);options.onZoom(zoom);updateLighting()}
   function setFixture(count=13){
+    stopProbeTargets.splice(0).forEach(stop=>stop());
     for(const v of views.values()){v.stop();v.label.remove();scene.remove(v.wave);v.wave.geometry.dispose();(v.wave.material as T.Material).dispose();v.group.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();ownedGeometries.delete(o.geometry)}});world.remove(v.group)}views.clear();contactId=undefined;contact.intensity=0;
     nodes=fixtureNodes(count).map(n=>({...n,form:count>13&&n.form==='mask'?'stone':n.form}));contextual.visible=count===13;
     for(const spec of nodes){const group=cloneSculpture(spec);world.add(group);
@@ -199,6 +204,13 @@ export const createThreeMaterialGraph = (options: Parameters<GraphFactory>[0], e
       };
       const stop=interactions.register({id:spec.id,elevation:spec.form==='mask'?'object':'relief',material:materialForForm(spec.form,finish),geometry:()=>({width:spec.width,height:spec.height}),clientToLocal:p=>{const q=clientToWorld(p);return {x:q.x-group.position.x+spec.width/2,y:group.position.y+spec.height/2-q.y}},apply,capabilities:[{kind:'drag',available:true,label:'Move relief'},{kind:'inspect',available:true,label:'Inspect fixture node'}]});
       views.set(spec.id,{spec,group,label,wave,stop});
+      if(targets)stopProbeTargets.push(targets.register({id:spec.id,kind:'graph-node',bounds:()=>{
+        if(disposed||lost||!canvas.isConnected)return;
+        const r=canvas.getBoundingClientRect(),p=project(group.position),sx=r.width/width,sy=r.height/height;
+        const left=Math.max(r.left,r.left+(p.x-spec.width*zoom*.4)*sx),right=Math.min(r.right,r.left+(p.x+spec.width*zoom*.4)*sx);
+        const top=Math.max(r.top,r.top+(p.y-spec.height*zoom*.45)*sy),bottom=Math.min(r.bottom,r.top+(p.y+spec.height*zoom*.45)*sy);
+        return left<right&&top<bottom?{left,right,top,bottom}:undefined;
+      }}));
     }
     const extent=Math.max(900,...nodes.map(n=>n.x+n.width),...nodes.map(n=>n.y+n.height));for(const side of ['left','bottom'] as const)sunlight.shadow.camera[side]=-extent*.8;for(const side of ['right','top'] as const)sunlight.shadow.camera[side]=extent*.8;sunlight.shadow.camera.updateProjectionMatrix();
     configureMaterials();updateEdges();select(nodes[0]?.id);fit();
@@ -228,7 +240,7 @@ export const createThreeMaterialGraph = (options: Parameters<GraphFactory>[0], e
     setFinish(value:StoneFinish){finish=value;container.dataset.finish=value;for(const v of views.values()){v.group.traverse(o=>{if(o instanceof T.Mesh)o.material=detail==='flat'?plain:material(v.spec.form)});const target=interactions.target(v.spec.id);if(target)target.material=materialForForm(v.spec.form,finish)}contextual.traverse(o=>{if(o instanceof T.Mesh)o.material=material('beads')});configureMaterials();request()},
     zoomBy(delta:number){zoom=Math.max(.15,Math.min(2.5,zoom+delta));options.onZoom(zoom);request(false)},
     pan(dx:number,dy:number){centre.x-=dx/zoom;centre.y+=dy/zoom;updateLighting()},move(dx:number,dy:number){if(selectedId)translateNode(selectedId,dx,dy)},
-    dispose(){if(disposed)return;disposed=true;resize.disconnect();stopLight();stopRender();environmentRig?.dispose();surfaceRegistry?.dispose();stoneDetail.dispose();for(const v of views.values()){v.stop();scene.remove(v.wave);v.wave.geometry.dispose();(v.wave.material as T.Material).dispose()}views.clear();for(const g of ownedGeometries)g.dispose();for(const m of materials.values())m.dispose();for(const t of textures)t.dispose();for(const e of edges.children)(e as T.Line).geometry.dispose();floor.geometry.dispose();floorMaterial.dispose();plain.dispose();lineMaterial.dispose();waveMaterial.dispose();outlineMaterial.dispose();sunlight.shadow.dispose();renderer.dispose();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('webglcontextlost',contextLost);container.removeEventListener('keydown',key);renderer.forceContextLoss();canvas.remove();labels.remove();options.minimap.replaceChildren();},
+    dispose(){if(disposed)return;disposed=true;stopProbeTargets.splice(0).forEach(stop=>stop());resize.disconnect();stopLight();stopRender();environmentRig?.dispose();surfaceRegistry?.dispose();stoneDetail.dispose();for(const v of views.values()){v.stop();scene.remove(v.wave);v.wave.geometry.dispose();(v.wave.material as T.Material).dispose()}views.clear();for(const g of ownedGeometries)g.dispose();for(const m of materials.values())m.dispose();for(const t of textures)t.dispose();for(const e of edges.children)(e as T.Line).geometry.dispose();floor.geometry.dispose();floorMaterial.dispose();plain.dispose();lineMaterial.dispose();waveMaterial.dispose();outlineMaterial.dispose();sunlight.shadow.dispose();renderer.dispose();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('webglcontextlost',contextLost);container.removeEventListener('keydown',key);renderer.forceContextLoss();canvas.remove();labels.remove();options.minimap.replaceChildren();},
   };
   return api;
 };

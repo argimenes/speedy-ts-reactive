@@ -1,0 +1,137 @@
+// Bounded Probe acceptance demo: actual pointer, wheel and native editor input.
+// Uses an isolated temporary document store, actual server process and Vite host.
+// Writes only fixture files; evidence goes to artifacts/flint-probe.
+import { spawn } from 'node:child_process';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import { createServer } from 'vite';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+const artifacts=process.env.PROOF_ARTIFACTS??'artifacts/flint-probe';await mkdir(artifacts,{recursive:true});
+const storeRoot=await mkdtemp(path.join(tmpdir(),'flint-native-store-'));
+await mkdir(path.join(storeRoot,'vault/nested'),{recursive:true});
+await writeFile(path.join(storeRoot,'vault/standalone.md'),'# Imported\n\n**native bold**');
+let backend,port;
+const startBackend=async()=>{backend=spawn(process.execPath,['scripts/native-production-test-host.mjs'],{env:{...process.env,PROOF_ROOT:storeRoot,PROOF_PORT:String(port??0)},stdio:['ignore','pipe','inherit']});
+port=await new Promise((resolve,reject)=>{backend.stdout.once('data',b=>resolve(JSON.parse(b.toString()).port));backend.once('error',reject);backend.once('exit',code=>reject(new Error('Qualification server exited before startup: '+code)));});};
+await startBackend();process.env.PORT=String(port);
+const vite=await createServer({server:{host:'127.0.0.1',port:0,hmr:false}});await vite.listen();
+const appUrl=`http://127.0.0.1:${vite.httpServer.address().port}`;
+const control=(name)=>fetch(`http://127.0.0.1:${port}/__proof/${name}`,{method:name==='status'?'GET':'POST'});
+const profile = await mkdtemp(path.join(tmpdir(), 'speedy-flint-check-'));
+const chrome = spawn(process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--headless=new', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disk-cache-size=1', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', '--user-data-dir=' + profile, 'about:blank']);
+let socket;
+try {
+const endpoint = await new Promise((resolve, reject) => {
+ let output = ''; chrome.stderr.on('data', chunk => { output += chunk; const match = output.match(/DevTools listening on (ws:\/\/[^\s]+)/); if(match) resolve(match[1]); });
+ chrome.once('error', reject); setTimeout(() => reject(new Error('Chrome startup timed out')), 15000).unref();
+});
+socket = new WebSocket(endpoint); await new Promise(resolve => socket.addEventListener('open', resolve, {once:true}));
+let id = 0; const pending = new Map();
+socket.addEventListener('message', event => { const result = JSON.parse(event.data); if(result.id && pending.has(result.id)) { const p = pending.get(result.id); pending.delete(result.id); result.error ? p.reject(new Error(JSON.stringify(result.error))) : p.resolve(result.result); }});
+const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => { const requestId = ++id; const timeout=setTimeout(()=>{pending.delete(requestId);reject(new Error('CDP timeout: '+method));},60000);pending.set(requestId,{resolve:v=>{clearTimeout(timeout);resolve(v)},reject:e=>{clearTimeout(timeout);reject(e)}}); socket.send(JSON.stringify({id:requestId,method,params,...(sessionId ? {sessionId} : {})})); });
+ const {targetId} = await send('Target.createTarget',{url:'about:blank'}); const {sessionId} = await send('Target.attachToTarget',{targetId,flatten:true});
+ await send('Network.enable',{},sessionId);
+ socket.addEventListener('message', event => { const msg=JSON.parse(event.data); if(msg.method==='Network.loadingFailed') console.error(JSON.stringify(msg.params)); });
+ const evaluate = async expression => {
+   if (expression.includes('await ') && !expression.trimStart().startsWith('(async()=>')) expression = `(async()=>{${expression}})()`;
+   const result = await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},sessionId);
+   if(result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
+   return result.result.value;
+ };
+
+ const checks=[], errors=[];const check=(name,value,expected=true)=>{assert.deepEqual(value,expected,name);checks.push(name);console.log('Passed: '+name);};
+ socket.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails);if(m.method==='Runtime.consoleAPICalled'&&m.params.type==='error')errors.push(m.params.args.map(a=>a.value??a.description).join(' '))});
+ await send('Runtime.enable',{},sessionId);await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false},sessionId);
+ await send('Page.navigate',{url:appUrl},sessionId);await evaluate('new Promise(r=>setTimeout(r,1500))');
+ await evaluate(`(async()=>{
+ const {WorkspaceSession}=await import('/src/application/workspace-session.ts');
+ const {materializeLocalWorkspace}=await import('/src/reactive-editor/workspace-manifest.ts');
+ const {WorkspacePresentationView}=await import('/src/application/workspace-presentation-view.tsx');
+ const {nativeDocumentSession}=await import('/src/persistence/native-session.ts');
+ const codec=await import('/src/persistence/native-resource.ts');
+ const source=await(await fetch('/src/rendering/reactive-tree-view.tsx')).text();const {render,createComponent}=await import(source.split('"').find(p=>p.includes('/solid-js_web.js')));
+ const host=document.createElement('div');host.className='workspace-demo workspace-demo--canonical';host.style.cssText='position:fixed;inset:40px 0 0;z-index:9000;background:#eee;overflow:auto';document.body.append(host);
+ const make=()=>new WorkspaceSession(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{publicHostedVersion:false,...( ${process.env.P4_FACTS==='0'} ? {nativeKnowledge:false}:{}),nativeKnowledgeSaved:${process.env.P5_SAVED==='1'}}});
+ const setup=()=>{const session=make(),editor=session.editor;editor.commandRegistry.execute('flint.open',{targetKey:session.projection.state.rootKey,args:undefined});const dispose=render(()=>createComponent(WorkspacePresentationView,{session}),host);editor.installGateway(document);return {session,editor,dispose}};
+ window.proof={host,setup,...setup(),nativeDocumentSession,codec};
+ proof.click=text=>{const button=[...host.querySelectorAll('button')].find(b=>b.textContent===text);if(!button)throw Error('Missing '+text);button.click()};
+ proof.field=(label,value)=>{const input=host.querySelector('input[aria-label="'+label+'"]');input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));};
+ proof.wait=async predicate=>{for(let i=0;i<150;i++){if(predicate())return;await new Promise(r=>setTimeout(r,30));}throw Error('UI wait timed out: '+host.textContent.slice(0,1700))};
+ })()`);
+ await evaluate(`proof.one=proof.host.querySelector('.flint-application');proof.win=proof.one;
+ proof.click=text=>{if(text==='Close tab'||text==='Files'){const m=proof.win.querySelector('[aria-label="Flint application menu"]');if(m.getAttribute('aria-expanded')!=='true')m.click();}const b=[...proof.win.querySelectorAll('button')].find(b=>b.textContent===text);if(!b||b.disabled)throw Error('Button unavailable '+text);b.click();};
+ proof.field=(label,value)=>{const el=proof.win.querySelector('[aria-label="'+label+'"]');if(!el)throw Error('Field missing '+label);el.value=value;el.dispatchEvent(new Event(el.tagName==='SELECT'?'change':'input',{bubbles:true}));};
+ proof.windowNode=proof.editor.node(proof.win.closest('.reactive-window').dataset.nodeKey);
+ const wn=Object.values(proof.session.projection.state.nodes).find(n=>n.viewType==='window-block');proof.windowKey=wn.key;proof.editor.commands.setPayloadField(wn.key,'metadata',{...JSON.parse(JSON.stringify(wn.payload.metadata)),size:{w:1320,h:800}});
+ proof.id=()=>proof.win.querySelector('[data-flint-property="id"]').textContent;
+ proof.ready=()=>![...proof.win.querySelectorAll('button')].find(b=>b.textContent==='Refresh')?.disabled;
+ `);
+ const click=label=>evaluate(`proof.click(${JSON.stringify(label)})`),field=(label,value)=>evaluate(`proof.field(${JSON.stringify(label)},${JSON.stringify(value)})`),wait=p=>evaluate(`proof.wait(()=>(${p}))`);
+ const ready=()=>wait('proof.ready()');
+ const shot=async name=>{const {data}=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,name+'.png'),Buffer.from(data,'base64'));};
+ await evaluate(`(async()=>{
+   const module=await import('/src/features/flint/material/material-chrome.tsx');
+   proof.material=module.materialChromePresentation(proof.win);
+   await proof.wait(()=>proof.win.dataset.materialReady==='true');
+   proof.scene=proof.material.scene;
+ })()`);
+ const pause=ms=>evaluate(`new Promise(r=>setTimeout(r,${ms}))`);
+ const mouse=async(x,y)=>{await send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y},sessionId);await pause(100);};
+ const point=selector=>evaluate(`(()=>{const r=proof.win.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+ const press=async p=>{await mouse(p.x,p.y);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p},sessionId);await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p},sessionId);await pause(100);};
+ await evaluate(`proof.probeModule=await import('/src/features/flint/probe/probe.tsx');await proof.wait(()=>proof.probeModule.probePresentation(proof.win));proof.probe=proof.probeModule.probePresentation(proof.win)`);
+ const chromePoint=await point('.flint-vault-name');await mouse(chromePoint.x,chromePoint.y);
+ await wait(`proof.probe.state.visibility==='visible'`);await shot('01-chrome');
+ check('precise tip follows client coordinates; overlay never owns input',await evaluate(`(()=>{const r=proof.win.getBoundingClientRect(),p=proof.probe.renderer;return Math.abs(p.body.position.x+r.left-${chromePoint.x})<.1&&Math.abs(r.top-p.body.position.y-${chromePoint.y})<.1&&getComputedStyle(p.canvas).pointerEvents==='none'&&p.canvas.getAttribute('aria-hidden')==='true'})()`));
+ const eikon=await point('[data-probe-eikon]');await mouse(eikon.x,eikon.y);await wait(`proof.probe.state.proximity==='flint-eikon'`);await shot('02-eikon-amber');
+ check('eikon emits amber through registered DOM bounds',await evaluate(`proof.probe.renderer.diode.material.emissive.r>proof.probe.renderer.diode.material.emissive.b&&proof.probe.renderer.diode.material.emissiveIntensity>2`));
+ const toggle=await point('[aria-label="Toggle Library"]');await press(toggle);
+ check('ordinary DOM buttons receive real clicks',await evaluate(`proof.win.dataset.library==='false'`));await press(toggle);
+ const editPoint=await point('[contenteditable="true"]');await press({x:editPoint.x-80,y:editPoint.y});
+ check('real click establishes the native text caret beneath Probe',await evaluate(`document.activeElement?.isContentEditable&&!!getSelection()?.anchorNode&&proof.win.contains(getSelection().anchorNode)`));await shot('03-editor-caret');
+ await evaluate(`proof.view=[...proof.editor.projections.values()].find(p=>p!==proof.session.projection);proof.node=Object.values(proof.view.state.nodes).find(n=>n.viewType==='standoff-editor-block');proof.mount=proof.editor.mounts.get(proof.node.key);proof.textBefore=proof.mount.captureText()`);
+ await send('Input.insertText',{text:' Probe keeps native editing. '},sessionId);await pause(100);
+ check('typing edits native content and suppresses only the Probe',await evaluate(`proof.mount.captureText().includes('Probe keeps native editing.')&&proof.probe.state.visibility==='suppressed-while-typing'&&proof.probe.renderer.canvas.hidden`));await shot('04-typing-hidden');
+ await evaluate(`proof.caret=JSON.stringify(proof.mount.captureInlineSelection());proof.textAfter=proof.mount.captureText()`);
+ await mouse(editPoint.x+25,editPoint.y+8);
+ check('pointer movement restores Probe without moving caret or changing text',await evaluate(`proof.probe.state.visibility==='visible'&&JSON.stringify(proof.mount.captureInlineSelection())===proof.caret&&proof.mount.captureText()===proof.textAfter`));await shot('05-pointer-restored');
+ await evaluate(`proof.mount.restoreInlineSelection({anchor:0,head:8});proof.range=JSON.stringify(proof.mount.captureInlineSelection())`);await mouse(editPoint.x+55,editPoint.y+9);
+ check('native selection survives pointer movement',await evaluate(`JSON.stringify(proof.mount.captureInlineSelection())===proof.range`));
+ await evaluate(`proof.win.querySelector('[aria-label="Flint Probe"]').click()`);
+ check('disable immediately restores native cursor',await evaluate(`!proof.win.hasAttribute('data-probe-cursor')&&!proof.probe.renderer`));
+ await evaluate(`proof.win.querySelector('[aria-label="Flint Probe"]').click()`);await mouse(editPoint.x+56,editPoint.y+9);await wait(`!!proof.probe.renderer`);
+ await evaluate(`proof.probe.renderer.renderer.getContext().getExtension('WEBGL_lose_context').loseContext()`);await wait(`proof.probe.state.visibility==='disabled'`);
+ check('WebGL failure restores cursor and preserves editor mount',await evaluate(`!proof.win.hasAttribute('data-probe-cursor')&&!proof.probe.renderer&&proof.mount===proof.editor.mounts.get(proof.node.key)`));
+ await evaluate(`proof.dispose();proof.session.dispose()`);
+ check('owning Solid lifecycle disposes Probe and pending work',await evaluate(`proof.probe.disposed&&!proof.probe.pending&&!document.querySelector('.flint-probe-canvas')`));
+ // Actual Three Graph in the other Flint host uses the same Probe controller.
+ await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:1,mobile:false},sessionId);
+ await send('Page.navigate',{url:appUrl+'/flint-material-three'},sessionId);
+ await evaluate(`(async()=>{for(let i=0;i<300;i++){if(document.querySelector('[data-ready="true"]'))break;await new Promise(r=>setTimeout(r,40));}const m=await import('/src/features/flint/material-playground.tsx'),q=await import('/src/features/flint/probe/probe.tsx');window.root=document.querySelector('.flint-material-playground');window.p=m.materialPlaygroundPresentation(root);for(let i=0;i<150;i++){if(q.probePresentation(root)&&p.graph.metrics.loadedTextures===2)break;await new Promise(r=>setTimeout(r,40));}window.probe=q.probePresentation(root);await new Promise(r=>setTimeout(r,100));})()`);
+ await mouse(580,165);await shot('06-enter-graph');
+ const nodePoint=await evaluate(`(()=>{const v=p.graph.views.get('waste-land'),q=p.graph.project(v.group.position),r=root.querySelector('.flint-three-canvas').getBoundingClientRect();return {x:r.left+q.x,y:r.top+q.y}})()`);
+ await mouse(nodePoint.x,nodePoint.y);await shot('07-node-blue');
+ check('Three target projection produces blue proximity',await evaluate(`probe.state.proximity==='graph-node'&&probe.renderer.diode.material.emissive.b>probe.renderer.diode.material.emissive.r&&probe.renderer.diode.material.emissiveIntensity>2`));
+ await evaluate(`p.graph.select(undefined)`);await press(nodePoint);
+ check('Probe hotspot clicks the actual Graph node',await evaluate(`p.graph.selectedId==='waste-land'`));
+ const clip={x:nodePoint.x-25,y:nodePoint.y-55,width:80,height:115,scale:4};
+ const detailShot=async name=>{const {data}=await send('Page.captureScreenshot',{format:'png',clip},sessionId);await writeFile(path.join(artifacts,name+'.png'),Buffer.from(data,'base64'));};
+ await detailShot('08-probe-front-detail');
+ await evaluate(`window.cameraX=p.graph.camera.position.x;window.cameraY=p.graph.camera.position.y;window.zoom=p.graph.zoom;window.angle=probe.rotation`);
+ await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:380,modifiers:1},sessionId);await pause(35);
+ check('Alt-wheel eases toward target without scrolling or Graph zoom',await evaluate(`probe.targetRotation>angle+2&&probe.rotation>angle&&probe.rotation<probe.targetRotation&&p.graph.camera.position.x===cameraX&&p.graph.camera.position.y===cameraY&&p.graph.zoom===zoom`));await detailShot('09-probe-turning-detail');
+ await pause(800);await shot('10-probe-reverse');await detailShot('11-probe-reverse-detail');
+ check('rotation reveals reverse while hotspot stays fixed',await evaluate(`Math.abs(probe.rotation-probe.targetRotation)<.001&&Math.abs(probe.renderer.body.position.x+root.getBoundingClientRect().left-${nodePoint.x})<.1`));
+ await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:30,modifiers:2},sessionId);await pause(150);
+ check('ordinary Ctrl-wheel still zooms Graph',await evaluate(`p.graph.zoom!==zoom`));
+ await mouse(330,900);await pause(200);
+ check('moving away extinguishes diode and rendering becomes idle',await evaluate(`probe.state.proximity==='none'&&probe.renderer.diode.material.emissiveIntensity===0&&!probe.pending`));
+ await send('Emulation.setEmulatedMedia',{features:[{name:'forced-colors',value:'active'}]},sessionId);await pause(150);
+ check('forced colours restores native cursor',await evaluate(`!root.hasAttribute('data-probe-cursor')&&!probe.renderer`));
+ check('no uncaught runtime errors',errors.length,0);
+ await writeFile(path.join(artifacts,'browser-results.json'),JSON.stringify({checks,errors,limits:['Headless Chromium with software WebGL; desktop latency needs normal hardware review.','Geometry reconstructed from the supplied presentation sheet; no GLB or separate PBR maps were provided.']},null,2));
+ console.log(JSON.stringify({passed:checks.length,artifacts},null,2));
+} finally {
+ socket?.close();chrome.kill('SIGKILL');backend?.kill('SIGKILL');vite.httpServer?.closeAllConnections();await vite.close();await new Promise(r=>setTimeout(r,200));await rm(profile,{recursive:true,force:true});await rm(storeRoot,{recursive:true,force:true});
+}

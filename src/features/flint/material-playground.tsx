@@ -13,6 +13,7 @@ import { CYCLADIC_APERTURE, OPEN_ENVIRONMENT, type LightEnvironment } from './ma
 import './material/material-chrome.css';
 import './material-tokens.css';
 import './material-playground.css';
+import { FlintProbe } from './probe/probe';
 
 type PlaygroundPresentation = { lighting: Lighting; interactions: MaterialInteractions; graph: MaterialGraphAdapter; materialScene?: MaterialScene };
 const presentations = new WeakMap<HTMLElement, PlaygroundPresentation>();
@@ -20,7 +21,7 @@ const presentations = new WeakMap<HTMLElement, PlaygroundPresentation>();
 export function materialPlaygroundPresentation(root: HTMLElement) { return presentations.get(root); }
 
 const neutralLocal = { x: 50, y: 50, proximity: 0, contact: 0, press: 0, lift: 0 };
-export default function MaterialPlayground(props: { lightFieldEnabled?: boolean; graphFactory?: GraphFactory; threeSpike?: boolean; materialChrome?: boolean } = {}) {
+export default function MaterialPlayground(props: { lightFieldEnabled?: boolean; graphFactory?: GraphFactory; threeSpike?: boolean; materialChrome?: boolean; probe?:boolean } = {}) {
   let root!: HTMLElement, container!: HTMLDivElement, minimap!: HTMLDivElement, panel!: HTMLDivElement, button!: HTMLButtonElement;
   let presentation: PlaygroundPresentation | undefined;
   let field!: HTMLDivElement;
@@ -97,13 +98,13 @@ export default function MaterialPlayground(props: { lightFieldEnabled?: boolean;
     <div class="flint-material-picture" aria-hidden="true" style={{ '--flint-macro-image': `url("${STONE_MACRO}")`, '--flint-mineral-image': `url("${STONE_MINERAL}")`, '--flint-micro-image': `url("${STONE_GRAIN}")`, '--flint-macro-amount': textureLayers().macro, '--flint-mineral-amount': textureLayers().mineral, '--flint-grain-amount': textureLayers().grain }}><span class="flint-material-cloud" /><span class="flint-material-minerals" /><span class="flint-material-pores" /></div>
     <Show when={!props.materialChrome && props.lightFieldEnabled !== false}><div class="flint-light-field" aria-hidden="true"><div ref={field} class="flint-light-field-plane" /></div></Show>
     <aside class="flint-material-library" aria-label="Reference library">
-      <div class="flint-material-identity"><svg viewBox="0 0 72 100" aria-hidden="true"><path d="M36 4C8 4 7 27 11 52c4 23 14 38 26 43 14-8 23-27 25-50C65 15 52 4 36 4Z" fill="var(--flint-facet-front)"/><path d="M36 4C8 4 7 27 11 52c4 23 14 38 26 43Z" fill="var(--flint-facet-left)"/><path d="m37 24-4 37 9 0-2-37Z" fill="var(--flint-facet-top)"/><path d="m31 70 12 0-7 3Z" fill="#8c806a"/></svg><span>FLINT<small>—</small></span></div>
+      <div class="flint-material-identity"><svg data-probe-eikon viewBox="0 0 72 100" aria-hidden="true"><path d="M36 4C8 4 7 27 11 52c4 23 14 38 26 43 14-8 23-27 25-50C65 15 52 4 36 4Z" fill="var(--flint-facet-front)"/><path d="M36 4C8 4 7 27 11 52c4 23 14 38 26 43Z" fill="var(--flint-facet-left)"/><path d="m37 24-4 37 9 0-2-37Z" fill="var(--flint-facet-top)"/><path d="m31 70 12 0-7 3Z" fill="#8c806a"/></svg><span>FLINT<small>—</small></span></div>
       <nav aria-label="Playground navigation"><a href={import.meta.env.BASE_URL}>⌂ <span>Mutable</span></a><span>▤ <span>Notes</span></span><FlintSurface class="flint-material-nav-current" elevation="relief">♧ <span>Graph</span></FlintSurface><span>▧ <span>Canvas</span></span><span>▢ <span>Templates</span></span><span>♙ <span>Archive</span></span></nav>
       <div class="flint-material-library-tree"><h2>Library</h2><p>⌄　▤　Poetry</p><p class="flint-material-indent">⌄　Eliot</p><FlintSurface elevation="etched">▤　The Waste Land</FlintSurface><p class="flint-material-indent">▤　The Hollow Men</p><p class="flint-material-indent">▤　Four Quartets</p><p>▸　▤　Greek</p><p>▤　Journal</p><p>▤　Research</p></div>
       <blockquote>“We shape our tools<br />and thereafter<br />they shape us.”<cite>— McLuhan</cite></blockquote>
     </aside>
     <div class="flint-material-workspace">
-      <header class="flint-material-header"><div><span class="flint-material-kicker">MATERIAL STUDY · {props.materialChrome ? '2.5D MATERIAL ENVIRONMENT' : props.threeSpike ? 'PHASE A.5 · THREE.JS GRAPH' : 'PHASE A'}</span><h1>A space for ideas, carved in light.</h1></div><a href={`${import.meta.env.BASE_URL}${props.threeSpike ? 'flint-material' : 'flint-material-three'}`}>{props.threeSpike ? 'Compare SVG baseline ↗' : 'Compare Three.js spike ↗'}</a></header>
+      <header class="flint-material-header"><div><span class="flint-material-kicker">MATERIAL STUDY · {props.materialChrome ? '2.5D MATERIAL ENVIRONMENT' : props.threeSpike ? 'PHASE A.5 · THREE.JS GRAPH' : 'PHASE A'}</span><h1>A space for ideas, carved in light.</h1></div><Show when={props.probe}><FlintProbe root={()=>root} lighting={()=>presentation?.lighting}/></Show><a href={`${import.meta.env.BASE_URL}${props.threeSpike ? 'flint-material' : 'flint-material-three'}`}>{props.threeSpike ? 'Compare SVG baseline ↗' : 'Compare Three.js spike ↗'}</a></header>
       <div class="flint-material-tabs" aria-label="Reference composition"><FlintSurface elevation="raised">▤　The Waste Land</FlintSurface><FlintSurface elevation="relief">♧　Graph</FlintSurface><span aria-hidden="true">＋</span></div>
       <div class="flint-material-stage">
         <section class="flint-material-graph-panel" aria-label="Material graph study">

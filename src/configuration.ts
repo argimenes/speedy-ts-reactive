@@ -28,6 +28,8 @@ export type FeatureFlags = Readonly<{
   flintThreeGraphSpike: boolean;
   /** Flint-wide material substrate and real environmental occlusion; DOM editor unchanged. */
   flintMaterialChrome: boolean;
+  /** Experimental application-wide stone pointer; Alt + wheel rotates it. */
+  flintProbe: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
   nativeDocumentPersistence: boolean;
   /** Accepted loaded-resource provider; false retains the legacy rollback. */
@@ -73,6 +75,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   flintLightField: true,
   flintThreeGraphSpike: true,
   flintMaterialChrome: true,
+  flintProbe: true,
   nativeDocumentPersistence: true,
   nativeKnowledge: true,
   nativeKnowledgeSaved: false,

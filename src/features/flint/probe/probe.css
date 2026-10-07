@@ -1,0 +1,9 @@
+.flint-probe-canvas { position:fixed; display:block; pointer-events:none; z-index:2147483000; }
+.flint-probe-canvas[hidden] { display:none; }
+[data-probe-cursor=hidden], [data-probe-cursor=hidden] * { cursor:none !important; }
+.flint-probe-controls { position:relative; font-size:12px; }
+.flint-probe-controls summary { cursor:pointer; padding:7px 10px; border:1px solid #93867144; border-radius:5px; white-space:nowrap; }
+.flint-probe-controls > div { position:absolute; right:0; top:100%; z-index:20; width:240px; padding:12px; background:#f2eee4; color:#34332e; border:1px solid #b8ac99; border-radius:5px; box-shadow:0 5px 15px #443a2425; }
+.flint-probe-controls label { display:flex; gap:7px; align-items:center; }
+.flint-probe-controls small { display:block; margin-top:9px; line-height:1.4; }
+@media (forced-colors:active) { .flint-probe-canvas { display:none; } }

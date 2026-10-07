@@ -5,11 +5,12 @@ import { KnowledgeView } from './knowledge-view';
 import { VaultView, DocumentProperties } from './vault-view';
 import { StorageSheet } from './storage-sheet';
 import { useCurrentCavern } from '../../application/cavern-startup';
-import { MaterialChrome } from './material/material-chrome';
+import { MaterialChrome, materialChromePresentation } from './material/material-chrome';
+import { FlintProbe } from './probe/probe';
 
 // A runtime crop of the supplied, unmodified master: no generated substitute artwork.
 const identity = new URL('../../../docs/assets/flint/flint-app-icon-master.png', import.meta.url).href;
-export function FlintView(props:{application:DocumentApplicationInstance; materialChrome?:boolean}) {
+export function FlintView(props:{application:DocumentApplicationInstance; materialChrome?:boolean; probe?:boolean}) {
   const cavern = useCurrentCavern();
   const app=props.application;
   const [library,setLibrary]=createSignal(true),[context,setContext]=createSignal(true);
@@ -34,7 +35,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
   return <div ref={shell} class="flint-application" data-material-chrome={props.materialChrome !== false} data-library={library()} data-context={context()} data-narrow-panel={narrowPanel()}>
     <div class="flint-surfaces" inert={storage()}>
     <header class="flint-application__header">
-      <div class="flint-menu-anchor" onKeyDown={e=>{if(menu()&&e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}><button ref={menuButton} class="flint-brand" aria-label="Flint application menu" aria-expanded={menu()} onClick={()=>setMenu(!menu())}><span class="flint-mark"><img src={identity} alt=""/></span><strong>Flint</strong><span aria-hidden="true">⌄</span></button>
+      <div class="flint-menu-anchor" onKeyDown={e=>{if(menu()&&e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}><button ref={menuButton} class="flint-brand" aria-label="Flint application menu" aria-expanded={menu()} onClick={()=>setMenu(!menu())}><span class="flint-mark" data-probe-eikon><img src={identity} alt=""/></span><strong>Flint</strong><span aria-hidden="true">⌄</span></button>
         <Show when={menu()}><div class="flint-menu" role="group" aria-label="Flint actions" onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}>
           <button disabled={!app.vault} onClick={()=>{setMenu(false);chooseVault();}}>Open Another Cavern…</button>
           <button onClick={()=>openStorage()}>Files</button>
@@ -45,6 +46,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
       <div class="flint-vault-name"><small>{cavern ? 'CAVERN' : 'WORKSPACE'}</small><span>{cavern?.current()?.name ?? vault()?.root??'A space for ideas'}</span></div>
       <button class="flint-search-launch" onClick={showSearch}>Search</button>
       <Show when={props.materialChrome !== false}><MaterialChrome root={()=>shell} viewport={()=>viewport} layout={()=>[library(),context(),narrowPanel()]} /></Show>
+      <Show when={props.probe !== false}><FlintProbe root={()=>shell} lighting={()=>materialChromePresentation(shell)?.lighting}/></Show>
       <button disabled={!app.files||!app.properties()||busy()||vault()?.readOnly||vault()?.busy} onPointerDown={e=>e.preventDefault()} onClick={()=>void save()}>Save Document</button>
     </header>
     <div class="flint-workspace-tools">
