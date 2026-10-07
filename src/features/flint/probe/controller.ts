@@ -45,7 +45,17 @@ export function createProbeController(root:HTMLElement,getLighting:()=>Lighting|
   function leave(){inside=false;nativeCursor();if(renderer)renderer.canvas.hidden=true;request();}
   const editable=(target:EventTarget|null)=>target instanceof HTMLElement&&(target.isContentEditable||target instanceof HTMLTextAreaElement||target instanceof HTMLInputElement&&!['checkbox','radio','button','range','submit','color','file'].includes(target.type));
   function typing(event:Event){if(enabled&&!failed&&event.target instanceof Node&&root.contains(event.target)&&editable(event.target)){suppressed=true;if(renderer)renderer.canvas.hidden=true;publish('suppressed-while-typing',state.proximity);request();}}
-  function key(event:KeyboardEvent){if(!event.ctrlKey&&!event.metaKey&&!event.altKey&&(event.key.length===1||['Backspace','Delete','Enter'].includes(event.key)))typing(event);}
+  function key(event:KeyboardEvent){
+    if(!event.ctrlKey&&!event.metaKey&&!event.altKey&&(event.key.length===1||['Backspace','Delete','Enter'].includes(event.key)))typing(event);
+    if(event.key!==' '||event.defaultPrevented||event.isComposing||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey)return;
+    if(!enabled||failed||!inside||suppressed||!renderer||colours.matches)return;
+    const target=event.target;
+    if(!(target instanceof Element)||(!root.contains(target)&&target!==document.body&&target!==document.documentElement))return;
+    // Preserve spaces in editors and native Space activation on focused controls.
+    if(editable(target)||target.closest('button,input,textarea,select,summary,a[href],[contenteditable],[role="button"],[role="checkbox"],[role="radio"],[role="switch"],[role="slider"],[role="menuitem"],[role="option"],[role="tab"],[role="treeitem"]'))return;
+    event.preventDefault();event.stopPropagation();
+    if(!event.repeat){targetRotation+=Math.PI;request();}
+  }
   function wheel(event:WheelEvent){
     if(!enabled||failed||!inside||suppressed||!renderer||colours.matches||!event.altKey||event.ctrlKey||event.metaKey)return;
     event.preventDefault();event.stopPropagation();
@@ -57,7 +67,7 @@ export function createProbeController(root:HTMLElement,getLighting:()=>Lighting|
   const eikon=root.querySelector<HTMLElement>('[data-probe-eikon]');
   const stopEikon=eikon?registry.register({id:'flint-eikon',kind:'flint-eikon',bounds:()=>eikon.isConnected?eikon.getBoundingClientRect():undefined}):undefined;
   // Observe before the editor's document-level input gateway can consume the
-  // event. These observers never prevent, stop or reinterpret editor input.
+  // event. Editor input stays native; only explicit Probe shortcuts are consumed.
   window.addEventListener('pointermove',pointer,{capture:true,passive:true});
   document.addEventListener('pointerout',out);window.addEventListener('blur',leave);
   window.addEventListener('keydown',key,true);window.addEventListener('beforeinput',typing,true);window.addEventListener('compositionstart',typing,true);

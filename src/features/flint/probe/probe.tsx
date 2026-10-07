@@ -14,7 +14,7 @@ export function FlintProbe(props:{root:()=>HTMLElement;lighting:()=>Lighting|und
   });
   return <details class="flint-probe-controls"><summary>Probe experiment</summary><div>
     <label><input type="checkbox" aria-label="Flint Probe" checked={enabled()} onChange={event=>{setEnabled(event.currentTarget.checked);controller?.setEnabled(enabled());}}/> Stone pointer</label>
-    <small>Alt + wheel rotates the Probe. Ordinary scrolling and zoom remain available.</small>
+    <small>Space turns the Probe over; Alt + wheel rotates it. Space stays normal in text fields and focused controls.</small>
     <small>{state().visibility==='disabled'?'Native pointer active.': 'Typing hides the Probe; pointer movement restores it.'}</small>
   </div></details>;
 }

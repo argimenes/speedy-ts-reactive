@@ -80,6 +80,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  const mouse=async(x,y)=>{await send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y},sessionId);await pause(100);};
  const point=selector=>evaluate(`(()=>{const r=proof.win.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
  const press=async p=>{await mouse(p.x,p.y);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p},sessionId);await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...p},sessionId);await pause(100);};
+ const spaceDown=autoRepeat=>send('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',windowsVirtualKeyCode:32,text:' ',autoRepeat},sessionId);
+ const spaceUp=()=>send('Input.dispatchKeyEvent',{type:'keyUp',key:' ',code:'Space',windowsVirtualKeyCode:32},sessionId);
+ const space=async()=>{await spaceDown(false);await spaceUp();await pause(100);};
  await evaluate(`proof.probeModule=await import('/src/features/flint/probe/probe.tsx');await proof.wait(()=>proof.probeModule.probePresentation(proof.win));proof.probe=proof.probeModule.probePresentation(proof.win)`);
  const chromePoint=await point('.flint-vault-name');await mouse(chromePoint.x,chromePoint.y);
  await wait(`proof.probe.state.visibility==='visible'`);await shot('01-chrome');
@@ -88,6 +91,8 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('eikon emits amber through registered DOM bounds',await evaluate(`proof.probe.renderer.diode.material.emissive.r>proof.probe.renderer.diode.material.emissive.b&&proof.probe.renderer.diode.material.emissiveIntensity>2`));
  const toggle=await point('[aria-label="Toggle Library"]');await press(toggle);
  check('ordinary DOM buttons receive real clicks',await evaluate(`proof.win.dataset.library==='false'`));await press(toggle);
+ await evaluate(`proof.spaceAngle=proof.probe.targetRotation;proof.win.querySelector('[aria-label="Toggle Library"]').focus()`);await space();
+ check('Space still activates focused buttons without rotating Probe',await evaluate(`proof.win.dataset.library==='false'&&proof.probe.targetRotation===proof.spaceAngle`));await press(toggle);
  const editPoint=await point('[contenteditable="true"]');await press({x:editPoint.x-80,y:editPoint.y});
  check('real click establishes the native text caret beneath Probe',await evaluate(`document.activeElement?.isContentEditable&&!!getSelection()?.anchorNode&&proof.win.contains(getSelection().anchorNode)`));await shot('03-editor-caret');
  await evaluate(`proof.view=[...proof.editor.projections.values()].find(p=>p!==proof.session.projection);proof.node=Object.values(proof.view.state.nodes).find(n=>n.viewType==='standoff-editor-block');proof.mount=proof.editor.mounts.get(proof.node.key);proof.textBefore=proof.mount.captureText()`);
@@ -96,6 +101,8 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await evaluate(`proof.caret=JSON.stringify(proof.mount.captureInlineSelection());proof.textAfter=proof.mount.captureText()`);
  await mouse(editPoint.x+25,editPoint.y+8);
  check('pointer movement restores Probe without moving caret or changing text',await evaluate(`proof.probe.state.visibility==='visible'&&JSON.stringify(proof.mount.captureInlineSelection())===proof.caret&&proof.mount.captureText()===proof.textAfter`));await shot('05-pointer-restored');
+ await space();
+ check('Space inserts text and hides Probe without rotating it',await evaluate(`proof.mount.captureText().length===proof.textAfter.length+1&&proof.probe.targetRotation===proof.spaceAngle&&proof.probe.state.visibility==='suppressed-while-typing'`));
  await evaluate(`proof.mount.restoreInlineSelection({anchor:0,head:8});proof.range=JSON.stringify(proof.mount.captureInlineSelection())`);await mouse(editPoint.x+55,editPoint.y+9);
  check('native selection survives pointer movement',await evaluate(`JSON.stringify(proof.mount.captureInlineSelection())===proof.range`));
  await evaluate(`proof.win.querySelector('[aria-label="Flint Probe"]').click()`);
@@ -110,6 +117,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await send('Page.navigate',{url:appUrl+'/flint-material-three'},sessionId);
  await evaluate(`(async()=>{for(let i=0;i<300;i++){if(document.querySelector('[data-ready="true"]'))break;await new Promise(r=>setTimeout(r,40));}const m=await import('/src/features/flint/material-playground.tsx'),q=await import('/src/features/flint/probe/probe.tsx');window.root=document.querySelector('.flint-material-playground');window.p=m.materialPlaygroundPresentation(root);for(let i=0;i<150;i++){if(q.probePresentation(root)&&p.graph.metrics.loadedTextures===2)break;await new Promise(r=>setTimeout(r,40));}window.probe=q.probePresentation(root);await new Promise(r=>setTimeout(r,100));})()`);
  await mouse(580,165);await shot('06-enter-graph');
+ const settleRotation=()=>evaluate(`(async()=>{for(let i=0;i<300;i++){if(!probe.pending&&Math.abs(probe.rotation-probe.targetRotation)<.001)return;await new Promise(r=>setTimeout(r,40));}throw Error('Probe rotation did not settle');})()`);
  const nodePoint=await evaluate(`(()=>{const v=p.graph.views.get('waste-land'),q=p.graph.project(v.group.position),r=root.querySelector('.flint-three-canvas').getBoundingClientRect();return {x:r.left+q.x,y:r.top+q.y}})()`);
  await mouse(nodePoint.x,nodePoint.y);await shot('07-node-blue');
  check('Three target projection produces blue proximity',await evaluate(`probe.state.proximity==='graph-node'&&probe.renderer.diode.material.emissive.b>probe.renderer.diode.material.emissive.r&&probe.renderer.diode.material.emissiveIntensity>2`));
@@ -128,14 +136,19 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await evaluate(`window.cameraX=p.graph.camera.position.x;window.cameraY=p.graph.camera.position.y;window.zoom=p.graph.zoom;window.angle=probe.rotation`);
  await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:380,modifiers:1},sessionId);await pause(35);
  check('Alt-wheel eases toward target without scrolling or Graph zoom',await evaluate(`probe.targetRotation>angle+2&&probe.rotation>angle&&probe.rotation<probe.targetRotation&&p.graph.camera.position.x===cameraX&&p.graph.camera.position.y===cameraY&&p.graph.zoom===zoom`));await detailShot('09-probe-turning-detail');
- await pause(800);await shot('10-probe-reverse');await detailShot('11-probe-reverse-detail');
+ await settleRotation();await shot('10-probe-reverse');await detailShot('11-probe-reverse-detail');
  check('rotation reveals reverse while hotspot stays fixed',await evaluate(`Math.abs(probe.rotation-probe.targetRotation)<.001&&Math.abs(probe.renderer.body.position.x+root.getBoundingClientRect().left-${nodePoint.x})<.1`));
  for(const [name,target] of [['12-three-quarter',.8],['13-side',Math.PI/2],['14-back',Math.PI]]) {
    const current=await evaluate('probe.targetRotation');
    await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:(target-current)/.008,modifiers:1},sessionId);
-   await pause(800);await detailShot(name);
+   await settleRotation();await detailShot(name);
  }
  console.log('Probe render sanity:',await evaluate(`({triangles:probe.renderer.renderer.info.render.triangles,lastSubmitMs:probe.renderer.metrics.lastRenderMs,idle:!probe.pending})`));
+ await evaluate(`document.activeElement?.blur();window.spaceAngle=probe.targetRotation;window.spaceScroll=scrollY`);
+ await spaceDown(false);await spaceDown(true);await spaceUp();await settleRotation();
+ check('Space flips once per press without repeat, page scroll or Graph movement',await evaluate(`Math.abs(probe.targetRotation-spaceAngle-Math.PI)<.001&&Math.abs(probe.rotation-probe.targetRotation)<.001&&scrollY===spaceScroll&&p.graph.camera.position.x===cameraX&&p.graph.camera.position.y===cameraY&&p.graph.zoom===zoom`));
+ await space();await settleRotation();
+ check('a second Space turns Probe over again and rendering settles',await evaluate(`Math.abs(probe.targetRotation-spaceAngle-2*Math.PI)<.001&&Math.abs(probe.rotation-probe.targetRotation)<.001&&!probe.pending`));
  await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:30,modifiers:2},sessionId);await pause(150);
  check('ordinary Ctrl-wheel still zooms Graph',await evaluate(`p.graph.zoom!==zoom`));
  await mouse(330,900);await pause(200);

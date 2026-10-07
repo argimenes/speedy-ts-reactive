@@ -7,15 +7,19 @@ pointer** checkbox disables it immediately within one Flint instance.
 
 Move over Flint to show the Probe. Its lower tip is the actual client-coordinate
 hotspot, including during rotation. **Alt + wheel** rotates about that tip on
-the X axis; ordinary wheel/Control/Command zoom input retains its existing
-meaning. Typing or beginning composition hides the Probe until the pointer
-moves; caret, text selection and editing remain with the existing editor.
+the X axis. **Space** smoothly turns it over by 180° per press while the Probe
+is visible; holding Space does not repeat the turn. Spaces in editors and
+Space activation of focused controls keep their normal behaviour. Ordinary
+wheel/Control/Command zoom input retains its existing meaning. Typing or
+beginning composition hides the Probe until the pointer moves; caret, text
+selection and editing remain with the existing editor.
 
 `probe/probe.tsx` owns the Solid lifecycle and semantic state. The controller
 coalesces pointer coordinates directly into a bounded animation-frame loop.
 Its window-capture observers see input before the editor's document gateway
-consumes it, but never cancel editor events. Only active Alt-wheel rotation is
-intercepted. Disabled, forced-colour and failed WebGL states restore native
+consumes it, but never cancel editor events. Only active Alt-wheel rotation and
+the plain Space shortcut outside editors and controls are intercepted.
+Disabled, forced-colour and failed WebGL states restore native
 cursor styling. Idle scenes stop rendering; disposal removes observers and GPU
 resources. Reduced motion removes rotational easing.
 
