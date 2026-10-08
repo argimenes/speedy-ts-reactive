@@ -6,6 +6,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  untrack,
 } from "solid-js";
 import type { PhosphorPort } from "./port";
 import {
@@ -37,6 +38,7 @@ import {
 } from "./model";
 import { GLYPH_ENCODING, glyphInfo, glyphLabel } from "./glyphs";
 import "./phosphor.css";
+import "./material.css";
 
 const presentations = new WeakMap<HTMLElement, PhosphorPort>();
 export const phosphorPresentation = (root: HTMLElement) =>
@@ -64,6 +66,7 @@ const tools: Tool[] = [
 ];
 type Display = "invisible" | "underline" | "inverse";
 export function PhosphorView(props: { port: PhosphorPort }) {
+  const id = crypto.randomUUID();
   const api = props.port,
     data = createMemo(() => api.read()),
     rows = createMemo(() => project(data()));
@@ -113,11 +116,14 @@ export function PhosphorView(props: { port: PhosphorPort }) {
   const [effects, setEffects] = createSignal(true),
     [reduced, setReduced] = createSignal(false),
     [ready, setReady] = createSignal(false),
-    [cellWidth, setCellWidth] = createSignal(14);
+    [zoom, setZoom] = createSignal(1),
+    [fitView, setFitView] = createSignal(true);
   let root!: HTMLDivElement,
     input!: HTMLTextAreaElement,
     surface!: HTMLDivElement,
     viewport!: HTMLDivElement,
+    displayBay!: HTMLDivElement,
+    aperture!: HTMLDivElement,
     left!: HTMLElement,
     right!: HTMLElement;
   let material:
@@ -144,6 +150,8 @@ export function PhosphorView(props: { port: PhosphorPort }) {
   });
   const cursorCell = createMemo(() => cellAt(data(), head()));
   const columns = createMemo(() => data().settings.columns);
+  const screenRows = createMemo(() => data().settings.rows);
+  const cellWidth = () => (columns() === 80 ? 7 : 14) * zoom();
   const [firstRow, setFirstRow] = createSignal(0);
   const visibleRows = createMemo(() => {
     const start = Math.max(0, firstRow() - 3),
@@ -725,24 +733,31 @@ export function PhosphorView(props: { port: PhosphorPort }) {
     }
   });
   const fitCells = () => {
-    const pixelWidth = columns() === 80 ? 3.5 : 7,
-      scale = Math.max(
-        1,
-        Math.floor(
-          Math.min(
-            (viewport.clientWidth - 48) / (columns() * pixelWidth),
-            (viewport.clientHeight - 32) / (24 * 8),
-          ),
-        ),
-      );
-    setCellWidth(pixelWidth * scale);
+    if (!fitView()) return;
+    // Everything inside the aperture scales together. Snap Fit to device pixels;
+    // manual zoom remains a viewing preference, never a Screen setting.
+    const quantum = (columns() === 80 ? 2 : 1) / (window.devicePixelRatio || 1),
+      fit = Math.min(
+        (displayBay.clientWidth - 28) /
+          (columns() * (columns() === 80 ? 7 : 14) + 54),
+        (displayBay.clientHeight - 28) / (screenRows() * 16 + 54),
+      ),
+      scale = (Math.floor((fit * 2) / quantum) * quantum) / 2;
+    setZoom(Math.max(0.5, Math.min(3, scale)));
+    displayBay.scrollTo(0, 0);
+  };
+  const fitScreen = () => {
+    setFitView(true);
+    fitCells();
   };
   onMount(() => {
     presentations.set(root, api);
     onCleanup(() => presentations.delete(root));
     onCleanup(api.mount(root, input));
     const observer = new ResizeObserver(fitCells);
-    observer.observe(viewport);
+    observer.observe(displayBay);
+    window.addEventListener("resize", fitCells);
+    onCleanup(() => window.removeEventListener("resize", fitCells));
     onCleanup(() => observer.disconnect());
     const motion = matchMedia("(prefers-reduced-motion: reduce)"),
       colours = matchMedia("(forced-colors: active)");
@@ -769,7 +784,11 @@ export function PhosphorView(props: { port: PhosphorPort }) {
         try {
           material = m.createPhosphorMaterial(
             root,
-            [viewport, left, right].filter(Boolean),
+            {
+              display: aperture,
+              workspace: displayBay,
+              panels: [left, right].filter(Boolean),
+            },
             setReady,
           );
         } catch {
@@ -779,7 +798,7 @@ export function PhosphorView(props: { port: PhosphorPort }) {
     onCleanup(() => {
       disposed = true;
     });
-    if (viewport) fitCells();
+    if (displayBay) untrack(fitCells);
   });
   const linkEntity = (entity: { id: string; name: string }) =>
     mark(ENTITY, entity.id, { entityId: entity.id, entityName: entity.name });
@@ -793,6 +812,8 @@ export function PhosphorView(props: { port: PhosphorPort }) {
       style={{
         "--cell-width": `${cellWidth()}px`,
         "--columns": columns(),
+        "--screen-height": `${screenRows() * lineHeight()}px`,
+        "--screen-zoom": zoom(),
         "--ph-glyph-font":
           columns() === 80 ? '"Phosphor Apple 80"' : '"Phosphor Apple 40"',
       }}
@@ -1016,7 +1037,7 @@ export function PhosphorView(props: { port: PhosphorPort }) {
             <div class="ph-screen-heading">
               Screen 1{" "}
               <span>
-                ({data().settings.columns} × 24) —{" "}
+                ({data().settings.columns} × {screenRows()}) —{" "}
                 {data().settings.scroll ? "Scroll" : "Fixed"}
               </span>
               <span class="ph-spacer" />
@@ -1024,154 +1045,199 @@ export function PhosphorView(props: { port: PhosphorPort }) {
                 {data().settings.layout === "spatial" ? "SPATIAL" : "PROSE"}
               </small>
             </div>
-            <div class="ph-ruler" aria-hidden="true">
-              <div class="ph-ruler-track">
-                <For each={[0, columns() / 4, columns() / 2, columns() - 1]}>
-                  {(n) => (
-                    <span style={{ left: `${n * cellWidth()}px` }}>{n}</span>
-                  )}
-                </For>
-              </div>
-            </div>
             <div
-              ref={viewport}
-              class="ph-screen-viewport"
-              data-ph-panel
-              onScroll={() =>
-                setFirstRow(Math.floor(viewport.scrollTop / lineHeight()))
-              }
+              ref={displayBay}
+              class="ph-display-bay"
+              aria-label="Screen workspace"
             >
-              <textarea
-                ref={input}
-                class="ph-input"
-                aria-label="Phosphor character screen"
-                spellcheck={false}
-                autocapitalize="off"
-                autocomplete="off"
-                value={data().text}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                onKeyDown={key}
-                onCopy={(e) => copy(e)}
-                onCut={(e) => copy(e, true)}
-                onPaste={paste}
-                onBeforeInput={(e) => {
-                  if (composing || e.isComposing) return;
-                  const text = e.data;
-                  if (e.inputType.startsWith("insert") && text) {
-                    e.preventDefault();
-                    inputText(text);
-                  } else if (
-                    e.inputType === "insertLineBreak" ||
-                    e.inputType === "insertParagraph"
-                  ) {
-                    e.preventDefault();
-                    inputText("\n");
-                  } else if (e.inputType.startsWith("delete")) {
-                    e.preventDefault();
-                    remove(e.inputType.includes("Backward"));
-                  }
-                }}
-                onSelect={() => {
-                  if (composing) return;
-                  const value = input.value,
-                    a = chars(value.slice(0, input.selectionStart)).length,
-                    b = chars(value.slice(0, input.selectionEnd)).length;
-                  if (input.selectionDirection === "backward") {
-                    setAnchor(b);
-                    setHead(a);
-                  } else {
-                    setAnchor(a);
-                    setHead(b);
-                  }
-                }}
-                onCompositionStart={() => {
-                  composing = true;
-                  compositionText = "";
-                }}
-                onCompositionUpdate={(e) => {
-                  compositionText = e.data;
-                }}
-                onCompositionEnd={(e) => {
-                  composing = false;
-                  inputText(e.data || compositionText);
-                  input.value = data().text;
-                }}
-                onInput={() => {
-                  if (!composing) input.value = data().text;
-                }}
-              />
-              <div
-                ref={surface}
-                class="ph-cell-surface"
-                style={{
-                  "--cell-width": `${cellWidth()}px`,
-                  "--line-height": `${lineHeight()}px`,
-                  "--columns": data().settings.columns,
-                  "--glyph-size": `${lineHeight()}px`,
-                  height: `${Math.max(24, rows().length) * lineHeight()}px`,
-                }}
-                onPointerDown={down}
-                onPointerMove={move}
-                onPointerUp={up}
-                onPointerCancel={() => {
-                  drag = undefined;
-                  setPreview([]);
-                }}
-                aria-hidden="true"
-              >
-                <For each={visibleRows()}>
-                  {(y) => (
-                    <div
-                      class="ph-row"
-                      style={{ top: `${y * lineHeight()}px` }}
-                    >
-                      <span class="ph-row-number">{y + 1}</span>
+              <div class="ph-display-stage">
+                <div ref={aperture} class="ph-display-aperture">
+                  <div class="ph-ruler" aria-hidden="true">
+                    <div class="ph-ruler-track">
                       <For
-                        each={Array.from(
-                          { length: data().settings.columns },
-                          (_, i) => i,
-                        )}
+                        each={[0, columns() / 4, columns() / 2, columns() - 1]}
                       >
-                        {(x) => {
-                          const index = () => rows()[y]?.start + x,
-                            valid = () => !!rows()[y] && x < rows()[y].length,
-                            flags = () =>
-                              valid() ? marked().get(index()) : undefined;
-                          return (
-                            <span
-                              class="ph-cell"
-                              classList={{
-                                "ph-inverse": flags()?.has(ATTRIBUTES[0]),
-                                "ph-blink": flags()?.has(ATTRIBUTES[1]),
-                                "ph-underline": flags()?.has(ATTRIBUTES[2]),
-                                "ph-selected":
-                                  valid() && selected(y, x, index()),
-                                "ph-caret":
-                                  focused() &&
-                                  cursorCell().row === y &&
-                                  cursorCell().column === x,
-                                "ph-preview": pending().has(`${y}:${x}`),
-                              }}
-                            >
-                              <span class="ph-glyph">
-                                {pending().has(`${y}:${x}`) && tool() !== "Move"
-                                  ? tool() === "Eraser"
-                                    ? " "
-                                    : glyph()
-                                  : (chars(rows()[y]?.text ?? "")[x] ?? " ")}
-                              </span>
-                            </span>
-                          );
-                        }}
+                        {(n) => (
+                          <span style={{ left: `${n * cellWidth()}px` }}>
+                            {n}
+                          </span>
+                        )}
                       </For>
                     </div>
-                  )}
-                </For>
+                  </div>
+                  <div
+                    ref={viewport}
+                    class="ph-screen-viewport"
+                    data-ph-panel
+                    onScroll={() =>
+                      setFirstRow(Math.floor(viewport.scrollTop / lineHeight()))
+                    }
+                  >
+                    <textarea
+                      ref={input}
+                      class="ph-input"
+                      aria-label="Phosphor character screen"
+                      spellcheck={false}
+                      autocapitalize="off"
+                      autocomplete="off"
+                      value={data().text}
+                      onFocus={() => setFocused(true)}
+                      onBlur={() => setFocused(false)}
+                      onKeyDown={key}
+                      onCopy={(e) => copy(e)}
+                      onCut={(e) => copy(e, true)}
+                      onPaste={paste}
+                      onBeforeInput={(e) => {
+                        if (composing || e.isComposing) return;
+                        const text = e.data;
+                        if (e.inputType.startsWith("insert") && text) {
+                          e.preventDefault();
+                          inputText(text);
+                        } else if (
+                          e.inputType === "insertLineBreak" ||
+                          e.inputType === "insertParagraph"
+                        ) {
+                          e.preventDefault();
+                          inputText("\n");
+                        } else if (e.inputType.startsWith("delete")) {
+                          e.preventDefault();
+                          remove(e.inputType.includes("Backward"));
+                        }
+                      }}
+                      onSelect={() => {
+                        if (composing) return;
+                        const value = input.value,
+                          a = chars(
+                            value.slice(0, input.selectionStart),
+                          ).length,
+                          b = chars(value.slice(0, input.selectionEnd)).length;
+                        if (input.selectionDirection === "backward") {
+                          setAnchor(b);
+                          setHead(a);
+                        } else {
+                          setAnchor(a);
+                          setHead(b);
+                        }
+                      }}
+                      onCompositionStart={() => {
+                        composing = true;
+                        compositionText = "";
+                      }}
+                      onCompositionUpdate={(e) => {
+                        compositionText = e.data;
+                      }}
+                      onCompositionEnd={(e) => {
+                        composing = false;
+                        inputText(e.data || compositionText);
+                        input.value = data().text;
+                      }}
+                      onInput={() => {
+                        if (!composing) input.value = data().text;
+                      }}
+                    />
+                    <div
+                      ref={surface}
+                      class="ph-cell-surface"
+                      style={{
+                        "--cell-width": `${cellWidth()}px`,
+                        "--line-height": `${lineHeight()}px`,
+                        "--columns": data().settings.columns,
+                        "--glyph-size": `${lineHeight()}px`,
+                        height: `${Math.max(24, rows().length) * lineHeight()}px`,
+                      }}
+                      onPointerDown={down}
+                      onPointerMove={move}
+                      onPointerUp={up}
+                      onPointerCancel={() => {
+                        drag = undefined;
+                        setPreview([]);
+                      }}
+                      aria-hidden="true"
+                    >
+                      <For each={visibleRows()}>
+                        {(y) => (
+                          <div
+                            class="ph-row"
+                            style={{ top: `${y * lineHeight()}px` }}
+                          >
+                            <span class="ph-row-number">{y + 1}</span>
+                            <For
+                              each={Array.from(
+                                { length: data().settings.columns },
+                                (_, i) => i,
+                              )}
+                            >
+                              {(x) => {
+                                const index = () => rows()[y]?.start + x,
+                                  valid = () =>
+                                    !!rows()[y] && x < rows()[y].length,
+                                  flags = () =>
+                                    valid() ? marked().get(index()) : undefined;
+                                return (
+                                  <span
+                                    class="ph-cell"
+                                    classList={{
+                                      "ph-inverse": flags()?.has(ATTRIBUTES[0]),
+                                      "ph-blink": flags()?.has(ATTRIBUTES[1]),
+                                      "ph-underline": flags()?.has(
+                                        ATTRIBUTES[2],
+                                      ),
+                                      "ph-selected":
+                                        valid() && selected(y, x, index()),
+                                      "ph-caret":
+                                        focused() &&
+                                        cursorCell().row === y &&
+                                        cursorCell().column === x,
+                                      "ph-preview": pending().has(`${y}:${x}`),
+                                    }}
+                                  >
+                                    <span class="ph-glyph">
+                                      {pending().has(`${y}:${x}`) &&
+                                      tool() !== "Move"
+                                        ? tool() === "Eraser"
+                                          ? " "
+                                          : glyph()
+                                        : (chars(rows()[y]?.text ?? "")[x] ??
+                                          " ")}
+                                    </span>
+                                  </span>
+                                );
+                              }}
+                            </For>
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="ph-screen-foot">
-              A place for words. A space for forms.<span>INK NATIVE</span>
+              <span class="ph-screen-caption">
+                A place for words. A space for forms.
+              </span>
+              <div class="ph-zoom-controls" aria-label="Screen view controls">
+                <label for={`ph-zoom-${id}`}>Zoom</label>
+                <input
+                  id={`ph-zoom-${id}`}
+                  type="range"
+                  min="50"
+                  max="300"
+                  step="25"
+                  aria-label="Screen zoom"
+                  value={Math.round(zoom() * 100)}
+                  onInput={(e) => {
+                    setFitView(false);
+                    setZoom(Number(e.currentTarget.value) / 100);
+                  }}
+                />
+                <output aria-label="Screen zoom level">
+                  {Math.round(zoom() * 100)}%
+                </output>
+                <button aria-pressed={fitView()} onClick={fitScreen}>
+                  Fit Screen
+                </button>
+              </div>
             </div>
           </main>
           <aside ref={right} class="ph-inspector ph-panel">

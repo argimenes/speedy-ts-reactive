@@ -6,6 +6,7 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
 import { createServer } from "vite";
+const visualOnly = process.argv.includes("--visual");
 const store = await mkdtemp(path.join(tmpdir(), "phosphor-proof-")),
   profile = await mkdtemp(path.join(tmpdir(), "phosphor-browser-"));
 await mkdir(path.join(store, "vault"));
@@ -106,7 +107,12 @@ try {
   await send("Page.enable", {}, sessionId);
   await send(
     "Emulation.setDeviceMetricsOverride",
-    { width: 1536, height: 1100, deviceScaleFactor: 1, mobile: false },
+    {
+      width: 1536,
+      height: 1100,
+      deviceScaleFactor: visualOnly ? 2 : 1,
+      mobile: false,
+    },
     sessionId,
   );
   await send(
@@ -145,7 +151,7 @@ try {
     );
   };
   await evaluate("document.fonts.ready");
-  await shot("01-amber-scene");
+  await shot(visualOnly ? "03-refined-40" : "01-amber-scene");
   await evaluate(`click('WRITE');input.focus();`);
   await send("Input.insertText", { text: "Hello" }, sessionId);
   check(
@@ -209,195 +215,319 @@ try {
       sessionId,
     );
   };
-  await evaluate(`click('Glyph #')`);
-  await gesture("Line", [1, 20], [8, 20]);
-  await gesture("Rectangle", [10, 20], [15, 22]);
-  check(
-    "Line and Rectangle draw exact cell outlines",
+  if (visualOnly) {
     await evaluate(
-      `api.read().text.split('\\n')[20].slice(1,9)==='########'&&api.read().text.split('\\n')[21].slice(10,16)==='#    #'`,
-    ),
-  );
-  await gesture("Pick", [1, 20]);
-  check(
-    "Pick recovers glyph",
-    await evaluate(`root.querySelector('.ph-glyph-preview').textContent==='#'`),
-  );
-  await gesture("Select", [1, 20], [8, 20]);
-  await evaluate(`click('Copy')`);
-  await gesture("Stamp", [1, 21]);
-  check(
-    "rectangular copy and Stamp preserve shape",
-    await evaluate(`api.read().text.split('\\n')[21].slice(1,9)==='########'`),
-  );
-  await gesture("Select", [1, 21], [8, 21]);
-  await gesture("Move", [1, 21], [1, 22]);
-  check(
-    "Move clears source and preserves destination",
-    await evaluate(
-      `api.read().text.split('\\n')[21].slice(1,9)==='        '&&api.read().text.split('\\n')[22].slice(1,9)==='########'`,
-    ),
-  );
-  await evaluate(`click('Apple II')`);
-  check(
-    "all 32 MouseText codes plus cursor in picker",
-    await evaluate(
-      `root.querySelectorAll('.ph-characters button').length===33`,
-    ),
-  );
-  await evaluate(`click('Running man, left · $46')`);
-  await gesture("Pencil", [20, 23]);
-  await gesture("Select", [20, 23]);
-  await evaluate(`click('Copy')`);
-  await gesture("Stamp", [22, 23]);
-  check(
-    "Apple supplementary glyph remains one cell through clipboard",
-    await evaluate(
-      `Array.from(api.read().text)[23*41+20]===String.fromCodePoint(0x1fbb2)&&Array.from(api.read().text)[23*41+22]===String.fromCodePoint(0x1fbb2)`,
-    ),
-  );
-  await shot("02-mousetext");
-  check(
-    "bitmap fonts use original cell advances",
-    await evaluate(
-      `(()=>{const c=document.createElement('canvas').getContext('2d');c.font='16px "Phosphor Apple 40"';return c.measureText('A').width===14})()`,
-    ),
-  );
-  await gesture("Select", [1, 22], [8, 22]);
-  await evaluate(
-    `window.setField=(label,value)=>{const i=root.querySelector('[aria-label="'+label+'"]');i.value=value;i.dispatchEvent(new Event('input',{bubbles:true}))};setField('Tag name','rain-scene');click('Apply tag');`,
-  );
-  check(
-    "invisible tag has native cell anchors",
-    await evaluate(
-      `api.read().marks.some(m=>m.type===model.TAG&&m.start===22*41+1&&m.end===22*41+8)&&root.querySelector('[aria-label="Tag display"]').value==='invisible'`,
-    ),
-  );
-  await evaluate(`window.saveNotice=await api.save('vault','rain.ink')`);
-  check(
-    "save refreshes native Cavern",
-    await evaluate(`!saveNotice.includes('unavailable')`),
-  );
-  await evaluate(
-    `window.entity=await api.createEntity('The Waste Land');window.results=await api.searchEntities('The Waste Land')`,
-  );
-  check(
-    "canonical SQLite entity creation and search",
-    await evaluate(`results.some(e=>e.id===entity.id)`),
-  );
-  await evaluate(
-    `api.commit({...api.read(),marks:[...api.read().marks,{id:crypto.randomUUID(),type:model.ENTITY,value:entity.id,metadata:{entityName:entity.name},start:22*41+1,end:22*41+8}]},'Link canonical entity');window.saved=JSON.stringify(api.read());await api.save('vault','rain.ink')`,
-  );
-  check(
-    "native .ink save finishes",
-    await evaluate(`api.status().startsWith('Saved')`),
-  );
-  await evaluate(
-    `click('File');click('Letter');await wait(()=>document.querySelectorAll('.phosphor').length===2)`,
-  );
-  check(
-    "new work preserves existing screen",
-    await evaluate(`JSON.stringify(api.read())===saved`),
-  );
-  await evaluate(
-    `window.letterRoot=[...document.querySelectorAll('.phosphor')].find(r=>r!==root);window.letter=(await import('/src/features/phosphor/view.tsx')).phosphorPresentation(letterRoot)`,
-  );
-  check(
-    "letter uses native prose with vertical scrolling",
-    await evaluate(
-      `letter.read().settings.columns===80&&letter.read().settings.scroll&&letter.read().settings.layout==='prose'`,
-    ),
-  );
-  await evaluate(
-    `window.letterInput=letterRoot.querySelector('textarea');letterInput.focus();window.lclick=t=>[...letterRoot.querySelectorAll('button')].find(b=>b.textContent===t).click();window.lfield=(label,value)=>{const i=letterRoot.querySelector('[aria-label="'+label+'"]');i.value=value;i.dispatchEvent(new Event('input',{bubbles:true}))}`,
-  );
-  await send("Input.insertText", { text: "Notes: " }, sessionId);
-  check(
-    "letter inserts ordinary text without losing existing prose",
-    await evaluate(`letter.read().text.startsWith('Notes: Dear friend,')`),
-  );
-  await evaluate(
-    `letterInput.setSelectionRange(0,5);letterInput.dispatchEvent(new Event('select',{bubbles:true}));letterRoot.querySelector('.ph-cell-settings input').click();window.clipboard=new DataTransfer();letterInput.dispatchEvent(new ClipboardEvent('copy',{clipboardData:clipboard,bubbles:true,cancelable:true}));letterInput.setSelectionRange(letterInput.value.length,letterInput.value.length);letterInput.dispatchEvent(new Event('select',{bubbles:true}));letterInput.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));`,
-  );
-  check(
-    "linear clipboard preserves text and authored attribute",
-    await evaluate(
-      `letter.read().text.endsWith('Notes')&&letter.read().marks.some(m=>m.type===model.ATTRIBUTES[0]&&m.end===Array.from(letter.read().text).length-1)`,
-    ),
-  );
-  await evaluate(
-    `lclick('Find');lfield('Find text','friend');lfield('Replacement text','writer');lclick('Find next');lclick('Replace')`,
-  );
-  check(
-    "prose Find and Replace edits the selected match",
-    await evaluate(
-      `letter.read().text.includes('Dear writer,')&&!letter.read().text.includes('Dear friend,')`,
-    ),
-  );
-  await evaluate(`window.savedLetter=JSON.stringify(letter.read())`);
-  await evaluate(
-    `await letter.save('vault','letter.ink');await api.open('vault','rain.ink');await wait(()=>document.querySelectorAll('.phosphor').length===3)`,
-  );
-  check(
-    "Open preserves exact geometry and text",
-    await evaluate(
-      `(async()=>{const m=await import('/src/features/phosphor/view.tsx');return [...document.querySelectorAll('.phosphor')].filter(r=>r!==root&&r!==letterRoot).every(r=>JSON.stringify(m.phosphorPresentation(r).read())===saved)})()`,
-    ),
-  );
-  await send(
-    "Emulation.setEmulatedMedia",
-    { features: [{ name: "forced-colors", value: "active" }] },
-    sessionId,
-  );
-  await evaluate(`await wait(()=>root.dataset.materialReady==='false')`);
-  check(
-    "forced colours keeps editor mounted",
-    await evaluate(`input.isConnected&&JSON.stringify(api.read())===saved`),
-  );
-  const expected = await evaluate("saved"),
-    expectedLetter = await evaluate("savedLetter");
-  const loaded = new Promise((resolve) => {
-    const onMessage = (e) => {
-      const m = JSON.parse(e.data);
-      if (m.method === "Page.loadEventFired" && m.sessionId === sessionId) {
-        socket.removeEventListener("message", onMessage);
-        resolve();
-      }
+      `api.undo();api.undo();window.zoomInput=root.querySelector('[aria-label="Screen zoom"]');window.inkBeforeZoom=JSON.stringify(api.read());window.chromeWidth=root.querySelector('.ph-title').getBoundingClientRect().width`,
+    );
+    const zoomTo = async (value) => {
+      await evaluate(
+        `zoomInput.value=${value};zoomInput.dispatchEvent(new Event('input',{bubbles:true}))`,
+      );
+      await evaluate(
+        `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`,
+      );
     };
-    socket.addEventListener("message", onMessage);
-  });
-  await send("Page.reload", {}, sessionId);
-  await loaded;
-  await evaluate(
-    `(async()=>{for(let i=0;i<300;i++){const root=document.querySelector('.phosphor');if(root&&(await import('/src/features/phosphor/view.tsx')).phosphorPresentation(root))return;await new Promise(r=>setTimeout(r,40));}throw Error('Reload failed')})()`,
-  );
-  await evaluate(
-    `window.root=document.querySelector('.phosphor');window.api=(await import('/src/features/phosphor/view.tsx')).phosphorPresentation(root);await api.open('vault','rain.ink');await api.open('vault','letter.ink')`,
-  );
-  const reopened = await evaluate(
-    `(async()=>{const m=await import('/src/features/phosphor/view.tsx');return [...document.querySelectorAll('.phosphor')].map(r=>m.phosphorPresentation(r).read())})()`,
-  );
-  check(
-    "fresh browser reload reads the saved file with exact semantics",
-    reopened.some((data) => isDeepStrictEqual(data, JSON.parse(expected))),
-  );
-  check(
-    "fresh reopen retains prose and clipboard attributes",
-    reopened.some((data) =>
-      isDeepStrictEqual(data, JSON.parse(expectedLetter)),
-    ),
-  );
-  check("no uncaught browser exceptions", errors.length === 0);
-  await writeFile(
-    "artifacts/phosphor/browser-results.json",
-    JSON.stringify({ checks, errors }, null, 2),
-  );
-  console.log(
-    JSON.stringify({
-      passed: checks.length,
-      url: "http://localhost:3000/phosphor",
-    }),
-  );
+    for (const level of [50, 150, 300]) {
+      await zoomTo(level);
+      check(
+        `${level}% keeps original cell aspect and scales the bezel`,
+        await evaluate(
+          `(()=>{const cell=root.querySelector('.ph-cell').getBoundingClientRect(),ap=root.querySelector('.ph-display-aperture').getBoundingClientRect();return Math.abs(cell.width/cell.height-7/8)<.001&&Math.abs(ap.width-614*${level}/100)<1&&root.querySelector('.ph-title').getBoundingClientRect().width===chromeWidth&&JSON.stringify(api.read())===inkBeforeZoom})()`,
+        ),
+      );
+      if (level === 150) {
+        await gesture("WRITE", [5, 4], [8, 4]);
+        check(
+          "zoomed text selection and caret retain exact native offsets",
+          await evaluate(
+            `input.selectionStart===4*41+5&&input.selectionEnd===4*41+8&&root.querySelectorAll('.ph-selected').length===3&&root.querySelectorAll('.ph-row')[4].querySelectorAll('.ph-cell')[8].classList.contains('ph-caret')&&JSON.stringify(api.read())===inkBeforeZoom`,
+          ),
+        );
+        await gesture("WRITE", [8, 4]);
+        await evaluate(`click('DRAW')`);
+        await shot("06-zoom-150");
+      }
+    }
+    check(
+      "enlarged Screen is scrollable in its workspace",
+      await evaluate(
+        `(()=>{const bay=root.querySelector('.ph-display-bay');bay.scrollTo(400,300);return bay.scrollWidth>bay.clientWidth&&bay.scrollHeight>bay.clientHeight})()`,
+      ),
+    );
+    await evaluate(`click('Glyph #')`);
+    await gesture("Pencil", [15, 12]);
+    check(
+      "pointer maps correctly after zoom and workspace pan",
+      await evaluate(`Array.from(api.read().text)[12*41+15]==='#'`),
+    );
+    await evaluate(`api.undo();click('Fit Screen')`);
+    await evaluate(
+      `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`,
+    );
+    check(
+      "Fit contains and centres the physical Screen",
+      await evaluate(
+        `(()=>{const b=root.querySelector('.ph-display-bay').getBoundingClientRect(),a=root.querySelector('.ph-display-aperture').getBoundingClientRect();return a.left>=b.left&&a.right<=b.right&&a.top>=b.top&&a.bottom<=b.bottom&&Math.abs((a.left+a.right)-(b.left+b.right))<2&&JSON.stringify(api.read())===inkBeforeZoom})()`,
+      ),
+    );
+    await shot("03-refined-40");
+    await evaluate(`click('80 COL');click('Fit Screen')`);
+    await evaluate(
+      `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`,
+    );
+    check(
+      "80-column aperture retains narrow Apple II cell proportions",
+      await evaluate(
+        `(()=>{const c=root.querySelector('.ph-cell').getBoundingClientRect();return api.read().settings.columns===80&&Math.abs(c.width/c.height-7/16)<.001})()`,
+      ),
+    );
+    await gesture("Pencil", [12, 3]);
+    check(
+      "80-column drawing targets the correct cell",
+      await evaluate(`Array.from(api.read().text)[3*81+12]==='#'`),
+    );
+    await evaluate(`api.undo()`);
+    await shot("04-refined-80");
+    await evaluate(
+      `const select=root.querySelector('[aria-label="Scroll mode"]');select.value='scroll';select.dispatchEvent(new Event('change',{bubbles:true}));api.commit({...api.read(),text:api.read().text+'\\n'+Array(30).fill(' '.repeat(80)).join('\\n')},'Scrollable visual fixture');root.querySelector('.ph-screen-viewport').scrollTop=30*root.querySelector('.ph-cell').getBoundingClientRect().height`,
+    );
+    await evaluate(
+      `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`,
+    );
+    check(
+      "scrollable content keeps a 24-row physical viewport",
+      await evaluate(
+        `(()=>{const v=root.querySelector('.ph-screen-viewport'),cell=root.querySelector('.ph-cell').getBoundingClientRect();return v.scrollTop>0&&v.scrollHeight>v.clientHeight&&v.clientHeight<cell.height*26})()`,
+      ),
+    );
+    await gesture("Pencil", [6, 33]);
+    check(
+      "pointer remains accurate after internal document scrolling",
+      await evaluate(`Array.from(api.read().text)[33*81+6]==='#'`),
+    );
+    await evaluate(
+      `window.lastContent=JSON.stringify(api.read());const canvas=root.querySelector('canvas');canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();await wait(()=>root.dataset.materialReady==='false')`,
+    );
+    check(
+      "WebGL loss retains DOM content and input",
+      await evaluate(
+        `input.isConnected&&JSON.stringify(api.read())===lastContent`,
+      ),
+    );
+    await send(
+      "Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-reduced-motion", value: "reduce" }] },
+      sessionId,
+    );
+    await evaluate(`await wait(()=>root.dataset.reduced==='true')`);
+    check(
+      "reduced effects preserve aperture geometry",
+      await evaluate(
+        `root.querySelectorAll('.ph-cell').length>0&&root.querySelector('.ph-display-aperture').getBoundingClientRect().width>0&&JSON.stringify(api.read())===lastContent`,
+      ),
+    );
+    await shot("05-refined-fallback");
+    check("no uncaught browser exceptions", errors.length === 0);
+    await writeFile(
+      "artifacts/phosphor/visual-results.json",
+      JSON.stringify({ checks, errors }, null, 2),
+    );
+    console.log(JSON.stringify({ passed: checks.length }));
+  } else {
+    await evaluate(`click('Glyph #')`);
+    await gesture("Line", [1, 20], [8, 20]);
+    await gesture("Rectangle", [10, 20], [15, 22]);
+    check(
+      "Line and Rectangle draw exact cell outlines",
+      await evaluate(
+        `api.read().text.split('\\n')[20].slice(1,9)==='########'&&api.read().text.split('\\n')[21].slice(10,16)==='#    #'`,
+      ),
+    );
+    await gesture("Pick", [1, 20]);
+    check(
+      "Pick recovers glyph",
+      await evaluate(
+        `root.querySelector('.ph-glyph-preview').textContent==='#'`,
+      ),
+    );
+    await gesture("Select", [1, 20], [8, 20]);
+    await evaluate(`click('Copy')`);
+    await gesture("Stamp", [1, 21]);
+    check(
+      "rectangular copy and Stamp preserve shape",
+      await evaluate(
+        `api.read().text.split('\\n')[21].slice(1,9)==='########'`,
+      ),
+    );
+    await gesture("Select", [1, 21], [8, 21]);
+    await gesture("Move", [1, 21], [1, 22]);
+    check(
+      "Move clears source and preserves destination",
+      await evaluate(
+        `api.read().text.split('\\n')[21].slice(1,9)==='        '&&api.read().text.split('\\n')[22].slice(1,9)==='########'`,
+      ),
+    );
+    await evaluate(`click('Apple II')`);
+    check(
+      "all 32 MouseText codes plus cursor in picker",
+      await evaluate(
+        `root.querySelectorAll('.ph-characters button').length===33`,
+      ),
+    );
+    await evaluate(`click('Running man, left · $46')`);
+    await gesture("Pencil", [20, 23]);
+    await gesture("Select", [20, 23]);
+    await evaluate(`click('Copy')`);
+    await gesture("Stamp", [22, 23]);
+    check(
+      "Apple supplementary glyph remains one cell through clipboard",
+      await evaluate(
+        `Array.from(api.read().text)[23*41+20]===String.fromCodePoint(0x1fbb2)&&Array.from(api.read().text)[23*41+22]===String.fromCodePoint(0x1fbb2)`,
+      ),
+    );
+    await shot("02-mousetext");
+    check(
+      "bitmap fonts use original cell advances",
+      await evaluate(
+        `(()=>{const c=document.createElement('canvas').getContext('2d');c.font='16px "Phosphor Apple 40"';return c.measureText('A').width===14})()`,
+      ),
+    );
+    await gesture("Select", [1, 22], [8, 22]);
+    await evaluate(
+      `window.setField=(label,value)=>{const i=root.querySelector('[aria-label="'+label+'"]');i.value=value;i.dispatchEvent(new Event('input',{bubbles:true}))};setField('Tag name','rain-scene');click('Apply tag');`,
+    );
+    check(
+      "invisible tag has native cell anchors",
+      await evaluate(
+        `api.read().marks.some(m=>m.type===model.TAG&&m.start===22*41+1&&m.end===22*41+8)&&root.querySelector('[aria-label="Tag display"]').value==='invisible'`,
+      ),
+    );
+    await evaluate(`window.saveNotice=await api.save('vault','rain.ink')`);
+    check(
+      "save refreshes native Cavern",
+      await evaluate(`!saveNotice.includes('unavailable')`),
+    );
+    await evaluate(
+      `window.entity=await api.createEntity('The Waste Land');window.results=await api.searchEntities('The Waste Land')`,
+    );
+    check(
+      "canonical SQLite entity creation and search",
+      await evaluate(`results.some(e=>e.id===entity.id)`),
+    );
+    await evaluate(
+      `api.commit({...api.read(),marks:[...api.read().marks,{id:crypto.randomUUID(),type:model.ENTITY,value:entity.id,metadata:{entityName:entity.name},start:22*41+1,end:22*41+8}]},'Link canonical entity');window.saved=JSON.stringify(api.read());await api.save('vault','rain.ink')`,
+    );
+    check(
+      "native .ink save finishes",
+      await evaluate(`api.status().startsWith('Saved')`),
+    );
+    await evaluate(
+      `click('File');click('Letter');await wait(()=>document.querySelectorAll('.phosphor').length===2)`,
+    );
+    check(
+      "new work preserves existing screen",
+      await evaluate(`JSON.stringify(api.read())===saved`),
+    );
+    await evaluate(
+      `window.letterRoot=[...document.querySelectorAll('.phosphor')].find(r=>r!==root);window.letter=(await import('/src/features/phosphor/view.tsx')).phosphorPresentation(letterRoot)`,
+    );
+    check(
+      "letter uses native prose with vertical scrolling",
+      await evaluate(
+        `letter.read().settings.columns===80&&letter.read().settings.scroll&&letter.read().settings.layout==='prose'`,
+      ),
+    );
+    await evaluate(
+      `window.letterInput=letterRoot.querySelector('textarea');letterInput.focus();window.lclick=t=>[...letterRoot.querySelectorAll('button')].find(b=>b.textContent===t).click();window.lfield=(label,value)=>{const i=letterRoot.querySelector('[aria-label="'+label+'"]');i.value=value;i.dispatchEvent(new Event('input',{bubbles:true}))}`,
+    );
+    await send("Input.insertText", { text: "Notes: " }, sessionId);
+    check(
+      "letter inserts ordinary text without losing existing prose",
+      await evaluate(`letter.read().text.startsWith('Notes: Dear friend,')`),
+    );
+    await evaluate(
+      `letterInput.setSelectionRange(0,5);letterInput.dispatchEvent(new Event('select',{bubbles:true}));letterRoot.querySelector('.ph-cell-settings input').click();window.clipboard=new DataTransfer();letterInput.dispatchEvent(new ClipboardEvent('copy',{clipboardData:clipboard,bubbles:true,cancelable:true}));letterInput.setSelectionRange(letterInput.value.length,letterInput.value.length);letterInput.dispatchEvent(new Event('select',{bubbles:true}));letterInput.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));`,
+    );
+    check(
+      "linear clipboard preserves text and authored attribute",
+      await evaluate(
+        `letter.read().text.endsWith('Notes')&&letter.read().marks.some(m=>m.type===model.ATTRIBUTES[0]&&m.end===Array.from(letter.read().text).length-1)`,
+      ),
+    );
+    await evaluate(
+      `lclick('Find');lfield('Find text','friend');lfield('Replacement text','writer');lclick('Find next');lclick('Replace')`,
+    );
+    check(
+      "prose Find and Replace edits the selected match",
+      await evaluate(
+        `letter.read().text.includes('Dear writer,')&&!letter.read().text.includes('Dear friend,')`,
+      ),
+    );
+    await evaluate(`window.savedLetter=JSON.stringify(letter.read())`);
+    await evaluate(
+      `await letter.save('vault','letter.ink');await api.open('vault','rain.ink');await wait(()=>document.querySelectorAll('.phosphor').length===3)`,
+    );
+    check(
+      "Open preserves exact geometry and text",
+      await evaluate(
+        `(async()=>{const m=await import('/src/features/phosphor/view.tsx');return [...document.querySelectorAll('.phosphor')].filter(r=>r!==root&&r!==letterRoot).every(r=>JSON.stringify(m.phosphorPresentation(r).read())===saved)})()`,
+      ),
+    );
+    await send(
+      "Emulation.setEmulatedMedia",
+      { features: [{ name: "forced-colors", value: "active" }] },
+      sessionId,
+    );
+    await evaluate(`await wait(()=>root.dataset.materialReady==='false')`);
+    check(
+      "forced colours keeps editor mounted",
+      await evaluate(`input.isConnected&&JSON.stringify(api.read())===saved`),
+    );
+    const expected = await evaluate("saved"),
+      expectedLetter = await evaluate("savedLetter");
+    const loaded = new Promise((resolve) => {
+      const onMessage = (e) => {
+        const m = JSON.parse(e.data);
+        if (m.method === "Page.loadEventFired" && m.sessionId === sessionId) {
+          socket.removeEventListener("message", onMessage);
+          resolve();
+        }
+      };
+      socket.addEventListener("message", onMessage);
+    });
+    await send("Page.reload", {}, sessionId);
+    await loaded;
+    await evaluate(
+      `(async()=>{for(let i=0;i<300;i++){const root=document.querySelector('.phosphor');if(root&&(await import('/src/features/phosphor/view.tsx')).phosphorPresentation(root))return;await new Promise(r=>setTimeout(r,40));}throw Error('Reload failed')})()`,
+    );
+    await evaluate(
+      `window.root=document.querySelector('.phosphor');window.api=(await import('/src/features/phosphor/view.tsx')).phosphorPresentation(root);await api.open('vault','rain.ink');await api.open('vault','letter.ink')`,
+    );
+    const reopened = await evaluate(
+      `(async()=>{const m=await import('/src/features/phosphor/view.tsx');return [...document.querySelectorAll('.phosphor')].map(r=>m.phosphorPresentation(r).read())})()`,
+    );
+    check(
+      "fresh browser reload reads the saved file with exact semantics",
+      reopened.some((data) => isDeepStrictEqual(data, JSON.parse(expected))),
+    );
+    check(
+      "fresh reopen retains prose and clipboard attributes",
+      reopened.some((data) =>
+        isDeepStrictEqual(data, JSON.parse(expectedLetter)),
+      ),
+    );
+    check("no uncaught browser exceptions", errors.length === 0);
+    await writeFile(
+      "artifacts/phosphor/browser-results.json",
+      JSON.stringify({ checks, errors }, null, 2),
+    );
+    console.log(
+      JSON.stringify({
+        passed: checks.length,
+        url: "http://localhost:3000/phosphor",
+      }),
+    );
+  }
 } finally {
   socket?.close();
   chrome.kill("SIGKILL");

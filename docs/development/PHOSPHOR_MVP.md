@@ -9,9 +9,18 @@ File offers a blank screen and three works: **Letter**, **ASCII scene**, and **C
 - `src/application/phosphor.tsx`: native Document/window creation, application capability adapter, atomic Ink edits/history, native save/open, Cavern and canonical Entity service integration.
 - `src/features/phosphor/model.ts`: one `phosphor-screen-block` owns cell geometry. Its ordinary `standoff-editor-block` child owns text, character identities and native inclusive standoff ranges. Spatial mode stores complete rows, including trailing spaces and empty rows. Prose stores only hard returns; wrapping is a projection. Unsafe narrowing/overflow is refused.
 - `src/features/phosphor/view.tsx`: Solid DOM cell projection, textarea input/IME/clipboard, caret and selections, writing, drawing, semantics and controls. Rows are virtualised; there are no glyph meshes or rasterised editing surfaces.
-- `src/features/phosphor/material.ts`: one decorative DOM-aligned orthographic scene per visible Phosphor view. Reuses Flint's scene, lighting scheduler and Probe PMREM environment; the only Flint change is an optional material-registry factory with the existing factory as default. Dark clearcoat surfaces and shallow emissive bronze borders have no camera navigation, global bloom or continuous render loop. DOM text is not physically refracted/reflected.
+- `src/features/phosphor/material.ts`: one decorative DOM-aligned orthographic scene per visible Phosphor view. Reuses Flint's scene, lighting scheduler and Probe PMREM environment; the only Flint change is an optional material-registry factory with the existing factory as default. Separate dark frame, panel and screen materials have shallow beveled metal rims. The Screen geometry follows its DOM bounds and clips to the workspace during zoom and panning. There is no camera navigation, global bloom or continuous render loop. DOM text is not physically refracted/reflected.
+- `src/features/phosphor/material.css`: restrained glyph glow, recessed display, raised controls and CSS fallback surfaces. The standalone route includes a static abstract setting; native Phosphor windows retain the Mutable desktop.
 
 Reduced effects, reduced motion, forced colours and WebGL failure retain DOM editing. Unknown Screen versions, glyph encodings, invalid characters and unsupported child structures show a preservation notice rather than converting the Document.
+
+## Screen viewport and zoom
+
+The flexible central workspace contains a separate physical Screen, sized to the matrix plus its ruler, padding and bezel. Its height uses the configured visible row count for both fixed and scrolling documents. Longer documents scroll inside that viewport. Enlarged Screens can also scroll horizontally and vertically in the surrounding workspace.
+
+The bottom-right slider scales the Screen from 50–300%; **Fit Screen** chooses the largest scale within that range that fits the workspace at a whole device-pixel bitmap step. Fit remains active on resize until a manual zoom is selected. At 100%, the native cells are 14×16 CSS pixels in 40-column mode and 7×16 in 80-column mode, preserving the original half-width 80-column appearance. Zoom changes neither logical cell coordinates nor authored Ink data, and does not scale the application chrome. It is local viewing state for each open view.
+
+Manual intermediate zoom values, browser zoom and fractional display scaling can soften bitmap edges. Fit favours crisp device-pixel alignment. Very small workspaces can still require scrolling at the minimum 50% scale.
 
 ## Apple II character identity
 
@@ -23,7 +32,7 @@ Normal letters remain ordinary ASCII in native `text-cell` records. MouseText us
 
 Authored INVERSE, BLINK and UNDERLINE are independent native standoff properties. MouseText names such as “inverse check mark” describe a particular historical bitmap, not an implicit authored INVERSE property. Semantic display adds underline/inverse by set union; selection has its own temporary colour and never changes authored attributes. Reduced motion disables the blink animation without deleting its property.
 
-The unmodified **Print Char 21** and **PR Number 3** fonts reproduce Apple II bitmap shapes. The DOM uses whole source-pixel scales where space permits, 7×8 cell geometry in 40-column mode, and the half-width 80-column aspect. Font kerning and ligatures are disabled. Resizing never changes logical cell coordinates. Browser zoom or fractional operating-system scaling may still introduce antialiasing.
+The unmodified **Print Char 21** and **PR Number 3** fonts reproduce Apple II bitmap shapes. The DOM preserves 7×8 cell geometry in 40-column mode and the half-width 80-column aspect; Fit snaps to whole device-pixel scales where space permits. Font kerning and ligatures are disabled. Resizing never changes logical cell coordinates.
 
 Copy/paste provides normal `text/plain` plus Phosphor MIME data for exact attribute/semantic ranges and rectangular patterns. Plain text retains actual scalar values, including private glyphs; other applications need a compatible font to display their original shapes. Plain-text transfers cannot preserve attributes. Unsupported graphemes become one `?` with a notice, avoiding invisible cell shifts. We do not translate arbitrary Unicode into a vaguely similar Apple character.
 
@@ -51,3 +60,5 @@ node scripts/check-phosphor-browser.mjs
 ```
 
 The browser script uses local Google Chrome, an isolated temporary native store and its SQLite service. It covers actual typing/pointers, tools, MouseText cell counts/font proportions, clipboard patterns, history, canonical entities, native saves, a fresh browser reopen and forced-colour fallback. Screenshots/results are written to ignored `artifacts/phosphor/`. The integration test checks native admission and actual SQLite standoff/FTS rows, including private and supplementary glyphs. No unrelated Flint stress suite is needed.
+
+For the visual-refinement and viewport changes, run `node scripts/check-phosphor-browser.mjs --visual`. Its focused checks cover typing/history, 50/150/300% zoom, unchanged Ink and chrome dimensions, pointer alignment after workspace panning, 40/80-column proportions, fixed versus scrolling viewport height, drawing after document scrolling, and WebGL/reduced-motion fallbacks. It writes `visual-results.json` and screenshots `03-refined-40.png`, `04-refined-80.png`, `05-refined-fallback.png` and `06-zoom-150.png` to the same artifact directory.

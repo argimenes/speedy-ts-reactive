@@ -1,0 +1,467 @@
+/* Presentation only: the display aperture has its own dimensions inside a
+   flexible, scrollable workspace. None of these measurements enter Ink. */
+.phosphor {
+  --ph-amber: #ffcf76;
+  --ph-muted: #ac9062;
+  background: linear-gradient(
+    125deg,
+    #342817,
+    #11130f 38%,
+    #090c0c 70%,
+    #282015
+  );
+}
+.ph-ui {
+  padding: 14px 16px 10px;
+}
+.ph-title {
+  padding: 3px 7px 12px;
+  border-color: #b5853738;
+  text-shadow: 0 0 12px #ffb32c35;
+}
+.ph-title-note {
+  color: #b29564;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.ph-emblem {
+  color: #ffe3a4;
+  text-shadow:
+    0 0 7px #ffc34b80,
+    0 0 22px #ed920d35;
+}
+.ph-menu {
+  padding: 10px 1px 13px;
+}
+.ph-workspace {
+  gap: 14px;
+}
+.ph-panel {
+  border: 1px solid #97754555;
+  border-radius: 6px;
+  padding: 12px 11px;
+  background: linear-gradient(128deg, #32291f, #111511 48%, #201b13);
+  box-shadow:
+    inset 1px 1px 1px #ffe0a923,
+    inset 0 3px 13px #000b,
+    1px 2px 2px #000b,
+    0 0 0 3px #0507064d;
+}
+.phosphor[data-material-ready="true"] .ph-panel {
+  background: linear-gradient(
+    126deg,
+    #99703812,
+    transparent 32%,
+    #06090952 58%,
+    #c08b3c08
+  );
+}
+.ph-panel h2 {
+  color: #e3c18a;
+  border-color: #b1935a30;
+}
+.ph-editor {
+  background: linear-gradient(130deg, #241f15c9, #0c100fd9 50%, #1d1a12c9);
+  border: 1px solid #9a773650;
+  border-radius: 7px;
+  box-shadow:
+    inset 0 1px 1px #f4d29123,
+    inset 0 0 30px #0008,
+    0 2px 2px #000b;
+}
+.ph-screen-heading {
+  padding: 9px 13px;
+  border-color: #9d783137;
+  font-size: 12px;
+}
+.ph-screen-heading small {
+  color: #ba9c63;
+}
+.ph-display-bay {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  background:
+    radial-gradient(ellipse at 50% 80%, #b1771520, transparent 65%),
+    linear-gradient(125deg, #33302314, #02060642);
+  scrollbar-width: thin;
+  scrollbar-color: #927345 #11130f;
+  overscroll-behavior: contain;
+}
+.ph-display-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  min-width: 100%;
+  height: max-content;
+  min-height: 100%;
+  padding: 14px;
+}
+.ph-display-aperture {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: calc(var(--columns) * var(--cell-width) + 54px * var(--screen-zoom));
+  padding: 0;
+  border: calc(1px * var(--screen-zoom)) solid #9b794047;
+  border-radius: calc(7px * var(--screen-zoom));
+  background: #030706;
+  box-shadow:
+    0 0 0 calc(3px * var(--screen-zoom)) #040605,
+    0 0 0 calc(4px * var(--screen-zoom)) #b6914647,
+    0 10px 20px #0008,
+    0 0 22px #f3ab2815,
+    inset 0 2px 12px #000;
+}
+.ph-display-aperture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    132deg,
+    #fff5d80a,
+    transparent 26%,
+    transparent 85%,
+    #ba7c2910
+  );
+  box-shadow:
+    inset 1px 1px 1px #fff0c22b,
+    inset -1px -1px 1px #a16d2445,
+    inset 0 0 14px #0009;
+}
+.ph-display-aperture .ph-ruler {
+  height: calc(28px * var(--screen-zoom));
+  padding: calc(8px * var(--screen-zoom)) calc(18px * var(--screen-zoom))
+    calc(5px * var(--screen-zoom)) calc(34px * var(--screen-zoom));
+  border-color: #7054263d;
+  font-size: calc(9px * var(--screen-zoom));
+  background: transparent;
+}
+.ph-display-aperture .ph-ruler-track {
+  margin: 0;
+}
+.ph-display-aperture .ph-screen-viewport {
+  display: block;
+  flex: none;
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  height: calc(var(--screen-height) + 24px * var(--screen-zoom));
+  padding: calc(12px * var(--screen-zoom)) calc(18px * var(--screen-zoom))
+    calc(12px * var(--screen-zoom)) calc(34px * var(--screen-zoom));
+  background: transparent;
+  border-radius: 0 0 calc(7px * var(--screen-zoom))
+    calc(7px * var(--screen-zoom));
+  scrollbar-color: #624f2d #080c09;
+  overscroll-behavior: auto;
+}
+.phosphor[data-material-ready="true"] .ph-display-aperture {
+  background: #020505a8;
+}
+.phosphor[data-material-ready="true"] .ph-display-aperture .ph-screen-viewport {
+  background: transparent;
+}
+.ph-row-number {
+  font-size: calc(9px * var(--screen-zoom));
+  right: calc(100% + 8px * var(--screen-zoom));
+  color: #b08640;
+}
+.ph-cell-surface {
+  color: #ffd781;
+}
+.phosphor:not([data-reduced="true"]) .ph-glyph {
+  text-shadow: 0 0 4px #ffaf3042;
+}
+.phosphor .ph-inverse .ph-glyph,
+.phosphor .ph-selected .ph-glyph {
+  text-shadow: none;
+}
+.ph-inverse {
+  color: #171709;
+  background: #f1c26b;
+}
+.ph-caret {
+  outline-color: #fff3c5;
+  box-shadow:
+    inset 0 -3px #ffe3a0,
+    0 0 7px #ffb62c60;
+}
+.ph-screen-foot {
+  padding: 10px 12px;
+  gap: 10px;
+  align-items: center;
+  border-color: #99733b38;
+  min-height: 48px;
+}
+.ph-screen-foot .ph-screen-caption {
+  letter-spacing: 0;
+  color: #af905e;
+  font-size: 9px;
+}
+.ph-zoom-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.ph-zoom-controls label {
+  font-size: 10px;
+  color: #b49563;
+}
+.phosphor .ph-zoom-controls input[type="range"] {
+  width: 88px;
+  padding: 0;
+  accent-color: #edbb60;
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  cursor: ew-resize;
+}
+.ph-zoom-controls output {
+  font: 10px monospace;
+  min-width: 32px;
+  text-align: right;
+}
+.ph-zoom-controls button {
+  font-size: 10px;
+  padding: 4px 6px;
+}
+.phosphor .ph-menu button,
+.phosphor .ph-palette .ph-segment button,
+.ph-zoom-controls button {
+  background: linear-gradient(165deg, #51412c70, #1b1b12 48%, #0b0e0b);
+  border-color: #9f7e4159;
+  box-shadow:
+    inset 0 1px #f9d69420,
+    inset 0 -1px #000a,
+    0 2px 3px #0009;
+}
+.phosphor button[aria-pressed="true"],
+.phosphor .ph-palette .ph-segment button[aria-pressed="true"] {
+  color: #2b1b05;
+  background: linear-gradient(160deg, #ffe39a, #eeb94f);
+  border-color: #e9b963;
+  box-shadow:
+    inset 0 1px #fff0bc,
+    inset 0 -1px #aa7a2380,
+    0 1px 3px #000b,
+    0 0 12px #e49e283b;
+}
+.ph-tools button[aria-pressed="true"] {
+  box-shadow:
+    inset 0 2px 3px #9d651838,
+    0 0 10px #ffb73530;
+}
+.phosphor input:not([type="checkbox"]):not([type="range"]),
+.phosphor select {
+  background: linear-gradient(150deg, #060a08, #14150d);
+  border-color: #9e7c3c61;
+  box-shadow:
+    inset 0 2px 5px #000a,
+    0 1px #ffe2a00e;
+  color: #ecca7f;
+}
+.ph-glyph-preview {
+  background: linear-gradient(140deg, #33281570, #070c09 60%);
+  box-shadow:
+    inset 0 2px 10px #000c,
+    0 1px 1px #ffcf6b19;
+  border-color: #9e7c3c85;
+}
+.phosphor input[type="checkbox"] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 12px;
+  height: 12px;
+  margin: 0 5px 0 0;
+  vertical-align: middle;
+  border: 1px solid #aa88535e;
+  border-radius: 2px;
+  background: #050907;
+  box-shadow: inset 0 1px 2px #000;
+}
+.phosphor input[type="checkbox"]:checked {
+  background: #f8cc77;
+  border-color: #f8cc77;
+  box-shadow: 0 0 6px #ffba3830;
+}
+.phosphor input[type="checkbox"]:checked::after {
+  content: "✓";
+  font: 11px monospace;
+  color: #251c09;
+}
+.phosphor button:disabled {
+  opacity: 0.38;
+  box-shadow: none;
+}
+.ph-status {
+  border-color: #99733b3b;
+}
+.ph-notice {
+  color: #a78e62;
+}
+.reactive-window:has(.phosphor) {
+  border-color: #92774a85;
+  border-radius: 13px;
+  background: #10110c;
+  box-shadow:
+    0 30px 65px #000b,
+    0 10px 14px #0008,
+    0 0 0 2px #090b08,
+    0 0 0 3px #b88f482b,
+    0 0 44px #d7941818;
+}
+.reactive-window:has(.phosphor) > .reactive-window__header {
+  min-height: 30px;
+  background: linear-gradient(175deg, #72543380, #211e13 40%, #0b100d 85%);
+  color: #efc981;
+  border-color: #ad833943;
+  box-shadow:
+    inset 0 1px #efce8d70,
+    inset 0 -2px #03050380;
+}
+.reactive-window:has(.phosphor) .reactive-window__controls button {
+  color: #efce8d;
+  text-shadow: 0 0 7px #ffbf4540;
+}
+/* The standalone setting suggests architecture through quiet static planes.
+   The normal Mutable desktop keeps its own chosen environment. */
+.ph-demo {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 65% 88%, #97601d35, transparent 55%),
+    radial-gradient(ellipse at 12% 12%, #a6742b22, transparent 45%), #090d0c;
+}
+.ph-demo > nav {
+  position: relative;
+  z-index: 1;
+  color: #a98d5d;
+}
+.ph-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ph-ambient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 12%,
+    #261f124d 12.1%,
+    #60472536 12.3%,
+    transparent 30%,
+    transparent 86%,
+    #9c6b2426 86.1%,
+    #191d1577 86.3%
+  );
+}
+.ph-ambient::after {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -1%;
+  height: 20%;
+  background: linear-gradient(#b0844433, #29261a80 1%, #111612 70%);
+  clip-path: polygon(9% 0, 90% 0, 100% 100%, 0 100%);
+  box-shadow: 0 -1px 30px #d0922922;
+}
+.ph-ambient i {
+  position: absolute;
+  top: 5%;
+  left: 13%;
+  height: 65%;
+  width: 2px;
+  background: linear-gradient(
+    transparent,
+    #dbaa5755 25%,
+    #ffcd6d88 75%,
+    transparent
+  );
+  box-shadow: 0 0 35px 10px #bc7b1830;
+}
+.ph-ambient i + i {
+  left: auto;
+  right: 13%;
+  top: 10%;
+  height: 60%;
+  opacity: 0.4;
+}
+.phosphor[data-reduced="true"]
+  :is(
+    .ph-editor,
+    .ph-panel,
+    .ph-display-aperture,
+    button,
+    input,
+    select,
+    .ph-glyph-preview,
+    .ph-caret
+  ) {
+  box-shadow: none;
+}
+.phosphor[data-reduced="true"] .ph-display-aperture::after {
+  display: none;
+}
+.ph-demo:has(.phosphor[data-reduced="true"]) .ph-ambient {
+  display: none;
+}
+@container (max-width:700px) {
+  .ph-screen-caption {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .phosphor
+    :is(
+      .ph-display-bay,
+      .ph-display-aperture,
+      .ph-screen-viewport,
+      .ph-ruler,
+      .ph-editor,
+      .ph-panel,
+      button,
+      input,
+      select
+    ) {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+    box-shadow: none;
+  }
+  .phosphor .ph-cell-surface,
+  .phosphor .ph-row-number,
+  .phosphor .ph-zoom-controls label {
+    color: CanvasText;
+    text-shadow: none;
+  }
+  .phosphor .ph-inverse,
+  .phosphor .ph-selected {
+    background: Highlight;
+    color: HighlightText;
+  }
+  .phosphor input[type="checkbox"] {
+    appearance: auto;
+  }
+  .ph-display-aperture::after,
+  .ph-ambient {
+    display: none;
+  }
+  .reactive-window:has(.phosphor) > .reactive-window__header {
+    color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+}
