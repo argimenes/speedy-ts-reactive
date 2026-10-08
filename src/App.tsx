@@ -144,6 +144,11 @@ export function PilotApp() {
 export default function App(props: { configuration?: ReactiveEditorConfiguration } = {}) {
   const route = window.location.pathname.replace(/\/+$/, "");
   const features = resolveFeatureFlags(props.configuration);
+  if (route === `${import.meta.env.BASE_URL}phosphor`) {
+    if (!features.phosphor) return <main>Phosphor is disabled.</main>;
+    const Phosphor = lazy(() => import("./features/phosphor/demo"));
+    return <Phosphor />;
+  }
   if (route === `${import.meta.env.BASE_URL}flint-material-three`) {
     if (!features.flintMaterialLighting || !features.flintThreeGraphSpike) return <main class="reactive-pilot"><h1>Three.js Graph spike disabled</h1><a href={`${import.meta.env.BASE_URL}flint-material`}>Return to SVG study</a></main>;
     const Spike = lazy(() => import("./features/flint/three-material-playground"));

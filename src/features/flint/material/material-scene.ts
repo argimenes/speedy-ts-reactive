@@ -8,7 +8,7 @@ import { createMaterialRegistry, type SurfaceMaterial } from './material-registr
 /** One CSS pixel = one scene unit, x-right/y-up, camera perpendicular to XY.
  * Only explicitly registered major rectangles are measured, on invalidation.
  * No animation loop, DOM traversal, or editor-content observation. */
-export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAvailable: (value: boolean) => void) {
+export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAvailable: (value: boolean) => void, materialFactory = createMaterialRegistry) {
   const canvas = document.createElement('canvas');
   canvas.className = 'flint-material-canvas'; canvas.setAttribute('aria-hidden', 'true');
   const renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
@@ -23,7 +23,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
   let dirty = true, layoutDirty = true, disposed = false, lost = false, width = 1, height = 1;
   const metrics = { frames: 0, surfaces: 0 };
   const request = () => { if (!disposed && !lost) { dirty = true; renderer.shadowMap.needsUpdate = true; lighting.request(); } };
-  const registry = createMaterialRegistry(request, .72), rig = createOcclusionRig(scene);
+  const registry = materialFactory(request, .72), rig = createOcclusionRig(scene);
   const geometry = new T.PlaneGeometry(1, 1);
   const substrate = new T.Mesh(geometry, registry.get('limestone')); substrate.receiveShadow = true; scene.add(substrate);
   const surfaces = new Map<HTMLElement, T.Mesh<T.PlaneGeometry, T.MeshStandardMaterial>>();

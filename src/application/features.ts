@@ -1,3 +1,4 @@
+import { createPhosphorFeature } from "./phosphor";
 import { FormattedDocumentView } from "../features/document-formats/view";
 import { createFlintFeature } from "../features/flint";
 import { documentApplicationCapabilities } from "./document-application-capabilities";
@@ -19,6 +20,7 @@ import { blockFeatureCapabilities } from "./feature-capabilities";
 export function registerApplicationViews(editor: ReactiveEditor): void {
   // Temporary legacy assembly: unmigrated views/commands retain their existing path.
   registerCoreViews(editor, editor.features.documentFormats ? FormattedDocumentView : undefined);
+  if (editor.features.phosphor) editor.featureHost.activate(createPhosphorFeature(editor));
   if (editor.features.flint) editor.featureHost.activate(createFlintFeature(scope => documentApplicationCapabilities(editor, scope), editor.features.flintMaterialChrome, editor.features.flintProbe));
   if (editor.features.threeDObjects) editor.featureHost.activate(createThreeDObjectFeature(scope => blockFeatureCapabilities(editor, scope)));
   if (editor.features.anchorRelationships) editor.featureHost.activate(createAnchorRelationshipsFeature(scope => anchorCapabilities(editor, scope)));

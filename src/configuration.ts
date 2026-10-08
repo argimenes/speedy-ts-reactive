@@ -20,6 +20,8 @@ export type FeatureFlags = Readonly<{
   windowMaximize: boolean;
   /** Composite Document application; transient tabs share canonical content. */
   flint: boolean;
+  /** Ink-native character screen and amber material presentation. */
+  phosphor: boolean;
   /** Isolated material/lighting playground; does not replace Flint chrome. */
   flintMaterialLighting: boolean;
   /** Experimental workspace sunlight/occlusion field within the material study. */
@@ -71,6 +73,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   cavernStartup: true,
   windowMaximize: true,
   flint: true,
+  phosphor: true,
   flintMaterialLighting: true,
   flintLightField: true,
   flintThreeGraphSpike: true,

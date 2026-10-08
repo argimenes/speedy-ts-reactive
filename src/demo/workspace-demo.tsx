@@ -422,6 +422,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
       <CavernControl />
       <opening.Buttons />
       <Show when={editor.features.flint}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>
+      <Show when={editor.features.phosphor}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Phosphor on Desktop" onClick={() => editor.commandRegistry.execute("phosphor.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Phosphor</button></Show>
       {<>
         <span class="workspace-demo__toolbar-group" aria-label="Server files"><strong>Server</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button></span>
         <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button><Show when={session.presentation.enabled}><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show></span>
@@ -439,6 +440,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
         <Show when={session.presentation.enabled}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
         <opening.Buttons menu />
         <Show when={editor.features.flint}><button type="button" role="menuitem" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>
+        <Show when={editor.features.phosphor}><button type="button" role="menuitem" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Phosphor on Desktop" onClick={() => editor.commandRegistry.execute("phosphor.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Phosphor</button></Show>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
         <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
         <hr role="separator" />
