@@ -17,11 +17,22 @@ const Context = createContext<CavernContext>();
 export const useCurrentCavern = () => useContext(Context);
 
 async function request(action: string, body?: unknown) {
-  const response = await fetch(`/api/cavern/${action}`, body === undefined ? undefined : {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.Success) throw new Error(result.Error || 'Mutable could not open the Cavern.');
+  const unavailable = 'Mutable cannot reach its local server. Start or restart Mutable, then try again.';
+  const invalid = 'Mutable received an invalid response from its local server. Restart Mutable, then try again.';
+  let response: Response;
+  try {
+    response = await fetch(`/api/cavern/${action}`, body === undefined ? undefined : {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+  } catch { throw new Error(unavailable); }
+  let result: any;
+  try { result = await response.json(); }
+  // The development proxy returns an empty 500 when the local server is stopped.
+  catch { throw new Error(response.status >= 500 ? unavailable : invalid); }
+  if (!response.ok || result?.Success === false) throw new Error(
+    typeof result?.Error === 'string' && result.Error ? result.Error : response.status >= 500 ? unavailable : 'Mutable could not open the Cavern.',
+  );
+  if (result?.Success !== true || !result.Data || typeof result.Data !== 'object') throw new Error(invalid);
   return result.Data;
 }
 
