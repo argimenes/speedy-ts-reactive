@@ -64,6 +64,9 @@
   border-radius: 9px;
   pointer-events: none;
 }
+.phosphor:not([data-material-ready="true"]) .ph-emblem:hover {
+  text-shadow: 0 0 4px #fff1b7, 0 0 12px #ffab32aa, 0 0 24px #ef8a2366;
+}
 .ph-emblem::after {
   content: "";
   position: absolute;

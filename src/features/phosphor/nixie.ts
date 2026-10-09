@@ -54,6 +54,10 @@ export function createNixieEmblem(
     depthWrite: false,
   });
   const phase = { value: 0 };
+  const hover = { value: 0 },
+    hoverPoint = { value: new T.Vector2(0, 0) },
+    pointerTarget = new T.Vector2(0, 0);
+  let hoverTarget = 0;
   const electrode = new T.MeshPhysicalMaterial({
     // Gas emission supplies the colour. A dark unlit substrate prevents the
     // nearby lamp from washing out spatial variation in the discharge.
@@ -67,19 +71,21 @@ export function createNixieEmblem(
   });
   electrode.onBeforeCompile = (shader) => {
     shader.uniforms.nixiePhase = phase;
+    shader.uniforms.nixieHover = hover;
+    shader.uniforms.nixiePointer = hoverPoint;
     shader.vertexShader = shader.vertexShader
       .replace(
         "#include <common>",
-        "#include <common>\nattribute float dischargePath;\nvarying float vDischargePath;",
+        "#include <common>\nattribute float dischargePath;\nvarying float vDischargePath;\nvarying vec2 vElectrodePosition;",
       )
       .replace(
         "#include <begin_vertex>",
-        "#include <begin_vertex>\nvDischargePath = dischargePath;",
+        "#include <begin_vertex>\nvDischargePath = dischargePath;\nvElectrodePosition = position.xy;",
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
-        "#include <common>\nuniform float nixiePhase;\nvarying float vDischargePath;",
+        "#include <common>\nuniform float nixiePhase;\nuniform float nixieHover;\nuniform vec2 nixiePointer;\nvarying float vDischargePath;\nvarying vec2 vElectrodePosition;",
       )
       .replace(
         "#include <emissivemap_fragment>",
@@ -90,10 +96,13 @@ export function createNixieEmblem(
         float veil = 0.5 + 0.5 * cos(vDischargePath * 3.0 + nixiePhase * 0.41
           + 0.35 * sin(nixiePhase * 0.73));
         float gas = smoothstep(0.18, 0.88, cloud * 0.65 + veil * 0.35);
-        totalEmissiveRadiance *= 0.6 + 1.3 * gas;`,
+        vec2 delta = vElectrodePosition - nixiePointer;
+        float proximity = exp(-dot(delta, delta) / 70.0);
+        totalEmissiveRadiance *= 0.6 + 1.3 * gas
+          + nixieHover * (0.35 + 1.3 * proximity);`,
       );
   };
-  electrode.customProgramCacheKey = () => "phosphor-phi-discharge-v2";
+  electrode.customProgramCacheKey = () => "phosphor-phi-discharge-v3";
   const piece = (
     geometry: T.BufferGeometry,
     material: T.Material,
@@ -208,6 +217,32 @@ export function createNixieEmblem(
     needsStatic = true;
     lighting.request();
   };
+  const pointerMove = (event: PointerEvent) => {
+    if (event.pointerType === "touch") return;
+    const bounds = sceneRoot.getBoundingClientRect(),
+      rect = element.getBoundingClientRect(),
+      sx = bounds.width / sceneRoot.clientWidth || 1,
+      sy = bounds.height / sceneRoot.clientHeight || 1;
+    // DOM is the hit target. Match the measured scene scale, including a
+    // transformed window; both electrode meshes sit at local y=1.
+    pointerTarget.set(
+      (event.clientX - rect.left - rect.width / 2) / sx / group.scale.x,
+      (rect.top + rect.height / 2 - event.clientY) / sy / group.scale.y - 1,
+    );
+    hoverTarget = 1;
+    needsStatic = true;
+    lighting.request();
+  };
+  const pointerLeave = () => {
+    hoverTarget = 0;
+    needsStatic = true;
+    lighting.request();
+  };
+  element.addEventListener("pointerenter", pointerMove);
+  element.addEventListener("pointermove", pointerMove);
+  element.addEventListener("pointerleave", pointerLeave);
+  element.addEventListener("pointercancel", pointerLeave);
+  window.addEventListener("blur", pointerLeave);
   const layout = () => {
     const bounds = sceneRoot.getBoundingClientRect(),
       r = element.getBoundingClientRect(),
@@ -293,11 +328,24 @@ export function createNixieEmblem(
       !element.isConnected ||
       lighting.effects.reducedEffects
     ) {
+      hoverTarget = hover.value = 0;
       stop();
       return;
     }
     const animated = !motion.matches && !lighting.effects.reducedMotion;
     if (!animated && !needsStatic) return;
+    const delta = lastTick ? Math.min(0.15, (now - lastTick) / 1000) : 0.05;
+    if (animated) {
+      const ease = 1 - Math.exp(-delta / (hoverTarget ? 0.1 : 0.22));
+      hover.value = T.MathUtils.lerp(hover.value, hoverTarget, ease);
+      if (Math.abs(hover.value - hoverTarget) < 0.002) hover.value = hoverTarget;
+      hoverPoint.value.lerp(pointerTarget, 1 - Math.exp(-delta / 0.07));
+    } else {
+      // Reduced motion keeps direct hover feedback, with no travelling or
+      // easing animation and no timer after the input-driven frame.
+      hover.value = hoverTarget;
+      hoverPoint.value.copy(pointerTarget);
+    }
     if (animated && lastTick)
       metrics.elapsed += (now - lastTick) / 1000;
     lastTick = now;
@@ -310,10 +358,17 @@ export function createNixieEmblem(
       4200 *
       (0.96 +
         0.06 * Math.sin(phase.value + 0.35) +
-        0.025 * Math.sin(phase.value * 1.73));
-    light.position.x = 3 + Math.cos(phase.value) * 1.2;
-    light.position.y = -9 + Math.sin(phase.value * 0.83) * 1.2;
-    haloMaterial.uniforms.strength.value = 0.14 + 0.015 * Math.sin(phase.value);
+        0.025 * Math.sin(phase.value * 1.73)) * (1 + 0.45 * hover.value);
+    light.position.x = T.MathUtils.lerp(
+      3 + Math.cos(phase.value) * 1.2,
+      T.MathUtils.clamp(hoverPoint.value.x, -10, 10), hover.value * 0.6,
+    );
+    light.position.y = T.MathUtils.lerp(
+      -9 + Math.sin(phase.value * 0.83) * 1.2,
+      T.MathUtils.clamp(hoverPoint.value.y + 1, -12, 12), hover.value * 0.6,
+    );
+    haloMaterial.uniforms.strength.value =
+      0.14 + 0.015 * Math.sin(phase.value) + 0.11 * hover.value;
     if (region) {
       renderLocal(region);
       metrics.frames++;
@@ -333,6 +388,8 @@ export function createNixieEmblem(
     group,
     light,
     phase,
+    hover,
+    hoverPoint,
     metrics,
     layout,
     get region() {
@@ -346,6 +403,11 @@ export function createNixieEmblem(
       visibility.disconnect();
       hostVisibility.disconnect();
       resize.disconnect();
+      element.removeEventListener("pointerenter", pointerMove);
+      element.removeEventListener("pointermove", pointerMove);
+      element.removeEventListener("pointerleave", pointerLeave);
+      element.removeEventListener("pointercancel", pointerLeave);
+      window.removeEventListener("blur", pointerLeave);
       document.removeEventListener("visibilitychange", wake);
       motion.removeEventListener("change", wake);
       canvas.removeEventListener("webglcontextlost", contextLost);
