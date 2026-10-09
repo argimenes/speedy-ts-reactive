@@ -16,6 +16,8 @@ File offers a blank screen and three works: **Letter**, **ASCII scene**, and **C
 
 The background asset `assets/amber-studio.png` is the user-supplied **Moody Amber Architectural Studio.png**, copied without alteration. The interface style guide is a design reference, not a UI texture. Lighting affects the genuine geometry, including bevel normals and real cast shadows. The photograph itself is static, while reflections reuse the Probe PMREM rather than reconstructing that room. There is no camera navigation, global bloom, glass transmission render pass or reflection/refraction of live DOM text.
 
+The material correction adds a broad rectangular key alongside the shared shadow-casting directional source; both follow the same azimuth, elevation, intensity and softness, on demand. Bronze uses directional roughness/bump grain and anisotropic reflection. Materials bind the PMREM explicitly so their individual reflection strengths are respected by Three.js. Smoked panels composite over a translucent backing, while metal housings and the character display remain opaque. This removes the previous nearly opaque stack (92% backing plus 82% panel), which caused the loading transparency change even though the mounted DOM backgrounds were clear. Glass uses dielectric specular/clearcoat and controlled alpha; transmission stays zero because the WebGL transmission buffer cannot sample the DOM photograph or text. CSS fallback backing and panel alpha match the same surface roles.
+
 Reduced effects, reduced motion, forced colours and WebGL failure retain DOM editing. Unknown Screen versions, glyph encodings, invalid characters and unsupported child structures show a preservation notice rather than converting the Document.
 
 ## Screen viewport and zoom

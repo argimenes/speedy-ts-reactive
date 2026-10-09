@@ -57,19 +57,26 @@ export function createPhysicalControls(
       key = [...clips.keys()].indexOf(clip) + ":" + kind;
     if (!materials.has(key)) {
       const lit = kind === "lit",
-        metal = kind === "housing" || kind === "rim",
-        glass = kind === "glass";
+        metal = kind === "housing" || kind === "rim" || kind === "key",
+        glass = kind === "glass" || kind === "panel";
       const m = new T.MeshPhysicalMaterial({
-        color: lit ? 0xf3b646 : metal ? 0x21190f : glass ? 0x020302 : 0x12110c,
+        color: lit ? 0xf3b646 : metal ? 0x403a30 : glass ? 0x20251f : 0x12110c,
         metalness: lit ? 0.35 : metal ? 0.87 : glass ? 0.05 : 0.65,
-        roughness: metal ? 0.42 : glass ? 0.23 : 0.29,
+        roughness: metal ? 0.56 : glass ? 0.17 : 0.29,
         roughnessMap: metal ? grain : null,
         bumpMap: metal ? grain : null,
-        bumpScale: 0.12,
-        clearcoat: glass ? 0.4 : 0.18,
-        clearcoatRoughness: 0.22,
-        envMapIntensity: glass ? 0.012 : 0.35,
-        specularIntensity: glass ? 0.25 : 1,
+        bumpScale: 0.09,
+        anisotropy: metal ? 0.65 : 0,
+        clearcoat: glass ? 1 : 0.08,
+        clearcoatRoughness: glass ? 0.12 : 0.3,
+        envMap: scene.environment,
+        envMapIntensity: glass ? 0.38 : 0.24,
+        specularIntensity: 1,
+        ior: 1.48,
+        transmission: 0,
+        transparent: glass,
+        opacity: kind === "panel" ? 0.35 : glass ? 0.86 : 1,
+        depthWrite: !glass,
         emissive: lit ? 0xffa323 : 0x000000,
         emissiveIntensity: lit ? 0.6 : 0,
         clippingPlanes,
@@ -80,10 +87,10 @@ export function createPhysicalControls(
         m.envMapIntensity = 0.1;
       }
       if (kind === "edge") {
-        m.color.set(0x987b4e);
+        m.color.set(0x947653);
         m.metalness = 0.88;
-        m.roughness = 0.26;
-        m.envMapIntensity = 0.55;
+        m.roughness = 0.32;
+        m.envMapIntensity = 0.38;
       }
       materials.set(key, m);
     }
@@ -172,7 +179,9 @@ export function createPhysicalControls(
         : selected
           ? "lit"
           : body.kind === "housing"
-            ? "housing"
+            ? el.matches(".ph-characters,.ph-tools")
+              ? "panel"
+              : "housing"
             : body.kind === "field" || body.kind === "check"
               ? "glass"
               : "key",
@@ -194,6 +203,7 @@ export function createPhysicalControls(
       metalness: 0.9,
       roughness: 0.48,
       roughnessMap: grain,
+      envMap: scene.environment,
       envMapIntensity: 0.8,
     }),
     new T.MeshPhysicalMaterial({
@@ -204,6 +214,7 @@ export function createPhysicalControls(
       transparent: true,
       opacity: 0.18,
       depthWrite: false,
+      envMap: scene.environment,
       envMapIntensity: 0.65,
     }),
     new T.MeshPhysicalMaterial({

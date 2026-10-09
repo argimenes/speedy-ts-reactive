@@ -17,14 +17,15 @@ export function createBronzeGrain() {
         a = Math.floor(x / 32);
       const streak = noise(a, y) * (1 - t) + noise((a + 1) % 8, y) * t;
       const value = Math.round(
-        150 + fibre * 48 + streak * 42 + noise(x, y) * 10,
+        146 + fibre * 60 + streak * 36 + noise(x, y) * 12,
       );
       data.set([value, value, value, 255], (y * width + x) * 4);
     }
   }
   const map = new T.DataTexture(data, width, height, T.RGBAFormat);
   map.wrapS = map.wrapT = T.RepeatWrapping;
-  map.repeat.set(2, 6);
+  // Fine subpixel fibres at the shared world-sized UV scale.
+  map.repeat.set(2, 5);
   map.magFilter = T.LinearFilter;
   map.minFilter = T.LinearMipmapLinearFilter;
   map.generateMipmaps = true;

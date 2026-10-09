@@ -9,10 +9,9 @@
     #0000000a 0.5px 1px,
     transparent 1px 3px
   );
-  background:
-    var(--ph-brush),
-    radial-gradient(ellipse at 10% 0, #8c60242e, transparent 48%),
-    linear-gradient(115deg, #1f170ec9, #070807ed 56%, #171108bd);
+  /* Match the smoked backing while WebGL loads; opaque bronze belongs only
+     to the structural housings, controls and frame. */
+  background: #1519138a;
 }
 .ph-ui {
   padding: 14px 16px 10px;
@@ -89,10 +88,10 @@
   padding: 12px 11px;
   background: linear-gradient(
     122deg,
-    #3931279c,
-    #080909e8 26%,
-    #0a0a09e8 75%,
-    #4a342228
+    #393b328f,
+    #1015118f 26%,
+    #1015118f 75%,
+    #33342b8f
   );
   box-shadow:
     inset 1px 1px 1px #ffe0a942,

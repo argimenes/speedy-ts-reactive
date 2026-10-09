@@ -1,6 +1,8 @@
 import * as T from "three";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import { createMaterialScene } from "../flint/material/material-scene";
 import { createLighting } from "../flint/lighting";
+import { lightVector } from "../flint/material-response";
 import { OPEN_ENVIRONMENT } from "../flint/material/light-environment-config";
 import { createCrystalEnvironment } from "../flint/probe/crystal-optics";
 import type { SurfaceMaterial } from "../flint/material/material-registry";
@@ -13,6 +15,7 @@ const presentations = new WeakMap<
   ReturnType<typeof createPhosphorMaterial>
 >();
 export const phosphorMaterial = (root: HTMLElement) => presentations.get(root);
+let areaLightReady = false;
 
 /** DOM remains the spatial/input authority. Rendering only happens on invalidation. */
 export function createPhosphorMaterial(
@@ -27,12 +30,13 @@ export function createPhosphorMaterial(
   const sceneRoot = root.closest<HTMLElement>(".reactive-window") ?? root;
   const lighting = createLighting(root);
   lighting.setLight({
-    azimuth: 250,
-    elevation: 45,
+    azimuth: 235,
+    elevation: 28,
     intensity: 0.9,
     softness: 0.8,
   });
   const grain = createBronzeGrain();
+  let reflectionEnvironment: T.Texture | null = null;
   const glassClip = [
     new T.Plane(new T.Vector3(1, 0, 0)),
     new T.Plane(new T.Vector3(-1, 0, 0)),
@@ -45,23 +49,26 @@ export function createPhosphorMaterial(
       get(name: SurfaceMaterial) {
         if (!materials.has(name)) {
           const screen = name === "marble",
-            frame = name === "limestone";
+            backing = name === "limestone";
           materials.set(
             name,
             new T.MeshPhysicalMaterial({
-              color: screen ? 0x010201 : frame ? 0x0c0b08 : 0x030403,
-              metalness: frame ? 0.85 : 0.12,
-              roughness: screen ? 0.21 : frame ? 0.68 : 0.3,
-              roughnessMap: frame ? grain : null,
-              bumpMap: frame ? grain : null,
-              bumpScale: 0.1,
-              clearcoat: frame ? 0.12 : 0.35,
-              clearcoatRoughness: screen ? 0.23 : 0.3,
-              envMapIntensity: screen ? 0.008 : frame ? 0.14 : 0.02,
-              specularIntensity: 0.25,
-              specularColor: 0xffd18b,
+              // The window backing is smoked glass, not a nearly opaque metal
+              // sheet underneath every other translucent surface.
+              color: screen ? 0x030604 : 0x20251f,
+              metalness: 0,
+              roughness: screen ? 0.3 : 0.18,
+              clearcoat: screen ? 0.35 : 1,
+              clearcoatRoughness: screen ? 0.25 : 0.13,
+              envMap: reflectionEnvironment,
+              envMapIntensity: screen ? 0.035 : backing ? 0.18 : 0.38,
+              ior: 1.48,
+              specularIntensity: 1,
+              // Alpha composites the DOM photograph. Three's transmission
+              // buffer cannot contain that photograph or the live DOM text.
+              transmission: 0,
               transparent: !screen,
-              opacity: frame ? 0.92 : screen ? 1 : 0.82,
+              opacity: screen ? 1 : backing ? 0.54 : 0.56,
               depthWrite: screen,
               clippingPlanes: screen ? glassClip : null,
             }),
@@ -103,29 +110,65 @@ export function createPhosphorMaterial(
   scene.renderer.shadowMap.enabled = true;
   scene.renderer.localClippingEnabled = true;
   const environment = createCrystalEnvironment(scene.renderer);
-  scene.scene.environment = environment.texture;
-  // Reflections provide context; the shared directional source reveals relief.
-  scene.scene.environmentIntensity = 0.05;
+  scene.scene.environment = reflectionEnvironment = environment.texture;
+  // An explicit map preserves each material's reflection strength. Three.js
+  // otherwise substitutes scene.environmentIntensity for envMapIntensity.
+  scene.scene.traverse((object) => {
+    if (
+      object instanceof T.Mesh &&
+      object.material instanceof T.MeshPhysicalMaterial
+    )
+      object.material.envMap = reflectionEnvironment;
+  });
+  if (!areaLightReady) {
+    RectAreaLightUniformsLib.init();
+    areaLightReady = true;
+  }
+  const key = new T.RectAreaLight(0xffe1b5);
+  key.name = "Phosphor broad key";
+  scene.scene.add(key);
+  const updateKey = () => {
+    const width = sceneRoot.clientWidth,
+      height = sceneRoot.clientHeight,
+      span = Math.max(width, height),
+      light = lighting.light,
+      v = lightVector(light);
+    key.width = span * (0.35 + light.softness * 0.6);
+    key.height = span * (0.2 + light.softness * 0.35);
+    key.intensity = light.intensity * 1.5;
+    key.position.set(
+      width / 2 + v.x * span * 0.35,
+      -height / 2 - v.y * span * 0.35,
+      v.z * span * 0.35,
+    );
+    // Keep the broad opening parallel to the display. Tilting a nearby large
+    // emitter through the UI plane causes a hard back-face lighting cutoff.
+    key.rotation.set(0, 0, 0);
+  };
+  // The shared directional source still casts shadows; the area source gives
+  // metal/glass a broad specular response using the same direction/softness.
+  const stopKey = lighting.subscribe(updateKey);
   const metal = new T.MeshPhysicalMaterial({
-    color: 0x302316,
+    color: 0x484032,
     metalness: 0.88,
-    roughness: 0.4,
+    roughness: 0.56,
     roughnessMap: grain,
     bumpMap: grain,
-    bumpScale: 0.16,
-    clearcoat: 0.18,
+    bumpScale: 0.09,
+    anisotropy: 0.65,
+    clearcoat: 0.08,
     clearcoatRoughness: 0.32,
-    envMapIntensity: 0.5,
+    envMap: reflectionEnvironment,
+    envMapIntensity: 0.24,
   });
   const innerMetal = metal.clone();
-  innerMetal.color.set(0x4a331b);
-  innerMetal.roughness = 0.34;
-  innerMetal.envMapIntensity = 0.6;
+  innerMetal.color.set(0x584933);
+  innerMetal.roughness = 0.5;
   innerMetal.clippingPlanes = glassClip;
   const edge = metal.clone();
-  edge.color.set(0xb28a52);
-  edge.roughness = 0.24;
-  edge.envMapIntensity = 0.65;
+  edge.color.set(0x947653);
+  edge.roughness = 0.32;
+  edge.envMapIntensity = 0.38;
   edge.bumpScale = 0.045;
   const innerEdge = edge.clone();
   innerEdge.clippingPlanes = glassClip;
@@ -161,6 +204,7 @@ export function createPhosphorMaterial(
     ...elements.panels.map((p) => scene.registerSurface(p, "paper")),
   ];
   const layout = () => {
+    updateKey();
     const b = sceneRoot.getBoundingClientRect(),
       sx = b.width / sceneRoot.clientWidth || 1,
       sy = b.height / sceneRoot.clientHeight || 1;
@@ -222,6 +266,8 @@ export function createPhosphorMaterial(
     dispose() {
       presentations.delete(root);
       controls.dispose();
+      stopKey();
+      scene.scene.remove(key);
       observer.disconnect();
       root.removeEventListener("scroll", layout, true);
       stops.forEach((stop) => stop());
