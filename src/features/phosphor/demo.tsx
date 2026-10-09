@@ -21,10 +21,7 @@ export default function PhosphorDemo() {
   onCleanup(() => editor.dispose());
   return (
     <div class="ph-demo">
-      <div class="ph-ambient" aria-hidden="true">
-        <i />
-        <i />
-      </div>
+      <div class="ph-ambient" aria-hidden="true" />
       <nav>
         <a href={import.meta.env.BASE_URL}>← Mutable</a>
         <span>PHOSPHOR / A CHARACTER INSTRUMENT</span>

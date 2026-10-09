@@ -271,6 +271,92 @@ try {
       ),
     );
     await shot("03-refined-40");
+    await evaluate(
+      `window.physical=(await import('/src/features/phosphor/material.ts')).phosphorMaterial(root);window.fitButton=[...root.querySelectorAll('button')].find(b=>b.textContent==='Fit Screen');`,
+    );
+    check(
+      "controls have beveled geometry and cast real shadows",
+      await evaluate(
+        `(()=>{const bodies=[...physical.controls.bodies.values()].filter(b=>b.mesh.visible);return bodies.length>30&&bodies.every(b=>b.mesh.geometry.getAttribute('normal')&&b.mesh.castShadow)&&getComputedStyle(fitButton).backgroundColor==='rgba(0, 0, 0, 0)'})()`,
+      ),
+    );
+    const fitPoint = await evaluate(
+      `(()=>{const r=fitButton.getBoundingClientRect();window.restingDepth=physical.controls.bodies.get(fitButton).mesh.position.z;return {x:r.left+r.width/2,y:r.top+r.height/2}})()`,
+    );
+    await send(
+      "Input.dispatchMouseEvent",
+      { type: "mousePressed", button: "left", clickCount: 1, ...fitPoint },
+      sessionId,
+    );
+    check(
+      "pressing a DOM button physically depresses its body",
+      await evaluate(
+        `physical.controls.bodies.get(fitButton).mesh.position.z<restingDepth`,
+      ),
+    );
+    await send(
+      "Input.dispatchMouseEvent",
+      { type: "mouseReleased", button: "left", clickCount: 1, ...fitPoint },
+      sessionId,
+    );
+    for (const [name, azimuth] of [
+      ["07-light-above", 270],
+      ["08-light-below", 90],
+    ]) {
+      await evaluate(
+        `window.lightFrame=physical.metrics.frames;physical.lighting.setLight({azimuth:${azimuth},elevation:60,intensity:1.3,softness:.45});await wait(()=>physical.metrics.frames>lightFrame)`,
+      );
+      await shot(name);
+      const clip = await evaluate(
+        `(()=>{const r=root.querySelector('.ph-menu').getBoundingClientRect();return {x:r.left-10,y:r.top-10,width:600,height:160,scale:2}})()`,
+      );
+      const closeup = await send(
+        "Page.captureScreenshot",
+        { format: "png", clip },
+        sessionId,
+      );
+      await writeFile(
+        `artifacts/phosphor/${name}-controls.png`,
+        Buffer.from(closeup.data, "base64"),
+      );
+    }
+    check(
+      "shared light updates the physical scene without changing Ink",
+      await evaluate(
+        `physical.lighting.light.azimuth===90&&JSON.stringify(api.read())===inkBeforeZoom`,
+      ),
+    );
+    await evaluate(
+      `window.idleFrames=physical.metrics.frames;await new Promise(r=>setTimeout(r,250));`,
+    );
+    check(
+      "static lighting stops rendering when idle",
+      await evaluate(`physical.metrics.frames===idleFrames`),
+    );
+    await evaluate(
+      `physical.lighting.setLight({azimuth:250,elevation:45,intensity:.9,softness:.8});window.nativeWindow=root.closest('.reactive-window');window.windowStyle=nativeWindow.getAttribute('style');nativeWindow.style.width='1000px';nativeWindow.style.height='730px';`,
+    );
+    await evaluate(
+      `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(r))))`,
+    );
+    check(
+      "resizing keeps the Screen fitted and control bodies aligned",
+      await evaluate(
+        `(()=>{const b=root.querySelector('.ph-display-bay').getBoundingClientRect(),a=root.querySelector('.ph-display-aperture').getBoundingClientRect(),w=nativeWindow.getBoundingClientRect(),r=fitButton.getBoundingClientRect(),m=physical.controls.bodies.get(fitButton).mesh;return a.left>=b.left&&a.right<=b.right&&a.bottom<=b.bottom&&Math.abs(m.position.x-(r.left+r.width/2-w.left)/(w.width/nativeWindow.clientWidth))<1})()`,
+      ),
+    );
+    await gesture("Pencil", [5, 3]);
+    check(
+      "drawing remains accurate after responsive resizing",
+      await evaluate(`Array.from(api.read().text)[3*41+5]==='#'`),
+    );
+    await evaluate(
+      `api.undo();nativeWindow.setAttribute('style',windowStyle);`,
+    );
+    await evaluate(
+      `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(r))))`,
+    );
+    await shot("03-refined-40");
     await evaluate(`click('80 COL');click('Fit Screen')`);
     await evaluate(
       `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`,
@@ -279,6 +365,12 @@ try {
       "80-column aperture retains narrow Apple II cell proportions",
       await evaluate(
         `(()=>{const c=root.querySelector('.ph-cell').getBoundingClientRect();return api.read().settings.columns===80&&Math.abs(c.width/c.height-7/16)<.001})()`,
+      ),
+    );
+    check(
+      "selected column toggle depresses without rebuilding the scene",
+      await evaluate(
+        `(()=>{const buttons=[...root.querySelectorAll('button')],on=buttons.find(b=>b.textContent==='80 COL'),off=buttons.find(b=>b.textContent==='40 COL');return !physical.lighting.disposed&&physical.controls.bodies.get(on).mesh.position.z<physical.controls.bodies.get(off).mesh.position.z})()`,
       ),
     );
     await gesture("Pencil", [12, 3]);
@@ -306,7 +398,7 @@ try {
       await evaluate(`Array.from(api.read().text)[33*81+6]==='#'`),
     );
     await evaluate(
-      `window.lastContent=JSON.stringify(api.read());const canvas=root.querySelector('canvas');canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();await wait(()=>root.dataset.materialReady==='false')`,
+      `window.lastContent=JSON.stringify(api.read());const canvas=root.closest('.reactive-window').querySelector('.ph-material-canvas');canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();await wait(()=>root.dataset.materialReady==='false')`,
     );
     check(
       "WebGL loss retains DOM content and input",

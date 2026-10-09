@@ -3,21 +3,25 @@
 .phosphor {
   --ph-amber: #ffcf76;
   --ph-muted: #ac9062;
-  background: linear-gradient(
-    125deg,
-    #342817,
-    #11130f 38%,
-    #090c0c 70%,
-    #282015
+  --ph-brush: repeating-linear-gradient(
+    3deg,
+    #edc07c07 0 0.5px,
+    #0000000a 0.5px 1px,
+    transparent 1px 3px
   );
+  background:
+    var(--ph-brush),
+    radial-gradient(ellipse at 10% 0, #8c60242e, transparent 48%),
+    linear-gradient(115deg, #1f170ec9, #070807ed 56%, #171108bd);
 }
 .ph-ui {
   padding: 14px 16px 10px;
 }
 .ph-title {
-  padding: 3px 7px 12px;
-  border-color: #b5853738;
+  padding: 3px 7px 10px;
+  border-color: #b5853759;
   text-shadow: 0 0 12px #ffb32c35;
+  background: linear-gradient(106deg, #bd873015, transparent 35%, #0004 80%);
 }
 .ph-title-note {
   color: #b29564;
@@ -25,10 +29,53 @@
   letter-spacing: 0.16em;
 }
 .ph-emblem {
-  color: #ffe3a4;
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 46px;
+  font-size: 34px;
+  color: #ffcf78;
+  border: 1px solid #c4934d75;
+  border-radius: 14px 14px 6px 6px;
+  background:
+    linear-gradient(
+      102deg,
+      #fff4d428,
+      transparent 19% 73%,
+      #ffd98910 85%,
+      #0008
+    ),
+    radial-gradient(ellipse at 50% 75%, #c96f182a, #040504d9 72%);
+  box-shadow:
+    inset 1px 0 1px #ffe4a431,
+    inset -2px 0 5px #0009,
+    0 1px 5px #000b;
   text-shadow:
-    0 0 7px #ffc34b80,
-    0 0 22px #ed920d35;
+    0 0 3px #fff1b799,
+    0 0 9px #ffab3280,
+    0 0 20px #ef8a232b;
+}
+.ph-emblem::before {
+  content: "";
+  position: absolute;
+  inset: 4px 5px 7px;
+  border-left: 1px solid #ffeac631;
+  border-radius: 9px;
+  pointer-events: none;
+}
+.ph-emblem::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  height: 5px;
+  border-radius: 1px 1px 4px 4px;
+  background: linear-gradient(#a07947, #302115 40%, #0b0906);
+  box-shadow: 0 2px 3px #000b;
+  pointer-events: none;
 }
 .ph-menu {
   padding: 10px 1px 13px;
@@ -37,32 +84,38 @@
   gap: 14px;
 }
 .ph-panel {
-  border: 1px solid #97754555;
+  border: 1px solid #97754545;
   border-radius: 6px;
   padding: 12px 11px;
-  background: linear-gradient(128deg, #32291f, #111511 48%, #201b13);
+  background: linear-gradient(
+    122deg,
+    #3931279c,
+    #080909e8 26%,
+    #0a0a09e8 75%,
+    #4a342228
+  );
   box-shadow:
-    inset 1px 1px 1px #ffe0a923,
+    inset 1px 1px 1px #ffe0a942,
     inset 0 3px 13px #000b,
     1px 2px 2px #000b,
     0 0 0 3px #0507064d;
 }
 .phosphor[data-material-ready="true"] .ph-panel {
   background: linear-gradient(
-    126deg,
-    #99703812,
-    transparent 32%,
-    #06090952 58%,
-    #c08b3c08
+    116deg,
+    #f8d3a212,
+    transparent 22%,
+    #0203032e 58%,
+    #c08b3c05
   );
 }
 .ph-panel h2 {
   color: #e3c18a;
-  border-color: #b1935a30;
+  border-color: #b1935a24;
 }
 .ph-editor {
-  background: linear-gradient(130deg, #241f15c9, #0c100fd9 50%, #1d1a12c9);
-  border: 1px solid #9a773650;
+  background: linear-gradient(118deg, #30231955, #03060665 42%, #18120a55);
+  border: 1px solid #8b6a3936;
   border-radius: 7px;
   box-shadow:
     inset 0 1px 1px #f4d29123,
@@ -73,6 +126,7 @@
   padding: 9px 13px;
   border-color: #9d783137;
   font-size: 12px;
+  background: linear-gradient(110deg, #a9782212, #0002 45%);
 }
 .ph-screen-heading small {
   color: #ba9c63;
@@ -84,8 +138,8 @@
   min-width: 0;
   overflow: auto;
   background:
-    radial-gradient(ellipse at 50% 80%, #b1771520, transparent 65%),
-    linear-gradient(125deg, #33302314, #02060642);
+    radial-gradient(ellipse at 10% 60%, #99631b17, transparent 60%),
+    linear-gradient(125deg, #3330230a, #02040326);
   scrollbar-width: thin;
   scrollbar-color: #927345 #11130f;
   overscroll-behavior: contain;
@@ -98,7 +152,7 @@
   min-width: 100%;
   height: max-content;
   min-height: 100%;
-  padding: 14px;
+  padding: calc(14px * var(--screen-zoom));
 }
 .ph-display-aperture {
   position: relative;
@@ -106,15 +160,33 @@
   box-sizing: border-box;
   width: calc(var(--columns) * var(--cell-width) + 54px * var(--screen-zoom));
   padding: 0;
-  border: calc(1px * var(--screen-zoom)) solid #9b794047;
+  border: calc(1px * var(--screen-zoom)) solid #c89c4d70;
   border-radius: calc(7px * var(--screen-zoom));
-  background: #030706;
+  background: #030403;
   box-shadow:
-    0 0 0 calc(3px * var(--screen-zoom)) #040605,
-    0 0 0 calc(4px * var(--screen-zoom)) #b6914647,
-    0 10px 20px #0008,
-    0 0 22px #f3ab2815,
-    inset 0 2px 12px #000;
+    0 12px 22px #000a,
+    inset 0 0 0 calc(3px * var(--screen-zoom)) #000b,
+    inset 0 7px 14px #000,
+    inset 2px 0 12px #c3872312;
+}
+/* The ring sits outside the editing rectangle; it never shifts the matrix. */
+.ph-display-aperture::before {
+  content: "";
+  position: absolute;
+  inset: calc(-10px * var(--screen-zoom));
+  border: calc(10px * var(--screen-zoom)) solid #382815;
+  border-top-color: #886536;
+  border-left-color: #604425;
+  border-radius: calc(18px * var(--screen-zoom));
+  pointer-events: none;
+  box-shadow:
+    -1px -1px 1px #f3c27a66,
+    1px 2px 1px #080705,
+    0 0 0 2px #16120b,
+    inset 1px 1px 2px #000b;
+}
+.phosphor[data-material-ready="true"] .ph-display-aperture::before {
+  border-color: #b0781d0a;
 }
 .ph-display-aperture::after {
   content: "";
@@ -123,16 +195,17 @@
   pointer-events: none;
   border-radius: inherit;
   background: linear-gradient(
-    132deg,
-    #fff5d80a,
-    transparent 26%,
-    transparent 85%,
-    #ba7c2910
+    113deg,
+    #fff5d810,
+    transparent 20%,
+    transparent 84%,
+    #ba7c2907
   );
   box-shadow:
-    inset 1px 1px 1px #fff0c22b,
-    inset -1px -1px 1px #a16d2445,
-    inset 0 0 14px #0009;
+    inset 1px 1px 1px #fff0c259,
+    inset -1px -1px 1px #a16d2426,
+    inset 0 0 14px #0009,
+    inset 2px 0 8px #d18b2122;
 }
 .ph-display-aperture .ph-ruler {
   height: calc(28px * var(--screen-zoom));
@@ -161,7 +234,7 @@
   overscroll-behavior: auto;
 }
 .phosphor[data-material-ready="true"] .ph-display-aperture {
-  background: #020505a8;
+  background: #01030288;
 }
 .phosphor[data-material-ready="true"] .ph-display-aperture .ph-screen-viewport {
   background: transparent;
@@ -175,7 +248,9 @@
   color: #ffd781;
 }
 .phosphor:not([data-reduced="true"]) .ph-glyph {
-  text-shadow: 0 0 4px #ffaf3042;
+  text-shadow:
+    0 0 2px #ffbe4347,
+    0 0 7px #f29a1d26;
 }
 .phosphor .ph-inverse .ph-glyph,
 .phosphor .ph-selected .ph-glyph {
@@ -197,6 +272,8 @@
   align-items: center;
   border-color: #99733b38;
   min-height: 48px;
+  background: linear-gradient(110deg, #97733a0d, #0005 45%, #ba853015);
+  box-shadow: inset 0 1px #dfb77a0c;
 }
 .ph-screen-foot .ph-screen-caption {
   letter-spacing: 0;
@@ -209,6 +286,13 @@
   align-items: center;
   gap: 8px;
   flex: none;
+  padding: 5px 7px;
+  border: 1px solid #bd904831;
+  border-radius: 5px;
+  background: linear-gradient(155deg, #0009, #26201540);
+  box-shadow:
+    inset 0 1px 4px #000b,
+    0 1px #e7b96318;
 }
 .ph-zoom-controls label {
   font-size: 10px;
@@ -223,6 +307,17 @@
   border: 0;
   cursor: ew-resize;
 }
+.phosphor .ph-zoom-controls input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #eab958, #785421);
+  box-shadow:
+    0 1px #000,
+    0 0 5px #e9a63022;
+}
+.phosphor .ph-zoom-controls input[type="range"]::-webkit-slider-thumb {
+  margin-top: -6px;
+}
 .ph-zoom-controls output {
   font: 10px monospace;
   min-width: 32px;
@@ -235,12 +330,22 @@
 .phosphor .ph-menu button,
 .phosphor .ph-palette .ph-segment button,
 .ph-zoom-controls button {
-  background: linear-gradient(165deg, #51412c70, #1b1b12 48%, #0b0e0b);
-  border-color: #9f7e4159;
+  background: linear-gradient(160deg, #8c6b3547, #0a0b09 42%, #040604);
+  border-color: #c1914778 #9f7e4145 #74552265;
   box-shadow:
-    inset 0 1px #f9d69420,
+    inset 0 1px #f9d69437,
     inset 0 -1px #000a,
     0 2px 3px #0009;
+}
+.phosphor button:hover:not(:disabled):not([aria-pressed="true"]) {
+  background: linear-gradient(155deg, #74532870, #21180988 55%, #0b0c08);
+  border-color: #e7b468;
+  box-shadow:
+    inset 0 1px #ffe4ad40,
+    0 0 8px #dc921629;
+}
+.phosphor button:active:not(:disabled) {
+  box-shadow: inset 0 2px 4px #000a;
 }
 .phosphor button[aria-pressed="true"],
 .phosphor .ph-palette .ph-segment button[aria-pressed="true"] {
@@ -258,9 +363,21 @@
     inset 0 2px 3px #9d651838,
     0 0 10px #ffb73530;
 }
+.ph-characters {
+  background: linear-gradient(120deg, #19181270, #030605c4 50%, #100e08a6);
+  border: 1px solid #775a343d;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 2px 8px #000c,
+    0 1px #cf9c4d26;
+}
+.ph-tools button:not([aria-pressed="true"]) {
+  background: linear-gradient(90deg, #05070544, transparent);
+  border-bottom-color: #b08c4110;
+}
 .phosphor input:not([type="checkbox"]):not([type="range"]),
 .phosphor select {
-  background: linear-gradient(150deg, #060a08, #14150d);
+  background: linear-gradient(145deg, #020504, #0e0e098c);
   border-color: #9e7c3c61;
   box-shadow:
     inset 0 2px 5px #000a,
@@ -268,23 +385,24 @@
   color: #ecca7f;
 }
 .ph-glyph-preview {
-  background: linear-gradient(140deg, #33281570, #070c09 60%);
+  background: linear-gradient(125deg, #73532922, #050706 45%, #19140966);
   box-shadow:
     inset 0 2px 10px #000c,
     0 1px 1px #ffcf6b19;
   border-color: #9e7c3c85;
+  border-radius: 5px;
 }
 .phosphor input[type="checkbox"] {
   appearance: none;
   display: inline-grid;
   place-content: center;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   margin: 0 5px 0 0;
   vertical-align: middle;
   border: 1px solid #aa88535e;
   border-radius: 2px;
-  background: #050907;
+  background: linear-gradient(#3e34244d, #030504);
   box-shadow: inset 0 1px 2px #000;
 }
 .phosphor input[type="checkbox"]:checked {
@@ -310,7 +428,9 @@
 .reactive-window:has(.phosphor) {
   border-color: #92774a85;
   border-radius: 13px;
-  background: #10110c;
+  background:
+    linear-gradient(#08070666, #08070666),
+    url("./assets/amber-studio.png") center / cover fixed;
   box-shadow:
     0 30px 65px #000b,
     0 10px 14px #0008,
@@ -320,7 +440,14 @@
 }
 .reactive-window:has(.phosphor) > .reactive-window__header {
   min-height: 30px;
-  background: linear-gradient(175deg, #72543380, #211e13 40%, #0b100d 85%);
+  background:
+    repeating-linear-gradient(
+      3deg,
+      #edc07c09 0 0.5px,
+      #0001 0.5px 1px,
+      transparent 1px 3px
+    ),
+    linear-gradient(112deg, #73512aa8, #16130ee8 28%, #070906eb 70%, #6b4d2257);
   color: #efc981;
   border-color: #ad833943;
   box-shadow:
@@ -331,19 +458,18 @@
   color: #efce8d;
   text-shadow: 0 0 7px #ffbf4540;
 }
-/* The standalone setting suggests architecture through quiet static planes.
-   The normal Mutable desktop keeps its own chosen environment. */
+/* Supplied photograph, fixed in viewport space. The window uses the same
+   crop beneath its translucent surfaces, including on the Mutable desktop. */
 .ph-demo {
   position: relative;
   isolation: isolate;
-  background:
-    radial-gradient(ellipse at 65% 88%, #97601d35, transparent 55%),
-    radial-gradient(ellipse at 12% 12%, #a6742b22, transparent 45%), #090d0c;
+  background: #090806;
 }
 .ph-demo > nav {
   position: relative;
   z-index: 1;
   color: #a98d5d;
+  text-shadow: 0 1px 4px #000;
 }
 .ph-ambient {
   position: fixed;
@@ -351,53 +477,9 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-}
-.ph-ambient::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 12%,
-    #261f124d 12.1%,
-    #60472536 12.3%,
-    transparent 30%,
-    transparent 86%,
-    #9c6b2426 86.1%,
-    #191d1577 86.3%
-  );
-}
-.ph-ambient::after {
-  content: "";
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  bottom: -1%;
-  height: 20%;
-  background: linear-gradient(#b0844433, #29261a80 1%, #111612 70%);
-  clip-path: polygon(9% 0, 90% 0, 100% 100%, 0 100%);
-  box-shadow: 0 -1px 30px #d0922922;
-}
-.ph-ambient i {
-  position: absolute;
-  top: 5%;
-  left: 13%;
-  height: 65%;
-  width: 2px;
-  background: linear-gradient(
-    transparent,
-    #dbaa5755 25%,
-    #ffcd6d88 75%,
-    transparent
-  );
-  box-shadow: 0 0 35px 10px #bc7b1830;
-}
-.ph-ambient i + i {
-  left: auto;
-  right: 13%;
-  top: 10%;
-  height: 60%;
-  opacity: 0.4;
+  background:
+    linear-gradient(#08070624, #08070638),
+    url("./assets/amber-studio.png") center / cover;
 }
 .phosphor[data-reduced="true"]
   :is(
@@ -408,22 +490,107 @@
     input,
     select,
     .ph-glyph-preview,
+    .ph-emblem,
+    .ph-zoom-controls,
     .ph-caret
   ) {
   box-shadow: none;
 }
-.phosphor[data-reduced="true"] .ph-display-aperture::after {
+.phosphor[data-reduced="true"] .ph-display-aperture::after,
+.phosphor[data-reduced="true"] .ph-emblem::before {
   display: none;
 }
+.phosphor[data-reduced="true"] {
+  background: #100f0c;
+}
 .ph-demo:has(.phosphor[data-reduced="true"]) .ph-ambient {
-  display: none;
+  opacity: 0.35;
+}
+.reactive-window:has(.phosphor[data-reduced="true"]) {
+  background: #100f0c;
 }
 @container (max-width:700px) {
   .ph-screen-caption {
     display: none;
   }
 }
+/* The intended rendering path: physical bodies, bevels, grain and shadows are
+   supplied by Three.js. DOM supplies labels, focus outlines and all hit targets.
+   The treatments above remain available for reduced effects / context loss. */
+.ph-material-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 0;
+}
+.ph-material-canvas[hidden] {
+  display: none;
+}
+.reactive-window:has(.phosphor) > .reactive-window__header,
+.reactive-window:has(.phosphor) > .reactive-window__content {
+  position: relative;
+  z-index: 1;
+}
+.reactive-window:has(.phosphor[data-material-ready="true"]) {
+  box-shadow: none;
+  border-color: transparent;
+}
+.reactive-window:has(.phosphor[data-material-ready="true"])
+  > .reactive-window__header,
+.reactive-window:has(.phosphor[data-material-ready="true"])
+  .reactive-window__controls
+  button,
+.phosphor[data-material-ready="true"],
+.phosphor[data-material-ready="true"]
+  :is(
+    .ph-title,
+    .ph-panel,
+    .ph-editor,
+    .ph-screen-heading,
+    .ph-screen-foot,
+    .ph-display-bay,
+    .ph-display-aperture,
+    .ph-characters,
+    .ph-tools,
+    .ph-glyph-preview,
+    .ph-zoom-controls,
+    .ph-emblem,
+    button,
+    input,
+    select
+  ) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+.phosphor[data-material-ready="true"] .ph-emblem {
+  color: transparent;
+  text-shadow: none;
+}
+.phosphor[data-material-ready="true"]
+  :is(.ph-display-aperture, .ph-emblem)::before,
+.phosphor[data-material-ready="true"]
+  :is(.ph-display-aperture, .ph-emblem)::after {
+  display: none;
+}
+.phosphor[data-material-ready="true"]
+  input[type="range"]::-webkit-slider-runnable-track,
+.phosphor[data-material-ready="true"]
+  input[type="range"]::-webkit-slider-thumb {
+  opacity: 0;
+}
+.phosphor[data-material-ready="true"] input[type="range"]::-moz-range-track,
+.phosphor[data-material-ready="true"] input[type="range"]::-moz-range-thumb,
+.phosphor[data-material-ready="true"] input[type="range"]::-moz-range-progress {
+  opacity: 0;
+}
 @media (forced-colors: active) {
+  .ph-material-canvas {
+    display: none;
+  }
   .phosphor
     :is(
       .ph-display-bay,
@@ -432,6 +599,8 @@
       .ph-ruler,
       .ph-editor,
       .ph-panel,
+      .ph-emblem,
+      .ph-zoom-controls,
       button,
       input,
       select
@@ -456,6 +625,9 @@
     appearance: auto;
   }
   .ph-display-aperture::after,
+  .ph-display-aperture::before,
+  .ph-emblem::before,
+  .ph-emblem::after,
   .ph-ambient {
     display: none;
   }
@@ -463,5 +635,9 @@
     color: CanvasText;
     background: Canvas;
     box-shadow: none;
+  }
+  .reactive-window:has(.phosphor),
+  .phosphor {
+    background: Canvas;
   }
 }

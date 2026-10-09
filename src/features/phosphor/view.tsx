@@ -738,9 +738,9 @@ export function PhosphorView(props: { port: PhosphorPort }) {
     // manual zoom remains a viewing preference, never a Screen setting.
     const quantum = (columns() === 80 ? 2 : 1) / (window.devicePixelRatio || 1),
       fit = Math.min(
-        (displayBay.clientWidth - 28) /
-          (columns() * (columns() === 80 ? 7 : 14) + 54),
-        (displayBay.clientHeight - 28) / (screenRows() * 16 + 54),
+        displayBay.clientWidth /
+          (columns() * (columns() === 80 ? 7 : 14) + 54 + 28),
+        displayBay.clientHeight / (screenRows() * 16 + 54 + 28),
       ),
       scale = (Math.floor((fit * 2) / quantum) * quantum) / 2;
     setZoom(Math.max(0.5, Math.min(3, scale)));
@@ -772,8 +772,6 @@ export function PhosphorView(props: { port: PhosphorPort }) {
   });
   createEffect(() => {
     const enabled = effects() && !reduced();
-    mode();
-    columns();
     let disposed = false;
     material?.dispose();
     material = undefined;
@@ -798,6 +796,11 @@ export function PhosphorView(props: { port: PhosphorPort }) {
     onCleanup(() => {
       disposed = true;
     });
+  });
+  createEffect(() => {
+    mode();
+    columns();
+    screenRows();
     if (displayBay) untrack(fitCells);
   });
   const linkEntity = (entity: { id: string; name: string }) =>
@@ -820,7 +823,9 @@ export function PhosphorView(props: { port: PhosphorPort }) {
     >
       <div class="ph-ui">
         <header class="ph-title">
-          <span class="ph-emblem">Φ</span>
+          <span class="ph-emblem" aria-hidden="true">
+            Φ
+          </span>
           <span>
             Phosphor <span class="ph-muted">—</span> {api.title()}.ink
           </span>
