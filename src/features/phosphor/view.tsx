@@ -65,7 +65,7 @@ const tools: Tool[] = [
   "Stamp",
 ];
 type Display = "invisible" | "underline" | "inverse";
-export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean }) {
+export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studioDrift?: boolean }) {
   const id = crypto.randomUUID();
   const api = props.port,
     data = createMemo(() => api.read()),
@@ -788,6 +788,7 @@ export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean }) {
             },
             setReady,
             props.nixie ?? true,
+            props.studioDrift ?? true,
           );
         } catch {
           setMessage("Simple surfaces active. Editing remains available.");

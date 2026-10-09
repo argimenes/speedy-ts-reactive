@@ -24,6 +24,8 @@ export type FeatureFlags = Readonly<{
   phosphor: boolean;
   /** Physical Phosphor emblem with a local, slowly migrating discharge. */
   phosphorNixie: boolean;
+  /** Occasional neutral studio-light movement across Phosphor's materials. */
+  phosphorStudioDrift: boolean;
   /** Isolated material/lighting playground; does not replace Flint chrome. */
   flintMaterialLighting: boolean;
   /** Experimental workspace sunlight/occlusion field within the material study. */
@@ -77,6 +79,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   flint: true,
   phosphor: true,
   phosphorNixie: true,
+  phosphorStudioDrift: true,
   flintMaterialLighting: true,
   flintLightField: true,
   flintThreeGraphSpike: true,

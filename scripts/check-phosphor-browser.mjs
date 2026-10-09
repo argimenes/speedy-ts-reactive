@@ -327,14 +327,14 @@ try {
       ),
     );
     await evaluate(
-      `window.idleFrames=physical.metrics.frames;await new Promise(r=>setTimeout(r,250));`,
+      `physical.lighting.setEffects({reducedMotion:true});await new Promise(r=>setTimeout(r,150));window.idleFrames=physical.metrics.frames;await new Promise(r=>setTimeout(r,250));`,
     );
     check(
-      "static lighting stops rendering when idle",
+      "reduced-motion lighting stops rendering when idle",
       await evaluate(`physical.metrics.frames===idleFrames`),
     );
     await evaluate(
-      `physical.lighting.setLight({azimuth:250,elevation:45,intensity:.9,softness:.8});window.nativeWindow=root.closest('.reactive-window');window.windowStyle=nativeWindow.getAttribute('style');nativeWindow.style.width='1000px';nativeWindow.style.height='730px';`,
+      `physical.lighting.setEffects({reducedMotion:false});physical.lighting.setLight({azimuth:250,elevation:45,intensity:.9,softness:.8});window.nativeWindow=root.closest('.reactive-window');window.windowStyle=nativeWindow.getAttribute('style');nativeWindow.style.width='1000px';nativeWindow.style.height='730px';`,
     );
     await evaluate(
       `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(r))))`,

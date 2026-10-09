@@ -10,6 +10,7 @@ import { createBronzeGrain } from "./bronze";
 import { relief, slab, GLASS_DEPTH, PANEL_BASE, PANEL_FACE } from "./geometry";
 import { createPhysicalControls } from "./physical-controls";
 import { createNixieEmblem, type NixieRegion } from "./nixie";
+import { createStudioDrift } from "./studio-drift";
 
 const presentations = new WeakMap<
   HTMLElement,
@@ -19,7 +20,7 @@ export const phosphorMaterial = (root: HTMLElement) => presentations.get(root);
 let areaLightReady = false;
 
 /** DOM remains the spatial/input authority. The scene renders on invalidation;
- * the Nixie animates only its bounded neighbourhood in the same canvas. */
+ * studio motion invalidates lighting, and the Nixie redraws only its neighbourhood. */
 export function createPhosphorMaterial(
   root: HTMLElement,
   elements: {
@@ -29,9 +30,11 @@ export function createPhosphorMaterial(
   },
   available: (ready: boolean) => void,
   nixie = true,
+  studioDrift = true,
 ) {
   const sceneRoot = root.closest<HTMLElement>(".reactive-window") ?? root;
   const lighting = createLighting(root);
+  let drift: ReturnType<typeof createStudioDrift> | undefined;
   lighting.setLight({
     azimuth: 235,
     elevation: 38,
@@ -86,6 +89,7 @@ export function createPhosphorMaterial(
       available,
       registry,
       nixie,
+      () => drift?.light ?? lighting.light,
     );
     scene.renderer.domElement.classList.add("ph-material-canvas");
   } catch (error) {
@@ -152,7 +156,7 @@ export function createPhosphorMaterial(
     const width = sceneRoot.clientWidth,
       height = sceneRoot.clientHeight,
       span = Math.max(width, height),
-      light = lighting.light,
+      light = drift?.light ?? lighting.light,
       v = lightVector(light);
     key.width = span * (0.35 + light.softness * 0.6);
     key.height = span * (0.2 + light.softness * 0.35);
@@ -463,6 +467,11 @@ export function createPhosphorMaterial(
         renderNixieRegion,
       )
     : undefined;
+  if (studioDrift)
+    drift = createStudioDrift(sceneRoot, scene.renderer.domElement, lighting, () => {
+      updateKey();
+      scene.requestRender();
+    });
   const observer = new ResizeObserver(() => {
     layout();
     controls.layout();
@@ -479,8 +488,10 @@ export function createPhosphorMaterial(
     metrics: scene.metrics,
     controls,
     emblem,
+    drift,
     dispose() {
       presentations.delete(root);
+      drift?.dispose();
       emblem?.dispose();
       controls.dispose();
       stopKey();

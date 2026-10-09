@@ -344,6 +344,7 @@ export function createPhosphorFeature(editor: ReactiveEditor): CodexFeature {
                   <PhosphorView
                     port={phosphorPort(editor, props.nodeKey)}
                     nixie={editor.features.phosphorNixie}
+                    studioDrift={editor.features.phosphorStudioDrift}
                   />
                 </ErrorBoundary>
               </Show>

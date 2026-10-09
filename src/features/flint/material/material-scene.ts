@@ -8,7 +8,7 @@ import { createMaterialRegistry, type SurfaceMaterial } from './material-registr
 /** One CSS pixel = one scene unit, x-right/y-up, camera perpendicular to XY.
  * Only explicitly registered major rectangles are measured, on invalidation.
  * No animation loop, DOM traversal, or editor-content observation. */
-export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAvailable: (value: boolean) => void, materialFactory = createMaterialRegistry, preserveDrawingBuffer = false) {
+export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAvailable: (value: boolean) => void, materialFactory = createMaterialRegistry, preserveDrawingBuffer = false, lightSource: () => Lighting["light"] = () => lighting.light) {
   const canvas = document.createElement('canvas');
   canvas.className = 'flint-material-canvas'; canvas.setAttribute('aria-hidden', 'true');
   const renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer });
@@ -63,7 +63,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
       Object.assign(sunlight.shadow.camera, { left: -span, right: span, top: span, bottom: -span });
       sunlight.shadow.camera.updateProjectionMatrix();
     }
-    applyFlintLight(sunlight, lighting.light, new T.Vector2(width / 2, -height / 2), Math.max(width, height) * 2);
+    applyFlintLight(sunlight, lightSource(), new T.Vector2(width / 2, -height / 2), Math.max(width, height) * 2);
     registry.setShadowCamera(sunlight.shadow.camera);
     renderer.render(scene, camera); metrics.frames++; onAvailable(true);
   });
@@ -75,6 +75,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
     scene, camera, renderer, rig, metrics,
     get disposed() { return disposed; },
     invalidateLayout,
+    requestRender: request,
     setEnvironment(environment: LightEnvironment) { rig.setEnvironment(environment); invalidateLayout(); },
     setMaterial(name: SurfaceMaterial) { substrate.material = registry.get(name); request(); },
     registerSurface(element: HTMLElement, name: SurfaceMaterial = 'paper') {
