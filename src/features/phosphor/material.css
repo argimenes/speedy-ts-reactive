@@ -9,9 +9,9 @@
     #0000000a 0.5px 1px,
     transparent 1px 3px
   );
-  /* Match the smoked backing while WebGL loads; opaque bronze belongs only
-     to the structural housings, controls and frame. */
-  background: #1519138a;
+  /* The instrument has a solid backing; the architectural photograph belongs
+     outside it. Match this while the physical slab materials load. */
+  background: #0b0d10;
 }
 .ph-ui {
   padding: 14px 16px 10px;
@@ -32,9 +32,9 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 46px;
-  font-size: 34px;
+  width: 78px;
+  height: 94px;
+  font-size: 52px;
   color: #ffcf78;
   border: 1px solid #c4934d75;
   border-radius: 14px 14px 6px 6px;
@@ -46,7 +46,7 @@
       #ffd98910 85%,
       #0008
     ),
-    radial-gradient(ellipse at 50% 75%, #c96f182a, #040504d9 72%);
+    radial-gradient(ellipse at 50% 75%, #c96f182a, #080b10d9 72%);
   box-shadow:
     inset 1px 0 1px #ffe4a431,
     inset -2px 0 5px #0009,
@@ -88,10 +88,10 @@
   padding: 12px 11px;
   background: linear-gradient(
     122deg,
-    #393b328f,
-    #1015118f 26%,
-    #1015118f 75%,
-    #33342b8f
+    #22262c,
+    #080a0e 26%,
+    #080a0e 75%,
+    #181d23
   );
   box-shadow:
     inset 1px 1px 1px #ffe0a942,
@@ -113,7 +113,7 @@
   border-color: #b1935a24;
 }
 .ph-editor {
-  background: linear-gradient(118deg, #30231955, #03060665 42%, #18120a55);
+  background: linear-gradient(118deg, #20242a55, #03060665 42%, #161a2055);
   border: 1px solid #8b6a3936;
   border-radius: 7px;
   box-shadow:
@@ -500,13 +500,13 @@
   display: none;
 }
 .phosphor[data-reduced="true"] {
-  background: #100f0c;
+  background: #0b0d10;
 }
 .ph-demo:has(.phosphor[data-reduced="true"]) .ph-ambient {
   opacity: 0.35;
 }
 .reactive-window:has(.phosphor[data-reduced="true"]) {
-  background: #100f0c;
+  background: #0b0d10;
 }
 @container (max-width:700px) {
   .ph-screen-caption {
@@ -565,7 +565,7 @@
   box-shadow: none !important;
   border-color: transparent !important;
 }
-.phosphor[data-material-ready="true"] .ph-emblem {
+.phosphor[data-material-ready="true"][data-nixie="true"] .ph-emblem {
   color: transparent;
   text-shadow: none;
 }

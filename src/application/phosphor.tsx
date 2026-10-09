@@ -341,7 +341,10 @@ export function createPhosphorFeature(editor: ReactiveEditor): CodexFeature {
                     </div>
                   )}
                 >
-                  <PhosphorView port={phosphorPort(editor, props.nodeKey)} />
+                  <PhosphorView
+                    port={phosphorPort(editor, props.nodeKey)}
+                    nixie={editor.features.phosphorNixie}
+                  />
                 </ErrorBoundary>
               </Show>
             ),

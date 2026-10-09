@@ -411,9 +411,9 @@ try {
       { features: [{ name: "prefers-reduced-motion", value: "reduce" }] },
       sessionId,
     );
-    await evaluate(`await wait(()=>root.dataset.reduced==='true')`);
+    await evaluate(`await wait(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)`);
     check(
-      "reduced effects preserve aperture geometry",
+      "WebGL fallback with reduced motion preserves aperture geometry",
       await evaluate(
         `root.querySelectorAll('.ph-cell').length>0&&root.querySelector('.ph-display-aperture').getBoundingClientRect().width>0&&JSON.stringify(api.read())===lastContent`,
       ),

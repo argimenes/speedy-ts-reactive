@@ -65,7 +65,7 @@ const tools: Tool[] = [
   "Stamp",
 ];
 type Display = "invisible" | "underline" | "inverse";
-export function PhosphorView(props: { port: PhosphorPort }) {
+export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean }) {
   const id = crypto.randomUUID();
   const api = props.port,
     data = createMemo(() => api.read()),
@@ -759,14 +759,13 @@ export function PhosphorView(props: { port: PhosphorPort }) {
     window.addEventListener("resize", fitCells);
     onCleanup(() => window.removeEventListener("resize", fitCells));
     onCleanup(() => observer.disconnect());
-    const motion = matchMedia("(prefers-reduced-motion: reduce)"),
-      colours = matchMedia("(forced-colors: active)");
-    const change = () => setReduced(motion.matches || colours.matches);
+    // Reduced motion retains a static physical emblem. Forced colours and the
+    // explicit effects switch still use the accessible DOM surface fallback.
+    const colours = matchMedia("(forced-colors: active)");
+    const change = () => setReduced(colours.matches);
     change();
-    motion.addEventListener("change", change);
     colours.addEventListener("change", change);
     onCleanup(() => {
-      motion.removeEventListener("change", change);
       colours.removeEventListener("change", change);
     });
   });
@@ -788,6 +787,7 @@ export function PhosphorView(props: { port: PhosphorPort }) {
               panels: [left, right].filter(Boolean),
             },
             setReady,
+            props.nixie ?? true,
           );
         } catch {
           setMessage("Simple surfaces active. Editing remains available.");
@@ -810,6 +810,7 @@ export function PhosphorView(props: { port: PhosphorPort }) {
       ref={root}
       class="phosphor"
       data-material-ready={ready()}
+      data-nixie={props.nixie ?? true}
       data-reduced={reduced() || !effects()}
       data-mode={mode()}
       style={{

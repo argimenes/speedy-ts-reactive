@@ -1,6 +1,5 @@
 import * as T from "three";
-import { relief } from "./geometry";
-import { createDiodeHalo } from "../flint/probe/crystal-optics";
+import { relief, slab, PANEL_FACE } from "./geometry";
 
 type Body = {
   element: HTMLElement;
@@ -12,7 +11,7 @@ type Body = {
   knob?: T.Mesh;
 };
 const selector =
-  "button,input,select,.ph-glyph-preview,.ph-title,.ph-screen-heading,.ph-screen-foot,.ph-zoom-controls,.ph-characters,.ph-tools,.reactive-window__header";
+  "button,input,select,.ph-glyph-preview,.ph-title,.ph-screen-heading,.ph-screen-foot,.ph-zoom-controls,.reactive-window__header";
 
 /** Phosphor's DOM is the sole hit target. These shallow physical counterparts
  * share geometry/materials and update only on layout or control-state changes. */
@@ -39,7 +38,10 @@ export function createPhysicalControls(
   ) => {
     const key = [w, h, depth, radius, lip].map((v) => v.toFixed(2)).join(":");
     if (!geometries.has(key))
-      geometries.set(key, relief(w, h, depth, radius, lip));
+      geometries.set(
+        key,
+        lip ? relief(w, h, depth, radius, lip) : slab(w, h, depth, radius),
+      );
     return geometries.get(key)!;
   };
   const planes = (clip: HTMLElement) => {
@@ -58,39 +60,46 @@ export function createPhysicalControls(
     if (!materials.has(key)) {
       const lit = kind === "lit",
         metal = kind === "housing" || kind === "rim" || kind === "key",
-        glass = kind === "glass" || kind === "panel";
+        glass = kind === "glass";
       const m = new T.MeshPhysicalMaterial({
-        color: lit ? 0xf3b646 : metal ? 0x403a30 : glass ? 0x20251f : 0x12110c,
+        color: lit
+          ? 0xf3b646
+          : kind === "housing"
+            ? 0x292a2c
+            : metal
+              ? 0x35332e
+              : glass
+                ? 0x080a0e
+                : 0x17191c,
         metalness: lit ? 0.35 : metal ? 0.87 : glass ? 0.05 : 0.65,
-        roughness: metal ? 0.56 : glass ? 0.17 : 0.29,
+        roughness: metal ? 0.5 : glass ? 0.2 : 0.29,
         roughnessMap: metal ? grain : null,
         bumpMap: metal ? grain : null,
-        bumpScale: 0.09,
-        anisotropy: metal ? 0.65 : 0,
+        bumpScale: 0.13,
+        anisotropy: metal ? 0.75 : 0,
+        anisotropyRotation: 0,
         clearcoat: glass ? 1 : 0.08,
         clearcoatRoughness: glass ? 0.12 : 0.3,
         envMap: scene.environment,
-        envMapIntensity: glass ? 0.38 : 0.24,
+        envMapIntensity: glass ? 0.6 : 0.48,
         specularIntensity: 1,
         ior: 1.48,
         transmission: 0,
-        transparent: glass,
-        opacity: kind === "panel" ? 0.35 : glass ? 0.86 : 1,
-        depthWrite: !glass,
+        opacity: 1,
         emissive: lit ? 0xffa323 : 0x000000,
         emissiveIntensity: lit ? 0.6 : 0,
         clippingPlanes,
         clipShadows: true,
       });
       if (kind === "disabled") {
-        m.color.set(0x090a08);
+        m.color.set(0x090b0e);
         m.envMapIntensity = 0.1;
       }
       if (kind === "edge") {
-        m.color.set(0x947653);
+        m.color.set(0x686156);
         m.metalness = 0.88;
         m.roughness = 0.32;
-        m.envMapIntensity = 0.38;
+        m.envMapIntensity = 0.65;
       }
       materials.set(key, m);
     }
@@ -156,6 +165,14 @@ export function createPhysicalControls(
         observer.observe(element);
       }
   };
+  const support = (body: Body) => {
+    if (body.kind === "housing")
+      return body.element.matches(".ph-zoom-controls") ? 10 : 2;
+    if (body.element.closest(".ph-panel")) return PANEL_FACE;
+    if (body.element.closest(".ph-zoom-controls")) return 18;
+    if (body.element.closest(".reactive-window__header")) return 10;
+    return 0;
+  };
   const setState = (body: Body) => {
     const el = body.element,
       disabled = el.matches(":disabled"),
@@ -163,15 +180,16 @@ export function createPhysicalControls(
         el.getAttribute("aria-pressed") === "true" ||
         (el instanceof HTMLInputElement && el.checked);
     body.z =
-      body.kind === "housing"
-        ? 0.85
+      support(body) +
+      (body.kind === "housing"
+        ? 0
         : body.kind === "field" || body.kind === "range"
-          ? 1.1
+          ? 0.6
           : pressed.has(el)
-            ? 0.5
+            ? 0.8
             : selected
-              ? 1.1
-              : 2.5;
+              ? 1.6
+              : 3.2);
     body.mesh.position.z = body.z;
     const face = material(
       disabled
@@ -179,9 +197,7 @@ export function createPhysicalControls(
         : selected
           ? "lit"
           : body.kind === "housing"
-            ? el.matches(".ph-characters,.ph-tools")
-              ? "panel"
-              : "housing"
+            ? "housing"
             : body.kind === "field" || body.kind === "check"
               ? "glass"
               : "key",
@@ -195,65 +211,6 @@ export function createPhysicalControls(
     if (body.knob)
       body.knob.material = material(disabled ? "disabled" : "lit", body.clip);
   };
-  const emblem = new T.Group(),
-    emblemElement = root.querySelector<HTMLElement>(".ph-emblem");
-  const emblemMaterials = [
-    new T.MeshPhysicalMaterial({
-      color: 0x986e3b,
-      metalness: 0.9,
-      roughness: 0.48,
-      roughnessMap: grain,
-      envMap: scene.environment,
-      envMapIntensity: 0.8,
-    }),
-    new T.MeshPhysicalMaterial({
-      color: 0x958676,
-      metalness: 0,
-      roughness: 0.12,
-      clearcoat: 1,
-      transparent: true,
-      opacity: 0.18,
-      depthWrite: false,
-      envMap: scene.environment,
-      envMapIntensity: 0.65,
-    }),
-    new T.MeshPhysicalMaterial({
-      color: 0xffc475,
-      emissive: 0xff950e,
-      emissiveIntensity: 2,
-      metalness: 0.3,
-      roughness: 0.28,
-    }),
-  ];
-  const emblemGeometries: T.BufferGeometry[] = [];
-  const piece = (
-    g: T.BufferGeometry,
-    m: T.MeshPhysicalMaterial,
-    x: number,
-    y: number,
-    z: number,
-  ) => {
-    const mesh = new T.Mesh(g, m);
-    mesh.position.set(x, y, z);
-    mesh.castShadow = mesh.receiveShadow = true;
-    emblemGeometries.push(g);
-    emblem.add(mesh);
-    return mesh;
-  };
-  piece(relief(32, 5, 4, 2), emblemMaterials[0], 0, -19, 3);
-  piece(new T.CapsuleGeometry(14, 12, 5, 20), emblemMaterials[1], 0, 1, 12);
-  piece(new T.TorusGeometry(9, 0.8, 6, 32), emblemMaterials[2], 0, 1, 13);
-  piece(new T.CylinderGeometry(0.8, 0.8, 29, 8), emblemMaterials[2], 0, 1, 13);
-  const haloMaterial = createDiodeHalo();
-  haloMaterial.uniforms.colour.value.set(0xffae3b);
-  haloMaterial.uniforms.strength.value = 0.5;
-  const haloGeometry = new T.PlaneGeometry(40, 46),
-    halo = new T.Mesh(haloGeometry, haloMaterial);
-  halo.position.z = 15;
-  emblem.add(halo);
-  scene.add(emblem);
-  if (emblemElement) observer.observe(emblemElement);
-
   const layout = () => {
     if (disposed) return;
     sync();
@@ -308,35 +265,32 @@ export function createPhysicalControls(
         Math.max(2, w - 2),
         kind === "range" ? 3 : Math.max(2, h - 2),
         kind === "housing"
-          ? 1.2
+          ? 8
           : kind === "field"
-            ? 0.6
+            ? 3
             : kind === "check"
-              ? 2
-              : 4,
-        kind === "housing" ? 4 : 3,
+              ? 3
+              : kind === "range"
+                ? 2
+                : 6,
+        kind === "housing" ? 4 : 2.2,
       );
       mesh.position.set(x, y, body.z);
       if (socket) {
-        socket.geometry = geometry(w, h, 1.6, 3, 1.2);
-        socket.position.set(x, y, 0.9);
+        socket.geometry = geometry(w, h, 3, 3, 1.2);
+        socket.position.set(x, y, support(body) + 0.3);
       }
       if (knob) {
         const input = el as HTMLInputElement,
           ratio =
             (Number(input.value) - Number(input.min)) /
             (Number(input.max) - Number(input.min));
-        knob.position.set(x - w / 2 + 8 + (w - 16) * ratio, y, 5);
+        knob.position.set(
+          x - w / 2 + 8 + (w - 16) * ratio,
+          y,
+          support(body) + 5,
+        );
       }
-    }
-    if (emblemElement) {
-      const r = emblemElement.getBoundingClientRect();
-      emblem.visible = !!r.width;
-      emblem.position.set(
-        (r.left + r.width / 2 - bounds.left) / sx,
-        -(r.top + r.height / 2 - bounds.top) / sy,
-        1,
-      );
     }
     const used = new Set<T.BufferGeometry>();
     for (const body of bodies.values()) {
@@ -438,11 +392,6 @@ export function createPhysicalControls(
         if (body.socket) scene.remove(body.socket);
         if (body.knob) scene.remove(body.knob);
       }
-      scene.remove(emblem);
-      emblemGeometries.forEach((g) => g.dispose());
-      emblemMaterials.forEach((m) => m.dispose());
-      haloGeometry.dispose();
-      haloMaterial.dispose();
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
       bodies.clear();

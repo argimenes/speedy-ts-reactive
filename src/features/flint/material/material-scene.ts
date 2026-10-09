@@ -8,10 +8,10 @@ import { createMaterialRegistry, type SurfaceMaterial } from './material-registr
 /** One CSS pixel = one scene unit, x-right/y-up, camera perpendicular to XY.
  * Only explicitly registered major rectangles are measured, on invalidation.
  * No animation loop, DOM traversal, or editor-content observation. */
-export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAvailable: (value: boolean) => void, materialFactory = createMaterialRegistry) {
+export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAvailable: (value: boolean) => void, materialFactory = createMaterialRegistry, preserveDrawingBuffer = false) {
   const canvas = document.createElement('canvas');
   canvas.className = 'flint-material-canvas'; canvas.setAttribute('aria-hidden', 'true');
-  const renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+  const renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer });
   configureMaterialRenderer(renderer);
   const scene = new T.Scene(), camera = new T.OrthographicCamera(0, 1, 0, -1, .1, 6000);
   camera.position.z = 2400;
