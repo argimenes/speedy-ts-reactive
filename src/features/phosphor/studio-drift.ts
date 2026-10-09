@@ -1,5 +1,9 @@
 import type { Lighting } from "../flint/lighting";
 
+export const PHOSPHOR_STUDIO_LIGHT: Lighting["light"] = Object.freeze({
+  azimuth: 235, elevation: 38, intensity: 0.9, softness: 0.65,
+});
+
 /** Occasional changes of studio pose, not a material animation. The existing
  * scene and scheduler do the rendering; no PMREM work or layout per tick. */
 export function createStudioDrift(
@@ -10,7 +14,7 @@ export function createStudioDrift(
 ) {
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const metrics = { moving: false, paused: true, frames: 0, moves: 0 };
-  let disposed = false, lost = false, inView = false, hostHidden = false;
+  let disposed = false, lost = false, inView = false, hostHidden = false, enabled = true;
   let base = lighting.light, effective = base;
   let azimuth = 0, elevation = 0, fromAzimuth = 0, fromElevation = 0;
   const frameInterval = 50;
@@ -31,7 +35,7 @@ export function createStudioDrift(
     cancel();
     last = performance.now();
     next = 0;
-    metrics.paused = hidden() || reduced();
+    metrics.paused = !enabled || hidden() || reduced();
     if (reduced()) {
       metrics.moving = false;
       elapsed = 0;
@@ -55,7 +59,7 @@ export function createStudioDrift(
     timer = setTimeout(() => { timer = undefined; lighting.request(); }, delay);
   };
   const stopTask = lighting.addTask((now) => {
-    if (hidden() || reduced()) {
+    if (!enabled || hidden() || reduced()) {
       cancel(); metrics.paused = true; last = 0;
       return;
     }
@@ -143,6 +147,12 @@ export function createStudioDrift(
   return {
     metrics,
     get light() { return effective; },
+    get enabled() { return enabled; },
+    setEnabled(value: boolean) {
+      if (disposed || value === enabled) return;
+      enabled = value;
+      wake();
+    },
     dispose() {
       disposed = true;
       metrics.paused = true;

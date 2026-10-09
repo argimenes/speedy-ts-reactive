@@ -26,6 +26,8 @@ export type FeatureFlags = Readonly<{
   phosphorNixie: boolean;
   /** Occasional neutral studio-light movement across Phosphor's materials. */
   phosphorStudioDrift: boolean;
+  /** Manual controls for Phosphor's shared studio lighting. */
+  phosphorLightingControls: boolean;
   /** Isolated material/lighting playground; does not replace Flint chrome. */
   flintMaterialLighting: boolean;
   /** Experimental workspace sunlight/occlusion field within the material study. */
@@ -80,6 +82,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   phosphor: true,
   phosphorNixie: true,
   phosphorStudioDrift: true,
+  phosphorLightingControls: true,
   flintMaterialLighting: true,
   flintLightField: true,
   flintThreeGraphSpike: true,

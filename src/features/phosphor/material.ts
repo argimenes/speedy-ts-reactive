@@ -10,7 +10,7 @@ import { createBronzeGrain } from "./bronze";
 import { relief, slab, GLASS_DEPTH, PANEL_BASE, PANEL_FACE } from "./geometry";
 import { createPhysicalControls } from "./physical-controls";
 import { createNixieEmblem, type NixieRegion } from "./nixie";
-import { createStudioDrift } from "./studio-drift";
+import { createStudioDrift, PHOSPHOR_STUDIO_LIGHT } from "./studio-drift";
 
 const presentations = new WeakMap<
   HTMLElement,
@@ -35,12 +35,7 @@ export function createPhosphorMaterial(
   const sceneRoot = root.closest<HTMLElement>(".reactive-window") ?? root;
   const lighting = createLighting(root);
   let drift: ReturnType<typeof createStudioDrift> | undefined;
-  lighting.setLight({
-    azimuth: 235,
-    elevation: 38,
-    intensity: 0.9,
-    softness: 0.65,
-  });
+  lighting.setLight(PHOSPHOR_STUDIO_LIGHT);
   const grain = createBronzeGrain();
   let reflectionEnvironment: T.Texture | null = null;
   const glassClip = [

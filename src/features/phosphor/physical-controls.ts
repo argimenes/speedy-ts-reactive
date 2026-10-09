@@ -11,7 +11,7 @@ type Body = {
   knob?: T.Mesh;
 };
 const selector =
-  "button,input,select,.ph-glyph-preview,.ph-title,.ph-screen-heading,.ph-screen-foot,.ph-zoom-controls,.reactive-window__header";
+  "button,input,select,.ph-glyph-preview,.ph-title,.ph-screen-heading,.ph-screen-foot,.ph-zoom-controls,.ph-lighting-controls,.reactive-window__header";
 
 /** Phosphor's DOM is the sole hit target. These shallow physical counterparts
  * share geometry/materials and update only on layout or control-state changes. */
@@ -167,9 +167,9 @@ export function createPhysicalControls(
   };
   const support = (body: Body) => {
     if (body.kind === "housing")
-      return body.element.matches(".ph-zoom-controls") ? 10 : 2;
+      return body.element.matches(".ph-zoom-controls,.ph-lighting-controls") ? 10 : 2;
     if (body.element.closest(".ph-panel")) return PANEL_FACE;
-    if (body.element.closest(".ph-zoom-controls")) return 18;
+    if (body.element.closest(".ph-zoom-controls,.ph-lighting-controls")) return 18;
     if (body.element.closest(".reactive-window__header")) return 10;
     return 0;
   };

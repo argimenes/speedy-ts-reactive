@@ -37,6 +37,8 @@ import {
   type Mark,
 } from "./model";
 import { GLYPH_ENCODING, glyphInfo, glyphLabel } from "./glyphs";
+import { normaliseLight, type Light } from "../flint/material-response";
+import { PHOSPHOR_STUDIO_LIGHT } from "./studio-drift";
 import "./phosphor.css";
 import "./material.css";
 
@@ -65,7 +67,12 @@ const tools: Tool[] = [
   "Stamp",
 ];
 type Display = "invisible" | "underline" | "inverse";
-export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studioDrift?: boolean }) {
+export function PhosphorView(props: {
+  port: PhosphorPort;
+  nixie?: boolean;
+  studioDrift?: boolean;
+  lightingControls?: boolean;
+}) {
   const id = crypto.randomUUID();
   const api = props.port,
     data = createMemo(() => api.read()),
@@ -118,6 +125,10 @@ export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studi
     [ready, setReady] = createSignal(false),
     [zoom, setZoom] = createSignal(1),
     [fitView, setFitView] = createSignal(true);
+  const [lightOpen, setLightOpen] = createSignal(false),
+    [studioLight, setStudioLight] = createSignal(PHOSPHOR_STUDIO_LIGHT),
+    [automaticLight, setAutomaticLight] = createSignal(true),
+    [motionReduced, setMotionReduced] = createSignal(false);
   let root!: HTMLDivElement,
     input!: HTMLTextAreaElement,
     surface!: HTMLDivElement,
@@ -131,6 +142,24 @@ export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studi
         ReturnType<(typeof import("./material"))["createPhosphorMaterial"]>
       >
     | undefined;
+  const adjustLight = (patch: Partial<Light>) => {
+    // Freeze the currently visible pose before taking over with a slider.
+    const current = automaticLight() ? material?.drift?.light ?? studioLight() : studioLight();
+    const next = normaliseLight({ ...current, ...patch });
+    setAutomaticLight(false);
+    material?.drift?.setEnabled(false);
+    setStudioLight(next);
+    material?.lighting.setLight(next);
+  };
+  const animateLight = (enabled: boolean) => {
+    if (!enabled) { adjustLight({}); return; }
+    setAutomaticLight(true);
+    material?.drift?.setEnabled(true);
+  };
+  const resetLight = () => {
+    setStudioLight(PHOSPHOR_STUDIO_LIGHT);
+    material?.lighting.setLight(PHOSPHOR_STUDIO_LIGHT);
+  };
   let drag:
       | {
           start: Cell;
@@ -762,11 +791,16 @@ export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studi
     // Reduced motion retains a static physical emblem. Forced colours and the
     // explicit effects switch still use the accessible DOM surface fallback.
     const colours = matchMedia("(forced-colors: active)");
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const motionChange = () => setMotionReduced(motion.matches);
+    motionChange();
+    motion.addEventListener("change", motionChange);
     const change = () => setReduced(colours.matches);
     change();
     colours.addEventListener("change", change);
     onCleanup(() => {
       colours.removeEventListener("change", change);
+      motion.removeEventListener("change", motionChange);
     });
   });
   createEffect(() => {
@@ -790,6 +824,10 @@ export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studi
             props.nixie ?? true,
             props.studioDrift ?? true,
           );
+          // View settings survive a fallback/material toggle, independently of Ink.
+          if (studioLight() !== PHOSPHOR_STUDIO_LIGHT)
+            material.lighting.setLight(studioLight());
+          material.drift?.setEnabled(automaticLight());
         } catch {
           setMessage("Simple surfaces active. Editing remains available.");
         }
@@ -838,6 +876,16 @@ export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studi
           <button onClick={() => api.undo()}>Undo</button>
           <button onClick={() => api.redo()}>Redo</button>
           <button onClick={() => setSearchOpen((v) => !v)}>Find</button>
+          <Show when={props.lightingControls ?? true}>
+            <button
+              aria-expanded={lightOpen()}
+              aria-controls={`ph-light-${id}`}
+              aria-pressed={lightOpen()}
+              onClick={() => setLightOpen((v) => !v)}
+            >
+              Light
+            </button>
+          </Show>
           <span class="ph-spacer" />
           <div class="ph-segment">
             <button
@@ -879,6 +927,56 @@ export function PhosphorView(props: { port: PhosphorPort; nixie?: boolean; studi
             </For>
           </div>
         </nav>
+        <Show when={(props.lightingControls ?? true) && lightOpen()}>
+          <section id={`ph-light-${id}`} class="ph-drawer ph-lighting-controls" aria-label="Studio lighting">
+            <fieldset disabled={!ready()} aria-label="Light source">
+              <For each={[
+                { key: "azimuth", label: "Direction", min: 0, max: 359, factor: 1, unit: "°" },
+                { key: "elevation", label: "Elevation", min: 15, max: 80, factor: 1, unit: "°" },
+                { key: "intensity", label: "Brightness", min: 15, max: 130, factor: 100, unit: "%" },
+                { key: "softness", label: "Softness", min: 0, max: 100, factor: 100, unit: "%" },
+              ] as const}>
+                {(control) => (
+                  <label class="ph-light-slider" for={`ph-light-${control.key}-${id}`}>
+                    <span>{control.label}</span>
+                    <output for={`ph-light-${control.key}-${id}`}>
+                      {Math.round(studioLight()[control.key] * control.factor)}{control.unit}
+                    </output>
+                    <input
+                      id={`ph-light-${control.key}-${id}`}
+                      type="range"
+                      aria-label={`Light ${control.label.toLowerCase()}`}
+                      min={control.min}
+                      max={control.max}
+                      step="1"
+                      value={Math.round(studioLight()[control.key] * control.factor)}
+                      onInput={(e) => adjustLight({ [control.key]: Number(e.currentTarget.value) / control.factor })}
+                    />
+                  </label>
+                )}
+              </For>
+              <Show when={props.studioDrift ?? true}>
+                <label class="ph-light-motion">
+                  <input
+                    type="checkbox"
+                    checked={automaticLight() && !motionReduced()}
+                    disabled={motionReduced()}
+                    onChange={(e) => animateLight(e.currentTarget.checked)}
+                  />
+                  Automatic movement
+                </label>
+              </Show>
+              <button onClick={resetLight}>Reset light</button>
+            </fieldset>
+            <p class="ph-hint">
+              {!ready()
+                ? "Lighting controls are available with material effects."
+                : motionReduced()
+                  ? "Reduced motion is enabled. Manual lighting remains available."
+                  : "Adjust a slider to pause automatic movement. Changes apply only to this view."}
+            </p>
+          </section>
+        </Show>
         <Show when={storage()}>
           <section class="ph-drawer" aria-label="File controls">
             <button onClick={() => api.newDocument("blank")}>New screen</button>

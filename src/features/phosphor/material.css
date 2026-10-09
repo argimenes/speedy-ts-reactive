@@ -329,6 +329,58 @@
   font-size: 10px;
   padding: 4px 6px;
 }
+.ph-lighting-controls {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 5px;
+}
+.ph-lighting-controls fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ph-lighting-controls .ph-light-slider {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  flex: 1 1 140px;
+  gap: 3px 8px;
+  min-width: 120px;
+  max-width: 190px;
+  font-size: 11px;
+}
+.ph-light-slider output {
+  font-variant-numeric: tabular-nums;
+  color: var(--ph-muted);
+}
+.phosphor .ph-light-slider input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  accent-color: #edbb60;
+  background: transparent;
+  cursor: ew-resize;
+}
+.phosphor[data-material-ready="true"] .ph-light-slider input[type="range"] {
+  appearance: none;
+}
+.ph-lighting-controls .ph-light-motion {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: none;
+  font-size: 11px;
+}
+.ph-lighting-controls .ph-hint {
+  margin: 5px 0 0;
+}
 .phosphor .ph-menu button,
 .phosphor .ph-palette .ph-segment button,
 .ph-zoom-controls button {
@@ -494,6 +546,7 @@
     .ph-glyph-preview,
     .ph-emblem,
     .ph-zoom-controls,
+    .ph-lighting-controls,
     .ph-caret
   ) {
   box-shadow: none;
@@ -559,6 +612,7 @@
     .ph-tools,
     .ph-glyph-preview,
     .ph-zoom-controls,
+    .ph-lighting-controls,
     .ph-emblem,
     button,
     input,
