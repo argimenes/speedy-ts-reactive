@@ -68,7 +68,8 @@ export function createDocumentStoreRouter(options: {
       const { target } = await directory(req.query.folder ?? ".");
       const entries = await fs.readdir(target, { withFileTypes: true });
       const folders = req.path === "/listFolders";
-      const names = entries.filter((entry) => !entry.name.startsWith(".") && (folders ? entry.isDirectory() : entry.isFile() && /\.json$/i.test(entry.name)))
+      // Listing is filename-based; ordinary JSON needs no native suffix or index entry.
+      const names = entries.filter((entry) => !entry.name.startsWith(".") && (folders ? entry.isDirectory() : entry.isFile() && (/\.json$/i.test(entry.name) || entry.name.endsWith('.ink'))))
         .map((entry) => entry.name).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       res.json(folders ? { folders: names } : { files: names });
     } catch (error) { errorResponse(res, error); }

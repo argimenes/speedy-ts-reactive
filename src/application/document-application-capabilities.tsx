@@ -1,6 +1,7 @@
 import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName} from '../persistence/document-file-names.mjs';
 import { DocumentBrowser } from "../demo/document-browser";
 import { useCurrentCavern } from './cavern-startup';
+import { registerDocumentApplicationNavigation } from './document-application-navigation';
 import {registerEntityContext} from './entity-service';
 import {SavedResultActivation} from './saved-result-activation';
 import {sqliteIndexLifecycle} from './sqlite-index-lifecycle';
@@ -113,6 +114,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
             if (target) chooseTab(target);
           };
       const [selectedVault, setSelectedVault] = createSignal<DocumentVaultLease>();
+      onCleanup(registerDocumentApplicationNavigation(editor, props.nodeKey, id => openDocument(id)));
       let opening = 0, openQuery: AbortController | undefined;
       onCleanup(() => { opening++; openQuery?.abort(); selectedVault()?.release(); if (!editor.node(props.nodeKey)) vaultRoots.delete(props.nodeKey); });
       onMount(() => {

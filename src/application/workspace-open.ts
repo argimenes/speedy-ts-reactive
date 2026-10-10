@@ -7,6 +7,10 @@ import { PersistenceService, type DocumentLocation } from "../reactive-editor/pe
 import { documentIdentity, validateDocumentSource, workspaceContentHash, workspaceDocumentContentKeys } from "../reactive-editor/workspace-manifest";
 import { validateWorkspacePresentation } from "../reactive-editor/workspace-presentation";
 import type { WorkspaceSession } from "./workspace-session";
+import { isNativeDocumentName } from "../persistence/document-file-names.mjs";
+import { nativeDocumentSession } from "../persistence/native-session";
+import { documentRootPlacements } from "../block-tree/resource-registration";
+import { selectApplicationDocument } from './document-application-navigation';
 
 /** Explicit Open actions add to the current session; they never reload its tree. */
 export function workspaceOpen(session: WorkspaceSession) {
@@ -19,11 +23,11 @@ export function workspaceOpen(session: WorkspaceSession) {
     position: { x: 24 + windows().length % 8 * 28, y: 24 + windows().length % 8 * 28 },
     size: document ? { w: 840, h: 620 } : { w: 480, h: 320 }, state: "normal", zIndex: Math.max(0, ...windows().map(n => Number((n.payload.metadata as any)?.zIndex) || 0)) + 1,
   });
-  const insert = (content: ExistingBlockDto, title: string, presentationDefaults?: { size: { w: number; h: number }; windowType: string }): PlacementKey => {
+  const insert = (content: ExistingBlockDto, title: string, presentationDefaults?: { size: { w: number; h: number }; windowType: string }, reference?: PlacementKey): PlacementKey => {
     const id = crypto.randomUUID(), isDocument = ["document-block", "main-list-block", "membrane-block"].includes(content.type!);
     const defaults = presentationDefaults ?? (editor.features.documentFormats ? documentFormatPresentation(content.metadata) : undefined);
     const metadata = { title, ...geometry(isDocument), ...(defaults ? { size: defaults.size } : {}) };
-    const window: ExistingBlockDto = { id, type: defaults?.windowType ?? (isDocument ? "document-window-block" : "window-block"), metadata, children: [content] };
+    const window: ExistingBlockDto = { id, type: defaults?.windowType ?? (isDocument ? "document-window-block" : "window-block"), metadata, children: reference ? [] : [content] };
     const value = presentation.read(), canvas = presentation.active() === "canvas" ? value?.presentations.canvas : undefined;
     const objectId = `block:${id}`;
     const spatial = presentation.active() === "spatial";
@@ -40,6 +44,7 @@ export function workspaceOpen(session: WorkspaceSession) {
       editor.commands.transaction("Open workspace object", () => {
         const parent = banked ? banks[0] ?? editor.commands.insert({ id: crypto.randomUUID(), type: "workspace-object-bank-block", children: [] }, { kind: "at", parentKey: root, index: editor.commands.childrenOf(root).length }) : desktopParent();
         placement = editor.commands.insert(window, { kind: "at", parentKey: parent, index: banked ? editor.commands.childrenOf(parent).length : 0 });
+        if (reference) editor.commands.transclude(reference, { kind: "at", parentKey: placement, index: 0 });
       });
       if (next) presentation.updateCanvas(next, objects);
       spatialCommit?.();
@@ -49,7 +54,7 @@ export function workspaceOpen(session: WorkspaceSession) {
   const documents = () => workspaceDocumentContentKeys(editor.repository.state).map(key => editor.repository.state.contents[key]);
   const sourceOf = (content: ReturnType<typeof documents>[number]) => {
     const meta = (content.payload.metadata ?? {}) as Record<string, any>;
-    return editor.persistence.workspaceReference(String(meta.documentId ?? content.payload.id))?.source ?? meta;
+    return nativeDocumentSession(editor).location(String(meta.documentId ?? content.payload.id)) ?? editor.persistence.workspaceReference(String(meta.documentId ?? content.payload.id))?.source ?? meta;
   };
   const matching = (location: DocumentLocation, id?: string) => {
     const matches = documents().filter(c => {
@@ -65,7 +70,7 @@ export function workspaceOpen(session: WorkspaceSession) {
     return match;
   };
   const reveal = (contentKey: string): PlacementKey => {
-    const node = Object.values(projection.state.nodes).find(n => n.contentKey === contentKey);
+    const node = Object.values(projection.state.nodes).find(n => n.contentKey === contentKey && editor.blockQueries.ancestors(n.key).some(a => ["document-window-block", "window-block"].includes(a.viewType)));
     const host = node && editor.blockQueries.ancestors(node.key).find(n => ["document-window-block", "window-block"].includes(n.viewType));
     if (!host) throw new Error("This Document is already in the workspace without a Window. Open it through its existing owner.");
     if (presentation.active() === "spatial") {
@@ -97,10 +102,81 @@ export function workspaceOpen(session: WorkspaceSession) {
     }
     return host.placementKey;
   };
+  const flintInstances = () => Object.values(projection.state.nodes).filter(n => n.viewType === 'flint-application-block' && editor.blockQueries.ancestors(n.key).some(a => a.viewType === 'window-block'));
+  const presentDocument = (contentKey: string, id: string, title: string) => {
+    const tabs = flintInstances().map(app => ({ app, row: app.children.map(key => editor.node(key)).find(n => n?.viewType === 'tab-row-block') }));
+    const existing = tabs.find(({ row }) => row?.children.some(key => (editor.node(key)?.payload.metadata as any)?.documentTarget?.documentId === id));
+    if (existing) {
+      const tab = existing.row!.children.find(key => (editor.node(key)?.payload.metadata as any)?.documentTarget?.documentId === id)!;
+      if (!selectApplicationDocument(editor, existing.app.key, id)) editor.setViewChild(existing.row!.key, tab);
+      return reveal(existing.app.contentKey);
+    }
+    const window = Object.values(projection.state.nodes).find(n => n.contentKey === contentKey && editor.blockQueries.ancestors(n.key).some(a => a.viewType === 'document-window-block'));
+    if (window) return reveal(contentKey);
+    if (tabs.length) {
+      const selected = tabs.sort((a, b) => {
+        const z = (app: typeof a.app) => Number((editor.blockQueries.ancestors(app.key).find(n => n.viewType === 'window-block')?.payload.metadata as any)?.zIndex) || 0;
+        return z(b.app) - z(a.app);
+      })[0];
+      if (selectApplicationDocument(editor, selected.app.key, id)) return reveal(selected.app.contentKey);
+      if (!selected.row) throw new Error('The open Flint window has no document tabs.');
+      const tab = editor.commands.insert({ id: crypto.randomUUID(), type: 'tab-block', metadata: { name: title, documentTarget: { version: 1, documentId: id } } }, { kind: 'at', parentKey: selected.row.key, index: selected.row.children.length });
+      editor.setViewChild(selected.row.key, projection.nodeForPlacement(tab)!.key);
+      return reveal(selected.app.contentKey);
+    }
+    const state = editor.repository.readState(), content = state.contents[contentKey];
+    const owners = documentRootPlacements(state, contentKey);
+    if (owners.length !== 1) throw new Error('Document has no unique canonical root.');
+    // Keep the canonical resource in the bank when its editable window closes.
+    return insert({ ...unwrap(content.payload), type: 'document-block' }, title, { size: { w: 840, h: 620 }, windowType: 'document-window-block' }, owners[0].key);
+  };
+  const boundDocument = (key: string) => {
+    const node = editor.node(key); if (!node) return;
+    const doc = editor.blockQueries.ancestors(key).find(n => n.viewType === 'document-block')
+      ?? (node.viewType === 'document-window-block' ? node.children.map(k => editor.node(k)).find(n => n?.viewType === 'document-block') : undefined);
+    const id = doc && String((doc.payload.metadata as any)?.documentId ?? doc.payload.id);
+    return id && nativeDocumentSession(editor).location(id) ? id : undefined;
+  };
   return {
+    canSaveDocument(key: string) { return !!boundDocument(key); },
+    async saveDocument(key: string) {
+      const id = boundDocument(key); if (!id) throw new Error('Select an opened native Document to save.');
+      const native = nativeDocumentSession(editor);
+      const result = await native.save(id);
+      if (result?.phase !== 'saved') throw new Error(native.status(id));
+      return native.status(id);
+    },
     async serverDocument(location: DocumentLocation, signal: AbortSignal) {
       validateDocumentSource({ kind: "document-store", ...location }); signal.throwIfAborted();
-      const existing = matching(location); if (existing) return reveal(existing.key);
+      const alreadyOpen = matching(location);
+      if (alreadyOpen) return presentDocument(alreadyOpen.key, String((alreadyOpen.payload.metadata as any)?.documentId ?? alreadyOpen.payload.id), location.filename);
+      if (isNativeDocumentName(location.filename) || flintInstances().length && editor.features.nativeDocumentPersistence) {
+        if (!editor.features.nativeDocumentPersistence) throw new Error('Enable native Document support to open this file.');
+        // Preserve the canonical resource and paired Save binding. A native file
+        // must never be flattened into a legacy tree just to open it from here.
+        // childrenOf returns canonical placement keys, not projected node keys.
+        // Looking these up with editor.node misses an existing bank and creates
+        // a second owner, which native admission correctly rejects.
+        const state = editor.repository.readState();
+        const banks = editor.commands.childrenOf(root).filter(key => state.contents[state.placements[key].contentKey].viewType === 'workspace-object-bank-block');
+        if (banks.length > 1) throw new Error('Ambiguous workspace object bank.');
+        let createdBank: PlacementKey | undefined;
+        if (!banks.length) createdBank = editor.commands.insert({ id: crypto.randomUUID(), type: 'workspace-object-bank-block', children: [] }, { kind: 'at', parentKey: root, index: editor.commands.childrenOf(root).length });
+        try {
+          const native = nativeDocumentSession(editor);
+          const id = isNativeDocumentName(location.filename) ? await native.open(location, false, signal)
+            : await native.openCompatible(location, await native.defaultVault() ?? '.', signal);
+          signal.throwIfAborted();
+          const doc = documents().find(c => String((c.payload.metadata as any)?.documentId ?? c.payload.id) === id);
+          if (!doc) throw new Error('Opened Document is unavailable.');
+          return presentDocument(doc.key, id, location.filename);
+        } finally {
+          if (createdBank) {
+            const bank = editor.repository.state.placements[createdBank];
+            if (bank && !editor.repository.state.contents[bank.contentKey].children.length) editor.commands.remove(createdBank);
+          }
+        }
+      }
       const dto = await PersistenceService.loadDocument(location.filename, location.folder, signal);
       signal.throwIfAborted();
       if (isHistoryDocument(dto)) throw new Error("History-enrolled Documents must be opened separately in the Sample document demo.");
@@ -108,7 +184,7 @@ export function workspaceOpen(session: WorkspaceSession) {
       const id = documentIdentity(dto) ?? crypto.randomUUID();
       const hash = await workspaceContentHash(dto); signal.throwIfAborted();
       // Check again after loading: another action may have opened this identity.
-      const current = matching(location, id); if (current) return reveal(current.key);
+      const current = matching(location, id); if (current) return presentDocument(current.key, id, location.filename);
       const document = structuredClone(dto);
       document.metadata = { ...(document.metadata as object), documentId: id, ...location };
       const placement = insert(document, location.filename);

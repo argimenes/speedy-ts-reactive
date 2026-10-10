@@ -1,4 +1,5 @@
 import { assertLegacySaveAllowed, disposeNativeSession } from "../persistence/native-bindings";
+import { isDocumentName } from "../persistence/document-file-names.mjs";
 import { createStore } from "solid-js/store";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
 import { decodeDocument, decodeWorkspace } from "../block-tree/codecs";
@@ -338,7 +339,7 @@ export class PersistenceService {
   static async listDocuments(folder = ".", signal?: AbortSignal): Promise<string[]> {
     const json = await responseJson(await fetch(`/api/listDocuments?${new URLSearchParams({ folder })}`, { signal }), true);
     if (!Array.isArray(json.files) || !json.files.every((item: unknown) => typeof item === "string")) throw new Error("Invalid document listing.");
-    return json.files.filter((name: string) => /\.json$/i.test(name));
+    return json.files.filter(isDocumentName);
   }
 
   static async listWorkspaces(signal?: AbortSignal): Promise<string[]> {

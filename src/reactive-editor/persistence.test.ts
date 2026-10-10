@@ -38,8 +38,8 @@ describe("document persistence", () => {
     editor.dispose();
   });
   it("escapes nested paths and filenames and validates listing/load responses", async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(response({ files: ["A & B.json", "ignore.txt"] })).mockResolvedValueOnce(response({ Success: true, Data: { document: { type: "main-list-block", children: [] } } })).mockResolvedValueOnce(response({ Success: true, Data: { document: [1] } })); vi.stubGlobal("fetch", fetch);
-    expect(await PersistenceService.listDocuments("A/B & C")).toEqual(["A & B.json"]);
+    const fetch = vi.fn().mockResolvedValueOnce(response({ files: ["A & B.json", "Notes.JSON", "Native.mutable.json", "Screen.ink", "Screen.ink.md", "ignore.txt"] })).mockResolvedValueOnce(response({ Success: true, Data: { document: { type: "main-list-block", children: [] } } })).mockResolvedValueOnce(response({ Success: true, Data: { document: [1] } })); vi.stubGlobal("fetch", fetch);
+    expect(await PersistenceService.listDocuments("A/B & C")).toEqual(["A & B.json", "Notes.JSON", "Native.mutable.json", "Screen.ink"]);
     expect(fetch.mock.calls[0][0]).toContain("folder=A%2FB+%26+C");
     expect((await PersistenceService.loadDocument("A & B.json", "A/B & C")).type).toBe("main-list-block");
     expect(fetch.mock.calls[1][0]).toContain("filename=A+%26+B.json");

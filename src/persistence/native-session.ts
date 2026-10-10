@@ -168,18 +168,20 @@ export class NativeDocumentSession {
     const banks=root.children.map(k=>state.contents[state.placements[k].contentKey]).filter(c=>c.viewType==='workspace-object-bank-block');
     if(banks.length!==1)throw new Error('Native Open requires one existing workspace object bank');return banks[0].key;
   }
-  async open(location: DocumentLocation, importText = false) {
-    this.opening++;this.notifyKnowledge();try{return await this.openResource(location,importText);}finally{this.opening--;this.notifyKnowledge();}
+  async open(location: DocumentLocation, importText = false, signal?: AbortSignal) {
+    signal?.throwIfAborted();
+    this.opening++;this.notifyKnowledge();try{return await this.openResource(location,importText,undefined,signal);}finally{this.opening--;this.notifyKnowledge();}
   }
-  async openCompatible(location:DocumentLocation,vault:string) {
+  async openCompatible(location:DocumentLocation,vault:string,signal?:AbortSignal) {
+    signal?.throwIfAborted();
     this.opening++;this.notifyKnowledge();
     try {
-      const data=await request('recognize',{location});if(this.disposed)throw Error('Document session closed');
+      const data=await request('recognize',{location},signal);signal?.throwIfAborted();if(this.disposed)throw Error('Document session closed');
       const bytes=new TextEncoder().encode(data.text),recognized=recognizeCompatibleDocument(bytes),id=recognized.resource.resourceId;
       if(id!==data.resourceId)throw Error('Recognition identity changed');
       const digest=await crypto.subtle.digest('SHA-256',bytes);
       if([...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('')!==data.byteHash)throw Error('Recognition bytes changed');
-      if(this.disposed)throw Error('Document session closed');
+      signal?.throwIfAborted();if(this.disposed)throw Error('Document session closed');
       const old=this.compatibleSources.get(id);
       if(this.bindings.has(id)||old&&!sameLocation(old.location,location))throw Error('Identity already opened from another source; no automatic rebinding');
       if(old&&old.byteHash!==data.byteHash)throw Error('Source changed since Open; live edits were preserved');
@@ -205,9 +207,9 @@ export class NativeDocumentSession {
     const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data.native));
     if([...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('')!==expected.byteHash)throw Error('Selected native bytes changed');
   }
-  private async openResource(location: DocumentLocation, importText: boolean, expected?:{resourceId:string;byteHash:string;check:()=>void;signal?:AbortSignal;verify?:()=>Promise<void>;completed:()=>void}) {
+  private async openResource(location: DocumentLocation, importText: boolean, expected?:{resourceId:string;byteHash:string;check:()=>void;signal?:AbortSignal;verify?:()=>Promise<void>;completed:()=>void}, signal = expected?.signal) {
     if(isDerivedMarkdownName(location.filename))throw new Error('Open the .ink Document; .ink.md is a derived projection');
-    const data = await request('open',{location},expected?.signal); if(expected){expected.check();await this.checkSelected(data,expected);expected.check();await expected.verify?.();expected.check();} if(this.disposed)throw new Error('Document session closed');
+    const data = await request('open',{location},signal); signal?.throwIfAborted(); if(expected){expected.check();await this.checkSelected(data,expected);expected.check();await expected.verify?.();expected.check();} if(this.disposed)throw new Error('Document session closed');
     if(data.kind === 'markdown') {
       if(!importText)throw new Error('Choose Import Markdown to create a new native candidate');
       const admitted=admitMarkdown(this.editor.repository,this.bank(),data.text,this.targets()); markNativeBinding(this.editor.repository,admitted.resourceId);this.candidates.add(admitted.resourceId);

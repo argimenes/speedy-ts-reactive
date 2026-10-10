@@ -670,6 +670,9 @@ export function WindowView(props: BlockViewProps) {
         <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
           <span>{title()}</span>
           <span class="reactive-window__controls">
+            <Show when={isDocument() && editor.commandRegistry.canExecute('document.save', { targetKey: props.nodeKey, args: undefined })}>
+              <button type="button" aria-label="Save Document" onPointerDown={e => e.stopPropagation()} onClick={() => void editor.commandRegistry.execute('document.save', { targetKey: props.nodeKey, args: undefined })}>Save</button>
+            </Show>
             <Dynamic component={presentation.control()} />
             <Show when={!geometry?.static}>
             <Show when={!geometry && editor.features.windowMaximize}><button type="button" aria-label={maximized()?"Restore window":"Maximize window"} onPointerDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>commitMetadata({state:maximized()?"normal":"maximized"},maximized()?"Restore Window":"Maximize Window")}>{maximized()?"❐":"□"}</button></Show>

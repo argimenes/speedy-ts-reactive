@@ -1,3 +1,4 @@
+import { isDocumentName } from "../persistence/document-file-names.mjs";
 import { clone } from "../block-tree/clone";
 import { decodeBlockTree, encodeDocument, encodeWorkspace } from "../block-tree/codecs";
 import { validateRepository } from "../block-tree/repository";
@@ -89,8 +90,8 @@ export function validateDocumentSource(value: unknown): WorkspaceDocumentSource 
   if (folder.includes("\\") || folder.includes("\0") || folder.startsWith("/") || folder.split("/").includes("..")) {
     throw new WorkspaceManifestError("A Workspace Document folder must stay inside the Document store.");
   }
-  if (/[\\/\0]/.test(filename) || filename.startsWith(".") || !/\.json$/i.test(filename)) {
-    throw new WorkspaceManifestError("A Workspace Document filename must be a JSON filename without path separators.");
+  if (/[\\/\0]/.test(filename) || filename.startsWith(".") || !isDocumentName(filename)) {
+    throw new WorkspaceManifestError("A Workspace Document filename must end in .json or .ink without path separators.");
   }
   return { kind: "document-store", folder, filename };
 }

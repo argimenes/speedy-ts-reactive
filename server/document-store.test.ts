@@ -48,6 +48,17 @@ describe("document store HTTP routes", () => {
     expect(loaded.Data.document).toEqual({ ...document, metadata: { filename: "New document.json" } });
     expect((await fs.readdir(path.join(root, "archive", "nested"))).some((name) => name.endsWith(".tmp"))).toBe(false);
   });
+  it("lists all JSON names alongside Ink without inspecting content or requiring native suffixes", async () => {
+    const names = ['Chapter.json', 'NOTES.JSON', 'Native.mutable.json', 'Screen.ink', 'Unknown.json', 'Broken.json'];
+    for (const name of names) await fs.writeFile(path.join(root, name), name === 'Broken.json' ? '{' : name === 'Unknown.json' ? '{}' : JSON.stringify(document));
+    await fs.writeFile(path.join(root, 'Screen.ink.md'), 'Derived projection');
+    await fs.mkdir(path.join(root, 'folder.json'));
+    const listing = await (await fetch(`${base}/listDocuments?folder=.`)).json();
+    expect(listing.files.sort()).toEqual(names.sort());
+    const opened = await (await fetch(`${base}/loadDocumentJson?folder=.&filename=Chapter.json`)).json();
+    expect(opened.Success).toBe(true);
+    expect(opened.Data.document.id).toBe(document.id);
+  });
   it("does not overwrite existing files during conditional creation, including racing saves", async () => {
     const responses = await Promise.all([save("Copy.json", document, { "If-None-Match": "*" }), save("Copy.json", document, { "If-None-Match": "*" })]);
     expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);

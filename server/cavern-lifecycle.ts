@@ -13,6 +13,7 @@ import { createNativeDocumentStoreRouter } from './native-document-store.mjs';
 import { createDocumentStoreRouter } from './document-store.js';
 import { createWorkspaceStoreRouter } from './workspace-store.js';
 import { featureFlags } from '../src/configuration.js';
+import { normalizePolicy } from '../src/knowledge/policy.js';
 
 type Cavern = { path: string; name: string; cavernGuid: string; session: string };
 type Preferences = { lastCavernPath?: string; recentCaverns: Array<Omit<Cavern, 'session'>> };
@@ -85,10 +86,31 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
     // Workspace files are ordinary files within this same Cavern.
     api.use(createWorkspaceStoreRouter({ documentRoot: root, workspaceRoot: root, coordinate }));
     let indexLease: string | undefined;
+    let indexPolicy: ReturnType<typeof normalizePolicy> | undefined;
+    let indexWork: ReturnType<typeof sql.status> | undefined;
+    const indexStatus = () => {
+      if (indexWork) return indexWork;
+      // Browser polling stops while closed/asleep. The host deliberately expires
+      // idle leases; retain the policy and reacquire instead of blocking startup.
+      const read = async () => {
+        if (indexLease) {
+          try { return await sql.status(indexLease); }
+          catch (error) {
+            if (!(error instanceof Error) || error.message !== 'SQLite lease expired') throw error;
+            indexLease = undefined;
+          }
+        }
+        indexLease = (await sql.acquire('.', indexPolicy!)).lease;
+        return sql.status(indexLease);
+      };
+      // Startup and status requests can overlap; only one replacement lease is needed.
+      indexWork = read().finally(() => { indexWork = undefined; });
+      return indexWork;
+    };
     return { api, sql,
-      async index(policy: any) { if (!indexLease) indexLease = (await sql.acquire('.', policy)).lease; return sql.status(indexLease); },
-      async status() { return indexLease ? sql.status(indexLease) : undefined; },
-      async close() { await sql.close(); await history.dispose(); },
+      async index(policy: any) { indexPolicy ??= normalizePolicy(policy); return indexStatus(); },
+      async status() { return indexPolicy ? indexStatus() : undefined; },
+      async close() { await indexWork?.catch(() => {}); await sql.close(); await history.dispose(); },
     };
   }
   const establish = async (input: unknown, intent: unknown, confirmed = false) => {

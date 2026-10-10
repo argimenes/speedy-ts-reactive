@@ -44,6 +44,18 @@ function mockStore() {
 function mountWorkspace() {
   const host = document.body.appendChild(document.createElement("div")); disposers.push(render(() => <WorkspaceDemo configuration={{ features: { codexSystemBar: false } }} />, host)); return host;
 }
+it('offers ordinary JSON and native Documents in the same folder with their exact filenames', async () => {
+  const names = ['Chapter.json', 'NOTES.JSON', 'Native.mutable.json', 'Screen.ink'];
+  vi.stubGlobal('fetch', vi.fn(async (address: string) => response(address.includes('listFolders') ? { folders: [] } : { files: [...names, 'Screen.ink.md'] })));
+  const choose = vi.fn(async () => true);
+  disposers.push(render(() => <DocumentBrowser mode="open" initialLocation={{ folder: 'documents/diary', filename: '' }} onChoose={choose} onClose={() => {}} />, document.body));
+  await vi.waitFor(() => expect(document.querySelectorAll('[role="option"]')).toHaveLength(4));
+  for (const filename of names) {
+    click(button(`▤${filename}`, dialog()));
+    click(button('Open', dialog()));
+    expect(choose).toHaveBeenLastCalledWith({ folder: 'documents/diary', filename }, false);
+  }
+});
 async function browseNotes(host: HTMLElement) {
   click(button("Open…", host));
   await vi.waitFor(() => expect(document.querySelector('[data-folder="archive"]')).not.toBeNull());

@@ -4,13 +4,21 @@ import { WorkspaceSession } from "./workspace-session";
 import { createInitialWorkspace } from "./initial-workspace";
 import { workspaceOpen } from "./workspace-open";
 import { materializeLocalWorkspace, createWorkspaceSaveBundle, workspaceContentHash } from "../reactive-editor/workspace-manifest";
+import fs from 'node:fs/promises';
+import { nativeDocumentSession } from '../persistence/native-session';
+import { decodeNative, captureNative, nativeText } from '../persistence/native-resource';
+import { createFlintDocumentTabs } from '../features/flint/document-tabs';
+import { render } from 'solid-js/web';
+import { ReactiveTreeView } from '../rendering/reactive-tree-view';
+import { createWorkspaceOpenControls } from '../demo/workspace-open-controls';
 
 const sessions: WorkspaceSession[] = [];
-afterEach(() => { sessions.splice(0).forEach(s => s.dispose()); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+const views: Array<() => void> = [];
+afterEach(() => { views.splice(0).forEach(dispose => dispose()); sessions.splice(0).forEach(s => s.dispose()); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const dto = { id: 'doc', type: 'main-list-block', future: { retained: true }, children: [{ id: 'text', type: 'plain-text-block', text: 'Server document' }] };
 const location = { folder: '.', filename: 'Notes.json' };
 function setup(canvas = false) {
-  const session = new WorkspaceSession(materializeLocalWorkspace(createInitialWorkspace()), { features: { canvasWorkspace: true } });
+  const session = new WorkspaceSession(materializeLocalWorkspace(createInitialWorkspace()), { features: { canvasWorkspace: true, spatialWorkspace: true, threeDObjects: false } });
   sessions.push(session); if (canvas) session.selectPresentation('canvas');
   return { session, editor: session.editor, actions: workspaceOpen(session), signal: new AbortController().signal };
 }
@@ -19,6 +27,103 @@ function server(value = dto) {
   vi.stubGlobal('fetch', fetch); return fetch;
 }
 describe('open workspace content', () => {
+  it.each([
+    ['Notes.ink', false, 'desktop'], ['Notes.mutable.json', false, 'desktop'],
+    ['Notes.ink', true, 'canvas'], ['Notes.mutable.json', true, 'spatial'],
+  ] as const)('opens %s in a DocumentWindow (existing bank=%s, presentation=%s)', async (filename, existingBank, presentation) => {
+    const native = await fs.readFile('artifacts/flint-b1.2/rich.mutable.json', 'utf8');
+    const resource = decodeNative(new TextEncoder().encode(native)), location = { folder: '.', filename };
+    let saved: any;
+    const fetch = vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/save')) {
+        saved = JSON.parse(options!.body as string);
+        return new Response(JSON.stringify({ Success: true, Data: { result: { phase: 'saved', generation: saved.generation.generation }, baseline: { nativeHash: 'new', markdownHash: 'projection', generation: saved.generation.generation } } }));
+      }
+      return new Response(JSON.stringify({ Success: true, Data: { kind: 'native', resourceId: resource.resourceId, native, baseline: { nativeHash: 'saved', markdownHash: null, generation: null } } }));
+    });
+    vi.stubGlobal('fetch', fetch);
+    const { editor, actions, signal } = setup();
+    const session = sessions.at(-1)!;
+    session.selectPresentation(presentation);
+    if (existingBank) editor.commands.insert({ id: 'existing-bank', type: 'workspace-object-bank-block', children: [] }, {
+      kind: 'at', parentKey: editor.repository.state.rootPlacementKey, index: 0,
+    });
+    const placement = await actions.serverDocument(location, signal);
+    expect(fetch.mock.calls[0][0]).toBe('/api/native/open');
+    expect(nativeDocumentSession(editor).location(resource.resourceId)).toEqual(location);
+    expect(nativeText(captureNative(editor.repository.snapshot(), resource.resourceId))).toBe(nativeText(resource));
+    const host = editor.repository.state.contents[editor.repository.state.placements[placement].contentKey];
+    expect(host.viewType).toBe('document-window-block');
+    expect(session.presentation.active()).toBe(presentation);
+    if (presentation === 'canvas') expect(session.canvasRoots()).toHaveLength(1);
+    if (presentation === 'spatial') expect(session.spatial!.objects().some(o => o.kind === 'document')).toBe(true);
+    const text = Object.values(editor.repository.state.contents).find(c => c.inlineKind === 'standoff')!;
+    const owner = Object.values(editor.repository.state.placements).find(p => p.contentKey === text.key)!;
+    editor.commands.replaceInlineRange(owner.key, 0, text.inlineContent.length, 'Unsaved edit');
+    expect(await actions.serverDocument(location, signal)).toBe(placement);
+    expect(editor.repository.state.contents[text.key].inlineContent.map(key => editor.repository.state.contents[editor.repository.state.placements[key].contentKey].payload.text).join('')).toBe('Unsaved edit');
+    const windowKey = session.projection.nodeForPlacement(placement)!.key;
+    expect(actions.canSaveDocument(windowKey)).toBe(true);
+    if (presentation === 'desktop' && filename === 'Notes.ink') {
+      const Host = () => {
+        const controls = createWorkspaceOpenControls(session, () => true);
+        return <><ReactiveTreeView editor={editor} projection={session.projection} /><controls.Dialogs /></>;
+      };
+      views.push(render(() => <Host />, document.body));
+      expect(document.querySelector('.reactive-window--document textarea, .reactive-window--document [contenteditable="true"]')).not.toBeNull();
+      const button = document.querySelector<HTMLButtonElement>('[aria-label="Save Document"]')!;
+      expect(button).not.toBeNull(); button.click();
+      await vi.waitFor(() => expect(document.body.textContent).toContain('Saved native Document'));
+    } else expect(await actions.saveDocument(windowKey)).toContain('Saved native Document');
+    expect(saved.location).toEqual(location);
+    expect(saved.generation.resourceId).toBe(resource.resourceId);
+    expect(saved.generation.native).toContain('Unsaved edit');
+    expect(Object.values(editor.repository.state.contents).filter(c => c.viewType === 'flint-application-block')).toHaveLength(0);
+    expect(Object.values(editor.repository.state.contents).filter(c => c.viewType === 'workspace-object-bank-block')).toHaveLength(1);
+    expect(() => editor.encodeWorkspace()).toThrow('native Documents');
+    editor.commands.remove(placement);
+    expect(nativeText(captureNative(editor.repository.snapshot(), resource.resourceId))).toContain('Unsaved edit');
+    const reopened = await actions.serverDocument(location, signal);
+    expect(reopened).not.toBe(placement);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it('uses an already-open Flint window and selects its existing tab without duplicating documents', async () => {
+    const native = await fs.readFile('artifacts/flint-b1.2/rich.mutable.json', 'utf8');
+    const resource = decodeNative(new TextEncoder().encode(native));
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ Success: true, Data: { kind: 'native', resourceId: resource.resourceId, native, baseline: { nativeHash: 'saved', markdownHash: null, generation: null } } }))));
+    const { editor, session, actions, signal } = setup();
+    const host = editor.commands.insert({ id: 'flint-window', type: 'window-block', children: [createFlintDocumentTabs([])] }, { kind: 'at', parentKey: session.projection.state.rootKey, index: 0 });
+    const location = { folder: '.', filename: 'Notes.ink' };
+    expect(await actions.serverDocument(location, signal)).toBe(host);
+    expect(await actions.serverDocument(location, signal)).toBe(host);
+    const tabs = Object.values(session.projection.state.nodes).filter(n => n.viewType === 'tab-block');
+    expect(tabs).toHaveLength(1);
+    const row = Object.values(session.projection.state.nodes).find(n => n.viewType === 'tab-row-block')!;
+    expect(editor.viewChildren[row.key]).toBe(tabs[0].key);
+    expect(Object.values(editor.repository.state.contents).filter(c => c.viewType === 'document-window-block')).toHaveLength(0);
+  });
+  it('opens ordinary JSON in existing Flint with its original codec and source binding', async () => {
+    const text = JSON.stringify(dto), bytes = new TextEncoder().encode(text);
+    const byteHash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join('');
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(JSON.stringify({ Success: true, Data: url.endsWith('vault/default') ? { vault: '.' } : { text, resourceId: 'doc', byteHash, saveCapability: 'in-place' } }))));
+    const { editor, session, actions, signal } = setup();
+    const host = editor.commands.insert({ id: 'flint-window', type: 'window-block', children: [createFlintDocumentTabs([])] }, { kind: 'at', parentKey: session.projection.state.rootKey, index: 0 });
+    expect(await actions.serverDocument(location, signal)).toBe(host);
+    expect(nativeDocumentSession(editor).compatibleSource('doc')).toMatchObject({ location, format: 'legacy-block-tree', canSave: true });
+    expect(await actions.serverDocument(location, signal)).toBe(host);
+    expect(Object.values(editor.repository.state.contents).filter(c => c.viewType === 'document-block')).toHaveLength(1);
+  });
+  it('does not admit a late native response after the picker is cancelled', async () => {
+    const native = await fs.readFile('artifacts/flint-b1.2/rich.mutable.json', 'utf8');
+    let respond!: (response: Response) => void;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { respond = resolve; })));
+    const { editor, actions } = setup(), controller = new AbortController();
+    const pending = actions.serverDocument({ folder: '.', filename: 'Notes.ink' }, controller.signal);
+    controller.abort();
+    respond(new Response(JSON.stringify({ Success: true, Data: { kind: 'native', native } })));
+    await expect(pending).rejects.toThrow();
+    expect(Object.values(editor.repository.state.contents).some(c => c.viewType === 'document-block' || c.viewType === 'workspace-object-bank-block')).toBe(false);
+  });
   it.each([false, true])('opens a server Document into the existing empty session (Canvas=%s)', async canvas => {
     const fetch = server(), { session, editor, actions, signal } = setup(canvas);
     const projection = session.projection, placement = await actions.serverDocument(location, signal);

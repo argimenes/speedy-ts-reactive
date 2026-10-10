@@ -1,4 +1,6 @@
 /** Presentation suffixes share the native Document codec; workspaces stay distinct. */
+// Browsing admits every JSON filename. Content validation belongs to Open.
+export const isDocumentName = name => typeof name === 'string' && (/\.json$/i.test(name) || isNativeDocumentName(name));
 export const isNativeDocumentName = name => typeof name === 'string' && (name.endsWith('.ink') || name.endsWith('.mutable.json'));
 export const isDerivedMarkdownName = name => typeof name === 'string' && name.endsWith('.ink.md');
 export const isWorkspaceName = name => typeof name === 'string' && /\.(desktop|canvas|world)$/.test(name);

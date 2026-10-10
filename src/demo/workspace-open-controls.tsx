@@ -13,6 +13,7 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
   const actions = workspaceOpen(session);
   const [dialog, setDialog] = createSignal<"document" | "image">();
   const [busy, setBusy] = createSignal(false), [error, setError] = createSignal("");
+  const [saveNotice, setSaveNotice] = createSignal('');
   const [url, setUrl] = createSignal("");
   const lifetime = new AbortController();
   onCleanup(() => lifetime.abort());
@@ -46,8 +47,20 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
   };
   const close = () => { if (!busy()) { setDialog(undefined); setError(""); } };
   onCleanup(session.editor.commandRegistry.register({ id: "document.open", label: "Open server Document", canExecute: enabled, execute: () => open("document") }, "workspace-open"));
+  const save = async (key: string) => {
+    if (busy()) return;
+    setBusy(true); setError(''); setSaveNotice('');
+    try { const message = await actions.saveDocument(key); if (!lifetime.signal.aborted) setSaveNotice(message); }
+    catch (error) { if (!lifetime.signal.aborted) setError(error instanceof Error ? error.message : String(error)); }
+    finally { if (!lifetime.signal.aborted) setBusy(false); }
+  };
+  onCleanup(session.editor.commandRegistry.register({ id: 'document.save', label: 'Save Document', canExecute: context => !busy() && actions.canSaveDocument(context.targetKey), execute: context => save(context.targetKey) }, 'workspace-open'));
   onMount(() => {
     const keydown = (event: KeyboardEvent) => {
+      const focused = session.editor.focus.state.focusedKey;
+      if (!event.isComposing && !event.altKey && !event.shiftKey && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && focused && actions.canSaveDocument(focused)) {
+        event.preventDefault(); event.stopImmediatePropagation(); void save(focused); return;
+      }
       if (!event.isComposing && !event.altKey && !event.shiftKey && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o" && enabled()) {
         event.preventDefault(); open("document");
       }
@@ -93,6 +106,7 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
         </form>
       </DocumentDialog></Show>
       <Show when={!dialog() && error()}><aside class="workspace-demo__workspace-notice" role="alert">{error()}</aside></Show>
+      <Show when={!dialog() && saveNotice()}><aside class="workspace-demo__workspace-notice" role="status">{saveNotice()}</aside></Show>
     </>,
   };
 }
