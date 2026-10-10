@@ -11,6 +11,7 @@ import { relief, slab, GLASS_DEPTH, PANEL_BASE, PANEL_FACE } from "./geometry";
 import { createPhysicalControls } from "./physical-controls";
 import { createNixieEmblem, type NixieRegion } from "./nixie";
 import { createStudioDrift, PHOSPHOR_STUDIO_LIGHT } from "./studio-drift";
+import { createPhosphorScreenHousing } from "./screen-housing";
 
 const presentations = new WeakMap<
   HTMLElement,
@@ -183,16 +184,38 @@ export function createPhosphorMaterial(
     envMapIntensity: 0.48,
   });
   const innerMetal = metal.clone();
-  innerMetal.color.set(0x36342f);
-  innerMetal.roughness = 0.5;
+  innerMetal.color.set(0x3b3934);
+  innerMetal.metalness = 0.72;
+  innerMetal.roughness = 0.42;
+  innerMetal.bumpScale = 0.06;
+  innerMetal.anisotropy = 0.55;
+  innerMetal.clearcoat = 0.08;
+  innerMetal.envMapIntensity = 0.7;
   innerMetal.clippingPlanes = glassClip;
+  innerMetal.clipShadows = true;
   const edge = metal.clone();
   edge.color.set(0x686156);
   edge.roughness = 0.32;
   edge.envMapIntensity = 0.65;
   edge.bumpScale = 0.045;
   const innerEdge = edge.clone();
+  innerEdge.color.set(0x494036);
+  innerEdge.roughness = 0.19;
+  innerEdge.bumpScale = 0.025;
+  innerEdge.clearcoat = 0.35;
+  innerEdge.clearcoatRoughness = 0.12;
   innerEdge.clippingPlanes = glassClip;
+  innerEdge.clipShadows = true;
+  const channel = innerMetal.clone();
+  channel.color.set(0x030405);
+  channel.metalness = 0.1;
+  channel.roughness = 0.9;
+  channel.roughnessMap = channel.bumpMap = null;
+  channel.anisotropy = channel.clearcoat = 0;
+  channel.envMapIntensity = 0.06;
+  const housing = createPhosphorScreenHousing({
+    shoulder: innerMetal, channel, lip: innerEdge,
+  });
   const glass = new T.MeshPhysicalMaterial({
     color: 0x080a0d,
     metalness: 0,
@@ -219,7 +242,10 @@ export function createPhosphorMaterial(
     screenEdge = glassEdge.clone();
   screenGlass.color.set(0x030406);
   screenGlass.envMapIntensity = 0.08;
-  screenGlass.clearcoat = 0.12;
+  screenGlass.specularIntensity = 0.28;
+  screenGlass.roughness = 0.32;
+  screenGlass.clearcoat = 0.06;
+  screenEdge.envMapIntensity = 0.22;
   screenGlass.clippingPlanes = screenEdge.clippingPlanes = glassClip;
   screenGlass.clipShadows = screenEdge.clipShadows = true;
   // A shadow receiver on the flat glass face preserves shallow contact under
@@ -258,10 +284,9 @@ export function createPhosphorMaterial(
     })),
   ];
   const frames = targets.map((t) => {
-    const mesh = new T.Mesh(new T.BufferGeometry(), [
-      t.material,
-      t.material === innerMetal ? innerEdge : edge,
-    ]);
+    const mesh = t.element === elements.display
+      ? housing.group
+      : new T.Mesh(new T.BufferGeometry(), [t.material, edge]);
     mesh.castShadow = mesh.receiveShadow = true;
     mesh.userData.phosphorElement = t.element;
     scene.scene.add(mesh);
@@ -306,7 +331,7 @@ export function createPhosphorMaterial(
     const zoom = Number(root.style.getPropertyValue("--screen-zoom")) || 1;
     targets.forEach((target, i) => {
       const r = target.element.getBoundingClientRect(),
-        inset = i === 0 ? 3 : i === 1 ? -10 * zoom : -3.5,
+        inset = i === 0 ? 3 : i === 1 ? 0 : -3.5,
         w = r.width / sx - inset * 2,
         h = r.height / sy - inset * 2,
         frame = frames[i],
@@ -316,14 +341,15 @@ export function createPhosphorMaterial(
       if (frame.contact) frame.contact.visible = frame.mesh.visible;
       if (!frame.mesh.visible) return;
       if (frame.width !== w || frame.height !== h || frame.scale !== scale) {
-        frame.mesh.geometry.dispose();
-        frame.mesh.geometry = relief(
-          w,
-          h,
-          target.depth * scale,
-          target.radius * scale,
-          target.lip * scale,
-        );
+        if (frame.mesh instanceof T.Mesh) {
+          frame.mesh.geometry.dispose();
+          frame.mesh.geometry = relief(
+            w, h, target.depth * scale, target.radius * scale, target.lip * scale,
+          );
+        } else {
+          housing.setSize(w / scale, h / scale);
+          housing.group.scale.setScalar(scale);
+        }
         if (frame.glassBody) {
           frame.glassBody.geometry.dispose();
           frame.glassBody.geometry = slab(
@@ -347,7 +373,7 @@ export function createPhosphorMaterial(
       frame.mesh.position.set(
         (r.left - b.left) / sx + inset + w / 2,
         -((r.top - b.top) / sy + inset + h / 2),
-        target.z * scale,
+        (i === 1 ? PANEL_FACE + housing.depth * 0.6 + 0.2 : target.z) * scale,
       );
       if (frame.glassBody) {
         frame.glassBody.position.copy(frame.mesh.position);
@@ -495,7 +521,7 @@ export function createPhosphorMaterial(
       root.removeEventListener("scroll", layout, true);
       frames.forEach(({ mesh, glassBody, contact }) => {
         scene.scene.remove(mesh);
-        mesh.geometry.dispose();
+        if (mesh instanceof T.Mesh) mesh.geometry.dispose();
         if (glassBody) {
           scene.scene.remove(glassBody);
           glassBody.geometry.dispose();
@@ -505,6 +531,8 @@ export function createPhosphorMaterial(
           contact.geometry.dispose();
         }
       });
+      housing.dispose();
+      channel.dispose();
       metal.dispose();
       innerMetal.dispose();
       edge.dispose();

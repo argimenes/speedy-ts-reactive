@@ -39,6 +39,7 @@ import {
 import { GLYPH_ENCODING, glyphInfo, glyphLabel } from "./glyphs";
 import { normaliseLight, type Light } from "../flint/material-response";
 import { PHOSPHOR_STUDIO_LIGHT } from "./studio-drift";
+import { screenHousingOutset } from "./screen-housing-metrics";
 import "./phosphor.css";
 import "./material.css";
 
@@ -180,6 +181,9 @@ export function PhosphorView(props: {
   const cursorCell = createMemo(() => cellAt(data(), head()));
   const columns = createMemo(() => data().settings.columns);
   const screenRows = createMemo(() => data().settings.rows);
+  const apertureWidth = () => columns() * (columns() === 80 ? 7 : 14) + 54;
+  const apertureHeight = () => screenRows() * 16 + 54;
+  const housingOutset = () => screenHousingOutset(apertureWidth(), apertureHeight());
   const cellWidth = () => (columns() === 80 ? 7 : 14) * zoom();
   const [firstRow, setFirstRow] = createSignal(0);
   const visibleRows = createMemo(() => {
@@ -767,9 +771,8 @@ export function PhosphorView(props: {
     // manual zoom remains a viewing preference, never a Screen setting.
     const quantum = (columns() === 80 ? 2 : 1) / (window.devicePixelRatio || 1),
       fit = Math.min(
-        displayBay.clientWidth /
-          (columns() * (columns() === 80 ? 7 : 14) + 54 + 28),
-        displayBay.clientHeight / (screenRows() * 16 + 54 + 28),
+        displayBay.clientWidth / (apertureWidth() + 2 * (housingOutset() + 8)),
+        displayBay.clientHeight / (apertureHeight() + 2 * (housingOutset() + 8)),
       ),
       scale = (Math.floor((fit * 2) / quantum) * quantum) / 2;
     setZoom(Math.max(0.5, Math.min(3, scale)));
@@ -857,6 +860,7 @@ export function PhosphorView(props: {
         "--columns": columns(),
         "--screen-height": `${screenRows() * lineHeight()}px`,
         "--screen-zoom": zoom(),
+        "--screen-housing-outset": `${housingOutset() * zoom()}px`,
         "--ph-glyph-font":
           columns() === 80 ? '"Phosphor Apple 80"' : '"Phosphor Apple 40"',
       }}

@@ -154,7 +154,7 @@
   min-width: 100%;
   height: max-content;
   min-height: 100%;
-  padding: calc(14px * var(--screen-zoom));
+  padding: calc(var(--screen-housing-outset) + 8px * var(--screen-zoom));
 }
 .ph-display-aperture {
   position: relative;
@@ -175,11 +175,11 @@
 .ph-display-aperture::before {
   content: "";
   position: absolute;
-  inset: calc(-10px * var(--screen-zoom));
-  border: calc(10px * var(--screen-zoom)) solid #382815;
+  inset: calc(-1 * var(--screen-housing-outset));
+  border: var(--screen-housing-outset) solid #252627;
   border-top-color: #886536;
   border-left-color: #604425;
-  border-radius: calc(18px * var(--screen-zoom));
+  border-radius: var(--screen-housing-outset);
   pointer-events: none;
   box-shadow:
     -1px -1px 1px #f3c27a66,
