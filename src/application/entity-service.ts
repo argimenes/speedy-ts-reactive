@@ -6,7 +6,7 @@ import {nativeDocumentSession} from '../persistence/native-session';
 import {WorkSlice} from '../knowledge/scheduler';
 import {observeLive} from '../knowledge/live-observer';
 import {encodeAuthoredValue,decodeAuthoredValue} from '../history/preplan-spike/wire';
-type Context={accepts(key:string):boolean;vault():DocumentVaultLease;facts?:FactsQueryProvider};
+type Context={accepts(key:string):boolean;vault():DocumentVaultLease;facts?:FactsQueryProvider;prepare?():Promise<void>};
 const contexts=new WeakMap<ReactiveEditor,Set<Context>>();
 export function registerEntityContext(editor:ReactiveEditor,context:Context){let set=contexts.get(editor);if(!set)contexts.set(editor,set=new Set());set.add(context);return()=>set!.delete(context);}
 const fold=(s:string)=>s.normalize('NFKC').toLowerCase();
@@ -25,7 +25,17 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
  const context=matches.length===1?matches[0]:undefined;
  const root=editor.blockQueries.ancestorPath(owner).filter(n=>n.viewType==='document-block').at(-1);
  const id=String((root?.payload.metadata as any)?.documentId??root?.payload.id??'');
- const vault=context?.vault();
+ let vault=context?.prepare?undefined:context?.vault(),preparing:Promise<void>|undefined;
+ const ready=async(signal?:AbortSignal)=>{
+  signal?.throwIfAborted();
+  if(!alive)throw Error('Entity resolver closed');
+  if(!editor.features.sqliteEntities||!context?.accepts(owner))throw Error('Open this Document in one verified Mutable Vault to resolve Entities.');
+  if(context.prepare&&!vault){
+   preparing??=context.prepare().then(()=>{if(!alive||!context.accepts(owner))throw Error('Entity resolver closed or Document unavailable');vault=context.vault();}).finally(()=>preparing=undefined);
+   await preparing;
+  }
+  signal?.throwIfAborted();
+ };
  const check=()=>{
   if(!alive||!editor.features.sqliteEntities||!context||!vault||context.vault()!==vault||!context.accepts(owner)||!vault.isAlive())throw Error('Open this Document in one verified Mutable Vault to resolve Entities.');
   const b=editor.repository.readCanonicalResourceBoundary(id);if(b.status!=='ready')throw Error('Entity source is missing or ambiguous');
@@ -36,6 +46,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   return {resourceId:id,location:proof.location,byteHash:proof.byteHash};
  };
  const call=async(input:any,signal?:AbortSignal,onDispatch?:()=>void)=>{
+  await ready(signal);
   const source=check();signal?.throwIfAborted();
   if(!lease){opening??=request('open',{vault:vault!.root,policy:policy()}).then(async result=>{if(!alive){await request('release',{lease:result.lease});throw Error('Entity resolver closed');}lease=result.lease;}).finally(()=>opening=undefined);await opening;}
   check();signal?.throwIfAborted();onDispatch?.();
@@ -47,6 +58,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
  return {
   async get(id,signal){const result=await call({op:'get',id},signal);check();return result.entity;},
   async summaries(ids,signal){
+   await ready(signal);
    const revision=editor.repository.state.revision,signature=vault?.signature();
    const current=()=>{signal?.throwIfAborted();check();if(editor.repository.state.revision!==revision||vault!.signature()!==signature)throw Error('Entity summary source changed');};
    const result=await call({op:'resolve',ids},signal);current();
@@ -71,6 +83,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   async update(input,signal){return (await call({op:'update',...input},signal)).entity;},
   async alias(input){return (await call(input)).entity;},
   async search(query,signal){
+   await ready(signal);
    check();const revision=editor.repository.state.revision,signature=vault!.signature();
    const current=()=>{signal.throwIfAborted();check();if(editor.repository.state.revision!==revision||vault!.signature()!==signature)throw Error('Entity resolution evidence changed');};
    const local=await observeLive(editor.repository,id,policy(),{check:current}),diagnostics=[...local.facts.diagnostics];

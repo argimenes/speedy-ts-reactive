@@ -8,6 +8,7 @@ import { registerApplicationViews } from "./features";
 import { batch, createSignal } from "solid-js";
 import { deriveDesktop } from "./desktop-derivation";
 import { deriveCanvas } from "./canvas-derivation";
+import { registerWorkspaceEntities } from "./workspace-entities";
 
 export interface WorkspaceObjectResolution {
   object: WorkspaceObject;
@@ -48,6 +49,7 @@ export class WorkspaceSession {
     this.editor.persistence.attachWorkspacePresentation({ capture: () => { this.interaction?.finish(); return this.presentation.capture(); }, markSaved: snapshot => this.presentation.markSaved(snapshot) });
     registerApplicationViews(this.editor);
     this.projection = this.editor.createView("loaded-workspace");
+    this.cleanup.push(registerWorkspaceEntities(this.editor, this.projection.viewId));
     this.resolveObjects();
     if (this.editor.features.spatialWorkspace) { this.spatial = createSpatialActions(this); this.cleanup.push(this.spatial.dispose); }
     if (this.presentation.enabled) {

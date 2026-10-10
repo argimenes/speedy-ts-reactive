@@ -6,19 +6,25 @@ import {createNativeDocumentStoreRouter} from '../../server/native-document-stor
 import {ReactiveEditor} from '../reactive-editor/editor';import {nativeDocumentSession} from '../persistence/native-session';
 import {createDocumentVaults} from './document-vault';import {createNativeKnowledgeHost} from './native-knowledge-scope';import {FactsQueryProvider} from './facts-query-provider';import {DEFAULT_POLICY} from '../knowledge/policy';
 import {entityService,registerEntityContext} from './entity-service';
+import {WorkspaceSession} from './workspace-session';
+import {workspaceOpen} from './workspace-open';
+import {materializeLocalWorkspace} from '../reactive-editor/workspace-manifest';
 const cleanup:Array<()=>any>=[],realFetch=globalThis.fetch;
 afterEach(async()=>{for(const f of cleanup.splice(0).reverse())await f();vi.unstubAllGlobals();});
 function bytes(id:string,entity:string,text='the city') {return JSON.stringify({format:'mutable-document',version:1,valueEncoding:'codex-authored-value-v1',resourceId:id,definitionOwnerBlockIds:[],document:{format:'codex-portable-resource-gate',version:1,resourceId:id,root:{kind:'owned',placementId:id+'-root',target:{kind:'local',blockId:id+'-doc'}},blocks:[{id:id+'-doc',type:'document-block',properties:{metadata:{documentId:id}},children:[{kind:'owned',placementId:id+'-child',target:{kind:'local',blockId:id+'-text'}}]},{id:id+'-text',type:'standoff-editor-block',properties:{standoffProperties:[{id:id+'-mention',type:'codex/entity-reference',value:entity,start:0,end:[...text].length-1}]},children:[],inline:[{kind:'text',text}]}]}});}
-async function fixture(){
+async function fixture(standalone=false,savedKnowledge=true){
  vi.stubGlobal('crypto',webcrypto);const root=await fs.mkdtemp(path.join(os.tmpdir(),'p3d-service-'));cleanup.push(()=>fs.rm(root,{recursive:true,force:true}));await fs.mkdir(path.join(root,'vault'));const entityId=randomUUID();
  for(const id of ['a','b'])await fs.writeFile(path.join(root,`vault/${id}.mutable.json`),bytes(id,entityId,id==='a'?'the city':'Firenze'));
- const sql=new SqliteKnowledgeHost({root,debounceMs:60000});cleanup.push(()=>sql.close());const lease=await sql.acquire('vault');await sql.flush();
- const app=express();app.use('/api/sqlite/knowledge',sql.router());app.use('/api/native',createNativeDocumentStoreRouter({root,establishVault:v=>sql.establish(v),coordinate:(a:any)=>sql.foreground(a)}));const server:any=await new Promise(r=>{const s=app.listen(0,'127.0.0.1',()=>r(s));});cleanup.push(()=>new Promise(r=>server.close(r)));vi.stubGlobal('fetch',(url:any,o:any)=>realFetch(typeof url==='string'&&url.startsWith('/')?`http://127.0.0.1:${server.address().port}${url}`:url,o));
- const editor=new ReactiveEditor({id:'workspace',type:'workspace-block',children:[{id:'bank',type:'workspace-object-bank-block',children:[]}]}),native=nativeDocumentSession(editor),vaults=createDocumentVaults(native),factory=createNativeKnowledgeHost(editor.repository,native,{read:()=>DEFAULT_POLICY,subscribe:()=>()=>{}},{progressiveSaved:true,sqliteSaved:true,debounceMs:60000,yieldControl:async()=>{}});
- cleanup.push(async()=>{await factory.dispose();vaults.dispose();editor.dispose();});const vault=await vaults.acquire('vault');await native.open({folder:'vault',filename:'a.mutable.json'});const view=editor.createView('entity-source'),node=Object.values(view.state.nodes).find(n=>n.payload.id==='a-text')!;expect(node).toBeTruthy();const facts=new FactsQueryProvider(factory);facts.use(vault);cleanup.push(()=>facts.dispose());let selected=vault;
- cleanup.push(registerEntityContext(editor,{accepts:key=>key===node.key,vault:()=>selected,facts}));const service=entityService(editor,node.key);cleanup.push(()=>service.dispose());const settle=async()=>{await vault.refresh(true);await factory.host.flush();};await settle();
+ const workspace={id:'workspace',type:'workspace-block',children:[{id:'bank',type:'workspace-object-bank-block',children:[]}]};
+ const session=standalone?new WorkspaceSession(materializeLocalWorkspace(workspace),{features:{nativeKnowledgeSaved:savedKnowledge}}):undefined;
+ const policy=session?{version:1 as const,opaqueTypes:session.editor.registry.typesWithCapability('opaque-widget')}:DEFAULT_POLICY;
+ const sql=new SqliteKnowledgeHost({root,debounceMs:60000});cleanup.push(()=>sql.close());const lease=await sql.acquire('vault',policy);await sql.flush();
+ const app=express();app.use('/api/sqlite/knowledge',sql.router());app.use('/api/native',createNativeDocumentStoreRouter({root,defaultVault:'vault',establishVault:v=>sql.establish(v),coordinate:(a:any)=>sql.foreground(a)}));const server:any=await new Promise(r=>{const s=app.listen(0,'127.0.0.1',()=>r(s));});cleanup.push(()=>new Promise(r=>server.close(r)));vi.stubGlobal('fetch',(url:any,o:any)=>realFetch(typeof url==='string'&&url.startsWith('/')?`http://127.0.0.1:${server.address().port}${url}`:url,o));
+ const editor=session?.editor??new ReactiveEditor(workspace),native=nativeDocumentSession(editor),vaults=createDocumentVaults(native),factory=createNativeKnowledgeHost(editor.repository,native,{read:()=>policy,subscribe:()=>()=>{}},{progressiveSaved:true,sqliteSaved:true,debounceMs:60000,yieldControl:async()=>{}});
+ cleanup.push(async()=>{await factory.dispose();vaults.dispose();if(session)session.dispose();else editor.dispose();});const vault=await vaults.acquire('vault');if(session)await workspaceOpen(session).serverDocument({folder:'vault',filename:'a.mutable.json'},new AbortController().signal);else await native.open({folder:'vault',filename:'a.mutable.json'});const view=session?.projection??editor.createView('entity-source'),node=Object.values(view.state.nodes).find(n=>n.payload.id==='a-text'&&(!session||editor.blockQueries.ancestors(n.key).some(a=>a.viewType==='document-window-block')))!;expect(node).toBeTruthy();const facts=new FactsQueryProvider(factory);facts.use(vault);cleanup.push(()=>facts.dispose());let selected=vault;
+ if(!session)cleanup.push(registerEntityContext(editor,{accepts:key=>key===node.key,vault:()=>selected,facts}));const service=entityService(editor,node.key);cleanup.push(()=>service.dispose());const settle=async()=>{await vault.refresh(true);await factory.host.flush();};await settle();
  const query=(query:string,stream:'all'|'name'|'alias'|'mention'='all',scope:'document'|'vault'='vault',match:'exact'|'partial'='partial')=>service.search({query,stream,scope,match},new AbortController().signal);
- return {root,sql,lease,editor,native,vault,node,factory,service,query,settle,entityId,select:(v:any)=>selected=v};
+ return {root,sql,lease,session,editor,native,vault,node,factory,service,query,settle,entityId,select:(v:any)=>selected=v};
 }
 it('real HTTP/worker resolves canonical names, curated aliases and live/saved mentions as independent evidence',async()=>{
  const f=await fixture(),before=await fs.readFile(path.join(f.root,'vault/a.mutable.json'));await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});await f.settle();
@@ -69,4 +75,42 @@ it('identifies a missing source binding before creation dispatch without claimin
  const fetchSpy=vi.spyOn(globalThis,'fetch');
  await expect(f.service.create({id:randomUUID(),operationId:randomUUID(),name:'Mutable OS'})).rejects.toMatchObject({entityCreationOutcome:'not-created',message:expect.stringContaining('Save this Document')});
  expect(fetchSpy).not.toHaveBeenCalled();spy.mockRestore();fetchSpy.mockRestore();
+},30000);
+
+it('DocumentWindows resolve SQLite names and vault counts without Flint, and reject closed occurrences',async()=>{
+ const f=await fixture(true);
+ expect(Object.values(f.editor.repository.state.contents).some(c=>c.viewType==='flint-application-block')).toBe(false);
+ await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});
+ await f.settle();
+ // The real progressive provider can finish its initial saved/live refresh
+ // after the first query. A new listing query uses the same workspace host.
+ await expect.poll(async()=>{
+  const service=entityService(f.editor,f.node.key);
+  try{return await service.summaries([f.entityId]);}finally{service.dispose();}
+ },{timeout:10000}).toMatchObject({complete:true,rows:[{id:f.entityId,name:'Florence',mentions:2}]});
+ const aborted=new AbortController();aborted.abort();
+ await expect(f.service.summaries([f.entityId],aborted.signal)).rejects.toThrow();
+ const win=f.editor.blockQueries.ancestors(f.node.key).find(n=>n.viewType==='document-window-block')!;
+ f.editor.commands.remove(win.key);
+ await expect(f.service.get(f.entityId)).rejects.toThrow(/unavailable|Vault|closed/);
+ const service=entityService(f.editor,f.node.key);
+ f.session!.dispose();
+ await expect(service.get(f.entityId)).rejects.toThrow();service.dispose();
+},30000);
+
+it('DocumentWindows still resolve names when saved-vault counts are disabled, without claiming complete counts',async()=>{
+ const f=await fixture(true,false);
+ await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});
+ await f.settle();
+ const result=await f.service.summaries([f.entityId]);
+ expect(result.rows).toEqual([{id:f.entityId,name:'Florence'}]);
+ expect(result.complete).toBe(false);
+ expect(result.diagnostics.length).toBeGreaterThan(0);
+ // Another projection of the canonical bank is not a DocumentWindow and
+ // must not borrow the workspace's source authority.
+ const other=f.editor.createView('unrelated');
+ const owner=Object.values(other.state.nodes).find(n=>n.payload.id==='a-text'&&!f.editor.blockQueries.ancestors(n.key).some(a=>a.viewType==='document-window-block'))!;
+ const service=entityService(f.editor,owner.key);
+ await expect(service.get(f.entityId)).rejects.toThrow(/verified Mutable Vault/);
+ service.dispose();
 },30000);
