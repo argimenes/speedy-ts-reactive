@@ -54,7 +54,7 @@ export function EntityListWindow(props: { list: DocumentEntityList; panel: Panel
       <table aria-label="Document entities">
         <thead><tr>
           {heading("name", "Entity", "Sort by entity name")}
-          {heading("graph", "Vault", "Sort by qualified mentions across the vault")}
+          {heading("graph", "DB mentions", "Sort by saved, non-deleted entity-reference segments in the DB")}
           {heading("document", "Document", "Sort by logical entity mentions in this Document")}
         </tr></thead>
         <tbody>
@@ -69,10 +69,11 @@ export function EntityListWindow(props: { list: DocumentEntityList; panel: Panel
       </table>
       <Show when={!state.rows.length && !state.pending}><p class="document-entity-list__empty">No entity references in this Document.</p></Show>
       <p class="document-entity-list__status" role="status" aria-live="polite">
-        {state.pending ? "Loading canonical names and vault counts…" : state.error ? `Entity summaries incomplete: ${state.error}` : `${state.rows.length} entities · ${state.rows.reduce((sum, row) => sum + row.documentMentions, 0)} logical mentions`}
+        {state.pending ? "Loading entity names…" : state.error ? `Entity summaries incomplete: ${state.error}` : `${state.rows.length} entities · ${state.rows.reduce((sum, row) => sum + row.documentMentions, 0)} logical mentions`}
       </p>
+      <Show when={state.dbPending || state.dbError}><p role="status">{state.dbPending ? "Loading optional DB mentions…" : state.dbError}</p></Show>
       <Show when={state.concertinaEntityId}><div class="document-entity-list__navigation"><button type="button" onClick={() => list.navigateConcertina(-1)}>Previous occurrence</button><span>{state.concertinaIndex + 1} of {list.pageOccurrenceCount(state.concertinaEntityId!)}</span><button type="button" onClick={() => list.navigateConcertina(1)}>Next occurrence</button></div></Show>
-      <small>Vault counts use verified eligible live/saved references; — means unknown. Document counts are live. Hover or focus a row to preview visible references.</small>
+      <small>DB mentions count saved indexed annotation segments, excluding deleted references; unsaved edits are excluded. — means unavailable. Document counts are live logical mentions. Hover or focus a row to preview visible references.</small>
     </div>
     <FloatingWindowResizeHandle controller={windowResize} class="document-entity-list__resize" label="Resize Entity Listing window" />
   </section>;

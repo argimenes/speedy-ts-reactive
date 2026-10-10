@@ -1,5 +1,5 @@
 /** Vault worker lifetime, verified saved reads and source-scoped canonical Entity requests. */
-import { verifyDocumentSource } from './recognized-source.mjs';
+import { verifyDocumentSource, verifyEntityListingSource } from './recognized-source.mjs';
 import { RecognizedDocumentStore } from './recognized-document-store.mjs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -126,7 +126,9 @@ export class SqliteKnowledgeHost {
     if(this.options.entitiesEnabled===false)throw Error('Canonical Entity service is disabled');
     const e=this.entry(body.lease), source=body.source;
     if(!e.client||!source||typeof source.resourceId!=='string'||!source.location||typeof source.byteHash!=='string')throw Error('Verified native source context required');
-    await verifyDocumentSource(this.store,e.vault,source,signal);
+    const listing=body.request?.op==='names'||body.request?.op==='db-mentions';
+    if(listing)await verifyEntityListingSource(this.store,e.vault,source,signal);
+    else await verifyDocumentSource(this.store,e.vault,source,signal);
     if(await new RecognizedDocumentStore(this.store).pending(e.vault,source.resourceId))throw Error('Document Save recovery is pending');
     signal?.throwIfAborted();
     const mutation=['create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(body.request?.op);

@@ -3,6 +3,8 @@ import type {EntityService,CanonicalEntity,EntityResolution} from '../../feature
 export function mockResolver(name='Vernon Blake',id='blake') {
  const entities=new Map<string,CanonicalEntity>([[id,{id,name,revision:0,aliases:[]}]]);
  const service:EntityService={
+  names:vi.fn(async(ids:string[])=>ids.flatMap(id=>{const e=entities.get(id);return e?[{id:e.id,name:e.name}]:[];})),
+  dbMentions:vi.fn(async(ids:string[])=>ids.map(id=>({id,mentions:0}))),
   search:vi.fn(async(q,signal)=>({candidates:[...entities.values()].filter(e=>!q.query||e.name.toLowerCase().includes(q.query.toLowerCase())).map(e=>({id:e.id,name:e.name,evidence:[{kind:'name',text:e.name}],localMentions:0})),complete:true,diagnostics:[],current(){signal.throwIfAborted();}})),
   summaries:vi.fn(async(ids:string[])=>({rows:ids.map(id=>entities.get(id)).filter((e):e is CanonicalEntity=>!!e),complete:false,diagnostics:["Unqualified test counts"]})),
   get:vi.fn(async id=>entities.get(id)),

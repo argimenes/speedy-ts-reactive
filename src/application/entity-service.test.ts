@@ -114,3 +114,37 @@ it('DocumentWindows still resolve names when saved-vault counts are disabled, wi
  await expect(service.get(f.entityId)).rejects.toThrow(/verified Mutable Vault/);
  service.dispose();
 },30000);
+it('listing reads only names and indexed segment counts without Vault discovery or Facts reconstruction',async()=>{
+ const f=await fixture(true,false);
+ const source={resourceId:'a',location:{folder:'vault',filename:'a.mutable.json'},byteHash:f.native.knowledgeEvidence('a').byteHash};
+ await f.sql.entities({lease:f.lease.lease,source,request:{op:'create',id:f.entityId,operationId:randomUUID(),name:'Florence',description:'Not needed in listing'}});
+ // Two linked segments in b count as two DB rows, even though they describe
+ // one logical mention. Deleted segments and unrelated types do not count.
+ const file=path.join(f.root,'vault/b.mutable.json'),saved=JSON.parse(await fs.readFile(file,'utf8'));
+ saved.document.blocks[0].properties.linkedAnnotations={city:{type:'codex/entity-reference',value:f.entityId}};
+ saved.document.blocks[1].properties.standoffProperties=[
+  {id:'one',annotationId:'city',start:0,end:2},
+  {id:'two',annotationId:'city',start:3,end:6},
+  {id:'deleted',type:'codex/entity-reference',value:f.entityId,start:0,end:0,isDeleted:true},
+  {id:'other',type:'bold',value:f.entityId,start:0,end:0},
+ ];
+ saved.definitionOwnerBlockIds=['b-doc'];
+ await fs.writeFile(file,JSON.stringify(saved));await f.sql.refresh(f.lease.lease,true);await f.settle();
+ const discovery=vi.spyOn(f.native,'discoverVault'),facts=vi.spyOn(f.factory.host,'flush'),fetch=vi.spyOn(globalThis,'fetch');
+ const serverDiscovery=vi.spyOn(f.sql.store,'discover').mockImplementation(()=>{throw Error('Listing must not discover the Vault');});
+ const serverFence=vi.spyOn(f.sql.store,'readScopeFence').mockImplementation(()=>{throw Error('Listing must not traverse the Vault');});
+ const service=entityService(f.editor,f.node.key);
+ try{
+  expect(await service.names([f.entityId,randomUUID()])).toEqual([{id:f.entityId,name:'Florence'}]);
+  expect(await service.dbMentions([f.entityId, 'unmentioned'])).toEqual([{id:f.entityId,mentions:3},{id:'unmentioned',mentions:0}]);
+  expect(discovery).not.toHaveBeenCalled();expect(facts).not.toHaveBeenCalled();
+  expect(serverDiscovery).not.toHaveBeenCalled();expect(serverFence).not.toHaveBeenCalled();
+  for(const op of ['names','db-mentions']){
+   await expect(f.sql.entities({lease:f.lease.lease,source:{...source,byteHash:'wrong'},request:{op,ids:[f.entityId]}})).rejects.toThrow(/changed/);
+   await expect(f.sql.entities({lease:f.lease.lease,source:{...source,resourceId:'forged'},request:{op,ids:[f.entityId]}})).rejects.toThrow(/identity/);
+  }
+  const ops=fetch.mock.calls.filter(([url])=>String(url).endsWith('/entities')).map(([,o])=>JSON.parse(o!.body as string).request.op);
+  expect(ops).toEqual(['names','db-mentions']);
+  const aborted=new AbortController();aborted.abort();await expect(service.names([f.entityId],aborted.signal)).rejects.toThrow();
+ }finally{service.dispose();discovery.mockRestore();facts.mockRestore();fetch.mockRestore();serverDiscovery.mockRestore();serverFence.mockRestore();}
+},30000);

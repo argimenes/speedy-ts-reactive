@@ -33,6 +33,11 @@ export function registerWorkspaceEntities(editor: ReactiveEditor, viewId: string
       return vault;
     },
     facts,
+    async listingVault() {
+      const root = vault?.root ?? await native.defaultVault();
+      if (disposed || !root) throw Error('DocumentWindow Vault is unavailable');
+      return root;
+    },
     prepare() {
       if (disposed) return Promise.reject(Error('DocumentWindow Vault is closed'));
       return preparing ??= (async () => {

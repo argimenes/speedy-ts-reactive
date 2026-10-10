@@ -6,7 +6,7 @@ import {nativeDocumentSession} from '../persistence/native-session';
 import {WorkSlice} from '../knowledge/scheduler';
 import {observeLive} from '../knowledge/live-observer';
 import {encodeAuthoredValue,decodeAuthoredValue} from '../history/preplan-spike/wire';
-type Context={accepts(key:string):boolean;vault():DocumentVaultLease;facts?:FactsQueryProvider;prepare?():Promise<void>};
+type Context={accepts(key:string):boolean;vault():DocumentVaultLease;facts?:FactsQueryProvider;prepare?():Promise<void>;listingVault?():Promise<string>};
 const contexts=new WeakMap<ReactiveEditor,Set<Context>>();
 export function registerEntityContext(editor:ReactiveEditor,context:Context){let set=contexts.get(editor);if(!set)contexts.set(editor,set=new Set());set.add(context);return()=>set!.delete(context);}
 const fold=(s:string)=>s.normalize('NFKC').toLowerCase();
@@ -55,7 +55,39 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   for(const entity of [result.entity,...(result.entities??[])])if(entity&&entity.attributes!==undefined)entity.attributes=decodeAuthoredValue(entity.attributes);
   return result;
  };
+ // Listing reads need source authority, not discovery/extraction of the Vault.
+ // The server verifies the bound file/hash on every request, including reads.
+ let listingLease:string|undefined,listingRoot:string|undefined,listingOpening:Promise<void>|undefined;
+ const listingSource=()=>{
+  if(!alive||!editor.features.sqliteEntities||!context?.accepts(owner))throw Error('Open this Document in one verified Mutable Vault to resolve Entities.');
+  if(listingRoot&&!context.listingVault){const selected=context.vault();if(!selected.isAlive()||selected.root!==listingRoot)throw Error('Entity listing Vault changed');}
+  if(editor.repository.readCanonicalResourceBoundary(id).status!=='ready')throw Error('Entity source is missing or ambiguous');
+  const proof=native.knowledgeEvidence(id);
+  if(proof.pending||!proof.location||!proof.byteHash)throw Error('Save or recover this Document in the selected Vault before resolving Entities.');
+  return {resourceId:id,location:proof.location,byteHash:proof.byteHash};
+ };
+ const listingCall=async(op:string,ids:string[],signal?:AbortSignal)=>{
+  signal?.throwIfAborted();const source=listingSource();
+  if(!listingLease){
+   listingOpening??=(async()=>{
+    const root=context!.listingVault?await context!.listingVault():context!.vault().root;
+    listingRoot=root;
+    listingSource();
+    const opened=await request('open',{vault:root,policy:policy()});
+    if(!alive){await request('release',{lease:opened.lease});throw Error('Entity resolver closed');}
+    listingLease=opened.lease;
+   })().finally(()=>listingOpening=undefined);
+   await listingOpening;
+  }
+  signal?.throwIfAborted();listingSource();
+  const result=await request('entities',{lease:listingLease,source,request:{op,ids}},signal);
+  signal?.throwIfAborted();
+  if(JSON.stringify(listingSource())!==JSON.stringify(source))throw Error('Entity source changed');
+  return result.rows;
+ };
  return {
+  names:(ids,signal)=>listingCall('names',ids,signal),
+  dbMentions:(ids,signal)=>listingCall('db-mentions',ids,signal),
   async get(id,signal){const result=await call({op:'get',id},signal);check();return result.entity;},
   async summaries(ids,signal){
    await ready(signal);
@@ -115,6 +147,6 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
    await verified({op:'current'});await validate();current();
    return {candidates:[...candidates.values()].sort((a,b)=>b.localMentions-a.localMentions||a.name.localeCompare(b.name)||a.id.localeCompare(b.id)),complete:!diagnostics.length,diagnostics:[...new Set(diagnostics)].slice(0,32),current};
   },
-  dispose(){alive=false;if(lease){void request('release',{lease}).catch(()=>{});lease=undefined;}},
+  dispose(){alive=false;if(lease){void request('release',{lease}).catch(()=>{});lease=undefined;}if(listingLease){void request('release',{lease:listingLease}).catch(()=>{});listingLease=undefined;}},
  };
 }

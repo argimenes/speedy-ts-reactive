@@ -22,6 +22,22 @@ export function canonicalEntities(db, request, check = () => {}, ledger = canoni
   if (!entityMutation(op)) return db.transaction(() => {
     const revision = sqlRevision(db); let result;
     if (op === 'current') result = {};
+    else if (op === 'names' || op === 'db-mentions') {
+      if (!Array.isArray(request.ids) || request.ids.length > 500) throw Error('List at most 500 Entities per batch');
+      const ids = [...new Set(request.ids.map(id => string(id,512)))];
+      if (!ids.length) result = {rows:[]};
+      else {
+        const placeholders = ids.map(()=>'?').join(',');
+        if (op === 'names') result = {rows:db.prepare(`SELECT guid AS id,name FROM Entity WHERE guid IN (${placeholders})`).all(...ids)};
+        else {
+          // Saved annotation segments, not logical mentions or graph edges.
+          // The existing (targetEntityGuid,typename) index bounds this lookup.
+          const counts = new Map(db.prepare(`SELECT targetEntityGuid AS id,COUNT(*) AS mentions FROM StandoffProperty WHERE targetEntityGuid IN (${placeholders}) AND typename='codex/entity-reference' AND isDeleted=0 GROUP BY targetEntityGuid`).all(...ids).map(row=>[row.id,row.mentions]));
+          result = {rows:ids.map(id=>({id,mentions:counts.get(id)??0}))};
+        }
+      }
+      check();
+    }
     else if (op === 'get') result = {entity: entity(db,request.id)};
     else if (op === 'resolve') {
       if (!Array.isArray(request.ids) || request.ids.length > 100) throw Error('Resolve at most 100 Entities');

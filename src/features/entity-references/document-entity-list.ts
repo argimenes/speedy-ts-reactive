@@ -41,12 +41,14 @@ export class DocumentEntityList {
       sort: EntityListSort;
       direction: "ascending" | "descending";
       pending: boolean;
+      dbPending: boolean;
+      dbError: string;
       error: string;
       active?: string;
       concertinaEntityId?: string;
       concertinaIndex: number;
       focusRequest: number;
-    }>({ open: false, rows: [], sort: "document", direction: "descending", pending: false, error: "", concertinaIndex: 0, focusRequest: 0 });
+    }>({ open: false, rows: [], sort: "document", direction: "descending", pending: false, dbPending: false, dbError: "", error: "", concertinaIndex: 0, focusRequest: 0 });
     this.unsubscribe = editor.afterChange(() => {
       if (!this.state.open || this.refreshQueued) return;
       this.refreshQueued = true;
@@ -97,36 +99,77 @@ export class DocumentEntityList {
       return { id: row.id, name: summary?.name || row.fallbackName || row.id, graphMentions: summary?.mentions, documentMentions: row.documentMentions, ranges: row.ranges };
     });
     const active = rows.some(row => row.id === this.state.active) ? this.state.active : undefined;
-    this.setState({ scope: prepared.scope, rows, active, error: "" });
+    this.setState({ scope: prepared.scope, rows, active, error: "", dbPending: false, dbError: "" });
     if (this.state.concertinaEntityId) {
       const focused = rows.find(row => row.id === this.state.concertinaEntityId);
       if (focused?.ranges.length) this.applyConcertina(focused);
       else this.clearConcertina();
     }
     if (active) this.preview(active); else this.clearPreview();
-    if(!fetchSummaries){this.setState({pending:false,error:"Document changed. Refresh summaries to update vault counts."});return;}
+    if(!fetchSummaries){this.setState({pending:false,error:"Document changed. Refresh summaries to update names and DB mentions."});return;}
     const missing = rows.map(row => row.id).filter(id => !this.summaries.has(id));
     if (!missing.length) { this.setState("pending", false); return; }
     const controller = this.controller = new AbortController();
     this.setState("pending", true);
-    let coverage="";
-    const load=async()=>{
-      if(this.loader!==loadEntitySummaries||!this.editor.entities)return this.loader(missing,controller.signal);
-      const service=this.editor.entities(this.origin!);
-      try{const result=await service.summaries(missing.slice(0,100),controller.signal);coverage=[...result.diagnostics,...(missing.length>100?['Canonical names limited to 100 Entities']:[])].join('; ');return result.rows;}
-      finally{service.dispose();}
-    };
-    void load().then(summaries => {
-      if (generation !== this.generation || !this.state.open || controller.signal.aborted) return;
+    const current = () => generation === this.generation && this.state.open && !controller.signal.aborted;
+    const apply = (summaries: EntitySummary[]) => {
+      if (!current()) return;
       summaries.forEach(summary => this.summaries.set(summary.id, summary));
       this.setState("rows", rows => rows.map(row => {
         const summary = this.summaries.get(row.id);
         return summary ? { ...row, name: summary.name || row.name, graphMentions: summary.mentions } : row;
       }));
-      this.setState({ pending: false, error: coverage });
-    }).catch(error => {
-      if (generation !== this.generation || controller.signal.aborted || !this.state.open) return;
-      this.setState({ pending: false, error: error instanceof Error ? error.message : "Canonical Entity summaries are unavailable." });
+    };
+    void (async () => {
+      // Injected loaders remain useful for offline hosts and focused UI tests.
+      if (this.loader !== loadEntitySummaries || !this.editor.entities) {
+        apply(await this.loader(missing, controller.signal));
+        if (current()) this.setState("pending", false);
+        return;
+      }
+      const service = this.editor.entities(this.origin!);
+      try {
+        for (let i = 0; i < missing.length; i += 500) {
+          apply(await service.names(missing.slice(i, i + 500), controller.signal));
+          if (!current()) return;
+        }
+        this.setState({ pending: false, error: missing.some(id => !this.summaries.has(id)) ? "Some Entity names are unavailable in this DB." : "" });
+        const ids = rows.map(row => row.id).filter(id => this.summaries.has(id));
+        if (!ids.length) return;
+        // A separate, bounded optional read. Names and local counts are already
+        // visible; a slow DB must never hold up or erase those results.
+        const counts = new AbortController();
+        const abort = () => counts.abort();
+        controller.signal.addEventListener("abort", abort, { once: true });
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        this.setState("dbPending", true);
+        const deadline = performance.now() + 1000;
+        try {
+          const work = async () => {
+            const totals: Array<{id: string; mentions: number}> = [];
+            for (let i = 0; i < ids.length; i += 500) {
+              counts.signal.throwIfAborted();
+              if (performance.now() >= deadline) throw Error('DB mentions timed out');
+              totals.push(...await service.dbMentions(ids.slice(i, i + 500), counts.signal));
+            }
+            return totals;
+          };
+          const timeout = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => { counts.abort(); reject(Error("DB mentions exceeded the one-second budget.")); }, 1000);
+          });
+          const totals = await Promise.race([work(), timeout]);
+          if (performance.now() >= deadline) throw Error('DB mentions timed out');
+          if (current()) apply(totals.map(total => ({ ...this.summaries.get(total.id)!, mentions: total.mentions })));
+        } catch {
+          if (current()) this.setState("dbError", "DB mentions unavailable or exceeded the one-second budget.");
+        } finally {
+          clearTimeout(timer); counts.abort(); controller.signal.removeEventListener("abort", abort);
+          if (current()) this.setState("dbPending", false);
+        }
+      } finally { service.dispose(); }
+    })().catch(error => {
+      if (!current()) return;
+      this.setState({ pending: false, error: error instanceof Error ? error.message : "Entity names are unavailable." });
     });
   }
 
@@ -216,7 +259,7 @@ export class DocumentEntityList {
 
   close(restore = true) {
     this.controller?.abort(); this.controller = undefined; this.generation++; this.clearConcertina(); this.clearPreview();
-    this.setState({ open: false, rows: [], pending: false, error: "", active: undefined });
+    this.setState({ open: false, rows: [], pending: false, dbPending: false, dbError: "", error: "", active: undefined });
     const panel = this.panel; this.panel = undefined;
     panel?.close(restore);
   }

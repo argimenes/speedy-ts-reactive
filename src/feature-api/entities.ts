@@ -6,6 +6,8 @@ export interface EntityEvidence {kind:string;text:string;resourceId?:string;ment
 export interface EntityCandidate {id:string;name:string;evidence:EntityEvidence[];localMentions:number}
 export interface EntityResolution {candidates:EntityCandidate[];complete:boolean;diagnostics:string[];current():void}
 export interface EntityService {
+ names(ids:string[],signal?:AbortSignal):Promise<Array<{id:string;name:string}>>;
+ dbMentions(ids:string[],signal?:AbortSignal):Promise<Array<{id:string;mentions:number}>>;
  search(query:EntityResolutionQuery,signal:AbortSignal):Promise<EntityResolution>;
  summaries(ids:string[],signal?:AbortSignal):Promise<{rows:Array<{id:string;name:string;mentions?:number}>;complete:boolean;diagnostics:string[]}>;
  get(id:string,signal?:AbortSignal):Promise<CanonicalEntity|undefined>;

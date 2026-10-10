@@ -34,3 +34,24 @@ export async function verifyDocumentSource(store,vault,source,signal,recovery) {
  if(await store.readScopeFence(vault,signal)!==fence)throw Error('Document source scope changed during verification');
  return {bytes,scan};
 }
+
+/** Read-only Entity listing authority: verify the exact opened file, not the
+ * identity of every other file in the Vault. This grants no mutation, Save or
+ * globally unique Document authority. Indexed DB counts describe DB rows only. */
+export async function verifyEntityListingSource(store,vault,source,signal) {
+ signal?.throwIfAborted();
+ if(!source?.location||typeof source.location.folder!=='string'||typeof source.location.filename!=='string'||/[\/\\]/.test(source.location.filename)||!source.location.filename)throw Error('Invalid listing source location');
+ const file=path.posix.join(source.location.folder,source.location.filename);
+ const root=await store.resolve(vault),resolved=await store.resolve(file),relative=path.relative(root,resolved);
+ if(relative.startsWith('..')||path.isAbsolute(relative))throw Error('Document source outside its Vault');
+ await store.guardReadPath(file);
+ // Read-only lookups still reject a half-published native pair.
+ const pending=path.posix.join(source.location.folder,`.mutable-pair-${hash(source.resourceId)}`,'pending.json');
+ if(await store.read(pending,true))throw Error('Document Save recovery is pending');
+ const stamp=await store.stamp(file),bytes=await store.read(file);
+ signal?.throwIfAborted();
+ if(hash(bytes)!==source.byteHash)throw Error('Document source changed since Open/Save; explicit reconciliation required');
+ if(recognizeCompatibleDocument(bytes).resource.resourceId!==source.resourceId)throw Error('Document source identity changed');
+ if(await store.stamp(file)!==stamp)throw Error('Document source changed during verification');
+ signal?.throwIfAborted();
+}

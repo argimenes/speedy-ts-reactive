@@ -134,3 +134,54 @@ describe("document entity listing", () => {
     expect(editor.repository.snapshot()).toEqual(before); expect(editor.repository.canUndo()).toBe(false);
   });
 });
+
+describe('fast Entity listing',()=>{
+  function fastSetup(size=2) {
+    const editor=new ReactiveEditor({type:'document-block',id:'fast-doc',children:[{id:'fast-text',type:'standoff-editor-block',text:'x'.repeat(size),standoffProperties:Array.from({length:size},(_,i)=>({id:`ref-${i}`,type:'codex/entity-reference',value:`entity-${i}`,start:i,end:i}))}]});
+    registerEntityTestViews(editor);
+    const api=entityTestApi(editor);
+    const names=vi.fn(async(ids:string[])=>ids.map(id=>({id,name:`Name ${id}`})));
+    const totals=vi.fn(async(ids:string[],signal?:AbortSignal)=>ids.map(id=>({id,mentions:42})));
+    const dispose=vi.fn(),summaries=vi.fn(()=>{throw Error('Must not reconstruct Facts');});
+    api.entities=()=>({names,dbMentions:totals,dispose,summaries} as any);
+    const view=editor.createView('fast-list'),node=Object.values(view.state.nodes).find(n=>n.payload.id==='fast-text')!;
+    const list=entityTestList(editor);
+    cleanup.push(()=>editor.dispose());
+    return {editor,list,node,names,totals,dispose,summaries};
+  }
+  it('publishes all names beyond 100 IDs before optional totals complete',async()=>{
+    const f=fastSetup(620);let finish!:(rows:any[])=>void;
+    f.totals.mockImplementationOnce(()=>new Promise(resolve=>finish=resolve));
+    f.list.open(f.node.key);
+    await vi.waitFor(()=>expect(f.list.state.pending).toBe(false));
+    expect(f.names.mock.calls.map(([ids])=>ids.length)).toEqual([500,120]);
+    expect(f.list.state.rows).toHaveLength(620);
+    expect(f.list.state.rows.every(r=>r.name.startsWith('Name ')&&r.documentMentions===1&&r.graphMentions===undefined)).toBe(true);
+    expect(f.list.state.dbPending).toBe(true);expect(f.summaries).not.toHaveBeenCalled();
+    finish(f.totals.mock.calls[0][0].map(id=>({id,mentions:42})));
+    await vi.waitFor(()=>expect(f.list.state.dbPending).toBe(false));
+    expect(f.list.state.rows.every(r=>r.graphMentions===42)).toBe(true);
+    expect(f.dispose).toHaveBeenCalledOnce();
+  });
+  it('times out optional totals without losing names and ignores late results',async()=>{
+    const f=fastSetup();let finish!:(rows:any[])=>void;
+    f.totals.mockImplementation(()=>new Promise(resolve=>finish=resolve));
+    f.list.open(f.node.key);
+    await vi.waitFor(()=>expect(f.list.state.dbPending).toBe(true));
+    await vi.waitFor(()=>expect(f.list.state.dbPending).toBe(false),{timeout:1500});
+    expect(f.totals.mock.calls[0][1]?.aborted).toBe(true);
+    expect(f.list.state.pending).toBe(false);expect(f.list.state.dbError).toContain('one-second');
+    expect(f.list.state.rows.every(r=>r.name.startsWith('Name ')&&r.documentMentions===1&&r.graphMentions===undefined)).toBe(true);
+    finish([{id:'entity-0',mentions:999}]);await Promise.resolve();await Promise.resolve();
+    expect(f.list.state.rows[0].graphMentions).toBeUndefined();
+    expect(f.dispose).toHaveBeenCalledOnce();
+  });
+  it('closing the listing cancels optional reads and prevents late updates',async()=>{
+    const f=fastSetup();let finish!:(rows:any[])=>void;
+    f.totals.mockImplementation(()=>new Promise(resolve=>finish=resolve));
+    f.list.open(f.node.key);await vi.waitFor(()=>expect(f.list.state.dbPending).toBe(true));
+    f.list.close();expect(f.totals.mock.calls[0][1]?.aborted).toBe(true);
+    finish([{id:'entity-0',mentions:999}]);await vi.waitFor(()=>expect(f.dispose).toHaveBeenCalledOnce());
+    expect(f.list.state.rows).toEqual([]);
+  });
+});
