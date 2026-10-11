@@ -50,4 +50,48 @@ describe("page creation convention", () => {
     expect(host.querySelector('.reactive-page [data-block-id="p"]')).not.toBeNull();
     editor.repository.undo(); expect(editor.encodeDocument()).toEqual(before);
   });
+  it("wraps every document child when invoked inside a nested block, preserving order, annotations and margins", () => {
+    const { editor, key, host } = setup([
+      { id: "intro", type: "standoff-editor-block", text: "Introduction" },
+      { id: "list", type: "indented-list-block", children: [{ ...text,
+        standoffProperties: [{ id: "mention", type: "codex/entity-reference", start: 0, end: 7, value: "entity-id" }],
+        relation: { rightMargin: { id: "margin", type: "right-margin-block", children: [{ id: "note", type: "standoff-editor-block", text: "Margin note" }] } },
+      }] },
+      { id: "end", type: "standoff-editor-block", text: "Conclusion" },
+    ]);
+    const before = editor.encodeDocument();
+    const convert = action(blockMenuItems(editor, key("p")), "Convert to page");
+    convert.run!();
+    const after = editor.encodeDocument();
+    expect(after.children).toHaveLength(1);
+    const page = after.children![0].children![0].children![0];
+    expect(page.type).toBe("page-block");
+    expect(page.children).toEqual(before.children);
+    expect(after.id).toBe(before.id);
+    expect(host.querySelector('.reactive-page [data-block-id="p"]')).not.toBeNull();
+    expect(blockMenuItems(editor, key("p")).some(item => item.label === "Convert to page")).toBe(false);
+    convert.run!(); expect(editor.encodeDocument()).toEqual(after);
+    editor.repository.undo(); expect(editor.encodeDocument()).toEqual(before);
+    editor.repository.redo(); expect(editor.encodeDocument()).toEqual(after);
+    const loaded = new ReactiveEditor(after);
+    expect(loaded.encodeDocument()).toEqual(after); loaded.dispose();
+  });
+  it("offers document-wide Page conversion on the document itself", () => {
+    const { editor, projection } = setup([text, { id: "last", type: "standoff-editor-block", text: "Last paragraph" }]);
+    const before = editor.encodeDocument();
+    action(blockMenuItems(editor, projection.state.rootKey), "Convert to page").run!();
+    const after = editor.encodeDocument();
+    expect(after.children).toHaveLength(1);
+    expect(after.children![0].children![0].children![0].children).toEqual(before.children);
+    editor.repository.undo(); expect(editor.encodeDocument()).toEqual(before);
+  });
+  it("hides Page conversion both within a PageBlock and for a document nested inside one", () => {
+    const { editor, projection, key } = setup([{ id: "page", type: "page-block", children: [
+      text,
+      { id: "nested-doc", type: "document-block", children: [{ id: "nested-text", type: "standoff-editor-block", text: "Nested document" }] },
+    ] }]);
+    for (const target of [projection.state.rootKey, key("page"), key("p"), key("nested-doc"), key("nested-text")]) {
+      expect(blockMenuItems(editor, target).some(item => item.label === "Convert to page")).toBe(false);
+    }
+  });
 });

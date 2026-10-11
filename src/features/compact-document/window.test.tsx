@@ -33,6 +33,31 @@ function mount(dto: ExistingBlockDto = {
 const click = (element: HTMLElement) => element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 
 describe("Compact Document presentation", () => {
+  it.each([false, true])("narrows documents without reclaimable margin padding (PageBlock: %s) and restores their width", paged => {
+    const paragraph = { id: "text", type: "plain-text-block", text: "A flowing letter" };
+    const { editor, host } = mount({
+      id: "window", type: "document-window-block", metadata: { size: { w: 840, h: 500 } },
+      children: [{ type: "document-block", children: paged ? [{ type: "page-block", children: [paragraph] }] : [paragraph] }],
+    });
+    const root = host.querySelector<HTMLElement>(".reactive-window")!;
+    root.getBoundingClientRect = () => ({ left: 0, top: 0, width: parseFloat(root.style.width), height: 500 }) as DOMRect;
+    const before = editor.encodeDocument(), textarea = root.querySelector("textarea");
+    const toggle = root.querySelector<HTMLButtonElement>(".compact-document-toggle")!;
+    click(toggle); expect(root.style.width).toBe("672px");
+    expect(root.querySelector("textarea")).toBe(textarea);
+    expect(editor.encodeDocument()).toEqual(before);
+    click(toggle); expect(root.style.width).toBe("840px");
+    expect(editor.encodeDocument()).toEqual(before);
+  });
+
+  it.each([[600, 560], [400, 400]])("respects the minimum width without enlarging an already small window (%s px)", (width, compactWidth) => {
+    const { host } = mount({ type: "document-window-block", metadata: { size: { w: width, h: 500 } }, children: [{ type: "document-block", children: [] }] });
+    const root = host.querySelector<HTMLElement>(".reactive-window")!;
+    const toggle = root.querySelector<HTMLButtonElement>(".compact-document-toggle")!;
+    click(toggle); expect(root.style.width).toBe(`${compactWidth}px`);
+    click(toggle); expect(root.style.width).toBe(`${width}px`);
+  });
+
   it("keeps explicit Compact Document state independent from narrow-window collapse", async () => {
     const observers: Array<{ callback: ResizeObserverCallback; targets: Element[] }> = [];
     vi.stubGlobal("ResizeObserver", class {

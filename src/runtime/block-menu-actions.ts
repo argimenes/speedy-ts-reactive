@@ -113,10 +113,32 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
         if (node.viewType === "standoff-editor-block") createTextTab(editor, key);
         else convert(dto("tab-row-block", [dto("tab-block", [], { name: "Tab 1", active: true })]), 1);
       } });
-      if (!ancestor("document-tab-row-block")) items.push({ label: "Convert to page", run: () => convert(dto("document-tab-row-block", [dto("document-tab-block", [dto("page-block")], { name: "Page 1", active: true })]), 2) });
       if (!ancestor("indented-list-block")) items.push({ label: "Convert to list", run: () => convert(dto("indented-list-block"), 0) });
       items.push(unavailable("Convert to pocket", "This action is a no-op in the original source; existing pocket controls are available."));
     }
+    const document = ancestor("document-block");
+    const containsPage = (key: NodeKey): boolean => {
+      const current = editor.node(key);
+      return !!current && (["page-block", "document-tab-row-block"].includes(current.viewType)
+        || current.children.some(containsPage));
+    };
+    const canConvertDocumentToPage = () => !!document && !!editor.node(document.key)
+      && !editor.blockQueries.ancestors(document.key).some(item => item.viewType === "page-block")
+      && !containsPage(document.key);
+    if (document && canConvertDocumentToPage()) items.push({ label: "Convert to page", run: () => {
+      // Page conversion is document-wide, including when invoked inside a grid or margin.
+      // Check again because the menu may have been opened before another conversion.
+      if (!canConvertDocumentToPage()) return;
+      editor.commands.transaction("Convert Document to Page", () => {
+        const children = editor.commands.childrenOf(document.key);
+        const row = editor.commands.insert(dto("document-tab-row-block", [dto("document-tab-block", [dto("page-block")], { name: "Page 1", active: true })]), { kind: "at", parentKey: document.key, index: 0 });
+        const tab = editor.commands.childrenOf(row)[0];
+        const page = editor.commands.childrenOf(tab)[0];
+        children.forEach((child, index) => editor.commands.move(child, { kind: "at", parentKey: page, index }));
+      });
+      const target = editor.nodeForPlacementInView(node.placementKey, node.viewId);
+      if (target) focus(target.key);
+    } });
     if (node.viewType === "standoff-editor-block") items.push({ label: "To tab / add tab", run: () => { createTextTab(editor, key); } });
     for (const [label, rowType, tabType] of [["Tabs", "tab-row-block", "tab-block"], ["Pages", "document-tab-row-block", "document-tab-block"], ["Tags", "sticky-tab-row-block", "sticky-tab-block"]]) {
       const row = ancestor(rowType) ?? (label === "Tags" ? doc.children.map(key => editor.node(key)).find(item => item?.viewType === rowType) : undefined);
