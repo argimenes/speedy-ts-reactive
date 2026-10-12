@@ -3,20 +3,20 @@ import { ReactiveEditor } from "../../reactive-editor/editor";
 import { registerApplicationViews } from "../../application/features";
 import { ReactiveTreeView } from "../../rendering/reactive-tree-view";
 import { materializeLocalWorkspace } from "../../reactive-editor/workspace-manifest";
-export default function PhosphorDemo() {
+import { openPhosphor } from "../../application/phosphor";
+import type { ReactiveEditorConfiguration } from "../../configuration";
+export default function PhosphorDemo(props: { configuration?: ReactiveEditorConfiguration } = {}) {
   const editor = new ReactiveEditor(
     materializeLocalWorkspace({
       id: crypto.randomUUID(),
       type: "workspace-block",
       children: [],
     }),
+    props.configuration,
   );
   registerApplicationViews(editor);
   const view = editor.createView("phosphor-demo");
-  editor.commandRegistry.execute("phosphor.open", {
-    targetKey: view.state.rootKey,
-    args: undefined,
-  });
+  openPhosphor(editor, "rain");
   onMount(() => editor.installGateway(document));
   onCleanup(() => editor.dispose());
   return (

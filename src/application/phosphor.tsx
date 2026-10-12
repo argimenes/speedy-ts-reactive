@@ -20,6 +20,11 @@ import {
 import { sqliteIndexLifecycle } from "./sqlite-index-lifecycle";
 import { entityService, registerEntityContext } from "./entity-service";
 
+export const phosphorWindowPresentation = {
+  size: { w: 1260, h: 820 },
+  windowType: "window-block",
+};
+
 export function openPhosphor(
   editor: ReactiveEditor,
   example: Parameters<typeof newDocument>[0] = "blank",
@@ -72,11 +77,11 @@ export function openPhosphor(
     const win = editor.commands.insert(
       {
         id: crypto.randomUUID(),
-        type: "window-block",
+        type: phosphorWindowPresentation.windowType,
         metadata: {
           title: "Phosphor",
           position: { x: 28, y: 30 },
-          size: { w: 1260, h: 820 },
+          size: { ...phosphorWindowPresentation.size },
           zIndex:
             Math.max(
               0,
@@ -365,7 +370,7 @@ export function createPhosphorFeature(editor: ReactiveEditor): CodexFeature {
                   editor.repository.state.rootPlacementKey
                 ].contentKey
               ].viewType === "workspace-block",
-            execute: () => openPhosphor(editor, "rain"),
+            execute: () => openPhosphor(editor),
           },
           scope.owner,
         ),

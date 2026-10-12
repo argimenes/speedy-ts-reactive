@@ -11,6 +11,7 @@ import { isNativeDocumentName } from "../persistence/document-file-names.mjs";
 import { nativeDocumentSession } from "../persistence/native-session";
 import { documentRootPlacements } from "../block-tree/resource-registration";
 import { selectApplicationDocument } from './document-application-navigation';
+import { phosphorWindowPresentation } from './phosphor';
 
 /** Explicit Open actions add to the current session; they never reload its tree. */
 export function workspaceOpen(session: WorkspaceSession) {
@@ -25,7 +26,8 @@ export function workspaceOpen(session: WorkspaceSession) {
   });
   const insert = (content: ExistingBlockDto, title: string, presentationDefaults?: { size: { w: number; h: number }; windowType: string }, reference?: PlacementKey): PlacementKey => {
     const id = crypto.randomUUID(), isDocument = ["document-block", "main-list-block", "membrane-block"].includes(content.type!);
-    const defaults = presentationDefaults ?? (editor.features.documentFormats ? documentFormatPresentation(content.metadata) : undefined);
+    const phosphor = editor.features.phosphor && content.children?.some(child => child.type === 'phosphor-screen-block');
+    const defaults = presentationDefaults ?? (phosphor ? phosphorWindowPresentation : editor.features.documentFormats ? documentFormatPresentation(content.metadata) : undefined);
     const metadata = { title, ...geometry(isDocument), ...(defaults ? { size: defaults.size } : {}) };
     const window: ExistingBlockDto = { id, type: defaults?.windowType ?? (isDocument ? "document-window-block" : "window-block"), metadata, children: reference ? [] : [content] };
     const value = presentation.read(), canvas = presentation.active() === "canvas" ? value?.presentations.canvas : undefined;
@@ -104,6 +106,16 @@ export function workspaceOpen(session: WorkspaceSession) {
   };
   const flintInstances = () => Object.values(projection.state.nodes).filter(n => n.viewType === 'flint-application-block' && editor.blockQueries.ancestors(n.key).some(a => a.viewType === 'window-block'));
   const presentDocument = (contentKey: string, id: string, title: string) => {
+    const state = editor.repository.readState(), content = state.contents[contentKey];
+    // Screens use their own application even when Flint is open. Keep the native
+    // resource in its bank and reuse its existing window, including unsaved edits.
+    if (editor.features.phosphor && content.children.some(key => state.contents[state.placements[key].contentKey].viewType === 'phosphor-screen-block')) {
+      const existing = Object.values(projection.state.nodes).find(n => n.contentKey === contentKey && editor.blockQueries.ancestors(n.key).some(a => ['window-block', 'document-window-block'].includes(a.viewType)));
+      if (existing) return reveal(contentKey);
+      const owners = documentRootPlacements(state, contentKey);
+      if (owners.length !== 1) throw new Error('Document has no unique canonical root.');
+      return insert({ ...unwrap(content.payload), type: 'document-block' }, `Phosphor — ${title}`, phosphorWindowPresentation, owners[0].key);
+    }
     const tabs = flintInstances().map(app => ({ app, row: app.children.map(key => editor.node(key)).find(n => n?.viewType === 'tab-row-block') }));
     const existing = tabs.find(({ row }) => row?.children.some(key => (editor.node(key)?.payload.metadata as any)?.documentTarget?.documentId === id));
     if (existing) {
@@ -124,7 +136,6 @@ export function workspaceOpen(session: WorkspaceSession) {
       editor.setViewChild(selected.row.key, projection.nodeForPlacement(tab)!.key);
       return reveal(selected.app.contentKey);
     }
-    const state = editor.repository.readState(), content = state.contents[contentKey];
     const owners = documentRootPlacements(state, contentKey);
     if (owners.length !== 1) throw new Error('Document has no unique canonical root.');
     // Keep the canonical resource in the bank when its editable window closes.
@@ -211,7 +222,7 @@ export function workspaceOpen(session: WorkspaceSession) {
       if (presentation.active() === "spatial") return; // A has proxies, never a hidden editor focus request.
       const host = projection.nodeForPlacement(placement); if (!host) return;
       const visit = (key: string): string | undefined => {
-        if (["native-text", "standoff"].includes(editor.mounts.get(key)?.inputPolicy ?? "")) return key;
+        if (["native-text", "standoff"].includes(editor.mounts.get(key)?.inputPolicy ?? "") || editor.node(key)?.viewType === 'phosphor-screen-block' && editor.mounts.get(key)) return key;
         for (const child of editor.node(key)?.children ?? []) { const found = visit(child); if (found) return found; }
       };
       editor.focus.request(visit(host.key) ?? host.key, { reason: "open-workspace-object" });

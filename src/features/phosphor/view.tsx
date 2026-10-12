@@ -115,7 +115,7 @@ export function PhosphorView(props: {
   const [storage, setStorage] = createSignal(false),
     [folder, setFolder] = createSignal(api.location()?.folder ?? "."),
     [filename, setFilename] = createSignal(
-      api.location()?.filename ?? `${api.title()}.ink`,
+      api.location()?.filename ?? `${api.title()}.phosphor`,
     );
   const [searchOpen, setSearchOpen] = createSignal(false),
     [tag, setTag] = createSignal(""),
@@ -871,7 +871,7 @@ export function PhosphorView(props: {
             Φ
           </span>
           <span>
-            Phosphor <span class="ph-muted">—</span> {api.title()}.ink
+            Phosphor <span class="ph-muted">—</span> {api.location()?.filename ?? `${api.title()}.phosphor`}
           </span>
           <span class="ph-title-note">SAME THING. MANY FORMS.</span>
         </header>
@@ -1013,7 +1013,7 @@ export function PhosphorView(props: {
                 })
               }
             >
-              Save .ink
+              Save .phosphor
             </button>
             <button
               disabled={busy()}
@@ -1024,7 +1024,7 @@ export function PhosphorView(props: {
                 })
               }
             >
-              Open .ink
+              Open .phosphor
             </button>
             <button onClick={() => setStorage(false)}>Close</button>
           </section>

@@ -69,7 +69,7 @@ export function createDocumentStoreRouter(options: {
       const entries = await fs.readdir(target, { withFileTypes: true });
       const folders = req.path === "/listFolders";
       // Listing is filename-based; ordinary JSON needs no native suffix or index entry.
-      const names = entries.filter((entry) => !entry.name.startsWith(".") && (folders ? entry.isDirectory() : entry.isFile() && (/\.json$/i.test(entry.name) || entry.name.endsWith('.ink'))))
+      const names = entries.filter((entry) => !entry.name.startsWith(".") && (folders ? entry.isDirectory() : entry.isFile() && (/\.json$/i.test(entry.name) || /\.(ink|phosphor)$/.test(entry.name))))
         .map((entry) => entry.name).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       res.json(folders ? { folders: names } : { files: names });
     } catch (error) { errorResponse(res, error); }
@@ -102,7 +102,7 @@ export function createDocumentStoreRouter(options: {
       if (options.readOnly) throw new StoreError(403, "Server Documents are read-only in the public hosted version. Save to a Local JSON file instead.");
       const { root, target } = await directory(req.body?.folder ?? "data");
       const filepath = path.join(target, filename(req.body?.filename));
-      if (/\.(ink|mutable\.json)$/i.test(filepath)) throw new StoreError(409, "Native destinations require paired resource Save.");
+      if (/\.(ink|phosphor|mutable\.json)$/i.test(filepath)) throw new StoreError(409, "Native destinations require paired resource Save.");
       validateDocument(req.body?.document);
       // Check existing symlinks as well as the parent before writing.
       try { inside(root, await fs.realpath(filepath)); }

@@ -8,7 +8,7 @@ import { WorkspaceDemo } from "./demo/workspace-demo";
 import { StandoffEffectsDemo } from "./demo/standoff-effects-demo";
 import { TextSuperpositionDemo } from "./demo/text-superposition-demo";
 import { createInitialWorkspace } from "./application/initial-workspace";
-import { featureFlags, resolveFeatureFlags, type ReactiveEditorConfiguration } from "./configuration";
+import { resolveFeatureFlags, type ReactiveEditorConfiguration } from "./configuration";
 import { CavernStartup } from "./application/cavern-startup";
 
 const pilotDocument: ExistingBlockDto = {
@@ -147,7 +147,7 @@ export default function App(props: { configuration?: ReactiveEditorConfiguration
   if (route === `${import.meta.env.BASE_URL}phosphor`) {
     if (!features.phosphor) return <main>Phosphor is disabled.</main>;
     const Phosphor = lazy(() => import("./features/phosphor/demo"));
-    return <Phosphor />;
+    return <Phosphor configuration={props.configuration} />;
   }
   if (route === `${import.meta.env.BASE_URL}flint-material-three`) {
     if (!features.flintMaterialLighting || !features.flintThreeGraphSpike) return <main class="reactive-pilot"><h1>Three.js Graph spike disabled</h1><a href={`${import.meta.env.BASE_URL}flint-material`}>Return to SVG study</a></main>;
@@ -167,8 +167,8 @@ export default function App(props: { configuration?: ReactiveEditorConfiguration
   if (route === `${import.meta.env.BASE_URL}superposition`) return <TextSuperpositionDemo />;
   if (route === `${import.meta.env.BASE_URL}pilot`) return <PilotApp />;
   // Accepted application capability; hosts can still explicitly disable it.
-  const configuration = { features: { canvasWorkspace: import.meta.env.VITE_CANVAS_WORKSPACE !== "0", spatialWorkspace: import.meta.env.VITE_SPATIAL_WORKSPACE === "1" } };
+  const configuration = { features: { canvasWorkspace: import.meta.env.VITE_CANVAS_WORKSPACE !== "0", spatialWorkspace: import.meta.env.VITE_SPATIAL_WORKSPACE === "1", ...props.configuration?.features } };
   const workspace = () => <WorkspaceDemo configuration={configuration}
     initialWorkspace={new URLSearchParams(window.location.search).get("demo") === "1" ? undefined : createInitialWorkspace()} />;
-  return featureFlags.cavernStartup ? <CavernStartup>{() => workspace()}</CavernStartup> : workspace();
+  return features.cavernStartup ? <CavernStartup>{() => workspace()}</CavernStartup> : workspace();
 }

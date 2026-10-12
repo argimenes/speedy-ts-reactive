@@ -24,7 +24,7 @@ const fields = (value, keys) => value && typeof value === "object" && !Array.isA
 
 export class ManagedPair {
   constructor({ root, resourceId, nativeName, markdownName, locations = new Map(), fault = async () => {} }) {
-    if (![nativeName, markdownName].every(n => typeof n === "string" && !n.includes("\0") && /^[^./\\][^/\\]*$/.test(n)) || nativeName === markdownName || !isNativeDocumentName(nativeName) || !markdownName.endsWith(".md") || nativeName.endsWith('.ink') && markdownName !== markdownProjectionName(nativeName)) throw Error("Invalid pair locations");
+    if (![nativeName, markdownName].every(n => typeof n === "string" && !n.includes("\0") && /^[^./\\][^/\\]*$/.test(n)) || nativeName === markdownName || !isNativeDocumentName(nativeName) || !markdownName.endsWith(".md") || /\.(ink|phosphor)$/.test(nativeName) && markdownName !== markdownProjectionName(nativeName)) throw Error("Invalid pair locations");
     this.root = root; this.resourceId = resourceId; this.nativeName = nativeName; this.markdownName = markdownName;
     this.locations = new Map(locations); this.fault = fault;
     this.home = path.join(root, `.mutable-pair-${hash(resourceId)}`);

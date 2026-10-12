@@ -20,7 +20,7 @@ import { createFormattedDocument, readDocumentFormat } from "../features/documen
 import type { ApplicationVault } from "../feature-api/document-application";
 import { nativeDocumentSession } from "../persistence/native-session";
 import { documentRootPlacements } from "../block-tree/resource-registration";
-import { Show, For, createMemo, createSignal, createEffect, untrack, onCleanup, onMount } from "solid-js";
+import { Show, For, batch, createMemo, createSignal, createEffect, untrack, onCleanup, onMount } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { FeatureScope } from "../feature-api";
@@ -87,10 +87,16 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       let root!: HTMLDivElement, mounted = true;
       const guard = () => { requireActive(); if (!mounted || !editor.node(props.nodeKey)) throw new Error("Document application instance is disposed"); };
       onMount(() => {
-        const release = editor.mounts.register(props.nodeKey, { root, focusElement: root, inputPolicy: "container", focus: () => root.focus({ preventScroll: true }) });
+        const release = editor.mounts.register(props.nodeKey, { root, focusElement: root, inputPolicy: "container", focus: () => root.focus({ preventScroll: true }),
+          contextActions: () => {
+            const menu = editor.overlays.overlays.find(item => item.ownerKey === props.nodeKey && item.viewType === "context-menu");
+            const key = (menu?.data as { documentTab?: string } | undefined)?.documentTab ?? activeTab();
+            return [{ label: "Close Document", disabled: !key || !tabKeys().includes(key), run: () => { if (key) closeTab(key); } }];
+          },
+        });
         onCleanup(release);
       });
-      onCleanup(() => { mounted = false; if (!editor.node(props.nodeKey)) { viewBookmarks.delete(props.nodeKey); navigationTabs.delete(props.nodeKey); } });
+      onCleanup(() => { mounted = false; for (const overlay of [...editor.overlays.overlays]) if (overlay.ownerKey === props.nodeKey) editor.overlays.close(overlay.key, false); if (!editor.node(props.nodeKey)) { viewBookmarks.delete(props.nodeKey); navigationTabs.delete(props.nodeKey); } });
       const Target = (target: { documentId: string; tabKey: string }) => {
         const placement = () => resolve(target.documentId)?.placement;
         return <Show when={placement()} keyed fallback={<p role="status">Document unavailable: {target.documentId}. Its canonical source is missing or ambiguous.</p>}>{source =>
@@ -100,7 +106,42 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const tabId = (key: string) => navigation.tabs.get(key) ?? tabDocumentTarget(editor.node(key)?.payload.metadata);
       const chooseTab = (key: string) => { navigation.active = navigation.tabs.has(key) ? key : undefined; setNavigationRevision(n => n+1); const r = row(); if(r && !navigation.active) editor.setViewChild(r.key,key); };
       const tabKeys = createMemo(() => { navigationRevision(); return [...(row()?.children ?? []),...navigation.tabs.keys()]; });
-      const tabs = () => <div class="reactive-tabs"><div class="reactive-tabs__labels" role="tablist"><For each={tabKeys()}>{key => <button type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{resolve(tabId(key)??'')?.title ?? String((editor.node(key)?.payload.metadata as any)?.name ?? 'Unavailable Document')}</button>}</For></div><For each={tabKeys()}>{key=><Show when={activeTab()===key}><div class="reactive-tabs__panel" role="tabpanel"><Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show></div></Show>}</For></div>;
+      const tabButtons = new Map<string, HTMLButtonElement>();
+      const closeTab = (key: string) => {
+        guard(); const keys = tabKeys(); if (!keys.includes(key)) return;
+        const active = activeTab(), index = keys.indexOf(key), next = keys[index + 1] ?? keys[index - 1];
+        // Only the view's tab is removed; the canonical Document (including edits)
+        // remains in the object bank and can be reopened from the Library.
+        for (const overlay of [...editor.overlays.overlays]) if (overlay.ownerKey === props.nodeKey) editor.overlays.close(overlay.key, false);
+        batch(() => {
+          if (navigation.tabs.has(key)) { navigation.tabs.delete(key); if (navigation.active === key) navigation.active = undefined; setNavigationRevision(n => n + 1); }
+          else editor.commands.remove(key);
+          if (active === key) {
+            if (next) chooseTab(next);
+            else { const r = row(); if (r) editor.setViewChild(r.key, undefined); }
+          }
+        });
+        bookmarks.delete(key);
+        editor.focus.request(props.nodeKey, { reason: "close-document-tab" });
+        tabButtons.get(activeTab() ?? "")?.focus({ preventScroll: true });
+      };
+      const openTabMenu = (key: string, event: MouseEvent | KeyboardEvent) => {
+        event.preventDefault(); event.stopPropagation();
+        for (const overlay of [...editor.overlays.overlays]) if (overlay.viewType === "context-menu") editor.overlays.close(overlay.key, false);
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        editor.overlays.open({ ownerKey: props.nodeKey, viewType: "context-menu", data: { documentTab: key },
+          anchor: event instanceof MouseEvent ? { x: event.clientX, y: event.clientY } : { x: rect.left, y: rect.bottom } });
+      };
+      const tabs = () => <div class="reactive-tabs"><div class="reactive-tabs__labels" role="tablist"><For each={tabKeys()}>{key => {
+        const title = () => resolve(tabId(key) ?? '')?.title ?? String((editor.node(key)?.payload.metadata as any)?.name ?? 'Unavailable Document');
+        onCleanup(() => tabButtons.delete(key));
+        return <div class="flint-document-tab" role="presentation" data-active={activeTab() === key} data-native-context-menu
+          onContextMenu={event => openTabMenu(key, event)}
+          onKeyDown={event => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) openTabMenu(key, event); }}>
+          <button ref={button => tabButtons.set(key, button)} type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{title()}</button>
+          <button type="button" class="flint-document-tab__close" aria-label={`Close Document: ${title()}`} title={`Close ${title()}`} onClick={event => { event.stopPropagation(); closeTab(key); }}>×</button>
+        </div>;
+      }}</For></div><For each={tabKeys()}>{key=><Show when={activeTab()===key}><div class="reactive-tabs__panel" role="tabpanel"><Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show></div></Show>}</For></div>;
       const activeId = () => { const key = activeTab(); return key && tabId(key); };
       const requireId = () => { const id = activeId(); if (!id || !resolve(id)) throw new Error("Select an available Document tab"); return id; };
       const openDocument = (id: string, transient = false) => {
@@ -314,7 +355,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
             const content = editor.repository.readState().contents[doc.contentKey];
             editor.commands.setPayloadField(doc.placement, "metadata", { ...(content.payload.metadata as object), title: title.trim() }, "Rename Document");
           },
-          closeActiveTab() { guard(); const key = activeTab(); if (key) { if(navigation.tabs.has(key)){navigation.tabs.delete(key);navigation.active=undefined;setNavigationRevision(n=>n+1);}else editor.commands.remove(key); bookmarks.delete(key); const r = row(); if (r) editor.setViewChild(r.key, r.children[0]); } },
+          closeActiveTab() { const key = activeTab(); if (key) closeTab(key); },
         }} />
       </div></>;
     };

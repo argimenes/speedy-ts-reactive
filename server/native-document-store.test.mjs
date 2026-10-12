@@ -31,6 +31,18 @@ it('saves/reopens rich native bytes through actual routes and preserves identity
  const standalone=await fixture();await fs.writeFile(path.join(standalone.root,'renamed.mutable.json'),g.native);
  expect((await standalone.call('native/open',{location:{folder:'.',filename:'renamed.mutable.json'}})).Data.resourceId).toBe(g.resourceId);
 });
+it('saves, lists and reopens .phosphor native pairs while excluding their Markdown projections',async()=>{
+ const f=await fixture(),g=await f.generation();f.location.filename='screen.phosphor';
+ const saved=await f.save(g);expect(saved.Data.result.phase).toBe('saved');
+ expect(await fs.readFile(path.join(f.root,'screen.phosphor'),'utf8')).toBe(g.native);
+ expect(await fs.readFile(path.join(f.root,'screen.phosphor.md'),'utf8')).toBe(g.markdown);
+ expect((await f.call('native/list?folder=.')).Data.files).toEqual(['screen.phosphor']);
+ expect((await f.call('listDocuments?folder=.')).files).toEqual(['screen.phosphor']);
+ await f.restart();
+ const opened=await f.call('native/open',{location:f.location});
+ expect(opened.Data.native).toBe(g.native);expect(opened.Data.resourceId).toBe(g.resourceId);
+ expect((await f.call('native/open',{location:{folder:'.',filename:'screen.phosphor.md'}})).status).toBe(400);
+});
 it('rejects a stale second editor even though the durable server receipt advanced',async()=>{
  const f=await fixture(),g=await f.generation();await f.save(g);const opened=(await f.call('native/open',{location:f.location})).Data;
  const newer=await f.generation(undefined,'Client one');expect((await f.save(newer,opened.baseline)).Data.result.phase).toBe('saved');

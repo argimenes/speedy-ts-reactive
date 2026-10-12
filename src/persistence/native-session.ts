@@ -208,7 +208,7 @@ export class NativeDocumentSession {
     if([...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('')!==expected.byteHash)throw Error('Selected native bytes changed');
   }
   private async openResource(location: DocumentLocation, importText: boolean, expected?:{resourceId:string;byteHash:string;check:()=>void;signal?:AbortSignal;verify?:()=>Promise<void>;completed:()=>void}, signal = expected?.signal) {
-    if(isDerivedMarkdownName(location.filename))throw new Error('Open the .ink Document; .ink.md is a derived projection');
+    if(isDerivedMarkdownName(location.filename))throw new Error('Open the native Document; this Markdown file is a derived projection');
     const data = await request('open',{location},signal); signal?.throwIfAborted(); if(expected){expected.check();await this.checkSelected(data,expected);expected.check();await expected.verify?.();expected.check();} if(this.disposed)throw new Error('Document session closed');
     if(data.kind === 'markdown') {
       if(!importText)throw new Error('Choose Import Markdown to create a new native candidate');
@@ -279,10 +279,10 @@ export class NativeDocumentSession {
     if(this.compatibleSources.has(id)){if(location&&!sameLocation(location,this.compatibleSources.get(id)!.location))throw Error('Changing source format/location requires explicit Save As; no conversion was performed');return this.saveRecognized(id);}
     if(this.editor.blockHistory.state.storage==='persistent')throw new Error('Native pair integration does not migrate persistent History enrollment');
     let b=this.bindings.get(id);
-    if(!b){if(!location||!isNativeDocumentName(location.filename))throw new Error('Choose a .ink or .mutable.json destination');captureNative(this.editor.repository.snapshot(),id);b=this.bind(id,location,{nativeHash:null,markdownHash:null,generation:null});}
+    if(!b){if(!location||!isNativeDocumentName(location.filename))throw new Error('Choose a .ink, .phosphor or .mutable.json destination');captureNative(this.editor.repository.snapshot(),id);b=this.bind(id,location,{nativeHash:null,markdownHash:null,generation:null});}
     // A rejected first destination has no durable binding to relocate.
     if(location && !sameLocation(b.location,location) && b.baseline.nativeHash===null && !b.pending) {
-      if(!isNativeDocumentName(location.filename))throw new Error('Choose a .ink or .mutable.json destination');
+      if(!isNativeDocumentName(location.filename))throw new Error('Choose a .ink, .phosphor or .mutable.json destination');
       b.location={...location};this.touchStorage();
     }
     return this.operate(id,false);

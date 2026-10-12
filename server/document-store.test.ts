@@ -49,9 +49,10 @@ describe("document store HTTP routes", () => {
     expect((await fs.readdir(path.join(root, "archive", "nested"))).some((name) => name.endsWith(".tmp"))).toBe(false);
   });
   it("lists all JSON names alongside Ink without inspecting content or requiring native suffixes", async () => {
-    const names = ['Chapter.json', 'NOTES.JSON', 'Native.mutable.json', 'Screen.ink', 'Unknown.json', 'Broken.json'];
+    const names = ['Chapter.json', 'NOTES.JSON', 'Native.mutable.json', 'Screen.ink', 'Artwork.phosphor', 'Unknown.json', 'Broken.json'];
     for (const name of names) await fs.writeFile(path.join(root, name), name === 'Broken.json' ? '{' : name === 'Unknown.json' ? '{}' : JSON.stringify(document));
     await fs.writeFile(path.join(root, 'Screen.ink.md'), 'Derived projection');
+    await fs.writeFile(path.join(root, 'Artwork.phosphor.md'), 'Derived projection');
     await fs.mkdir(path.join(root, 'folder.json'));
     const listing = await (await fetch(`${base}/listDocuments?folder=.`)).json();
     expect(listing.files.sort()).toEqual(names.sort());
