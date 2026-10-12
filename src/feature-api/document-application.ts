@@ -14,6 +14,12 @@ export interface DocumentApplicationInstance {
   knowledge?: ApplicationKnowledge;
   /** Entity-reference inventory in the active Document occurrence. */
   entityBacklinks?: Component;
+  entities?: {
+    rows(): readonly { id: string; name: string; documentMentions: number }[];
+    pending(): boolean;
+    refresh(): void;
+    focus(id: string): void;
+  };
   properties(): ApplicationDocumentProperties | undefined;
   setProperties(id: string, value: {title: string; tags: readonly string[]}): void;
   files?: {

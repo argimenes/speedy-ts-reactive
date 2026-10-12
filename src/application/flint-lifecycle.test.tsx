@@ -10,8 +10,8 @@ import { materializeLocalWorkspace, createWorkspaceSaveBundle, materializeWorksp
 import type { ExistingBlockDto } from "../block-tree/types";
 const disposers: (() => void)[] = [];
 afterEach(() => { disposers.splice(0).reverse().forEach(d => d()); document.body.replaceChildren(); localStorage.clear(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
-function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true) {
-  const editor = new ReactiveEditor(materializeLocalWorkspace(saved ?? { id: "workspace", type: "workspace-block", children: [] }), { features: { flint: enabled, flintMaterialChrome: materialChrome, compactEditorChrome: false } });
+function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true, spatialGraph = true) {
+  const editor = new ReactiveEditor(materializeLocalWorkspace(saved ?? { id: "workspace", type: "workspace-block", children: [] }), { features: { flint: enabled, flintMaterialChrome: materialChrome, flintSpatialGraph: spatialGraph, compactEditorChrome: false } });
   registerApplicationViews(editor); const projection = editor.createView("workspace");
   disposers.push(() => editor.dispose());
   if (!saved && enabled) editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined });
@@ -25,6 +25,28 @@ function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true) 
 }
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 describe("Flint composite transient hosting", () => {
+  it("switches to the integrated entity Graph without remounting or altering the Document", async () => {
+    const f = setup(true, undefined, false); await tick();
+    const node=f.text(), mount=f.editor.mounts.get(node.key)!, view=f.views()[0];
+    f.editor.focus.request(node.key); mount.restoreInlineSelection!({anchor:1,head:4});
+    const before=f.editor.repository.snapshot();
+    const toggle=f.host.querySelector<HTMLButtonElement>('[aria-label="Toggle Document and Graph"]')!;
+    toggle.click();
+    await vi.waitFor(()=>expect(f.host.querySelector('[aria-label="Document entity graph"]')).toBeTruthy());
+    expect(f.editor.mounts.get(node.key)).toBe(mount); expect(f.views()[0]).toBe(view);
+    expect(f.host.querySelector('.flint-application')?.getAttribute('data-view')).toBe('graph');
+    toggle.click(); await tick();
+    expect(f.editor.mounts.get(node.key)).toBe(mount);
+    expect(f.editor.repository.snapshot()).toEqual(before);
+    expect(f.host.querySelector('[aria-label="Document entity graph"]')).toBeNull();
+  });
+  it("can disable the new Graph capability without restoring an alternate presentation", async () => {
+    const f=setup(true,undefined,false,false);await tick();
+    expect(f.host.querySelector('[aria-label="Toggle Document and Graph"]')).toBeNull();
+    expect(f.host.querySelector('.flint-spatial-navigation')).toBeTruthy();
+    expect(f.editor.mounts.get(f.text().key)!.inputPolicy).toBe('standoff');
+  });
+
   it("closes a background Document from its tab button without changing the active view or deleting content", async () => {
     const f = setup(true, undefined, false); await tick();
     f.tabs()[0].click(); await tick();

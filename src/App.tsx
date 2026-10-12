@@ -149,16 +149,8 @@ export default function App(props: { configuration?: ReactiveEditorConfiguration
     const Phosphor = lazy(() => import("./features/phosphor/demo"));
     return <Phosphor configuration={props.configuration} />;
   }
-  if (route === `${import.meta.env.BASE_URL}flint-material-three`) {
-    if (!features.flintMaterialLighting || !features.flintThreeGraphSpike) return <main class="reactive-pilot"><h1>Three.js Graph spike disabled</h1><a href={`${import.meta.env.BASE_URL}flint-material`}>Return to SVG study</a></main>;
-    const Spike = lazy(() => import("./features/flint/three-material-playground"));
-    return <Spike lightFieldEnabled={features.flintLightField} materialChrome={features.flintMaterialChrome} probe={features.flintProbe} />;
-  }
-  if (route === `${import.meta.env.BASE_URL}flint-material`) {
-    if (!features.flintMaterialLighting) return <main class="reactive-pilot"><h1>Material playground disabled</h1><a href={import.meta.env.BASE_URL}>Return to Mutable</a></main>;
-    const Playground = lazy(() => import("./features/flint/material-playground"));
-    return <Playground lightFieldEnabled={features.flintLightField} />;
-  }
+  // Historical study URLs now launch the same production Flint in Mutable OS.
+  const launchFlint = ['flint', 'flint-material', 'flint-material-three'].some(path => route === `${import.meta.env.BASE_URL}${path}`);
   if (import.meta.env.DEV && import.meta.env.VITE_CANVAS_MILESTONE_A === "1" && route === `${import.meta.env.BASE_URL}scaled-window-prototype`) {
     const Prototype = lazy(() => import("./demo/scaled-window-prototype"));
     return <Prototype />;
@@ -168,7 +160,7 @@ export default function App(props: { configuration?: ReactiveEditorConfiguration
   if (route === `${import.meta.env.BASE_URL}pilot`) return <PilotApp />;
   // Accepted application capability; hosts can still explicitly disable it.
   const configuration = { features: { canvasWorkspace: import.meta.env.VITE_CANVAS_WORKSPACE !== "0", spatialWorkspace: import.meta.env.VITE_SPATIAL_WORKSPACE === "1", ...props.configuration?.features } };
-  const workspace = () => <WorkspaceDemo configuration={configuration}
+  const workspace = () => <WorkspaceDemo configuration={configuration} launchFlint={launchFlint}
     initialWorkspace={new URLSearchParams(window.location.search).get("demo") === "1" ? undefined : createInitialWorkspace()} />;
   return features.cavernStartup ? <CavernStartup>{() => workspace()}</CavernStartup> : workspace();
 }

@@ -28,16 +28,12 @@ export type FeatureFlags = Readonly<{
   phosphorStudioDrift: boolean;
   /** Manual controls for Phosphor's shared studio lighting. */
   phosphorLightingControls: boolean;
-  /** Isolated material/lighting playground; does not replace Flint chrome. */
-  flintMaterialLighting: boolean;
-  /** Experimental workspace sunlight/occlusion field within the material study. */
-  flintLightField: boolean;
-  /** Isolated Three.js Graph materiality spike; no production Graph migration. */
-  flintThreeGraphSpike: boolean;
   /** Flint-wide material substrate and real environmental occlusion; DOM editor unchanged. */
   flintMaterialChrome: boolean;
-  /** Experimental application-wide stone pointer; Alt + wheel rotates it. */
+  /** Application-wide stone pointer; Alt + wheel rotates it. */
   flintProbe: boolean;
+  /** Live sculptural entity graph in the normal Flint application. */
+  flintSpatialGraph: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
   nativeDocumentPersistence: boolean;
   /** Accepted loaded-resource provider; false retains the legacy rollback. */
@@ -83,11 +79,9 @@ export const featureFlags: FeatureFlags = Object.freeze({
   phosphorNixie: true,
   phosphorStudioDrift: true,
   phosphorLightingControls: true,
-  flintMaterialLighting: true,
-  flintLightField: true,
-  flintThreeGraphSpike: true,
   flintMaterialChrome: true,
   flintProbe: true,
+  flintSpatialGraph: true,
   nativeDocumentPersistence: true,
   nativeKnowledge: true,
   nativeKnowledgeSaved: false,

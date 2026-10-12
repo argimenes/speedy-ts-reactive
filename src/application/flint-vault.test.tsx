@@ -34,7 +34,7 @@ async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise
  }
  const f=make();return {...f,root,make};
 }
-async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Vault');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Vault').disabled).toBe(false));}
+async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Cavern');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Cavern').disabled).toBe(false));}
 async function create(host:ParentNode,name='note.mutable.json',title='A title') {field(host,'New Document filename',name);field(host,'New Document title',title);click(host,'New Document');await wait(()=>expect(host.textContent).toContain('Saved native Document and Markdown'));await wait(()=>expect(host.querySelector(`[aria-label="Open vault/${name}"]`)).toBeTruthy());await wait(()=>expect(button(host,'New Document').disabled).toBe(false));}
 const idOf=(host:ParentNode)=>host.querySelector('[data-flint-property="id"]')!.textContent!;
 it('uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files',async()=>{

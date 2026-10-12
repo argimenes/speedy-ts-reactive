@@ -40,7 +40,7 @@ export function createProbeController(root:HTMLElement,getLighting:()=>Lighting|
     const moved=!seen||x!==event.clientX||y!==event.clientY;
     x=event.clientX;y=event.clientY;seen=true;
     const hit=document.elementFromPoint(x,y);
-    inside=!!hit&&root.contains(hit)&&hit.closest('.flint-application,.flint-material-playground')===root;
+    inside=!!hit&&root.contains(hit)&&hit.closest('.flint-application')===root;
     if(moved)suppressed=false;
     request();
   }

@@ -112,50 +112,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('WebGL failure restores cursor and preserves editor mount',await evaluate(`!proof.win.hasAttribute('data-probe-cursor')&&!proof.probe.renderer&&proof.mount===proof.editor.mounts.get(proof.node.key)`));
  await evaluate(`proof.dispose();proof.session.dispose()`);
  check('owning Solid lifecycle disposes Probe and pending work',await evaluate(`proof.probe.disposed&&!proof.probe.pending&&!document.querySelector('.flint-probe-canvas')`));
- // Actual Three Graph in the other Flint host uses the same Probe controller.
- await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:1,mobile:false},sessionId);
- await send('Page.navigate',{url:appUrl+'/flint-material-three'},sessionId);
- await evaluate(`(async()=>{for(let i=0;i<300;i++){if(document.querySelector('[data-ready="true"]'))break;await new Promise(r=>setTimeout(r,40));}const m=await import('/src/features/flint/material-playground.tsx'),q=await import('/src/features/flint/probe/probe.tsx');window.root=document.querySelector('.flint-material-playground');window.p=m.materialPlaygroundPresentation(root);for(let i=0;i<150;i++){if(q.probePresentation(root)&&p.graph.metrics.loadedTextures===2)break;await new Promise(r=>setTimeout(r,40));}window.probe=q.probePresentation(root);await new Promise(r=>setTimeout(r,100));})()`);
- await mouse(580,165);await shot('06-enter-graph');
- const settleRotation=()=>evaluate(`(async()=>{for(let i=0;i<300;i++){if(!probe.pending&&Math.abs(probe.rotation-probe.targetRotation)<.001)return;await new Promise(r=>setTimeout(r,40));}throw Error('Probe rotation did not settle');})()`);
- const nodePoint=await evaluate(`(()=>{const v=p.graph.views.get('waste-land'),q=p.graph.project(v.group.position),r=root.querySelector('.flint-three-canvas').getBoundingClientRect();return {x:r.left+q.x,y:r.top+q.y}})()`);
- await mouse(nodePoint.x,nodePoint.y);await shot('07-node-blue');
- check('Three target projection produces blue proximity',await evaluate(`probe.state.proximity==='graph-node'&&probe.renderer.diode.material.emissive.b>probe.renderer.diode.material.emissive.r&&probe.renderer.diode.material.emissiveIntensity>2`));
- await evaluate(`p.graph.select(undefined)`);await press(nodePoint);
- check('Probe hotspot clicks the actual Graph node',await evaluate(`p.graph.selectedId==='waste-land'`));
- const clip={x:nodePoint.x-25,y:nodePoint.y-15,width:80,height:115,scale:4};
- const detailShot=async name=>{
-   // Render real extra samples at high DPI; do not enlarge the physical model.
-   await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:3,mobile:false},sessionId);
-   await evaluate(`probe.renderer.renderer.setPixelRatio(3);p.lighting.setLight({})`);await pause(200);
-   const {data}=await send('Page.captureScreenshot',{format:'png',clip:{...clip,scale:1}},sessionId);await writeFile(path.join(artifacts,name+'.png'),Buffer.from(data,'base64'));
-   await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:1,mobile:false},sessionId);
-   await evaluate(`probe.renderer.renderer.setPixelRatio(1);p.lighting.setLight({})`);await pause(100);
- };
- await detailShot('08-probe-front-detail');
- await evaluate(`window.cameraX=p.graph.camera.position.x;window.cameraY=p.graph.camera.position.y;window.zoom=p.graph.zoom;window.angle=probe.rotation`);
- await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:380,modifiers:1},sessionId);await pause(35);
- check('Alt-wheel eases toward target without scrolling or Graph zoom',await evaluate(`probe.targetRotation>angle+2&&probe.rotation>angle&&probe.rotation<probe.targetRotation&&p.graph.camera.position.x===cameraX&&p.graph.camera.position.y===cameraY&&p.graph.zoom===zoom`));await detailShot('09-probe-turning-detail');
- await settleRotation();await shot('10-probe-reverse');await detailShot('11-probe-reverse-detail');
- check('rotation reveals reverse while hotspot stays fixed',await evaluate(`Math.abs(probe.rotation-probe.targetRotation)<.001&&Math.abs(probe.renderer.body.position.x+root.getBoundingClientRect().left-${nodePoint.x})<.1`));
- for(const [name,target] of [['12-three-quarter',.8],['13-side',Math.PI/2],['14-back',Math.PI]]) {
-   const current=await evaluate('probe.targetRotation');
-   await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:(target-current)/.008,modifiers:1},sessionId);
-   await settleRotation();await detailShot(name);
- }
- console.log('Probe render sanity:',await evaluate(`({triangles:probe.renderer.renderer.info.render.triangles,lastSubmitMs:probe.renderer.metrics.lastRenderMs,idle:!probe.pending})`));
- await evaluate(`document.activeElement?.blur();window.spaceAngle=probe.targetRotation;window.spaceScroll=scrollY`);
- await spaceDown(false);await spaceDown(true);await spaceUp();await settleRotation();
- check('Space flips once per press without repeat, page scroll or Graph movement',await evaluate(`Math.abs(probe.targetRotation-spaceAngle-Math.PI)<.001&&Math.abs(probe.rotation-probe.targetRotation)<.001&&scrollY===spaceScroll&&p.graph.camera.position.x===cameraX&&p.graph.camera.position.y===cameraY&&p.graph.zoom===zoom`));
- await space();await settleRotation();
- check('a second Space turns Probe over again and rendering settles',await evaluate(`Math.abs(probe.targetRotation-spaceAngle-2*Math.PI)<.001&&Math.abs(probe.rotation-probe.targetRotation)<.001&&!probe.pending`));
- check('upper tip owns the hotspot and long axis stays upright through a turn',await evaluate(`(()=>{const body=probe.renderer.body,geometry=probe.renderer.geometry;geometry.computeBoundingBox();body.updateMatrixWorld(true);const origin=body.position.clone().set(0,0,0),tip=body.localToWorld(origin.clone()),bottom=body.localToWorld(origin.clone().set(0,-42,0));return geometry.boundingBox.max.y===0&&geometry.boundingBox.min.y===-42&&tip.distanceTo(body.position)<.001&&bottom.y<tip.y&&Math.abs(bottom.z-tip.z)<.001})()`));
- await send('Input.dispatchMouseEvent',{type:'mouseWheel',x:nodePoint.x,y:nodePoint.y,deltaX:0,deltaY:30,modifiers:2},sessionId);await pause(150);
- check('ordinary Ctrl-wheel still zooms Graph',await evaluate(`p.graph.zoom!==zoom`));
- await mouse(330,900);await pause(200);
- check('moving away extinguishes diode and rendering becomes idle',await evaluate(`probe.state.proximity==='none'&&probe.renderer.diode.material.emissiveIntensity===0&&!probe.pending`));
- await send('Emulation.setEmulatedMedia',{features:[{name:'forced-colors',value:'active'}]},sessionId);await pause(150);
- check('forced colours restores native cursor',await evaluate(`!root.hasAttribute('data-probe-cursor')&&!probe.renderer`));
+ // Graph coverage now runs against the real app in check-flint-integration-browser.mjs.
  check('no uncaught runtime errors',errors.length,0);
  await writeFile(path.join(artifacts,'browser-results.json'),JSON.stringify({checks,errors,limits:['Headless Chromium with software WebGL; desktop latency needs normal hardware review.','Geometry reconstructed from the supplied presentation sheet; no GLB or separate PBR maps were provided.']},null,2));
  console.log(JSON.stringify({passed:checks.length,artifacts},null,2));

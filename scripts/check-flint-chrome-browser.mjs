@@ -76,7 +76,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    await proof.wait(()=>proof.win.dataset.materialReady==='true');
    proof.scene=proof.material.scene;
  })()`);
- check('one material canvas and one explicitly registered editor viewport',await evaluate(`proof.win.querySelectorAll('.flint-material-canvas').length===1&&proof.scene.metrics.surfaces===1&&proof.scene.camera.isOrthographicCamera`));
+ check('one material canvas, editor viewport and physical chrome',await evaluate(`proof.win.querySelectorAll('.flint-material-canvas').length===1&&proof.scene.metrics.surfaces>8&&proof.scene.camera.isOrthographicCamera`));
  await evaluate('new Promise(r=>setTimeout(r,500))');await shot('chrome-default');
  await evaluate(`proof.win.querySelector('.flint-light-controls').open=true;proof.sunBefore=proof.scene.scene.children.find(o=>o.isDirectionalLight).position.toArray();proof.field('Direction',135)`);
  await wait(`JSON.stringify(proof.scene.scene.children.find(o=>o.isDirectionalLight).position.toArray())!==JSON.stringify(proof.sunBefore)`);
@@ -111,15 +111,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('static scene idles',await evaluate(`proof.frames===proof.scene.metrics.frames&&!proof.material.lighting.pending`));
  await evaluate(`proof.dispose();proof.session.dispose()`);
  check('unmount releases material renderer and scheduler',await evaluate(`proof.scene.disposed&&proof.material.lighting.disposed`));
- // Same Graph fixture and viewport as A.5, now under the actual environment.
- await send('Emulation.setDeviceMetricsOverride',{width:1536,height:1024,deviceScaleFactor:1,mobile:false},sessionId);
- await send('Page.navigate',{url:appUrl+'/flint-material-three'},sessionId);
- await evaluate(`(async()=>{for(let i=0;i<250;i++){if(document.querySelector('[data-ready="true"]'))return;await new Promise(r=>setTimeout(r,40));}throw Error('Graph not ready')})()`);
- await evaluate(`(async()=>{const m=await import('/src/features/flint/material-playground.tsx');window.graphRoot=document.querySelector('.flint-material-playground');window.graphProof=m.materialPlaygroundPresentation(graphRoot);await new Promise(r=>setTimeout(r,700));})()`);
- check('Graph retains sculptures and HTML labels with a real material environment',await evaluate(`graphProof.graph.nodes.length===13&&graphRoot.querySelectorAll('.flint-three-label').length===13&&graphProof.materialScene.metrics.frames>0`));await shot('graph-environment');
- await evaluate(`const direction=graphRoot.querySelector('[aria-label="Direction"]');direction.value='135';direction.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(r=>setTimeout(r,200))`);await shot('graph-reversed');
- await evaluate(`graphProof.graph.select('waste-land');window.oldX=graphProof.graph.views.get('waste-land').group.position.x;graphProof.graph.move(15,0);graphProof.graph.zoomBy(.1);await new Promise(r=>setTimeout(r,150))`);
- check('Graph selection, movement and XY zoom still work',await evaluate(`graphProof.graph.views.get('waste-land').group.position.x===oldX+15&&graphProof.graph.selectedId==='waste-land'`));
+ // Graph coverage now runs against the real app in check-flint-integration-browser.mjs.
  check('no uncaught runtime errors',errors.length,0);
  await writeFile(path.join(artifacts,'browser-results.json'),JSON.stringify({checks,errors,limits:['Headless Chromium with software WebGL. Original concept reviewed visually; no pixel-equivalence claim.']},null,2));
  console.log(JSON.stringify({passed:checks.length,artifacts},null,2));

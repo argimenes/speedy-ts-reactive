@@ -303,19 +303,21 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       },accepts:key=>{const node=editor.node(key);return !!node&&[...liveViews.values()].some(view=>view.viewId===node.viewId);}}));
       createEffect(() => { const vault=selectedVault(); untrack(() => facts?.use(vault)); });
       const knowledge = native ? new VaultKnowledge(editor, native, knowledgeHost, undefined, facts) : undefined;
+      const entityList = new DocumentEntityList(entityAnnotations);
+      const entityOrigin = createMemo(() => {
+        viewRevision();
+        const key = activeTab();
+        return key ? liveViews.get(key)?.state.rootKey : undefined;
+      });
+      createEffect(() => {
+        const key = entityOrigin();
+        selectedVault()?.root;
+        untrack(() => { entityList.close(false); if (key) entityList.open(key, true); });
+      });
+      onCleanup(() => entityList.dispose());
       const EntityBacklinks = () => {
-        const list = new DocumentEntityList(entityAnnotations);
-        const origin = createMemo(() => {
-          viewRevision();
-          const key = activeTab();
-          return key ? liveViews.get(key)?.state.rootKey : undefined;
-        });
-        createEffect(() => {
-          const key = origin();
-          selectedVault()?.root;
-          untrack(() => { list.close(false); if (key) list.open(key, true); });
-        });
-        onCleanup(() => list.dispose());
+        const list = entityList, origin = entityOrigin;
+        onCleanup(() => list.clearPreview());
         return <section class="flint-backlinks flint-entity-list" aria-label="Document backlinks">
           <header><h2>Backlinks</h2><button type="button" aria-label="Refresh backlinks" disabled={!origin() || list.state.pending} onClick={() => list.refreshSummaries()}>Refresh</button></header>
           <Show when={origin()} fallback={<p>Open a Document to see its entity references.</p>}><EntityListContents list={list}/></Show>
@@ -344,6 +346,12 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       return <><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
           documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, entityBacklinks: EntityBacklinks,
+          entities: {
+            rows: () => entityList.state.rows,
+            pending: () => entityList.state.pending,
+            refresh: () => entityList.refreshSummaries(),
+            focus: id => { entityList.clearConcertina(); entityList.focusOccurrences(id); },
+          },
           setProperties(id, value) {
             guard(); const doc = resolve(id); if (!doc?.placement) throw new Error('Document unavailable');
             if (tagsOf(id) === undefined) throw new Error('Existing tags payload is incompatible; it has been preserved');
@@ -378,7 +386,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       editor.commands.transaction("Open Flint", () => {
         const bank = banks[0] ?? editor.commands.insert({ id: crypto.randomUUID(), type: "workspace-object-bank-block", children: [] }, { kind: "at", parentKey: root, index: editor.commands.childrenOf(root).length });
         for (const document of examples) editor.commands.insert(document, { kind: "at", parentKey: bank, index: editor.commands.childrenOf(bank).length });
-        editor.commands.insert({ id: crypto.randomUUID(), type: "window-block", metadata: { title: "Flint", position: { x: 35 + (zIndex - 1) * 24, y: 35 + (zIndex - 1) * 24 }, size: { w: 1040, h: 720 }, zIndex }, children: [definition.create(initialTabs.slice(0, 2))] }, { kind: "at", parentKey: desktopParent, index: 0 });
+        editor.commands.insert({ id: crypto.randomUUID(), type: "window-block", metadata: { title: "Flint", position: { x: 35 + (zIndex - 1) * 24, y: 35 + (zIndex - 1) * 24 }, size: { w: Math.min(1380, Math.max(840, window.innerWidth - 90)), h: Math.min(900, Math.max(620, window.innerHeight - 120)) }, zIndex }, children: [definition.create(initialTabs.slice(0, 2))] }, { kind: "at", parentKey: desktopParent, index: 0 });
       });
     } }, scope.owner));
   } };

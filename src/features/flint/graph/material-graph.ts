@@ -1,7 +1,7 @@
 import { Graph, MiniMap, Selection, type Node, type NodeMetadata } from '@antv/x6';
 import type { Lighting } from '../lighting';
 import type { MaterialInteractions } from '../material-interaction';
-import { fixtureNodes, type FixtureNode } from './material-fixture';
+import type { ReliefNode } from './relief-node';
 import { installReliefDefinitions, svgElement } from '../relief-defs';
 import { type MaterialResponse, type Position, type StoneFinish } from '../material-response';
 import { materialForForm } from '../relief-vocabulary';
@@ -11,11 +11,11 @@ import type { TextureLayers } from '../material-textures';
 export type DetailLevel = 'full' | 'simple' | 'flat';
 export function createMaterialGraph(options: {
   container: HTMLElement; minimap: HTMLElement; lighting: Lighting; interactions: MaterialInteractions;
-  onSelection: (node: FixtureNode | undefined) => void; onZoom: (zoom: number) => void;
+  onSelection: (node: ReliefNode | undefined) => void; onZoom: (zoom: number) => void;
 }) {
   const { container, lighting, interactions } = options;
   const prefix = `flint-relief-${crypto.randomUUID()}`;
-  let registrations: (() => void)[] = [], ownedLocalDefs: Element[] = [], nodes: readonly FixtureNode[] = [];
+  let registrations: (() => void)[] = [], ownedLocalDefs: Element[] = [], nodes: readonly ReliefNode[] = [];
   let selectedId: string | undefined, detail: DetailLevel = 'full', disposed = false;
   let finish: StoneFinish = 'limestone';
   const graph = new Graph({
@@ -30,8 +30,6 @@ export function createMaterialGraph(options: {
   graph.use(new Selection({ enabled: true, multiple: false, rubberband: false, showNodeSelectionBox: true, movable: true }));
   graph.use(new MiniMap({ container: options.minimap, width: 168, height: 112, padding: 8, scalable: false, graphOptions: { async: false } }));
   const definitions = installReliefDefinitions(graph.view.defs, prefix, lighting);
-  const contextual = svgElement('g', { class: 'flint-contextual-outlines', 'pointer-events': 'none', 'aria-hidden': 'true' });
-  graph.view.stage.prepend(contextual);
 
   function select(id?: string) {
     selectedId = id;
@@ -49,7 +47,7 @@ export function createMaterialGraph(options: {
   };
   container.addEventListener('click', labelClick);
 
-  function addNode(spec: FixtureNode) {
+  function addNode(spec: ReliefNode) {
     const localId = `${prefix}-local-${spec.id}`;
     const glow = svgElement('radialGradient', { id: `${localId}-glow`, cx: '50%', cy: '50%', r: '70%' });
     glow.append(svgElement('stop', { offset: 0, 'stop-color': '#fffdf0', 'stop-opacity': 1 }), svgElement('stop', { offset: 1, 'stop-color': '#fffdf0', 'stop-opacity': 0 }));
@@ -109,28 +107,20 @@ export function createMaterialGraph(options: {
     }));
     return node;
   }
-  function setFixture(count = 13) {
+  function setNodes(input: readonly ReliefNode[]) {
     for (const stop of registrations.splice(0)) stop();
     for (const el of ownedLocalDefs.splice(0)) el.remove();
-    graph.clearCells(); contextual.replaceChildren();
-    nodes = fixtureNodes(count);
+    graph.clearCells();
+    nodes = input.map(node => ({ ...node }));
     graph.batchUpdate(() => {
       for (const spec of nodes) addNode(spec);
       for (let i = 1; i < nodes.length; i++) {
-        const source = count === 13 ? nodes[0].id : nodes[i - 1].id;
+        const source = nodes[0].id;
         graph.addEdge({ source, target: nodes[i].id, zIndex: -1,
           attrs: { line: { stroke: '#79705f', strokeWidth: .8, targetMarker: null, sourceMarker: null, strokeDasharray: i % 3 === 0 ? '4 4' : '' } },
         });
       }
     });
-    if (count === 13) {
-      for (const [cx, cy, rx, ry] of [[348, 191, 94, 99], [774, 342, 91, 91], [551, 619, 118, 91]]) {
-        contextual.append(svgElement('ellipse', { cx, cy, rx, ry, fill: 'none', stroke: '#817562', 'stroke-width': .8, 'stroke-dasharray': '4 5' }));
-      }
-      for (const [cx, cy] of [[257, 151], [242, 329], [267, 413], [434, 224], [534, 210], [687, 264], [697, 334], [523, 523], [397, 552], [355, 499], [474, 647]]) {
-        contextual.append(svgElement('circle', { cx, cy, r: 6, fill: `url(#${prefix}-body)`, filter: `url(#${prefix}-relief)` }));
-      }
-    }
     select(nodes[0]?.id); fit();
   }
   function fit() { graph.zoomToFit({ padding: 60, maxScale: 1.15, minScale: .15 }); options.onZoom(graph.zoom()); }
@@ -154,7 +144,7 @@ export function createMaterialGraph(options: {
   container.dataset.detail = detail;
   container.dataset.finish = 'limestone';
   return {
-    graph, prefix, setFixture, select, fit,
+    graph, prefix, setNodes, select, fit,
     setTextureLayers(layers: TextureLayers) { definitions.setTextureLayers(layers); },
     get nodes() { return nodes; }, get selectedId() { return selectedId; }, get disposed() { return disposed; },
     setDetail(value: DetailLevel) { detail = value; container.dataset.detail = value; options.minimap.dataset.detail = 'flat'; definitions.setDetail(value); },

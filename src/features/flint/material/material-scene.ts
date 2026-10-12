@@ -1,4 +1,5 @@
 import * as T from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { STONE_TILE } from './stone-detail';
 import type { Lighting } from '../lighting';
 import { applyFlintLight, configureMaterialRenderer, createFlintAmbient, FLINT_SUN_COLOR } from './scene-light';
@@ -26,7 +27,7 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
   const registry = materialFactory(request, .72), rig = createOcclusionRig(scene);
   const geometry = new T.PlaneGeometry(1, 1);
   const substrate = new T.Mesh(geometry, registry.get('limestone')); substrate.receiveShadow = true; scene.add(substrate);
-  const surfaces = new Map<HTMLElement, T.Mesh<T.PlaneGeometry, T.MeshStandardMaterial>>();
+  const surfaces = new Map<HTMLElement, T.Mesh<T.BufferGeometry, T.MeshStandardMaterial>>();
   const invalidateLayout = () => { layoutDirty = true; request(); };
   const observer = new ResizeObserver(invalidateLayout); observer.observe(root);
   // Scroll outside the app changes all client rectangles together; internal
@@ -34,11 +35,14 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
   root.addEventListener('scroll', invalidateLayout, true);
   const stopLight = lighting.subscribe(request);
   function geometryFor(mesh: T.Mesh, w: number, h: number, x: number, y: number, z: number) {
-    mesh.scale.set(w, h, 1); mesh.position.set(x + w / 2, -y - h / 2, z);
+    const depth = Number(mesh.userData.reliefDepth ?? 0);
+    mesh.scale.set(depth ? 1 : w, depth ? 1 : h, 1);
+    mesh.position.set(x + w / 2, -y - h / 2, z + depth / 2 - (mesh.userData.pressed ? 1.5 : 0) - (mesh.userData.selected ? .7 : 0));
     // World-sized texture repeat, not stretched to each surface's aspect ratio.
     if (mesh.geometry !== geometry) mesh.geometry.dispose();
-    const plane = new T.PlaneGeometry(1, 1), uv = plane.getAttribute('uv');
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, (x + uv.getX(i) * w) / STONE_TILE, (-y + uv.getY(i) * h) / STONE_TILE);
+    const plane = depth ? new RoundedBoxGeometry(Math.max(1,w), Math.max(1,h), depth, 3, Math.min(2.5,depth/2,w/4,h/4)) : new T.PlaneGeometry(1, 1);
+    const uv = plane.getAttribute('uv'), positions = plane.getAttribute('position');
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (x + (depth ? positions.getX(i)+w/2 : uv.getX(i)*w)) / STONE_TILE, (-y + (depth ? positions.getY(i)+h/2 : uv.getY(i)*h)) / STONE_TILE);
     mesh.geometry = plane;
   }
   const stopRender = lighting.addTask(() => {
@@ -56,6 +60,14 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
       geometryFor(substrate, width, height, 0, 0, 0);
       for (const [element, mesh] of surfaces) {
         const r = element.getBoundingClientRect(); mesh.visible = r.width > 0 && r.height > 0;
+        mesh.userData.selected = element.getAttribute('aria-pressed') === 'true' || element.getAttribute('aria-selected') === 'true';
+        // Scrolled chrome must not leave physical key bodies floating outside
+        // its DOM clipping region. Native labels remain clipped by their owner.
+        const clip = element.closest<HTMLElement>('.flint-rail,.reactive-tabs__labels');
+        if (clip && clip !== element) {
+          const c = clip.getBoundingClientRect();
+          mesh.visible &&= r.left >= c.left && r.right <= c.right && r.top >= c.top && r.bottom <= c.bottom;
+        }
         geometryFor(mesh, r.width / sx, r.height / sy, (r.left - bounds.left) / sx, (r.top - bounds.top) / sy, .7);
       }
       rig.layout(width, height);
@@ -78,11 +90,15 @@ export function createMaterialScene(root: HTMLElement, lighting: Lighting, onAva
     requestRender: request,
     setEnvironment(environment: LightEnvironment) { rig.setEnvironment(environment); invalidateLayout(); },
     setMaterial(name: SurfaceMaterial) { substrate.material = registry.get(name); request(); },
-    registerSurface(element: HTMLElement, name: SurfaceMaterial = 'paper') {
+    registerSurface(element: HTMLElement, name: SurfaceMaterial = 'paper', depth = 0) {
       if (surfaces.has(element)) throw new Error('Material surface already registered');
-      const mesh = new T.Mesh(geometry, registry.get(name)); mesh.receiveShadow = true;
+      const mesh = new T.Mesh<T.BufferGeometry, T.MeshStandardMaterial>(geometry, registry.get(name)); mesh.receiveShadow = true; mesh.castShadow = depth > 0; mesh.userData.reliefDepth = depth;
       scene.add(mesh); surfaces.set(element, mesh); metrics.surfaces = surfaces.size; observer.observe(element); invalidateLayout();
       return () => { observer.unobserve(element); surfaces.delete(element); metrics.surfaces = surfaces.size; scene.remove(mesh); if (mesh.geometry !== geometry) mesh.geometry.dispose(); invalidateLayout(); };
+    },
+    setPressed(element: HTMLElement, pressed: boolean) {
+      const mesh = surfaces.get(element); if (!mesh || !!mesh.userData.pressed === pressed) return;
+      mesh.userData.pressed = pressed; mesh.position.z += pressed ? -1.5 : 1.5; request();
     },
     dispose() {
       if (disposed) return; disposed = true;

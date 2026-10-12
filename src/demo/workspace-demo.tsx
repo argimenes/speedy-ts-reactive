@@ -395,7 +395,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   );
 }
 
-function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
+function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
   const cavern = useCurrentCavern();
   const session = new WorkspaceSession(props.loaded, props.configuration);
   const { editor, projection } = session;
@@ -406,6 +406,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   }
   onMount(() => {
     editor.installGateway(document);
+    if (props.launchFlint && editor.features.flint) editor.commandRegistry.execute('flint.open', {targetKey:projection.state.rootKey,args:undefined});
     if (cavern) {
       const beforeUnload = (event: BeforeUnloadEvent) => {
         if (session.dirty() || props.workspaceBusy || editor.blockHistory.hasPendingCapture()) { event.preventDefault(); event.returnValue = ''; }
@@ -477,7 +478,7 @@ function CanonicalWorkspaceSession(props: { configuration: ReactiveEditorConfigu
   </main>;
 }
 
-export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfiguration; initialWorkspace?: ExistingBlockDto } = {}) {
+export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: ReactiveEditorConfiguration; initialWorkspace?: ExistingBlockDto } = {}) {
   const cavern = useCurrentCavern();
   const features = resolveFeatureFlags(props.configuration);
   const configuration: ReactiveEditorConfiguration = { ...props.configuration, features };
@@ -616,7 +617,7 @@ export function WorkspaceDemo(props: { configuration?: ReactiveEditorConfigurati
             {(initial) => <DemoSession {...initial} configuration={configuration} stickyHost={background} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onEditor={bridge => { activeDemo = bridge; activeEditor = bridge.editor; return () => { if (activeDemo === bridge) activeDemo = undefined; if (activeEditor === bridge.editor) activeEditor = undefined; }; }} onBackground={openBackground} onReset={() => setSession({})} onClose={(document, location, localFile) => setSession({ document, location, localFile, closed: true })} onOpen={(document, location) => setSession({ document, location })} onOpenLocal={(document, localFile) => setSession({ document, localFile })} />}
           </For>
         </>}>
-          {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession configuration={configuration} loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onLocalWorkspaceSaveAs={() => void saveLocalWorkspace(true)} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}
+          {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession launchFlint={props.launchFlint} configuration={configuration} loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onLocalWorkspaceSaveAs={() => void saveLocalWorkspace(true)} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}
         </Show>
         <Show when={workspaceError() && !workspaceBrowser()}><aside class="workspace-demo__workspace-notice" role="alert">{workspaceError()}</aside></Show>
         <Show when={workspaceBrowser()}>{mode => <WorkspaceBrowser mode={mode()} initialFilename={workspaceFilename()} busy={workspaceBusy()} error={workspaceError()} conflict={workspaceConflict()} onChoose={chooseWorkspace} onClose={() => { if (!workspaceBusy()) { setWorkspaceBrowser(undefined); setWorkspaceError(""); } }} />}</Show>
