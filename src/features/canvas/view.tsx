@@ -1,4 +1,5 @@
 import { For, Show, createSignal, onCleanup, type JSX } from "solid-js";
+import { Probe } from "../probe/probe";
 import type { CanvasLayout } from "../../reactive-editor/workspace-presentation";
 import { createCanvasInteractions, type CanvasResize } from "./interactions";
 
@@ -21,7 +22,7 @@ export interface CanvasViewPort {
   background(): JSX.Element;
   setCamera(camera: CanvasLayout["camera"]): void;
 }
-export function CanvasView(props: { port: CanvasViewPort }) {
+export function CanvasView(props: { port: CanvasViewPort; probe?: boolean }) {
   const p = props.port, input = p.interactions;
   const [selected, select] = createSignal<string>();
   const [adding, setAdding] = createSignal(false), [message, setMessage] = createSignal("");
@@ -29,7 +30,7 @@ export function CanvasView(props: { port: CanvasViewPort }) {
   const attempt = (fn: () => void) => { if (!p.available()) return; try { input.finish(); fn(); setMessage(""); } catch (e) { setMessage(String(e instanceof Error ? e.message : e)); } };
   const center = () => ({ x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
   const isBackground = (target: EventTarget | null) => target instanceof Element && !target.closest("[data-canvas-placement], .workspace-canvas__toolbar, .workspace-canvas__add");
-  const wheel = (e: WheelEvent) => { if (isBackground(e.target)) { const rect = viewport.getBoundingClientRect(); input.wheel(e, { x: e.clientX - rect.left, y: e.clientY - rect.top }); } };
+  const wheel = (e: WheelEvent) => { if (isBackground(e.target)) { const rect = viewport.getBoundingClientRect(); input.wheel(e, { x: e.clientX - rect.left, y: e.clientY - rect.top }, e.altKey || (props.probe !== false && e.shiftKey)); } };
   const fit = () => {
     const placements = p.layout()?.placements ?? []; if (!placements.length) { p.setCamera({ x: 0, y: 0, zoom: 1 }); return; }
     const left = Math.min(...placements.map(p => p.bounds.x)), top = Math.min(...placements.map(p => p.bounds.y));
@@ -71,7 +72,8 @@ export function CanvasView(props: { port: CanvasViewPort }) {
       <button onClick={() => attempt(() => p.setCamera({ ...input.camera(), x: 0, y: 0, zoom: 1 }))}>Reset view</button><button onClick={() => attempt(fit)}>Fit objects</button>
       <button onClick={() => setAdding(!adding())} aria-expanded={adding()}>Add object</button>
       <Show when={selected()}>{id => <><button onClick={() => p.activate(id())}>Edit object</button><button onClick={() => attempt(() => p.order(id(), 1))}>Bring forward</button><button onClick={() => attempt(() => p.order(id(), -1))}>Send backward</button><button onClick={() => attempt(() => p.order(id(), Infinity))}>Bring to front</button><button onClick={() => attempt(() => p.order(id(), -Infinity))}>Send to back</button><button aria-label="Move left" onClick={() => attempt(() => p.nudge(id(), -10, 0))}>←</button><button aria-label="Move right" onClick={() => attempt(() => p.nudge(id(), 10, 0))}>→</button><button aria-label="Move up" onClick={() => attempt(() => p.nudge(id(), 0, -10))}>↑</button><button aria-label="Move down" onClick={() => attempt(() => p.nudge(id(), 0, 10))}>↓</button><button onClick={() => attempt(() => remove(id()))}>Remove from Canvas</button><Show when={p.roots().find(r => r.placement.id === id())?.embedded}><button onClick={() => attempt(() => p.media(id(), !!p.roots().find(r => r.placement.id === id())?.nodeKey))}>{p.roots().find(r => r.placement.id === id())?.nodeKey ? "Close embedded media (discard form drafts)" : "Open embedded media"}</button></Show></>}</Show>
-      <small>Drag background to pan · Alt + wheel to zoom</small>
+      <Show when={props.probe !== false}><Probe root={() => viewport} /></Show>
+      <small>Drag background to pan · {props.probe !== false ? "Shift" : "Alt"} + wheel to zoom</small>
     </nav>
     <Show when={adding()}><aside class="workspace-canvas__add" aria-label="Add Canvas object">
       <strong>Existing workspace objects</strong><For each={p.candidates()}>{item => <button onClick={() => attempt(() => reveal(p.add(item.id)))}>{item.label}</button>}</For>

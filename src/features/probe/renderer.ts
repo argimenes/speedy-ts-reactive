@@ -1,6 +1,6 @@
 import * as T from 'three';
-import { applyFlintLight, configureMaterialRenderer, createFlintAmbient, FLINT_SUN_COLOR } from '../material/scene-light';
-import type { Light } from '../material-response';
+import { applyFlintLight, configureMaterialRenderer, createFlintAmbient, FLINT_SUN_COLOR } from '../flint/material/scene-light';
+import type { Light } from '../flint/material-response';
 import type { ProbeKind } from './targets';
 import { createCrystalGeometry, createProbeFacets, PROBE_SENSOR, PROBE_STANDARD_HEIGHT } from './crystal-geometry';
 import { createCrystalEnvironment, createCrystalMaps, createDiodeHalo } from './crystal-optics';
@@ -8,7 +8,7 @@ import { clampProbeSize, PROBE_DEFAULT_HEIGHT } from './size';
 
 export function createProbeRenderer(onFailure: () => void, size = PROBE_DEFAULT_HEIGHT) {
   size=clampProbeSize(size);
-  const canvas=document.createElement('canvas');canvas.className='flint-probe-canvas';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;
+  const canvas=document.createElement('canvas');canvas.className='probe-canvas';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;
   const renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
   configureMaterialRenderer(renderer);renderer.shadowMap.enabled=false;
   // Transmission samples only this small optical scene, never DOM text or Graph.

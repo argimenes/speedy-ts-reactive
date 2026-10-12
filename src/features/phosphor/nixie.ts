@@ -1,6 +1,6 @@
 import * as T from "three";
 import type { Lighting } from "../flint/lighting";
-import { createDiodeHalo } from "../flint/probe/crystal-optics";
+import { createDiodeHalo } from "../probe/crystal-optics";
 import { slab } from "./geometry";
 
 export type NixieRegion = {

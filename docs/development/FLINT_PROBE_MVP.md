@@ -1,8 +1,32 @@
-# Flint Probe MVP
+# Shared presentation Probe
 
-The default-on `flintProbe` experimental feature adds a stone pointer to each
-Flint application and `/flint-material-three`. Set the feature to `false` to
-omit its controller, controls and renderer. The **Probe experiment → Stone
+The currently disabled `presentationProbe` feature replaces the pointer in Spatial and
+Infinite Canvas with the same Probe used by Flint. Set it to `true` in editor
+configuration to re-enable the Probe in these presentations. Existing presentation
+availability flags are unchanged; Flint's separate `flintProbe` switch is also disabled.
+Each presentation has **Probe → Stone pointer** and **Probe size** controls.
+
+Infinite Canvas uses **Shift + wheel** for zoom while the feature is enabled;
+its zoom buttons and ordinary wheel panning remain available. **Alt + wheel**
+rotates the Probe. With the Probe disabled or unavailable, Alt + wheel retains
+the native Canvas zoom behavior.
+
+`src/features/probe/probe.tsx` exports the reusable `Probe` component. Mount
+`<Probe root={() => presentationElement} />` in a presentation toolbar. It owns
+its controller, settings and rendering lifecycle; optional `lighting` and `size`
+props let a host supply lighting and a controlled size. No Flint application is
+required. Rendering reuses the existing crystal geometry, optics and material
+lighting helpers. Flint's small adapter registers its emblem target and supplies
+its live lighting; the graph registers targets with the shared `probeTargets` API.
+
+Controllers mark their hosts with `data-probe-root`. The innermost host under
+the pointer owns it, including when Flint is embedded in another presentation.
+Presentation switches dispose the old controller and GPU resources. Targets
+remain scoped to their own presentation root.
+
+The currently disabled `flintProbe` experimental feature adds a stone pointer to each
+Flint application and `/flint-material-three`. Set the feature to `true` to
+re-enable its controller, controls and renderer. The **Probe → Stone
 pointer** checkbox disables it immediately within one Flint instance.
 
 Move over Flint to show the Probe. Its upper tip is the actual client-coordinate
@@ -24,7 +48,7 @@ Disabled, forced-colour and failed WebGL states restore native
 cursor styling. Idle scenes stop rendering; disposal removes observers and GPU
 resources. Reduced motion removes rotational easing.
 
-The body-level, pointer-transparent canvas uses the owning Flint root's client
+The body-level, pointer-transparent canvas uses the owning presentation root's client
 rectangle plus transparent room for the body behind the tip near host edges.
 This avoids inheriting desktop window CSS transforms. The renderer
 shares Flint's lighting character without merging scenes or changing Graph.
@@ -62,7 +86,8 @@ are unchanged.
 Run `npm run build`, then `node scripts/check-flint-probe-browser.mjs` for the
 bounded Chromium demo. Captures and results go to `artifacts/flint-probe` using
 temporary fixture storage. It exercises actual pointer, click, wheel and
-native editor input; it is not a hardware latency benchmark.
+native editor input in Flint, Canvas and Spatial, including presentation switching,
+the feature flag and Canvas zoom/rotation shortcuts; it is not a hardware latency benchmark.
 
 The crystalline review uses
 `PROOF_ARTIFACTS=artifacts/flint-probe-crystalline node scripts/check-flint-probe-browser.mjs`.

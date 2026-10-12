@@ -1,4 +1,5 @@
 import { For, Show, createMemo, createEffect, createSignal, onCleanup, onMount, type JSX } from "solid-js";
+import { Probe } from "../probe/probe";
 import { paperOrientation, clampCamera, type SpatialCamera, type SpatialLayout, type SpatialObject, type SpatialPlacement } from "./model";
 import { createStudyScene, type SceneStatus } from "./scene";
 import { createArrangementInput } from "./arrangement-input";
@@ -17,7 +18,7 @@ export interface SpatialPort {
   camera(value: SpatialCamera): void; available(): boolean; ownInteraction(value: { cancel(): void; finish(): void }): () => void; returnDesktop(): unknown;
 }
 /** The application supplies exactly one authorized live slot; the scene never owns editable DOM. */
-export default function SpatialView(props: { port: SpatialPort }) {
+export default function SpatialView(props: { port: SpatialPort; probe?: boolean }) {
   let canvas!: HTMLCanvasElement, host!: HTMLDivElement;
   let scene: ReturnType<typeof createStudyScene> | undefined, resize: ResizeObserver | undefined;
   const [surfaceGeneration, setSurfaceGeneration] = createSignal(1);
@@ -164,6 +165,7 @@ export default function SpatialView(props: { port: SpatialPort }) {
     <div class="workspace-spatial__bar" aria-label="Spatial controls">
       <div class="workspace-spatial__title"><strong>The night study</strong><span>{active()?.label ?? "Spatial workspace"}</span></div>
       <div class="workspace-spatial__controls">
+        <Show when={props.probe !== false}><Probe root={() => host} /></Show>
         <button aria-label="Swivel left" disabled={!browsing() || !props.port.available() || !!error()} onClick={() => change({ yaw: camera().yaw + .18 })}>←</button>
         <button onClick={() => change({ yaw: 0, approach: 0 })} disabled={!browsing() || !props.port.available() || !!error()}>Recentre</button>
         <button aria-label="Swivel right" disabled={!browsing() || !props.port.available() || !!error()} onClick={() => change({ yaw: camera().yaw - .18 })}>→</button>

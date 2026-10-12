@@ -32,6 +32,8 @@ export type FeatureFlags = Readonly<{
   flintMaterialChrome: boolean;
   /** Application-wide stone pointer; Alt + wheel rotates it. */
   flintProbe: boolean;
+  /** Shared Probe cursor in Spatial and Infinite Canvas presentations. */
+  presentationProbe: boolean;
   /** Live sculptural entity graph in the normal Flint application. */
   flintSpatialGraph: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
@@ -80,7 +82,8 @@ export const featureFlags: FeatureFlags = Object.freeze({
   phosphorStudioDrift: true,
   phosphorLightingControls: true,
   flintMaterialChrome: true,
-  flintProbe: true,
+  flintProbe: false,
+  presentationProbe: false,
   flintSpatialGraph: true,
   nativeDocumentPersistence: true,
   nativeKnowledge: true,

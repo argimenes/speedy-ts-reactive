@@ -75,10 +75,10 @@ export function createCanvasInteractions(port: CanvasInteractionPort) {
     element.addEventListener("pointercancel", cancel); element.addEventListener("lostpointercapture", cancel);
     acquire(); element.focus({ preventScroll: true }); e.preventDefault(); e.stopPropagation();
   };
-  const wheel = (e: WheelEvent, point: { x: number; y: number }) => {
+  const wheel = (e: WheelEvent, point: { x: number; y: number }, zoom = e.altKey) => {
     if (!port.available() || gesture || e.ctrlKey || e.metaKey) return;
     const c = pendingCamera ?? camera(), unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 600 : 1;
-    pendingCamera = e.altKey ? anchoredZoom(c, Math.exp(-e.deltaY * unit * .002), point) : { ...c, x: c.x + e.deltaX * unit / c.zoom, y: c.y + e.deltaY * unit / c.zoom };
+    pendingCamera = zoom ? anchoredZoom(c, Math.exp(-e.deltaY * unit * .002), point) : { ...c, x: c.x + e.deltaX * unit / c.zoom, y: c.y + e.deltaY * unit / c.zoom };
     acquire(); schedule(); clearTimeout(wheelTimer); wheelTimer = setTimeout(finish, 160); e.preventDefault();
   };
   const zoom = (factor: number, point: { x: number; y: number }) => { if (!port.available()) return; finish(); port.camera(anchoredZoom(camera(), factor, point)); };

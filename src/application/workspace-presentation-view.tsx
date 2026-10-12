@@ -50,7 +50,7 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
       onMount(actions.documentReady);
       return <Show when={actions.activeRoot()} keyed>{root => <BlockOutlet nodeKey={root.nodeKey} />}</Show>;
     };
-    return <SpatialView port={{ layout: actions.layout, objects: actions.objects, selected: actions.selected, select: actions.select,
+    return <SpatialView probe={editor.features.presentationProbe} port={{ layout: actions.layout, objects: actions.objects, selected: actions.selected, select: actions.select,
       camera: actions.camera, arrange: actions.arrange, available: actions.available, ownInteraction: actions.ownInteraction, returnDesktop: actions.returnDesktop,
       document: actions.document, renderDocument: () => <DocumentSlot />, displayedSize: () => spatialResize()?.presentedSize() }} />;
   };
@@ -63,7 +63,7 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
       </ErrorBoundary>
     </Show>}>
       <CanvasLifetime />
-      <CanvasView port={{ layout: canvas, roots, interactions: input, available: () => props.session.inputAvailable(), ...actions,
+      <CanvasView probe={editor.features.presentationProbe} port={{ layout: canvas, roots, interactions: input, available: () => props.session.inputAvailable(), ...actions,
         setCamera: value => presentation.setCamera(value),
         displayedSize: id => resizePort(id)?.presentedSize(),
         resize: id => { const p = resizePort(id); return p && { size: p.presentedSize(), minimum: p.minimum(), expanded: p.toExpanded }; },

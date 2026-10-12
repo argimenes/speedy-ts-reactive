@@ -47,14 +47,14 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  await choose('Create Spatial');
  for(let i=0;i<80;i++){if(await evaluate('Number(document.querySelector(".workspace-spatial")?.dataset.frames)>0'))break;await wait(100);}
  check('actual application exposes explicit Create Spatial',await evaluate('!!document.querySelector(".workspace-spatial[data-frames]")'));
- check('empty application creates an empty desk',await evaluate(`document.querySelector('.workspace-spatial summary').textContent.includes('0')`));
+ check('empty application creates an empty desk',await evaluate(`document.querySelector('.workspace-spatial__footer summary').textContent.includes('0')`));
  await menu();await button('New Document');await frame();
- check('actual New Document creates a proxy without an editor',await evaluate(`document.querySelector('.workspace-spatial summary').textContent.includes('1')&&!document.querySelector('.reactive-standoff-flow')`));
+ check('actual New Document creates a proxy without an editor',await evaluate(`document.querySelector('.workspace-spatial__footer summary').textContent.includes('1')&&!document.querySelector('.reactive-standoff-flow')`));
  await menu();await button('Open Document from Server…');
  for(let i=0;i<60;i++){if(await evaluate(`[...document.querySelectorAll('[role=option]')].some(e=>e.textContent.includes('text1.json'))`))break;await wait(100);}
  await evaluate(`[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.includes('text1.json')).click()`);await button('Open',`document.querySelector('[role="dialog"]')`);
- for(let i=0;i<60;i++){if(await evaluate(`!document.querySelector('[role="dialog"]')&&document.querySelector('.workspace-spatial summary').textContent.includes('2')`))break;await wait(100);}
- check('actual server Document opening produces a second physical proxy',await evaluate(`document.querySelector('.workspace-spatial summary').textContent.includes('2')`));
+ for(let i=0;i<60;i++){if(await evaluate(`!document.querySelector('[role="dialog"]')&&document.querySelector('.workspace-spatial__footer summary').textContent.includes('2')`))break;await wait(100);}
+ check('actual server Document opening produces a second physical proxy',await evaluate(`document.querySelector('.workspace-spatial__footer summary').textContent.includes('2')`));
  await evaluate(`window.savedSpatial='';window.showSaveFilePicker=async()=>({name:'Spatial.json',createWritable:async()=>({write:async value=>{window.savedSpatial=typeof value==='string'?value:await value.text()},close:async()=>{}})})`);
  await menu();await button('Save Workspace',`document.querySelector('[aria-label="Local files"]')`);
  check('actual local save includes independent Spatial entry',await evaluate(`JSON.parse(savedSpatial).metadata.workspacePresentation.active==='spatial'`));

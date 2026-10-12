@@ -15,8 +15,8 @@ const fixture = (): ExistingBlockDto => ({ id: "workspace", type: "workspace-blo
   { id: "two", type: "document-window-block", metadata: { position: { x: 900, y: 40 }, size: { w: 700, h: 500 }, state: "minimized" }, children: [structuredClone(doc)] },
   { id: "image", type: "image-block", metadata: { url: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" } },
 ] });
-function mount(dto = fixture()) {
-  const session = new WorkspaceSession(materializeLocalWorkspace(dto), { features: { canvasWorkspace: true } });
+function mount(dto = fixture(), presentationProbe = true) {
+  const session = new WorkspaceSession(materializeLocalWorkspace(dto), { features: { canvasWorkspace: true, presentationProbe } });
   cleanup.push(() => session.dispose());
   const host = document.body.appendChild(document.createElement("div")); host.className = "workspace-demo";
   cleanup.push(render(() => <><WorkspacePresentations session={session} /><WorkspacePresentationView session={session} /></>, host));
@@ -26,6 +26,19 @@ function mount(dto = fixture()) {
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 
 describe("canonical presentation switching", () => {
+  it("mounts Probe controls only in Canvas and honours the presentation feature flag", async () => {
+    const enabled = mount();
+    expect(enabled.host.querySelector('.probe-controls')).toBeNull();
+    enabled.session.selectPresentation('canvas'); await tick();
+    expect(enabled.host.querySelector('[aria-label="Probe pointer"]')).not.toBeNull();
+    enabled.session.selectPresentation('desktop'); await tick();
+    expect(enabled.host.querySelector('.probe-controls')).toBeNull();
+    const disabled = mount(fixture(), false);
+    disabled.session.selectPresentation('canvas'); await tick();
+    expect(disabled.host.querySelector('.probe-controls')).toBeNull();
+    expect(disabled.host.textContent).toContain('Alt + wheel to zoom');
+  });
+
   it("falls back to the Window icon when the focused Canvas occurrence is minimized on Desktop", async () => {
     const { session, host } = mount(); session.selectPresentation("canvas"); await tick();
     host.querySelectorAll<HTMLTextAreaElement>("textarea")[1].focus();

@@ -11,7 +11,7 @@ import { createMaterialRegistry } from '../material/material-registry';
 import { DEFAULT_TEXTURE_LAYERS, type TextureLayers } from '../material-textures';
 import limestoneURL from '../assets/limestone-fine-albedo.png';
 import marbleURL from '../assets/marble-albedo.png';
-import { probeTargets } from '../probe/targets';
+import { probeTargets } from '../../probe/targets';
 
 export type MaterialGraphAdapter = Pick<ReturnType<typeof createMaterialGraph>, 'setNodes'|'select'|'fit'|'setTextureLayers'|'nodes'|'selectedId'|'disposed'|'setDetail'|'setFinish'|'zoomBy'|'pan'|'move'|'dispose'> & { setEnvironment?: (environment: LightEnvironment) => void };
 export type GraphFactory = (options: Parameters<typeof createMaterialGraph>[0]) => MaterialGraphAdapter;
