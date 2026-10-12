@@ -93,7 +93,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
   await q.frame();
  })()`);
  for(let i=0;i<100;i++){if(await evaluate('Number(document.querySelector(".workspace-spatial")?.dataset.frames)>0'))break;await evaluate('new Promise(r=>setTimeout(r,100))');}
- const settle=()=>evaluate('new Promise(r=>setTimeout(r,600))');
+ const settle=()=>evaluate(`(async()=>{let last=-1;for(let i=0;i<50;i++){await q.frame();const root=document.querySelector('.workspace-spatial'),frames=Number(root?.dataset.frames);if(['desk','editing'].includes(root?.dataset.phase)&&frames===last)return;last=frames;}throw Error('Study did not become idle');})()`);
  const choose=async label=>{const selector=await evaluate(`(()=>{document.querySelector('[data-c-action]')?.removeAttribute('data-c-action');const e=[...document.querySelectorAll('.workspace-spatial button')].find(e=>e.textContent.trim()===${JSON.stringify(label)});if(!e)throw new Error('Missing '+${JSON.stringify(label)});e.setAttribute('data-c-action','');return '[data-c-action]'})()`);await click(selector);};
  const begin=async(dx=65,dy=-20)=>{await evaluate('q.before=q.place();q.revision=q.session.presentation.revision()');const p=await evaluate('q.point()');await mouse('mousePressed',p);await mouse('mouseMoved',{x:p.x+dx,y:p.y+dy});await evaluate('q.frame()');return{x:p.x+dx,y:p.y+dy};};
  await evaluate('q.startFrames=Number(document.querySelector(".workspace-spatial").dataset.frames)');await shot('01-original');check('distinct Documents have recognisable actual content',await evaluate("q.session.spatial.objects().find(o=>o.id==='block:one').preview.title==='A visit to the Alps'&&q.session.spatial.objects().find(o=>o.id==='block:botanical').preview.title==='Botanical notebook'&&q.session.spatial.objects().find(o=>o.id==='block:one').preview.blocks.some(b=>b.kind==='image')"),true);
@@ -148,9 +148,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('moved and rotated Document activates through B',await evaluate('document.querySelectorAll(".workspace-spatial__document .reactive-window").length'),1);
  check('arrangement controls are absent while editing',await evaluate('!!document.querySelector(".workspace-spatial__arrangement")'),false);
  await evaluate('q.digestBefore=q.session.spatial.objects().find(o=>o.id==="block:one").preview;q.editFrames=Number(document.querySelector(".workspace-spatial").dataset.frames)');
- await evaluate("q.flow('native').focus();q.flow('native').setSelectionRange(0,0)");await send('Input.insertText',{text:'After arranging '},sessionId);await evaluate('q.frame()');
+ await evaluate("q.flow('native').focus();q.flow('native').setSelectionRange(0,0)");await settle();await evaluate('q.editFrames=Number(document.querySelector(".workspace-spatial").dataset.frames)');await send('Input.insertText',{text:'After arranging '},sessionId);await evaluate('q.frame()');
  check('native editing remains ordinary Codex',await evaluate("q.flow('native').value.startsWith('After arranging Native')"),true);
- check('typing neither refreshes preview nor renders the scene',await evaluate('q.session.spatial.objects().find(o=>o.id==="block:one").preview===q.digestBefore&&Number(document.querySelector(".workspace-spatial").dataset.frames)===q.editFrames'),true);await shot('05-live-editor');await choose('Return to desk');await settle();
+ check('typing neither refreshes preview nor renders the scene',await evaluate('({samePreview:q.session.spatial.objects().find(o=>o.id==="block:one").preview===q.digestBefore,extraFrames:Number(document.querySelector(".workspace-spatial").dataset.frames)-q.editFrames})'),{samePreview:true,extraFrames:0});await shot('05-live-editor');await choose('Return to desk');await settle();
  check('return refreshes the shared non-live digest',await evaluate('q.session.spatial.objects().find(o=>o.id==="block:one").preview.blocks.some(b=>b.kind==="text"&&b.text.startsWith("After arranging Native"))&&q.session.spatial.objects().find(o=>o.id==="block:one").preview===q.session.spatial.objects().find(o=>o.id==="block:two").preview'),true);
  check('return restores the exact arranged placement',await evaluate('JSON.stringify(q.session.spatial.layout())===q.settled'),true);
  await choose('Lay flat');await evaluate('q.settled=JSON.stringify(q.session.spatial.layout())');await choose('Read Document');await settle();await choose('Return to desk');await settle();
@@ -178,9 +178,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
  check('outside completion releases capture and remains a valid placement',await evaluate("!document.querySelector('.workspace-spatial__scene').hasPointerCapture(1)&&q.place().position.x>=-1.5&&q.place().position.z<0"),true);
  await evaluate("q.settled=JSON.stringify(q.session.spatial.layout())");
  await evaluate('q.idleFrames=Number(document.querySelector(".workspace-spatial").dataset.frames)');await settle();check('desk is idle without recurring frames',await evaluate('Number(document.querySelector(".workspace-spatial").dataset.frames)===q.idleFrames'),true);
- // A missing reference remains a recoverable labelled proxy, with no arrangement writes.
+ // A missing reference remains movable as a labelled proxy, without a live editor.
  await evaluate("q.editor.commands.remove(q.node('one').key);q.frame()");
- check('missing objects disable arrangement',await evaluate('!document.querySelector(".workspace-spatial__arrangement")&&!document.querySelector(".workspace-spatial__footer > button")'),true);
+ check('missing proxies can be arranged but cannot be read',await evaluate('!!document.querySelector(".workspace-spatial__arrangement")&&!document.querySelector(".workspace-spatial__footer > button")'),true);
  await evaluate('q.editor.repository.undo();q.frame()');
  check('undo restores shared content without undoing arrangement',await evaluate('JSON.stringify(q.session.spatial.layout())===q.settled'),true);
  await writeFile('artifacts/spatial-d/browser-results.json',JSON.stringify({browser:await send('Browser.getVersion'),checks},null,2));console.log(JSON.stringify({checks},null,2));await evaluate('q.dispose()');

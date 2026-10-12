@@ -1,3 +1,4 @@
+import { propPlacement } from "./desk-props";
 import { paintDocumentPreview, type PreviewImageSlot } from "./document-preview";
 import { dragStage } from "./drag-profile";
 import { paintWalnut, paintAlpineNight } from "./study-materials";
@@ -9,7 +10,7 @@ import { STUDY, paperSize, type SpatialLayout, type SpatialObject, type SpatialP
 
 export interface SceneStatus { frames: number; geometries: number; textures: number; calls: number; alignmentError: number; width: number; height: number }
 /** One disposable GPU lifetime. No editor, content renderer, timers or global controls. */
-export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (status: SceneStatus) => void, fail: (message: string) => void) {
+export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (status: SceneStatus) => void, fail: (message: string) => void, deskObjects = true) {
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "low-power" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = T.SRGBColorSpace; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
@@ -20,11 +21,12 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
   let layout: SpatialLayout | undefined, objects: readonly SpatialObject[] = [], signature = "", selected: string | undefined, rehearsal = false;
   let camera = studyCamera({ kind: "perspective", yaw: 0, approach: 0 }, width, height);
   let alignment: T.Mesh | undefined;
-  const hits: T.Object3D[] = [];
+  const hits: T.Object3D[] = [], propHits: T.Object3D[] = [];
+  const props = new Map<string, { group: T.Group; homeY: number; restY: number; edge: T.BoxHelper }>();
   const pages = new Map<string, { page: T.Group; edge: T.LineSegments }>();
   let pickup: { id: string; rect: ScreenRect; progress: number; opacity: number } | undefined;
   let renderSignature = "";
-  let arrangement: SpatialPlacement | undefined;
+  let arrangement: SpatialPlacement | undefined, lift = 0;
   const loading = new Set<HTMLImageElement>();
   const cancelImages = () => { for (const image of loading) { image.onload = image.onerror = null; image.src = ""; } loading.clear(); };
   const material = (color: number, roughness = .75, metalness = 0) => new T.MeshStandardMaterial({ color, roughness, metalness });
@@ -73,27 +75,43 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       }
     }
   }
-  // Lamp, cup, books, inkpot and quill are decorative and physically scaled.
+  // Each tabletop prop is a separately owned movable group. Room furniture stays fixed.
+  const registerProp = (id: string, group: T.Group) => {
+    group.updateWorldMatrix(true, true);
+    const restY = group.position.y - new T.Box3().setFromObject(group).min.y + .004;
+    const edge = new T.BoxHelper(group, 0xd6b56c); edge.visible = false; scene.add(edge);
+    props.set(id, { group, homeY: group.position.y, restY, edge });
+    group.traverse(node => { if (node instanceof T.Mesh) { node.userData.objectId = id; node.castShadow = deskObjects; propHits.push(node); } });
+  };
   const lamp = new T.Group(); lamp.position.set(-.81, .012, -.9); world.add(lamp);
   cylinder(lamp, .085, .105, .018, 0x7b6039, 0, .009, 0, .65);
   cylinder(lamp, .012, .014, .35, 0x947948, 0, .19, 0, .65);
   const shade = mesh(lamp, new T.SphereGeometry(.135, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), material(0x244b38, .3), .03, .36, 0); shade.scale.set(1.4, .62, .8);
   const bulb = mesh(lamp, new T.SphereGeometry(.025, 16, 8), new T.MeshBasicMaterial({ color: 0xffd29b }), .03, .353, 0);
-  const light = new T.PointLight(0xffc084, 1.6, 3, 2); light.position.copy(lamp.position).add(bulb.position); scene.add(light);
+  const light = new T.PointLight(0xffc084, 1.6, 3, 2); light.position.copy(bulb.position); lamp.add(light);
   const deskLight = new T.SpotLight(0xffc894, 1.2, 3, 1.1, .8); deskLight.position.set(-.7, .8, -.65); deskLight.target.position.set(0, 0, -.85); deskLight.castShadow = true; deskLight.shadow.mapSize.set(512, 512); deskLight.shadow.bias = -.001; scene.add(deskLight, deskLight.target);
+  // Reparent without changing the authored lighting; moving the lamp carries both sources.
+  lamp.updateWorldMatrix(true, false); lamp.attach(deskLight); lamp.attach(deskLight.target);
+  registerProp('study:lamp', lamp);
   const cup = new T.Group(); cup.position.set(.52, .01, -.69); world.add(cup);
   cylinder(cup, .041, .034, .087, 0xc7b08a, 0, .044, 0);
   cylinder(cup, .036, .036, .002, 0x21130b, 0, .087, 0);
   const handle = mesh(cup, new T.TorusGeometry(.026, .008, 12, 24), material(0xb49a71, .38), .048, .051, 0); handle.rotation.y = .3;
-  cylinder(cup, .069, .069, .006, 0xb5a17c, 0, .003, 0);
+  registerProp('study:cup', cup);
+  const saucer = new T.Group(); saucer.position.copy(cup.position); world.add(saucer);
+  cylinder(saucer, .069, .069, .006, 0xb5a17c, 0, .003, 0); registerProp('study:saucer', saucer);
   for (let i = 0; i < 3; i++) {
     const book = new T.Group(); book.position.set(1.08, .012 + i * .033, -.53); book.rotation.y = .15 - i * .1; world.add(book);
     box(book, .18, .025, .25, 0xc2b38c, 0, .014, 0);
     for (const y of [0, .03]) box(book, .19, .004, .26, [0x393c2a, 0x643624, 0x2f3440][i], 0, y, 0);
+    registerProp(`study:book-${i}`, book);
   }
-  cylinder(world, .023, .037, .047, 0x151720, -.42, .03, -.68);
-  cylinder(world, .026, .024, .007, 0x8c723d, -.42, .057, -.68, .7);
-  const quill = mesh(world, new T.ConeGeometry(.018, .21, 4), material(0xbba881), -.43, .15, -.68); quill.rotation.z = -.25; quill.scale.z = .15;
+  const inkpot = new T.Group(); inkpot.position.set(-.42, .0065, -.68); world.add(inkpot);
+  cylinder(inkpot, .023, .037, .047, 0x151720, 0, .0235, 0);
+  cylinder(inkpot, .026, .024, .007, 0x8c723d, 0, .0505, 0, .7); registerProp('study:inkpot', inkpot);
+  const pen = new T.Group(); pen.position.set(-.43, .15, -.68); world.add(pen);
+  const quill = mesh(pen, new T.ConeGeometry(.018, .21, 4), material(0xbba881), 0, 0, 0); quill.rotation.z = -.25; quill.scale.z = .15;
+  registerProp('study:quill', pen);
   const ambient = new T.HemisphereLight(0x9daecf, 0x31231c, .65); scene.add(ambient);
   const moon = new T.DirectionalLight(0x90afd2, .55); moon.position.set(1, 3, -4); scene.add(moon);
   const fill = new T.PointLight(0xffb971, 7, 7); fill.position.set(0, 1.7, .5); scene.add(fill);
@@ -160,13 +178,21 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       const g = new T.BufferGeometry().setFromPoints([points[0], points[3], points[1], points[1], points[3], points[2]]);
       alignment = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffedc9, transparent: true, opacity: .18, side: T.DoubleSide, depthTest: false })); alignment.renderOrder = 10; scene.add(alignment);
     }
+    for (const [id, entry] of props) {
+      const saved = layout.environment.deskProps?.some(p => p.id === id);
+      const moving = arrangement?.objectId === id;
+      const p = moving ? arrangement! : propPlacement(layout, id)!;
+      entry.group.position.set(p.position.x, (saved ? entry.restY : entry.homeY) + (moving ? lift : 0), p.position.z);
+      entry.group.rotation.y = p.heading;
+      entry.group.updateWorldMatrix(true, true); entry.edge.update(); entry.edge.visible = deskObjects && selected === id;
+    }
     for (const [id, entry] of pages) {
       entry.edge.visible = selected === id;
       const { page } = entry, moving = pickup?.id === id ? pickup : undefined;
       const index = layout.placements.findIndex(p => p.objectId === id), p = arrangement?.objectId === id ? arrangement : layout.placements[index];
       if (!p) continue;
       const size = paperSize(p);
-      page.parent!.position.set(p.position.x, surfaceHeight(index), p.position.z); page.parent!.rotation.y = p.heading;
+      page.parent!.position.set(p.position.x, surfaceHeight(index) + (arrangement?.objectId === id ? lift : 0), p.position.z); page.parent!.rotation.y = p.heading;
       page.position.set(0, 0, 0); page.rotation.set(p.posture === "lying" ? -Math.PI / 2 : PAGE_TILT, 0, 0); page.scale.set(1, 1, 1);
       page.updateWorldMatrix(true, false);
       const home: PagePose = { center: page.localToWorld(new T.Vector3(0, size.height / 2, 0)), rotation: page.getWorldQuaternion(new T.Quaternion()), width: size.width, height: size.height };
@@ -202,13 +228,13 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       layout = next; objects = summaries; selected = selection; rehearsal = align;
       const key = JSON.stringify([next.placements.map(p => [p.objectId, paperSize(p)]), summaries]); if (key !== signature) { signature = key; rebuild(); } request();
     },
-    previewPlacement(value?: SpatialPlacement) { arrangement = value; dragStage(value, "queued"); request(); },
+    previewPlacement(value?: SpatialPlacement, height = 0) { arrangement = value; lift = height; dragStage(value, "queued"); request(); },
     deskPoint(clientX: number, clientY: number, height = 0) {
       const rect = canvas.getBoundingClientRect(); return deskPoint(camera, { width: rect.width, height: rect.height }, clientX - rect.left, clientY - rect.top, height);
     },
     grabHeight(clientX: number, clientY: number) {
       const rect = canvas.getBoundingClientRect(), ray = new T.Raycaster(); ray.setFromCamera(new T.Vector2((clientX - rect.left) / rect.width * 2 - 1, 1 - (clientY - rect.top) / rect.height * 2), camera);
-      return ray.intersectObjects(hits, false)[0]?.point.y;
+      return ray.intersectObjects(deskObjects ? [...hits, ...propHits] : hits, false)[0]?.point.y;
     },
     handoff(id?: string, rect?: ScreenRect, progress = 0, opacity = 1) {
       pickup = id && rect ? { id, rect, progress, opacity } : undefined; request();
@@ -225,7 +251,7 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
     },
     hit(clientX: number, clientY: number) {
       const rect = canvas.getBoundingClientRect(), ray = new T.Raycaster(); ray.setFromCamera(new T.Vector2((clientX - rect.left) / rect.width * 2 - 1, 1 - (clientY - rect.top) / rect.height * 2), camera);
-      return ray.intersectObjects(hits, false)[0]?.object.userData.objectId as string | undefined;
+      return ray.intersectObjects(deskObjects ? [...hits, ...propHits] : hits, false)[0]?.object.userData.objectId as string | undefined;
     },
     dispose() {
       if (disposed) return; disposed = true; generation++; cancelImages(); cancelAnimationFrame(frame);

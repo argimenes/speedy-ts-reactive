@@ -33,3 +33,20 @@ it("clicks do not author movement and another pointer cannot complete the gestur
   const q = setup(); q.element.dispatchEvent(q.event("pointerdown")); q.element.dispatchEvent(q.event("pointerup", 0, 2)); expect(q.input.owned()).toBe(true);
   q.element.dispatchEvent(q.event("pointerup", 2)); expect(q.input.owned()).toBe(false); expect(q.commit).not.toHaveBeenCalled();
 });
+
+it('lifts transiently beyond the desktop, settles only constrained x/z, and cancels without a write', () => {
+  const element = document.createElement('canvas'); let captured = false;
+  element.setPointerCapture = () => { captured = true; }; element.hasPointerCapture = () => captured; element.releasePointerCapture = () => { captured = false; };
+  const placement = starterLayout([{ id: 'one', label: 'One', kind: 'document' }]).placements[0];
+  const commit = vi.fn(() => true), point = vi.fn((x: number, y: number, height = 0) => ({ x: x / 100, z: -1 + height }));
+  const input = createArrangementInput({ placement: () => placement, available: () => true, grabHeight: () => .2, point, lift: () => .06, select() {}, commit });
+  element.addEventListener('pointerdown', e => input.start(e, 'one'));
+  const dispatch = (type: string, x: number) => { const e = new MouseEvent(type, { clientX: x, button: 0 }); Object.defineProperty(e, 'pointerId', { value: 1 }); element.dispatchEvent(e); };
+  dispatch('pointerdown', 0); dispatch('pointermove', 400);
+  expect(input.preview()!.position.x).toBe(4); expect(input.lift()).toBe(.06); expect(point).toHaveBeenLastCalledWith(400, 0, .26); expect(commit).not.toHaveBeenCalled();
+  input.finish(); expect(commit).toHaveBeenCalledOnce();
+  const change = (commit.mock.calls[0] as unknown as [string, PlacementChange])[1];
+  expect(Math.hypot(change.position!.x, change.position!.z)).toBeLessThan(1.45);
+  expect(Object.keys(change)).toEqual(['position']); expect(Object.keys(change.position!)).toEqual(['x', 'z']); expect(input.lift()).toBe(0);
+  dispatch('pointerdown', 0); dispatch('pointermove', 500); input.cancel(); expect(commit).toHaveBeenCalledOnce(); expect(input.lift()).toBe(0); expect(input.preview()).toBeUndefined();
+});

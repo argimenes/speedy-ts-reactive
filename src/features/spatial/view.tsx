@@ -1,9 +1,10 @@
+import { DESK_PROPS, deskProp, propPlacement, arrangedProp } from "./desk-props";
 import { For, Show, createMemo, createEffect, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import { Probe } from "../probe/probe";
 import { paperOrientation, clampCamera, type SpatialCamera, type SpatialLayout, type SpatialObject, type SpatialPlacement } from "./model";
 import { createStudyScene, type SceneStatus } from "./scene";
 import { createArrangementInput } from "./arrangement-input";
-import { type PlacementChange } from "./arrangement";
+import { arrangedPlacement, type PlacementChange } from "./arrangement";
 import { editingRectangle } from "./camera";
 import "./spatial.css";
 export interface SpatialDocumentPort {
@@ -18,7 +19,7 @@ export interface SpatialPort {
   camera(value: SpatialCamera): void; available(): boolean; ownInteraction(value: { cancel(): void; finish(): void }): () => void; returnDesktop(): unknown;
 }
 /** The application supplies exactly one authorized live slot; the scene never owns editable DOM. */
-export default function SpatialView(props: { port: SpatialPort; probe?: boolean }) {
+export default function SpatialView(props: { port: SpatialPort; probe?: boolean; deskObjects?: boolean }) {
   let canvas!: HTMLCanvasElement, host!: HTMLDivElement;
   let scene: ReturnType<typeof createStudyScene> | undefined, resize: ResizeObserver | undefined;
   const [surfaceGeneration, setSurfaceGeneration] = createSignal(1);
@@ -35,17 +36,22 @@ export default function SpatialView(props: { port: SpatialPort; probe?: boolean 
   const browsing = () => !active() && phase() === "desk";
   const [hoverPoint, setHoverPoint] = createSignal<{x:number;y:number}>();
   const [arranging, setArranging] = createSignal(false);
-  const placement = (id: string) => props.port.layout()?.placements.find(p => p.objectId === id);
-  const canArrange = (id: string) => browsing() && props.port.available() && !error() && !!placement(id) && !!props.port.objects().find(o => o.id === id && !o.reason && o.kind !== "placeholder");
+  const allObjects = () => [...props.port.objects(), ...(props.deskObjects !== false ? DESK_PROPS.map(p => ({ id: p.id, label: p.label, kind: 'prop' as const, reason: undefined, tooltipLabel: p.label })) : [])];
+  const placement = (id: string) => props.deskObjects !== false && deskProp(id) ? propPlacement(props.port.layout(), id) : props.port.layout()?.placements.find(p => p.objectId === id);
+  const selectedProp = () => !!deskProp(props.port.selected() ?? '');
+  const canArrange = (id: string) => browsing() && props.port.available() && !error() && !!placement(id) && !!allObjects().find(o => o.id === id && (props.deskObjects !== false || !o.reason && o.kind !== "placeholder"));
   const arrangement = createArrangementInput({ placement, available: canArrange, grabHeight: (x, y) => scene?.grabHeight(x, y), point: (x, y, height) => scene?.deskPoint(x, y, height),
+    lift: () => props.deskObjects !== false ? .06 : 0,
+    constrain: (p, change) => deskProp(p.objectId) ? arrangedProp(p, change) : arrangedPlacement(p, change),
     select: props.port.select, commit: props.port.arrange });
   const tooltip = createMemo(() => {
     status();
     const point=hoverPoint();
     if (!point || !browsing() || arrangement.owned() || !props.port.available() || error()) return;
     const id=scene?.hit(point.x,point.y);
-    const object=props.port.objects().find(o=>o.id===id && o.kind==="document");
-    const anchor=object && scene?.documentTop(object.id);
+    const object=allObjects().find(o=>o.id===id);
+    const bounds=host.getBoundingClientRect();
+    const anchor=object && (scene?.documentTop(object.id) ?? { x:point.x-bounds.left, y:point.y-bounds.top });
     if (!object || !anchor) return;
     return { label:object.tooltipLabel ?? object.label, x:Math.max(128,Math.min((status()?.width??256)-128,anchor.x)), y:Math.max(44,anchor.y-10) };
   });
@@ -104,7 +110,7 @@ export default function SpatialView(props: { port: SpatialPort; probe?: boolean 
   const startScene = () => {
     cancel(); scene?.dispose(); scene = undefined; setError("");
     try {
-      scene = createStudyScene(canvas, setStatus, message => { cancel(); stopMotion(); setError(message); });
+      scene = createStudyScene(canvas, setStatus, message => { cancel(); stopMotion(); setError(message); }, props.deskObjects !== false);
       const bounds = host.getBoundingClientRect(); scene.resize(bounds.width, bounds.height);
       const layout = props.port.layout(); if (layout) scene.update({ ...layout, camera: camera() }, props.port.objects(), props.port.selected(), rehearsal()); if (active()) scene.handoff(active()!.objectId, rect(), 1, 0);
     } catch (e) { setError(`The study needs WebGL 2. ${e instanceof Error ? e.message : String(e)} Your workspace is preserved.`); }
@@ -117,7 +123,7 @@ export default function SpatialView(props: { port: SpatialPort; probe?: boolean 
 
   });
   createEffect(() => { props.port.layout(); props.port.objects(); props.port.available(); arrangement.validate(); });
-  createEffect(() => { const value = arrangement.preview(); scene?.previewPlacement(value); });
+  createEffect(() => { const value = arrangement.preview(); scene?.previewPlacement(value, arrangement.lift()); });
   createEffect(() => { const layout = props.port.layout(); if (layout) scene?.update({ ...layout, camera: camera() }, props.port.objects(), props.port.selected(), rehearsal()); });
   createEffect(() => { if (!active() && phase() === "editing") { scene?.handoff(); setPhase("desk"); } });
   const key = (event: KeyboardEvent) => {
@@ -126,7 +132,7 @@ export default function SpatialView(props: { port: SpatialPort; probe?: boolean 
     if (event.key === "Escape" && (arrangement.owned() || arranging())) { event.preventDefault(); if (arrangement.owned()) arrangement.cancel(); else setArranging(false); return; }
     if (arranging()) {
       const step = event.shiftKey ? .001 : .01, angle = (event.shiftKey ? 1 : 5) * Math.PI / 180;
-      const commands: Record<string, () => void> = { ArrowLeft: () => nudge(-step, 0), ArrowRight: () => nudge(step, 0), ArrowUp: () => nudge(0, -step), ArrowDown: () => nudge(0, step), "[": () => rotate(-angle), "]": () => rotate(angle), l: () => adjust({ posture: "lying" }), p: () => adjust({ posture: "propped" }) };
+      const commands: Record<string, () => void> = { ArrowLeft: () => nudge(-step, 0), ArrowRight: () => nudge(step, 0), ArrowUp: () => nudge(0, -step), ArrowDown: () => nudge(0, step), "[": () => rotate(-angle), "]": () => rotate(angle), l: () => { if (!selectedProp()) adjust({ posture: "lying" }); }, p: () => { if (!selectedProp()) adjust({ posture: "propped" }); } };
       const name = event.key === "{" ? "[" : event.key === "}" ? "]" : event.key.length === 1 ? event.key.toLowerCase() : event.key;
       if (commands[name]) { event.preventDefault(); event.stopPropagation(); commands[name](); return; }
     }
@@ -148,7 +154,7 @@ export default function SpatialView(props: { port: SpatialPort; probe?: boolean 
     onMount(() => { startScene(); if (browsing()) canvas.focus({ preventScroll: true }); });
     onCleanup(() => { cancel(); scene?.dispose(); scene = undefined; });
     return (
-    <canvas ref={canvas} class="workspace-spatial__scene" tabIndex={0} aria-label={arranging() ? "Arrange selected object. Arrows move; brackets rotate; L lays flat; P props up; Shift uses fine steps; Escape returns to view controls; Enter reads." : "Study desk. Drag a paper to move it, or the background to swivel. Arrow keys move the view; Home recentres; Enter reads the selected Document."} onKeyDown={key} onDblClick={event => activate(scene?.hit(event.clientX, event.clientY))}
+    <canvas ref={canvas} class="workspace-spatial__scene" tabIndex={0} aria-label={arranging() ? selectedProp() ? "Arrange selected object. Arrows move; brackets rotate; Shift uses fine steps; Escape returns to view controls." : "Arrange selected object. Arrows move; brackets rotate; L lays flat; P props up; Shift uses fine steps; Escape returns to view controls; Enter reads." : (props.deskObjects !== false ? "Study desk. Drag an object to lift and move it; release to place it on the desktop. Escape cancels. Drag the background to swivel." : "Study desk. Drag a paper to move it, or the background to swivel. Arrow keys move the view; Home recentres; Enter reads the selected Document.")} onKeyDown={key} onDblClick={event => activate(scene?.hit(event.clientX, event.clientY))}
       onPointerDown={event => { setHoverPoint(undefined); if (!browsing() || gesture || arrangement.owned() || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || !props.port.available() || error()) return;
         const id = scene?.hit(event.clientX, event.clientY);
         if (id) { props.port.select(id); if (arrangement.start(event, id)) setArranging(true); return; }
@@ -159,7 +165,7 @@ export default function SpatialView(props: { port: SpatialPort; probe?: boolean 
       onPointerCancel={cancel} onLostPointerCapture={cancel} />
     );
   };
-  return <div class="workspace-spatial" ref={host} data-arranging={arranging()} data-moving={arrangement.owned()} data-phase={phase()} data-handoff-progress={progress()} data-editing={active()?.objectId} data-camera={camera().kind} data-frames={status()?.frames} data-geometries={status()?.geometries} data-textures={status()?.textures} data-calls={status()?.calls} data-alignment-error={status()?.alignmentError}>
+  return <div class="workspace-spatial" ref={host} data-arranging={arranging()} data-moving={arrangement.owned()} data-lift={arrangement.lift()} data-phase={phase()} data-handoff-progress={progress()} data-editing={active()?.objectId} data-camera={camera().kind} data-frames={status()?.frames} data-geometries={status()?.geometries} data-textures={status()?.textures} data-calls={status()?.calls} data-alignment-error={status()?.alignmentError}>
     <Show when={surfaceGeneration()} keyed>{_generation => <Surface />}</Show>
     <Show when={tooltip()}>{tip => <div class="workspace-spatial__tooltip" role="tooltip" style={{left:tip().x+"px",top:tip().y+"px"}}>{tip().label}</div>}</Show>
     <div class="workspace-spatial__bar" aria-label="Spatial controls">
@@ -179,23 +185,25 @@ export default function SpatialView(props: { port: SpatialPort; probe?: boolean 
     <Show when={active()}><div class="workspace-spatial__document" inert={phase() === "returning"} style={{ opacity: opacity(), left: `${rect().x}px`, top: `${rect().y}px`, width: `${rect().width}px`, height: `${rect().height}px` }}>{props.port.renderDocument()}</div></Show>
     <Show when={browsing() && rehearsal() && !error()}><div class="workspace-spatial__alignment" style={{ left: `${rect().x}px`, top: `${rect().y}px`, width: `${rect().width}px`, height: `${rect().height}px` }}><span>Future editing area · non-editable alignment rehearsal</span></div></Show>
     <div class="workspace-spatial__footer" hidden={!browsing()}>
-      <details><summary>Workspace objects · {props.port.objects().length}</summary><ul><For each={props.port.objects()}>{object => <li><button aria-pressed={props.port.selected() === object.id} disabled={!props.port.available()} onClick={() => props.port.select(object.id)}>{object.label}<small>{object.reason ?? (props.port.layout()?.placements.some(p => p.objectId === object.id) ? object.kind : "Unplaced")}</small></button></li>}</For></ul><Show when={!props.port.objects().length}><p>Your desk is empty. Use Workspace → Open Document from Server, New Document or Open Image.</p></Show></details>
-      <p role="status"><Show when={props.port.selected()} fallback="Drag the desk view to swivel. Documents remain physical page previews.">{props.port.objects().find(o => o.id === props.port.selected())?.label} · {props.port.document.eligible(props.port.selected()!) ? "Double-click its page or choose Read Document." : "Physical preview"}</Show></p>
+      <details><summary>{props.deskObjects !== false ? "Desk objects" : "Workspace objects"} · {allObjects().length}</summary><ul><For each={allObjects()}>{object => <li><button aria-pressed={props.port.selected() === object.id} disabled={!props.port.available()} onClick={() => props.port.select(object.id)}>{object.label}<small>{object.reason ?? (placement(object.id) ? object.kind : "Unplaced")}</small></button></li>}</For></ul><Show when={!props.port.objects().length}><p>Use Workspace → Open Document from Server, New Document or Open Image.</p></Show></details>
+      <p role="status"><Show when={props.port.selected()} fallback={props.deskObjects !== false ? "Drag any desk object to lift and move it. Release to place it on the desktop." : "Drag the desk view to swivel. Documents remain physical page previews."}>{allObjects().find(o => o.id === props.port.selected())?.label} · {props.port.document.eligible(props.port.selected()!) ? "Double-click its page or choose Read Document." : "Physical preview"}</Show></p>
       <Show when={props.port.selected() && props.port.document.eligible(props.port.selected()!)}><button onClick={() => activate(props.port.selected())}>Read Document</button></Show>
     </div>
     <Show when={browsing() && props.port.selected() && canArrange(props.port.selected()!)}>
       <div class="workspace-spatial__arrangement workspace-spatial__controls" role="group" aria-label="Arrange selected object">
-        <strong>{props.port.objects().find(o => o.id === props.port.selected())?.label}</strong>
+        <strong>{allObjects().find(o => o.id === props.port.selected())?.label}</strong>
         <button aria-pressed={arranging()} onClick={() => { cancel(); setArranging(!arranging()); canvas.focus({ preventScroll: true }); }}>{arranging() ? "View controls" : "Arrange with keyboard"}</button>
         <button aria-label="Move left" onClick={() => nudge(-.01, 0)}>←</button><button aria-label="Move right" onClick={() => nudge(.01, 0)}>→</button>
         <button aria-label="Move away" onClick={() => nudge(0, -.01)}>↑</button><button aria-label="Move closer" onClick={() => nudge(0, .01)}>↓</button>
         <button aria-label="Rotate left" title="Rotate heading 5° left; Shift-click for 1°" onClick={e => rotate(-(e.shiftKey ? 1 : 5) * Math.PI / 180)}>↶ Rotate left</button><button aria-label="Rotate right" title="Rotate heading 5° right; Shift-click for 1°" onClick={e => rotate((e.shiftKey ? 1 : 5) * Math.PI / 180)}>Rotate right ↷</button>
         <span>Heading {Math.round((selectedPlacement()?.heading ?? 0) * 180 / Math.PI)}°</span>
+        <Show when={!selectedProp()}>
         <button aria-pressed={selectedPlacement()?.posture === "lying"} onClick={() => adjust({ posture: "lying" })}>Lay flat</button>
         <button aria-pressed={selectedPlacement()?.posture === "propped"} onClick={() => adjust({ posture: "propped" })}>Prop up</button>
         <span class="workspace-spatial__orientation" role="group" aria-label="Paper orientation"><button aria-pressed={!!selectedPlacement() && paperOrientation(selectedPlacement()!) === "portrait"} onClick={() => adjust({ orientation: "portrait" })}>Portrait</button><button aria-pressed={!!selectedPlacement() && paperOrientation(selectedPlacement()!) === "landscape"} onClick={() => adjust({ orientation: "landscape" })}>Landscape</button></span>
         <button onClick={() => adjust({ toFront: true })}>Bring to top</button>
-        <span class="workspace-spatial__arrangement-help">{arranging() ? "Arrows move · [ ] rotate · L/P posture · Shift fine steps · Esc cancels" : "Drag a paper to move it. Background drag swivels the view."}</span>
+        </Show>
+        <span class="workspace-spatial__arrangement-help">{arranging() ? (selectedProp() ? "Arrows move · [ ] rotate · Shift fine steps · Esc cancels" : "Arrows move · [ ] rotate · L/P posture · Shift fine steps · Esc cancels") : (props.deskObjects !== false ? "Drag to lift and move. Release onto the desktop. Esc cancels." : "Drag a paper to move it. Background drag swivels the view.")}</span>
       </div>
     </Show>
     <Show when={props.port.document.notice()}><p class="workspace-spatial__notice" role="status">{props.port.document.notice()}</p></Show>

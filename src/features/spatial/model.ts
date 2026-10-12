@@ -1,3 +1,4 @@
+import { validateDeskProps, type DeskPropPlacement } from "./desk-props";
 import type { DocumentPreview } from "./document-preview";
 /** Spatial v1 is a seated, desk-constrained presentation. Distances are metres. */
 export interface SpatialCamera { kind: "perspective" | "orthographic"; yaw: number; approach: number; [key: string]: unknown }
@@ -14,7 +15,7 @@ export function paperSize(p: SpatialPlacement) {
   return p.orientation === "portrait" ? { width: short, height: long } : { width: long, height: short };
 }
 export interface SpatialLayout {
-  version: 1; environment: { preset: "night-study-v1"; [key: string]: unknown };
+  version: 1; environment: { preset: "night-study-v1"; deskProps?: DeskPropPlacement[]; [key: string]: unknown };
   camera: SpatialCamera; placements: SpatialPlacement[]; [key: string]: unknown;
 }
 export interface SpatialObject { id: string; label: string; tooltipLabel?: string; kind: "document" | "image" | "placeholder"; reason?: string; imageUrl?: string; preview?: DocumentPreview }
@@ -25,6 +26,7 @@ const identity = (v: unknown) => { if (typeof v !== "string" || !v.trim()) throw
 export function decodeSpatial(value: unknown): SpatialLayout {
   const v = record(value);
   if (v.version !== 1 || record(v.environment).preset !== "night-study-v1") throw new Error("Unsupported Spatial version or study preset.");
+  if (v.environment.deskProps !== undefined) validateDeskProps(v.environment.deskProps);
   const c = record(v.camera);
   if (!["perspective", "orthographic"].includes(c.kind)) throw new Error("Unsupported Spatial camera.");
   finite(c.yaw, -STUDY.yawLimit, STUDY.yawLimit); finite(c.approach, 0, 1);

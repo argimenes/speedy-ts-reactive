@@ -1,3 +1,4 @@
+import { arrangedProp, deskProp, propPlacement } from "../features/spatial/desk-props";
 import { createComputed, createMemo, createRoot, createSignal, untrack } from "solid-js";
 import { spatialDocumentPreview } from "./spatial-document-preview";
 import type { DocumentPreview } from "../features/spatial/document-preview";
@@ -139,9 +140,21 @@ export function createSpatialActions(session: WorkspaceSession) {
     dispose: () => { disposed = true; releaseDocument(); bookmarks.clear(); previews.clear(); dispose(); },
     arrange(id: string, change: PlacementChange, expected: SpatialPlacement) {
       if (!session.inputAvailable() || presentation.active() !== "spatial" || activeRoot()) return false;
-      const current = layout(), object = objects().find(o => o.id === id);
+      const current = layout();
+      if (deskProp(id)) {
+        if (!editor.features.spatialDeskObjects || !current || change.orientation || change.posture || change.toFront) return false;
+        const placement = propPlacement(current, id)!;
+        if (JSON.stringify(placement) !== JSON.stringify(expected)) return false;
+        const next = arrangedProp(placement, change);
+        const saved = current.environment.deskProps ?? [], previous = saved.find(p => p.id === id);
+        const replacement = { ...previous, id, position: next.position, heading: next.heading };
+        const deskProps = previous ? saved.map(p => p === previous ? replacement : p) : [...saved, replacement];
+        presentation.updateSpatial(decodeSpatial({ ...current, environment: { ...current.environment, deskProps } }));
+        return true;
+      }
+      const object = objects().find(o => o.id === id);
       const placement = current?.placements.find(p => p.objectId === id);
-      if (!current || !placement || !object || object.reason || object.kind === "placeholder" || JSON.stringify(placement) !== JSON.stringify(expected)) return false;
+      if (!current || !placement || !object || (!editor.features.spatialDeskObjects && (object.reason || object.kind === "placeholder")) || JSON.stringify(placement) !== JSON.stringify(expected)) return false;
       const replacement = change.position || change.heading !== undefined || change.posture || change.orientation ? arrangedPlacement(placement, change) : placement;
       const placements = current.placements.map(p => p === placement ? replacement : p);
       if (change.toFront) { placements.splice(placements.indexOf(replacement), 1); placements.push(replacement); }

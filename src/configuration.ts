@@ -60,6 +60,8 @@ export type FeatureFlags = Readonly<{
   canvasWorkspace: boolean;
   /** Experimental study presentation; explicitly opt in at application assembly. */
   spatialWorkspace: boolean;
+  /** Lift and arrange all desk objects, including the study props. */
+  spatialDeskObjects: boolean;
   /** Existing Timer capability remains on; activation is decided by application composition. */
   timer: boolean;
   /** Existing retained selection behavior, activated only by application composition. */
@@ -97,6 +99,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   anchorRelationships: true,
   canvasWorkspace: false,
   spatialWorkspace: false,
+  spatialDeskObjects: true,
   timer: true,
   grouping: true,
   entityReferences: true,

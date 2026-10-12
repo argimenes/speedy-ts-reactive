@@ -76,8 +76,19 @@ D also adds static procedural wood/paper materials and Alpine exterior depth.
 The [D review gallery](./artifacts/spatial-d/index.html) includes both orientations
 and a drag-latency comparison. **Spatial A–D is complete and accepted**, including
 manual confirmation of smooth, responsive dragging. The accepted implementation
-baseline is `b800bd3` (`Milestone D complete`). Broader Spatial work remains
-unstarted while future directions are reviewed.
+baseline is `b800bd3` (`Milestone D complete`).
+
+The default-on `spatialDeskObjects` flag extends arrangement to every desk object:
+Documents, images and retained previews, plus the lamp, cup, saucer, three books,
+inkpot and quill. Drag to lift an object; release to settle it onto the desktop.
+Drops beyond an edge are constrained so the complete footprint stays on the desk;
+objects cannot be left floating or placed on the floor, walls or shelves. Escape
+cancels the move. **Desk objects** also gives access to covered items and keyboard
+movement/rotation. Paper posture and orientation controls remain specific to pages.
+The lamp's lights follow it. Prop positions are saved in the Spatial environment;
+setting the flag to `false` disables the new interactions while retaining saved
+positions. The Probe remains disabled. Run
+`node scripts/check-spatial-desk-objects-browser.mjs` for the browser checks.
 
 The design principles for portable Blocks and reusable tools, with a staged
 ToolbarBlock demonstration and refactoring roadmap, are documented in

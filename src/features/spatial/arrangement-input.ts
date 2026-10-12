@@ -7,6 +7,9 @@ interface ArrangementPort {
   available(id: string): boolean;
   grabHeight?(x: number, y: number): number | undefined;
   point(x: number, y: number, height?: number): { x: number; z: number } | undefined;
+  /** A transient lift; only x/z are ever committed. */
+  lift?: () => number;
+  constrain?: (placement: SpatialPlacement, change: PlacementChange) => SpatialPlacement;
   select(id: string): void;
   commit(id: string, change: PlacementChange, expected: SpatialPlacement): boolean;
 }
@@ -14,6 +17,7 @@ interface ArrangementPort {
  * immediately; only the scene coalesces rendering into RAF. Cancel writes nothing. */
 export function createArrangementInput(port: ArrangementPort) {
   const [preview, setPreview] = createSignal<SpatialPlacement>();
+  const [lift, setLift] = createSignal(0);
   const [owned, setOwned] = createSignal(false);
   let pending: SpatialPlacement | undefined;
   let gesture: { pointer: number; element: HTMLElement; id: string; original: SpatialPlacement; height: number; start: { x: number; z: number }; x: number; y: number; moved: boolean } | undefined;
@@ -26,13 +30,13 @@ export function createArrangementInput(port: ArrangementPort) {
       g.element.removeEventListener("pointercancel", cancel); g.element.removeEventListener("lostpointercapture", cancel);
       if (g.element.hasPointerCapture(g.pointer)) g.element.releasePointerCapture(g.pointer);
     }
-    batch(() => { setPreview(undefined); setOwned(false); });
+    batch(() => { setPreview(undefined); setLift(0); setOwned(false); });
   };
   const cancel = () => release();
   const finish = () => {
     const g = gesture;
     try {
-      if (g && valid()) { flush(); const value = preview(); if (g.moved && value) port.commit(g.id, { position: value.position }, g.original); }
+      if (g && valid()) { flush(); const value = preview(); if (g.moved && value) { const settled = (port.constrain ?? arrangedPlacement)(g.original, { position: value.position }); port.commit(g.id, { position: settled.position }, g.original); } }
     } finally { release(); }
   };
   const move = (e: PointerEvent) => {
@@ -40,15 +44,18 @@ export function createArrangementInput(port: ArrangementPort) {
     if (!valid()) { cancel(); return; }
     if (!g.moved && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 4) return;
     const sample = beginDragSample();
-    const point = port.point(e.clientX, e.clientY, g.height); if (sample) sample.intersection = performance.now(); if (!point) return;
+    const height = port.lift?.() ?? 0;
+    const point = port.point(e.clientX, e.clientY, g.height + height); if (sample) sample.intersection = performance.now(); if (!point) return;
     g.moved = true;
-    pending = arrangedPlacement(g.original, { position: { x: g.original.position.x + point.x - g.start.x, z: g.original.position.z + point.z - g.start.z } });
+    const position = { ...g.original.position, x: g.original.position.x + point.x - g.start.x, z: g.original.position.z + point.z - g.start.z };
+    pending = height > 0 ? { ...g.original, position } : (port.constrain ?? arrangedPlacement)(g.original, { position });
+    setLift(height);
     trackDragPlacement(pending, sample);
     flush(); e.preventDefault();
   };
   const up = (e: PointerEvent) => { if (e.pointerId === gesture?.pointer) { move(e); finish(); } };
   return {
-    preview, owned, cancel, finish,
+    preview, lift, owned, cancel, finish,
     validate() { if (gesture && !valid()) cancel(); },
     start(e: PointerEvent, id: string) {
       if (gesture || e.button !== 0 || !port.available(id)) return false;

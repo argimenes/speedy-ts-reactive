@@ -50,7 +50,7 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
       onMount(actions.documentReady);
       return <Show when={actions.activeRoot()} keyed>{root => <BlockOutlet nodeKey={root.nodeKey} />}</Show>;
     };
-    return <SpatialView probe={editor.features.presentationProbe} port={{ layout: actions.layout, objects: actions.objects, selected: actions.selected, select: actions.select,
+    return <SpatialView deskObjects={editor.features.spatialDeskObjects} probe={editor.features.presentationProbe} port={{ layout: actions.layout, objects: actions.objects, selected: actions.selected, select: actions.select,
       camera: actions.camera, arrange: actions.arrange, available: actions.available, ownInteraction: actions.ownInteraction, returnDesktop: actions.returnDesktop,
       document: actions.document, renderDocument: () => <DocumentSlot />, displayedSize: () => spatialResize()?.presentedSize() }} />;
   };

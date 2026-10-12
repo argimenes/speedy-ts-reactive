@@ -1,3 +1,4 @@
+import { DESK_PROPS, propPlacement } from "../features/spatial/desk-props";
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceSession } from "./workspace-session";
@@ -11,8 +12,8 @@ const sessions: WorkspaceSession[] = [];
 afterEach(() => { sessions.splice(0).forEach(s => s.dispose()); vi.unstubAllGlobals(); });
 const doc = (): ExistingBlockDto => ({ id: "doc", type: "document-block", metadata: { documentId: "doc", folder: ".", filename: "Shared.json" }, children: [{ id: "text", type: "plain-text-block", text: "Shared original" }] });
 const fixture = (): ExistingBlockDto => ({ id: "work", type: "workspace-block", children: [0, 1].map(i => ({ id: `window-${i}`, type: "document-window-block", metadata: { title: `Document ${i}`, position: { x: i * 900, y: 17 }, size: { w: 840, h: 620 } }, children: [doc()] })) });
-function open(dto = fixture(), canvas = false, spatial = true) {
-  const s = new WorkspaceSession(materializeLocalWorkspace(dto), { features: { canvasWorkspace: canvas, spatialWorkspace: spatial } }); sessions.push(s); return s;
+function open(dto = fixture(), canvas = false, spatial = true, deskObjects = true) {
+  const s = new WorkspaceSession(materializeLocalWorkspace(dto), { features: { canvasWorkspace: canvas, spatialWorkspace: spatial, spatialDeskObjects: deskObjects } }); sessions.push(s); return s;
 }
 describe("Spatial application boundary", () => {
   it("defaults off; exposes independent availability across all four flag combinations", () => {
@@ -175,13 +176,13 @@ describe("Spatial arrangement sidecar", () => {
     expect(local.presentation.read()).toEqual(s.presentation.read()); expect(server.presentation.read()).toEqual(s.presentation.read());
     s.selectPresentation("desktop"); s.selectPresentation("canvas"); s.selectPresentation("spatial"); expect(a.layout()).toEqual(local.spatial!.layout());
   });
-  it("rejects stale or missing targets and any arrangement while the live editor owns the surface", () => {
+  it("rejects stale targets and edits while reading, but allows moving retained missing proxies", () => {
     const s = open(); s.selectPresentation("spatial"); const a = s.spatial!, first = a.layout()!.placements[0];
     expect(a.arrange(first.objectId, { heading: .2 }, first)).toBe(true);
     expect(a.arrange(first.objectId, { posture: "lying" }, first)).toBe(false);
     a.document.activate(first.objectId); const now = a.layout()!.placements[0]; expect(a.arrange(first.objectId, { heading: 1 }, now)).toBe(false);
     a.document.release(); const root = s.projection.nodeForPlacement(s.resolveObjects()[0].placementKeys[0])!; s.editor.commands.remove(root.key);
-    expect(a.arrange(first.objectId, { heading: 1 }, now)).toBe(false);
+    expect(a.arrange(first.objectId, { heading: 1 }, now)).toBe(true);
   });
 });
 
@@ -202,5 +203,40 @@ describe("qualified inline widgets in Spatial", () => {
     expect(a.activeRoot()).toBeUndefined();
     expect(a.document.eligible("block:window-0")).toBe(false);
     s.editor.repository.undo(); expect(a.document.activate("block:window-0")).toBe(true);
+  });
+});
+
+describe('movable study props', () => {
+  it('defaults on and saves each prop independently without changing content or other presentations', async () => {
+    expect(featureFlags.spatialDeskObjects).toBe(true);
+    const s = open(fixture(), true); s.selectPresentation('canvas'); s.selectPresentation('spatial');
+    const a = s.spatial!, before = s.editor.repository.snapshot(), directory = s.presentation.read()!.objects;
+    const canvas = s.presentation.read()!.presentations.canvas, desktop = s.presentation.read()!.presentations.desktop;
+    const pages = a.layout()!.placements, revision = s.presentation.revision();
+    for (const [i, definition] of DESK_PROPS.entries()) {
+      const original = propPlacement(a.layout(), definition.id)!;
+      expect(a.arrange(definition.id, { position: { x: -3 + i, z: -4 }, heading: i / 4 }, original)).toBe(true);
+      expect(a.arrange(definition.id, { position: { x: 0, z: -.8 } }, original)).toBe(false);
+    }
+    expect(s.presentation.revision()).toBe(revision + DESK_PROPS.length);
+    expect(a.layout()!.environment.deskProps).toHaveLength(DESK_PROPS.length);
+    expect(a.layout()!.placements).toEqual(pages); expect(s.editor.repository.snapshot()).toEqual(before);
+    expect(s.presentation.read()!.objects).toEqual(directory); expect(s.presentation.read()!.presentations.canvas).toEqual(canvas); expect(s.presentation.read()!.presentations.desktop).toEqual(desktop);
+    const captured = s.editor.persistence.captureWorkspace(), bundle = await createWorkspaceSaveBundle(captured.repository, [], 'workspace', captured.presentation);
+    const local = open(JSON.parse(JSON.stringify(captured.document)), true);
+    const server = new WorkspaceSession(materializeWorkspace(bundle.manifest, new Map(bundle.documents.map(d => [d.documentId, d.document]))), { features: { spatialWorkspace: true } }); sessions.push(server);
+    expect(local.spatial!.layout()).toEqual(a.layout()); expect(server.spatial!.layout()).toEqual(a.layout());
+    s.selectPresentation('desktop'); s.selectPresentation('spatial'); expect(a.layout()).toEqual(local.spatial!.layout());
+  });
+  it('disables prop editing behind the flag and while a Document owns the surface', () => {
+    const disabled = open(fixture(), false, true, false); disabled.selectPresentation('spatial');
+    const p = propPlacement(disabled.spatial!.layout(), 'study:lamp')!;
+    expect(disabled.spatial!.arrange(p.objectId, { position: { x: 0, z: -1 } }, p)).toBe(false);
+    expect(disabled.spatial!.layout()!.environment.deskProps).toBeUndefined();
+    const s = open(); s.selectPresentation('spatial'); const a = s.spatial!, original = propPlacement(a.layout(), 'study:lamp')!;
+    a.document.activate(a.layout()!.placements[0].objectId);
+    expect(a.arrange(original.objectId, { heading: .4 }, original)).toBe(false);
+    a.document.release(); expect(a.arrange(original.objectId, { posture: 'propped' }, original)).toBe(false);
+    expect(a.arrange(original.objectId, { heading: .4 }, original)).toBe(true);
   });
 });
