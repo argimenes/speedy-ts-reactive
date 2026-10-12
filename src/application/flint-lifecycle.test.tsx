@@ -25,6 +25,41 @@ function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true) 
 }
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 describe("Flint composite transient hosting", () => {
+  it("closes a background Document from its tab button without changing the active view or deleting content", async () => {
+    const f = setup(true, undefined, false); await tick();
+    f.tabs()[0].click(); await tick();
+    const active = f.text().key, activeTab = f.tabs()[0].textContent;
+    f.editor.commands.replaceInlineRange(active, 0, 0, "Unsaved ");
+    const documents = Object.values(f.editor.repository.state.contents).filter(c => c.viewType === "document-block").map(c => c.key);
+    const inactive = f.tabs()[1].textContent!;
+    f.host.querySelector<HTMLButtonElement>(`[aria-label="Close Document: ${inactive}"]`)!.click(); await tick();
+    expect(f.tabs()).toHaveLength(1);
+    expect(f.tabs()[0].textContent).toBe(activeTab);
+    expect(f.text().key).toBe(active);
+    expect(f.editor.mounts.get(active)!.captureText!()).toContain("Unsaved ");
+    expect(Object.values(f.editor.repository.state.contents).filter(c => c.viewType === "document-block").map(c => c.key)).toEqual(documents);
+    f.host.querySelector<HTMLButtonElement>(`[aria-label="Close Document: ${activeTab}"]`)!.click(); await tick();
+    expect(f.tabs()).toHaveLength(0); expect(f.views()).toHaveLength(0);
+    expect(f.host.querySelector('.flint-welcome')).not.toBeNull();
+    [...f.host.querySelectorAll<HTMLButtonElement>('[aria-label="Flint Documents"] button')].find(b => b.textContent?.startsWith(activeTab!))!.click(); await tick();
+    expect(f.editor.mounts.get(f.text().key)!.captureText!()).toContain("Unsaved ");
+  });
+  it("offers Close Document on the clicked tab's mouse and keyboard context menus", async () => {
+    const f = setup(true, undefined, false); await tick();
+    f.tabs()[0].click(); await tick();
+    const active = f.text().key;
+    f.tabs()[1].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 50, clientY: 60 })); await tick();
+    const close = () => [...document.querySelectorAll<HTMLButtonElement>('.reactive-block-menu [role=menuitem]')].find(b => b.textContent === 'Close Document')!;
+    expect(close()).toBeDefined(); close().click(); await tick();
+    expect(f.tabs()).toHaveLength(1); expect(f.text().key).toBe(active);
+    expect(document.querySelector('.reactive-block-menu')).toBeNull();
+    f.tabs()[0].focus();
+    f.tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true, cancelable: true })); await tick();
+    close().click(); await tick();
+    expect(f.tabs()).toHaveLength(0); expect(f.views()).toHaveLength(0);
+    expect(Object.values(f.editor.repository.state.contents).filter(c => c.viewType === 'document-block')).toHaveLength(2);
+    expect(document.querySelector('.reactive-block-menu')).toBeNull();
+  });
   it("keeps the original shell and native editor when material chrome is disabled", async () => {
     const f = setup(true, undefined, false); await tick();
     const shell = f.host.querySelector<HTMLElement>('.flint-application')!;
