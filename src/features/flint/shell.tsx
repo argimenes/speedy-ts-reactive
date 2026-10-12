@@ -1,6 +1,6 @@
 import { For, Show, createSignal } from 'solid-js';
 import type { DocumentApplicationInstance } from '../../feature-api/document-application';
-import { BacklinksPanel } from './backlinks-view';
+import { Dynamic } from "solid-js/web";
 import { KnowledgeView } from './knowledge-view';
 import { VaultView, DocumentProperties } from './vault-view';
 import { StorageSheet } from './storage-sheet';
@@ -73,7 +73,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
         <div class="flint-rail-heading"><h2>Context</h2><small>AROUND THIS DOCUMENT</small></div>
         <div class="flint-segments" role="group" aria-label="Context lenses"><For each={['Backlinks','References','Properties'] as const}>{name=><button aria-pressed={lens()===name} onPointerDown={e=>e.preventDefault()} onClick={()=>setLens(name)}>{name}</button>}</For></div>
         <Show when={!app.properties()}><p>Open a Document to explore its context.</p></Show>
-        <Show when={lens()==='Backlinks'&&context()}><Show when={vault()&&app.backlinks} fallback={<p>Backlinks become available when a Document is open in a vault.</p>}><BacklinksPanel backlinks={app.backlinks!}/></Show></Show>
+        <Show when={lens()==='Backlinks'&&context()}><Show when={app.entityBacklinks} fallback={<p>Entity backlinks are unavailable in this host.</p>}><Dynamic component={app.entityBacklinks!}/></Show></Show>
         <div hidden={lens()!=='References'}><Show when={vault()&&app.knowledge} fallback={<p>Open a vault to work with native Document references.</p>}><KnowledgeView knowledge={app.knowledge!} mode="references"/></Show></div>
         <div hidden={lens()!=='Properties'}><DocumentProperties application={app}/></div>
       </aside>

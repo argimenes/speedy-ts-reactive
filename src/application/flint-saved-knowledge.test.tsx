@@ -45,7 +45,7 @@ async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise
  vi.stubGlobal('Worker',class {constructor(url:URL){if(!url.pathname.includes('search.worker'))throw new Error('Only the search worker is simulated in this test');}onmessage?: (e:any)=>void;onerror?:()=>void;live=true;terminate(){this.live=false;}postMessage(data:any){setTimeout(()=>{if(this.live)this.onmessage?.({data:{results:matchSources(data.sources,data.query,data.options)}});},0);}});
  const f=make();return {...f,root,make,sql};
 }
-async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Vault');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Vault').disabled).toBe(false));}
+async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Cavern');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Cavern').disabled).toBe(false));}
 async function create(host:ParentNode,name='note.mutable.json',title='A title') {field(host,'New Document filename',name);field(host,'New Document title',title);click(host,'New Document');await wait(()=>expect(host.textContent).toContain('Saved native Document and Markdown'));await wait(()=>expect(host.querySelector(`[aria-label="Open vault/${name}"]`)).toBeTruthy());await wait(()=>expect(button(host,'New Document').disabled).toBe(false));}
 const idOf=(host:ParentNode)=>host.querySelector('[data-flint-property="id"]')!.textContent!;
 async function documentWithText(f:Awaited<ReturnType<typeof fixture>>,host:HTMLElement,name:string,title:string,text:string) {
@@ -65,11 +65,13 @@ it('progressively searches saved resources without admission, then opens only th
  await wait(()=>{const focused=f.editor.node(f.editor.focus.state.focusedKey!)!;expect(focused.payload.id).toBe('resource-1-p0');expect(b.contains(f.editor.mounts.get(focused.key)!.root)).toBe(true);expect(f.editor.mounts.get(focused.key)!.captureInlineSelection?.()).toEqual({anchor:0,head:8});});
  await readySearch(a,'Leonardo');expect(a.querySelectorAll('[data-search-document="resource-1"]')).toHaveLength(12);
 },30000);
-it('saved backlinks open and revalidate the logical mention rather than returning an unopened-source error',async()=>{
+it('Backlinks lists saved entity references without admitting incoming document-link sources',async()=>{
  const f=await savedFixture(),a=f.windows()[0];await open(a);a.querySelector<HTMLButtonElement>('[aria-label="Open vault/0.mutable.json"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-0'));click(a,'Backlinks');
- await wait(()=>expect(a.querySelector('.flint-backlink[data-backlink-source="resource-2"]')).toBeTruthy());expect(canonicalIds(f)).toEqual(['resource-0']);
- a.querySelector<HTMLButtonElement>('.flint-backlink[data-backlink-source="resource-2"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-2'));await wait(()=>expect(f.editor.mounts.get(f.editor.focus.state.focusedKey!)?.captureInlineSelection?.()).toEqual({anchor:9,head:16}));
- expect(canonicalIds(f).sort()).toEqual(['resource-0','resource-2']);
+ await wait(()=>{
+   const rows=a.querySelectorAll('[aria-label="Document backlinks"] tbody tr');expect(rows).toHaveLength(1);
+   expect([...rows[0].querySelectorAll('td')].map(cell=>cell.textContent)).toEqual(['Leonardo','—','3']);
+ });
+ expect(a.querySelectorAll('.flint-backlink')).toHaveLength(0);expect(canonicalIds(f)).toEqual(['resource-0']);
 },30000);
 it.each(['changed bytes','duplicate','external move','removed'])('rejects a saved result after %s without admission or binding',async change=>{
  const f=await savedFixture(),a=f.windows()[0];await open(a);await readySearch(a);const hit=a.querySelector<HTMLButtonElement>('[data-search-document="resource-1"]')!;

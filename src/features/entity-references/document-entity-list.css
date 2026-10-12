@@ -5,23 +5,30 @@
 .document-entity-list__header button:hover { background:#ffffff75; }
 .document-entity-list__header button:first-of-type { width:auto; height:auto; flex-shrink:0; margin-left:auto; padding:5px 8px; color:inherit; font:inherit; white-space:nowrap; }
 .document-entity-list__body { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px; }
-.document-entity-list table { width:100%; border-collapse:collapse; table-layout:fixed; }
-.document-entity-list th { position:sticky; top:-8px; z-index:1; padding:0; border-bottom:1px solid #9aafaa; background:#fff; text-align:left; }
-.document-entity-list th:first-child { width:auto; }
-.document-entity-list th:nth-child(2) { width:62px; }
-.document-entity-list th:nth-child(3) { width:78px; }
-.document-entity-list th button { width:100%; padding:7px 4px; border:0; color:inherit; background:transparent; font:inherit; font-weight:bold; text-align:inherit; cursor:pointer; }
-.document-entity-list th:nth-child(n+2),.document-entity-list td:nth-child(n+2) { text-align:right; font-variant-numeric:tabular-nums; }
-.document-entity-list td { overflow:hidden; padding:6px 4px; border-bottom:1px solid #e2e8e6; text-overflow:ellipsis; white-space:nowrap; }
+:is(.document-entity-list,.flint-entity-list) table { width:100%; border-collapse:collapse; table-layout:fixed; }
+:is(.document-entity-list,.flint-entity-list) th { position:sticky; top:-8px; z-index:1; padding:0; border-bottom:1px solid #9aafaa; background:#fff; text-align:left; }
+:is(.document-entity-list,.flint-entity-list) th:first-child { width:auto; }
+:is(.document-entity-list,.flint-entity-list) th:nth-child(2) { width:62px; }
+:is(.document-entity-list,.flint-entity-list) th:nth-child(3) { width:78px; }
+:is(.document-entity-list,.flint-entity-list) th button { width:100%; padding:7px 4px; border:0; color:inherit; background:transparent; font:inherit; font-weight:bold; text-align:inherit; cursor:pointer; }
+:is(.document-entity-list,.flint-entity-list) th:nth-child(n+2),:is(.document-entity-list,.flint-entity-list) td:nth-child(n+2) { text-align:right; font-variant-numeric:tabular-nums; }
+:is(.document-entity-list,.flint-entity-list) td { overflow:hidden; padding:6px 4px; border-bottom:1px solid #e2e8e6; text-overflow:ellipsis; white-space:nowrap; }
 .document-entity-list__focus { display:block; margin-top:3px; padding:2px 5px; border:1px solid #9aafaa; border-radius:4px; background:#f4f9f7; color:#263a35; font:11px Arial,sans-serif; cursor:pointer; }
 .document-entity-list__focus::after { content:"Focus"; }
 .document-entity-list__focus[aria-pressed="true"] { background:#ffe6a5; border-color:#a97724; }
 .document-entity-list__navigation { display:flex; align-items:center; justify-content:space-between; gap:4px; margin:6px 0; }
 .document-entity-list__navigation button { padding:3px 5px; font:inherit; }
-.document-entity-list tbody tr { outline:none; }
-.document-entity-list tbody tr:hover,.document-entity-list tbody tr.active,.document-entity-list tbody tr:focus-visible { background:#fff1a8; }
-.document-entity-list tbody tr:focus-visible { box-shadow:inset 0 0 0 2px #8a6c00; }
+:is(.document-entity-list,.flint-entity-list) tbody tr { outline:none; }
+:is(.document-entity-list,.flint-entity-list) tbody tr:hover,:is(.document-entity-list,.flint-entity-list) tbody tr.active,:is(.document-entity-list,.flint-entity-list) tbody tr:focus-visible { background:#fff1a8; }
+:is(.document-entity-list,.flint-entity-list) tbody tr:focus-visible { box-shadow:inset 0 0 0 2px #8a6c00; }
 .document-entity-list__empty { margin:14px 4px; color:#53645f; text-align:center; }
 .document-entity-list__status { margin:8px 4px 3px; }
-.document-entity-list small { display:block; margin:3px 4px; color:#53645f; }
+:is(.document-entity-list,.flint-entity-list) small { display:block; margin:3px 4px; color:#53645f; }
 @media (max-width:480px) { .document-entity-list { width:calc(100vw - 16px); } }
+
+.flint-entity-list { min-width:0; font-size:12px; }
+.flint-entity-list > header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.flint-entity-list .document-entity-list__body { padding:0; }
+.flint-entity-list th { background:var(--flint-panel, #eee9df); }
+.flint-entity-list th:nth-child(2),.flint-entity-list th:nth-child(3) { width:58px; }
+.flint-entity-list td { white-space:normal; overflow-wrap:anywhere; }

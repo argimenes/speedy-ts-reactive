@@ -8,8 +8,6 @@ import "./document-entity-list.css";
 export function EntityListWindow(props: { list: DocumentEntityList; panel: PanelSession }) {
   const list = props.list, state = list.state;
   onCleanup(() => list.close(false));
-  const rows = createMemo(() => list.sortedRows());
-  const focusScope = () => state.pageKey ? "Page" : "Document";
   const [position, setPosition] = createSignal({ x: Math.max(8, window.innerWidth - 388), y: 64 });
   const [sessionSize, setSessionSize] = createSignal<FloatingWindowSize>();
   let root!: HTMLElement;
@@ -26,13 +24,6 @@ export function EntityListWindow(props: { list: DocumentEntityList; panel: Panel
     onCommit: size => { setSessionSize(size); queueMicrotask(() => setPosition(current => clamp(current.x, current.y))); },
   });
   const displaySize = () => windowResize.preview() ?? sessionSize();
-  const heading = (column: EntityListSort, label: string, title: string) => (
-    <th aria-sort={state.sort === column ? state.direction : "none"}>
-      <button type="button" title={title} onClick={() => list.sortBy(column)}>
-        {label}<Show when={state.sort === column}> {state.direction === "ascending" ? "↑" : "↓"}</Show>
-      </button>
-    </th>
-  );
   createEffect(() => { state.focusRequest; if (state.open) queueMicrotask(() => root?.focus({ preventScroll: true })); });
   onMount(() => {
     disposeMount = props.panel.mountWidget(root, () => root.focus({ preventScroll: true }));
@@ -50,7 +41,25 @@ export function EntityListWindow(props: { list: DocumentEntityList; panel: Panel
       <button type="button" disabled={state.pending} onClick={()=>list.refreshSummaries()}>Refresh summaries</button>
       <button type="button" aria-label="Close entity listing" onClick={() => list.close()}>×</button>
     </header>
-    <div class="document-entity-list__body">
+    <EntityListContents list={list} />
+    <FloatingWindowResizeHandle controller={windowResize} class="document-entity-list__resize" label="Resize Entity Listing window" />
+  </section>;
+}
+
+
+/** Shared live entity inventory for the floating window and Flint Backlinks. */
+export function EntityListContents(props: { list: DocumentEntityList }) {
+  const list = props.list, state = list.state;
+  const rows = createMemo(() => list.sortedRows());
+  const focusScope = () => state.pageKey ? "Page" : "Document";
+  const heading = (column: EntityListSort, label: string, title: string) => (
+    <th aria-sort={state.sort === column ? state.direction : "none"}>
+      <button type="button" title={title} onClick={() => list.sortBy(column)}>
+        {label}<Show when={state.sort === column}> {state.direction === "ascending" ? "↑" : "↓"}</Show>
+      </button>
+    </th>
+  );
+  return <div class="document-entity-list__body">
       <table aria-label="Document entities">
         <thead><tr>
           {heading("name", "Entity", "Sort by entity name")}
@@ -74,8 +83,5 @@ export function EntityListWindow(props: { list: DocumentEntityList; panel: Panel
       <Show when={state.dbPending || state.dbError}><p role="status">{state.dbPending ? "Loading optional DB mentions…" : state.dbError}</p></Show>
       <Show when={state.concertinaEntityId}><div class="document-entity-list__navigation"><button type="button" onClick={() => list.navigateConcertina(-1)}>Previous occurrence</button><span>{state.concertinaIndex + 1} of {list.pageOccurrenceCount(state.concertinaEntityId!)}</span><button type="button" onClick={() => list.navigateConcertina(1)}>Next occurrence</button></div></Show>
       <small>DB mentions count saved indexed annotation segments, excluding deleted references; unsaved edits are excluded. — means unavailable. Document counts are live logical mentions. Hover or focus a row to preview visible references.</small>
-    </div>
-    <FloatingWindowResizeHandle controller={windowResize} class="document-entity-list__resize" label="Resize Entity Listing window" />
-  </section>;
+    </div>;
 }
-

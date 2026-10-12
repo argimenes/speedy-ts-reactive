@@ -66,7 +66,7 @@ export class DocumentEntityList {
     });
   }
 
-  open(key: string) {
+  open(key: string, embedded = false) {
     try {
       const inventory = collectDocumentEntities(this.editor, key);
       if (this.state.open && this.state.scope?.rootKey === inventory.scope.rootKey) {
@@ -79,8 +79,10 @@ export class DocumentEntityList {
       this.controller?.abort(); this.generation++; this.summaries.clear(); this.clearPreview();
       this.origin = key;
       const pageKey = this.editor.currentPage(inventory.scope, key);
-      this.panel = this.editor.openPanel("entity-list", key, {});
-      this.panel.allowDocumentInput(true);
+      if (!embedded) {
+        this.panel = this.editor.openPanel("entity-list", key, {});
+        this.panel.allowDocumentInput(true);
+      }
       this.setState({ open: true, scope: inventory.scope, pageKey, rows: [], pending: false, error: "", active: undefined, concertinaEntityId: undefined, concertinaIndex: 0, focusRequest: this.state.focusRequest + 1 });
       this.refresh(inventory);
     } catch (error) {

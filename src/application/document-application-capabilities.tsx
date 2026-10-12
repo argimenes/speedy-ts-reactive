@@ -9,9 +9,9 @@ import {observeLive} from '../knowledge/live-observer';
 import {runSearchWorker} from '../runtime/search-worker';
 import { createNativeKnowledgeHost } from './native-knowledge-scope';
 import { FactsQueryProvider } from './facts-query-provider';
-import { FactsBacklinks } from './facts-backlinks';
-import { CanonicalBacklinks } from "./canonical-backlinks";
-import type { ApplicationBacklinks } from "../feature-api/backlinks";
+import { annotationCapabilities } from "./annotation-capabilities";
+import { DocumentEntityList } from "../features/entity-references/document-entity-list";
+import { EntityListContents } from "../features/entity-references/list-view";
 import { VaultKnowledge, type KnowledgeHost } from "./vault-knowledge";
 import { revealMatch } from "../runtime/reveal-match";
 import type { BlockTreeProjection } from "../block-tree/projection";
@@ -63,6 +63,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       for (const [key, value] of viewBookmarks) if (!editor.repository.state.placements[value.placement]) { viewBookmarks.delete(key); vaultRoots.delete(key); navigationTabs.delete(key); }
       scope.defer(() => { for (const [owner, value] of viewBookmarks) for (const key of value.tabs.keys()) if (!editor.node(key) && !navigationTabs.get(owner)?.tabs.has(key)) value.tabs.delete(key); });
     }));
+    const entityAnnotations = annotationCapabilities(editor, scope);
     const Instance = (props: { nodeKey: string }) => {
       const cavern = useCurrentCavern();
       // Stage A hosts a Window application, never an application recursively inside a Document.
@@ -83,6 +84,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       navigationTabs.set(props.nodeKey, navigation);
       const [navigationRevision, setNavigationRevision] = createSignal(0);
       const liveViews = new Map<string, BlockTreeProjection>();
+      const [viewRevision, setViewRevision] = createSignal(0);
       const activeTab = () => { navigationRevision(); if(navigation.active && navigation.tabs.has(navigation.active)) return navigation.active; const r = row(); return r && (editor.viewChildren[r.key] ?? r.children.find(k => (editor.node(k)?.payload.metadata as any)?.active) ?? r.children[0]); };
       let root!: HTMLDivElement, mounted = true;
       const guard = () => { requireActive(); if (!mounted || !editor.node(props.nodeKey)) throw new Error("Document application instance is disposed"); };
@@ -100,7 +102,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const Target = (target: { documentId: string; tabKey: string }) => {
         const placement = () => resolve(target.documentId)?.placement;
         return <Show when={placement()} keyed fallback={<p role="status">Document unavailable: {target.documentId}. Its canonical source is missing or ambiguous.</p>}>{source =>
-          <TransientDocumentView editor={editor} placement={source} onProjection={view => { liveViews.set(target.tabKey, view); return () => { if(liveViews.get(target.tabKey)===view) liveViews.delete(target.tabKey); }; }} bookmark={() => bookmarks.get(target.tabKey)} remember={value => bookmarks.set(target.tabKey, value)} />
+          <TransientDocumentView editor={editor} placement={source} onProjection={view => { liveViews.set(target.tabKey, view); setViewRevision(n => n + 1); return () => { if(liveViews.get(target.tabKey)===view) { liveViews.delete(target.tabKey); setViewRevision(n => n + 1); } }; }} bookmark={() => bookmarks.get(target.tabKey)} remember={value => bookmarks.set(target.tabKey, value)} />
         }</Show>;
       };
       const tabId = (key: string) => navigation.tabs.get(key) ?? tabDocumentTarget(editor.node(key)?.payload.metadata);
@@ -294,30 +296,32 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         },
       };
       const facts = factsHost ? new FactsQueryProvider(factsHost) : undefined;
-      onCleanup(registerEntityContext(editor,{vault:lease,facts,accepts:key=>{const node=editor.node(key);return !!node&&[...liveViews.values()].some(view=>view.viewId===node.viewId);}}));
+      onCleanup(registerEntityContext(editor,{vault:lease,facts,listingVault:async()=>{
+        const root=selectedVault()?.root ?? (cavern ? '.' : vaultRoots.get(props.nodeKey) ?? await native?.defaultVault());
+        if(!mounted || !root) throw Error('Open a Vault to resolve Entity names.');
+        return root;
+      },accepts:key=>{const node=editor.node(key);return !!node&&[...liveViews.values()].some(view=>view.viewId===node.viewId);}}));
       createEffect(() => { const vault=selectedVault(); untrack(() => facts?.use(vault)); });
       const knowledge = native ? new VaultKnowledge(editor, native, knowledgeHost, undefined, facts) : undefined;
-      // In Facts mode the legacy reader is used only for host-side activation validation.
-      // It has no subscriptions, cached query scans or parallel background query path.
-      const canonical = native ? new CanonicalBacklinks(editor.repository, native, lease, type => editor.registry.hasCapability(type, 'opaque-widget')) : undefined;
-      const backlinkService = facts ? new FactsBacklinks(facts, lease) : canonical;
-      const backlinks: ApplicationBacklinks | undefined = backlinkService ? {
-        service: backlinkService,
-        target() { const v = selectedVault(), id = activeId(), doc = id && resolve(id); if (!v || !doc || !id) return; return {vault: v.root, target: {documentId: id, blockId: String(editor.repository.state.contents[doc.contentKey].payload.id)}}; },
-        async follow(result, mention, signal) {
-          guard();
-          const saved=backlinkService instanceof FactsBacklinks ? backlinkService.savedSource(result,mention.source.documentId) : undefined;
-          if(saved){
-            if(!result.mentions.includes(mention))throw Error('Backlink is not a member of this result');
-            const ticket=await activation!.prepare(saved,()=>backlinkService.current(result),signal);
-            const resolved=await canonical!.resolveDerived(result,mention,ticket.current,signal);guard();
-            await knowledgeHost.navigate(resolved.target,resolved.passage,ticket.current,ticket.verify);return;
-          }
-          const resolved = await (facts ? canonical!.resolveDerived(result, mention, () => backlinkService.current(result), signal) : canonical!.resolve(result, mention, signal)); guard();
-          await knowledgeHost.navigate(resolved.target, resolved.passage, () => !signal?.aborted && backlinkService.current(result));
-        },
-      } : undefined;
-      onCleanup(()=>{ knowledge?.dispose(); backlinkService?.dispose(); canonical?.dispose(); facts?.dispose(); });
+      const EntityBacklinks = () => {
+        const list = new DocumentEntityList(entityAnnotations);
+        const origin = createMemo(() => {
+          viewRevision();
+          const key = activeTab();
+          return key ? liveViews.get(key)?.state.rootKey : undefined;
+        });
+        createEffect(() => {
+          const key = origin();
+          selectedVault()?.root;
+          untrack(() => { list.close(false); if (key) list.open(key, true); });
+        });
+        onCleanup(() => list.dispose());
+        return <section class="flint-backlinks flint-entity-list" aria-label="Document backlinks">
+          <header><h2>Backlinks</h2><button type="button" aria-label="Refresh backlinks" disabled={!origin() || list.state.pending} onClick={() => list.refreshSummaries()}>Refresh</button></header>
+          <Show when={origin()} fallback={<p>Open a Document to see its entity references.</p>}><EntityListContents list={list}/></Show>
+        </section>;
+      };
+      onCleanup(()=>{ knowledge?.dispose(); facts?.dispose(); });
       onMount(() => { if(vault&&native)void (async()=>{const root=cavern ? '.' : vaultRoots.get(props.nodeKey)??await native.defaultVault();if(root&&mounted)await vault.open(root);})().catch(e=>{if(mounted){setChooserError(String(e));if(!cavern)setChoosingVault(true);}}); });
       const files = native ? {
         list: (folder: string) => { selectedVault()?.requireDirectory(folder); return native.list(folder); },
@@ -339,7 +343,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       } : undefined;
       return <><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
-          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, backlinks,
+          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, entityBacklinks: EntityBacklinks,
           setProperties(id, value) {
             guard(); const doc = resolve(id); if (!doc?.placement) throw new Error('Document unavailable');
             if (tagsOf(id) === undefined) throw new Error('Existing tags payload is incompatible; it has been preserved');
