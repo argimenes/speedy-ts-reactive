@@ -2,7 +2,7 @@ import * as T from 'three';
 import { applyFlintLight, configureMaterialRenderer, createFlintAmbient, FLINT_SUN_COLOR } from '../material/scene-light';
 import type { Light } from '../material-response';
 import type { ProbeKind } from './targets';
-import { createCrystalGeometry, PROBE_STANDARD_HEIGHT } from './crystal-geometry';
+import { createCrystalGeometry, createProbeFacets, PROBE_SENSOR, PROBE_STANDARD_HEIGHT } from './crystal-geometry';
 import { createCrystalEnvironment, createCrystalMaps, createDiodeHalo } from './crystal-optics';
 import { clampProbeSize, PROBE_DEFAULT_HEIGHT } from './size';
 
@@ -17,24 +17,36 @@ export function createProbeRenderer(onFailure: () => void, size = PROBE_DEFAULT_
   const sunlight=new T.DirectionalLight(FLINT_SUN_COLOR,3),ambient=createFlintAmbient();scene.add(sunlight,sunlight.target,ambient);
   const environment=createCrystalEnvironment(renderer);scene.environment=environment.texture;
   const maps=createCrystalMaps();
-  const material=new T.MeshPhysicalMaterial({color:0x292c30,roughness:.47,roughnessMap:maps.roughness,
-    metalness:.08,transmission:.18,thickness:3.2,thicknessMap:maps.thickness,ior:1.48,
-    attenuationColor:0x746958,attenuationDistance:3.5,envMapIntensity:.85,flatShading:true});
+  const material=new T.MeshPhysicalMaterial({color:0x292c30,roughness:.29,roughnessMap:maps.roughness,
+    metalness:.08,transmission:.12,thickness:3.2,thicknessMap:maps.thickness,ior:1.48,
+    attenuationColor:0x4b5058,attenuationDistance:3.5,envMapIntensity:1.05,clearcoat:.35,clearcoatRoughness:.22});
   const incisionMaterial=new T.MeshStandardMaterial({color:0x0c0e10,roughness:.72,envMapIntensity:.25});
   const geometry=createCrystalGeometry(),stone=new T.Mesh(geometry,[material,incisionMaterial]),body=new T.Group();
   body.scale.setScalar(size/PROBE_STANDARD_HEIGHT);body.add(stone);scene.add(body);
+  const offset=geometry.userData.tipOffset as number[];
+  const facetGeometry=createProbeFacets(offset),facetMaterial=material.clone();
+  facetMaterial.vertexColors=true;facetMaterial.color.set(0x85888d);facetMaterial.flatShading=true;
+  facetMaterial.transmission=0;facetMaterial.roughnessMap=null;
+  body.add(new T.Mesh(facetGeometry,facetMaterial));
+  const sensor=PROBE_SENSOR.clone().sub(new T.Vector3(offset[0],offset[1],offset[2]));
+  const engravings=new T.Group();
+  for(const [x,y,length,angle] of [[12,-14,8,.58],[16,-28,5,0]]){
+    const line=new T.Mesh(new T.BoxGeometry(.38,length,.16),incisionMaterial);
+    line.position.set(x-offset[0],y-offset[1],4.85-offset[2]);line.rotation.z=angle;engravings.add(line);
+  }
+  body.add(engravings);
 
   const diodeMaterial=new T.MeshStandardMaterial({color:0x424247,roughness:.25,emissive:0x000000,envMapIntensity:.25});
-  const diodeGeometry=new T.SphereGeometry(.85,16,10),diode=new T.Mesh(diodeGeometry,diodeMaterial);
-  diode.position.set(0,7.2-PROBE_STANDARD_HEIGHT,3.25);diode.scale.z=.55;body.add(diode);
-  const socketGeometry=new T.TorusGeometry(1.25,.24,8,32),socketMaterial=new T.MeshStandardMaterial({color:0x55514b,metalness:.35,roughness:.48});
-  const socket=new T.Mesh(socketGeometry,socketMaterial);socket.position.set(0,7.2-PROBE_STANDARD_HEIGHT,3.05);body.add(socket);
-  const lensGeometry=new T.SphereGeometry(1.12,16,10),lensMaterial=new T.MeshPhysicalMaterial({color:0x7a746c,roughness:.3,transmission:.35,thickness:.5,ior:1.45,transparent:true,opacity:.42,depthWrite:false});
-  const lens=new T.Mesh(lensGeometry,lensMaterial);lens.position.copy(diode.position);lens.scale.z=.6;body.add(lens);
-  const haloMaterial=createDiodeHalo(),haloGeometry=new T.PlaneGeometry(8,8),halo=new T.Mesh(haloGeometry,haloMaterial);
-  halo.position.set(0,7.2-PROBE_STANDARD_HEIGHT,4.05);body.add(halo);
+  const diodeGeometry=new T.TorusGeometry(3.6,.17,8,48),diode=new T.Mesh(diodeGeometry,diodeMaterial);
+  diode.position.copy(sensor);body.add(diode);
+  const socketGeometry=new T.TorusGeometry(4.05,.35,8,48),socketMaterial=new T.MeshStandardMaterial({color:0x55514b,metalness:.35,roughness:.48});
+  const socket=new T.Mesh(socketGeometry,socketMaterial);socket.position.copy(sensor).add(new T.Vector3(0,0,-.15));body.add(socket);
+  const lensGeometry=new T.CircleGeometry(3.4,32),lensMaterial=new T.MeshPhysicalMaterial({color:0x14171b,roughness:.3,metalness:.05,clearcoat:.35});
+  const lens=new T.Mesh(lensGeometry,lensMaterial);lens.position.copy(sensor).add(new T.Vector3(0,0,-.12));body.add(lens);
+  const haloMaterial=createDiodeHalo(),haloGeometry=new T.PlaneGeometry(12,12),halo=new T.Mesh(haloGeometry,haloMaterial);
+  halo.position.copy(sensor).add(new T.Vector3(0,0,.25));body.add(halo);
   // A real short-range source illuminates adjacent facets and the socket.
-  const diodeLight=new T.PointLight(0xffffff,0,13,2);diodeLight.position.set(0,7.2-PROBE_STANDARD_HEIGHT,4.4);body.add(diodeLight);
+  const diodeLight=new T.PointLight(0xffffff,0,13,2);diodeLight.position.copy(sensor).add(new T.Vector3(0,0,2));body.add(diodeLight);
   const loss=(event:Event)=>{event.preventDefault();onFailure();};canvas.addEventListener('webglcontextlost',loss);
   document.body.append(canvas);
   // Let the body extend behind its hotspot at the host boundary. The managed
@@ -59,23 +71,22 @@ export function createProbeRenderer(onFailure: () => void, size = PROBE_DEFAULT_
       }
       canvas.style.left=rect.left-padding+'px';canvas.style.top=rect.top-padding+'px';canvas.style.width=width+padding*2+'px';canvas.style.height=height+padding*2+'px';
       body.position.set(x-rect.left,-(y-rect.top),0);
-      // The authored crystal's long axis is Y. Turn around that axis first,
-      // then apply the cursor's fixed lean so the upper tip stays upright.
-      body.rotation.set(0,angle,.2,'ZYX');
+      // The outline itself supplies the upper-left lean; never steer it with movement.
+      body.rotation.set(0,angle,0,'ZYX');
       // Size, proximity and rotation never translate the model's tip origin.
       applyFlintLight(sunlight,light,new T.Vector2(body.position.x,body.position.y));
-      const colour=kind==='flint-eikon'?amber:blue,core=kind==='flint-eikon'?amberCore:blueCore;
-      diodeMaterial.emissive.copy(core);diodeMaterial.emissiveIntensity=intensity*4.2;
+      const colour=kind==='graph-node'?blue:amber,core=kind==='graph-node'?blueCore:amberCore;
+      diodeMaterial.emissive.copy(core);diodeMaterial.emissiveIntensity=.85+intensity*2.2;
       const scale=size/PROBE_STANDARD_HEIGHT;
       diodeLight.color.copy(colour);diodeLight.distance=13*scale;diodeLight.intensity=intensity*220*scale*scale;
       haloMaterial.uniforms.colour.value.copy(colour);haloMaterial.uniforms.strength.value=intensity;
-      halo.visible=intensity>0;lensMaterial.color.set(0x7a746c).lerp(colour,intensity*.55);
+      halo.visible=intensity>0;
       canvas.hidden=!visible;
       if(visible){const start=performance.now();renderer.render(scene,camera);metrics.lastRenderMs=performance.now()-start;metrics.frames++;}
     },
     get disposed(){return disposed;},
     dispose(){if(disposed)return;disposed=true;canvas.removeEventListener('webglcontextlost',loss);
-      geometry.dispose();diodeGeometry.dispose();socketGeometry.dispose();lensGeometry.dispose();haloGeometry.dispose();
+      geometry.dispose();facetGeometry.dispose();facetMaterial.dispose();engravings.children.forEach(child=>(child as T.Mesh).geometry.dispose());diodeGeometry.dispose();socketGeometry.dispose();lensGeometry.dispose();haloGeometry.dispose();
       material.dispose();incisionMaterial.dispose();diodeMaterial.dispose();socketMaterial.dispose();lensMaterial.dispose();haloMaterial.dispose();
       maps.thickness.dispose();maps.roughness.dispose();environment.dispose();renderer.dispose();renderer.forceContextLoss();canvas.remove();},
   };

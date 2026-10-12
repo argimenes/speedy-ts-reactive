@@ -1,5 +1,5 @@
 export const PROBE_STANDARD_HEIGHT = 42;
-export const PROBE_DEFAULT_HEIGHT = 82;
+export const PROBE_DEFAULT_HEIGHT = 41;
 export const PROBE_MIN_HEIGHT = 16;
 export const PROBE_MAX_HEIGHT = 128;
 
