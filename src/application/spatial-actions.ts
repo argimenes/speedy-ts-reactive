@@ -15,7 +15,11 @@ function describe(state: RepositoryState, content: ContentRecord | undefined, id
   if (c && ["window-block", "document-window-block"].includes(c.viewType) && c.children.length === 1) c = state.contents[state.placements[c.children[0]].contentKey];
   const kind = !reason && c?.viewType === "image-block" ? "image" : !reason && c && ["document-block", "main-list-block", "membrane-block"].includes(c.viewType) ? "document" : "placeholder";
   const url = (c?.payload.metadata as any)?.url;
-  return { id, label, kind, ...(reason || kind === "placeholder" ? { reason: reason ?? "Representation awaits qualification" } : {}),
+  const metadata = c?.payload.metadata as Record<string,unknown> | undefined;
+  const outer = content?.payload.metadata as Record<string,unknown> | undefined;
+  const tooltipLabel = [metadata?.title, metadata?.name, metadata?.filename, outer?.title, outer?.filename, label]
+    .find((value): value is string => typeof value === "string" && !!value.trim());
+  return { id, label, tooltipLabel, kind, ...(reason || kind === "placeholder" ? { reason: reason ?? "Representation awaits qualification" } : {}),
     ...(kind === "image" && typeof url === "string" && /^(https?:\/\/|data:image\/|\/(?!\/))/i.test(url) ? { imageUrl: url } : {}) };
 }
 /** Application adapter: only semantic summaries and validated sidecar changes escape. */

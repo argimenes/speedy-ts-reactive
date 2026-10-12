@@ -37,3 +37,4 @@
 
 .workspace-spatial__arrangement { max-width: none; }
 .workspace-spatial__orientation { display: inline-flex; gap: 4px; border-left: 1px solid #ad966441; padding-left: 8px; }
+.workspace-spatial__tooltip { position: absolute; z-index: 5; pointer-events: none; transform: translate(-50%, -100%); width: max-content; max-width: min(240px, calc(100% - 24px)); padding: 6px 10px; border: 1px solid #bca77d66; border-radius: 5px; background: #101620f2; color: #f1e7d3; box-shadow: 0 3px 12px #0005; font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }

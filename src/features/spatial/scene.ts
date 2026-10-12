@@ -214,6 +214,15 @@ export function createStudyScene(canvas: HTMLCanvasElement, invalidateStatus: (s
       pickup = id && rect ? { id, rect, progress, opacity } : undefined; request();
     },
     resize(w: number, h: number) { width = Math.max(1, w); height = Math.max(1, h); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); renderer.setSize(width, height, false); request(); },
+    documentTop(id: string) {
+      const page = pages.get(id)?.page, placement = layout?.placements.find(p => p.objectId === id);
+      if (!page?.visible || !placement) return;
+      const size = paperSize(placement);
+      page.updateWorldMatrix(true, false);
+      const points = [[-1, 0], [1, 0], [-1, 1], [1, 1]].map(([x, y]) =>
+        projectCss(page.localToWorld(new T.Vector3(x * size.width / 2, y * size.height, 0)), camera, width, height));
+      return { x: (Math.min(...points.map(p => p.x)) + Math.max(...points.map(p => p.x))) / 2, y: Math.min(...points.map(p => p.y)) };
+    },
     hit(clientX: number, clientY: number) {
       const rect = canvas.getBoundingClientRect(), ray = new T.Raycaster(); ray.setFromCamera(new T.Vector2((clientX - rect.left) / rect.width * 2 - 1, 1 - (clientY - rect.top) / rect.height * 2), camera);
       return ray.intersectObjects(hits, false)[0]?.object.userData.objectId as string | undefined;

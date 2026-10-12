@@ -17,7 +17,7 @@ export interface SpatialLayout {
   version: 1; environment: { preset: "night-study-v1"; [key: string]: unknown };
   camera: SpatialCamera; placements: SpatialPlacement[]; [key: string]: unknown;
 }
-export interface SpatialObject { id: string; label: string; kind: "document" | "image" | "placeholder"; reason?: string; imageUrl?: string; preview?: DocumentPreview }
+export interface SpatialObject { id: string; label: string; tooltipLabel?: string; kind: "document" | "image" | "placeholder"; reason?: string; imageUrl?: string; preview?: DocumentPreview }
 export const STUDY = Object.freeze({ innerRadius: .55, outerRadius: 1.45, arc: 150, thickness: .065, eyeHeight: .6, yawLimit: Math.PI / 4, maxPlaced: 8 });
 const record = (v: unknown): Record<string, any> => { if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("Expected Spatial object."); return v; };
 const finite = (v: unknown, min: number, max: number) => { if (typeof v !== "number" || !Number.isFinite(v) || v < min || v > max) throw new Error("Invalid Spatial geometry."); };

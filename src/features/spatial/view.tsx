@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createSignal, onCleanup, onMount, type JSX } from "solid-js";
+import { For, Show, createMemo, createEffect, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import { paperOrientation, clampCamera, type SpatialCamera, type SpatialLayout, type SpatialObject, type SpatialPlacement } from "./model";
 import { createStudyScene, type SceneStatus } from "./scene";
 import { createArrangementInput } from "./arrangement-input";
@@ -32,11 +32,22 @@ export default function SpatialView(props: { port: SpatialPort }) {
   const [progress, setProgress] = createSignal(0);
   let animation = 0, generation = 0;
   const browsing = () => !active() && phase() === "desk";
+  const [hoverPoint, setHoverPoint] = createSignal<{x:number;y:number}>();
   const [arranging, setArranging] = createSignal(false);
   const placement = (id: string) => props.port.layout()?.placements.find(p => p.objectId === id);
   const canArrange = (id: string) => browsing() && props.port.available() && !error() && !!placement(id) && !!props.port.objects().find(o => o.id === id && !o.reason && o.kind !== "placeholder");
   const arrangement = createArrangementInput({ placement, available: canArrange, grabHeight: (x, y) => scene?.grabHeight(x, y), point: (x, y, height) => scene?.deskPoint(x, y, height),
     select: props.port.select, commit: props.port.arrange });
+  const tooltip = createMemo(() => {
+    status();
+    const point=hoverPoint();
+    if (!point || !browsing() || arrangement.owned() || !props.port.available() || error()) return;
+    const id=scene?.hit(point.x,point.y);
+    const object=props.port.objects().find(o=>o.id===id && o.kind==="document");
+    const anchor=object && scene?.documentTop(object.id);
+    if (!object || !anchor) return;
+    return { label:object.tooltipLabel ?? object.label, x:Math.max(128,Math.min((status()?.width??256)-128,anchor.x)), y:Math.max(44,anchor.y-10) };
+  });
   const selectedPlacement = () => { const id = props.port.selected(); return id ? arrangement.preview() ?? placement(id) : undefined; };
   const adjust = (change: PlacementChange) => {
     const id = props.port.selected(); if (!id || !canArrange(id)) return;
@@ -86,7 +97,7 @@ export default function SpatialView(props: { port: SpatialPort }) {
   };
   const camera = () => preview() ?? props.port.layout()!.camera;
   const clearCapture = () => { const g = gesture; gesture = undefined; if (g && canvas.hasPointerCapture(g.id)) canvas.releasePointerCapture(g.id); };
-  const cancel = () => { arrangement.cancel(); clearCapture(); setPreview(undefined); };
+  const cancel = () => { setHoverPoint(undefined); arrangement.cancel(); clearCapture(); setPreview(undefined); };
   const finish = () => { arrangement.finish(); const next = preview(); clearCapture(); if (next) props.port.camera(next); setPreview(undefined); };
   const change = (patch: Partial<SpatialCamera>) => { if (!props.port.available() || error() || !browsing()) return; cancel(); props.port.camera(clampCamera({ ...camera(), ...patch })); };
   const startScene = () => {
@@ -137,17 +148,19 @@ export default function SpatialView(props: { port: SpatialPort }) {
     onCleanup(() => { cancel(); scene?.dispose(); scene = undefined; });
     return (
     <canvas ref={canvas} class="workspace-spatial__scene" tabIndex={0} aria-label={arranging() ? "Arrange selected object. Arrows move; brackets rotate; L lays flat; P props up; Shift uses fine steps; Escape returns to view controls; Enter reads." : "Study desk. Drag a paper to move it, or the background to swivel. Arrow keys move the view; Home recentres; Enter reads the selected Document."} onKeyDown={key} onDblClick={event => activate(scene?.hit(event.clientX, event.clientY))}
-      onPointerDown={event => { if (!browsing() || gesture || arrangement.owned() || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || !props.port.available() || error()) return;
+      onPointerDown={event => { setHoverPoint(undefined); if (!browsing() || gesture || arrangement.owned() || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || !props.port.available() || error()) return;
         const id = scene?.hit(event.clientX, event.clientY);
         if (id) { props.port.select(id); if (arrangement.start(event, id)) setArranging(true); return; }
         setArranging(false); canvas.focus(); gesture = { id: event.pointerId, x: event.clientX, camera: { ...camera() }, moved: false }; canvas.setPointerCapture(event.pointerId); }}
-      onPointerMove={event => { if (!gesture || gesture.id !== event.pointerId) return; if (!props.port.available()) { cancel(); return; } const dx = event.clientX - gesture.x; if (Math.abs(dx) > 4) gesture.moved = true; if (gesture.moved) setPreview(clampCamera({ ...gesture.camera, yaw: gesture.camera.yaw + dx / canvas.clientWidth * 1.6 })); }}
+      onPointerLeave={() => setHoverPoint(undefined)}
+      onPointerMove={event => { if (!event.buttons && event.pointerType !== "touch") setHoverPoint({x:event.clientX,y:event.clientY}); else setHoverPoint(undefined); if (!gesture || gesture.id !== event.pointerId) return; if (!props.port.available()) { cancel(); return; } const dx = event.clientX - gesture.x; if (Math.abs(dx) > 4) gesture.moved = true; if (gesture.moved) setPreview(clampCamera({ ...gesture.camera, yaw: gesture.camera.yaw + dx / canvas.clientWidth * 1.6 })); }}
       onPointerUp={event => { if (!gesture || gesture.id !== event.pointerId) return; if (!gesture.moved && props.port.available()) props.port.select(scene?.hit(event.clientX, event.clientY)); finish(); }}
       onPointerCancel={cancel} onLostPointerCapture={cancel} />
     );
   };
   return <div class="workspace-spatial" ref={host} data-arranging={arranging()} data-moving={arrangement.owned()} data-phase={phase()} data-handoff-progress={progress()} data-editing={active()?.objectId} data-camera={camera().kind} data-frames={status()?.frames} data-geometries={status()?.geometries} data-textures={status()?.textures} data-calls={status()?.calls} data-alignment-error={status()?.alignmentError}>
     <Show when={surfaceGeneration()} keyed>{_generation => <Surface />}</Show>
+    <Show when={tooltip()}>{tip => <div class="workspace-spatial__tooltip" role="tooltip" style={{left:tip().x+"px",top:tip().y+"px"}}>{tip().label}</div>}</Show>
     <div class="workspace-spatial__bar" aria-label="Spatial controls">
       <div class="workspace-spatial__title"><strong>The night study</strong><span>{active()?.label ?? "Spatial workspace"}</span></div>
       <div class="workspace-spatial__controls">
