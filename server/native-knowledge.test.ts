@@ -132,3 +132,17 @@ it('Facts text-budget exhaustion leaves valid identity inspection available and 
  const v=JSON.parse(fixtureText(0,3)),p=v.document.blocks.find((b:any)=>b.id==='resource-0-p0');p.inline=[{kind:'text',text:'a'.repeat(2000001)}];const input=bytes(JSON.stringify(v)),j=jobs();
  expect((await j.run('inspect',input)).inspection.resourceId).toBe('resource-0');await expect(j.run('facts',input)).rejects.toThrow('bounded search budget');expect((await j.run('inspect',bytes())).inspection.resourceId).toBe('resource-0');
 },15000);
+it('shares discovery across browser/indexer stores and invalidates it after external changes',async()=>{
+ const f=await store(),other=new NativeVaultStore({root:f.root});
+ let scans=0;
+ const first=f.store.discover.bind(f.store),second=other.discover.bind(other);
+ f.store.discover=async(...args:any[])=>{scans++;return first(...args);};
+ other.discover=async(...args:any[])=>{scans++;return second(...args);};
+ const [a,b]=await Promise.all([f.store.discoverShared('vault'),other.discoverShared('vault')]);
+ expect(a).toEqual(b);expect(scans).toBe(1);
+ a.documents.length=0;
+ expect((await other.discoverShared('vault')).documents).toHaveLength(1);
+ await fs.writeFile(path.join(f.root,'vault/external.json'),'{}');
+ expect((await other.discoverShared('vault')).other).toContain('vault/external.json');
+ expect(scans).toBe(2);
+});

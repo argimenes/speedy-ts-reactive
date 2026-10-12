@@ -38,7 +38,9 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const meta = content.payload.metadata as Record<string, unknown> | undefined;
       const id = String(meta?.documentId ?? content.payload.id ?? "");
       const owners = documentRootPlacements(state, content.key).map(p => p.key);
-      return { id, title: String(meta?.title ?? "Untitled"), contentKey: content.key, placement: owners.length === 1 ? owners[0] : undefined };
+      const filename = editor.features.nativeDocumentPersistence ? nativeDocumentSession(editor).location(id)?.filename : undefined;
+      const title = [meta?.title, meta?.name, filename].find((value): value is string => typeof value === "string" && !!value.trim()) ?? "Untitled";
+      return { id, title, contentKey: content.key, placement: owners.length === 1 ? owners[0] : undefined };
     }).filter(d => d.id);
   };
   return { register(definition) {
@@ -73,9 +75,13 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       onCleanup(editor.repository.subscribeChanges(change => { if (!change.inlineOwner && !change.split && !change.childrenOwner) setRevision(n => n + 1); }));
       const all = createMemo(() => { revision(); return catalog(); });
       const documents = all;
+      const byId = createMemo(() => {
+        const map = new Map<string, ReturnType<typeof catalog>[number] | undefined>();
+        for (const document of all()) map.set(document.id, map.has(document.id) ? undefined : document);
+        return map;
+      });
       const resolve = (id: string) => {
-        const matches = all().filter(d => d.id === id);
-        return matches.length === 1 ? matches[0] : undefined;
+        return byId().get(id);
       };
       const row = () => editor.node(props.nodeKey)?.children.map(key => editor.node(key)).find(n => n?.viewType === "tab-row-block");
       const bookmarks = viewBookmarks.get(props.nodeKey)?.tabs ?? new Map<string, DocumentViewBookmark>();
@@ -160,12 +166,6 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       onCleanup(registerDocumentApplicationNavigation(editor, props.nodeKey, id => openDocument(id)));
       let opening = 0, openQuery: AbortController | undefined;
       onCleanup(() => { opening++; openQuery?.abort(); selectedVault()?.release(); if (!editor.node(props.nodeKey)) vaultRoots.delete(props.nodeKey); });
-      onMount(() => {
-        const refresh = () => { void selectedVault()?.refresh().catch(() => {}); };
-        const refocus = (event: FocusEvent) => { if (!(event.relatedTarget instanceof Node) || !root.contains(event.relatedTarget)) refresh(); };
-        window.addEventListener('focus', refresh); root.addEventListener('focusin', refocus);
-        onCleanup(() => { window.removeEventListener('focus', refresh); root.removeEventListener('focusin', refocus); });
-      });
       const lease = () => { guard(); const value = selectedVault(); if (!value) throw new Error('Open a vault first'); return value; };
       const tagsOf = (id: string) => {
         const doc = resolve(id), meta = doc && editor.repository.state.contents[doc.contentKey].payload.metadata as any;
@@ -212,13 +212,13 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           const request = ++opening, next = await vaults.acquire(root, openQuery.signal);
           if (!mounted || request !== opening) { next.release(); return; }
           vaultRoots.set(props.nodeKey, next.root);
-          const previous = selectedVault(); setSelectedVault(next); previous?.release(); await next.refresh();
+          const previous = selectedVault(); setSelectedVault(next); previous?.release();
         },
         close() { guard(); opening++; openQuery?.abort(); const previous = selectedVault(); setSelectedVault(undefined); vaultRoots.delete(props.nodeKey); previous?.release(); },
         async refresh() { await lease().refresh(true); },
-        async openFile(location) { const v = lease(); await v.refresh(); v.requireFile(location); const id = await native.open(location); if (mounted) openDocument(id); await v.refresh(); },
+        async openFile(location) { const v = lease(); v.requireFile(location); const id = await native.open(location); if (mounted && selectedVault() === v) openDocument(id); },
         async openCandidate(location) {
-          const v=lease();await v.refresh();v.requireDirectory(location.folder);vaultLeaf(location.filename);
+          const v=lease();v.requireDirectory(location.folder);vaultLeaf(location.filename);
           if(![...(v.snapshot().other??[]),...v.snapshot().markdown].includes(vaultPath(location)))throw Error('File is no longer in this vault; Refresh first');
           const id=await native.openCompatible(location,v.root);if(mounted&&selectedVault()===v)openDocument(id);
         },
@@ -329,13 +329,13 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         list: (folder: string) => { selectedVault()?.requireDirectory(folder); return native.list(folder); },
         async open(location: {folder: string; filename: string}, importMarkdown = false) {
           guard(); const v = selectedVault();
-          if (v) { await v.refresh(); if (importMarkdown) throw new Error('Use the vault import controls to choose a fresh destination'); v.requireFile(location); }
+          if (v) { if (importMarkdown) throw new Error('Use the vault import controls to choose a fresh destination'); v.requireFile(location); }
           const id = await native.open(location, importMarkdown); guard();
           openDocument(id);
         },
         async save(location: VaultLocation) {
           guard(); const id = requireId(), lease = selectedVault(), destination = native.isCandidate(id) ? location : native.location(id) ?? location;
-          if (lease) { lease.requireDirectory(destination.folder); await lease.mutate(() => native.save(id, destination)); }
+          if (lease) { lease.requireDirectory(destination.folder); await lease.mutate(() => native.save(id, destination), !native.location(id) || native.isCandidate(id)); }
           else await native.save(id, location);
         },
         async recover(location: {folder: string; filename: string}) { guard(); if(native.compatibleSource(activeId()??''))await native.recover(activeId(),location);else if (selectedVault()) await vault!.recoverNative(location); else await native.recover(activeId(), location); },

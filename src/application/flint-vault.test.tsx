@@ -153,15 +153,23 @@ it('derives vault rows once per publication and retains unchanged DOM rows acros
 },15000);
 it('browses physical files and opens a real historical Document without migration or hidden native enrollment',async()=>{
  const f=await fixture(),a=f.windows()[0];
- const source=await fs.readFile('data/raven.json','utf8'),original=JSON.parse(source);
+ const original=JSON.parse(await fs.readFile('data/raven.json','utf8'));
+ delete original.metadata?.title; delete original.metadata?.name;
+ const source=JSON.stringify(original);
  await fs.writeFile(path.join(f.root,'vault/nested/raven.json'),source);
  await fs.writeFile(path.join(f.root,'vault/unsupported.json'),JSON.stringify({format:'unknown-future',version:99}));
  await fs.writeFile(path.join(f.root,'vault/notes.txt'),'not a Document');
+ const discoveries=vi.spyOn(f.service,'discoverVault');
  await open(a);expect(a.querySelector('[aria-label="Open vault/notes.txt"]')).toBeTruthy();
+ const discoveryCount=discoveries.mock.calls.length;
+ window.dispatchEvent(new Event('focus'));
+ a.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
  click(a,'nested');expect(a.querySelector('[aria-label="Selected folder"]')?.textContent).toBe('vault/nested');
  a.querySelector<HTMLButtonElement>('[aria-label="Open vault/nested/raven.json"]')!.click();
  const id=String(original.metadata?.documentId??original.id);
  await wait(()=>expect(idOf(a)).toBe(id));expect(a.textContent).toContain('Document');
+ expect(discoveries).toHaveBeenCalledTimes(discoveryCount);
+ expect(a.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('raven.json');
  expect(f.service.compatibleSource(id)?.location).toEqual({folder:'vault/nested',filename:'raven.json'});
  expect(f.service.knowledgeEvidence(id).location).toEqual({folder:'vault/nested',filename:'raven.json'});
  expect(nativeText(captureNative(f.editor.repository.snapshot(),id))).toContain('Raven');

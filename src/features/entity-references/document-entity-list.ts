@@ -28,6 +28,7 @@ export class DocumentEntityList {
   private concertinaDecorations: ReturnType<AnnotationCapabilities["decorations"]>;
   private unsubscribe: () => void;
   private refreshQueued = false;
+  private inventorySignature = "";
   private collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
   constructor(private editor: AnnotationCapabilities, private loader: EntitySummaryLoader = loadEntitySummaries) {
@@ -58,8 +59,11 @@ export class DocumentEntityList {
         this.refreshQueued = false;
         if (!this.state.open) return;
         try {
+          const inventory = collectDocumentEntities(this.editor, this.origin!);
+          // Workspace/tab publications must not cancel an in-flight lookup or erase totals.
+          if (JSON.stringify(inventory) === this.inventorySignature) return;
           for(const [id,summary] of this.summaries)this.summaries.set(id,{id:summary.id,name:summary.name});
-          this.refresh(undefined,false);
+          this.refresh(inventory,false);
         }
         catch { this.close(false); }
       });
@@ -94,6 +98,7 @@ export class DocumentEntityList {
   refreshSummaries() { if(this.state.open){this.summaries.clear();this.refresh();} }
 
   private refresh(prepared = collectDocumentEntities(this.editor, this.origin!), fetchSummaries = true) {
+    this.inventorySignature = JSON.stringify(prepared);
     const generation = ++this.generation;
     this.controller?.abort();
     const rows = prepared.rows.map(row => {

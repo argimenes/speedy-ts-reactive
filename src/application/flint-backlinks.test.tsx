@@ -38,6 +38,11 @@ it('lists live entity references without a Vault scan; Refresh reloads names and
   await vi.waitFor(() => expect(f.rows().map(row => [...row.cells].map(cell => cell.textContent))).toEqual([['Michelangelo', '42', '2']]));
   expect(f.service.names).toHaveBeenCalledWith(['artist'], expect.any(AbortSignal));
   expect(f.service.summaries).not.toHaveBeenCalled();
+  // A tab label publication is unrelated to the active Document inventory.
+  const tab = Object.values(f.editor.repository.state.placements).find(p => f.editor.repository.state.contents[p.contentKey]?.viewType === 'tab-block')!;
+  f.editor.commands.setPayloadField(tab.key, 'metadata', {...JSON.parse(JSON.stringify(f.editor.repository.state.contents[tab.contentKey].payload.metadata)), name: 'Renamed tab'}, 'Rename tab');
+  await tick();
+  expect(f.rows()[0].cells[1].textContent).toBe('42');
   expect(f.host.querySelector('[role="dialog"][aria-label="Entities in document"]')).toBeNull();
   const before = f.editor.repository.snapshot();
   vi.mocked(f.service.names).mockResolvedValue([{ id: 'artist', name: 'Michelangelo Buonarroti' }]);

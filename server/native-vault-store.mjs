@@ -21,11 +21,12 @@ const location=p=>({folder:path.posix.dirname(p),filename:path.posix.basename(p)
 const filename=l=>{if(!l||typeof l.folder!=='string'||typeof l.filename!=='string'||l.filename.includes('/')||!isNativeDocumentName(l.filename))fail('Invalid native location',400);return relative(join(l.folder,l.filename));};
 const operationId=id=>{if(typeof id!=='string'||! /^[a-zA-Z0-9-]{1,100}$/.test(id))fail('Invalid relocation operation ID',400);return id;};
 const absent=async p=>{try{await fs.lstat(p);return false;}catch(e){if(e.code==='ENOENT')return true;throw e;}};
+const sharedDiscovery = new Map();
 export class NativeVaultStore {
  constructor({root,readOnly=false,fault=async()=>{},helper,inspect,nativeDiscoveryWorker=true}={}) {
   this.root=path.resolve(root);
   try {if(lstatSync(root).isSymbolicLink())fail('Unsafe managed root',400);this.root=realpathSync(root);}catch(e){if(e.code!=='ENOENT')throw e;}
-  this.readOnly=readOnly;this.fault=fault;
+  this.readOnly=readOnly;this.fault=fault;this.shareDiscovery=!inspect&&nativeDiscoveryWorker;
   // Internal rollback/test seam only; no request can choose a weaker inspector.
   this.inspect=inspect??(nativeDiscoveryWorker?((bytes,signal)=>nativeKnowledgeJobs.run('inspect',bytes,{signal})):async bytes=>{
    const r=decodeNative(bytes),root=r.contents[r.placements[r.rootPlacementKey].target.contentKey];
@@ -140,6 +141,28 @@ export class NativeVaultStore {
   const receipt=await pair.receipt(),pending=await pair.pending(),native=await this.read(p),md=await this.read(markdownProjectionName(p),true);
   const revision=await this.guard(id,loc);
   return {pair,home,receipt,pending,baseline:{nativeHash:hash(native),markdownHash:md?hash(md):null,generation:receipt?.generation??null,...(revision?{locationRevision:revision}:{})}};
+ }
+ async discoverShared(vault='.',{signal}={}) {
+  if(!this.shareDiscovery)return this.discover(vault,{signal});
+  signal?.throwIfAborted();
+  const fence=await this.readScopeFence(vault,signal);
+  const key=JSON.stringify([this.root,vault,this.readOnly]);
+  let entry=sharedDiscovery.get(key);
+  if(!entry||entry.fence!==fence||Date.now()-entry.created>5000){
+   entry={fence,created:Date.now()};
+   // Shared work has its own lifetime; cancelling one consumer cannot cancel another.
+   entry.work=this.discover(vault).then(async scan=>{
+    if(await this.readScopeFence(vault)!==fence)throw Error('Vault changed during shared discovery');
+    return scan;
+   });
+   sharedDiscovery.set(key,entry);
+   if(sharedDiscovery.size>8)sharedDiscovery.delete(sharedDiscovery.keys().next().value);
+  }
+  try{
+   const scan=await entry.work;signal?.throwIfAborted();
+   if(await this.readScopeFence(vault,signal)!==fence)throw Error('Vault changed before discovery reuse');
+   return structuredClone(scan);
+  }catch(error){if(sharedDiscovery.get(key)===entry)sharedDiscovery.delete(key);throw error;}
  }
  async discover(vault='.',{signal}={}) {
   signal?.throwIfAborted();

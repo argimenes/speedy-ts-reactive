@@ -49,7 +49,7 @@ export function registerWorkspaceEntities(editor: ReactiveEditor, viewId: string
           if (disposed) { acquired.release(); throw Error('DocumentWindow Vault is closed'); }
           vault = acquired;
           facts?.use(vault);
-        } else await vault.refresh();
+        }
         // Finish initial indexing/status work before the resolver captures its
         // revision fence. Do not race the first summary against index startup.
         await index?.refresh();

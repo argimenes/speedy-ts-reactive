@@ -156,7 +156,7 @@ export function phosphorPort(
       lease = await vaults.acquire(
         (await native.defaultVault()) ?? native.location(id())?.folder ?? ".",
       );
-    else await lease.refresh();
+
     return (service ??= entityService(editor, textNode().key));
   };
   const read = (): ScreenData => {

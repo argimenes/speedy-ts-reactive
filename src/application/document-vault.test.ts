@@ -19,3 +19,13 @@ it('publishes uncertainty on failed refresh and notifies closure without replaci
  const native={establishVault:async()=>({}),discoverVault:vi.fn(async()=>initial)};const vaults=createDocumentVaults(native as unknown as NativeDocumentSession),lease=await vaults.acquire('vault'),listener=vi.fn();lease.subscribe(listener);
  native.discoverVault.mockRejectedValue(Error('worker cancelled'));await expect(lease.refresh()).rejects.toThrow();expect(lease.snapshot().complete).toBe(false);expect(lease.snapshot().documents).toEqual(initial.documents);expect(listener).toHaveBeenCalledTimes(1);lease.release();expect(listener).toHaveBeenCalledTimes(2);expect(lease.isAlive()).toBe(false);vaults.dispose();
 });
+it('does not scan around existing-file saves and scans only once after tree mutations',async()=>{
+ const native={establishVault:async()=>({}),discoverVault:vi.fn(async()=>scan('vault')),pendingVaultRelocations:()=>[]};
+ const vaults=createDocumentVaults(native as unknown as NativeDocumentSession),lease=await vaults.acquire('vault');
+ const save=vi.fn(async()=>42);
+ await expect(lease.mutate(save,false)).resolves.toBe(42);
+ expect(native.discoverVault).toHaveBeenCalledTimes(1);
+ await lease.mutate(save);
+ expect(native.discoverVault).toHaveBeenCalledTimes(2);
+ lease.release();vaults.dispose();
+});

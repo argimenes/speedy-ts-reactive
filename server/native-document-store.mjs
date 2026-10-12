@@ -59,7 +59,7 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  });
  route('post','/vault/discover',async (req,res)=>{
   const controller=new AbortController(),closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);
-  try{return await vault.discover(req.body.vault,{signal:controller.signal});}finally{res.off('close',closed);}
+  try{return await vault.discoverShared(req.body.vault,{signal:controller.signal});}finally{res.off('close',closed);}
  });
  route('post','/vault/mkdir',async req=>vault.mkdir(req.body.vault,req.body.directory));
  route('post','/vault/relocate',async req=>vault.relocate(req.body));

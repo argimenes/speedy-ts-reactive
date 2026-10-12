@@ -70,15 +70,16 @@ export function createDocumentVaults(native: NativeDocumentSession, indexLifecyc
       const rows=this.snapshot().documents.filter(d=>vaultPath(d.location)===vaultPath(loc));
       if(rows.length!==1||rows[0].state==='ambiguous')throw new Error('Document missing or ambiguous; refresh the vault');return rows[0];
     }
-    async mutate<T>(action:()=>Promise<T>) {
+    async mutate<T>(action:()=>Promise<T>, refreshTree=true) {
       if(!this.alive)throw new Error('Vault closed');
       if(this.busy())throw new Error('A vault operation is already active');
       if(this.snapshot().readOnly)throw new Error('This vault is read-only');
       this.busySignal[1](true);this.noticeSignal[1]('');
-      try{await this.refresh();if(this.snapshot().readOnly)throw new Error('This vault is read-only');const result=await action();return result;}catch(e){this.noticeSignal[1](String(e));throw e;}
-      finally {try{if(this.alive){await this.refreshWork?.catch(()=>{});await this.refresh().catch(()=>{});}}finally{this.busySignal[1](false);}}
+      try{if(this.snapshot().readOnly)throw new Error('This vault is read-only');const result=await action();return result;}catch(e){this.noticeSignal[1](String(e));throw e;}
+      finally {try{if(this.alive&&refreshTree){await this.refreshWork?.catch(()=>{});await this.refresh().catch(()=>{});}}finally{this.busySignal[1](false);}}
     }
     async relocate(kind:'pair'|'directory',source:string,destination:string) {
+      await this.refresh(); // Relocation needs current baselines for every affected resource.
       return this.mutate(async()=>{
         const scan=this.snapshot();
         if(!scan.complete)throw new Error('Resolve incomplete or ambiguous vault discovery before relocation');

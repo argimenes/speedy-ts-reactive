@@ -26,7 +26,7 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
         if(identity.root!==await store.resolve(vault))throw Error('SQLite vault and managed scope differ');
         const vaultGuid=identity.mutable.vaultGuid;let initialFence:string;
         try{initialFence=await locked('scope',()=>store.readScopeFence(vault,signal));}catch(e:any){signal?.throwIfAborted();await client.indexIssue(vault,e.message);return {complete:false,issues:[{path:vault,message:e.message}],reconciled:[],removed:[]};}
-        const discoveryStart=performance.now(),discovery=await store.discover(vault,{signal}),issues:any[]=[...discovery.diagnostics],candidates:any[]=[];
+        const discoveryStart=performance.now(),discovery=await (store.discoverShared ? store.discoverShared(vault,{signal}) : store.discover(vault,{signal})),issues:any[]=[...discovery.diagnostics],candidates:any[]=[];
         timings.discoveryMs=performance.now()-discoveryStart;
         if(discovery.operations.some((r:any)=>r.phase==='pending'))issues.push({path:vault,message:'Relocation pending'});
         const native=new Map<string,any>(discovery.documents.map((d:any)=>[filename(d.location),d]));
