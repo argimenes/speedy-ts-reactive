@@ -121,7 +121,7 @@ try {
     sessionId,
   );
   await evaluate(
-    `(async()=>{for(let i=0;i<400;i++){if(document.querySelector('.ph-cell'))return;await new Promise(r=>setTimeout(r,40));}throw Error('Phosphor did not mount: '+document.body.textContent.slice(0,1200))})()`,
+    `(async()=>{for(let i=0;i<1200;i++){if(document.querySelector('.ph-cell'))return;await new Promise(r=>setTimeout(r,40));}throw Error('Phosphor did not mount: '+document.body.textContent.slice(0,1200))})()`,
   );
   await evaluate(
     `window.root=document.querySelector('.phosphor');window.api=(await import('/src/features/phosphor/view.tsx')).phosphorPresentation(root);window.model=await import('/src/features/phosphor/model.ts');window.input=root.querySelector('textarea');window.click=t=>{const b=[...root.querySelectorAll('button')].find(b=>b.textContent===t||b.getAttribute('aria-label')===t);if(!b)throw Error('Button '+t);b.click()};window.wait=async f=>{for(let i=0;i<200;i++){if(f())return;await new Promise(r=>setTimeout(r,30));}throw Error('Condition timed out')};`,
@@ -138,7 +138,7 @@ try {
       `api.read().settings.columns===40&&root.querySelectorAll('.ph-cell').length===960`,
     ),
   );
-  await evaluate(`await wait(()=>root.dataset.materialReady==='true')`);
+  await evaluate(`await wait(()=>root.dataset.logoReady==='true')`);
   const shot = async (name) => {
     const { data } = await send(
       "Page.captureScreenshot",
@@ -251,7 +251,7 @@ try {
     check(
       "enlarged Screen is scrollable in its workspace",
       await evaluate(
-        `(()=>{const bay=root.querySelector('.ph-display-bay');bay.scrollTo(400,300);return bay.scrollWidth>bay.clientWidth&&bay.scrollHeight>bay.clientHeight})()`,
+        `(()=>{const bay=root.querySelector('.ph-display-bay'),r=root.querySelector('.ph-cell-surface').getBoundingClientRect(),cell=root.querySelector('.ph-cell').getBoundingClientRect(),b=bay.getBoundingClientRect();bay.scrollBy(r.left+cell.width*15.5-b.left-b.width/2,r.top+cell.height*12.5-b.top-b.height/2);return bay.scrollWidth>bay.clientWidth&&bay.scrollHeight>bay.clientHeight})()`,
       ),
     );
     await evaluate(`click('Glyph #')`);
@@ -272,16 +272,16 @@ try {
     );
     await shot("03-refined-40");
     await evaluate(
-      `window.physical=(await import('/src/features/phosphor/material.ts')).phosphorMaterial(root);window.fitButton=[...root.querySelectorAll('button')].find(b=>b.textContent==='Fit Screen');`,
+      `window.physical=(await import('/src/features/phosphor/logo.ts')).phosphorLogo(root);window.fitButton=[...root.querySelectorAll('button')].find(b=>b.textContent==='Fit Screen');`,
     );
     check(
-      "controls have beveled geometry and cast real shadows",
+      "HTML controls paint their own backgrounds; only the logo has a canvas",
       await evaluate(
-        `(()=>{const bodies=[...physical.controls.bodies.values()].filter(b=>b.mesh.visible);return bodies.length>30&&bodies.every(b=>b.mesh.geometry.getAttribute('normal')&&b.mesh.castShadow)&&getComputedStyle(fitButton).backgroundColor==='rgba(0, 0, 0, 0)'})()`,
+        `root.querySelectorAll('canvas').length===1&&root.querySelector('canvas').parentElement.classList.contains('ph-emblem')&&!root.closest('.reactive-window').querySelector('.ph-material-canvas,.flint-material-canvas')&&(getComputedStyle(fitButton).backgroundColor!=='rgba(0, 0, 0, 0)'||getComputedStyle(fitButton).backgroundImage!=='none')`,
       ),
     );
     const fitPoint = await evaluate(
-      `(()=>{const r=fitButton.getBoundingClientRect();window.restingDepth=physical.controls.bodies.get(fitButton).mesh.position.z;return {x:r.left+r.width/2,y:r.top+r.height/2}})()`,
+      `(()=>{const r=fitButton.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`,
     );
     await send(
       "Input.dispatchMouseEvent",
@@ -289,9 +289,9 @@ try {
       sessionId,
     );
     check(
-      "pressing a DOM button physically depresses its body",
+      "pointer presses activate the native HTML button",
       await evaluate(
-        `physical.controls.bodies.get(fitButton).mesh.position.z<restingDepth`,
+        `fitButton.matches(':active')`,
       ),
     );
     await send(
@@ -321,7 +321,7 @@ try {
       );
     }
     check(
-      "shared light updates the physical scene without changing Ink",
+      "lighting updates the logo without changing Ink",
       await evaluate(
         `physical.lighting.light.azimuth===90&&JSON.stringify(api.read())===inkBeforeZoom`,
       ),
@@ -340,9 +340,9 @@ try {
       `new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(r))))`,
     );
     check(
-      "resizing keeps the Screen fitted and control bodies aligned",
+      "HTML resizing keeps the Screen fitted and controls visible",
       await evaluate(
-        `(()=>{const b=root.querySelector('.ph-display-bay').getBoundingClientRect(),a=root.querySelector('.ph-display-aperture').getBoundingClientRect(),w=nativeWindow.getBoundingClientRect(),r=fitButton.getBoundingClientRect(),m=physical.controls.bodies.get(fitButton).mesh;return a.left>=b.left&&a.right<=b.right&&a.bottom<=b.bottom&&Math.abs(m.position.x-(r.left+r.width/2-w.left)/(w.width/nativeWindow.clientWidth))<1})()`,
+        `(()=>{const b=root.querySelector('.ph-display-bay').getBoundingClientRect(),a=root.querySelector('.ph-display-aperture').getBoundingClientRect();return a.left>=b.left&&a.right<=b.right&&a.bottom<=b.bottom&&fitButton.offsetWidth>0})()`,
       ),
     );
     await gesture("Pencil", [5, 3]);
@@ -368,9 +368,9 @@ try {
       ),
     );
     check(
-      "selected column toggle depresses without rebuilding the scene",
+      "column toggles expose their selected state through native HTML",
       await evaluate(
-        `(()=>{const buttons=[...root.querySelectorAll('button')],on=buttons.find(b=>b.textContent==='80 COL'),off=buttons.find(b=>b.textContent==='40 COL');return !physical.lighting.disposed&&physical.controls.bodies.get(on).mesh.position.z<physical.controls.bodies.get(off).mesh.position.z})()`,
+        `(()=>{const buttons=[...root.querySelectorAll('button')],on=buttons.find(b=>b.textContent==='80 COL'),off=buttons.find(b=>b.textContent==='40 COL');return !physical.lighting.disposed&&on.getAttribute('aria-pressed')==='true'&&off.getAttribute('aria-pressed')==='false'})()`,
       ),
     );
     await gesture("Pencil", [12, 3]);
@@ -397,8 +397,10 @@ try {
       "pointer remains accurate after internal document scrolling",
       await evaluate(`Array.from(api.read().text)[33*81+6]==='#'`),
     );
+    await evaluate(`physical.lighting.setEffects({reducedMotion:true});await new Promise(r=>setTimeout(r,250));window.logoBefore={...physical.metrics};root.querySelector('.ph-screen-viewport').scrollTop=100;await new Promise(r=>setTimeout(r,250))`);
+    check('scrolling HTML does not redraw or resize the resting Nixie',await evaluate('JSON.stringify(physical.metrics)===JSON.stringify(logoBefore)'));
     await evaluate(
-      `window.lastContent=JSON.stringify(api.read());const canvas=root.closest('.reactive-window').querySelector('.ph-material-canvas');canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();await wait(()=>root.dataset.materialReady==='false')`,
+      `window.lastContent=JSON.stringify(api.read());const canvas=root.closest('.reactive-window').querySelector('.application-logo-canvas');canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();await wait(()=>root.dataset.logoReady==='false')`,
     );
     check(
       "WebGL loss retains DOM content and input",
@@ -570,7 +572,7 @@ try {
       { features: [{ name: "forced-colors", value: "active" }] },
       sessionId,
     );
-    await evaluate(`await wait(()=>root.dataset.materialReady==='false')`);
+    await evaluate(`await wait(()=>root.dataset.logoReady==='false')`);
     check(
       "forced colours keeps editor mounted",
       await evaluate(`input.isConnected&&JSON.stringify(api.read())===saved`),

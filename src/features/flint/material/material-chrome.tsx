@@ -1,73 +1,34 @@
-import { For, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, createSignal, onCleanup, onMount } from 'solid-js';
 import { createLighting, type Lighting } from '../lighting';
 import { DEFAULT_LIGHT, type Light } from '../material-response';
 import { CYCLADIC_APERTURE, OPEN_ENVIRONMENT } from './light-environment-config';
 import type { LightEnvironment } from './light-environment-config';
-import type { MaterialScene } from './material-scene';
 import type { SurfaceMaterial } from './material-registry';
 import './material-chrome.css';
 
-type Presentation = { lighting: Lighting; scene?: MaterialScene; readonly material: SurfaceMaterial; readonly environment: LightEnvironment };
+type Presentation = { lighting: Lighting; readonly material: SurfaceMaterial; readonly environment: LightEnvironment };
 export const MATERIAL_CHANGE_EVENT = "flint-material-change";
 const presentations = new WeakMap<HTMLElement, Presentation>();
 export const materialChromePresentation = (root: HTMLElement) => presentations.get(root);
 
-/** Solid owns lifetime and opt-out. The editor slot lives outside this component. */
-export function MaterialChrome(props: { root: () => HTMLElement; viewport: () => HTMLElement; layout: () => unknown; lighting?: Lighting; independent?: boolean }) {
+/** Lighting preferences only. HTML owns every application control and surface. */
+export function MaterialChrome(props: { root: () => HTMLElement; lighting?: Lighting }) {
   const [enabled, setEnabled] = createSignal(true), [occlusion, setOcclusion] = createSignal(true);
   const [light, setLight] = createSignal<Light>(DEFAULT_LIGHT), [material, setMaterial] = createSignal<SurfaceMaterial>('limestone');
-  const [status, setStatus] = createSignal('Loading materials…');
-  let presentation: Presentation | undefined, disposeScene: (() => void) | undefined, refresh: (() => void) | undefined;
-  createEffect(() => { props.layout(); presentation?.scene?.invalidateLayout(); });
+  const [status, setStatus] = createSignal('Graph and logo lighting');
+  let presentation: Presentation | undefined, refresh: (() => void) | undefined;
   onMount(() => {
     const root = props.root(), lighting = props.lighting ?? createLighting(root);
     presentation = { lighting, get material() { return material(); }, get environment() { return occlusion() ? CYCLADIC_APERTURE : OPEN_ENVIRONMENT; } }; presentations.set(root, presentation);
     const colours = window.matchMedia?.('(forced-colors: active)'), motion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    let generation = 0, disposed = false;
-    const available = (value: boolean) => { root.dataset.materialReady = String(value); setStatus(value ? 'Materials active' : 'Simple surfaces'); };
-    const start = async () => {
-      const ticket = ++generation;
-      disposeScene?.(); disposeScene = undefined;
-      // Independent chrome consumes the lighting/material state, never DOM surfaces.
-      if (props.independent) { available(false); setStatus(enabled() ? 'Independent chrome lighting' : 'Simple surfaces'); return; }
-      if (!enabled() || colours?.matches || !window.WebGLRenderingContext || typeof ResizeObserver === 'undefined') { available(false); return; }
-      try {
-        const { createMaterialScene } = await import('./material-scene');
-        if (disposed || ticket !== generation) return;
-        const scene = createMaterialScene(root, lighting, available); presentation!.scene = scene;
-        const stopSurface = scene.registerSurface(props.viewport());
-        const reliefs = new Map<HTMLElement, () => void>();
-        const sync = () => {
-          const elements = new Set(root.querySelectorAll<HTMLElement>('[data-flint-relief], .flint-document-tab > button'));
-          for (const [el, stop] of reliefs) if (!elements.has(el)) { stop(); reliefs.delete(el); }
-          for (const el of elements) if (!reliefs.has(el)) reliefs.set(el, scene.registerSurface(el, el.dataset.flintRelief === 'panel' ? 'limestone' : 'marble', el.dataset.flintRelief === 'panel' ? 3 : 6));
-          scene.invalidateLayout();
-        };
-        sync();
-        const observer = new MutationObserver(sync);
-        for (const el of root.querySelectorAll('.reactive-tabs__labels')) observer.observe(el, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-selected','data-active']});
-        let pressed: HTMLElement | undefined;
-        const release = () => { if (pressed) scene.setPressed(pressed, false); pressed = undefined; };
-        const press = (event: Event) => {
-          if (event instanceof KeyboardEvent && ![' ', 'Enter'].includes(event.key)) return;
-          const el = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-flint-relief="key"],.flint-document-tab > button') : undefined;
-          if (!el || el.hasAttribute('disabled')) return;
-          release(); pressed = el; scene.setPressed(el,true);
-        };
-        root.addEventListener('pointerdown',press); root.addEventListener('keydown',press);
-        window.addEventListener('pointerup',release); window.addEventListener('pointercancel',release); window.addEventListener('keyup',release); window.addEventListener('blur',release);
-        scene.setMaterial(material()); scene.setEnvironment(occlusion() ? CYCLADIC_APERTURE : OPEN_ENVIRONMENT);
-        disposeScene = () => { observer.disconnect(); release(); root.removeEventListener('pointerdown',press); root.removeEventListener('keydown',press); window.removeEventListener('pointerup',release); window.removeEventListener('pointercancel',release); window.removeEventListener('keyup',release); window.removeEventListener('blur',release); for (const stop of reliefs.values()) stop(); stopSurface(); scene.dispose(); if (presentation) presentation.scene = undefined; };
-      } catch { if (!disposed && ticket === generation) available(false); }
-    };
     refresh = () => {
       lighting.setEffects({ reducedMotion: motion?.matches ?? false, reducedEffects: !enabled() || (colours?.matches ?? false) });
-      void start();
+      setStatus(enabled() && !colours?.matches ? 'Graph and logo lighting' : 'Reduced effects');
     };
     colours?.addEventListener('change', refresh); motion?.addEventListener('change', refresh); refresh();
     onCleanup(() => {
-      disposed = true; generation++; colours?.removeEventListener('change', refresh!); motion?.removeEventListener('change', refresh!);
-      disposeScene?.(); if (!props.lighting) lighting.dispose(); presentations.delete(root); delete root.dataset.materialReady; presentation = undefined;
+      colours?.removeEventListener('change', refresh!); motion?.removeEventListener('change', refresh!);
+      if (!props.lighting) lighting.dispose(); presentations.delete(root); presentation = undefined;
     });
   });
   function announceMaterial() { props.root().dispatchEvent(new Event(MATERIAL_CHANGE_EVENT)); }
@@ -78,8 +39,8 @@ export function MaterialChrome(props: { root: () => HTMLElement; viewport: () =>
     <summary>Light & material</summary>
     <div class="flint-light-controls__panel" role="group" aria-label="Light and material">
       <label><input type="checkbox" aria-label="Material effects" checked={enabled()} onChange={e => { setEnabled(e.currentTarget.checked); refresh?.(); }} /> Material effects</label>
-      <label><input type="checkbox" aria-label="Environmental occlusion" checked={occlusion()} onChange={e => { setOcclusion(e.currentTarget.checked); presentation?.scene?.setEnvironment(occlusion() ? CYCLADIC_APERTURE : OPEN_ENVIRONMENT); announceMaterial(); }} /> Environmental occlusion</label>
-      <label>Surface<select aria-label="Application material" value={material()} onChange={e => { setMaterial(e.currentTarget.value as SurfaceMaterial); presentation?.scene?.setMaterial(material()); announceMaterial(); }}><For each={['limestone', 'marble', 'chalk', 'paper', 'parchment'] as const}>{name => <option value={name}>{name}</option>}</For></select></label>
+      <label><input type="checkbox" aria-label="Environmental occlusion" checked={occlusion()} onChange={e => { setOcclusion(e.currentTarget.checked); announceMaterial(); }} /> Environmental occlusion</label>
+      <label>Surface<select aria-label="Application material" value={material()} onChange={e => { setMaterial(e.currentTarget.value as SurfaceMaterial); announceMaterial(); }}><For each={['limestone', 'marble', 'chalk', 'paper', 'parchment'] as const}>{name => <option value={name}>{name}</option>}</For></select></label>
       <For each={[
         { key: 'azimuth', label: 'Direction', min: 0, max: 359, step: 1 },
         { key: 'elevation', label: 'Light elevation', min: 15, max: 80, step: 1 },

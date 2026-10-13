@@ -24,14 +24,16 @@ export type FeatureFlags = Readonly<{
   phosphor: boolean;
   /** Physical Phosphor emblem with a local, slowly migrating discharge. */
   phosphorNixie: boolean;
-  /** Occasional neutral studio-light movement across Phosphor's materials. */
+  /** Occasional light movement across Phosphor's Nixie logo. */
   phosphorStudioDrift: boolean;
-  /** Manual controls for Phosphor's shared studio lighting. */
+  /** Manual controls for Phosphor's logo lighting. */
   phosphorLightingControls: boolean;
-  /** Flint-wide material substrate and real environmental occlusion; DOM editor unchanged. */
+  /** Lighting and material controls for Flint graph views and the logo. */
   flintMaterialChrome: boolean;
-  /** Prototype: self-contained Three.js chrome beside independently scrolling HTML content. */
+  /** Retired prototype flag; application chrome is always HTML. */
   flintSceneChrome: boolean;
+  /** Small independently rendered Three.js mask in the application header. */
+  flintLogo: boolean;
   /** Application-wide stone pointer; Alt + wheel rotates it. */
   flintProbe: boolean;
   /** Shared Probe cursor in Spatial and Infinite Canvas presentations. */
@@ -86,7 +88,8 @@ export const featureFlags: FeatureFlags = Object.freeze({
   phosphorStudioDrift: true,
   phosphorLightingControls: true,
   flintMaterialChrome: true,
-  flintSceneChrome: true,
+  flintSceneChrome: false,
+  flintLogo: true,
   flintProbe: false,
   presentationProbe: false,
   flintSpatialGraph: true,

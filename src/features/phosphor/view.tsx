@@ -131,16 +131,14 @@ export function PhosphorView(props: {
     [automaticLight, setAutomaticLight] = createSignal(true),
     [motionReduced, setMotionReduced] = createSignal(false);
   let root!: HTMLDivElement,
+    emblem!: HTMLSpanElement,
     input!: HTMLTextAreaElement,
     surface!: HTMLDivElement,
     viewport!: HTMLDivElement,
-    displayBay!: HTMLDivElement,
-    aperture!: HTMLDivElement,
-    left!: HTMLElement,
-    right!: HTMLElement;
+    displayBay!: HTMLDivElement;
   let material:
     | Awaited<
-        ReturnType<(typeof import("./material"))["createPhosphorMaterial"]>
+        ReturnType<(typeof import("./logo"))["createPhosphorLogo"]>
       >
     | undefined;
   const adjustLight = (patch: Partial<Light>) => {
@@ -807,33 +805,25 @@ export function PhosphorView(props: {
     });
   });
   createEffect(() => {
-    const enabled = effects() && !reduced();
+    const enabled = (props.nixie ?? true) && effects() && !reduced();
     let disposed = false;
     material?.dispose();
     material = undefined;
     setReady(false);
     if (enabled && root)
-      void import("./material").then((m) => {
+      void import("./logo").then((m) => {
         if (disposed) return;
         try {
-          material = m.createPhosphorMaterial(
-            root,
-            {
-              display: aperture,
-              workspace: displayBay,
-              panels: [left, right].filter(Boolean),
-            },
-            setReady,
-            props.nixie ?? true,
-            props.studioDrift ?? true,
-          );
+          material = m.createPhosphorLogo(root, emblem, setReady, props.studioDrift ?? true);
           // View settings survive a fallback/material toggle, independently of Ink.
           if (studioLight() !== PHOSPHOR_STUDIO_LIGHT)
             material.lighting.setLight(studioLight());
           material.drift?.setEnabled(automaticLight());
         } catch {
-          setMessage("Simple surfaces active. Editing remains available.");
+          setMessage("The static logo is active. Editing remains available.");
         }
+      }).catch(() => {
+        if (!disposed) setMessage("The static logo is active. Editing remains available.");
       });
     onCleanup(() => {
       disposed = true;
@@ -851,7 +841,7 @@ export function PhosphorView(props: {
     <div
       ref={root}
       class="phosphor"
-      data-material-ready={ready()}
+      data-logo-ready={ready()}
       data-nixie={props.nixie ?? true}
       data-reduced={reduced() || !effects()}
       data-mode={mode()}
@@ -867,7 +857,7 @@ export function PhosphorView(props: {
     >
       <div class="ph-ui">
         <header class="ph-title">
-          <span class="ph-emblem" aria-hidden="true">
+          <span ref={emblem} class="ph-emblem" aria-hidden="true" data-logo-ready={ready()}>
             Φ
           </span>
           <span>
@@ -932,7 +922,7 @@ export function PhosphorView(props: {
           </div>
         </nav>
         <Show when={(props.lightingControls ?? true) && lightOpen()}>
-          <section id={`ph-light-${id}`} class="ph-drawer ph-lighting-controls" aria-label="Studio lighting">
+          <section id={`ph-light-${id}`} class="ph-drawer ph-lighting-controls" aria-label="Logo lighting">
             <fieldset disabled={!ready()} aria-label="Light source">
               <For each={[
                 { key: "azimuth", label: "Direction", min: 0, max: 359, factor: 1, unit: "°" },
@@ -974,10 +964,10 @@ export function PhosphorView(props: {
             </fieldset>
             <p class="ph-hint">
               {!ready()
-                ? "Lighting controls are available with material effects."
+                ? "Lighting controls are available with logo effects."
                 : motionReduced()
                   ? "Reduced motion is enabled. Manual lighting remains available."
-                  : "Adjust a slider to pause automatic movement. Changes apply only to this view."}
+                  : "Adjust a slider to pause automatic movement. Changes apply only to the logo."}
             </p>
           </section>
         </Show>
@@ -1052,7 +1042,6 @@ export function PhosphorView(props: {
         </Show>
         <div class="ph-workspace">
           <aside
-            ref={left}
             class="ph-palette ph-panel"
             aria-label="Characters and drawing tools"
           >
@@ -1160,7 +1149,7 @@ export function PhosphorView(props: {
               aria-label="Screen workspace"
             >
               <div class="ph-display-stage">
-                <div ref={aperture} class="ph-display-aperture">
+                <div class="ph-display-aperture">
                   <div class="ph-ruler" aria-hidden="true">
                     <div class="ph-ruler-track">
                       <For
@@ -1349,7 +1338,7 @@ export function PhosphorView(props: {
               </div>
             </div>
           </main>
-          <aside ref={right} class="ph-inspector ph-panel">
+          <aside class="ph-inspector ph-panel">
             <h2>Cell</h2>
             <div class="ph-cell-settings">
               <output class="ph-glyph-preview">
@@ -1549,7 +1538,7 @@ export function PhosphorView(props: {
                 checked={effects()}
                 onChange={(e) => setEffects(e.currentTarget.checked)}
               />{" "}
-              Material effects
+              Logo effects
             </label>
             <p class="ph-hint">
               Semantic marks remain in Ink when invisible. Entities use the

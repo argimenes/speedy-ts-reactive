@@ -244,6 +244,17 @@ export function createNixieEmblem(
   element.addEventListener("pointercancel", pointerLeave);
   window.addEventListener("blur", pointerLeave);
   const layout = () => {
+    // A standalone logo uses local dimensions only. Moving or scrolling the
+    // application cannot change this coordinate system.
+    if (element === sceneRoot) {
+      const width = element.clientWidth, height = element.clientHeight;
+      group.position.set(width / 2, -height / 2, 11);
+      group.scale.setScalar(Math.min(width / 48, height / 60));
+      group.visible = width > 0 && height > 0;
+      region = {x:0, y:0, width, height};
+      wake();
+      return;
+    }
     const bounds = sceneRoot.getBoundingClientRect(),
       r = element.getBoundingClientRect(),
       sx = bounds.width / sceneRoot.clientWidth || 1,

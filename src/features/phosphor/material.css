@@ -697,3 +697,14 @@
     background: Canvas;
   }
 }
+
+/* Only the emblem has a canvas. All surrounding chrome keeps its HTML paint. */
+.ph-emblem[data-logo-ready="true"] {
+  color: transparent;
+  text-shadow: none;
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+.ph-emblem[data-logo-ready="true"]::before,
+.ph-emblem[data-logo-ready="true"]::after { display: none; }

@@ -180,7 +180,7 @@ try {
   const bytes = await (await import('node:fs/promises')).readFile(path.join(store,'vault/workspace.phosphor'),'utf8');
   check('Save .phosphor writes the native file to disk', bytes.includes('phosphor-screen-block'));
   await evaluate(`click('Close')`);
-  await wait(`root.dataset.materialReady==='true'`);
+  await wait(`root.dataset.logoReady==='true'`);
   const { data } = await send('Page.captureScreenshot', {format:'png'}, sessionId);
   await writeFile('artifacts/phosphor/workspace-integration.png', Buffer.from(data,'base64'));
 
