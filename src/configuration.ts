@@ -42,6 +42,8 @@ export type FeatureFlags = Readonly<{
   flintSpatialGraph: boolean;
   /** Per-resource native/Markdown persistence through the managed server store. */
   nativeDocumentPersistence: boolean;
+  /** Persistent Library listings with background filesystem reconciliation. */
+  vaultDiscoveryCache: boolean;
   /** Accepted loaded-resource provider; false retains the legacy rollback. */
   nativeKnowledge: boolean;
   /** P5 saved coverage qualification; rollout remains separately reviewed. */
@@ -94,6 +96,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   presentationProbe: false,
   flintSpatialGraph: true,
   nativeDocumentPersistence: true,
+  vaultDiscoveryCache: true,
   nativeKnowledge: true,
   nativeKnowledgeSaved: false,
   sqliteKnowledge: true,

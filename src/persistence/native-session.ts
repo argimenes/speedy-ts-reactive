@@ -15,7 +15,13 @@ export function nativeDocumentSession(editor: ReactiveEditor) {
 }
 async function request(action: string, body?: unknown, signal?: AbortSignal) {
   const response = await fetch(`/api/native/${action}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal } : { signal });
-  const json = await response.json(); if (!response.ok || !json.Success) throw Object.assign(new Error(json.Error ?? 'Native store request failed'), {status:response.status,preflight:json.PublicationStarted===false}); return json.Data;
+  let json: any;
+  try { json = await response.json(); }
+  catch (error) {
+    if (signal?.aborted) throw error;
+    throw Object.assign(new Error('Native store returned an invalid response'), {status:response.status});
+  }
+  if (!response.ok || !json?.Success) throw Object.assign(new Error(json?.Error ?? 'Native store request failed'), {status:response.status,preflight:json?.PublicationStarted===false}); return json.Data;
 }
 const sameLocation = (a: DocumentLocation, b: DocumentLocation) => a.folder === b.folder && a.filename === b.filename;
 /** C1a storage capability; no Flint UI or authored vault membership. */
@@ -25,6 +31,7 @@ export interface VaultRelocation {
   dependencies?: Array<{resourceId: string; location: DocumentLocation}>;
 }
 export class NativeDocumentSession {
+  private legacyVaultDiscovery = false;
   private bindings = new Map<string, Binding>();
   private compatibleSources = new Map<string,{location:DocumentLocation;byteHash:string;format:string;vault:string;canSave:boolean;message:string;dirty:boolean;busy:boolean;members:Set<string>;pending?:any}>();
   private changed = createSignal(0);
@@ -82,6 +89,18 @@ export class NativeDocumentSession {
   async defaultVault(){return (await request('vault/default')).vault as string|undefined;}
   async establishVault(vault:string,signal?:AbortSignal){return request('vault/establish',{vault},signal);}
   async discoverVault(vault: string, signal?: AbortSignal) { return request('vault/discover', {vault}, signal); }
+  async browseVault(vault: string, mode: 'cached'|'reconcile'|'verify', signal?: AbortSignal) {
+    if (!this.legacyVaultDiscovery) {
+      try { return await request('vault/browse', {vault,mode}, signal); }
+      catch (error) {
+        // A hot-reloaded client can outlive the backend version that serves it.
+        // Fall back only when the endpoint is unsupported, never on storage failures.
+        if (signal?.aborted || ![404,405,501].includes((error as any)?.status)) throw error;
+        this.legacyVaultDiscovery = true;
+      }
+    }
+    return this.discoverVault(vault, signal);
+  }
   async createVaultDirectory(vault: string, directory: string) { return request('vault/mkdir', {vault, directory}); }
   async relocateVault(input: VaultRelocation) {
     if (this.relocations.has(input.operationId)) {

@@ -16,7 +16,7 @@ export function VaultView(props:{vault:ApplicationVault}) {
   const [name,setName]=createSignal('Document.mutable.json'), [title,setTitle]=createSignal('Untitled'), [directory,setDirectory]=createSignal('New folder');
   const [destination,setDestination]=createSignal('.'), [moveName,setMoveName]=createSignal(''), [importSource,setImportSource]=createSignal(''), [tag,setTag]=createSignal('');
   const [working,setWorking]=createSignal(false), [error,setError]=createSignal('');
-  const state=createMemo(()=>props.vault.state()), busy=()=>working()||state()?.busy, readOnly=()=>state()?.readOnly;
+  const state=createMemo(()=>props.vault.state()), busy=()=>working()||props.vault.loading?.()||state()?.busy, readOnly=()=>state()?.readOnly;
   const run=async(action:()=>Promise<unknown>)=>{if(busy())return;setWorking(true);setError('');try{await action();}catch(e){setError(String(e));}finally{setWorking(false);}};
   createEffect(on(createMemo(()=>state()?.root),r=>{if(r){setRoot(r);setFolder(r);setDestination(r);setSelected('');}}));
   createEffect(()=>{const s=state();if(s && folder()!==s.root&&!s.folders.includes(folder()))setFolder(s.root);});
@@ -32,10 +32,13 @@ export function VaultView(props:{vault:ApplicationVault}) {
     <For each={candidateFolders().get(p.path)}>{candidate=><div class="flint-tree-document"><button aria-label={`Open ${candidate}`} disabled={busy()} onClick={()=>{setSelected('');setFolder(location(candidate).folder);void run(async()=>{if(!props.vault.openCandidate)throw Error('Content recognition is unavailable');await props.vault.openCandidate(location(candidate));});}}>{location(candidate).filename}<small>File · recognize on Open</small></button></div>}</For>
   </details>;
   return <section class="flint-vault-controls" aria-label="Filesystem Cavern">
+    <Show when={props.vault.loading?.()}><p role="status">Loading Vault contents…</p></Show>
+    <Show when={props.vault.error?.()}><p role="alert">Could not load Vault contents: {props.vault.error!()}</p><Show when={props.vault.retry}><button disabled={busy()} onClick={()=>void run(()=>props.vault.retry!())}>Retry</button></Show></Show>
     <Show when={props.vault.choose}><button disabled={busy()} onClick={()=>props.vault.choose!()}>Open Another Cavern…</button><p>{cavern?.current()?.path ?? 'Choose a directory in the server Documents store.'}</p></Show>
     <Show when={!cavern}><details><summary>Open by managed relative path</summary><label>Managed directory<input aria-label="Vault directory" value={root()} onInput={e=>setRoot(e.currentTarget.value)}/></label>
     <button disabled={busy()} onClick={()=>void run(()=>props.vault.open(root()))}>Open Cavern</button></details></Show>
-    <Show when={state()}><button disabled={busy()} onClick={()=>void run(()=>props.vault.refresh())}>Refresh</button><Show when={!cavern}><button disabled={busy()} onClick={()=>props.vault.close()}>Close Cavern</button></Show>
+    <Show when={state()}><button disabled={busy()||state()?.checking} onClick={()=>void run(()=>props.vault.refresh())}>Refresh</button><Show when={props.vault.verify}><button disabled={busy()||state()?.checking} title="Read every native document and compare its checksum" onClick={()=>void run(()=>props.vault.verify!())}>Verify files</button></Show><Show when={!cavern}><button disabled={busy()} onClick={()=>props.vault.close()}>Close Cavern</button></Show>
+      <Show when={state()?.checking || state()?.cached}><p role="status">{state()?.checking?'Checking for file changes…':'Showing the last saved Library listing.'}</p></Show>
       <p>Vault: {state()!.root} <Show when={readOnly()}><strong>Read-only storage. Local edits cannot be saved.</strong></Show></p>
       <label>Tag filter<select aria-label="Tag filter" value={tag()} onChange={e=>setTag(e.currentTarget.value)}><option value="">All tags</option><For each={tags()}>{t=><option value={t}>{t}</option>}</For></select></label>
       <Show when={state()!.documents.some(d=>!d.loaded)}><p>Tag filtering covers opened Documents only.</p></Show>
@@ -63,7 +66,7 @@ export function VaultView(props:{vault:ApplicationVault}) {
       <For each={state()!.operations.filter(o=>o.phase==='pending')}>{o=><p>Pending relocation: {o.operationId}<button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.recoverOperation(o.operationId))}>Recover relocation</button></p>}</For>
       <For each={state()!.diagnostics}>{d=><p role="alert">{d}</p>}</For>
       <p role="status">{busy()?'Cavern operation in progress…':state()!.notice}</p>
-    </Show><Show when={error()}><p role="alert">{error()}</p></Show>
+    </Show><Show when={error() && error() !== props.vault.error?.()}><p role="alert">{error()}</p></Show>
   </section>;
 }
 

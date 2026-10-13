@@ -81,7 +81,7 @@ export class VaultKnowledge implements ApplicationKnowledge {
   }
   search=async(query:string):Promise<VaultSearchResults>=>{
     this.host.guard();this.cancel();const controller=new AbortController();this.controller=controller;
-    const vault=this.host.vault();if(!this.derived?.progressive)await vault.refresh();controller.signal.throwIfAborted();
+    const vault=this.host.vault();if(!this.derived?.progressive)await vault.refresh();else await vault.ensureVerified();controller.signal.throwIfAborted();
     const stamp=this.stamp(vault),token=crypto.randomUUID(),scope=this.derived?undefined:this.scope(vault),diagnostics=scope?.diagnostics??[];
     const stop=this.editor.repository.subscribeChanges(()=>controller.abort());
     const timeout=setTimeout(()=>controller.abort(),15000);
@@ -132,6 +132,11 @@ export class VaultKnowledge implements ApplicationKnowledge {
     if(found.length!==1)throw new Error('Target is unavailable in this vault. Explicitly Open it and try again.');
     return found[0];
   }
+  prepareReferences=async()=>{
+    this.host.guard();const vault=this.host.vault(),active=this.host.active(),revision=this.editor.repository.state.revision;
+    await vault.ensureVerified();this.host.guard();
+    if(!this.live||this.host.vault()!==vault||this.host.active()?.projection!==active?.projection||this.editor.repository.state.revision!==revision)throw Error('Source changed while preparing references; select the text again.');
+  };
   activate=async(id:string)=>{
     const hit=this.hits.get(id);if(!hit)throw new Error('Search result expired');
     if(hit.saved){if(!this.host.activateSaved)throw Error('Saved result Open unavailable');return this.host.activateSaved(hit.target,hit.passage,hit.saved,()=>this.hits.get(id)===hit&&this.valid(hit.stamp),hit.query!);}

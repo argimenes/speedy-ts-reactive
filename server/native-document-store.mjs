@@ -9,6 +9,8 @@ import path from 'node:path';
 import { ManagedPair, hash } from '../src/persistence/managed-pair.mjs';
 import { installNativeKnowledgeRoutes } from './native-knowledge-routes.mjs';
 import { NativeVaultStore } from './native-vault-store.mjs';
+import { VaultListingCache } from './vault-listing-cache.mjs';
+import { featureFlags } from '../src/configuration';
 import { decodeNative } from '../src/persistence/native-resource';
 import { exportMarkdown } from '../src/persistence/markdown';
 import { recognizeCompatibleDocument, encodeRecognizedDocument } from '../src/persistence/compatible-document';
@@ -16,8 +18,9 @@ const LIMIT = 20 * 1024 * 1024;
 const fail = (message, status = 409) => { throw Object.assign(new Error(message), { status }); };
 const read = async file => { try { const s = await fs.lstat(file); if (!s.isFile() || s.isSymbolicLink() || s.size > LIMIT) fail('Expected a bounded regular file', 400); return await fs.readFile(file); } catch(e) { if(e.code !== 'ENOENT') throw e; } };
 const fields = (v, names) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === names.length && Object.keys(v).every(k => names.includes(k));
-export function createNativeDocumentStoreRouter({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true, coordinate = action => action(), establishVault, defaultVault}) {
+export function createNativeDocumentStoreRouter({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true, vaultDiscoveryCache = featureFlags.vaultDiscoveryCache, coordinate = action => action(), establishVault, defaultVault}) {
  const vault = new NativeVaultStore({root,readOnly,fault,nativeDiscoveryWorker});
+ const listings = new VaultListingCache(vault);
  const recognizedStore=new RecognizedDocumentStore(vault);
  const router = Router(); router.use(json({limit:'32mb'}));
  const directory = async folder => {
@@ -60,6 +63,11 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  route('post','/vault/discover',async (req,res)=>{
   const controller=new AbortController(),closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);
   try{return await vault.discoverShared(req.body.vault,{signal:controller.signal});}finally{res.off('close',closed);}
+ });
+ route('post','/vault/browse',async (req,res)=>{
+  const mode=req.body.mode??'cached';if(!['cached','reconcile','verify'].includes(mode))fail('Invalid listing mode',400);
+  const controller=new AbortController(),closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);
+  try{return vaultDiscoveryCache ? await listings.browse(req.body.vault,{mode,signal:controller.signal}) : await vault.discoverShared(req.body.vault,{signal:controller.signal});}finally{res.off('close',closed);}
  });
  route('post','/vault/mkdir',async req=>vault.mkdir(req.body.vault,req.body.directory));
  route('post','/vault/relocate',async req=>vault.relocate(req.body));

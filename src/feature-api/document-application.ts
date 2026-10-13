@@ -57,14 +57,19 @@ export interface ApplicationVaultState {
   documentSaves?: readonly {resourceId:string;generation:string;path:string}[];
   operations: readonly {operationId: string; phase: string}[];
   readOnly: boolean; complete: boolean; busy: boolean; notice: string;
+  checking?: boolean; cached?: boolean;
 }
 export interface ApplicationVault {
   /** Host-owned, confined server directory chooser. Selection still requires native discovery. */
   choose?(): void;
   state(): ApplicationVaultState | undefined;
+  loading?(): boolean;
+  error?(): string;
+  retry?(): Promise<void>;
   open(root: string): Promise<void>;
   close(): void;
   refresh(): Promise<void>;
+  verify?(): Promise<void>;
   openFile(location: {folder: string; filename: string}): Promise<void>;
   openCandidate?(location: {folder: string; filename: string}): Promise<void>;
   createDocument(folder: string, filename: string, title: string): Promise<void>;
@@ -83,6 +88,7 @@ export interface VaultSearchHit extends DocumentTarget { id: string; kind: 'titl
 export interface VaultSearchResults { savedProvider?:SavedProviderCoverage; coverageMode?: 'loaded'|'saved-and-live'; token: string; hits: readonly VaultSearchHit[]; diagnostics: readonly string[]; available: number; discovered: number; complete: boolean }
 export interface NativeReferenceItem { id: string; label: string; target?: DocumentTarget; diagnostic?: string; removable: boolean }
 export interface ApplicationKnowledge {
+  prepareReferences?(): Promise<void>;
   search(query: string): Promise<VaultSearchResults>;
   cancel(): void;
   current(token: string): boolean;

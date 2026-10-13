@@ -21,9 +21,9 @@ const wait=(f:()=>void)=>vi.waitFor(f,{timeout:6000,interval:20});
 const button=(host:ParentNode,label:string)=>{if(label==='Files'||label==='Close tab'){const menu=host.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!;if(menu.getAttribute('aria-expanded')!=='true')menu.click();}const b=[...host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label);expect(b,`button ${label}`).toBeTruthy();return b!;};
 const click=(host:ParentNode,label:string)=>{const b=button(host,label);expect(b.disabled,`${label} enabled`).toBe(false);b.click();};
 const field=(host:ParentNode,label:string,value:string)=>{const input=host.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;expect(input,label).toBeTruthy();input.value=value;input.dispatchEvent(new Event(input.tagName==='SELECT'?'change':'input',{bubbles:true}));};
-async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise<void>}={}) {
+async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise<void>;defaultVault?:string;nativeMiddleware?:express.RequestHandler}={}) {
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'flint-c1b-'));disposers.push(()=>fs.rm(root,{recursive:true,force:true}));await fs.mkdir(path.join(root,'vault/nested'),{recursive:true});await fs.writeFile(path.join(root,'vault/input.md'),'# Imported\n\n**Bold** text');
- const app=express();app.use('/api/native',createNativeDocumentStoreRouter({root,...options}));const server:any=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});disposers.push(()=>new Promise(r=>server.close(r)));
+ const app=express();if(options.nativeMiddleware)app.use('/api/native',options.nativeMiddleware);app.use('/api/native',createNativeDocumentStoreRouter({root,...options}));const server:any=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});disposers.push(()=>new Promise(r=>server.close(r)));
  vi.stubGlobal('fetch',(input:any,init:any)=>actualFetch(typeof input==='string'&&input.startsWith('/')?`http://127.0.0.1:${server.address().port}${input}`:input,init));
  function make() {
   const editor=new ReactiveEditor(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{compactEditorChrome:false}});registerApplicationViews(editor);const projection=editor.createView('workspace');disposers.push(()=>editor.dispose());
@@ -191,3 +191,28 @@ it('browses physical files and opens a real historical Document without migratio
  b.querySelector<HTMLButtonElement>('[aria-label="Open vault/nested/raven.json"]')!.click();await wait(()=>expect(idOf(b)).toBe(id));
  expect((b.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('Local reading copy');
 },20000);
+
+it('shows loading at startup and lists the Vault with an older backend',async()=>{
+ let resume!:()=>void;const held=new Promise<void>(r=>resume=r);disposers.push(()=>resume());
+ let misses=0,scans=0;
+ const f=await fixture({defaultVault:'vault',nativeMiddleware:async(req,res,next)=>{
+  if(req.path==='/vault/browse'){misses++;await held;res.status(404).json({Success:false,Error:'This service is unavailable in the current Cavern.'});return;}
+  if(req.path==='/vault/discover')scans++;next();
+ }});
+ await wait(()=>expect(f.host.textContent).toContain('Loading Vault contents'));
+ resume();await wait(()=>expect(f.host.querySelector('[aria-label="Open vault/input.md"]')).toBeTruthy());
+ expect(misses).toBe(1);expect(scans).toBe(1);
+ click(f.host,'Refresh');await wait(()=>expect(scans).toBe(2));expect(misses).toBe(1);
+ await wait(()=>expect(button(f.host,'Refresh').disabled).toBe(false));
+});
+it.each(['/vault/default','/vault/browse'])('shows startup errors from %s in the Library and Retry loads the contents',async failingPath=>{
+ let failing=true;
+ const f=await fixture({defaultVault:'vault',nativeMiddleware:(req,res,next)=>{
+  if(failing&&req.path===failingPath){res.status(503).json({Success:false,Error:'Temporary storage failure'});return;}next();
+ }});
+ await wait(()=>expect(f.host.querySelector('.flint-vault-controls')?.textContent).toContain('Could not load Vault contents: Error: Temporary storage failure'));
+ expect(f.host.querySelector('[aria-label="Selected folder"]')).toBeNull();
+ failing=false;click(f.host,'Retry');
+ await wait(()=>expect(f.host.querySelector('[aria-label="Open vault/input.md"]')).toBeTruthy());
+ expect(f.host.querySelector('.flint-vault-controls')?.textContent).not.toContain('Could not load Vault contents');
+});
