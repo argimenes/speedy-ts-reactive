@@ -98,8 +98,52 @@ describe("document entity listing", () => {
     await vi.waitFor(() => expect(rows()[0].cells[0].textContent).toBe("Beta"));const requests=loader.mock.calls.length;
     editor.commands.setPayloadField(node("b").key, "standoffProperties", []);
     await vi.waitFor(() => expect(rows().find(row => row.cells[0].textContent === "Beta")?.cells[2].textContent).toBe("1"));
-    expect(rows().every(row=>row.cells[1].textContent==="—")).toBe(true);expect(loader).toHaveBeenCalledTimes(requests);
-    [...panel().querySelectorAll("button")].find(b=>b.textContent==="Refresh summaries")!.click();await vi.waitFor(()=>expect(loader).toHaveBeenCalledTimes(requests+1));
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(requests + 1));
+    expect(rows().find(row=>row.cells[0].textContent==="Beta")?.cells[1].textContent).toBe("2");
+    [...panel().querySelectorAll("button")].find(b=>b.textContent==="Refresh summaries")!.click();await vi.waitFor(()=>expect(loader).toHaveBeenCalledTimes(requests+2));
+  });
+
+  it("caches summaries across ordinary edits, repeated opening and closing", async () => {
+    const {editor, node, loader} = setup();
+    const list = entityTestList(editor);
+    list.open(node('a').key);
+    await vi.waitFor(() => expect(list.state.rows[0].graphMentions).toBe(10));
+    const row = list.state.rows[0];
+    editor.commands.replaceInlineRange(node('a').key, 0, 0, 'Before ');
+    await vi.waitFor(() => expect(list.state.rows[0].ranges[0].start).toBe(7));
+    expect(list.state.rows[0]).toBe(row);
+    expect(list.state.rows[0].graphMentions).toBe(10);
+    list.preview('alpha');
+    expect(editor.decorations.nodes[node('a').key][0].range.start).toBe(7);
+    editor.commands.setPayloadField(node('c').key, 'metadata', {title:'Renamed unrelated paragraph'});
+    const properties = JSON.parse(JSON.stringify(node('a').payload.standoffProperties));
+    editor.commands.setPayloadField(node('a').key, 'standoffProperties', [...properties, {id:'bold',type:'style/bold',start:0,end:2}]);
+    list.open(node('a').key);
+    list.close();
+    list.open(node('a').key);
+    await Promise.resolve(); await Promise.resolve();
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(list.state.rows[0].graphMentions).toBe(10);
+    list.refreshSummaries();
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
+  });
+
+  it("invalidates a closed listing when its source links change and handles undo/redo", async () => {
+    const {editor, node, loader} = setup();
+    const list = entityTestList(editor);
+    list.open(node('a').key);
+    await vi.waitFor(() => expect(list.state.rows[0].graphMentions).toBe(10));
+    list.close();
+    editor.commands.setPayloadField(node('b').key, 'standoffProperties', []);
+    list.open(node('a').key);
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
+    expect(list.state.rows.find(row=>row.id==='beta')!.documentMentions).toBe(1);
+    editor.repository.undo();
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(3));
+    expect(list.state.rows.find(row=>row.id==='beta')!.documentMentions).toBe(2);
+    editor.repository.redo();
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(4));
+    expect(list.state.rows.find(row=>row.id==='beta')!.documentMentions).toBe(1);
   });
 
   it("focuses an entity on the current Page and restores the Page on toggle", async () => {
@@ -140,7 +184,7 @@ describe('fast Entity listing',()=>{
     const editor=new ReactiveEditor({type:'document-block',id:'fast-doc',children:[{id:'fast-text',type:'standoff-editor-block',text:'x'.repeat(size),standoffProperties:Array.from({length:size},(_,i)=>({id:`ref-${i}`,type:'codex/entity-reference',value:`entity-${i}`,start:i,end:i}))}]});
     registerEntityTestViews(editor);
     const api=entityTestApi(editor);
-    const names=vi.fn(async(ids:string[])=>ids.map(id=>({id,name:`Name ${id}`})));
+    const names=vi.fn(async(ids:string[],signal?:AbortSignal)=>ids.map(id=>({id,name:`Name ${id}`})));
     const totals=vi.fn(async(ids:string[],signal?:AbortSignal)=>ids.map(id=>({id,mentions:42})));
     const dispose=vi.fn(),summaries=vi.fn(()=>{throw Error('Must not reconstruct Facts');});
     api.entities=()=>({names,dbMentions:totals,dispose,summaries} as any);
@@ -175,6 +219,21 @@ describe('fast Entity listing',()=>{
     finish([{id:'entity-0',mentions:999}]);await Promise.resolve();await Promise.resolve();
     expect(f.list.state.rows[0].graphMentions).toBeUndefined();
     expect(f.dispose).toHaveBeenCalledOnce();
+  });
+  it('keeps an in-flight name lookup alive across typing and uses current ranges when it resolves', async () => {
+    const f=fastSetup(); let finish!: (rows: Array<{id:string;name:string}>)=>void;
+    let signal: AbortSignal | undefined;
+    f.names.mockImplementationOnce((ids, abort?: AbortSignal)=>{signal=abort;return new Promise(resolve=>finish=resolve);});
+    f.list.open(f.node.key);
+    const activeSignal = signal;
+    f.editor.commands.replaceInlineRange(f.node.key, 0, 0, 'Before ');
+    await vi.waitFor(()=>expect(f.list.state.rows[0].ranges[0].start).toBe(7));
+    expect(f.names).toHaveBeenCalledOnce();
+    expect(activeSignal?.aborted).toBe(false);
+    finish([{id:'entity-0',name:'Resolved zero'},{id:'entity-1',name:'Resolved one'}]);
+    await vi.waitFor(()=>expect(f.list.state.rows[0].graphMentions).toBe(42));
+    expect(f.list.state.rows[0].name).toBe('Resolved zero');
+    expect(f.list.state.rows[0].ranges[0].start).toBe(7);
   });
   it('closing the listing cancels optional reads and prevents late updates',async()=>{
     const f=fastSetup();let finish!:(rows:any[])=>void;

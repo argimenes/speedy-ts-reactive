@@ -84,3 +84,23 @@ it('discards a delayed result when its tab is closed and keeps local mentions if
   await vi.waitFor(() => expect(f.panel().textContent).toContain('Database unavailable'));
   expect(f.rows()[0].cells[2].textContent).toBe('1');
 });
+
+it('reuses cached Backlinks across typing, context lenses and tab switches', async () => {
+  const f = fixture(); await tick(); f.link();
+  await vi.waitFor(() => expect(f.rows()[0]?.cells[1].textContent).toBe('42'));
+  const names = vi.mocked(f.service.names).mock.calls.length;
+  const totals = vi.mocked(f.service.dbMentions).mock.calls.length;
+  f.editor.commands.replaceInlineRange(f.text().key, 0, 0, 'New ');
+  await tick();
+  expect(f.rows()[0].cells[1].textContent).toBe('42');
+  const click = (label: string) => [...f.host.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.textContent===label)!.click();
+  click('Properties'); await tick(); click('Backlinks'); await tick();
+  f.tabs()[1].click(); await tick(); expect(f.rows()).toHaveLength(0);
+  f.tabs()[0].click(); await tick();
+  expect(f.rows()[0].cells[1].textContent).toBe('42');
+  expect(f.service.names).toHaveBeenCalledTimes(names);
+  expect(f.service.dbMentions).toHaveBeenCalledTimes(totals);
+  f.link(4, 7);
+  await vi.waitFor(() => expect(f.service.dbMentions).toHaveBeenCalledTimes(totals + 1));
+  expect(f.rows()[0].cells[2].textContent).toBe('2');
+});

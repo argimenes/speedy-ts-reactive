@@ -25,6 +25,11 @@ export interface AnnotationCapabilities {
   path(key: string): { key: string; label: string }[];
   scope(key: string, kind?: ScopeKind): SearchScope;
   documentTexts(key: string): { scope: SearchScope; texts: AnnotationText[] };
+  /** Source-scoped entity changes. A stable signature means only occurrence
+   * coordinates changed; cached names and DB counts remain valid. */
+  watchDocumentEntities(key: string, listener: (change: { signature: string; removed: boolean }) => void): {
+    readonly key: string; readonly signature: string; dispose(): void;
+  };
   selection(key: string): AnnotationTarget[];
   beforeChange(listener: () => void): Disposer;
   afterChange(listener: () => void): Disposer;

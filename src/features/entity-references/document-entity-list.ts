@@ -1,7 +1,7 @@
 import { createStore } from "solid-js/store";
 import type { AnnotationCapabilities, PanelSession, SearchRange, SearchScope } from "../../feature-api";
 import { rangesToPositionMarkers as entityRangesToPositionMarkers } from "../../feature-api";
-import { collectDocumentEntities } from "./document-entities";
+import { collectDocumentEntities, type DocumentEntityInventory } from "./document-entities";
 import { loadEntitySummaries, type EntitySummary, type EntitySummaryLoader } from "./entity-summary";
 
 export type EntityListSort = "name" | "graph" | "document";
@@ -11,6 +11,14 @@ export interface EntityListRow {
   graphMentions?: number;
   documentMentions: number;
   ranges: SearchRange[];
+}
+
+interface CachedEntityResults {
+  signature: string;
+  summaries: Map<string, EntitySummary>;
+  loaded: boolean;
+  error: string;
+  dbError: string;
 }
 
 let sessionCounter = 0;
@@ -26,9 +34,9 @@ export class DocumentEntityList {
   panel?: PanelSession;
   private previewDecorations: ReturnType<AnnotationCapabilities["decorations"]>;
   private concertinaDecorations: ReturnType<AnnotationCapabilities["decorations"]>;
-  private unsubscribe: () => void;
-  private refreshQueued = false;
-  private inventorySignature = "";
+  private watch?: ReturnType<AnnotationCapabilities["watchDocumentEntities"]>;
+  private cache = new Map<string, CachedEntityResults>();
+  private cached?: CachedEntityResults;
   private collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
   constructor(private editor: AnnotationCapabilities, private loader: EntitySummaryLoader = loadEntitySummaries) {
@@ -50,24 +58,17 @@ export class DocumentEntityList {
       concertinaIndex: number;
       focusRequest: number;
     }>({ open: false, rows: [], sort: "document", direction: "descending", pending: false, dbPending: false, dbError: "", error: "", concertinaIndex: 0, focusRequest: 0 });
-    this.unsubscribe = editor.afterChange(() => {
-      if (!this.state.open || this.refreshQueued) return;
-      this.refreshQueued = true;
-      // Projections receive the same repository notification. Refresh after they
-      // have materialised the latest canonical payload into occurrence nodes.
-      queueMicrotask(() => {
-        this.refreshQueued = false;
-        if (!this.state.open) return;
-        try {
-          const inventory = collectDocumentEntities(this.editor, this.origin!);
-          // Workspace/tab publications must not cancel an in-flight lookup or erase totals.
-          if (JSON.stringify(inventory) === this.inventorySignature) return;
-          for(const [id,summary] of this.summaries)this.summaries.set(id,{id:summary.id,name:summary.name});
-          this.refresh(inventory,false);
-        }
-        catch { this.close(false); }
-      });
-    });
+  }
+
+  private useCache(signature: string) {
+    const key = this.watch!.key;
+    let cached = this.cache.get(key);
+    if (!cached || cached.signature !== signature) {
+      cached = {signature, summaries:new Map(), loaded:false, error:"", dbError:""};
+      this.cache.set(key, cached);
+    }
+    this.cached = cached;
+    this.summaries = cached.summaries;
   }
 
   open(key: string, embedded = false) {
@@ -77,45 +78,72 @@ export class DocumentEntityList {
         const pageKey = this.editor.currentPage(inventory.scope, key);
         if (pageKey && pageKey !== this.state.pageKey) { this.clearConcertina(); this.setState("pageKey", pageKey); }
         this.setState("focusRequest", value => value + 1);
-        this.refresh(inventory);
         return;
       }
-      this.controller?.abort(); this.generation++; this.summaries.clear(); this.clearPreview();
-      this.origin = key;
+      this.close(false);
+      this.origin = inventory.scope.rootKey;
+      this.watch = this.editor.watchDocumentEntities(this.origin, change => {
+        if (!this.state.open) return;
+        if (change.removed) { this.cache.delete(this.watch!.key); this.close(false); return; }
+        try {
+          const inventory = collectDocumentEntities(this.editor, this.origin!);
+          if (change.signature === this.cached?.signature) this.updateInventory(inventory, true);
+          else { this.useCache(change.signature); this.refresh(inventory); }
+        } catch { this.close(false); }
+      });
+      this.useCache(this.watch.signature);
       const pageKey = this.editor.currentPage(inventory.scope, key);
       if (!embedded) {
         this.panel = this.editor.openPanel("entity-list", key, {});
         this.panel.allowDocumentInput(true);
       }
       this.setState({ open: true, scope: inventory.scope, pageKey, rows: [], pending: false, error: "", active: undefined, concertinaEntityId: undefined, concertinaIndex: 0, focusRequest: this.state.focusRequest + 1 });
-      this.refresh(inventory);
+      if (this.cached!.loaded) {
+        this.updateInventory(inventory);
+        this.setState({error:this.cached!.error, dbError:this.cached!.dbError});
+      }
+      else this.refresh(inventory);
     } catch (error) {
-      if (this.state.open) this.close(false);
+      this.close(false);
       this.setState("error", error instanceof Error ? error.message : String(error));
     }
   }
 
-  refreshSummaries() { if(this.state.open){this.summaries.clear();this.refresh();} }
+  refreshSummaries() {
+    if (!this.state.open) return;
+    this.summaries.clear();
+    this.cached!.loaded = false;
+    this.refresh();
+  }
 
-  private refresh(prepared = collectDocumentEntities(this.editor, this.origin!), fetchSummaries = true) {
-    this.inventorySignature = JSON.stringify(prepared);
-    const generation = ++this.generation;
-    this.controller?.abort();
+  private updateInventory(prepared: DocumentEntityInventory, rangesOnly = false) {
     const rows = prepared.rows.map(row => {
       const summary = this.summaries.get(row.id);
       return { id: row.id, name: summary?.name || row.fallbackName || row.id, graphMentions: summary?.mentions, documentMentions: row.documentMentions, ranges: row.ranges };
     });
     const active = rows.some(row => row.id === this.state.active) ? this.state.active : undefined;
-    this.setState({ scope: prepared.scope, rows, active, error: "", dbPending: false, dbError: "" });
+    if (rangesOnly) {
+      // Keep row identities, names and totals stable while caret/preview
+      // coordinates follow ordinary text edits. Do not cancel any lookup.
+      const byId = new Map(rows.map(row => [row.id, row.ranges]));
+      this.state.rows.forEach((row, index) => this.setState('rows', index, 'ranges', byId.get(row.id) ?? []));
+    } else this.setState({ scope: prepared.scope, rows, active });
     if (this.state.concertinaEntityId) {
       const focused = rows.find(row => row.id === this.state.concertinaEntityId);
       if (focused?.ranges.length) this.applyConcertina(focused);
       else this.clearConcertina();
     }
     if (active) this.preview(active); else this.clearPreview();
-    if(!fetchSummaries){this.setState({pending:false,error:"Document changed. Refresh summaries to update names and DB mentions."});return;}
+  }
+
+  private refresh(prepared = collectDocumentEntities(this.editor, this.origin!)) {
+    const generation = ++this.generation;
+    this.controller?.abort();
+    this.updateInventory(prepared);
+    this.setState({error:"", dbPending:false, dbError:""});
+    const rows = this.state.rows;
     const missing = rows.map(row => row.id).filter(id => !this.summaries.has(id));
-    if (!missing.length) { this.setState("pending", false); return; }
+    if (!rows.length) { this.cached!.loaded = true; this.setState("pending", false); return; }
     const controller = this.controller = new AbortController();
     this.setState("pending", true);
     const current = () => generation === this.generation && this.state.open && !controller.signal.aborted;
@@ -177,6 +205,9 @@ export class DocumentEntityList {
     })().catch(error => {
       if (!current()) return;
       this.setState({ pending: false, error: error instanceof Error ? error.message : "Entity names are unavailable." });
+    }).finally(() => {
+      if (!current()) return;
+      Object.assign(this.cached!, {loaded:true, error:this.state.error, dbError:this.state.dbError});
     });
   }
 
@@ -265,11 +296,12 @@ export class DocumentEntityList {
   }
 
   close(restore = true) {
+    this.watch?.dispose(); this.watch = undefined;
     this.controller?.abort(); this.controller = undefined; this.generation++; this.clearConcertina(); this.clearPreview();
     this.setState({ open: false, rows: [], pending: false, dbPending: false, dbError: "", error: "", active: undefined });
     const panel = this.panel; this.panel = undefined;
     panel?.close(restore);
   }
 
-  dispose() { this.close(false); this.unsubscribe(); this.previewDecorations.dispose(); this.concertinaDecorations.dispose(); }
+  dispose() { this.close(false); this.cache.clear(); this.previewDecorations.dispose(); this.concertinaDecorations.dispose(); }
 }

@@ -311,8 +311,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       });
       createEffect(() => {
         const key = entityOrigin();
-        selectedVault()?.root;
-        untrack(() => { entityList.close(false); if (key) entityList.open(key, true); });
+        untrack(() => { if (key) entityList.open(key, true); else entityList.close(false); });
       });
       onCleanup(() => entityList.dispose());
       const EntityBacklinks = () => {

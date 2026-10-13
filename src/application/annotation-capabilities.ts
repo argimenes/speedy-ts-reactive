@@ -8,6 +8,7 @@ import { currentPageForScope, nodeKeysForPage } from "../runtime/minimap";
 import { panelSession } from "../runtime/panel-session";
 import { entityService } from './entity-service';
 import { graphemeBoundaries } from '../input/graphemes';
+import { watchDocumentEntities } from './document-entity-changes';
 
 export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureScope): AnnotationCapabilities {
   const check = () => { if (!scope.active()) throw new Error(`Feature ${scope.owner} is disposed`); };
@@ -59,6 +60,12 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
       const origin = node?.viewType === "document-window-block" ? node.children.find(child => editor.node(child)?.viewType === "document-block") ?? key : key;
       const scope = resolveSearchScope(editor, origin, "document");
       return { scope, texts: scopeNodes(editor, scope).found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => text(node.key)!) };
+    },
+    watchDocumentEntities(key, listener) {
+      check();
+      const watch = watchDocumentEntities(editor, key, listener);
+      const dispose = scope.own(watch.dispose);
+      return {key:watch.key, get signature() { return watch.signature; }, dispose};
     },
     selection(key) {
       const cross = editor.crossText.range(); if (cross) return editor.crossText.resolve(cross.anchor, cross.head);
