@@ -21,7 +21,7 @@ export function registerApplicationViews(editor: ReactiveEditor): void {
   // Temporary legacy assembly: unmigrated views/commands retain their existing path.
   registerCoreViews(editor, editor.features.documentFormats ? FormattedDocumentView : undefined);
   if (editor.features.phosphor) editor.featureHost.activate(createPhosphorFeature(editor));
-  if (editor.features.flint) editor.featureHost.activate(createFlintFeature(scope => documentApplicationCapabilities(editor, scope), editor.features.flintMaterialChrome, editor.features.flintProbe, editor.features.flintSpatialGraph));
+  if (editor.features.flint) editor.featureHost.activate(createFlintFeature(scope => documentApplicationCapabilities(editor, scope), editor.features.flintMaterialChrome, editor.features.flintProbe, editor.features.flintSpatialGraph, editor.features.flintSceneChrome));
   if (editor.features.threeDObjects) editor.featureHost.activate(createThreeDObjectFeature(scope => blockFeatureCapabilities(editor, scope)));
   if (editor.features.anchorRelationships) editor.featureHost.activate(createAnchorRelationshipsFeature(scope => anchorCapabilities(editor, scope)));
   if (editor.features.canvasWorkspace) editor.featureHost.activate(createCanvasCounterFeature(scope => blockFeatureCapabilities(editor, scope)));

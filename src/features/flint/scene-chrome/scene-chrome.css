@@ -1,0 +1,29 @@
+.flint-scene-chrome { position:relative; flex:none; width:100%; min-width:0; overflow:hidden; background:#eee9df; border-radius:7px; }
+.flint-scene-chrome__canvas { position:absolute; inset:0; display:block; width:100%; height:100%; touch-action:pan-y; }
+.flint-scene-chrome__semantics { display:flex; flex-wrap:wrap; gap:8px; padding:10px; font:13px system-ui,sans-serif; }
+.flint-scene-chrome__semantics > strong { flex-basis:100%; font:18px Georgia,serif; }
+.flint-application .flint-scene-chrome__semantics button { padding:8px 12px; color:#34332e; background:#f7f4eb; border:1px solid #a69c87; border-radius:5px; cursor:pointer; }
+.flint-scene-chrome__semantics button:focus-visible { outline:2px solid #526c74; outline-offset:2px; }
+/* A semantic counterpart, not a transparent pointer overlay. Canvas hit testing
+   and labels share the scene's layout; keyboard focus is drawn in that scene. */
+.flint-scene-chrome[data-scene-ready=true] > .flint-scene-chrome__semantics { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.flint-application[data-scene-chrome=true] > .flint-surfaces { position:relative; }
+.flint-application[data-scene-chrome=true] .flint-rail { padding:0; overflow:hidden; display:flex; flex-direction:column; background:#f5f1e8; }
+.flint-application[data-scene-chrome=true] :is(.flint-application__editor,.flint-html-content) { background:#faf7ef; }
+.flint-application[data-scene-chrome=true] .flint-html-content { min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; }
+.flint-application[data-scene-chrome=true] .flint-rail > .flint-html-content { flex:1; padding:14px; }
+.flint-application[data-scene-chrome=true][data-library=false] .flint-application__vault,
+.flint-application[data-scene-chrome=true][data-context=false] .flint-context { display:none; }
+.flint-scene-settings { flex:none; max-height:260px; padding:10px 16px; border-bottom:1px solid #b8ad96; }
+.flint-scene-settings .flint-light-controls__panel { position:static; width:auto; display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; box-shadow:none; }
+.flint-scene-settings .flint-light-controls__panel label { min-width:140px; }
+.flint-scene-settings .flint-light-controls__panel small { flex-basis:100%; }
+@container flint (max-width:939px) {
+  .flint-application[data-scene-chrome=true] .flint-rail { display:none; }
+  .flint-application[data-scene-chrome=true][data-narrow-panel=library] .flint-application__vault,
+  .flint-application[data-scene-chrome=true][data-narrow-panel=context] .flint-context { display:flex; }
+}
+@media (forced-colors:active) {
+  .flint-scene-chrome { background:Canvas; color:CanvasText; }
+  .flint-application .flint-scene-chrome__semantics button { background:ButtonFace; color:ButtonText; border-color:ButtonText; }
+}

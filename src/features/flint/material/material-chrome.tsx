@@ -13,7 +13,7 @@ const presentations = new WeakMap<HTMLElement, Presentation>();
 export const materialChromePresentation = (root: HTMLElement) => presentations.get(root);
 
 /** Solid owns lifetime and opt-out. The editor slot lives outside this component. */
-export function MaterialChrome(props: { root: () => HTMLElement; viewport: () => HTMLElement; layout: () => unknown; lighting?: Lighting }) {
+export function MaterialChrome(props: { root: () => HTMLElement; viewport: () => HTMLElement; layout: () => unknown; lighting?: Lighting; independent?: boolean }) {
   const [enabled, setEnabled] = createSignal(true), [occlusion, setOcclusion] = createSignal(true);
   const [light, setLight] = createSignal<Light>(DEFAULT_LIGHT), [material, setMaterial] = createSignal<SurfaceMaterial>('limestone');
   const [status, setStatus] = createSignal('Loading materials…');
@@ -28,6 +28,8 @@ export function MaterialChrome(props: { root: () => HTMLElement; viewport: () =>
     const start = async () => {
       const ticket = ++generation;
       disposeScene?.(); disposeScene = undefined;
+      // Independent chrome consumes the lighting/material state, never DOM surfaces.
+      if (props.independent) { available(false); setStatus(enabled() ? 'Independent chrome lighting' : 'Simple surfaces'); return; }
       if (!enabled() || colours?.matches || !window.WebGLRenderingContext || typeof ResizeObserver === 'undefined') { available(false); return; }
       try {
         const { createMaterialScene } = await import('./material-scene');

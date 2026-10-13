@@ -10,8 +10,8 @@ import { materializeLocalWorkspace, createWorkspaceSaveBundle, materializeWorksp
 import type { ExistingBlockDto } from "../block-tree/types";
 const disposers: (() => void)[] = [];
 afterEach(() => { disposers.splice(0).reverse().forEach(d => d()); document.body.replaceChildren(); localStorage.clear(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
-function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true, spatialGraph = true) {
-  const editor = new ReactiveEditor(materializeLocalWorkspace(saved ?? { id: "workspace", type: "workspace-block", children: [] }), { features: { flint: enabled, flintMaterialChrome: materialChrome, flintSpatialGraph: spatialGraph, compactEditorChrome: false } });
+function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true, spatialGraph = true, sceneChrome = false) {
+  const editor = new ReactiveEditor(materializeLocalWorkspace(saved ?? { id: "workspace", type: "workspace-block", children: [] }), { features: { flint: enabled, flintMaterialChrome: materialChrome, flintSpatialGraph: spatialGraph, flintSceneChrome: sceneChrome, compactEditorChrome: false } });
   registerApplicationViews(editor); const projection = editor.createView("workspace");
   disposers.push(() => editor.dispose());
   if (!saved && enabled) editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined });
@@ -25,6 +25,29 @@ function setup(enabled = true, saved?: ExistingBlockDto, materialChrome = true, 
 }
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 describe("Flint composite transient hosting", () => {
+  it("uses independent HTML content and native semantic controls when prototype graphics are unavailable", async () => {
+    const f = setup(true, undefined, false, false, true); await tick();
+    const shell = f.host.querySelector<HTMLElement>('.flint-application')!;
+    expect(shell.dataset.sceneChrome).toBe('true');
+    expect(shell.querySelectorAll('.flint-scene-chrome')).toHaveLength(3);
+    expect(shell.querySelector('.flint-material-canvas')).toBeNull();
+    expect(shell.querySelector('[data-scene-control="graph"]')).toBeNull();
+    expect(shell.querySelector('[data-flint-content="entities"] [aria-label="Document backlinks"]')).not.toBeNull();
+    const node = f.text(), mount = f.editor.mounts.get(node.key), before = f.editor.repository.snapshot();
+    f.editor.selections.setPrimary(node.key, node.contentKey, node.viewId, 2, 5);
+    const selection = JSON.stringify(f.editor.selections.sets[node.key]);
+    shell.querySelector('canvas')!.dispatchEvent(new MouseEvent('pointerdown', { bubbles:true, button:0 }));
+    expect(JSON.stringify(f.editor.selections.sets[node.key])).toBe(selection);
+    shell.querySelector<HTMLButtonElement>('[data-scene-control="Properties"]')!.click(); await tick();
+    expect(shell.querySelector('[data-flint-content="entities"] input')).not.toBeNull();
+    expect(f.editor.mounts.get(node.key)).toBe(mount);
+    expect(f.editor.repository.snapshot()).toEqual(before);
+    shell.querySelector<HTMLButtonElement>('[data-scene-control="menu"]')!.click(); await tick();
+    expect(shell.querySelector('[data-scene-control="files"]')).not.toBeNull();
+    shell.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})); await tick();
+    expect(shell.querySelector('[data-scene-control="files"]')).toBeNull();
+    expect(document.activeElement).toBe(shell.querySelector('[data-scene-control="menu"]'));
+  });
   it("switches to the integrated entity Graph without remounting or altering the Document", async () => {
     const f = setup(true, undefined, false); await tick();
     const node=f.text(), mount=f.editor.mounts.get(node.key)!, view=f.views()[0];

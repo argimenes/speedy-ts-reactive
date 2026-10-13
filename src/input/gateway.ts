@@ -299,12 +299,12 @@ export class InputGateway {
     const element = event.target instanceof Element ? event.target : undefined;
     if (element?.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
     if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey &&
-      !element?.closest('button, input, textarea, select, [role="dialog"], [role="menu"], .document-style-bar')) {
+      !element?.closest('button, input, textarea, select, [role="dialog"], [role="menu"], .document-style-bar, [data-cross-text-controls]')) {
       const resolved = this.mounts.resolveEvent(event);
       this.selections.clearExcept(resolved?.handle.inputPolicy === "standoff" ? resolved.nodeKey : undefined);
     }
     if (this.blockSelection.state.items.length && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey &&
-      !element?.closest('button, [role="dialog"], [role="menu"], .document-style-bar')) {
+      !element?.closest('button, [role="dialog"], [role="menu"], .document-style-bar, [data-cross-text-controls]')) {
       const resolved = this.mounts.resolveEvent(event);
       if (resolved && !this.overlays.isOverlayKey(resolved.nodeKey)) this.blockSelection.clear();
     }

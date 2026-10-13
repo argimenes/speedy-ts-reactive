@@ -19,7 +19,7 @@ const vite=await createServer({plugins:[{
  import {materializeLocalWorkspace} from '/src/reactive-editor/workspace-manifest.ts';
  import '/src/index.css';
  import '/src/demo/workspace-demo.css';
- const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{nativeDocumentPersistence:false,flintProbe:false}});
+ const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{nativeDocumentPersistence:false,flintProbe:false,flintSceneChrome:false}});
  const editor=session.editor;
  editor.commandRegistry.execute('flint.open',{targetKey:session.projection.state.rootKey,args:undefined});
  const win=Object.values(session.projection.state.nodes).find(n=>n.viewType==='window-block');

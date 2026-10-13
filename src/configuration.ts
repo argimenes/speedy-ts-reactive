@@ -30,6 +30,8 @@ export type FeatureFlags = Readonly<{
   phosphorLightingControls: boolean;
   /** Flint-wide material substrate and real environmental occlusion; DOM editor unchanged. */
   flintMaterialChrome: boolean;
+  /** Prototype: self-contained Three.js chrome beside independently scrolling HTML content. */
+  flintSceneChrome: boolean;
   /** Application-wide stone pointer; Alt + wheel rotates it. */
   flintProbe: boolean;
   /** Shared Probe cursor in Spatial and Infinite Canvas presentations. */
@@ -84,6 +86,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   phosphorStudioDrift: true,
   phosphorLightingControls: true,
   flintMaterialChrome: true,
+  flintSceneChrome: true,
   flintProbe: false,
   presentationProbe: false,
   flintSpatialGraph: true,
