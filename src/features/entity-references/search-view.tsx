@@ -57,12 +57,12 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   if(!canonicalName().trim())throw Error('Enter a canonical name');
   const retrying=!!attempt();
   if(!attempt())setAttempt({id:crypto.randomUUID(),operationId:crypto.randomUUID(),name:canonicalName()});
-  setCreating(true);setOutcome('Creation outcome unconfirmed');
+  setCreating(true);setOutcome('Creating Entity…');
   try{
    const e=await service.create(attempt()!);if(!alive)return;
    setCreated(e);setDetails(e);setRename(e.name);setOutcome('Created but not linked');
    try{bind(e);}catch(reason){setValid(false);setError(`${e.name} was created, but the original text could no longer be linked. ${String(reason)}`);panel.allowDocumentInput(true);}
-  }catch(error){if(alive&&!retrying&&(error as any)?.entityCreationOutcome==='not-created'){setOutcome('Not created');setAttempt(undefined);}throw error;}finally{if(alive)setCreating(false);}
+  }catch(error){if(alive){if(!retrying&&(error as any)?.entityCreationOutcome==='not-created'){setOutcome('Not created');setAttempt(undefined);}else setOutcome('Creation outcome unconfirmed');}throw error;}finally{if(alive)setCreating(false);}
  });
  const recover=()=>void run(async()=>{
   const e=created();if(!e)throw Error('No confirmed Entity creation to recover');
@@ -144,7 +144,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
    <table aria-label="Entity results" tabIndex={0}><thead><tr><th>Entity</th><th>Why it matched</th><th>Actions</th></tr></thead><tbody><For each={pageRows()}>{(row,i)=><tr classList={{current:current()===i()}}><td>{i()} · {row.name}<small>{row.id}</small></td><td><For each={row.evidence.slice(0,3)}>{e=><div>{e.kind==='name'?'Canonical-name match':e.kind==='alias'?'Alias match':e.kind==='mention'?'Mention match':'Document evidence'}: {e.text}</div>}</For></td><td><button disabled={working()||!valid()} aria-label={`Select ${row.name}`} onClick={()=>select(row.id)}>Link</button><button disabled={working()} onClick={()=>showDetails(row.id)}>Details / aliases</button><button disabled={working()||!valid()||target().entityRanges.length!==1} onClick={()=>select(row.id,true)}>Replace &amp; Link</button></td></tr>}</For></tbody></table>
    <footer><button disabled={!page()} onClick={()=>{setPage(n=>n-1);setCurrent(0);}}>Previous page</button><span>Page {page()+1}</span><button disabled={(page()+1)*10>=(result()?.candidates.length??0)} onClick={()=>{setPage(n=>n+1);setCurrent(0);}}>Next page</button></footer>
    <button onClick={()=>{setCreateForm(true);if(!attempt())setCanonicalName(query().trim()||target().entityQuery);}}>+ Create Entity</button>
-   <Show when={createForm()}><section aria-label="Create canonical Entity"><label>Canonical name<input aria-label="Canonical name" value={canonicalName()} disabled={!!attempt()} maxLength={1000} onInput={e=>setCanonicalName(e.currentTarget.value)}/></label><button disabled={working()||!!created()||(!valid()&&!attempt())} onClick={create}>{attempt()?'Retry creation and link':'Create and link'}</button><p role="status">{outcome()}</p><small>Creation is independent of linking. Cancel after dispatch cannot undo creation.</small></section></Show>
+   <Show when={createForm()}><section aria-label="Create canonical Entity"><label>Canonical name<input aria-label="Canonical name" value={canonicalName()} disabled={!!attempt()} maxLength={1000} onInput={e=>setCanonicalName(e.currentTarget.value)}/></label><button disabled={working()||!!created()||(!valid()&&!attempt())} onClick={create}>{creating()?'Creating…':attempt()?'Retry creation and link':'Create and link'}</button><p role="status">{outcome()}</p><small>Creation is independent of linking. Cancel after dispatch cannot undo creation.</small></section></Show>
    <Show when={created()&&!valid()}><button onPointerDown={e=>e.preventDefault()} disabled={working()} onClick={recover}>Bind to new selection</button></Show>
    <Show when={details()}>{entity=><section aria-label="Canonical Entity details"><strong>{entity().name}</strong><small>{entity().id}</small>
     <label>Preferred name<input aria-label="Preferred name" value={rename()} onInput={e=>setRename(e.currentTarget.value)}/></label><button disabled={working()} onClick={()=>void run(async()=>{setDetails(await service!.rename({id:entity().id,name:rename(),expected:entity().revision,operationId:crypto.randomUUID()}));setRetry(n=>n+1);})}>Update name</button>

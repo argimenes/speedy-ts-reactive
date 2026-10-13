@@ -113,7 +113,7 @@ it('selector reads ignore source-file changes while source-authorized operations
 },30000);
 it('lost mutation response is explicitly unconfirmed and retrying the same attempt does not create another Entity',async()=>{
  const f=await fixture(),fetch=globalThis.fetch,input={id:randomUUID(),operationId:randomUUID(),name:'Leonardo da Vinci'};let lost=true;
- vi.stubGlobal('fetch',async(url:any,o:any)=>{const response=await fetch(url,o);if(lost&&String(url).endsWith('/entities')&&JSON.parse(o.body).request.op==='create'){lost=false;await response.arrayBuffer();throw Error('simulated response lost after commit');}return response;});
+ vi.stubGlobal('fetch',async(url:any,o:any)=>{const response=await fetch(url,o);if(lost&&String(url).endsWith('/entity-mutate')&&JSON.parse(o.body).request.op==='create'){lost=false;await response.arrayBuffer();throw Error('simulated response lost after commit');}return response;});
  await expect(f.service.create(input)).rejects.toThrow(/response lost/);expect((await f.service.get(input.id))?.name).toBe(input.name);
  const retry=await f.service.create(input);expect(retry.id).toBe(input.id);await f.settle();expect((await f.query('Leonardo da Vinci','name','vault','exact')).candidates.map(c=>c.id)).toEqual([input.id]);expect(f.editor.node(f.node.key)!.payload.standoffProperties).toHaveLength(1);
 },30000);
@@ -130,12 +130,27 @@ it('unresolved saved definitions keep mention resolution and vault counts explic
  expect((await f.query('Firenze','mention')).complete).toBe(false);
  await expect(f.service.summaries([f.entityId])).rejects.toThrow(/incomplete/i);
 },30000);
-it('identifies a missing source binding before creation dispatch without claiming an uncertain Entity commit',async()=>{
- const f=await fixture(),proof=f.native.knowledgeEvidence('a');
- const spy=vi.spyOn(f.native,'knowledgeEvidence').mockReturnValue({...proof,location:undefined,byteHash:undefined});
- const fetchSpy=vi.spyOn(globalThis,'fetch');
- await expect(f.service.create({id:randomUUID(),operationId:randomUUID(),name:'Mutable OS'})).rejects.toMatchObject({entityCreationOutcome:'not-created',message:expect.stringContaining('Save this Document')});
- expect(fetchSpy).not.toHaveBeenCalled();spy.mockRestore();fetchSpy.mockRestore();
+it('creates 1842 without document preparation, source proofs, or traversal and invalidates cached absence',async()=>{
+ const f=await fixture(true,false);
+ expect((await f.query('1842','name')).candidates).toHaveLength(0);
+ const spies=[
+  vi.spyOn(f.native,'knowledgeEvidence').mockImplementation(()=>{throw Error('No source validation');}),
+  vi.spyOn(f.native,'discoverVault').mockRejectedValue(Error('No vault discovery')),
+  vi.spyOn(f.editor.repository,'readCanonicalResourceBoundary').mockImplementation(()=>{throw Error('No boundary audit');}),
+  vi.spyOn(f.sql.store,'discover').mockRejectedValue(Error('No server discovery')),
+  vi.spyOn(f.sql.store,'readScopeFence').mockRejectedValue(Error('No scope scan')),
+ ];
+ try{
+  const input={id:randomUUID(),operationId:randomUUID(),name:'1842'};
+  const created=await f.service.create(input);expect(created).toMatchObject({id:input.id,name:'1842'});
+  expect((await f.service.create(input)).id).toBe(input.id);
+  expect((await f.query('1842','name')).candidates.map(c=>c.id)).toEqual([input.id]);
+  for(const spy of spies)expect(spy).not.toHaveBeenCalled();
+ }finally{for(const spy of spies)spy.mockRestore();}
+},30000);
+it('rejects creation before dispatch when the invoking Vault context is unavailable',async()=>{
+ const f=await fixture();f.select(undefined);const fetch=vi.spyOn(globalThis,'fetch');
+ try{await expect(f.service.create({id:randomUUID(),operationId:randomUUID(),name:'1842'})).rejects.toMatchObject({entityCreationOutcome:'not-created'});expect(fetch).not.toHaveBeenCalled();}finally{fetch.mockRestore();}
 },30000);
 
 it('DocumentWindows resolve SQLite names and vault counts without Flint, and reject closed occurrences',async()=>{

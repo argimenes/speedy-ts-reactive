@@ -36,6 +36,16 @@ it('retries unconfirmed creation with the same supplied identity and request',as
  const f=setup();vi.mocked(f.service.create).mockRejectedValueOnce(Error('Response lost'));f.open();f.button('+ Create Entity').click();f.button('Create and link').click();await vi.advanceTimersByTimeAsync(0);expect(f.panel().textContent).toContain('Creation outcome unconfirmed');expect(f.editor.repository.canUndo()).toBe(false);
  f.button('Retry creation and link').click();await vi.advanceTimersByTimeAsync(0);expect(vi.mocked(f.service.create).mock.calls[1][0]).toEqual(vi.mocked(f.service.create).mock.calls[0][0]);
 });
+it('shows an in-progress create state until the Entity write is confirmed',async()=>{
+ const f=setup('1842');let finish!:(value:any)=>void;
+ vi.mocked(f.service.create).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+ f.open();f.button('+ Create Entity').click();f.button('Create and link').click();
+ expect(f.button('Creating…').disabled).toBe(true);
+ expect(f.panel().textContent).toContain('Creating Entity…');
+ expect(f.panel().textContent).not.toContain('Creation outcome unconfirmed');
+ const input=vi.mocked(f.service.create).mock.calls[0][0];finish({...input,revision:0,aliases:[]});await vi.advanceTimersByTimeAsync(0);
+ expect(f.panel()).toBeNull();expect(f.node().payload.standoffProperties).toEqual([expect.objectContaining({value:input.id,start:0,end:3})]);
+});
 it('retains created-but-not-linked identity and binds a newly validated selection',async()=>{
  const f=setup();let finish!:(e:any)=>void;vi.mocked(f.service.create).mockImplementation(input=>new Promise(r=>{finish=r;}));f.open();f.button('+ Create Entity').click();f.button('Create and link').click();
  f.editor.commands.replaceInlineRange(f.node().key,0,0,'Now ');f.entities.set('created',{id:'created',name:'Leonardo',revision:0,aliases:[]});finish(f.entities.get('created'));await vi.advanceTimersByTimeAsync(0);expect(f.panel().textContent).toContain('created, but');expect(f.node().payload.standoffProperties).toBeUndefined();

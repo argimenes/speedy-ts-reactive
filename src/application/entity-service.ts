@@ -97,6 +97,17 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   if(!root)throw Error('Select a Vault to resolve Entities.');
   return root;
  };
+ let mutationVault:string|undefined;
+ const mutate=async(input:any,signal?:AbortSignal,onDispatch?:()=>void)=>{
+  const root=await lookupRoot(signal);
+  if(mutationVault&&mutationVault!==root)throw Error('Entity mutation Vault changed; reopen the selector');
+  mutationVault=root;
+  const wireInput=Object.hasOwn(input,'attributes')?{...input,attributes:encodeAuthoredValue(input.attributes)}:input;
+  signal?.throwIfAborted();onDispatch?.();
+  const result=await request('entity-mutate',{vault:root,policy:policy(),request:wireInput},signal);
+  if(result.entity?.attributes!==undefined)result.entity.attributes=decodeAuthoredValue(result.entity.attributes);
+  return result.entity;
+ };
  return {
   names:async(ids,signal)=>(await listingCall({op:'names',ids},signal)).rows,
   dbMentions:async(ids,signal)=>(await listingCall({op:'db-mentions',ids},signal)).rows,
@@ -122,10 +133,10 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
    const complete=!diagnostics.length;
    return {rows:result.entities.map((e:CanonicalEntity)=>({id:e.id,name:e.name,...(complete?{mentions:counts.get(e.id)??0}:{})})),complete,diagnostics:[...new Set(diagnostics)].slice(0,32)};
   },
-  async create(input,signal){let dispatched=false;try{return (await call({op:'create',...input},signal,()=>{dispatched=true;})).entity;}catch(error){if(!dispatched)throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});throw error;}},
-  async rename(input){return (await call({op:'rename',...input})).entity;},
-  async update(input,signal){return (await call({op:'update',...input},signal)).entity;},
-  async alias(input){return (await call(input)).entity;},
+  async create(input,signal){let dispatched=false;try{return await mutate({op:'create',...input},signal,()=>{dispatched=true;});}catch(error){if(!dispatched)throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});throw error;}},
+  async rename(input){return mutate({op:'rename',...input});},
+  async update(input,signal){return mutate({op:'update',...input},signal);},
+  async alias(input){return mutate(input);},
   async search(query,signal,onProgress){
    const vaultRoot=await lookupRoot(signal);
    const current=()=>{signal.throwIfAborted();lookupCurrent();};

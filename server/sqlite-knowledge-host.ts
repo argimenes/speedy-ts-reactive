@@ -139,6 +139,31 @@ export class SqliteKnowledgeHost {
     finally {if(mutation)this.enqueue(e,false);}
     }catch(error){if(!dispatched&&body.request?.op==='create')throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});throw error;}
   }
+  /** Explicit Entity edits belong to the selected Vault, not the source file.
+   * Keep one audited writer and give the commit priority over saved indexing. */
+  async entityMutate(body:any,signal?:AbortSignal){
+    let dispatched=false;
+    try{
+      if(this.closed||this.options.entitiesEnabled===false)throw Error('Canonical Entity service is unavailable');
+      if(this.options.readOnly)throw Error('Canonical Entity storage is read-only');
+      if(typeof body.vault!=='string'||!['create','rename','update','alias-add','alias-update','alias-remove'].includes(body.request?.op))throw Error('Invalid Entity mutation');
+      signal?.throwIfAborted();
+      // Do not establish a new Vault as a side effect of choosing a name.
+      await this.store.resolve(path.posix.join(body.vault,'.mutable/mutable.db'));
+      return await this.foreground(async()=>{
+        const opened=await this.acquireContext(body.vault,normalizePolicy(body.policy),true);
+        try{
+          signal?.throwIfAborted();
+          const e=this.entry(opened.lease);if(!e.client)throw Error('Canonical Entity storage is unavailable');
+          dispatched=true;
+          return await e.client.entities(body.request,signal);
+        }finally{await this.release(opened.lease);}
+      });
+    }catch(error){
+      if(!dispatched&&body.request?.op==='create')throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});
+      throw error;
+    }
+  }
   /** Selector reads are vault-scoped, not Document/Save operations. A separate
    * read-only connection keeps them out of the writer's reconciliation queue. */
   async entityLookup(body:any,signal?:AbortSignal){
@@ -252,8 +277,8 @@ export class SqliteKnowledgeHost {
       catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),outcome:'unknown-after-dispatch'});}
       finally{req.off('aborted',cancel);res.off('close',cancel);}
     });
-    for(const route of ['entities','entity-lookup'])router.post('/'+route,async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
-      try{const data=await (route==='entities'?this.entities(req.body??{},c.signal):this.entityLookup(req.body??{},c.signal));if(!c.signal.aborted)res.json({Success:true,Data:data});}
+    for(const route of ['entities','entity-lookup','entity-mutate'])router.post('/'+route,async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
+      try{const data=await (route==='entities'?this.entities(req.body??{},c.signal):route==='entity-mutate'?this.entityMutate(req.body??{},c.signal):this.entityLookup(req.body??{},c.signal));if(!c.signal.aborted)res.json({Success:true,Data:data});}
       catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),...((error as any)?.entityCreationOutcome==='not-created'?{entityCreationOutcome:'not-created'}:{})});}
       finally{req.off('aborted',cancel);res.off('close',cancel);}
     });
