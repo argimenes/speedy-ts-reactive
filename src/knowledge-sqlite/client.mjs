@@ -8,10 +8,15 @@ import path from 'node:path';
 export async function openSqliteFoundation(options) {
   const { timeoutMs = 30000, ...configuration } = options;
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) throw Error('Invalid worker timeout');
+  // Selector readers open an existing DB only. They neither establish a Vault
+  // nor acquire a writer/indexing lease, so they must not scan its documents.
+  if(configuration.entityReader && (!configuration.readOnly || configuration.initialize))throw Error('Entity readers must be read-only');
   let releaseScope;
-  for(let attempt=0;;attempt++){try{releaseScope=lockVaultEstablishment();break;}catch(e){if(!['EAGAIN','EWOULDBLOCK'].includes(e.code)||attempt>=100)throw e;await new Promise(resolve=>setTimeout(resolve,20));}}
-  try{inspectVaultScope(configuration.vault);}catch(e){releaseScope();throw e;}
-  let worker;try{worker = new Worker(path.join(path.dirname(fileURLToPath(import.meta.url)), 'worker.mjs'), { workerData: {...configuration,scopeValidated:true} });}catch(e){releaseScope();throw e;}
+  if(!configuration.entityReader){
+   for(let attempt=0;;attempt++){try{releaseScope=lockVaultEstablishment();break;}catch(e){if(!['EAGAIN','EWOULDBLOCK'].includes(e.code)||attempt>=100)throw e;await new Promise(resolve=>setTimeout(resolve,20));}}
+   try{inspectVaultScope(configuration.vault);}catch(e){releaseScope();throw e;}
+  }
+  let worker;try{worker = new Worker(path.join(path.dirname(fileURLToPath(import.meta.url)), 'worker.mjs'), { workerData: {...configuration,scopeValidated:true} });}catch(e){releaseScope?.();throw e;}
   const pending = new Map(); let next = 0, pendingBytes = 0, dead = false, closing = false, startup, unlock;
   let readyResolve, readyReject;
   const ready = new Promise((resolve, reject) => { readyResolve = resolve; readyReject = reject; });
@@ -37,7 +42,7 @@ export async function openSqliteFoundation(options) {
     pending.delete(message.id); pendingBytes -= task.byteSize; clearTimeout(task.timer);
     if (message.error) task.reject(Error(message.error)); else task.resolve(message.value);
   });
-  try { await ready; } catch (e) { await worker.terminate(); throw e; } finally { releaseScope(); }
+  try { await ready; } catch (e) { await worker.terminate(); throw e; } finally { releaseScope?.(); }
   const request = (operation, directory, payload) => {
     if (dead || closing) return Promise.reject(Error('SQLite worker is closed'));
     if (pending.size >= 32) return Promise.reject(Error('SQLite worker queue is full'));
@@ -61,6 +66,7 @@ export async function openSqliteFoundation(options) {
     // Internal host capabilities; not exposed through a browser/request route.
     inventory:()=>request('inventory'),resourceProjection:resourceId=>request('resource-projection',undefined,{resourceId}),
     entities:(payload,signal)=>cancellable('entities',payload,signal),
+    entityLookup:(payload,signal)=>cancellable('entity-lookup',payload,signal),
     semantics:(payload,signal)=>cancellable('semantics',payload,signal),
     auditStatus:()=>request('audit-status'),
     operationOutcome:operationId=>request('operation-outcome',undefined,{operationId}),

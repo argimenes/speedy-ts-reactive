@@ -1,15 +1,13 @@
 import type {ReactiveEditor} from '../reactive-editor/editor';
 import type {DocumentVaultLease} from './document-vault';
-import type {FactsQueryProvider} from './facts-query-provider';
-import type {EntityService,EntityCandidate,EntityEvidence,CanonicalEntity} from '../feature-api/entities';
+import {waitForQuery,type FactsQueryProvider} from './facts-query-provider';
+import type {EntityService,EntityCandidate,CanonicalEntity} from '../feature-api/entities';
 import {nativeDocumentSession} from '../persistence/native-session';
 import {WorkSlice} from '../knowledge/scheduler';
-import {observeLive} from '../knowledge/live-observer';
 import {encodeAuthoredValue,decodeAuthoredValue} from '../history/preplan-spike/wire';
 type Context={accepts(key:string):boolean;vault():DocumentVaultLease;facts?:FactsQueryProvider;prepare?():Promise<void>;listingVault?():Promise<string>};
 const contexts=new WeakMap<ReactiveEditor,Set<Context>>();
 export function registerEntityContext(editor:ReactiveEditor,context:Context){let set=contexts.get(editor);if(!set)contexts.set(editor,set=new Set());set.add(context);return()=>set!.delete(context);}
-const fold=(s:string)=>s.normalize('NFKC').toLowerCase();
 async function request(action:string,body:unknown,signal?:AbortSignal){
  const response=await fetch('/api/sqlite/knowledge/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});
  if(!response.body)throw Error('Entity service unavailable');const reader=response.body.getReader(),parts:Uint8Array[]=[];let length=0;
@@ -32,7 +30,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   if(!editor.features.sqliteEntities||!context?.accepts(owner))throw Error('Open this Document in one verified Mutable Vault to resolve Entities.');
   if(context.prepare&&!vault){
    preparing??=context.prepare().then(()=>{if(!alive||!context.accepts(owner))throw Error('Entity resolver closed or Document unavailable');vault=context.vault();}).finally(()=>preparing=undefined);
-   await preparing;
+   await waitForQuery(preparing,signal);
   }
   signal?.throwIfAborted();
  };
@@ -66,7 +64,7 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   if(proof.pending||!proof.location||!proof.byteHash)throw Error('Save or recover this Document in the selected Vault before resolving Entities.');
   return {resourceId:id,location:proof.location,byteHash:proof.byteHash};
  };
- const listingCall=async(op:string,ids:string[],signal?:AbortSignal)=>{
+ const listingCall=async(input:Record<string,unknown>,signal?:AbortSignal)=>{
   signal?.throwIfAborted();const source=listingSource();
   if(!listingLease){
    listingOpening??=(async()=>{
@@ -77,18 +75,32 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
     if(!alive){await request('release',{lease:opened.lease});throw Error('Entity resolver closed');}
     listingLease=opened.lease;
    })().finally(()=>listingOpening=undefined);
-   await listingOpening;
+   await waitForQuery(listingOpening,signal);
   }
   signal?.throwIfAborted();listingSource();
-  const result=await request('entities',{lease:listingLease,source,request:{op,ids}},signal);
+  const result=await request('entities',{lease:listingLease,source,request:input},signal);
   signal?.throwIfAborted();
   if(JSON.stringify(listingSource())!==JSON.stringify(source))throw Error('Entity source changed');
-  return result.rows;
+  return result;
+ };
+ // Selection reads require only the invoking context and selected Vault. They
+ // do not inspect source bytes, Save state, ownership boundaries or document Facts.
+ const lookupCurrent=()=>{
+  if(!alive||!editor.features.sqliteEntities||!context?.accepts(owner))throw Error('Open this Document in one verified Mutable Vault to resolve Entities.');
+  if(vault&&(!vault.isAlive()||context.vault()!==vault))throw Error('Entity lookup Vault changed');
+  if(!context.listingVault&&!context.vault()?.isAlive())throw Error('Entity lookup Vault is unavailable');
+ };
+ const lookupRoot=async(signal?:AbortSignal)=>{
+  signal?.throwIfAborted();lookupCurrent();
+  const root=context!.listingVault?await waitForQuery(context!.listingVault(),signal):context!.vault().root;
+  signal?.throwIfAborted();lookupCurrent();
+  if(!root)throw Error('Select a Vault to resolve Entities.');
+  return root;
  };
  return {
-  names:(ids,signal)=>listingCall('names',ids,signal),
-  dbMentions:(ids,signal)=>listingCall('db-mentions',ids,signal),
-  async get(id,signal){const result=await call({op:'get',id},signal);check();return result.entity;},
+  names:async(ids,signal)=>(await listingCall({op:'names',ids},signal)).rows,
+  dbMentions:async(ids,signal)=>(await listingCall({op:'db-mentions',ids},signal)).rows,
+  async get(id,signal){const vault=await lookupRoot(signal),result=await request('entity-lookup',{vault,request:{op:'get',id}},signal);lookupCurrent();if(result.entity?.attributes!==undefined)result.entity.attributes=decodeAuthoredValue(result.entity.attributes);return result.entity;},
   async summaries(ids,signal){
    await ready(signal);
    const revision=editor.repository.state.revision,signature=vault?.signature();
@@ -114,38 +126,28 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   async rename(input){return (await call({op:'rename',...input})).entity;},
   async update(input,signal){return (await call({op:'update',...input},signal)).entity;},
   async alias(input){return (await call(input)).entity;},
-  async search(query,signal){
-   await ready(signal);
-   check();const revision=editor.repository.state.revision,signature=vault!.signature();
-   const current=()=>{signal.throwIfAborted();check();if(editor.repository.state.revision!==revision||vault!.signature()!==signature)throw Error('Entity resolution evidence changed');};
-   const local=await observeLive(editor.repository,id,policy(),{check:current}),diagnostics=[...local.facts.diagnostics];
-   let sources=[local.facts],validate=async()=>current();
-   if(query.scope==='vault'&&(query.stream==='all'||query.stream==='mention')){
-    if(context!.facts){const scope=await context!.facts.prepare(vault!,signal);sources=[local.facts,...scope.sources.map(s=>s.facts).filter(f=>f.id!==local.facts.id)];diagnostics.push(...scope.diagnostics,...sources.flatMap(f=>f.diagnostics));validate=async()=>{await scope.validate();current();};}
-    else diagnostics.push('Vault mention coverage unavailable; current Document only.');
+  async search(query,signal,onProgress){
+   const vaultRoot=await lookupRoot(signal);
+   const current=()=>{signal.throwIfAborted();lookupCurrent();};
+   const base={op:'search',query:query.query,match:query.match,...(query.scope==='document'?{resourceId:id}:{}),refresh:query.refresh};
+   const candidates=new Map<string,EntityCandidate>();
+   const diagnostics:string[]=[];
+   const append=(result:any)=>{
+    diagnostics.push(...result.diagnostics);
+    for(const m of result.matches){
+     let row=candidates.get(m.id);
+     if(!row){if(candidates.size===100){diagnostics.push('Candidate limit reached; refine the query.');continue;}candidates.set(m.id,row={id:m.id,name:m.name,evidence:[]});}
+     if(row.evidence.length<50)row.evidence.push({kind:m.kind,text:m.text,...(m.kind==='mention'?{resourceId:m.resourceId,mentionId:m.mentionId,ranges:[{blockId:m.blockId,start:m.start,end:m.end}]}:{})});
+    }
+   };
+   const snapshot=()=>({candidates:[...candidates.values()].map(row=>({...row,evidence:[...row.evidence]})).sort((a,b)=>a.name.localeCompare(b.name)||a.id.localeCompare(b.id)),complete:!diagnostics.length,diagnostics:[...new Set(diagnostics)],current});
+   append(await request('entity-lookup',{vault:vaultRoot,request:{...base,stream:query.stream}},signal));current();
+   if(query.stream==='all'){
+    onProgress?.({...snapshot(),complete:false,diagnostics:[...diagnostics,'Searching saved indexed mentions.']});
+    try{append(await request('entity-lookup',{vault:vaultRoot,request:{...base,stream:'mention'}},signal));}
+    catch(error){current();diagnostics.push('Saved mention lookup unavailable: '+String(error));}
    }
-   const locals=new Map<string,number>();for(const m of local.facts.mentions)if(m.kind==='entity')locals.set(m.targetId,(locals.get(m.targetId)??0)+1);
-   const candidates=new Map<string,EntityCandidate>(),entities=new Map<string,CanonicalEntity>();let sqlRevision:string|undefined;
-   const verified=async(input:any)=>{const r=await call(input,signal);current();if(sqlRevision&&sqlRevision!==r.revision)throw Error('Canonical Entity knowledge changed; retry');sqlRevision=r.revision;return r;};
-   const add=(entity:{id:string;name:string},evidence:EntityEvidence)=>{if(query.scope==='document'&&!locals.has(entity.id))return;let row=candidates.get(entity.id);if(!row){if(candidates.size===100){diagnostics.push('Candidate limit reached; refine the query.');return;}candidates.set(entity.id,row={...entity,evidence:[],localMentions:locals.get(entity.id)??0});}if(row.evidence.length<50)row.evidence.push(evidence);else diagnostics.push('Mention evidence truncated.');};
-   const matches=(s:string)=>query.match==='exact'?fold(s)===fold(query.query):fold(s).includes(fold(query.query));
-   const resolve=async(ids:string[])=>{if(ids.length>500){diagnostics.push('Entity resolution limited to 500 identities.');ids=ids.slice(0,500);}for(let i=0;i<ids.length;i+=100){const r=await verified({op:'resolve',ids:ids.slice(i,i+100)});for(const e of r.entities)entities.set(e.id,e);}};
-   if(query.scope==='vault'&&query.stream!=='mention'){
-    const result=await verified({op:'search',query:query.query,stream:query.stream,match:query.match});if(!result.complete)diagnostics.push('Canonical matches truncated; refine the query.');for(const m of result.matches)add(m,{kind:m.kind,text:m.text});
-   }
-   const mentions:Array<{resourceId:string;mention:typeof local.facts.mentions[number]}>=[];
-   outer:for(const f of sources)for(const m of f.mentions){if(m.kind==='entity')mentions.push({resourceId:f.id,mention:m});if(mentions.length>2000)break outer;}
-   if(mentions.length>2000){mentions.length=2000;diagnostics.push('Mention search limited to 2,000 assertions.');}
-   const matching=mentions.filter(({mention:m})=>matches(m.text));
-   await resolve([...new Set([...locals.keys(),...((query.stream==='all'||query.stream==='mention')?matching.map(m=>m.mention.targetId):[])])]);
-   if(query.scope==='document'&&query.stream!=='mention')for(const e of entities.values())if(locals.has(e.id)){
-    if(query.stream!=='alias'&&matches(e.name))add(e,{kind:'name',text:e.name});
-    if(query.stream!=='name')for(const a of e.aliases)if(matches(a.name))add(e,{kind:'alias',text:a.name});
-   }
-   if(query.stream==='all'||query.stream==='mention')for(const {resourceId,mention:m} of matching){const e=entities.get(m.targetId);if(e)add(e,{kind:'mention',text:m.text,resourceId,mentionId:m.id,ranges:m.ranges});else diagnostics.push('Mention target is unresolved in this vault.');}
-   if(query.stream==='all'&&!candidates.size)for(const [entityId,count]of locals){const e=entities.get(entityId);if(e)add(e,{kind:'local',text:`Already mentioned in this Document (${count})`});}
-   await verified({op:'current'});await validate();current();
-   return {candidates:[...candidates.values()].sort((a,b)=>b.localMentions-a.localMentions||a.name.localeCompare(b.name)||a.id.localeCompare(b.id)),complete:!diagnostics.length,diagnostics:[...new Set(diagnostics)].slice(0,32),current};
+   current();return snapshot();
   },
   dispose(){alive=false;if(lease){void request('release',{lease}).catch(()=>{});lease=undefined;}if(listingLease){void request('release',{lease:listingLease}).catch(()=>{});listingLease=undefined;}},
  };

@@ -4,6 +4,7 @@ import { prepareHome } from './paths.mjs';
 import { projectSaved } from './saved-projection.ts';
 import { sqlKnowledgeRead } from './query-services.ts';
 import { randomUUID } from 'node:crypto';
+import { createEntityLookup } from './entity-lookup.mjs';
 let store;
 try {
   if (workerData.restoreFrom && workerData.readOnly) throw Error('Read-only mode cannot restore databases');
@@ -17,6 +18,7 @@ try {
   parentPort.postMessage({ ready: true, restored });
 } catch (e) { parentPort.postMessage({ startupError: e.message }); parentPort.close(); }
 if (store) {
+  const lookup = createEntityLookup();
   let queue = Promise.resolve();
   let staged;
   parentPort.on('message', ({ id, operation, directory, payload }) => {
@@ -25,8 +27,10 @@ if (store) {
         let value;
         const check=()=>{if(payload?.cancellation&&Atomics.load(payload.cancellation,0))throw Error('Saved indexing canceled');};
         check();
+        if(workerData.entityReader && !['entity-lookup','close'].includes(operation))throw Error('Entity reader only accepts lookups');
         if(['inspect-saved','stage-saved'].includes(operation)&&payload.vaultGuid!==store.vaultGuid)throw Error('Saved indexing vault identity mismatch');
         switch (operation) {
+          case 'entity-lookup': value=store.readKnowledge(db=>lookup(db,payload,check));break;
           case 'entities': { const {cancellation,...input}=payload; value=store.entities(input,check);break; }
           case 'semantics': { const {cancellation,...input}=payload; value=store.semantics(input,check);break; }
           case 'audit-status': value=store.auditStatus();break;

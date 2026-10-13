@@ -24,9 +24,69 @@ async function fixture(standalone=false,savedKnowledge=true){
  cleanup.push(async()=>{await factory.dispose();vaults.dispose();if(session)session.dispose();else editor.dispose();});const vault=await vaults.acquire('vault');if(session)await workspaceOpen(session).serverDocument({folder:'vault',filename:'a.mutable.json'},new AbortController().signal);else await native.open({folder:'vault',filename:'a.mutable.json'});const view=session?.projection??editor.createView('entity-source'),node=Object.values(view.state.nodes).find(n=>n.payload.id==='a-text'&&(!session||editor.blockQueries.ancestors(n.key).some(a=>a.viewType==='document-window-block')))!;expect(node).toBeTruthy();const facts=new FactsQueryProvider(factory);facts.use(vault);cleanup.push(()=>facts.dispose());let selected=vault;
  if(!session)cleanup.push(registerEntityContext(editor,{accepts:key=>key===node.key,vault:()=>selected,facts}));const service=entityService(editor,node.key);cleanup.push(()=>service.dispose());const settle=async()=>{await vault.refresh(true);await factory.host.flush();};await settle();
  const query=(query:string,stream:'all'|'name'|'alias'|'mention'='all',scope:'document'|'vault'='vault',match:'exact'|'partial'='partial')=>service.search({query,stream,scope,match},new AbortController().signal);
- return {root,sql,lease,session,editor,native,vault,node,factory,service,query,settle,entityId,select:(v:any)=>selected=v};
+ return {root,sql,lease,session,editor,native,vault,node,factory,facts,service,query,settle,entityId,select:(v:any)=>selected=v};
 }
-it('real HTTP/worker resolves canonical names, curated aliases and live/saved mentions as independent evidence',async()=>{
+it('partial canonical searches bypass Vault discovery and saved Facts, including the first DocumentWindow search',async()=>{
+ const f=await fixture(true,false),name='The abbey of Prince Prospero';
+ const source={resourceId:'a',location:{folder:'vault',filename:'a.mutable.json'},byteHash:f.native.knowledgeEvidence('a').byteHash};
+ await f.sql.entities({lease:f.lease.lease,source,request:{op:'create',id:f.entityId,operationId:randomUUID(),name}});
+ await f.sql.entities({lease:f.lease.lease,source,request:{op:'alias-add',entityId:f.entityId,id:randomUUID(),operationId:randomUUID(),name:'Prospero’s refuge'}});
+ const discovery=vi.spyOn(f.native,'discoverVault').mockRejectedValue(Error('Vault discovery must not block name search'));
+ const serverDiscovery=vi.spyOn(f.sql.store,'discover').mockRejectedValue(Error('Search must not discover the Vault'));
+ const fence=vi.spyOn(f.sql.store,'readScopeFence').mockRejectedValue(Error('Search must not traverse the Vault'));
+ try{
+  expect(await f.query('abbey','name')).toMatchObject({complete:true,candidates:[{id:f.entityId,name,evidence:[{kind:'name',text:name}]}]});
+  expect((await f.query('ABBEY','name')).candidates).toHaveLength(1);
+  expect((await f.query('abbey','name','vault','exact')).candidates).toHaveLength(0);
+  expect((await f.query('refuge','alias')).candidates[0]).toMatchObject({id:f.entityId,evidence:[{kind:'alias',text:'Prospero’s refuge'}]});
+  expect(discovery).not.toHaveBeenCalled();expect(serverDiscovery).not.toHaveBeenCalled();expect(fence).not.toHaveBeenCalled();
+  for(const op of ['search','current']){
+   const request={op,query:'abbey',stream:'name',match:'partial'};
+   await expect(f.sql.entities({lease:f.lease.lease,source:{...source,byteHash:'wrong'},request})).rejects.toThrow(/changed/);
+   await expect(f.sql.entities({lease:f.lease.lease,source:{...source,resourceId:'forged'},request})).rejects.toThrow(/identity/);
+  }
+ }finally{discovery.mockRestore();serverDiscovery.mockRestore();fence.mockRestore();}
+},30000);
+it('name lookup and selection make no document reads or boundary audits, even without a saved source',async()=>{
+ const f=await fixture(true,false),source={resourceId:'a',location:{folder:'vault',filename:'a.mutable.json'},byteHash:f.native.knowledgeEvidence('a').byteHash};
+ await f.sql.entities({lease:f.lease.lease,source,request:{op:'create',id:f.entityId,operationId:randomUUID(),name:'Rome'}});
+ const spies=[
+  vi.spyOn(f.editor.repository,'readCanonicalResourceBoundary').mockImplementation(()=>{throw Error('Unexpected boundary audit');}),
+  vi.spyOn(f.editor.repository,'readCanonicalResourceBoundaryCooperative').mockRejectedValue(Error('Unexpected traversal')),
+  vi.spyOn(f.native,'knowledgeEvidence').mockImplementation(()=>{throw Error('Unexpected source proof');}),
+  vi.spyOn(f.native,'discoverVault').mockRejectedValue(Error('Unexpected discovery')),
+  vi.spyOn(f.sql.store,'read').mockRejectedValue(Error('Unexpected document read')),
+ ];
+ const fetch=vi.spyOn(globalThis,'fetch');
+ try{
+  expect((await f.query('Rome','name')).candidates.map(c=>c.name)).toEqual(['Rome']);
+  expect((await f.service.get(f.entityId))?.name).toBe('Rome');
+  expect((await f.query('Rome','name')).candidates).toHaveLength(1);
+  for(const spy of spies)expect(spy).not.toHaveBeenCalled();
+  const requests=fetch.mock.calls.filter(([url])=>String(url).includes('/sqlite/')).map(([url])=>String(url));
+  expect(requests).toEqual(Array(3).fill('/api/sqlite/knowledge/entity-lookup'));
+ }finally{fetch.mockRestore();for(const spy of spies)spy.mockRestore();}
+},30000);
+it('All publishes canonical matches then merges indexed mentions without preparing document Facts',async()=>{
+ const f=await fixture(),name='The abbey of Prince Prospero';
+ await f.service.create({id:f.entityId,operationId:randomUUID(),name});
+ await fs.writeFile(path.join(f.root,'vault/b.mutable.json'),bytes('b',f.entityId,'abbey'));await f.sql.refresh(f.lease.lease,true);await f.settle();
+ const prepare=vi.spyOn(f.facts,'prepare').mockRejectedValue(Error('Selector must not extract Facts'));
+ const progress=vi.fn(),controller=new AbortController();
+ const search=f.service.search({query:'abbey',stream:'all',scope:'vault',match:'partial'},controller.signal,progress);
+ try{
+  const result=await search;expect(prepare).not.toHaveBeenCalled();
+  expect(progress).toHaveBeenCalledOnce();
+  const partial=progress.mock.calls[0][0];
+  expect(partial).toMatchObject({complete:false,candidates:[{id:f.entityId,name,evidence:[{kind:'name',text:name}]}]});
+  expect(()=>partial.current()).not.toThrow();
+
+  expect(result.candidates[0].evidence).toEqual(expect.arrayContaining([{kind:'name',text:name},expect.objectContaining({kind:'mention',text:'abbey',resourceId:'b'})]));
+  expect(partial.candidates[0].evidence).toHaveLength(1);
+  controller.abort();expect(()=>partial.current()).toThrow();
+ }finally{await search.catch(()=>{});prepare.mockRestore();}
+},30000);
+it('real HTTP/worker resolves canonical names, curated aliases and explicitly saved indexed mentions',async()=>{
  const f=await fixture(),before=await fs.readFile(path.join(f.root,'vault/a.mutable.json'));await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});await f.settle();
  expect((await f.query('Florence','name')).candidates[0].id).toBe(f.entityId);
  expect(await f.service.summaries([f.entityId])).toMatchObject({complete:true,rows:[{id:f.entityId,name:'Florence',mentions:2}]});
@@ -35,20 +95,21 @@ it('real HTTP/worker resolves canonical names, curated aliases and live/saved me
  expect(Object.values(f.editor.repository.readState().contents).some(c=>c.payload.id==='b-doc')).toBe(false);
  expect((await f.query('Firenze','mention','document')).candidates).toHaveLength(0);expect((await f.query('city','mention','document','exact')).candidates).toHaveLength(0);expect((await f.query('the city','mention','document','exact')).candidates).toHaveLength(1);
  const alias=randomUUID();await f.service.alias({op:'alias-add',entityId:f.entityId,id:alias,name:'Firenze',operationId:randomUUID()});await f.settle();expect((await f.query('Firenze','alias')).candidates[0].evidence[0].kind).toBe('alias');
- const saved=await f.query('city','mention');f.editor.commands.replaceInlineRange(f.node.key,4,8,'town');expect(()=>saved.current()).toThrow();await f.factory.host.flush();expect((await f.query('city','mention','document')).candidates).toHaveLength(0);expect((await f.query('the ','mention','document','exact')).candidates[0]?.id).toBe(f.entityId);
+ const saved=await f.query('city','mention');f.editor.commands.replaceInlineRange(f.node.key,4,8,'town');expect(()=>saved.current()).not.toThrow();
+ const indexed=await f.query('city','mention','document');expect(indexed.candidates).toHaveLength(1);expect(indexed.diagnostics.join(' ')).toContain('unsaved or unindexed');
  expect((await f.service.get(f.entityId))!.aliases.map(a=>a.name)).toEqual(['Firenze']);expect(await fs.readFile(path.join(f.root,'vault/a.mutable.json'))).toEqual(before);
  f.editor.repository.undo();await f.factory.host.flush();expect((await f.query('the city','mention','document','exact')).candidates).toHaveLength(1);
  f.select(undefined);await expect(f.service.get(f.entityId)).rejects.toThrow(/Vault|vault/);
 },30000);
-it('rejects duplicate/source disappearance, forged bindings, wrong vault, cancellation and stale live tokens',async()=>{
+it('selector reads ignore source-file changes while source-authorized operations still reject forged bindings',async()=>{
  const f=await fixture();await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});await f.settle();const result=await f.query('city','mention','document');
  const signal=new AbortController();signal.abort();await expect(f.service.search({query:'x',scope:'vault',stream:'name',match:'partial'},signal.signal)).rejects.toThrow();
  const source={resourceId:'a',location:{folder:'vault',filename:'a.mutable.json'},byteHash:f.native.knowledgeEvidence('a').byteHash};
  await expect(f.sql.entities({lease:f.lease.lease,source:{...source,resourceId:'b'},request:{op:'get',id:f.entityId}})).rejects.toThrow(/evidence|identity|outside|changed/);
- await fs.copyFile(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/duplicate.mutable.json'));await expect(f.service.get(f.entityId)).rejects.toThrow(/evidence|identity|outside|changed/);await fs.rm(path.join(f.root,'vault/duplicate.mutable.json'));
- await fs.rename(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/moved.mutable.json'));await expect(f.service.get(f.entityId)).rejects.toThrow(/evidence|identity|outside|changed/);
- f.editor.commands.replaceInlineRange(f.node.key,0,0,'x');expect(()=>result.current()).toThrow();
- const root=Object.values(f.editor.repository.readState().contents).find(c=>c.payload.id==='a-doc')!;f.editor.repository.commit('Disappear',[{kind:'put-content',record:{...root,payload:{...root.payload,metadata:{documentId:'elsewhere'}}}}]);await expect(f.service.get(f.entityId)).rejects.toThrow(/missing|ambiguous/);
+ await fs.copyFile(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/duplicate.mutable.json'));expect((await f.service.get(f.entityId))?.name).toBe('Florence');await fs.rm(path.join(f.root,'vault/duplicate.mutable.json'));
+ await fs.rename(path.join(f.root,'vault/a.mutable.json'),path.join(f.root,'vault/moved.mutable.json'));expect((await f.service.get(f.entityId))?.name).toBe('Florence');
+ f.editor.commands.replaceInlineRange(f.node.key,0,0,'x');expect(()=>result.current()).not.toThrow();
+ const root=Object.values(f.editor.repository.readState().contents).find(c=>c.payload.id==='a-doc')!;f.editor.repository.commit('Disappear',[{kind:'put-content',record:{...root,payload:{...root.payload,metadata:{documentId:'elsewhere'}}}}]);expect((await f.service.get(f.entityId))?.name).toBe('Florence');
 },30000);
 it('lost mutation response is explicitly unconfirmed and retrying the same attempt does not create another Entity',async()=>{
  const f=await fixture(),fetch=globalThis.fetch,input={id:randomUUID(),operationId:randomUUID(),name:'Leonardo da Vinci'};let lost=true;
@@ -66,7 +127,7 @@ it('unresolved saved definitions keep mention resolution and vault counts explic
  const f=await fixture();await f.service.create({id:f.entityId,operationId:randomUUID(),name:'Florence'});await f.settle();
  const file=path.join(f.root,'vault/b.mutable.json'),saved=JSON.parse(await fs.readFile(file,'utf8'));
  saved.document.blocks[1].properties.standoffProperties.push({id:'unresolved',annotationId:'missing-definition',start:0,end:1});await fs.writeFile(file,JSON.stringify(saved));await f.settle();
- await expect(f.query('Firenze','mention')).rejects.toThrow(/incomplete/i);
+ expect((await f.query('Firenze','mention')).complete).toBe(false);
  await expect(f.service.summaries([f.entityId])).rejects.toThrow(/incomplete/i);
 },30000);
 it('identifies a missing source binding before creation dispatch without claiming an uncertain Entity commit',async()=>{

@@ -20,6 +20,7 @@ export function registerWorkspaceEntities(editor: ReactiveEditor, viewId: string
   const vaults = createDocumentVaults(native, editor.features.sqliteKnowledge ? root => (index = sqliteIndexLifecycle(root, policy())) : undefined);
   const controller = new AbortController();
   let vault: DocumentVaultLease | undefined, preparing: Promise<void> | undefined, disposed = false;
+  let defaultRoot:Promise<string|undefined>|undefined;
   const unregister = registerEntityContext(editor, {
     accepts(key) {
       if (disposed || editor.node(key)?.viewId !== viewId) return false;
@@ -34,7 +35,7 @@ export function registerWorkspaceEntities(editor: ReactiveEditor, viewId: string
     },
     facts,
     async listingVault() {
-      const root = vault?.root ?? await native.defaultVault();
+      const root = vault?.root ?? await (defaultRoot ??= native.defaultVault().catch(error=>{defaultRoot=undefined;throw error;}));
       if (disposed || !root) throw Error('DocumentWindow Vault is unavailable');
       return root;
     },

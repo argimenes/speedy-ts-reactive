@@ -139,7 +139,11 @@ export function phosphorPort(
       : undefined,
   );
   const release = registerEntityContext(editor, {
-    accepts: (k) => k === textNode().key || k === key,
+    accepts: (k) => !!node() && (k === node().children[0] || k === key),
+    listingVault: async () => lease?.root ?? (await native.defaultVault()) ?? native.location(id())?.folder ?? ".",
+    prepare: async () => {
+      if(!lease)lease=await vaults.acquire((await native.defaultVault()) ?? native.location(id())?.folder ?? ".");
+    },
     vault: () => {
       if (!lease) throw Error("Save in the current Cavern first.");
       return lease;
@@ -152,12 +156,7 @@ export function phosphorPort(
     vaults.dispose();
   });
   const entities = async () => {
-    if (!lease)
-      lease = await vaults.acquire(
-        (await native.defaultVault()) ?? native.location(id())?.folder ?? ".",
-      );
-
-    return (service ??= entityService(editor, textNode().key));
+    return (service ??= entityService(editor, node().children[0]));
   };
   const read = (): ScreenData => {
     const child = textNode();

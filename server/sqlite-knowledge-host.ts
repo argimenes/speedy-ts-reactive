@@ -3,6 +3,7 @@ import { verifyDocumentSource, verifyEntityListingSource } from './recognized-so
 import { RecognizedDocumentStore } from './recognized-document-store.mjs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
+import {stat} from 'node:fs/promises';
 import { Router, json } from 'express';
 import { openSqliteFoundation } from '../src/knowledge-sqlite/client.mjs';
 import { entityCommand } from '../src/knowledge-sqlite/entities.mjs';
@@ -20,6 +21,7 @@ export class SqliteKnowledgeHost {
   private foregrounds=0; private foregroundTail=Promise.resolve(); private closed=false;
   readonly metrics={sweeps:0,cancellations:0,foregroundWaitMs:0,maxForegroundWaitMs:0};
   private semanticLeases=new Set<string>();
+  private readers=new Map<string,{opening:Promise<any>;identity:string;active:number;timer?:ReturnType<typeof setTimeout>}>();
   constructor(private options:{root:string;readOnly?:boolean;entitiesEnabled?:boolean;semanticServicesEnabled?:boolean;store?:any;open?:typeof openSqliteFoundation;indexer?:typeof createSavedIndexer;debounceMs?:number;leaseMs?:number}) {
     this.store=options.store??new NativeVaultStore({root:options.root,readOnly:!!options.readOnly});
   }
@@ -126,7 +128,7 @@ export class SqliteKnowledgeHost {
     if(this.options.entitiesEnabled===false)throw Error('Canonical Entity service is disabled');
     const e=this.entry(body.lease), source=body.source;
     if(!e.client||!source||typeof source.resourceId!=='string'||!source.location||typeof source.byteHash!=='string')throw Error('Verified native source context required');
-    const listing=body.request?.op==='names'||body.request?.op==='db-mentions';
+    const listing=['names','db-mentions','search','current'].includes(body.request?.op);
     if(listing)await verifyEntityListingSource(this.store,e.vault,source,signal);
     else await verifyDocumentSource(this.store,e.vault,source,signal);
     if(await new RecognizedDocumentStore(this.store).pending(e.vault,source.resourceId))throw Error('Document Save recovery is pending');
@@ -136,6 +138,41 @@ export class SqliteKnowledgeHost {
     try{dispatched=true;return await e.client.entities(body.request,signal);}
     finally {if(mutation)this.enqueue(e,false);}
     }catch(error){if(!dispatched&&body.request?.op==='create')throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});throw error;}
+  }
+  /** Selector reads are vault-scoped, not Document/Save operations. A separate
+   * read-only connection keeps them out of the writer's reconciliation queue. */
+  async entityLookup(body:any,signal?:AbortSignal){
+    if(this.closed || this.options.entitiesEnabled===false)throw Error('Canonical Entity service is unavailable');
+    if(typeof body.vault!=='string' || !['search','get'].includes(body.request?.op))throw Error('Invalid Entity lookup');
+    signal?.throwIfAborted();
+    const root=await this.store.resolve(body.vault),file=await this.store.resolve(path.posix.join(body.vault,'.mutable/mutable.db'));
+    const stamp=await stat(file),identity=`${stamp.dev}:${stamp.ino}`;
+    let reader=this.readers.get(root);
+    if(reader && reader.identity!==identity){
+      if(reader.active)throw Error('Entity database replaced; retry');
+      clearTimeout(reader.timer);this.readers.delete(root);await reader.opening.then(c=>c.close(),()=>{});reader=undefined;
+    }
+    if(!reader){
+      if(this.readers.size>=8)throw Error('Entity reader Vault limit reached');
+      reader={identity,active:0,opening:openSqliteFoundation({vault:root,readOnly:true,entityReader:true,timeoutMs:5000})};
+      this.readers.set(root,reader);
+    }
+    clearTimeout(reader.timer);reader.active++;
+    try{
+      const client=await reader.opening;
+      signal?.throwIfAborted();if(this.closed)throw Error('Entity reader closed');
+      return await client.entityLookup(body.request,signal);
+    }catch(error){
+      // Failed opens/timeouts can be retried on a new reader. Never replay a write.
+      if(!signal?.aborted&&this.readers.get(root)===reader){this.readers.delete(root);void reader.opening.then(c=>c.close(),()=>{}).catch(()=>{});}
+      throw error;
+    }finally{
+      if(--reader.active===0 && this.readers.get(root)===reader){
+        const idle=reader;
+        reader.timer=setTimeout(()=>{if(this.readers.get(root)===idle){this.readers.delete(root);void idle.opening.then(c=>c.close(),()=>{}).catch(()=>{});}},300000);
+        reader.timer.unref?.();
+      }
+    }
   }
   async refresh(token:string,full=false){
     const e=this.entry(token);if(this.options.readOnly)throw Error('SQLite reconciliation is read-only');
@@ -200,6 +237,7 @@ export class SqliteKnowledgeHost {
       return {released:true};});
   }
   async close(){this.closed=true;this.savedScopes?.close();clearTimeout(this.timer);this.controller?.abort(Error('Host shutdown'));await this.control;await this.foregroundTail;await this.running;
+    for(const r of this.readers.values()){clearTimeout(r.timer);await r.opening.then(c=>c.close(),()=>{});}this.readers.clear();
     for(const l of this.leases.values())clearTimeout(l.timer);this.leases.clear();for(const e of this.entries.values())await e.client?.close();this.entries.clear();}
   router(){
     const router=Router();router.use(json({limit:'32kb'}));
@@ -214,8 +252,8 @@ export class SqliteKnowledgeHost {
       catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),outcome:'unknown-after-dispatch'});}
       finally{req.off('aborted',cancel);res.off('close',cancel);}
     });
-    router.post('/entities',async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
-      try{const data=await this.entities(req.body??{},c.signal);if(!c.signal.aborted)res.json({Success:true,Data:data});}
+    for(const route of ['entities','entity-lookup'])router.post('/'+route,async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
+      try{const data=await (route==='entities'?this.entities(req.body??{},c.signal):this.entityLookup(req.body??{},c.signal));if(!c.signal.aborted)res.json({Success:true,Data:data});}
       catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),...((error as any)?.entityCreationOutcome==='not-created'?{entityCreationOutcome:'not-created'}:{})});}
       finally{req.off('aborted',cancel);res.off('close',cancel);}
     });

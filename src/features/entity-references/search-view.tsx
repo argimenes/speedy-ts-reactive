@@ -80,10 +80,13 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
    candidates().dispose();setTarget(snapshotTarget([range],api));setCandidates(newCandidates());setError('');
   }catch(e){setError(String(e));}
  };
+ let refreshed=0;
  createEffect(()=>{
-  const options={query:query(),stream:stream(),match:match(),scope:searchScope()};retry();
+  const refresh=retry()!==refreshed;refreshed=retry();
+  const options={query:query(),stream:stream(),match:match(),scope:searchScope(),...(refresh?{refresh:true}:{})};
   const controller=new AbortController();let active=true;setBusy(true);setResult(undefined);setCurrent(0);setPage(0);
-  const timer=setTimeout(async()=>{try{if(!service)throw Error('Open a bound native Document in a Flint vault to use canonical Entities.');const r=await service.search(options,controller.signal);if(active){setResult(r);if(!attempt())setError('');}}catch(e){if(active)setError(String(e));}finally{if(active)setBusy(false);}},200);
+  const publish=(r:EntityResolution)=>{if(active){setResult(r);if(!attempt())setError('');}};
+  const timer=setTimeout(async()=>{try{if(!service)throw Error('Open a bound native Document in a Flint vault to use canonical Entities.');publish(await service.search(options,controller.signal,publish));}catch(e){if(active)setError(String(e));}finally{if(active)setBusy(false);}},200);
   onCleanup(()=>{active=false;clearTimeout(timer);controller.abort();});
  });
  onMount(()=>{
@@ -114,7 +117,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   if(e.altKey&&e.key.toLowerCase()==='v'){e.preventDefault();setScope(searchScope()==='vault'?'document':'vault');return;}
   if((e.target as Element).closest('.entity-candidates'))return;
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){if(field&&e.target!==input)return;e.preventDefault();const n=pageRows().length;if(n)setCurrent((current()+(e.key==='ArrowDown'?1:-1)+n)%n);}
-  else if(e.key==='Enter'&&(e.target===input||!field&&!(e.target as Element).closest('button'))){e.preventDefault();const row=pageRows()[current()];if(row&&!busy()&&!working())select(row.id);}
+  else if(e.key==='Enter'&&(e.target===input||!field&&!(e.target as Element).closest('button'))){e.preventDefault();const row=pageRows()[current()];if(row&&!working())select(row.id);}
   else if(!field&&e.key==='Home'){e.preventDefault();setCurrent(0);}
   else if(!field&&e.key==='End'){e.preventDefault();setCurrent(Math.max(0,pageRows().length-1));}
   else if(!field&&/^[0-9]$/.test(e.key)){e.preventDefault();const row=pageRows()[Number(e.key)];if(row)select(row.id);}
@@ -132,12 +135,13 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
     <label>Stream<select aria-label="Entity stream" value={stream()} onChange={e=>setStream(e.currentTarget.value as any)}><option value="all">All</option><option value="name">Name</option><option value="alias">Alias</option><option value="mention">Mention</option></select></label>
     <label>Match<select aria-label="Entity match" value={match()} onChange={e=>setMatch(e.currentTarget.value as any)}><option value="partial">Partial</option><option value="exact">Exact</option></select></label>
     <label>Scope<select aria-label="Entity scope" value={searchScope()} onChange={e=>setScope(e.currentTarget.value as any)}><option value="document">Current Document</option><option value="vault">Vault</option></select></label>
-    <button disabled={busy()} onClick={()=>setRetry(n=>n+1)}>Refresh candidates</button>
+    <button disabled={busy()&&!result()} onClick={()=>setRetry(n=>n+1)}>Refresh candidates</button>
    </div>
-   <p role="status">{busy()?'Resolving…':result()?`${result()!.candidates.length} candidates. ${result()!.complete?'Coverage complete.':'Incomplete coverage; zero matches do not establish absence.'}`:'Resolution unavailable.'}</p>
+   <Show when={stream()==='all'||stream()==='mention'||searchScope()==='document'}><small>Mention matches use saved text; unsaved edits are not included.</small></Show>
+   <p role="status">{busy()?(result()?`${result()!.candidates.length} candidates. Resolving mention evidence…`:'Resolving…'):result()?`${result()!.candidates.length} candidates. ${result()!.complete?'Coverage complete.':'Incomplete coverage; zero matches do not establish absence.'}`:'Resolution unavailable.'}</p>
    <Show when={result()?.diagnostics.length}><details><summary>Coverage details</summary><For each={result()!.diagnostics}>{d=><p>{d}</p>}</For></details></Show>
    <Show when={error()}><p role="alert">{error()}</p></Show>
-   <table aria-label="Entity results" tabIndex={0}><thead><tr><th>Entity</th><th>Why it matched</th><th>Actions</th></tr></thead><tbody><For each={pageRows()}>{(row,i)=><tr classList={{current:current()===i()}}><td>{i()} · {row.name}<small>{row.id}</small></td><td><For each={row.evidence.slice(0,3)}>{e=><div>{e.kind==='name'?'Canonical-name match':e.kind==='alias'?'Alias match':e.kind==='mention'?'Mention match':'Document evidence'}: {e.text}</div>}</For></td><td><button disabled={working()||busy()||!valid()} aria-label={`Select ${row.name}`} onClick={()=>select(row.id)}>Link</button><button disabled={working()} onClick={()=>showDetails(row.id)}>Details / aliases</button><button disabled={working()||!valid()||target().entityRanges.length!==1} onClick={()=>select(row.id,true)}>Replace &amp; Link</button></td></tr>}</For></tbody></table>
+   <table aria-label="Entity results" tabIndex={0}><thead><tr><th>Entity</th><th>Why it matched</th><th>Actions</th></tr></thead><tbody><For each={pageRows()}>{(row,i)=><tr classList={{current:current()===i()}}><td>{i()} · {row.name}<small>{row.id}</small></td><td><For each={row.evidence.slice(0,3)}>{e=><div>{e.kind==='name'?'Canonical-name match':e.kind==='alias'?'Alias match':e.kind==='mention'?'Mention match':'Document evidence'}: {e.text}</div>}</For></td><td><button disabled={working()||!valid()} aria-label={`Select ${row.name}`} onClick={()=>select(row.id)}>Link</button><button disabled={working()} onClick={()=>showDetails(row.id)}>Details / aliases</button><button disabled={working()||!valid()||target().entityRanges.length!==1} onClick={()=>select(row.id,true)}>Replace &amp; Link</button></td></tr>}</For></tbody></table>
    <footer><button disabled={!page()} onClick={()=>{setPage(n=>n-1);setCurrent(0);}}>Previous page</button><span>Page {page()+1}</span><button disabled={(page()+1)*10>=(result()?.candidates.length??0)} onClick={()=>{setPage(n=>n+1);setCurrent(0);}}>Next page</button></footer>
    <button onClick={()=>{setCreateForm(true);if(!attempt())setCanonicalName(query().trim()||target().entityQuery);}}>+ Create Entity</button>
    <Show when={createForm()}><section aria-label="Create canonical Entity"><label>Canonical name<input aria-label="Canonical name" value={canonicalName()} disabled={!!attempt()} maxLength={1000} onInput={e=>setCanonicalName(e.currentTarget.value)}/></label><button disabled={working()||!!created()||(!valid()&&!attempt())} onClick={create}>{attempt()?'Retry creation and link':'Create and link'}</button><p role="status">{outcome()}</p><small>Creation is independent of linking. Cancel after dispatch cannot undo creation.</small></section></Show>

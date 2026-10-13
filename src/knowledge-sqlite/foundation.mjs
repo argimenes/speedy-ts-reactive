@@ -32,7 +32,7 @@ export function openFoundation(options = {}, context = {}) {
  if(!isMainThread){if(!context.scopeValidated)throw Error('Vault scope was not verified by the host');return openValidatedFoundation(options,context);}
  const release=lockVaultEstablishment();try{inspectVaultScope(options.vault);return openValidatedFoundation(options,context);}finally{release();}
 }
-function openValidatedFoundation({ vault, readOnly = false, initialize: create = false, semanticServicesEnabled = true } = {}, { hostLeaseHeld = false } = {}) {
+function openValidatedFoundation({ vault, readOnly = false, initialize: create = false, semanticServicesEnabled = true, entityReader = false } = {}, { hostLeaseHeld = false } = {}) {
   const { root, home } = prepareHome({ vault, readOnly, initialize: create }); checkFiles(home);
   let unlock, mutable, audit, closed = false, auditError;
   try {
@@ -47,7 +47,7 @@ function openValidatedFoundation({ vault, readOnly = false, initialize: create =
     const identity = validateSchema(mutable, 'mutable');
     if (create) migrate(mutable, 'mutable');
     configure(mutable, readOnly);
-    try {
+    if(!entityReader)try {
       checkFiles(home, 'audit');
       const auditFile = path.join(home, 'audit.db');
       if (!fs.existsSync(auditFile) && create) initialize(auditFile, 'audit', identity.vaultGuid);

@@ -58,6 +58,27 @@ it('passes stream, match and scope independently and rejects late search publica
  const f=setup();let finish!:(e:any)=>void;vi.mocked(f.service.search).mockImplementationOnce(()=>new Promise(r=>finish=r));f.open();await vi.advanceTimersByTimeAsync(220);f.input('Search entities','leonardo');await vi.advanceTimersByTimeAsync(220);finish({candidates:[{id:'wrong',name:'Stale'}],complete:true,diagnostics:[],current(){}});await vi.advanceTimersByTimeAsync(0);expect(f.panel().textContent).not.toContain('Stale');
  for(const [label,value]of [['Entity stream','mention'],['Entity match','exact'],['Entity scope','document']]){const e=f.panel().querySelector<HTMLSelectElement>(`[aria-label="${label}"]`)!;e.value=value;e.dispatchEvent(new Event('change',{bubbles:true}));}await vi.advanceTimersByTimeAsync(220);expect(vi.mocked(f.service.search).mock.calls.at(-1)![0]).toEqual({query:'leonardo',stream:'mention',match:'exact',scope:'document'});
 });
+it('keeps canonical partial matches visible and selectable when mention resolution fails',async()=>{
+ const name='The abbey of Prince Prospero',f=setup('This',name);
+ let fail!:(reason:Error)=>void;
+ vi.mocked(f.service.search).mockImplementationOnce((_query,signal,progress)=>{
+  progress?.({candidates:[{id:'blake',name,evidence:[{kind:'name',text:name}],localMentions:0}],complete:false,diagnostics:['Mention evidence pending'],current(){signal.throwIfAborted();}});
+  return new Promise((_resolve,reject)=>{fail=reject;});
+ });
+ f.open();f.input('Search entities','abbey');await vi.advanceTimersByTimeAsync(220);
+ expect(f.panel().textContent).toContain(name);expect(f.panel().textContent).toContain('Resolving mention evidence');
+ expect(f.panel().querySelector<HTMLButtonElement>(`[aria-label="Select ${name}"]`)!.disabled).toBe(false);
+ fail(Error('Mention search timed out'));await vi.advanceTimersByTimeAsync(0);
+ expect(f.panel().textContent).toContain(name);expect(f.panel().textContent).toContain('Mention search timed out');
+ await f.choose();expect(f.node().payload.standoffProperties).toEqual([expect.objectContaining({value:'blake'})]);
+});
+it('ignores late canonical progress from a replaced query',async()=>{
+ const f=setup();let publish:NonNullable<Parameters<typeof f.service.search>[2]>;
+ vi.mocked(f.service.search).mockImplementationOnce((_q,_signal,progress)=>{publish=progress!;return new Promise(()=>{});});
+ f.open();await vi.advanceTimersByTimeAsync(220);f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);
+ publish!({candidates:[{id:'stale',name:'Stale result',evidence:[],localMentions:0}],complete:false,diagnostics:[],current(){}});
+ expect(f.panel().textContent).not.toContain('Stale result');expect(f.panel().textContent).toContain('Leonardo da Vinci');
+});
 it('supports explicit alias add/update/remove without linking or history',async()=>{
  const f=setup();f.open();f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);f.button('Details / aliases').click();await vi.advanceTimersByTimeAsync(0);f.input('Explicit alias','Leo');f.button('Add alias').click();await vi.advanceTimersByTimeAsync(0);expect(f.entities.get('blake')!.aliases[0].name).toBe('Leo');f.button('Edit alias').click();f.input('Explicit alias','Leonardo');f.button('Update alias').click();await vi.advanceTimersByTimeAsync(0);expect(f.entities.get('blake')!.aliases[0].name).toBe('Leonardo');f.button('Remove alias').click();await vi.advanceTimersByTimeAsync(0);expect(f.entities.get('blake')!.aliases).toHaveLength(0);expect(f.editor.repository.canUndo()).toBe(false);
 });
