@@ -75,6 +75,7 @@ export function workspaceOpen(session: WorkspaceSession) {
     const node = Object.values(projection.state.nodes).find(n => n.contentKey === contentKey && editor.blockQueries.ancestors(n.key).some(a => ["document-window-block", "window-block"].includes(a.viewType)));
     const host = node && editor.blockQueries.ancestors(node.key).find(n => ["document-window-block", "window-block"].includes(n.viewType));
     if (!host) throw new Error("This Document is already in the workspace without a Window. Open it through its existing owner.");
+    editor.viewVisibility.set(host.placementKey, false);
     if (presentation.active() === "spatial") {
       const id = host.payload.id;
       if (typeof id !== "string" || !id.trim()) throw new Error("The existing Window has no stable identity.");
@@ -120,6 +121,7 @@ export function workspaceOpen(session: WorkspaceSession) {
     const existing = tabs.find(({ row }) => row?.children.some(key => (editor.node(key)?.payload.metadata as any)?.documentTarget?.documentId === id));
     if (existing) {
       const tab = existing.row!.children.find(key => (editor.node(key)?.payload.metadata as any)?.documentTarget?.documentId === id)!;
+      editor.viewVisibility.set(editor.node(tab)!.placementKey, false);
       if (!selectApplicationDocument(editor, existing.app.key, id)) editor.setViewChild(existing.row!.key, tab);
       return reveal(existing.app.contentKey);
     }

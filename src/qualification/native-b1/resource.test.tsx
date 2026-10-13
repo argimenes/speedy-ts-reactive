@@ -1,5 +1,6 @@
+import {admitNativeWithResource} from '../../persistence/native-resource';
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { render } from "solid-js/web";
 import { ReactiveEditor } from "../../reactive-editor/editor";
@@ -111,6 +112,25 @@ describe("B1 isolated canonical native proof", () => {
     const f = host([produced]), captured = capture(f, produced.id!), target = host();
     admitNative(target.editor.repository, nativeBytes(captured), target.bank);
     expect(nativeText(capture(target, produced.id!))).toBe(nativeText(captured));
+  });
+  it("admits fresh resources without copying or rebuilding already loaded Documents", () => {
+    const source=host([doc()]), target=host([{id:'existing-doc',type:'document-block',children:[{id:'existing-text',type:'standoff-editor-block',text:'Already loaded text'}]}]);
+    const bytes=nativeBytes(capture(source)), previous=target.node('existing-text');
+    const snapshot=vi.spyOn(target.editor.repository,'snapshot'), build=vi.spyOn(target.main as any,'build');
+    const admitted=admitNativeWithResource(target.editor.repository,bytes,target.bank,'resource');
+    expect(snapshot).not.toHaveBeenCalled();
+    expect(build).toHaveBeenCalledTimes(1);
+    expect(build.mock.calls[0][0]).toBe(admitted.placementKey);
+    expect(target.node('existing-text')).toBe(previous);
+    expect(admitted.members.sort()).toEqual(Object.keys(captureNative(target.editor.repository.readState(),'resource').contents).sort());
+    expect(nativeText(admitted.resource)).toBe(nativeText(captureNative(target.editor.repository.readState(),'resource')));
+    const fresh=target.editor.createView('fresh');
+    const shape=(view:typeof fresh)=>Object.values(view.state.nodes).map(n=>[n.placementKey,n.contentKey,n.viewType,n.payload,n.children.map(k=>view.node(k)!.placementKey),n.inlineContent.map(k=>view.node(k)!.placementKey)]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
+    expect(shape(target.main)).toEqual(shape(fresh));
+    const before=target.editor.repository.snapshot();
+    expect(()=>admitNativeWithResource(target.editor.repository,bytes,target.bank,'wrong-id')).toThrow('identity mismatch');
+    expect(target.editor.repository.snapshot()).toEqual(before);
+    snapshot.mockRestore();build.mockRestore();
   });
   it("reuses compatible canonical identity; rejects stale bytes, collisions and ambiguity atomically", () => {
     const source = host([doc()]), encoded = nativeBytes(capture(source)), target = host();

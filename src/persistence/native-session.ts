@@ -1,8 +1,8 @@
 import {isNativeDocumentName,nativeDocumentStem,isDerivedMarkdownName} from './document-file-names.mjs';
-import { createSignal } from 'solid-js';
+import { batch, createSignal } from 'solid-js';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { DocumentLocation } from '../reactive-editor/persistence';
-import { admitNative, captureNative, decodeNative, nativeText } from './native-resource';
+import { admitNative, admitNativeWithResource, captureNative, nativeText } from './native-resource';
 import { admitMarkdown, type LinkTarget } from './markdown';
 import { enrollPair, type PairGeneration, type PairResult, type ResourcePair } from './resource-pair';
 import { markNativeBinding, ownNativeSession } from './native-bindings';
@@ -248,18 +248,23 @@ export class NativeDocumentSession {
       // A retained binding alone is never evidence of a live canonical Document.
 
     }
-    const bytes=new TextEncoder().encode(data.native),resource=decodeNative(bytes);
+    const bytes=new TextEncoder().encode(data.native);
     expected?.check();
-    const admitted=admitNative(this.editor.repository,bytes,this.bank());
-    const binding=existing??this.bind(data.resourceId,location,data.baseline);
-    if(existing)binding.members=new Set(Object.keys(captureNative(this.editor.repository.snapshot(),data.resourceId).contents));
-    binding.pair.acknowledgeOpen(nativeText(resource));binding.message=data.readOnly?'Opened native Document (server is read-only)':'Opened native Document';
-    const contentKey=this.editor.repository.state.placements[admitted.placementKey].contentKey;
-    this.editor.persistence.registerWorkspaceDocument(contentKey,data.resourceId,location.folder,location.filename);
-    this.touch();expected?.completed();return data.resourceId;
+    if(typeof data.resourceId!=='string'||!data.resourceId.trim())throw Error('Open response identity missing');
+    // Publish admission and its file binding together so catalog observers do
+    // not rebuild once for the Document and again for its storage status.
+    return batch(()=>{
+      const admitted=admitNativeWithResource(this.editor.repository,bytes,this.bank(),data.resourceId);
+      const binding=existing??this.bind(data.resourceId,location,data.baseline,admitted.members);
+      if(existing)binding.members=new Set(admitted.members);
+      binding.pair.acknowledgeOpen(nativeText(admitted.resource));binding.message=data.readOnly?'Opened native Document (server is read-only)':'Opened native Document';
+      const contentKey=this.editor.repository.state.placements[admitted.placementKey].contentKey;
+      this.editor.persistence.registerWorkspaceDocument(contentKey,data.resourceId,location.folder,location.filename);
+      this.touch();expected?.completed();return data.resourceId;
+    });
   }
-  private bind(id: string, location: DocumentLocation, baseline: Baseline): Binding {
-    const binding = { location: {...location}, baseline, message:'Native destination selected', busy:false, members:new Set(Object.keys(captureNative(this.editor.repository.snapshot(),id).contents)) } as Binding;
+  private bind(id: string, location: DocumentLocation, baseline: Baseline, members?: readonly string[]): Binding {
+    const binding = { location: {...location}, baseline, message:'Native destination selected', busy:false, members:new Set(members ?? Object.keys(captureNative(this.editor.repository.snapshot(),id).contents)) } as Binding;
     const complete = (data: any) => {
       const r: PairResult=data.result;
       if(r.phase==='saved'&&r.generation===binding.pending?.generation){binding.baseline=data.baseline;binding.pending=undefined;this.candidates.delete(id);}

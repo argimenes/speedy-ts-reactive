@@ -52,3 +52,15 @@ it('a rejected first destination can be corrected without changing the candidate
  // A pre-publication identity collision is a rejection, not an uncertain write.
  const retried=await service.save(id,{folder:'.',filename:'fresh.mutable.json'});expect(retried?.phase).toBe('saved');expect(service.location(id)?.filename).toBe('fresh.mutable.json');
 });
+
+it('opens a native resource without taking a workspace snapshot to rebuild its binding membership',async()=>{
+ const f=await host(),{editor,service}=f.make(),snapshot=vi.spyOn(editor.repository,'snapshot');
+ const id=await service.open({folder:'.',filename:'rich.mutable.json'});
+ expect(snapshot).not.toHaveBeenCalled();snapshot.mockRestore();
+ const c=Object.values(editor.repository.readState().contents).find(c=>c.viewType==='standoff-editor-block')!;
+ const p=Object.values(editor.repository.readState().placements).find(p=>p.contentKey===c.key)!;
+ editor.commands.replaceInlineRange(p.key,0,0,'Unsaved ');
+ expect(service.status(id)).toContain('Save required');
+ expect((await service.save(id))?.phase).toBe('saved');
+ expect((await fs.readFile(path.join(f.root,'rich.mutable.json'),'utf8'))).toContain('Unsaved ');
+});

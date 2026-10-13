@@ -13,9 +13,9 @@ export function BlockOutlet(props: { nodeKey: NodeKey }) {
     return editor.registry.resolve(type);
   };
   const render = () => <><Dynamic component={registration()?.view ?? UnknownBlockView} nodeKey={props.nodeKey} /><BlockSelectionHandle editor={editor} nodeKey={props.nodeKey} /></>;
-  return <Show when={editor.blockPresentation.current()} fallback={render()}>{contribution =>
+  return <Show when={!editor.viewVisibility.isClosed(projection.state.nodes[props.nodeKey]?.placementKey ?? props.nodeKey)}><Show when={editor.blockPresentation.current()} fallback={render()}>{contribution =>
     <Dynamic component={contribution().view} nodeKey={props.nodeKey} scale={() => coordinates?.scale() ?? 1} render={render} />
-  }</Show>;
+  }</Show></Show>;
 }
 
 export function ChildBlocks(props: { parentKey: NodeKey }) {

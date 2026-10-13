@@ -183,7 +183,14 @@ export function decodeNative(bytes: Uint8Array): DeepReadonly<ResourceSnapshot> 
 /** Admission into an EXISTING repository/object bank, never a new editor or DTO.
  * Detached decode + collision/ownership checks precede the one atomic commit. */
 export function admitNative(repository: CanonicalRepository, bytes: Uint8Array, bankContentKey: string) {
-  const resource = decodeNative(bytes), incoming = resourceToRepository(resource), before = repository.snapshot();
+  const {placementKey,reused}=admitNativeWithResource(repository,bytes,bankContentKey);
+  return {placementKey,reused};
+}
+/** Admission result also exposes the immutable validated source and exact membership. */
+export function admitNativeWithResource(repository: CanonicalRepository, bytes: Uint8Array, bankContentKey: string, expectedResourceId?: string) {
+  const resource = decodeNative(bytes);
+  check(expectedResourceId === undefined || resource.resourceId === expectedResourceId, 'Open response identity mismatch');
+  const incoming = resourceToRepository(resource), before = repository.readState();
   const bank = before.contents[bankContentKey];
   check(bank?.viewType === "workspace-object-bank-block", "native admission requires the existing object bank");
   const existing = Object.values(before.contents).filter(c => c.viewType === "document-block" && identity(c) === resource.resourceId);
@@ -191,7 +198,7 @@ export function admitNative(repository: CanonicalRepository, bytes: Uint8Array, 
     check(existing.length === 1, "ambiguous existing resource identity");
     const captured = captureNative(before, resource.resourceId);
     check(nativeText(captured) === nativeText(resource), "disk/live resource conflict; no overwrite or history reset");
-    return { placementKey: captured.rootPlacementKey, reused: true };
+    return { placementKey: captured.rootPlacementKey, reused: true, resource, members: Object.keys(captured.contents) };
   }
   const ids = new Set(Object.values(before.contents).map(c => c.payload.id).filter(id));
   const placements = new Set(Object.values(before.placements).map(p => p.placementId).filter(id));
@@ -223,5 +230,5 @@ export function admitNative(repository: CanonicalRepository, bytes: Uint8Array, 
     ...bindings.map(record => ({ kind: "put-placement" as const, record })),
     { kind: "put-content", record: updatedBank },
   ]);
-  return { placementKey: incoming.rootPlacementKey, reused: false };
+  return { placementKey: incoming.rootPlacementKey, reused: false, resource, members: Object.keys(incoming.contents) };
 }

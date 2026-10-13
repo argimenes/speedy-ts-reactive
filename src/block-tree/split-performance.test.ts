@@ -170,12 +170,17 @@ describe.each([false, true])("incremental paragraph splitting (capture=%s)", cap
     const { editor, view, key } = setup();
     editor.commands.insertInlineImage(key, 3000, { assetId: "image", src: "/image.png", alt: "Image" });
     const snapshot = vi.spyOn(editor.repository, "snapshot");
+    const changes: Array<import('./repository').RepositoryChange> = [];
+    const stop = editor.repository.subscribeChanges(change => changes.push(change));
     const right = editor.commands.splitStandoff(key, 2800);
-    expect(snapshot).toHaveBeenCalled();
+    expect(changes.at(-1)?.split).toBeUndefined(); // full validation, now without a whole-graph copy
+    expect(snapshot).not.toHaveBeenCalled();
     expect(view.nodeForPlacement(right)!.inlineContent.some(k => view.node(k)!.viewType === "image-cell")).toBe(true);
     checkLocations(editor);
     snapshot.mockClear();
     editor.commands.splitStandoff(key, 1000);
+    expect(changes.at(-1)?.split).toBeDefined();
+    stop();
     expect(snapshot).not.toHaveBeenCalled();
     checkLocations(editor);
     editor.dispose();

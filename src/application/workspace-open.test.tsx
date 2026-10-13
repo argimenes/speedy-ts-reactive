@@ -63,6 +63,15 @@ describe('open workspace content', () => {
     expect(await actions.serverDocument(location, signal)).toBe(placement);
     expect(editor.repository.state.contents[text.key].inlineContent.map(key => editor.repository.state.contents[editor.repository.state.placements[key].contentKey].payload.text).join('')).toBe('Unsaved edit');
     const windowKey = session.projection.nodeForPlacement(placement)!.key;
+    const beforeClose = editor.repository.snapshot(), history = vi.fn();
+    const stop = editor.repository.subscribeHistoryChanges(history, error=>{throw error;});
+    editor.closeView(windowKey);
+    expect(editor.viewVisibility.isClosed(placement)).toBe(true);
+    expect(editor.repository.snapshot()).toEqual(beforeClose);
+    expect(history).not.toHaveBeenCalled();stop();
+    expect(await actions.serverDocument(location,signal)).toBe(placement);
+    expect(editor.viewVisibility.isClosed(placement)).toBe(false);
+    expect(nativeText(captureNative(editor.repository.snapshot(),resource.resourceId))).toContain('Unsaved edit');
     expect(actions.canSaveDocument(windowKey)).toBe(true);
     if (presentation === 'desktop' && filename === 'Notes.ink') {
       const Host = () => {

@@ -677,7 +677,7 @@ export function WindowView(props: BlockViewProps) {
             <Show when={!geometry?.static}>
             <Show when={!geometry && editor.features.windowMaximize}><button type="button" aria-label={maximized()?"Restore window":"Maximize window"} onPointerDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>commitMetadata({state:maximized()?"normal":"maximized"},maximized()?"Restore Window":"Maximize Window")}>{maximized()?"❐":"□"}</button></Show>
             <button type="button" aria-label="Minimize window" onPointerDown={(e) => { rememberReturnFocus(); e.stopPropagation(); }} onClick={minimizeWindow}>−</button>
-            <button type="button" aria-label={isSticky() ? "Close sticky note" : "Close window"} onPointerDown={(e) => e.stopPropagation()} onClick={() => isSticky() ? editor.stickyNotes.closeWindow(props.nodeKey) : editor.commands.remove(props.nodeKey)}>×</button>
+            <button type="button" aria-label={isSticky() ? "Close sticky note" : "Close window"} onPointerDown={(e) => e.stopPropagation()} onClick={() => isSticky() ? editor.stickyNotes.closeWindow(props.nodeKey) : editor.closeView(props.nodeKey)}>×</button>
             </Show>
           </span>
         </header>

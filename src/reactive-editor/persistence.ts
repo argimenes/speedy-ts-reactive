@@ -53,6 +53,7 @@ export interface WorkspaceSaveSnapshot {
   repository: RepositoryState;
   document: ExistingBlockDto;
   presentation?: PresentationSnapshot;
+  visibilityRevision?: number;
 }
 
 export class PersistenceService {
@@ -92,7 +93,8 @@ export class PersistenceService {
     const repository = this.editor.repository.snapshot();
     if (repository.contents[repository.placements[repository.rootPlacementKey].contentKey].viewType !== "workspace-block") throw new Error("Save Workspace requires a workspace-block root.");
     const presentation = this.workspacePresentation?.capture();
-    const snapshot = { repository, presentation, document: withWorkspacePresentation(this.editor.encodeWorkspace(repository), presentation) };
+    this.editor.viewVisibility.captureInto(repository);
+    const snapshot = { repository, presentation, visibilityRevision: this.editor.viewVisibility.revision(), document: withWorkspacePresentation(this.editor.encodeWorkspace(repository), presentation) };
     this.captures.add(snapshot);
     return snapshot;
   }
@@ -101,6 +103,7 @@ export class PersistenceService {
     if (this.disposed || !this.captures.delete(snapshot)) return;
     if (this.editor.repository.state.revision === snapshot.repository.revision) this.setState("lastSavedRevision", snapshot.repository.revision);
     if (snapshot.presentation) this.workspacePresentation?.markSaved(snapshot.presentation);
+    if (snapshot.visibilityRevision !== undefined) this.editor.viewVisibility.markSaved(snapshot.visibilityRevision);
   }
 
   dispose(): void {

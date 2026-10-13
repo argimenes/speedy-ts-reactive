@@ -91,7 +91,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const [navigationRevision, setNavigationRevision] = createSignal(0);
       const liveViews = new Map<string, BlockTreeProjection>();
       const [viewRevision, setViewRevision] = createSignal(0);
-      const activeTab = () => { navigationRevision(); if(navigation.active && navigation.tabs.has(navigation.active)) return navigation.active; const r = row(); return r && (editor.viewChildren[r.key] ?? r.children.find(k => (editor.node(k)?.payload.metadata as any)?.active) ?? r.children[0]); };
+      const visibleTabs = () => (row()?.children ?? []).filter(key => !editor.viewVisibility.isClosed(editor.node(key)!.placementKey));
+      const activeTab = () => { navigationRevision(); if(navigation.active && navigation.tabs.has(navigation.active)) return navigation.active; const r = row(), keys = visibleTabs(); const selected = r && editor.viewChildren[r.key]; return selected && keys.includes(selected) ? selected : keys.find(k => (editor.node(k)?.payload.metadata as any)?.active) ?? keys[0]; };
       let root!: HTMLDivElement, mounted = true;
       const guard = () => { requireActive(); if (!mounted || !editor.node(props.nodeKey)) throw new Error("Document application instance is disposed"); };
       onMount(() => {
@@ -113,7 +114,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       };
       const tabId = (key: string) => navigation.tabs.get(key) ?? tabDocumentTarget(editor.node(key)?.payload.metadata);
       const chooseTab = (key: string) => { navigation.active = navigation.tabs.has(key) ? key : undefined; setNavigationRevision(n => n+1); const r = row(); if(r && !navigation.active) editor.setViewChild(r.key,key); };
-      const tabKeys = createMemo(() => { navigationRevision(); return [...(row()?.children ?? []),...navigation.tabs.keys()]; });
+      const tabKeys = createMemo(() => { navigationRevision(); return [...visibleTabs(),...navigation.tabs.keys()]; });
       const tabButtons = new Map<string, HTMLButtonElement>();
       const closeTab = (key: string) => {
         guard(); const keys = tabKeys(); if (!keys.includes(key)) return;
@@ -123,7 +124,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         for (const overlay of [...editor.overlays.overlays]) if (overlay.ownerKey === props.nodeKey) editor.overlays.close(overlay.key, false);
         batch(() => {
           if (navigation.tabs.has(key)) { navigation.tabs.delete(key); if (navigation.active === key) navigation.active = undefined; setNavigationRevision(n => n + 1); }
-          else editor.commands.remove(key);
+          else editor.closeView(key);
           if (active === key) {
             if (next) chooseTab(next);
             else { const r = row(); if (r) editor.setViewChild(r.key, undefined); }
@@ -154,7 +155,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const requireId = () => { const id = activeId(); if (!id || !resolve(id)) throw new Error("Select an available Document tab"); return id; };
       const openDocument = (id: string, transient = false) => {
             guard(); const doc = resolve(id), r = row(); if (!doc?.placement || !r) return;
-            let target = tabKeys().find(k => tabId(k) === id);
+            let target = [...r.children,...navigation.tabs.keys()].find(k => tabId(k) === id);
+            if (target && editor.node(target)) editor.viewVisibility.set(editor.node(target)!.placementKey, false);
             if(!target && transient) { target = 'navigation:'+crypto.randomUUID(); navigation.tabs.set(target,id); setNavigationRevision(n=>n+1); }
             if (!target) {
               const placement = editor.commands.insert({ id: crypto.randomUUID(), type: "tab-block", metadata: { name: doc.title, documentTarget: { version: 1, documentId: id } } }, { kind: "at", parentKey: r.key, index: r.children.length });

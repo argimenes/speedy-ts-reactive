@@ -387,7 +387,7 @@ export class TreeCommands {
   }
 
   insert(dto: ExistingBlockDto, destination: Destination): PlacementKey {
-    const state = this.state();
+    const state = this.pending?.draft ?? this.repository.readState();
     const decoded = decodeDetachedSubtree(dto);
     prepareNewBlockIdentities(Object.values(decoded.state.contents));
     const target = this.resolveInsertion(destination, undefined, state);

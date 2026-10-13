@@ -1,3 +1,4 @@
+import {documentTabParentFor} from './document-tab-plan';
 import { batch } from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
 import { inlineOwnerFor } from "./inline-plan";
@@ -205,14 +206,19 @@ export function planOperations(
   operations: RepositoryOperation[],
   boundary?: BoundaryValidation,
 ): { next: RepositoryState; inverse: RepositoryOperation[] } {
-  const next = clone(source);
+  return planChangedRecords(clone(source), operations, boundary);
+}
+
+/** Changed records are private; unchanged records remain read-only during validation. */
+function planChangedRecords(source: RepositoryState, operations: RepositoryOperation[], boundary?: BoundaryValidation) {
+  const next = {...source,contents:{...source.contents},placements:{...source.placements}};
   const inverse: RepositoryOperation[] = [];
   for (const operation of operations) {
-    inverse.unshift(inverseFor(next, operation));
+    inverse.push(inverseFor(next, operation));
     applyOperation(next, operation);
   }
   validateRepository(next, boundary);
-  return { next, inverse };
+  return { next, inverse: inverse.reverse() };
 }
 
 type RepositorySubscriber = (state: RepositoryState, label: string) => void;
@@ -234,6 +240,8 @@ export interface RepositoryChange {
   inlineOwner?: ContentKey;
   split?: SplitChange;
   childrenOwner?: ContentKey;
+  /** Fully validated append of fresh subtrees; existing records/edges are unchanged. */
+  appendedChildrenOwner?: ContentKey;
 }
 
 export class CanonicalRepository {
@@ -393,19 +401,19 @@ export class CanonicalRepository {
       this.commitInline(label, operations, undefined, recordHistory, metadata, split, undefined, placementDelta);
       return;
     }
-    const childrenOwner = emptyParagraphParentFor(this.readState(), operations, this.references);
+    const childrenOwner = emptyParagraphParentFor(this.readState(), operations, this.references) ?? documentTabParentFor(this.readState(), operations, this.references);
     if (childrenOwner) {
       this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner, placementDelta);
       return;
     }
-    const current = this.snapshot();
+    const current = this.readState();
     for (const subscriber of this.beforeChangeSubscribers) subscriber(label);
-    for (const subscriber of this.beforeSubscribers) subscriber(current, label);
+    for (const subscriber of this.beforeSubscribers) subscriber(this.snapshot(), label);
     const validation: BoundaryValidation | undefined = this.boundary ? {} : undefined;
-    const { next, inverse } = planOperations(current, operations, validation);
+    const { next, inverse } = planChangedRecords(current, operations, validation);
     for (const [key, content] of Object.entries(next.contents)) {
       const previous = current.contents[key];
-      if (!previous) continue;
+      if (!previous || content === previous) continue;
       const previousValue = { ...previous, revision: 0 };
       const nextValue = { ...content, revision: 0 };
       if (JSON.stringify(previousValue) !== JSON.stringify(nextValue)) {
@@ -420,11 +428,33 @@ export class CanonicalRepository {
     for (const operation of operations) {
       if (operation.kind === "put-content" || operation.kind === "remove-content") {
         const key = operation.kind === "put-content" ? operation.record.key : operation.key;
-        previousContents.set(key, current.contents[key]);
+        previousContents.set(key, current.contents[key] ? clone(current.contents[key]) : undefined);
       }
     }
+    // Native admission normally adds a fresh resource to the object bank.
+    // The full graph validator above still checks ownership and all references;
+    // this hint only avoids rebuilding projections of unchanged Documents.
+    const existingChanges = [...previousContents].filter(([,before]) => !!before);
+    const parent = existingChanges.length === 1 ? existingChanges[0][1] : undefined;
+    const updated = parent && next.contents[parent.key];
+    const structure = ({children,wireChildren,revision,...rest}: ContentRecord) => JSON.stringify(rest);
+    const appendedChildrenOwner = parent?.viewType === 'workspace-object-bank-block' && updated &&
+      structure(parent) === structure(updated) && updated.children.length > parent.children.length &&
+      parent.children.every((key,i) => updated.children[i] === key) &&
+      operations.every(op => op.kind === 'put-content' || op.kind === 'put-placement' && !current.placements[op.record.key])
+      ? parent.key : undefined;
     batch(() => {
-      this.setState(reconcile(next));
+      // Publish only changed records. Reconciling the entire graph recursively
+      // unwraps every existing Cell even when opening a tiny new Document.
+      const contents = new Set<string>(), placements = new Set<string>();
+      for (const operation of operations) {
+        if (operation.kind === 'put-content' || operation.kind === 'remove-content') contents.add(operation.kind === 'put-content' ? operation.record.key : operation.key);
+        if (operation.kind === 'put-placement' || operation.kind === 'remove-placement') placements.add(operation.kind === 'put-placement' ? operation.record.key : operation.key);
+      }
+      for (const key of contents) this.setState('contents',key,next.contents[key] ? reconcile(next.contents[key]) : undefined);
+      for (const key of placements) this.setState('placements',key,next.placements[key] ? reconcile(next.placements[key]) : undefined);
+      this.setState('rootPlacementKey',next.rootPlacementKey);
+      this.setState('revision',next.revision);
       this.rebuildReferences();
       if (this.boundary) this.boundary.validation = validation!;
       if (identityDelta) this.identity!.acceptCommit(identityDelta);
@@ -435,7 +465,7 @@ export class CanonicalRepository {
       }
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
-      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents });
+      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, appendedChildrenOwner });
     });
   }
 

@@ -1,3 +1,4 @@
+import {isDocumentTabLeaf} from './document-tab-plan';
 /** Read-only canonical evidence. No authored payload, membership cache or consumer policy. */
 import { resourceSource } from './resource-identity';
 import { documentRootRole } from './resource-registration';
@@ -196,7 +197,7 @@ export function preservesResourceOwnership(state:RepositoryState,ops:readonly Re
    const key=op.kind==='put-content'?op.record.key:op.key,before=state.contents[key],after=op.kind==='put-content'?op.record:undefined;
    // Existing fast recognizers prove sequences/retained edges; additionally exclude
    // resource roots and exotic inline hosts whose payload can alter identity/claims.
-   if([before,after].some(c=>c&&!['text-cell','standoff-editor-block'].includes(c.viewType))){
+   if([before,after].some(c=>c&&!['text-cell','standoff-editor-block'].includes(c.viewType)&&!isDocumentTabLeaf(c))){
     if(!before||!after||before.viewType!==after.viewType||identity(before)!==identity(after)||before.payload.id!==after.payload.id||JSON.stringify(resourceSource(before))!==JSON.stringify(resourceSource(after)))return false;
    }
    if(before&&after&&before.definitionOwnerKey!==after.definitionOwnerKey)return false;
@@ -205,7 +206,7 @@ export function preservesResourceOwnership(state:RepositoryState,ops:readonly Re
    const p=op.kind==='put-placement'?op.record:state.placements[op.key];
    if(!p||p.externalReference||p.resolvedReference||p.resourceRegistration)return false;
    const c=state.contents[p.contentKey]??created.get(p.contentKey);
-   if(!c||!['text-cell','standoff-editor-block'].includes(c.viewType))return false;
+   if(!c||!['text-cell','standoff-editor-block'].includes(c.viewType)&&!isDocumentTabLeaf(c))return false;
   }
  }
  return true;

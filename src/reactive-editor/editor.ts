@@ -1,3 +1,4 @@
+import { ViewVisibility } from './view-visibility';
 import { assertLegacySaveAllowed } from "../persistence/native-bindings";
 import { WindowPresentation } from "../runtime/window-presentation";
 import { BlockPresentation } from "../runtime/block-presentation";
@@ -99,6 +100,7 @@ export class ReactiveEditor {
   readonly showHide = new ShowHideProjection(this);
   readonly overlays = new OverlayService(this.mounts, this.focus);
   readonly persistence: PersistenceService;
+  readonly viewVisibility: ViewVisibility;
   readonly multiSelections: MultiSelectionEditor;
   readonly projections = new Map<ViewId, BlockTreeProjection>();
   private gateway?: InputGateway;
@@ -110,6 +112,7 @@ export class ReactiveEditor {
     const loadedWorkspace = "state" in dto && "references" in dto ? dto as LoadedWorkspace : undefined;
     const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : isHistoryDocument(dto) ? decodeHistoryDocument(dto) : decodeBlockTree(dto as ExistingBlockDto);
     this.repository = new CanonicalRepository(decoded.state);
+    this.viewVisibility = new ViewVisibility(this.repository);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
     this.textRanges = new TextRanges(key => {
       const node = this.node(key), content = node && this.repository.readState().contents[node.contentKey];
@@ -203,6 +206,27 @@ export class ReactiveEditor {
     }
     projection.dispose();
     this.projections.delete(projection.viewId);
+  }
+
+  /** Close a presentation without deleting authored content or adding an Undo step. */
+  closeView(key: NodeKey): void {
+    const node = this.node(key);
+    if (!node || !['window-block', 'document-window-block', 'tab-block'].includes(node.viewType)) return;
+    const inside = (candidate: string | undefined) => !!candidate && (candidate === key || this.blockQueries.ancestors(candidate).some(n => n.key === key));
+    this.selectionGestures.cancelGesture();
+    const operation = this.currentTextOperation.active();
+    if (operation) {
+      const owns = (key: string): boolean => { const node = this.node(key); return operation.owns(key) || !!node && [...node.children,...Object.values(node.ownedRelations)].some(owns); };
+      if (owns(key)) operation.cancel();
+    }
+    if (this.blockSelection.state.items.some(item => inside(item.nodeKey))) this.blockSelection.clear();
+    if (inside(this.find.state.scope?.rootKey)) this.find.close(false);
+    const cross = this.crossText.range();
+    if (cross && (inside(cross.anchor.occurrenceKey) || inside(cross.head.occurrenceKey))) this.crossText.clear();
+    for (const overlay of [...this.overlays.overlays]) if (inside(overlay.ownerKey)) this.overlays.close(overlay.key, false);
+    const focused = this.focus.state.focusedKey;
+    if (inside(focused)) this.focus.clearRemoved(focused!);
+    this.viewVisibility.set(node.placementKey, true);
   }
 
   installGateway(document: Document): () => void {
@@ -340,7 +364,11 @@ export class ReactiveEditor {
 
   encodeWorkspace(snapshot = this.repository.snapshot()): ExistingBlockDto {
     assertLegacySaveAllowed(this.repository);
-    return encodeWorkspace(snapshot, undefined, this.focusBookmarks());
+    // The caller may supply a read-only repository view; decorate a detached root.
+    const rootKey = snapshot.placements[snapshot.rootPlacementKey].contentKey, root = snapshot.contents[rootKey];
+    const captured = {...snapshot,contents:{...snapshot.contents,[rootKey]:{...root,payload:{...root.payload}}}};
+    this.viewVisibility.captureInto(captured);
+    return encodeWorkspace(captured, undefined, this.focusBookmarks());
   }
 
   private focusBookmarks() {

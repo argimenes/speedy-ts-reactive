@@ -35,9 +35,13 @@ export class BlockTreeProjection {
     this.setState = setState;
     this.register(initial);
     this.unsubscribe = repository.subscribeChanges((change) => {
-      if (!repository.state.placements[this.rootPlacementKey]) {
+      if (!repository.readState().placements[this.rootPlacementKey]) {
         this.unregister();
         this.setState(reconcile({ rootKey: this.state.rootKey, nodes: {}, revision: repository.state.revision }));
+        return;
+      }
+      if (change.appendedChildrenOwner) {
+        this.appendChildren(change.appendedChildrenOwner);
         return;
       }
       if (change.childrenOwner) {
@@ -68,8 +72,10 @@ export class BlockTreeProjection {
     return key;
   }
 
-  private build(): BlockTreeState {
-    const snapshot = this.repository.snapshot();
+  private build(rootPlacementKey = this.rootPlacementKey, rootRoute = "root", ancestors = new Set<ContentKey>()): BlockTreeState {
+    // Read only this occurrence subtree; copying the whole workspace makes
+    // activating a small neighbouring tab depend on every loaded Document.
+    const snapshot = this.repository.readState();
     const nodes: Record<NodeKey, BlockNode> = {};
 
     const project = (
@@ -96,7 +102,7 @@ export class BlockTreeProjection {
           placementKey,
           viewId: this.viewId,
           viewType: "cyclic-reference",
-          payload: { ...content.payload, cycleTargetType: content.viewType },
+          payload: { ...clone(content.payload), cycleTargetType: content.viewType },
           children: [],
           inlineContent: [],
           ownedRelations: {},
@@ -123,7 +129,7 @@ export class BlockTreeProjection {
         placementKey,
         viewId: this.viewId,
         viewType: content.viewType,
-        payload: content.payload,
+        payload: clone(content.payload),
         children,
         inlineContent,
         ownedRelations,
@@ -131,7 +137,7 @@ export class BlockTreeProjection {
       return key;
     };
 
-    const rootKey = project(this.rootPlacementKey, "root", new Set());
+    const rootKey = project(rootPlacementKey, rootRoute, ancestors);
     return { rootKey, nodes, revision: snapshot.revision };
   }
 
@@ -201,6 +207,27 @@ export class BlockTreeProjection {
   private updateSplit(change: SplitChange): void {
     this.updateInline(change.left);
     this.updateChildren(change.parent);
+  }
+
+  private appendChildren(parentContentKey: ContentKey): void {
+    const source = this.repository.readState(), nodes = unwrap(this.state.nodes);
+    for (const key of this.contentNodes.get(parentContentKey) ?? []) {
+      const parent = nodes[key];
+      if (parent.viewType === 'cyclic-reference') continue;
+      const route = this.nodeRoutes.get(key)!, ancestors = new Set<ContentKey>();
+      for (const [ancestorKey, ancestorRoute] of this.nodeRoutes) {
+        if (nodes[ancestorKey] && (route === ancestorRoute || route.startsWith(ancestorRoute + '/'))) ancestors.add(nodes[ancestorKey].contentKey);
+      }
+      const children = [...parent.children];
+      for (const placement of source.contents[parentContentKey].children.slice(children.length)) {
+        const branch = this.build(placement, `${route}/child:${placement}`, ancestors);
+        this.setState('nodes',branch.nodes);
+        this.register(branch);
+        children.push(branch.rootKey);
+      }
+      this.setState('nodes',key,'children',reconcile(children));
+    }
+    this.setState('revision',source.revision);
   }
 
   private updateChildren(parentContentKey: ContentKey): void {

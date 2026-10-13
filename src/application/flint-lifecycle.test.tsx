@@ -85,6 +85,66 @@ describe("Flint composite transient hosting", () => {
     [...f.host.querySelectorAll<HTMLButtonElement>('[aria-label="Flint Documents"] button')].find(b => b.textContent?.startsWith(activeTab!))!.click(); await tick();
     expect(f.editor.mounts.get(f.text().key)!.captureText!()).toContain("Unsaved ");
   });
+  it("closes tabs without snapshots, repository edits or History, and Undo still undoes text", async () => {
+    const f = setup(true, undefined, false); await tick();
+    f.tabs()[0].click(); await tick();
+    const text = f.text(), original = f.editor.mounts.get(text.key)!.captureText!();
+    f.editor.commands.replaceInlineRange(text.key, 0, 0, "Unsaved ");
+    const before = f.editor.repository.snapshot(), history = vi.fn();
+    const stop = f.editor.repository.subscribeHistoryChanges(history, error => { throw error; });
+    const snapshot = vi.spyOn(f.editor.repository, 'snapshot');
+    // Close the background view first, then the edited active view.
+    const titles = f.tabs().map(t => t.textContent!);
+    for (const title of titles.reverse()) f.host.querySelector<HTMLButtonElement>(`[aria-label="Close Document: ${title}"]`)!.click();
+    expect(f.tabs()).toHaveLength(0); expect(f.views()).toHaveLength(0);
+    expect(snapshot).not.toHaveBeenCalled(); expect(history).not.toHaveBeenCalled(); snapshot.mockRestore();
+    expect(f.editor.repository.snapshot()).toEqual(before);
+    f.editor.repository.undo();
+    expect(f.tabs()).toHaveLength(0);
+    expect(history.mock.calls.at(-1)?.[0].cause.kind).toBe('undo');
+    stop();
+    [...f.host.querySelectorAll<HTMLButtonElement>('[aria-label="Flint Documents"] button')].find(b => b.textContent?.startsWith(titles.at(-1)!))!.click(); await tick();
+    expect(f.editor.mounts.get(f.text().key)!.captureText!()).toBe(original);
+  });
+  it("closes the active tab and activates its neighbour without copying the workspace", async () => {
+    const f = setup(true, undefined, false); await tick();
+    const title = f.tabs().find(t=>t.getAttribute('aria-selected')==='true')!.textContent!;
+    const history = vi.fn(), snapshot = vi.spyOn(f.editor.repository,'snapshot');
+    const stop = f.editor.repository.subscribeHistoryChanges(history, error=>{throw error;});
+    f.host.querySelector<HTMLButtonElement>(`[aria-label="Close Document: ${title}"]`)!.click(); await tick();
+    expect(f.tabs()).toHaveLength(1); expect(f.views()).toHaveLength(1);
+    expect(f.tabs()[0].getAttribute('aria-selected')).toBe('true');
+    expect(snapshot).not.toHaveBeenCalled(); expect(history).not.toHaveBeenCalled();stop();
+  });
+  it("persists closed tabs as layout and reopening a saved tab does not insert or edit a Block", async () => {
+    const f = setup(true, undefined, false); await tick();
+    const title = f.tabs()[1].textContent!;
+    f.host.querySelector<HTMLButtonElement>(`[aria-label="Close Document: ${title}"]`)!.click();
+    const capture = f.editor.persistence.captureWorkspace();
+    expect(f.editor.viewVisibility.dirty()).toBe(true);
+    f.editor.persistence.acknowledgeWorkspaceSave(capture);
+    expect(f.editor.viewVisibility.dirty()).toBe(false);
+    const restored = setup(true, capture.document, false); await tick();
+    expect(restored.tabs()).toHaveLength(1);
+    const before = restored.editor.repository.snapshot();
+    [...restored.host.querySelectorAll<HTMLButtonElement>('[aria-label="Flint Documents"] button')].find(b => b.textContent?.startsWith(title))!.click(); await tick();
+    expect(restored.tabs()).toHaveLength(2);
+    expect(restored.editor.repository.snapshot()).toEqual(before);
+  });
+  it("closes a Flint window without changing Documents or History and keeps it closed after saving", async () => {
+    const f = setup(true, undefined, false); await tick();
+    f.editor.commands.replaceInlineRange(f.text().key, 0, 0, "Keep these edits ");
+    const before = f.editor.repository.snapshot(), history = vi.fn();
+    const stop = f.editor.repository.subscribeHistoryChanges(history, error => { throw error; });
+    const snapshot = vi.spyOn(f.editor.repository,'snapshot');
+    f.host.querySelector<HTMLButtonElement>('[aria-label="Close window"]')!.click();
+    expect(f.host.querySelector('.flint-application')).toBeNull(); expect(f.views()).toHaveLength(0);
+    expect(snapshot).not.toHaveBeenCalled(); expect(history).not.toHaveBeenCalled(); snapshot.mockRestore();stop();
+    expect(f.editor.repository.snapshot()).toEqual(before);
+    const restored = setup(true, f.editor.persistence.captureWorkspace().document, false); await tick();
+    expect(restored.host.querySelector('.flint-application')).toBeNull();
+    expect(Object.values(restored.editor.repository.state.contents).filter(c=>c.viewType==='document-block')).toHaveLength(2);
+  });
   it("offers Close Document on the clicked tab's mouse and keyboard context menus", async () => {
     const f = setup(true, undefined, false); await tick();
     f.tabs()[0].click(); await tick();
