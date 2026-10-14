@@ -5,6 +5,7 @@
  * `compactDocumentMode` defaults on; set false to hide the laptop-density
  * presentation and per-window Compact Document control.
  * `codexSystemBar` defaults on; set false to use the previous workspace toolbar.
+ * `directDomCharacterCells` defaults on; set false to use Solid's per-cell renderer.
  *
  * Block history is deliberately opt-in while the feature is being introduced.
  * Set `blockHistory` to `true` to expose the History/Restore UI and allow a
@@ -79,6 +80,8 @@ export type FeatureFlags = Readonly<{
   compactDocumentMode: boolean;
   compactEditorChrome: boolean;
   textSuperposition: boolean;
+  /** Direct DOM character cells, updated by one reactive effect per paragraph. */
+  directDomCharacterCells: boolean;
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
@@ -117,6 +120,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   compactDocumentMode: true,
   compactEditorChrome: true,
   textSuperposition: false,
+  directDomCharacterCells: true,
 });
 
 export type ReactiveEditorConfiguration = {

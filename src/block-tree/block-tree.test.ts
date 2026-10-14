@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { unwrap } from "solid-js/store";
 import { decodeDocument, encodeDocument, encodeLegacyStandalone, encodeWorkspace, LegacyExportLossError } from "./codecs";
 import { TreeCommandError, TreeCommands } from "./commands";
 import { OccurrenceIndex } from "./occurrences";
@@ -177,6 +178,26 @@ describe("tree commands", () => {
     const key = primary.state.nodes[primary.state.rootKey].children[0];
     commands.move(key, { kind: "after", anchorKey: key });
     expect(repository.state.revision).toBe(0);
+  });
+
+  it("keeps leaf character payloads private across projections, including extended payloads", () => {
+    const { repository, occurrences, commands, primary } = setup({ type: "standoff-editor-block", text: "😀" });
+    const cell = primary.node(primary.state.rootKey)!.inlineContent[0];
+    const linked = new BlockTreeProjection(repository, "view:leaf-copy", occurrences);
+    const other = linked.node(linked.state.rootKey)!.inlineContent[0];
+    const payload = () => unwrap(primary.node(cell)!.payload);
+    const canonical = () => repository.readState().contents[primary.node(cell)!.contentKey].payload;
+    expect(payload()).toEqual({ text: "😀" });
+    expect(payload()).not.toBe(canonical());
+    expect(payload()).not.toBe(unwrap(linked.node(other)!.payload));
+    commands.setPayloadField(cell, "future", { nested: [1, 2] });
+    expect(payload().future).toEqual({ nested: [1, 2] });
+    expect(payload().future).not.toBe(canonical().future);
+    expect(payload().future).not.toBe(unwrap(linked.node(other)!.payload).future);
+    commands.setPayloadField(cell, "text", "Z");
+    expect(linked.node(other)!.payload.text).toBe("Z");
+    repository.undo(); expect(linked.node(other)!.payload.text).toBe("😀");
+    primary.dispose(); linked.dispose();
   });
 
   it("rejects an out-of-range insertion index", () => {

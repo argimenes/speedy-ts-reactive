@@ -165,19 +165,60 @@ export function parseNativeEnvelope(bytes: Uint8Array): NativeDocument {
 
 export function decodeNative(bytes: Uint8Array): DeepReadonly<ResourceSnapshot> {
   const value = parseNativeEnvelope(bytes), doc = value.document;
-  const resource = clone(decodeGateDocument(doc, value.valueEncoding ? "native" : "legacy")) as ResourceSnapshot;
+  let resource = decodeGateDocument(doc, value.valueEncoding ? "native" : "legacy");
   const root = resource.placements[resource.rootPlacementKey]; check(root.target.kind === "local", "external root");
   const rootContent = resource.contents[root.target.contentKey];
   check(identity(rootContent) === value.resourceId, "root identity disagrees with resource identity");
-  for (const blockId of value.definitionOwnerBlockIds) {
-    const content = Object.values(resource.contents).find(c => c.payload.id === blockId);
-    check(content, "unknown retained definition"); content.definitionOwnerKey = root.target.contentKey;
+  if (value.definitionOwnerBlockIds.length) {
+    const retained = new Set(value.definitionOwnerBlockIds), contents = { ...resource.contents };
+    for (const content of Object.values(contents)) if (retained.delete(content.payload.id as string)) {
+      check(!["text-cell", "image-cell"].includes(content.viewType), "invalid retention membership");
+      contents[content.key] = freeze({ ...content, definitionOwnerKey: root.target.contentKey });
+    }
+    check(!retained.size, "unknown retained definition");
+    resource = freeze({ ...resource, contents });
   }
-  validateResource(resource);
-  // Reject orphan/non-owned definitions instead of silently dropping on re-save.
-  const recaptured = captureNative(resourceToRepository(resource), value.resourceId);
-  check(Object.keys(recaptured.contents).length === Object.keys(resource.contents).length, "definition lacks canonical ownership/retention");
-  return freeze(resource);
+  validateNativeOwnership(resource, root.target.contentKey);
+  return resource;
+}
+
+/** The portable decoder already validates every record, edge and cycle. Check
+ * native ownership directly on that immutable graph instead of converting it
+ * into a repository, cloning/re-projecting it and validating all Cells again. */
+function validateNativeOwnership(resource: DeepReadonly<ResourceSnapshot>, rootKey: string): void {
+  const owners = new Set<string>(), resources = new Set<string>();
+  for (const p of Object.values(resource.placements)) {
+    if (p.kind === "reference") continue;
+    if (p.target.kind === "local") {
+      check(!owners.has(p.target.contentKey), "multiple canonical owners for one content record");
+      owners.add(p.target.contentKey);
+    } else {
+      // validateResource has already checked the owned-resource descriptor.
+      const source = p.target.reference.source;
+      check(source.scope === "document", "owned resource needs Document provenance");
+      check(!resources.has(source.resourceId), "Resource has multiple semantic owners");
+      resources.add(source.resourceId);
+    }
+  }
+  const membership = new Set<string>();
+  const visit = (key: string) => {
+    if (membership.has(key)) return;
+    membership.add(key);
+    for (const slot of slots(resource.contents[key])) {
+      const p = resource.placements[slot];
+      if (p.kind !== "reference" && p.target.kind === "local") visit(p.target.contentKey);
+    }
+  };
+  visit(rootKey);
+  const registry = (resource.contents[rootKey].payload.linkedAnnotations ?? {}) as object;
+  for (const c of Object.values(resource.contents)) {
+    if (c.definitionOwnerKey === rootKey) visit(c.key);
+    if (Array.isArray(c.payload.standoffProperties)) for (const property of c.payload.standoffProperties) {
+      if (!id(property.annotationId) || externalDefinitionLink(property)) continue;
+      check(Object.hasOwn(registry, property.annotationId), `linked annotation ${property.annotationId} lacks Document ownership or explicit foreign provenance`);
+    }
+  }
+  check(membership.size === Object.keys(resource.contents).length, "definition lacks canonical ownership/retention");
 }
 
 /** Admission into an EXISTING repository/object bank, never a new editor or DTO.

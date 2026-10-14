@@ -451,8 +451,10 @@ export class CanonicalRepository {
         if (operation.kind === 'put-content' || operation.kind === 'remove-content') contents.add(operation.kind === 'put-content' ? operation.record.key : operation.key);
         if (operation.kind === 'put-placement' || operation.kind === 'remove-placement') placements.add(operation.kind === 'put-placement' ? operation.record.key : operation.key);
       }
-      for (const key of contents) this.setState('contents',key,next.contents[key] ? reconcile(next.contents[key]) : undefined);
-      for (const key of placements) this.setState('placements',key,next.placements[key] ? reconcile(next.placements[key]) : undefined);
+      // Fresh records have nothing to reconcile. Passing them directly avoids
+      // walking every new Cell twice through Solid's recursive unwrap.
+      for (const key of contents) this.setState('contents',key,next.contents[key] && current.contents[key] ? reconcile(next.contents[key]) : next.contents[key]);
+      for (const key of placements) this.setState('placements',key,next.placements[key] && current.placements[key] ? reconcile(next.placements[key]) : next.placements[key]);
       this.setState('rootPlacementKey',next.rootPlacementKey);
       this.setState('revision',next.revision);
       this.rebuildReferences();

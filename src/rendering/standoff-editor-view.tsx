@@ -1,6 +1,6 @@
 import { localFragment } from "../runtime/local-coordinates";
 import { immutable } from "../runtime/effect-contributions";
-import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createEffect, createRenderEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import type { BlockNode, BlockViewProps, NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { BlockOutlet, ChildBlocks, RelationBlocks } from "./block-outlet";
@@ -13,6 +13,7 @@ import {
   type DecorationShape,
   type VisualFragment,
 } from "./decorations";
+import { DirectCharacterCells, type CharacterCellPresentation } from "./direct-character-cells";
 import { blockAppearance } from "./appearance";
 import { compileCellStyleRuns, cellStyleAt, hasActiveRange, standoffStyleSchema, standoffSvgStyles, type StandoffAnnotation } from "./standoff-styles";
 import "./candidate-exclusions.css";
@@ -573,26 +574,11 @@ export function StandoffEditorView(props: BlockViewProps) {
     }
   });
 
-  return (
-    <div
-      ref={root}
-      class={`abstract-block reactive-standoff-block ${appearance().classes.join(" ")}`}
-      style={appearance().style}
-      classList={{ "reactive-block--focused": editor.focus.state.focusedKey === props.nodeKey }}
-      data-block-id={(node()?.payload.id as string | undefined) ?? ""}
-      data-client-id={props.nodeKey}
-      data-runtime-key={props.nodeKey}
-      data-block-type="standoff-editor-block"
-    >
-      <div ref={surface} class="reactive-standoff-surface" onPointerMove={hoverCandidate} onPointerLeave={() => setHovered(undefined)}>
-        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes()} blendMode="color-dodge" />
-        <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />
-        <DecorationLayer class="reactive-selection-layer reactive-search-layer" shapes={searchShapes()} />
-        <For each={exclusions()}>{control => <button type="button" class="candidate-exclusion" data-candidate-exclusion data-native-context-menu aria-label={control.label ?? "Exclude this match"} title={control.title ?? "Exclude this match"} classList={{ "candidate-exclusion--visible": control.active || hovered() === `${control.owner}:${control.id}` }} style={{ left: `${control.x}px`,top: `${control.y}px` }}
-          onPointerDown={event => { event.preventDefault(); event.stopPropagation(); }}
-          onClick={event => { event.preventDefault(); event.stopPropagation(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); }}
-          onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); } }}
-        >×</button>}</For>
+  // Solid owns the paragraph and its surrounding controls. The cell updater is
+  // created after the flow element so initial cells exist before mount/selection
+  // restoration, without a reactive owner for each character.
+  const CharacterFlow = () => {
+    const element = (
         <div
           ref={flow}
           class="reactive-standoff-flow"
@@ -603,7 +589,7 @@ export function StandoffEditorView(props: BlockViewProps) {
           aria-multiline="true"
           spellcheck={true}
         >
-          <For each={node()?.inlineContent ?? []}>
+          {!editor.features.directDomCharacterCells && <For each={node()?.inlineContent ?? []}>
             {(cellKey, index) => {
               const cell = () => projection.state.nodes[cellKey];
               const projected = () => superpositions().find(property =>
@@ -658,8 +644,71 @@ export function StandoffEditorView(props: BlockViewProps) {
                 </Show>
               );
             }}
-          </For>
+          </For>}
         </div>
+    ) as HTMLDivElement;
+    if (editor.features.directDomCharacterCells) {
+      const cells = new DirectCharacterCells(element, (key, status) => {
+        if (!editor.node(key)) return;
+        editor.commands.updateInlineImage(key, { status });
+        if (status === "ready") scheduleMeasure();
+      });
+      createRenderEffect(() => {
+        const owner = node();
+        const styles = cellStyles();
+        const concealed = concealedRanges();
+        const projected = superpositions().filter(property => property.active !== "source" && !!owner?.ownedRelations[property.active]);
+        const alternatives = new Map(projected.map(property => {
+          const alternative = projection.state.nodes[owner!.ownedRelations[property.active]];
+          const runs = compileCellStyleRuns(((alternative?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? [])
+            .map(annotation => editor.linkedAnnotations.resolve(annotation, alternative?.contentKey) as StandoffAnnotation));
+          return [property.id, {
+            id: property.id, end: property.end,
+            cells: (alternative?.inlineContent ?? []).map((key, index) => ({
+              key, text: String(projection.state.nodes[key]?.payload.text ?? ""), style: cellStyleAt(runs, index),
+            })),
+          }];
+        }));
+        cells.update((owner?.inlineContent ?? []).map((key, index): CharacterCellPresentation => {
+          const cell = projection.state.nodes[key];
+          const property = projected.find(property => index >= property.start && index <= property.end);
+          if (property) return { key, index, text: String(cell?.payload.text ?? ""),
+            hiddenSource: index !== property.start,
+            alternative: index === property.start ? alternatives.get(property.id) : undefined };
+          if (cell?.viewType === "image-cell") return { key, index, text: "", image: {
+            src: String(cell.payload.src ?? ""), alt: String(cell.payload.alt ?? ""), label: String(cell.payload.alt ?? "Inline image"),
+            width: cell.payload.width as number | undefined, height: cell.payload.height as number | undefined,
+          } };
+          return { key, index, text: String(cell?.payload.text ?? ""), style: cellStyleAt(styles, index),
+            concealed: concealed.some(({ annotation }) => hasActiveRange(annotation) && annotation.start <= index && annotation.end >= index) };
+        }));
+      });
+      onCleanup(() => cells.dispose());
+    }
+    return element;
+  };
+
+  return (
+    <div
+      ref={root}
+      class={`abstract-block reactive-standoff-block ${appearance().classes.join(" ")}`}
+      style={appearance().style}
+      classList={{ "reactive-block--focused": editor.focus.state.focusedKey === props.nodeKey }}
+      data-block-id={(node()?.payload.id as string | undefined) ?? ""}
+      data-client-id={props.nodeKey}
+      data-runtime-key={props.nodeKey}
+      data-block-type="standoff-editor-block"
+    >
+      <div ref={surface} class="reactive-standoff-surface" onPointerMove={hoverCandidate} onPointerLeave={() => setHovered(undefined)}>
+        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes()} blendMode="color-dodge" />
+        <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />
+        <DecorationLayer class="reactive-selection-layer reactive-search-layer" shapes={searchShapes()} />
+        <For each={exclusions()}>{control => <button type="button" class="candidate-exclusion" data-candidate-exclusion data-native-context-menu aria-label={control.label ?? "Exclude this match"} title={control.title ?? "Exclude this match"} classList={{ "candidate-exclusion--visible": control.active || hovered() === `${control.owner}:${control.id}` }} style={{ left: `${control.x}px`,top: `${control.y}px` }}
+          onPointerDown={event => { event.preventDefault(); event.stopPropagation(); }}
+          onClick={event => { event.preventDefault(); event.stopPropagation(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); }}
+          onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); } }}
+        >×</button>}</For>
+        <CharacterFlow />
         <SuperpositionLayer owner={node} anchors={superpositionAnchors()} />
         <RegionEffectLayer regions={regionEffects()} />
         <NoiseLayer regions={noiseRegions()} />

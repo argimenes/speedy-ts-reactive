@@ -110,6 +110,21 @@ export class BlockTreeProjection {
         return key;
       }
 
+      // Ordinary character atoms are leaves. Avoid allocating an ancestor Set
+      // and walking three empty edge collections for every character in every
+      // view. Keep a private payload: projection reconciliation must never mutate
+      // canonical content or another occurrence's payload.
+      if (content.viewType === "text-cell" && !content.children.length && !content.inlineContent.length && !Object.keys(content.ownedRelations).length) {
+        nodes[key] = {
+          key, contentKey: content.key, placementKey, viewId: this.viewId,
+          viewType: content.viewType,
+          payload: typeof content.payload.text === "string" && Object.keys(content.payload).length === 1
+            ? { text: content.payload.text } : clone(content.payload),
+          children: [], inlineContent: [], ownedRelations: {},
+        };
+        return key;
+      }
+
       const nextAncestors = new Set(ancestors).add(content.key);
       const children = content.children.map((childKey) =>
         project(childKey, `${route}/child:${childKey}`, nextAncestors),

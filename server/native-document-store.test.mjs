@@ -31,6 +31,22 @@ it('saves/reopens rich native bytes through actual routes and preserves identity
  const standalone=await fixture();await fs.writeFile(path.join(standalone.root,'renamed.mutable.json'),g.native);
  expect((await standalone.call('native/open',{location:{folder:'.',filename:'renamed.mutable.json'}})).Data.resourceId).toBe(g.resourceId);
 });
+it('opens large native text verbatim and revalidates changed bytes on every Open',async()=>{
+ const f=await fixture({readOnly:true}),wire=JSON.parse(await fs.readFile('artifacts/flint-b1.2/rich.mutable.json','utf8'));
+ const paragraph=wire.document.blocks.find(b=>b.type==='standoff-editor-block');
+ paragraph.inline=[{kind:'text',text:'A😀é漢\n'.repeat(6000)},{kind:'image',properties:{src:'image.png'}}];
+ const native=JSON.stringify(wire),file=path.join(f.root,f.location.filename);await fs.writeFile(file,native);
+ const opened=await f.call('native/open',{location:f.location});
+ expect(opened.status).toBe(200);expect(opened.Data.native).toBe(native);
+ expect(opened.Data.resourceId).toBe(wire.resourceId);expect(opened.Data.baseline.nativeHash).toBe(hash(native));
+ paragraph.inline[0].extra='invalid reserved field';await fs.writeFile(file,JSON.stringify(wire));
+ expect((await f.call('native/open',{location:f.location})).Success).toBe(false);
+ delete paragraph.inline[0].extra;paragraph.inline[1].properties={externalDefinition:{format:'codex-external-definition-gate',version:99}};
+ await fs.writeFile(file,JSON.stringify(wire));expect((await f.call('native/open',{location:f.location})).Success).toBe(false);
+ paragraph.inline=[{kind:'text',text:'Changed text'}];const changed=JSON.stringify(wire);await fs.writeFile(file,changed);
+ const reopened=await f.call('native/open',{location:f.location});expect(reopened.status).toBe(200);
+ expect(reopened.Data.native).toBe(changed);expect(reopened.Data.baseline.nativeHash).toBe(hash(changed));
+});
 it('saves, lists and reopens .phosphor native pairs while excluding their Markdown projections',async()=>{
  const f=await fixture(),g=await f.generation();f.location.filename='screen.phosphor';
  const saved=await f.save(g);expect(saved.Data.result.phase).toBe('saved');

@@ -12,6 +12,7 @@ import { NativeVaultStore } from './native-vault-store.mjs';
 import { VaultListingCache } from './vault-listing-cache.mjs';
 import { featureFlags } from '../src/configuration';
 import { decodeNative } from '../src/persistence/native-resource';
+import { prepareLightweightFacts } from '../src/knowledge/saved-reader';
 import { exportMarkdown } from '../src/persistence/markdown';
 import { recognizeCompatibleDocument, encodeRecognizedDocument } from '../src/persistence/compatible-document';
 const LIMIT = 20 * 1024 * 1024;
@@ -96,13 +97,16 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
   const {file}=await locate(req.body.location),data=await read(file);if(!data)fail('File not found',404);
   if(isDerivedMarkdownName(req.body.location.filename))fail('Derived Markdown files are projections; open the native Document',400);
   if(req.body.location.filename.endsWith('.md'))return {kind:'markdown',text:data.toString(),readOnly};
-  const native=data.toString(),resource=decodeNative(data),pair=await store(req.body.location,resource.resourceId);
+  // Open only needs validated identity and the original bytes. Use the same
+  // read-only structural/text validator as saved inspection; expanding every
+  // character into editor Cells here duplicates the client's admission work.
+  const native=data.toString(),{resourceId}=prepareLightweightFacts(data).inspection,pair=await store(req.body.location,resourceId);
   await fault('open-native-read',{file});
   const pending=await pair.pending(),observed=await baseline(pair);
   // Bind the caller's permission to the exact native bytes returned, never to
   // a later receipt/file sampled after another writer replaced those bytes.
   if(hash(data)!==observed.nativeHash)fail('Native file changed while opening; retry Open');
-  return {kind:'native',native,resourceId:resource.resourceId,baseline:observed,pending:pending?{generation:pending.generation,resourceId:resource.resourceId}:null,readOnly};
+  return {kind:'native',native,resourceId,baseline:observed,pending:pending?{generation:pending.generation,resourceId}:null,readOnly};
  });
  route('post','/save',async req=>{
   writable();const {location,generation,baseline:observed,dependencies,acceptMarkdownHash}=req.body;
