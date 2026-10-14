@@ -1,4 +1,4 @@
-import { For, Show, createSignal, lazy } from 'solid-js';
+import { For, Show, createSignal, createUniqueId, onMount, onCleanup, lazy } from 'solid-js';
 import type { DocumentApplicationInstance } from '../../feature-api/document-application';
 import { Dynamic } from "solid-js/web";
 import { KnowledgeView } from './knowledge-view';
@@ -8,14 +8,22 @@ import { useCurrentCavern } from '../../application/cavern-startup';
 import { MaterialChrome, materialChromePresentation } from './material/material-chrome';
 import { FlintProbe } from './probe/probe';
 import { FlintLogo } from './logo';
+import { createFlintLayout, FlintPaneSplitter } from './compact-layout';
 
 const DocumentGraph = lazy(() => import('./graph/document-graph').then(module => ({default:module.DocumentGraph})));
 // Original artwork remains the static logo fallback and welcome illustration.
 const identity = new URL('../../../docs/assets/flint/flint-app-icon-master.png', import.meta.url).href;
-export function FlintView(props:{application:DocumentApplicationInstance; materialChrome?:boolean; probe?:boolean; spatialGraph?:boolean; logo?:boolean}) {
+export function FlintView(props:{application:DocumentApplicationInstance; materialChrome?:boolean; probe?:boolean; spatialGraph?:boolean; logo?:boolean; compactShell?:boolean}) {
   const cavern = useCurrentCavern();
   const app=props.application;
-  const [library,setLibrary]=createSignal(true),[context,setContext]=createSignal(true);
+  const compact = () => props.compactShell !== false;
+  const preferences = createFlintLayout(compact());
+  const library = () => preferences.layout.library, context = () => preferences.layout.context;
+  const setLibrary = (value: boolean) => preferences.set('library', value), setContext = (value: boolean) => preferences.set('context', value);
+  const explorerId = createUniqueId(), inspectorId = createUniqueId();
+  const [shellWidth, setShellWidth] = createSignal(1200);
+  const narrow = (panel: 'library' | 'context') => compact() ? shellWidth() < (panel === 'library' ? 620 : 760) : shell.clientWidth < 940;
+  const visible = (panel: 'library' | 'context') => narrow(panel) ? narrowPanel() === panel : panel === 'library' ? library() : context();
   const [browse,setBrowse]=createSignal<'browse'|'search'>('browse');
   const [view,setView]=createSignal<'document'|'graph'>('document');
   const [lens,setLens]=createSignal<'Backlinks'|'References'|'Properties'>('Backlinks');
@@ -24,21 +32,27 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
   const [destination,setDestination]=createSignal({folder:'.',filename:'Document.mutable.json'});
   const [busy,setBusy]=createSignal(false),[error,setError]=createSignal('');
   let shell!:HTMLDivElement, menuButton!:HTMLButtonElement, storageInvoker:HTMLElement|undefined;
+  onMount(() => {
+    const measure = () => setShellWidth(shell.clientWidth || 1200);
+    measure();
+    if (typeof ResizeObserver !== 'undefined') { const observer = new ResizeObserver(measure); observer.observe(shell); onCleanup(() => observer.disconnect()); }
+  });
   const vault=()=>app.vault?.state();
   const showLibrary=()=>{setLibrary(true);setNarrowPanel('library');};
-  const focusLibrary=()=>{showLibrary();setBrowse('browse');queueMicrotask(()=>shell.querySelector<HTMLInputElement>('[aria-label="Vault directory"]')?.focus());};
+  const focusLibrary=()=>{showLibrary();setBrowse('browse');queueMicrotask(()=>{const input=shell.querySelector<HTMLInputElement>('[aria-label="Vault directory"]');for(let parent=input?.parentElement;parent&&parent!==shell;parent=parent.parentElement)if(parent instanceof HTMLDetailsElement)parent.open=true;input?.focus();});};
   const chooseVault=()=>app.vault?.choose?app.vault.choose():focusLibrary();
   const showSearch=()=>{showLibrary();setBrowse('search');queueMicrotask(()=>shell.querySelector<HTMLInputElement>('[aria-label="Search vault"]')?.focus());};
   const openStorage=(invoker?:HTMLElement)=>{storageInvoker=invoker??menuButton;const bound=app.files?.location();if(bound)setDestination(bound);setMenu(false);setStorage(true);};
   const closeStorage=()=>{setStorage(false);queueMicrotask(()=>{const target=storageInvoker?.isConnected?storageInvoker:menuButton;if(target?.isConnected)target.focus();});};
   const save=async()=>{if(!app.files||busy())return;if(!app.files.location()){openStorage();return;}setBusy(true);setError('');try{await app.files.save(destination());}catch(e){setError(String(e));}finally{setBusy(false);}};
   const toggle=(rail:'library'|'context')=>{const open=rail==='library'?library():context(),set=rail==='library'?setLibrary:setContext;
-    if(shell.clientWidth<940){set(true);setNarrowPanel(narrowPanel()===rail?'':rail);}else set(!open);
+    if(narrow(rail)){set(true);setNarrowPanel(narrowPanel()===rail?'':rail);}else set(!open);
   };
-  return <div ref={shell} class="flint-application" data-material-chrome={props.materialChrome !== false} data-view={view()} data-library={library()} data-context={context()} data-narrow-panel={narrowPanel()}>
+  return <div ref={shell} class="flint-application" classList={{'flint-compact':compact()}} data-density={compact() ? preferences.layout.density : undefined}
+    style={compact() ? { '--flint-explorer-width': `${preferences.layout.explorerWidth}px`, '--flint-inspector-width': `${preferences.layout.inspectorWidth}px` } : undefined} data-material-chrome={props.materialChrome !== false && !compact()} data-view={view()} data-library={library()} data-context={context()} data-narrow-panel={narrowPanel()}>
     <div class="flint-surfaces" inert={storage()}>
     <header class="flint-application__header">
-      <div class="flint-menu-anchor" onKeyDown={e=>{if(menu()&&e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}><button ref={menuButton} class="flint-brand" aria-label="Flint application menu" aria-expanded={menu()} onClick={()=>setMenu(!menu())}><FlintLogo enabled={props.logo !== false} root={()=>shell} image={identity}/><strong>FLINT</strong><span aria-hidden="true">⌄</span></button>
+      <div class="flint-menu-anchor" onKeyDown={e=>{if(menu()&&e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}><button ref={menuButton} class="flint-brand" aria-label="Flint application menu" aria-expanded={menu()} onClick={()=>setMenu(!menu())}><Show when={!compact()} fallback={<span class="flint-compact-mark" aria-hidden="true">◈</span>}><FlintLogo enabled={props.logo !== false} root={()=>shell} image={identity}/></Show><strong>FLINT</strong><span aria-hidden="true">⌄</span></button>
         <Show when={menu()}><div class="flint-menu" role="group" aria-label="Flint actions" onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}>
           <button disabled={!app.vault} onClick={()=>{setMenu(false);chooseVault();}}>Open Another Cavern…</button>
           <button onClick={()=>openStorage()}>Files</button>
@@ -46,45 +60,62 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
           <button onClick={()=>{setMenu(false);menuButton.focus();}}>Dismiss menu</button>
         </div></Show>
       </div>
-      <div class="flint-vault-name"><small>{cavern ? 'CAVERN' : 'WORKSPACE'}</small><span>{cavern?.current()?.name ?? vault()?.root??'A space for ideas'}</span></div>
-      <button data-flint-relief="key" class="flint-search-launch" onClick={showSearch}>Search</button>
-      <Show when={props.materialChrome !== false}><MaterialChrome root={()=>shell} /></Show>
-      <button data-flint-relief="key" disabled={!app.files||!app.properties()||busy()||vault()?.readOnly||vault()?.busy} onPointerDown={e=>e.preventDefault()} onClick={()=>void save()}>Save Document</button>
+      <div class="flint-vault-name"><small>{cavern ? 'CAVERN' : 'WORKSPACE'}</small><span>{cavern?.current()?.name ?? vault()?.root??'Workspace'}<Show when={compact() && app.properties()}> / {app.properties()?.title}</Show></span></div>
+      <button data-flint-relief="key" class="flint-search-launch" aria-label="Search collection" title="Search collection" onClick={showSearch}>{compact() ? "⌕" : "Search"}</button>
+      <Show when={compact()}><button class="flint-panel-toggle" aria-label="Toggle Library" title="Toggle explorer" aria-controls={explorerId} aria-expanded={visible("library")} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle("library")}>◧</button><button class="flint-panel-toggle" aria-label="Toggle Context" title="Toggle inspector" aria-controls={inspectorId} aria-expanded={visible("context")} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle("context")}>◨</button></Show>
+      <Show when={props.materialChrome !== false}><div class="flint-graph-lighting" hidden={compact() && view()!=="graph"}><MaterialChrome root={()=>shell} /></div></Show>
+      <button class="flint-save" data-flint-relief="key" disabled={!app.files||!app.properties()||busy()||vault()?.readOnly||vault()?.busy} onPointerDown={e=>e.preventDefault()} onClick={()=>void save()}>Save Document</button>
     </header>
-    <div class="flint-workspace-tools">
+    <Show when={!compact()}><div class="flint-workspace-tools">
       <button data-flint-relief="key" aria-label="Toggle Library" aria-pressed={library()} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle('library')}>☰ Library</button>
       <Show when={props.spatialGraph !== false}><button data-flint-relief="key" aria-label="Toggle Document and Graph" aria-pressed={view()==='graph'} disabled={!app.properties()} onClick={()=>setView(view()==='graph'?'document':'graph')}>{view()==='graph'?'▤ Document':'♧ Graph'}</button></Show>
       <div class="flint-current"><span>{cavern?.current()?.name ?? vault()?.root??'Open Documents'}</span><span aria-hidden="true"> / </span><strong>{app.properties()?.title??'Choose a Document'}</strong></div>
       <button data-flint-relief="key" aria-label="Toggle Context" aria-pressed={context()} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle('context')}>Context ☷</button>
     </div>
+    </Show>
     <Show when={props.probe !== false}><FlintProbe root={()=>shell} lighting={()=>materialChromePresentation(shell)?.lighting}/></Show>
     <div class="flint-application__body">
-      <nav data-flint-relief="panel" class="flint-application__vault flint-rail" aria-label="Flint Documents" onClick={event=>{if((event.target as Element).closest('.flint-search-hit,.flint-tree-document button,.flint-open-document'))setView('document');}} onKeyDown={e=>{if(e.key==='Escape'&&shell.clientWidth<940){e.preventDefault();e.stopPropagation();setNarrowPanel('');shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Library"]')?.focus();}}}>
+      <Show when={compact()}><nav class="flint-primary-rail" aria-label="Primary navigation">
+        <button aria-label="Documents" title="Documents" aria-pressed={view()==='document'} onClick={()=>setView('document')}>▤</button>
+        <Show when={props.spatialGraph !== false}><button aria-label="Toggle Document and Graph" title="Graph" aria-pressed={view()==='graph'} disabled={!app.properties()} onClick={()=>setView(view()==='graph'?'document':'graph')}>⌘</button></Show>
+        <button aria-label="Search collection from navigation" title="Search vault" onClick={showSearch}>⌕</button>
+        <button aria-label="Open files" title="Files" onClick={e=>openStorage(e.currentTarget)}>▧</button>
+      </nav></Show>
+      <nav id={explorerId} data-flint-relief="panel" class="flint-application__vault flint-rail" aria-label="Flint Documents" onClick={event=>{if((event.target as Element).closest('.flint-search-hit,.flint-tree-document button,.flint-open-document')){setView('document');if(compact())setNarrowPanel('');}}} onKeyDown={e=>{if(e.key==='Escape'&&narrow('library')){e.preventDefault();e.stopPropagation();setNarrowPanel('');shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Library"]')?.focus();}}}>
         <div data-flint-content="library">
         <div class="flint-spatial-navigation" role="group" aria-label="Flint views">
           <button data-flint-relief="key" aria-pressed={view()==='document'} onClick={()=>setView('document')}><span aria-hidden="true">▤</span> Documents</button>
           <Show when={props.spatialGraph !== false}><button data-flint-relief="key" aria-pressed={view()==='graph'} disabled={!app.properties()} onClick={()=>setView('graph')}><span aria-hidden="true">♧</span> Graph</button></Show>
           <button data-flint-relief="key" onClick={showSearch}><span aria-hidden="true">⌕</span> Search collection</button>
         </div>
-        <div class="flint-rail-heading"><h2>Library</h2><small>YOUR COLLECTION</small></div>
+        <div class="flint-rail-heading"><h2>{compact()?"Explorer":"Library"}</h2><small>YOUR COLLECTION</small></div>
         <div class="flint-segments" role="group" aria-label="Library views"><button aria-pressed={browse()==='browse'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('browse')}>Browse</button><button aria-pressed={browse()==='search'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('search')}>Search</button></div>
         <div hidden={browse()!=='browse'}>
-          <Show when={app.vault} fallback={<p>Cavern browsing is unavailable in this host.</p>}><VaultView vault={app.vault!}/></Show>
+          <Show when={app.vault} fallback={<p>Cavern browsing is unavailable in this host.</p>}><VaultView vault={app.vault!} compact={compact()} activeLocation={()=>app.properties()?.location}/></Show>
           <Show when={!vault()}><h3>Open Documents</h3><p class="flint-hint">Open a managed directory above, or continue with a Document already in this workspace.</p><For each={app.documents()}>{doc=><button class="flint-open-document" onClick={()=>app.openDocument(doc.id)}><span>{doc.title}</span></button>}</For></Show>
         </div>
         <div hidden={browse()!=='search'}><Show when={vault()&&app.knowledge} fallback={<p>Open a Cavern to search its available native Documents.</p>}><KnowledgeView knowledge={app.knowledge!} mode="search"/></Show></div>
         </div>
       </nav>
-      <main class="flint-application__editor" data-flint-content="document">
+      <Show when={compact()}><FlintPaneSplitter pane="library" controls={explorerId} width={()=>preferences.layout.explorerWidth} root={()=>shell} resize={(width,save)=>preferences.set('explorerWidth',width,save)}/></Show>
+      <main class="flint-application__editor" data-flint-content="document" onClick={event=>{if((event.target as Element).closest('[role=tab]'))setView('document');}}>
+        <Show when={compact()}><div class="flint-view-tools" role="group" aria-label="Document presentation">
+          <Show when={props.spatialGraph !== false}><button aria-label="Show graph" aria-pressed={view()==='graph'} disabled={!app.properties()} onClick={()=>setView(view()==='graph'?'document':'graph')}>⌘ Graph</button></Show>
+          <button aria-label="Reading density" title={preferences.layout.density==='compact'?'Switch to reading density':'Switch to compact density'} aria-pressed={preferences.layout.density==='reading'} onPointerDown={e=>e.preventDefault()} onClick={()=>preferences.set('density',preferences.layout.density==='compact'?'reading':'compact')}>Aa</button>
+        </div></Show>
         <Show when={!app.properties()}><section class="flint-welcome"><img src={identity} alt="Flint — a space for ideas"/><div><small>A SPACE FOR IDEAS</small><h1>Make room for your next thought.</h1><p>{vault()?'Choose a Document from your Library, or create one in the selected folder.':'Bring your Documents together. Open a Cavern to browse, write and follow connections.'}</p><button onClick={()=>vault()?focusLibrary():chooseVault()}>{vault()?'Browse / New Document':'Open a Cavern'}</button><button onClick={e=>openStorage(e.currentTarget)}>Open native file</button></div></section></Show>
         {/* This slot is unconditional. Shell presentation never reparents or remounts it. */}
         <app.tabs />
         <Show when={props.spatialGraph !== false && view()==='graph' && app.properties()}><DocumentGraph application={app} root={()=>shell} showDocument={()=>setView('document')}/></Show>
       </main>
-      <aside data-flint-relief="panel" class="flint-context flint-rail" onClick={event=>{if((event.target as Element).closest('.document-entity-list__focus,.flint-reference button,.flint-knowledge button'))setView('document');}} aria-label="Document Context" onKeyDown={e=>{if(e.key==='Escape'&&!e.defaultPrevented&&shell.clientWidth<940){e.preventDefault();e.stopPropagation();setNarrowPanel('');shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Context"]')?.focus();}}}>
+      <Show when={compact()}><FlintPaneSplitter pane="context" controls={inspectorId} width={()=>preferences.layout.inspectorWidth} root={()=>shell} resize={(width,save)=>preferences.set('inspectorWidth',width,save)}/></Show>
+      <aside id={inspectorId} data-flint-relief="panel" class="flint-context flint-rail" onClick={event=>{if((event.target as Element).closest('.document-entity-list__focus,.flint-reference button,.flint-knowledge button'))setView('document');}} aria-label="Document Context" onKeyDown={e=>{if(e.key==='Escape'&&!e.defaultPrevented&&narrow('context')){e.preventDefault();e.stopPropagation();setNarrowPanel('');shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Context"]')?.focus();}}}>
         <div data-flint-content="entities">
         <div class="flint-rail-heading"><h2>Context</h2><small>AROUND THIS DOCUMENT</small></div>
-        <div class="flint-segments" role="group" aria-label="Context lenses"><For each={['Backlinks','References','Properties'] as const}>{name=><button aria-pressed={lens()===name} onPointerDown={e=>e.preventDefault()} onClick={()=>setLens(name)}>{name}</button>}</For></div>
+        <Show when={compact()} fallback={<div class="flint-segments" role="group" aria-label="Context lenses"><For each={['Backlinks','References','Properties'] as const}>{name=><button aria-pressed={lens()===name} onPointerDown={e=>e.preventDefault()} onClick={()=>setLens(name)}>{name}</button>}</For></div>}>
+          <div class="flint-segments" role="group" aria-label="Inspector panels"><button aria-pressed={lens()!=='Properties'} onPointerDown={e=>e.preventDefault()} onClick={()=>setLens('Backlinks')}>Links</button><button aria-pressed={lens()==='Properties'} onPointerDown={e=>e.preventDefault()} onClick={()=>setLens('Properties')}>Properties</button></div>
+          <div class="flint-link-lenses" role="group" aria-label="Link views" hidden={lens()==='Properties'}><For each={['Backlinks','References'] as const}>{name=><button aria-pressed={lens()===name} onPointerDown={e=>e.preventDefault()} onClick={()=>setLens(name)}>{name}</button>}</For></div>
+        </Show>
         <Show when={!app.properties()}><p>Open a Document to explore its context.</p></Show>
         <Show when={lens()==='Backlinks'&&context()}><Show when={app.entityBacklinks} fallback={<p>Entity backlinks are unavailable in this host.</p>}><Dynamic component={app.entityBacklinks!}/></Show></Show>
         <div hidden={lens()!=='References'}><Show when={vault()&&app.knowledge} fallback={<p>Open a vault to work with native Document references.</p>}><KnowledgeView knowledge={app.knowledge!} mode="references"/></Show></div>
@@ -93,6 +124,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
       </aside>
     </div>
     <footer class="flint-status" aria-label="Flint resource status"><div><span class="flint-status-dot" aria-hidden="true"/><span class="flint-signature">SAME THING. MANY FORMS.</span><span role="status">{busy()?'Saving…':app.properties()?.status??app.files?.status()??'No active Document'}</span></div>
+      <Show when={compact()}><span class="flint-cavern-status">Cavern: {cavern?.current()?.name ?? vault()?.root ?? "Workspace"}</span></Show>
       <Show when={vault()}><small>{vault()!.documents.filter(d=>d.loaded).length}/{vault()!.documents.length} loaded · search coverage is reported per query</small></Show>
       <button onClick={e=>openStorage(e.currentTarget)}>Storage details</button>
     </footer>

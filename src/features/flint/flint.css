@@ -133,7 +133,7 @@
 @container flint (max-width:939px) {
   /* A transient occurrence has no Document-Window drawer controls. Use the
      existing in-flow margin presentation at narrow widths, keeping it editable. */
-  .flint-application .reactive-document-occurrence .reactive-document-occurrence__content .reactive-relation:is([data-relation-name=leftMargin],[data-relation-name=rightMargin]) { display:block; position:static; width:auto; margin:8px 0; padding-left:10px; border-left:2px solid #bda775; }
-  .flint-application .reactive-document-occurrence .reactive-relation::before,.flint-application .reactive-document-occurrence .reactive-relation::after { display:none; }
-  .flint-application .reactive-document-occurrence__content:has(.reactive-relation):not(:has(.reactive-page)) { padding:18px 30px; }
+  .flint-application:not(.flint-compact) .reactive-document-occurrence .reactive-document-occurrence__content .reactive-relation:is([data-relation-name=leftMargin],[data-relation-name=rightMargin]) { display:block; position:static; width:auto; margin:8px 0; padding-left:10px; border-left:2px solid #bda775; }
+  .flint-application:not(.flint-compact) .reactive-document-occurrence .reactive-relation::before,.flint-application:not(.flint-compact) .reactive-document-occurrence .reactive-relation::after { display:none; }
+  .flint-application:not(.flint-compact) .reactive-document-occurrence__content:has(.reactive-relation):not(:has(.reactive-page)) { padding:18px 30px; }
 }

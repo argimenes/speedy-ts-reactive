@@ -1,0 +1,147 @@
+/* Flint Compact reference tokens. Scope to the application; graph materials and
+   authored inline/block styles remain owned by their existing renderers. */
+.flint-application.flint-compact {
+  --flint-line:#dedbd3; --flint-coal:#f6f3ec; --flint-stone:#efebe3;
+  --flint-chalk:#35322d; --flint-ink:#35322d; --flint-muted:#89847b;
+  --flint-ochre:#8b7455; --flint-mineral:#8b7455; --flint-focus:#8b7455;
+  --flint-hover:#e8e2d7; --flint-editor-size:14px; --flint-editor-leading:1.45;
+  --document-heading-h1:25px; --document-heading-h2:22px; --document-heading-h3:19px;
+  background:#f6f3ec; color:#35322d; font:13px/1.45 Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  min-width:0;
+}
+.flint-compact *, .flint-compact *::before, .flint-compact *::after { box-sizing:border-box; }
+.flint-compact :is(.flint-application__header,.flint-primary-rail,.flint-rail,.flint-view-tools,.flint-status,.flint-menu,.flint-sheet) button {
+  font:inherit; color:inherit; background:transparent; border:0; box-shadow:none; border-radius:4px; cursor:pointer;
+}
+.flint-compact :is(.flint-application__header,.flint-primary-rail,.flint-rail,.flint-view-tools,.flint-status,.flint-menu,.flint-sheet) button:hover:not(:disabled) { background:var(--flint-hover); }
+.flint-compact :is(button,summary,[role=separator]):focus-visible { outline:2px solid var(--flint-focus); outline-offset:-2px; }
+.flint-application.flint-compact [aria-pressed=true] { background:#e6ded1; border-color:transparent!important; color:#564734; }
+.flint-application.flint-compact .flint-application__header { height:39px; min-height:39px; padding:0 12px; gap:6px; flex-wrap:nowrap; background:var(--flint-coal); border-bottom:1px solid var(--flint-line); }
+.flint-application.flint-compact .flint-brand { gap:9px; min-width:85px; margin-right:14px; }
+.flint-application.flint-compact .flint-brand strong { font:13px Georgia,serif; letter-spacing:.25em; }
+.flint-compact-mark { font-size:20px; color:var(--flint-ochre); }
+.flint-compact .flint-vault-name { font-size:12px; color:var(--flint-muted); }
+.flint-compact .flint-vault-name small { display:none; }
+.flint-compact .flint-application__header :is(.flint-search-launch,.flint-panel-toggle) { width:30px; height:28px; flex:none; padding:0; font-size:18px; }
+.flint-compact .flint-application__header .flint-save { font-size:11px; padding:4px 6px; white-space:nowrap; }
+.flint-application.flint-compact .flint-application__body { gap:0; padding:0; overflow:hidden; }
+.flint-primary-rail { width:42px; flex:0 0 42px; border-right:1px solid var(--flint-line); display:flex; align-items:center; flex-direction:column; gap:5px; padding-top:10px; }
+.flint-primary-rail button { width:32px; height:32px; padding:0; font-size:19px!important; color:#69645b; }
+.flint-application.flint-compact .flint-rail { position:static; display:block; top:auto; bottom:auto; max-height:none; border:0; border-radius:0; box-shadow:none; background:var(--flint-coal); padding:11px 7px; font-size:12px; }
+.flint-application.flint-compact .flint-application__vault { flex:0 1 var(--flint-explorer-width,238px); min-width:150px; width:var(--flint-explorer-width,238px); }
+.flint-application.flint-compact .flint-context { flex:0 1 var(--flint-inspector-width,255px); min-width:190px; width:var(--flint-inspector-width,255px); padding:0; }
+.flint-compact .flint-spatial-navigation, .flint-compact .flint-context .flint-rail-heading { display:none; }
+.flint-compact .flint-rail-heading { padding:0 8px 10px; margin:0; }
+.flint-application.flint-compact .flint-rail-heading h2 { font:11px system-ui!important; letter-spacing:.1em; color:#777066; text-transform:uppercase; }
+.flint-compact .flint-rail-heading small { display:none; }
+.flint-compact .flint-segments { gap:0; padding:0; margin:0 0 10px; height:33px; border-bottom:1px solid var(--flint-line); }
+.flint-compact .flint-segments button { padding:0 8px; font-size:11px; border:0; border-radius:0; background:transparent; }
+.flint-application.flint-compact .flint-segments button[aria-pressed=true] { border-bottom:2px solid var(--flint-ochre)!important; background:transparent; color:#41392e; }
+.flint-compact .flint-context .flint-segments { margin:0; }
+.flint-compact .flint-context [data-flint-content=entities] > :not(.flint-segments):not(.flint-rail-heading) { padding:14px; }
+.flint-compact .flint-context h2, .flint-compact .flint-context h3 { font:600 12px system-ui; }
+.flint-compact .flint-rail :is(input,select,textarea) { font-size:12px; padding:5px 7px; background:#faf8f3; border-color:var(--flint-line); }
+.flint-compact .flint-rail label { margin:8px 0; color:#69645b; }
+.flint-compact .flint-tree-folder { margin:1px 0; }
+.flint-compact .flint-tree-folder .flint-tree-folder { border-left:0; padding-left:12px; margin-left:0; }
+.flint-compact .flint-tree-folder summary button { height:27px; padding:0 5px; }
+.flint-compact .flint-tree-document button, .flint-compact .flint-open-document { min-height:27px; margin:1px 0; padding:4px 8px; text-align:left; font-size:12.5px; background:transparent; border:0; }
+.flint-compact .flint-tree-document button[aria-current=page] { background:#e7dfd2; color:#3e3428; }
+.flint-compact .flint-tree-document button small { font-size:10px; margin:2px 0 0; }
+.flint-compact .flint-tree-document button:not(:hover):not(:focus-visible) small { display:none; }
+.flint-compact .flint-vault-controls .flint-vault-options { padding:0 0 8px; margin:0; border:0; }
+.flint-compact .flint-vault-controls > p { font-size:11px; color:var(--flint-muted); }
+.flint-pane-splitter { width:4px; flex:0 0 4px; background:var(--flint-line); cursor:col-resize; touch-action:none; user-select:none; }
+.flint-pane-splitter:hover, .flint-pane-splitter:focus-visible { background:var(--flint-ochre); }
+.flint-application.flint-compact[data-library=false] :is(.flint-application__vault,.flint-pane-splitter--library),
+.flint-application.flint-compact[data-context=false] :is(.flint-context,.flint-pane-splitter--context) { display:none; }
+.flint-application.flint-compact .flint-application__editor { position:relative; container:flint-document / inline-size; display:flex; flex-direction:column; flex:1; min-width:280px; border:0; border-radius:0; overflow:hidden; background:#faf8f3; }
+.flint-compact .flint-application__editor > .reactive-tabs { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.flint-application.flint-compact .reactive-tabs > .reactive-tabs__labels { height:33px; min-height:33px; flex:none; gap:1px; padding:0 112px 0 0; background:var(--flint-coal); border-bottom:1px solid var(--flint-line); overflow-x:auto; scrollbar-width:thin; }
+.flint-application.flint-compact .reactive-tabs > .reactive-tabs__labels button { height:32px; border:0; border-radius:0; padding:0 12px; background:transparent; color:#716a60; box-shadow:none; font:12px system-ui; }
+.flint-compact .flint-document-tab { border-right:1px solid var(--flint-line); }
+.flint-application.flint-compact .reactive-tabs__labels .flint-document-tab > .flint-document-tab__close { padding:0 7px; font-size:16px; color:#aaa399; }
+.flint-application.flint-compact .reactive-tabs > .reactive-tabs__labels button[aria-selected=true],
+.flint-application.flint-compact .reactive-tabs__labels .flint-document-tab[data-active=true] > .flint-document-tab__close { border:0; background:#faf8f3; color:#332f29; box-shadow:none; }
+.flint-view-tools { position:absolute; right:0; top:0; z-index:5; height:33px; display:flex; align-items:stretch; background:var(--flint-coal); border-left:1px solid var(--flint-line); border-bottom:1px solid var(--flint-line); }
+.flint-view-tools button { border-radius:0!important; padding:0 10px; font-size:12px!important; }
+.flint-view-tools button:last-child { width:37px; padding:0; color:var(--flint-muted); }
+.flint-compact .flint-application__editor > .reactive-tabs > .reactive-tabs__panel { flex:1; min-height:0; overflow:auto; }
+.flint-application.flint-compact[data-view=graph] .flint-application__editor > .reactive-tabs { flex:none; }
+.flint-compact .reactive-document-occurrence { background:#faf8f3; }
+.flint-application.flint-compact .reactive-document-occurrence__content { width:100%; max-width:none; margin:0; padding:16px 16px 24px 24px; --margin-column:clamp(88px,14cqi,136px); font-size:var(--flint-editor-size); line-height:var(--flint-editor-leading); }
+.flint-application.flint-compact .reactive-document-occurrence .reactive-standoff-surface { min-height:1.45em; padding:0; border:0; border-radius:0; background:transparent; }
+.flint-application.flint-compact .reactive-document-occurrence .reactive-standoff-flow { min-height:1.45em; line-height:inherit; }
+.flint-compact .reactive-document-occurrence .reactive-standoff-block + .reactive-standoff-block { margin-top:12px; }
+.flint-compact .document-style-bar { flex:none; background:var(--flint-coal); border-color:var(--flint-line); }
+.flint-application.flint-compact[data-density=reading] { --flint-editor-size:17px; --flint-editor-leading:1.65; --document-heading-h1:30px; }
+/* Use the editor pane, not the whole OS window, to size margin gutters.
+   Empty sides consume no gutter; leave enough inset for block drag handles. */
+.flint-application.flint-compact .reactive-page {
+  --margin-column:clamp(88px,14cqi,136px);
+  --flint-page-left:24px; --flint-page-right:16px;
+  padding:16px var(--flint-page-right) 24px var(--flint-page-left);
+}
+.flint-application.flint-compact .reactive-page:has(.reactive-relation--leftMargin) { --flint-page-left:var(--margin-column); }
+.flint-application.flint-compact .reactive-page:has(.reactive-relation--rightMargin) { --flint-page-right:var(--margin-column); }
+.flint-application.flint-compact .reactive-page--minimap-left { padding-left:calc(var(--flint-page-left) + 42px); }
+.flint-application.flint-compact .reactive-page--minimap-right { padding-right:calc(var(--flint-page-right) + 42px); }
+.flint-application.flint-compact .reactive-document-occurrence__content:has(.reactive-relation--leftMargin):not(:has(.reactive-page)) { padding-left:calc(var(--margin-column) + 24px); }
+.flint-application.flint-compact .reactive-document-occurrence__content:has(.reactive-relation--rightMargin):not(:has(.reactive-page)) { padding-right:calc(var(--margin-column) + 16px); }
+@container flint-document (max-width:600px) {
+  /* Keep margin text editable in the flow when side gutters would squeeze text. */
+  .flint-application.flint-compact .reactive-page { --flint-page-left:24px; --flint-page-right:16px; }
+  .flint-application.flint-compact .reactive-page:has(.reactive-relation--leftMargin) { --flint-page-left:24px; }
+  .flint-application.flint-compact .reactive-page:has(.reactive-relation--rightMargin) { --flint-page-right:16px; }
+  .flint-application.flint-compact .reactive-document-occurrence__content:has(.reactive-relation):not(:has(.reactive-page)) { padding:16px 16px 24px 24px; }
+  .flint-application.flint-compact .reactive-document-occurrence .reactive-relation:is([data-relation-name=leftMargin],[data-relation-name=rightMargin]) { display:block; position:static; width:auto; margin:8px 0; padding-left:10px; border-left:2px solid #bda775; }
+  .flint-application.flint-compact .reactive-document-occurrence .reactive-relation::before,
+  .flint-application.flint-compact .reactive-document-occurrence .reactive-relation::after { display:none; }
+}
+.flint-application.flint-compact .flint-status { height:24px; padding:0 12px; gap:8px; flex-wrap:nowrap; background:var(--flint-coal); border-top:1px solid var(--flint-line); font-size:11px; color:var(--flint-muted); }
+.flint-compact .flint-status > div { min-width:0; overflow:hidden; }
+.flint-compact .flint-status [role=status] { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.flint-compact .flint-signature, .flint-compact .flint-status-dot { display:none; }
+.flint-compact .flint-cavern-status { order:-1; white-space:nowrap; }
+.flint-compact .flint-status small { white-space:nowrap; flex-basis:auto; order:0; }
+.flint-compact .flint-status button { padding:0 4px; white-space:nowrap; }
+.flint-compact .flint-menu, .flint-compact .flint-sheet { background:var(--flint-coal); border:1px solid var(--flint-line); color:var(--flint-chalk); box-shadow:0 8px 24px #35322d22; }
+.flint-compact .flint-welcome { background:#faf8f3; padding:40px 24px; }
+.flint-compact .flint-welcome h1 { font:600 25px/1.25 system-ui; }
+.flint-compact .flint-light-controls summary { padding:3px 6px; font-size:11px; }
+.flint-compact .flint-document-graph { min-height:0; overflow:auto; background:radial-gradient(ellipse at 40% 25%,#faf7ef,#eee9df); }
+@container flint (max-width:1000px) {
+  .flint-compact .flint-status small { display:none; }
+}
+@container flint (max-width:759px) {
+  .flint-application.flint-compact :is(.flint-context,.flint-pane-splitter--context) { display:none; }
+  .flint-application.flint-compact[data-narrow-panel=context] .flint-context { display:block; position:absolute; right:0; top:0; bottom:0; z-index:20; width:min(310px,calc(100% - 42px)); background:#f6f3ec!important; border-left:1px solid var(--flint-line); box-shadow:-8px 0 24px #35322d22; }
+  .flint-compact .flint-vault-name, .flint-compact .flint-cavern-status { display:none; }
+  .flint-compact .flint-search-launch { margin-left:auto; }
+  .flint-application.flint-compact .flint-brand { margin-right:0; }
+}
+@container flint (max-width:619px) {
+  .flint-application.flint-compact :is(.flint-application__vault,.flint-pane-splitter--library) { display:none; }
+  .flint-application.flint-compact[data-narrow-panel=library] .flint-application__vault { display:block; position:absolute; left:42px; top:0; bottom:0; z-index:20; width:min(310px,calc(100% - 42px)); background:#f6f3ec!important; border-right:1px solid var(--flint-line); box-shadow:8px 0 24px #35322d22; }
+  .flint-application.flint-compact .flint-application__editor { min-width:0; }
+  .flint-compact .flint-application__header .flint-save { max-width:48px; overflow:hidden; text-overflow:ellipsis; }
+  .flint-compact .flint-graph-lighting { position:absolute; top:40px; right:8px; z-index:25; }
+}
+@media (forced-colors:active) {
+  .flint-application.flint-compact, .flint-compact .flint-rail { background:Canvas!important; color:CanvasText!important; }
+  .flint-pane-splitter { background:ButtonBorder; }
+  .flint-compact button:focus-visible { outline-color:Highlight; }
+}
+.flint-compact .flint-context .flint-segments { text-transform:uppercase; }
+.flint-compact .flint-context .flint-segments button { text-transform:uppercase; letter-spacing:.04em; }
+.flint-compact .flint-link-lenses { display:flex; gap:4px; padding:10px 14px 0!important; }
+.flint-compact .flint-link-lenses button { padding:3px 7px; font-size:11px; }
+.flint-application.flint-compact .flint-entity-list table { font:12.5px/1.4 system-ui,sans-serif; }
+.flint-application.flint-compact .flint-entity-list td { padding:5px 3px; border-color:var(--flint-line); }
+.flint-application.flint-compact .flint-entity-list th { background:var(--flint-stone); }
+.flint-application.flint-compact .flint-entity-list th:nth-child(2) { width:52px; }
+.flint-application.flint-compact .flint-entity-list th:nth-child(3) { width:62px; }
+.flint-application:not(.flint-compact) .flint-vault-options { display:contents; }
+.flint-application:not(.flint-compact) .flint-vault-options > summary { display:none; }
+.flint-compact .flint-tree-document button { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.flint-compact .flint-tree-document button small { display:none; }

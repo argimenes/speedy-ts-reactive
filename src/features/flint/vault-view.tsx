@@ -10,7 +10,7 @@ function groupByFolder<T>(rows: readonly T[], folder: (row:T)=>string) {
 }
 const join = (folder:string,name:string) => folder==='.'?name:`${folder}/${name}`;
 
-export function VaultView(props:{vault:ApplicationVault}) {
+export function VaultView(props:{vault:ApplicationVault; compact?:boolean; activeLocation?:()=>{folder:string;filename:string}|undefined}) {
   const cavern = useCurrentCavern();
   const [root,setRoot]=createSignal('.'), [folder,setFolder]=createSignal('.'), [selected,setSelected]=createSignal('');
   const [name,setName]=createSignal('Document.mutable.json'), [title,setTitle]=createSignal('Untitled'), [directory,setDirectory]=createSignal('New folder');
@@ -27,13 +27,14 @@ export function VaultView(props:{vault:ApplicationVault}) {
   const candidateFolders=createMemo(()=>groupByFolder(state()?.candidates??[],f=>location(f).folder));
   const pickFolder=(p:string)=>{setFolder(p);setSelected('');setMoveName(p.split('/').pop()!);setDestination(state()!.root);};
   const Folder=(p:{path:string})=> <details open class="flint-tree-folder"><summary><button aria-pressed={folder()===p.path&&!selected()} onClick={()=>pickFolder(p.path)}>{p.path===state()?.root?p.path:p.path.split('/').pop()}</button></summary>
-    <For each={documentFolders().get(p.path)}>{d=><div class="flint-tree-document"><button aria-label={`Open ${path(d.location)}`} disabled={busy()||!state()!.complete||d.state==='ambiguous'||d.state==='pending'} onClick={()=>{setSelected(path(d.location));setFolder(d.location.folder);setDestination(d.location.folder);setMoveName(d.location.filename);void run(()=>props.vault.openFile(d.location));}}>{d.title}<small>{d.location.filename} · {d.state}</small></button><Show when={d.state==='pending'}><button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.recoverNative(d.location))}>Recover {d.location.filename}</button></Show></div>}</For>
+    <For each={documentFolders().get(p.path)}>{d=><div class="flint-tree-document"><button title={`${d.title} · ${path(d.location)} · ${d.state}`} aria-current={props.activeLocation?.() && path(props.activeLocation()!)===path(d.location) ? "page" : undefined} aria-label={`Open ${path(d.location)}`} disabled={busy()||!state()!.complete||d.state==='ambiguous'||d.state==='pending'} onClick={()=>{setSelected(path(d.location));setFolder(d.location.folder);setDestination(d.location.folder);setMoveName(d.location.filename);void run(()=>props.vault.openFile(d.location));}}>{d.title}<small>{d.location.filename} · {d.state}</small></button><Show when={d.state==='pending'}><button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.recoverNative(d.location))}>Recover {d.location.filename}</button></Show></div>}</For>
     <For each={childFolders().get(p.path)}>{f=><Folder path={f}/>}</For>
     <For each={candidateFolders().get(p.path)}>{candidate=><div class="flint-tree-document"><button aria-label={`Open ${candidate}`} disabled={busy()} onClick={()=>{setSelected('');setFolder(location(candidate).folder);void run(async()=>{if(!props.vault.openCandidate)throw Error('Content recognition is unavailable');await props.vault.openCandidate(location(candidate));});}}>{location(candidate).filename}<small>File · recognize on Open</small></button></div>}</For>
   </details>;
   return <section class="flint-vault-controls" aria-label="Filesystem Cavern">
     <Show when={props.vault.loading?.()}><p role="status">Loading Vault contents…</p></Show>
     <Show when={props.vault.error?.()}><p role="alert">Could not load Vault contents: {props.vault.error!()}</p><Show when={props.vault.retry}><button disabled={busy()} onClick={()=>void run(()=>props.vault.retry!())}>Retry</button></Show></Show>
+    <details class="flint-vault-options" open={!props.compact}><summary>Cavern &amp; filters</summary>
     <Show when={props.vault.choose}><button disabled={busy()} onClick={()=>props.vault.choose!()}>Open Another Cavern…</button><p>{cavern?.current()?.path ?? 'Choose a directory in the server Documents store.'}</p></Show>
     <Show when={!cavern}><details><summary>Open by managed relative path</summary><label>Managed directory<input aria-label="Vault directory" value={root()} onInput={e=>setRoot(e.currentTarget.value)}/></label>
     <button disabled={busy()} onClick={()=>void run(()=>props.vault.open(root()))}>Open Cavern</button></details></Show>
@@ -42,6 +43,8 @@ export function VaultView(props:{vault:ApplicationVault}) {
       <p>Vault: {state()!.root} <Show when={readOnly()}><strong>Read-only storage. Local edits cannot be saved.</strong></Show></p>
       <label>Tag filter<select aria-label="Tag filter" value={tag()} onChange={e=>setTag(e.currentTarget.value)}><option value="">All tags</option><For each={tags()}>{t=><option value={t}>{t}</option>}</For></select></label>
       <Show when={state()!.documents.some(d=>!d.loaded)}><p>Tag filtering covers opened Documents only.</p></Show>
+    </Show></details>
+    <Show when={state()}>
       <Show when={state()!.complete&&!state()!.documents.length}><p role="status">No enrolled native Documents in this Cavern. Existing files remain browsable; Open recognizes compatible Document content without converting the source.</p></Show>
       <Folder path={state()!.root}/>
       <p>Selected folder: <output aria-label="Selected folder">{folder()}</output></p>

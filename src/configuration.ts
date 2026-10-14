@@ -21,6 +21,8 @@ export type FeatureFlags = Readonly<{
   windowMaximize: boolean;
   /** Composite Document application; transient tabs share canonical content. */
   flint: boolean;
+  /** Compact HTML shell, resizable panels and local editor-density preferences. */
+  flintCompactShell: boolean;
   /** Ink-native character screen and amber material presentation. */
   phosphor: boolean;
   /** Physical Phosphor emblem with a local, slowly migrating discharge. */
@@ -88,6 +90,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   cavernStartup: true,
   windowMaximize: true,
   flint: true,
+  flintCompactShell: true,
   phosphor: true,
   phosphorNixie: true,
   phosphorStudioDrift: true,
