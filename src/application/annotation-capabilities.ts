@@ -61,6 +61,19 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
       const scope = resolveSearchScope(editor, origin, "document");
       return { scope, texts: scopeNodes(editor, scope).found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => text(node.key)!) };
     },
+    documentAnnotations(key) {
+      const node = editor.node(key);
+      const origin = node?.viewType === "document-window-block" ? node.children.find(child => editor.node(child)?.viewType === "document-block") ?? key : key;
+      const scope = resolveSearchScope(editor, origin, "document");
+      return { scope, texts: scopeNodes(editor, scope).found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => immutable({
+        key: node.key, contentKey: node.contentKey, placementKey: node.placementKey,
+        version: editor.repository.state.contents[node.contentKey]?.inlineRevision ?? 0,
+        cellCount: node.inlineContent.length,
+        properties: ((Array.isArray(node.payload.standoffProperties) ? node.payload.standoffProperties : []) as Record<string, unknown>[])
+          .filter(p => p && typeof p === 'object' && !Array.isArray(p))
+          .map(p => JSON.parse(JSON.stringify(editor.linkedAnnotations.resolve(p, node.contentKey)))),
+      })) };
+    },
     watchDocumentEntities(key, listener) {
       check();
       const watch = watchDocumentEntities(editor, key, listener);

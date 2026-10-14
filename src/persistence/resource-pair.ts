@@ -4,8 +4,8 @@ import { captureNative, nativeText } from "./native-resource";
 import { exportMarkdown, type LinkTarget, type Diagnostic } from "./markdown";
 import { freeze, type DeepReadonly } from "../block-tree/commit-capture";
 export interface PairGeneration {
-  resourceId: string; generation: string; native: string; markdown: string;
-  profile: string; targets: readonly LinkTarget[]; diagnostics: readonly Diagnostic[];
+  resourceId: string; generation: string; native: string; markdown?: string;
+  profile?: string; targets?: readonly LinkTarget[]; diagnostics?: readonly Diagnostic[];
 }
 export interface PairResult {
   phase: "saved" | "failed" | "canonical-saved-markdown-pending" | "confirmation-pending";
@@ -16,18 +16,18 @@ export interface PairAdapter {
   recover(): Promise<PairResult & { native?: string }>;
 }
 const enrolled = new WeakMap<CanonicalRepository, Map<string, ResourcePair>>();
-export function enrollPair(repository: CanonicalRepository, resourceId: string, adapter: PairAdapter, targets: () => readonly LinkTarget[] = () => []) {
+export function enrollPair(repository: CanonicalRepository, resourceId: string, adapter: PairAdapter, targets: () => readonly LinkTarget[] = () => [], markdown = false) {
   let resources = enrolled.get(repository); if (!resources) enrolled.set(repository, resources = new Map());
   const existing = resources.get(resourceId);
   if (existing) { if (existing.adapter !== adapter) throw new Error("Resource already enrolled with another pair adapter"); return existing; }
-  const pair = new ResourcePair(repository, resourceId, adapter, targets); resources.set(resourceId, pair); return pair;
+  const pair = new ResourcePair(repository, resourceId, adapter, targets, markdown); resources.set(resourceId, pair); return pair;
 }
 export class ResourcePair {
   private inFlight?: Promise<PairResult>;
   private pending?: DeepReadonly<PairGeneration>;
   private savedNative?: string;
   result: PairResult = { phase: "failed", dirty: true };
-  constructor(private repository: CanonicalRepository, readonly resourceId: string, readonly adapter: PairAdapter, private targets: () => readonly LinkTarget[]) {}
+  constructor(private repository: CanonicalRepository, readonly resourceId: string, readonly adapter: PairAdapter, private targets: () => readonly LinkTarget[], private markdown = false) {}
   acknowledgeOpen(native: string) {
     if (this.inFlight || this.pending) throw new Error("Cannot change an active save baseline");
     this.savedNative = native;
@@ -39,8 +39,13 @@ export class ResourcePair {
     let generation: DeepReadonly<PairGeneration>;
     try {
       const resource = captureNative(this.repository.snapshot(), this.resourceId), native = nativeText(resource);
-      const targets = structuredClone(this.targets()), projection = exportMarkdown(resource, targets);
-      generation = freeze({ resourceId: this.resourceId, generation: crypto.randomUUID(), native, markdown: projection.text, profile: projection.profile, targets, diagnostics: projection.diagnostics });
+      // Normal saves capture only the authoritative JSON. Legacy paired export
+      // remains explicit; it must not run its traversal on application Save.
+      const captured = { resourceId: this.resourceId, generation: crypto.randomUUID(), native };
+      if (this.markdown) {
+        const targets = structuredClone(this.targets()), projection = exportMarkdown(resource, targets);
+        generation = freeze({ ...captured, markdown: projection.text, profile: projection.profile, targets, diagnostics: projection.diagnostics });
+      } else generation = freeze(captured);
     } catch (error) { return Promise.resolve(this.result = { phase: "failed", error: String(error), dirty: true }); }
     this.pending = generation;
     return this.run(() => this.adapter.save(generation, acceptMarkdownHash), generation.native, generation.generation);

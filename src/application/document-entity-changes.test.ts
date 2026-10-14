@@ -1,9 +1,10 @@
 import {afterEach, expect, it, vi} from 'vitest';
 import {ReactiveEditor} from '../reactive-editor/editor';
 import {watchDocumentEntities} from './document-entity-changes';
+import * as linked from '../block-tree/linked-annotations';
 
 const cleanup: (()=>void)[] = [];
-afterEach(()=>cleanup.splice(0).reverse().forEach(stop=>stop()));
+afterEach(()=>{ cleanup.splice(0).reverse().forEach(stop=>stop()); vi.restoreAllMocks(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 function fixture() {
   const editor = new ReactiveEditor({type:'workspace-block', children:[
@@ -41,9 +42,9 @@ it('ignores other Documents and non-link metadata, and distinguishes shifted ran
   f.editor.commands.setPayloadField(f.node('source').key,'metadata',{title:'New title'});
   await tick(); expect(f.a).not.toHaveBeenCalled();
   f.editor.commands.replaceInlineRange(f.node('text').key,0,0,'Before ');
-  await tick(); expect(f.a).toHaveBeenCalledOnce(); expect(f.first.signature).toBe(before);
+  await tick(); expect(f.a).not.toHaveBeenCalled(); expect(f.first.signature).toBe(before);
   f.editor.commands.setPayloadField(f.node('text').key,'standoffProperties',[]);
-  await tick(); expect(f.a).toHaveBeenCalledTimes(2); expect(f.first.signature).not.toBe(before);
+  await tick(); expect(f.a).toHaveBeenCalledOnce(); expect(f.first.signature).not.toBe(before);
 });
 
 it('coalesces a burst of link edits and unsubscribes without delivering queued events', async()=>{
@@ -56,11 +57,40 @@ it('coalesces a burst of link edits and unsubscribes without delivering queued e
   await tick(); expect(f.b).toHaveBeenCalledOnce();
 });
 
-it('invalidates summaries when link endpoints are explicitly changed', async()=>{
+it('publishes explicit link boundary edits without invalidating names and counts', async()=>{
   const f=fixture(), before=f.first.signature;
   const property = JSON.parse(JSON.stringify(f.node('text').payload.standoffProperties))[0];
   f.editor.linkedAnnotations.edit(f.node('text').key, 0, property, 'expand');
   await tick();
   expect(f.a).toHaveBeenCalledOnce();
+  expect(f.first.signature).toBe(before);
+});
+
+it('does not rescan document references or notify for typing, text undo/redo or unrelated styles', async()=>{
+  const f = fixture();
+  const resolve = vi.spyOn(linked, 'resolveLinkedProperty');
+  // Separate tasks, so this cannot pass merely by coalescing a typing burst.
+  for (const index of [0, 9, 12]) {
+    f.editor.commands.replaceInlineRange(f.node('text').key, index, index, 'x');
+    await tick();
+  }
+  f.editor.repository.undo(); await tick();
+  f.editor.repository.redo(); await tick();
+  const properties = JSON.parse(JSON.stringify(f.node('text').payload.standoffProperties));
+  f.editor.commands.setPayloadField(f.node('text').key, 'standoffProperties', [...properties, { id:'bold', type:'style/bold', start:0, end:2 }]);
+  await tick();
+  expect(resolve).not.toHaveBeenCalled();
+  expect(f.a).not.toHaveBeenCalled();
+  expect(f.b).not.toHaveBeenCalled();
+});
+
+it('publishes reference removal caused by deleting annotated text and restores it on undo', async()=>{
+  const f = fixture(), before = f.first.signature;
+  f.editor.commands.replaceInlineRange(f.node('text').key, 0, 5, '');
+  await tick();
+  expect(f.a).toHaveBeenCalledOnce();
   expect(f.first.signature).not.toBe(before);
+  f.editor.repository.undo(); await tick();
+  expect(f.a).toHaveBeenCalledTimes(2);
+  expect(f.first.signature).toBe(before);
 });

@@ -35,8 +35,36 @@ async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise
  const f=make();return {...f,root,make};
 }
 async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Cavern');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Cavern').disabled).toBe(false));}
-async function create(host:ParentNode,name='note.mutable.json',title='A title') {field(host,'New Document filename',name);field(host,'New Document title',title);click(host,'New Document');await wait(()=>expect(host.textContent).toContain('Saved native Document and Markdown'));await wait(()=>expect(host.querySelector(`[aria-label="Open vault/${name}"]`)).toBeTruthy());await wait(()=>expect(button(host,'New Document').disabled).toBe(false));}
+async function create(host:ParentNode,name='note.mutable.json',title='A title') {field(host,'New Document filename',name);field(host,'New Document title',title);click(host,'New Document');await wait(()=>expect(host.textContent).toContain('Saved Mutable JSON Document'));await wait(()=>expect(host.querySelector(`[aria-label="Open vault/${name}"]`)).toBeTruthy());await wait(()=>expect(button(host,'New Document').disabled).toBe(false));}
 const idOf=(host:ParentNode)=>host.querySelector('[data-flint-property="id"]')!.textContent!;
+it('marks edited tabs dirty and Command-S saves only the active document to its original filename',async()=>{
+ const f=await fixture(),a=f.windows()[0];await open(a);
+ await create(a,'first.ink','First');const first=idOf(a);
+ await create(a,'second.ink','Second');const second=idOf(a);
+ const firstBytes=await fs.readFile(path.join(f.root,'vault/first.ink'),'utf8');
+ const secondBytes=await fs.readFile(path.join(f.root,'vault/second.ink'),'utf8');
+ const textFor=(id:string)=>{const view=[...f.editor.projections.values()].find(v=>v!==f.projection&&v.state.nodes[v.state.rootKey]?.payload.id===id)!;return Object.values(view.state.nodes).find(n=>n.viewType==='standoff-editor-block')!;};
+ const selected=()=>a.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')!;
+ expect(selected().querySelector('[aria-label="Unsaved changes"]')).toBeNull();
+ const text=textFor(second);f.editor.commands.replaceInlineRange(text.key,0,0,'Manual changes');
+ expect(selected().querySelector('[aria-label="Unsaved changes"]')).toBeTruthy();
+ await Promise.resolve();expect(await fs.readFile(path.join(f.root,'vault/second.ink'),'utf8')).toBe(secondBytes);
+ // Selecting and saving the other tab must not write this dirty document.
+ a.querySelector<HTMLButtonElement>('[aria-label="Open vault/first.ink"]')!.click();await wait(()=>expect(idOf(a)).toBe(first));
+ expect(selected().querySelector('[aria-label="Unsaved changes"]')).toBeNull();
+ const key=new KeyboardEvent('keydown',{key:'s',metaKey:true,bubbles:true,cancelable:true});selected().dispatchEvent(key);
+ expect(key.defaultPrevented).toBe(true);await wait(()=>expect(button(a,'Save Document').disabled).toBe(false));
+ expect(await fs.readFile(path.join(f.root,'vault/second.ink'),'utf8')).toBe(secondBytes);
+ expect(await fs.readFile(path.join(f.root,'vault/first.ink'),'utf8')).toBe(firstBytes);
+ a.querySelector<HTMLButtonElement>('[aria-label="Open vault/second.ink"]')!.click();await wait(()=>expect(idOf(a)).toBe(second));
+ expect(selected().querySelector('[aria-label="Unsaved changes"]')).toBeTruthy();
+ const uninstall=f.editor.installGateway(document);disposers.push(uninstall);
+ const flow=f.editor.mounts.get(textFor(second).key)!.focusElement;
+ flow.dispatchEvent(new KeyboardEvent('keydown',{key:'s',metaKey:true,bubbles:true,cancelable:true}));
+ await wait(()=>expect(selected().querySelector('[aria-label="Unsaved changes"]')).toBeNull());
+ expect(await fs.readFile(path.join(f.root,'vault/second.ink'),'utf8')).toContain('Manual changes');
+ expect(await fs.stat(path.join(f.root,'vault/second.ink.md')).catch(()=>null)).toBeNull();
+});
 it('uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files',async()=>{
  const f=await fixture(),a=f.windows()[0];await open(a);f.launch();const b=f.windows().find(w=>w!==a)!;await open(b);
  await create(a);const id=idOf(a);expect(b.querySelector('[aria-label="Open vault/note.mutable.json"]')).toBeTruthy();
@@ -49,7 +77,7 @@ it('uses the real tree in two Windows, shared native properties and independent 
  field(a,'Document title','Authored title');field(a,'Document tags','poetry\nnight\npoetry');click(a,'Apply properties');
  expect((b.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('Authored title');expect(nativeText(captureNative(f.editor.repository.snapshot(),id))).toContain('night');
  f.editor.repository.undo();expect((a.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('A title');f.editor.repository.redo();
- click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));
+ click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved Mutable JSON Document'));
  expect(await fs.readdir(path.join(f.root,'vault'))).toContain('note.mutable.json');expect(await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8')).toContain('Authored title');
  await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));field(a,'Tag filter','night');expect(a.querySelector('[aria-label="Open vault/note.mutable.json"]')).toBeTruthy();expect(views().map(v=>v.state.rootKey)).toEqual(keys);
  expect(Object.values(f.editor.repository.state.contents).some(c=>(c.payload.metadata as any)?.members)).toBe(false);
@@ -62,7 +90,7 @@ it('moves pairs and directories without changing authored data or generations, a
  await wait(()=>expect(button(a,'Apply rename / move').disabled).toBe(false));field(a,'Move destination folder','vault/nested');field(a,'Move destination name','renamed.mutable.json');click(a,'Apply rename / move');await wait(()=>expect(f.service.location(id)).toEqual({folder:'vault/nested',filename:'renamed.mutable.json'}));
  expect(await fs.readFile(path.join(f.root,'vault/nested/renamed.mutable.json'),'utf8')).toBe(before);expect((a.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('A title');
  await wait(()=>expect(button(a,'Apply rename / move').disabled).toBe(false));click(a,'nested');field(a,'Move destination folder','vault');field(a,'Move destination name','archive');click(a,'Apply rename / move');await wait(()=>expect(f.service.location(id)?.folder).toBe('vault/archive'));
- await wait(()=>expect(button(a,'Apply rename / move').disabled).toBe(false));field(a,'Document title','New title');click(a,'Apply properties');click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));expect(await fs.readFile(path.join(f.root,'vault/archive/renamed.mutable.json'),'utf8')).toContain('New title');
+ await wait(()=>expect(button(a,'Apply rename / move').disabled).toBe(false));field(a,'Document title','New title');click(a,'Apply properties');click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved Mutable JSON Document'));expect(await fs.readFile(path.join(f.root,'vault/archive/renamed.mutable.json'),'utf8')).toContain('New title');
  const fresh=f.make(),b=fresh.windows()[0];await open(b);b.querySelector<HTMLButtonElement>('[aria-label="Open vault/archive/renamed.mutable.json"]')!.click();await wait(()=>expect(idOf(b)).toBe(id));expect((b.querySelector('[aria-label="Document title"]') as HTMLInputElement).value).toBe('New title');
 },15000);
 it('keeps typing and resource-owned relocation alive after both initiating occurrences close',async()=>{
@@ -108,17 +136,17 @@ it('preserves nested unknown native properties through property editing, Save an
  const f=await fixture(),a=f.windows()[0];await open(a);await create(a);const id=idOf(a);
  const doc=Object.values(f.editor.repository.readState().contents).find(c=>(c.payload.metadata as any)?.documentId===id)!,p=Object.values(f.editor.repository.state.placements).find(p=>p.contentKey===doc.key)!;
  f.editor.commands.setPayloadField(p.key,'metadata',{...doc.payload.metadata as any,futureFeature:{values:['opaque',{x:17}]}});
- field(a,'Document title','Preserved');field(a,'Document tags','tag');click(a,'Apply properties');click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
+ field(a,'Document title','Preserved');field(a,'Document tags','tag');click(a,'Apply properties');click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved Mutable JSON Document'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
  const fresh=f.make(),b=fresh.windows()[0];await open(b);b.querySelector<HTMLButtonElement>('[aria-label="Open vault/note.mutable.json"]')!.click();await wait(()=>expect(idOf(b)).toBe(id));
  const reopened=Object.values(fresh.editor.repository.readState().contents).find(c=>(c.payload.metadata as any)?.documentId===id)!;expect(reopened.payload.metadata).toMatchObject({title:'Preserved',tags:['tag'],futureFeature:{values:['opaque',{x:17}]},documentFormat:{format:'page'}});
 },15000);
 it('allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource',async()=>{
  const f=await fixture(),a=f.windows()[0];await open(a);await create(a);const original=await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8');
  click(a,'New Document');await wait(()=>expect(a.textContent).toContain('Save blocked'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));const candidate=idOf(a);expect(f.service.isCandidate(candidate)).toBe(true);
- click(a,'Files');field(a,'Native filename','retry.mutable.json');click(a,'Save to selected destination');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));expect(f.service.location(candidate)?.filename).toBe('retry.mutable.json');expect(f.service.isCandidate(candidate)).toBe(false);expect(await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8')).toBe(original);
+ click(a,'Files');field(a,'Native filename','retry.mutable.json');click(a,'Save to selected destination');await wait(()=>expect(a.textContent).toContain('Saved Mutable JSON Document'));expect(f.service.location(candidate)?.filename).toBe('retry.mutable.json');expect(f.service.isCandidate(candidate)).toBe(false);expect(await fs.readFile(path.join(f.root,'vault/note.mutable.json'),'utf8')).toBe(original);
 },15000);
 it('relocates a Document containing a native external reference without rewriting its target or saved generation',async()=>{
- const f=await fixture();await fs.copyFile('artifacts/flint-b1.2/c.mutable.json',path.join(f.root,'vault/c.mutable.json'));const a=f.windows()[0];await open(a);a.querySelector<HTMLButtonElement>('[aria-label="Open vault/c.mutable.json"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-c'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved native Document and Markdown'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
+ const f=await fixture();await fs.copyFile('artifacts/flint-b1.2/c.mutable.json',path.join(f.root,'vault/c.mutable.json'));const a=f.windows()[0];await open(a);a.querySelector<HTMLButtonElement>('[aria-label="Open vault/c.mutable.json"]')!.click();await wait(()=>expect(idOf(a)).toBe('resource-c'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));click(a,'Save Document');await wait(()=>expect(a.textContent).toContain('Saved Mutable JSON Document'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
  const before=await fs.readFile(path.join(f.root,'vault/c.mutable.json'),'utf8');expect(before).toContain('resource-b');field(a,'Move destination name','reference.mutable.json');click(a,'Apply rename / move');await wait(()=>expect(f.service.location('resource-c')?.filename).toBe('reference.mutable.json'));expect(await fs.readFile(path.join(f.root,'vault/reference.mutable.json'),'utf8')).toBe(before);expect(nativeText(captureNative(f.editor.repository.snapshot(),'resource-c'))).toBe(before);
 },15000);
 it('reports a vanished location without discarding the live Document or adopting an external same-ID move',async()=>{
@@ -142,6 +170,16 @@ it('derives vault rows once per publication and retains unchanged DOM rows acros
  await wait(()=>expect(idOf(a)).toBe('resource-0'));await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
  expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')).toBe(untouched);
  expect(a.querySelector('details.flint-tree-folder')).toBe(folder);
+ const status=vi.spyOn(f.service,'status'),sources=vi.spyOn(f.service,'compatibleSource');locations.mockClear();
+ const activeView=[...f.editor.projections.values()].find(v=>v!==f.projection&&(v.state.nodes[v.state.rootKey]?.payload.metadata as any)?.documentId==='resource-0')!;
+ const text=Object.values(activeView.state.nodes).find(n=>n.viewType==='standoff-editor-block')!;
+ for(const character of 'abc')f.editor.commands.replaceInlineRange(text.key,0,0,character);
+ // Save status is shared once per edit, not recalculated twice per Explorer row.
+ expect(status.mock.calls.length).toBeLessThanOrEqual(6);
+ expect(locations).not.toHaveBeenCalled();expect(sources).not.toHaveBeenCalled();
+ expect(a.querySelector('[aria-label="Open vault/0.mutable.json"]')?.getAttribute('aria-current')).toBe('page');
+ expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')).toBe(untouched);
+ status.mockRestore();sources.mockRestore();
  field(a,'Document title','Changed live title');click(a,'Apply properties');
  expect(a.querySelector('[aria-label="Open vault/0.mutable.json"]')?.textContent).toContain('Changed live title');
  expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')).toBe(untouched);
@@ -149,6 +187,10 @@ it('derives vault rows once per publication and retains unchanged DOM rows acros
  await wait(()=>expect(a.querySelector('[aria-label="Markdown source"]')?.textContent).toContain('added.md'));
  expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')).toBe(untouched);
  expect(a.querySelector('details.flint-tree-folder')).toBe(folder);
+ await wait(()=>expect(untouched.disabled).toBe(false));
+ untouched.click();await wait(()=>expect(idOf(a)).toBe('resource-1'));
+ expect(a.querySelector('[aria-label="Open vault/1.mutable.json"]')?.getAttribute('aria-current')).toBe('page');
+ expect(a.querySelector('[aria-label="Open vault/0.mutable.json"]')?.hasAttribute('aria-current')).toBe(false);
  locations.mockRestore();
 },15000);
 it('browses physical files and opens a real historical Document without migration or hidden native enrollment',async()=>{

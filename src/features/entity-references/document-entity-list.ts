@@ -1,4 +1,5 @@
 import { createStore } from "solid-js/store";
+import { batch } from "solid-js";
 import type { AnnotationCapabilities, PanelSession, SearchRange, SearchScope } from "../../feature-api";
 import { rangesToPositionMarkers as entityRangesToPositionMarkers } from "../../feature-api";
 import { collectDocumentEntities, type DocumentEntityInventory } from "./document-entities";
@@ -37,6 +38,7 @@ export class DocumentEntityList {
   private watch?: ReturnType<AnnotationCapabilities["watchDocumentEntities"]>;
   private cache = new Map<string, CachedEntityResults>();
   private cached?: CachedEntityResults;
+  private rangesRevision = -1;
   private collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 
   constructor(private editor: AnnotationCapabilities, private loader: EntitySummaryLoader = loadEntitySummaries) {
@@ -117,23 +119,38 @@ export class DocumentEntityList {
   }
 
   private updateInventory(prepared: DocumentEntityInventory, rangesOnly = false) {
+    this.rangesRevision = this.editor.revision();
     const rows = prepared.rows.map(row => {
       const summary = this.summaries.get(row.id);
       return { id: row.id, name: summary?.name || row.fallbackName || row.id, graphMentions: summary?.mentions, documentMentions: row.documentMentions, ranges: row.ranges };
     });
     const active = rows.some(row => row.id === this.state.active) ? this.state.active : undefined;
     if (rangesOnly) {
-      // Keep row identities, names and totals stable while caret/preview
-      // coordinates follow ordinary text edits. Do not cancel any lookup.
+      // Resolve coordinates on demand without replacing row identities or
+      // restarting summary queries. Ordinary typing does not enter this path.
       const byId = new Map(rows.map(row => [row.id, row.ranges]));
-      this.state.rows.forEach((row, index) => this.setState('rows', index, 'ranges', byId.get(row.id) ?? []));
+      batch(() => this.state.rows.forEach((row, index) => {
+        const ranges = byId.get(row.id) ?? [];
+        if (ranges.length === row.ranges.length && ranges.every((range, i) => {
+          const old = row.ranges[i];
+          return range.nodeKey === old.nodeKey && range.contentKey === old.contentKey && range.placementKey === old.placementKey
+            && range.version === old.version && range.start === old.start && range.end === old.end && range.coordinate === old.coordinate;
+        })) return;
+        this.setState('rows', index, 'ranges', ranges);
+      }));
     } else this.setState({ scope: prepared.scope, rows, active });
     if (this.state.concertinaEntityId) {
       const focused = rows.find(row => row.id === this.state.concertinaEntityId);
       if (focused?.ranges.length) this.applyConcertina(focused);
       else this.clearConcertina();
     }
-    if (active) this.preview(active); else this.clearPreview();
+    if (active) this.showPreview(active); else this.clearPreview();
+  }
+
+  private syncRanges() {
+    if (this.state.open && this.origin && this.rangesRevision !== this.editor.revision()) {
+      this.updateInventory(collectDocumentEntities(this.editor, this.origin), true);
+    }
   }
 
   private refresh(prepared = collectDocumentEntities(this.editor, this.origin!)) {
@@ -231,6 +248,11 @@ export class DocumentEntityList {
 
   preview(id?: string) {
     if (!id) { this.clearPreview(); return; }
+    this.syncRanges();
+    this.showPreview(id);
+  }
+
+  private showPreview(id: string) {
     const row = this.state.rows.find(row => row.id === id);
     if (!row) { this.clearPreview(); return; }
     this.setState("active", id);
@@ -238,6 +260,9 @@ export class DocumentEntityList {
   }
 
   pageRanges(row: EntityListRow): SearchRange[] {
+    // Inventory is already document-scoped. Flowing Documents need no repeated
+    // tree walk for every row's Focus button on each shifted annotation range.
+    if (!this.state.pageKey) return row.ranges;
     const rootKey = this.state.pageKey ?? this.state.scope?.rootKey;
     if (!rootKey) return [];
     const keys = this.editor.pageKeys(rootKey);
@@ -271,6 +296,7 @@ export class DocumentEntityList {
 
   focusOccurrences(id: string) {
     if (this.state.concertinaEntityId === id) { this.clearConcertina(); return; }
+    this.syncRanges();
     const row = this.state.rows.find(row => row.id === id);
     if (!row || !this.pageRanges(row).length) return;
     this.setState({ concertinaEntityId: id, concertinaIndex: 0 });
@@ -279,6 +305,7 @@ export class DocumentEntityList {
   }
 
   navigateConcertina(direction: -1 | 1) {
+    this.syncRanges();
     const row = this.state.rows.find(row => row.id === this.state.concertinaEntityId);
     if (!row) return;
     const ranges = this.pageRanges(row);

@@ -21,7 +21,7 @@ function metadataName(value: unknown): string | undefined {
 
 /** Model-only inventory. Counts canonical logical mentions while retaining every occurrence range for previews. */
 export function collectDocumentEntities(editor: AnnotationCapabilities, originKey: string): DocumentEntityInventory {
-  const { scope, texts } = editor.documentTexts(originKey);
+  const { scope, texts } = editor.documentAnnotations(originKey);
   const grouped = new Map<string, { name?: string; mentions: Set<string>; ranges: SearchRange[]; rangeKeys: Set<string> }>();
 
   for (const node of texts) {
@@ -41,7 +41,7 @@ export function collectDocumentEntities(editor: AnnotationCapabilities, originKe
       row.mentions.add(annotationId ? `linked:${annotationId}` : `${node.contentKey}:${propertyId}`);
 
       const start = Number(local.start), end = Number(local.end);
-      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end >= node.cells.length) return;
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end >= node.cellCount) return;
       const rangeKey = `${node.key}:${propertyId}:${start}:${end}`;
       if (row.rangeKeys.has(rangeKey)) return;
       row.rangeKeys.add(rangeKey);

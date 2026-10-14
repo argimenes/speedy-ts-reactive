@@ -48,7 +48,7 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
   await guardedHome(pair.home);await read(pair.file('native'));await read(pair.file('markdown'));return pair;
  };
  const lock = async (_dir, action) => vault.lock(action);
- const baseline = async pair => ({nativeHash: await read(pair.file('native')).then(b=>b?hash(b):null),markdownHash:await read(pair.file('markdown')).then(b=>b?hash(b):null),generation:(await pair.receipt())?.generation??null,...(await vault.guard(pair.resourceId,{folder:path.relative(vault.root,pair.root).split(path.sep).join('/')||'.',filename:pair.nativeName}) ? {locationRevision:await vault.guard(pair.resourceId)} : {})});
+ const baseline = async pair => ({nativeHash: await read(pair.file('native')).then(b=>b?hash(b):null),markdownHash:(await pair.receipt())?.version===2?null:await read(pair.file('markdown')).then(b=>b?hash(b):null),generation:(await pair.receipt())?.generation??null,...(await vault.guard(pair.resourceId,{folder:path.relative(vault.root,pair.root).split(path.sep).join('/')||'.',filename:pair.nativeName}) ? {locationRevision:await vault.guard(pair.resourceId)} : {})});
  const writes=new Set(['/recover-recognized','/save-recognized','/save','/recover','/vault/mkdir','/vault/relocate','/vault/recover']);
  const route = (method,name,action) => router[method](name,async(req,res)=>{try{const execute=()=>action(req,res);res.json({Success:true,Data:await (writes.has(name)?coordinate(execute):execute())});}catch(e){res.status(e.status??(e.conflict?409:e.code==='ENOENT'?404:500)).json({Success:false,Error:e.message,PublicationStarted:!!req.nativePublicationStarted||!!e.relocationStarted});}});
  installNativeKnowledgeRoutes(route,vault);
@@ -111,9 +111,11 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  route('post','/save',async req=>{
   writable();const {location,generation,baseline:observed,dependencies,acceptMarkdownHash}=req.body;
   if(!(fields(observed,['nativeHash','markdownHash','generation'])||fields(observed,['nativeHash','markdownHash','generation','locationRevision'])&&typeof observed.locationRevision==='string') || ![observed.nativeHash,observed.markdownHash].every(h=>h===null||typeof h==='string'&&/^[a-f0-9]{64}$/.test(h)) || !(observed.generation===null||typeof observed.generation==='string'))fail('Caller baseline required',400);
-  if(!generation||typeof generation.native!=='string'||typeof generation.markdown!=='string'||Buffer.byteLength(generation.native)>LIMIT||Buffer.byteLength(generation.markdown)>LIMIT||!Array.isArray(generation.targets)||generation.targets.length>256)fail('Invalid captured generation',400);
+  if(!generation||typeof generation.native!=='string'||Buffer.byteLength(generation.native)>LIMIT || generation.markdown!==undefined && (typeof generation.markdown!=='string'||Buffer.byteLength(generation.markdown)>LIMIT||!Array.isArray(generation.targets)||generation.targets.length>256))fail('Invalid captured generation',400);
   const resource=decodeNative(new TextEncoder().encode(generation.native));if(resource.resourceId!==generation.resourceId)fail('Resource identity mismatch');
-  const projection=exportMarkdown(resource,generation.targets);if(projection.text!==generation.markdown||projection.profile!==generation.profile)fail('Markdown is not the supplied native generation projection');
+  const nativeOnly=generation.markdown===undefined;
+  if(!nativeOnly){const projection=exportMarkdown(resource,generation.targets);if(projection.text!==generation.markdown||projection.profile!==generation.profile)fail('Markdown is not the supplied native generation projection');}
+  const markdownHash=nativeOnly?null:hash(generation.markdown);
   const pair=await store(location,resource.resourceId,dependencies),dir=path.dirname(pair.file('native'));
   return lock(dir,async()=>{
    await vault.guard(resource.resourceId,location,observed);
@@ -122,11 +124,11 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
    const current=await read(pair.file('native'));if(current&&decodeNative(current).resourceId!==resource.resourceId)fail('Another resource owns this destination');
    const pending=await pair.pending();
    if(pending){
-    if(pending.generation!==generation.generation||pending.nativeHash!==hash(generation.native)||pending.markdownHash!==hash(generation.markdown))fail('A different generation is pending');
+    if(pending.generation!==generation.generation||pending.nativeHash!==hash(generation.native)||pending.markdownHash!==markdownHash)fail('A different generation is pending');
     req.nativePublicationStarted=true;return {result:await pair.recover(),baseline:await baseline(pair)};
    }
    const receipt=await pair.receipt();
-   if(receipt?.generation===generation.generation){if(receipt.nativeHash!==hash(generation.native)||receipt.markdownHash!==hash(generation.markdown))fail('Retry generation bytes differ');req.nativePublicationStarted=true;return {result:await pair.recover(),baseline:await baseline(pair)};}
+   if(receipt?.generation===generation.generation){if(receipt.nativeHash!==hash(generation.native)||receipt.markdownHash!==markdownHash)fail('Retry generation bytes differ');req.nativePublicationStarted=true;return {result:await pair.recover(),baseline:await baseline(pair)};}
    req.nativePublicationStarted=true;const result=await pair.save(generation,acceptMarkdownHash,observed);return {result,baseline:await baseline(pair)};
   });
  });

@@ -11,6 +11,7 @@ import { exportMarkdown } from '../src/persistence/markdown';
 import { hash } from '../src/persistence/managed-pair.mjs';
 const cleanup=[];afterEach(async()=>{for(const f of cleanup.splice(0).reverse())await f();});
 const absent={nativeHash:null,markdownHash:null,generation:null};
+const nativeOnly = generation => ({resourceId:generation.resourceId,generation:generation.generation,native:generation.native});
 async function fixture(options={}) {
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'flint-production-'));cleanup.push(()=>fs.rm(root,{recursive:true,force:true}));await fs.mkdir(path.join(root,'workspaces'));
  let server,base;
@@ -30,6 +31,29 @@ it('saves/reopens rich native bytes through actual routes and preserves identity
  const renamed=await f.call('native/open',{location:{folder:'.',filename:'renamed.mutable.json'}});expect(renamed.status).toBe(409); // existing pair binding is explicit; no automatic relocation/adoption
  const standalone=await fixture();await fs.writeFile(path.join(standalone.root,'renamed.mutable.json'),g.native);
  expect((await standalone.call('native/open',{location:{folder:'.',filename:'renamed.mutable.json'}})).Data.resourceId).toBe(g.resourceId);
+});
+
+it('converts legacy paired saves to JSON-only without touching changed Markdown',async()=>{
+ const f=await fixture(),original=await f.generation(),first=(await f.save(original)).Data;
+ await fs.writeFile(path.join(f.root,'document.md'),'Independent edited Markdown');
+ const next=nativeOnly(await f.generation(undefined,'JSON only'));
+ const saved=await f.save(next,first.baseline);expect(saved.Data.result.phase).toBe('saved');
+ expect(saved.Data.baseline.markdownHash).toBeNull();
+ expect(await fs.readFile(path.join(f.root,'document.md'),'utf8')).toBe('Independent edited Markdown');
+ const scan=(await f.call('native/vault/discover',{vault:'.'})).Data;
+ expect(scan.documents[0].state).toBe('paired');
+ await f.restart();expect((await f.save(next,first.baseline)).Data.result.phase).toBe('saved');
+ expect(await fs.readFile(path.join(f.root,'document.md'),'utf8')).toBe('Independent edited Markdown');
+});
+
+it.each(['before-native','after-native','before-receipt','after-receipt'])('recovers a JSON-only save after %s without creating Markdown',async stage=>{
+ let paused=true;
+ const f=await fixture({fault:async at=>{if(paused&&at===stage)throw Error('interrupted');}}),g=nativeOnly(await f.generation());
+ expect((await f.save(g)).Data.result.phase).not.toBe('saved');
+ paused=false;await f.restart();expect((await f.save(g)).Data.result).toMatchObject({phase:'saved',generation:g.generation});
+ expect(await fs.readFile(path.join(f.root,'document.mutable.json'),'utf8')).toBe(g.native);
+ expect(await fs.stat(path.join(f.root,'document.md')).catch(()=>null)).toBeNull();
+ expect((await f.save(nativeOnly(await f.generation(undefined,'stale')),absent)).Data.result).toMatchObject({phase:'failed',conflict:true});
 });
 it('opens large native text verbatim and revalidates changed bytes on every Open',async()=>{
  const f=await fixture({readOnly:true}),wire=JSON.parse(await fs.readFile('artifacts/flint-b1.2/rich.mutable.json','utf8'));

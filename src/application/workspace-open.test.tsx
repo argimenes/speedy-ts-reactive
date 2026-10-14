@@ -82,8 +82,8 @@ describe('open workspace content', () => {
       expect(document.querySelector('.reactive-window--document textarea, .reactive-window--document [contenteditable="true"]')).not.toBeNull();
       const button = document.querySelector<HTMLButtonElement>('[aria-label="Save Document"]')!;
       expect(button).not.toBeNull(); button.click();
-      await vi.waitFor(() => expect(document.body.textContent).toContain('Saved native Document'));
-    } else expect(await actions.saveDocument(windowKey)).toContain('Saved native Document');
+      await vi.waitFor(() => expect(document.body.textContent).toContain('Saved Mutable JSON Document'));
+    } else expect(await actions.saveDocument(windowKey)).toContain('Saved Mutable JSON Document');
     expect(saved.location).toEqual(location);
     expect(saved.generation.resourceId).toBe(resource.resourceId);
     expect(saved.generation.native).toContain('Unsaved edit');

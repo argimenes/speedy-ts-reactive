@@ -17,7 +17,7 @@ async function host(input = "artifacts/flint-b1.2/rich.mutable.json") {
   const data = await fs.readFile(input), resourceId = decodeNative(data).resourceId;
   const admitted = admitNative(editor.repository, data, bank);
   const options = { root, resourceId, nativeName: "document.mutable.json", markdownName: "document.md" };
-  const store = new ManagedPair(options), pair = enrollPair(editor.repository, resourceId, store);
+  const store = new ManagedPair(options), pair = enrollPair(editor.repository, resourceId, store, () => [], true);
   const capture = () => captureNative(editor.repository.snapshot(), resourceId);
   const edit = (text = "New text ") => {
     const content = Object.values(editor.repository.state.contents).find(c => c.viewType === "standoff-editor-block");
@@ -55,7 +55,7 @@ it("captures once for two occurrences, survives their closure, and keeps newer e
 });
 it("freezes the export locator mapping along with canonical content", async () => {
   const f = await host(); let targets = [{ documentId: "resource-b", blockId: "b", title: "B", path: "B-before" }];
-  const g = generation(f); const immutablePair = new ResourcePair(f.editor.repository, f.resourceId, { async save(captured) { targets[0].path = "B-after"; expect(captured.targets[0].path).toBe("B-before"); expect(Object.isFrozen(captured)).toBe(true); return { phase: "saved", generation: captured.generation }; }, recover: async () => ({ phase: "failed" }) }, () => targets);
+  const g = generation(f); const immutablePair = new ResourcePair(f.editor.repository, f.resourceId, { async save(captured) { targets[0].path = "B-after"; expect(captured.targets[0].path).toBe("B-before"); expect(Object.isFrozen(captured)).toBe(true); return { phase: "saved", generation: captured.generation }; }, recover: async () => ({ phase: "failed" }) }, () => targets, true);
   expect((await immutablePair.save()).phase).toBe("saved"); expect(g.native).toBe(nativeText(f.capture()));
 });
 it("native encoding failure publishes nothing", async () => {

@@ -147,7 +147,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         return <div class="flint-document-tab" role="presentation" data-active={activeTab() === key} data-native-context-menu
           onContextMenu={event => openTabMenu(key, event)}
           onKeyDown={event => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) openTabMenu(key, event); }}>
-          <button ref={button => tabButtons.set(key, button)} type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{title()}</button>
+          <button ref={button => tabButtons.set(key, button)} type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{title()}<Show when={native?.isDirty(tabId(key) ?? '')}><span class="flint-document-tab__dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" /></Show></button>
           <button type="button" class="flint-document-tab__close" aria-label={`Close Document: ${title()}`} title={`Close ${title()}`} onClick={event => { event.stopPropagation(); closeTab(key); }}>×</button>
         </div>;
       }}</For></div><For each={tabKeys()}>{key=><Show when={activeTab()===key}><div class="reactive-tabs__panel" role="tabpanel"><Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show></div></Show>}</For></div>;
@@ -174,15 +174,24 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         const value = meta?.tags;
         return value === undefined ? [] : Array.isArray(value) && value.every(t => typeof t === 'string') ? value as string[] : undefined;
       };
-      const properties = () => {
+      // Identity, metadata and location evidence change independently of typing.
+      // In particular, never rescan the vault listing for a save-status update.
+      const documentDetails = createMemo(() => {
         revision(); const id = activeId(), doc = id && resolve(id); if (!doc || !id) return;
         const meta = editor.repository.state.contents[doc.contentKey].payload.metadata;
         const bound = native?.location(id), v = selectedVault(), scan = v?.listing();
         const missing = !!bound && !!v && !native?.compatibleSource(id) && vaultContains(v.root, vaultPath(bound)) && !scan!.documents.some(d => d.resourceId === id && vaultPath(d.location) === vaultPath(bound));
         return { id, title: doc.title, tags: tagsOf(id) ?? [], tagsValid: tagsOf(id) !== undefined,
           format: native?.compatibleSource(id)?.format ?? readDocumentFormat(meta)?.format ?? 'Native', location: native?.location(id),
-          status: (missing ? scan!.complete ? 'Location missing or moved; explicit reconciliation required. ' : 'Location unverified; vault discovery is incomplete. ' : '') + (native?.status(id) ?? 'Native persistence unavailable'), unsaved: native?.isCandidate(id) ?? false };
-      };
+          locationWarning: missing ? scan!.complete ? 'Location missing or moved; explicit reconciliation required. ' : 'Location unverified; vault discovery is incomplete. ' : '' };
+      });
+      const documentStatus = createMemo(() => native?.status(activeId()) ?? 'Native persistence unavailable');
+      const candidate = createMemo(() => native?.isCandidate(activeId() ?? '') ?? false);
+      const properties = createMemo(() => {
+        const details = documentDetails(); if (!details) return;
+        const { locationWarning, ...attributes } = details;
+        return { ...attributes, status: locationWarning + documentStatus(), unsaved: candidate() };
+      });
       const destinationIn = (v: DocumentVaultLease, destination: VaultLocation) => {
         v.requireDirectory(destination.folder); vaultLeaf(destination.filename);
         if (!isNativeDocumentName(destination.filename)) throw new Error('Choose a .ink or .mutable.json filename');

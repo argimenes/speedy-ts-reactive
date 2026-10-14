@@ -2,6 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { render } from 'solid-js/web';
 import * as canonicalEntities from './entity-service';
+import * as inventory from '../features/entity-references/document-entities';
 import { mockResolver } from '../features/entity-references/resolver-test-support';
 import { ReactiveEditor } from '../reactive-editor/editor';
 import { materializeLocalWorkspace } from '../reactive-editor/workspace-manifest';
@@ -103,4 +104,29 @@ it('reuses cached Backlinks across typing, context lenses and tab switches', asy
   f.link(4, 7);
   await vi.waitFor(() => expect(f.service.dbMentions).toHaveBeenCalledTimes(totals + 1));
   expect(f.rows()[0].cells[2].textContent).toBe('2');
+});
+
+it('does not rebuild inventory, query summaries or mutate Backlinks while typing before, within and after a reference', async () => {
+  const f = fixture(); await tick(); f.link();
+  await vi.waitFor(() => expect(f.rows()[0]?.cells[1].textContent).toBe('42'));
+  await tick();
+  const collect = vi.spyOn(inventory, 'collectDocumentEntities');
+  const names = vi.mocked(f.service.names).mock.calls.length, totals = vi.mocked(f.service.dbMentions).mock.calls.length;
+  const mutations: MutationRecord[] = [], observer = new MutationObserver(records => mutations.push(...records));
+  observer.observe(f.panel(), { childList:true, subtree:true, characterData:true, attributes:true });
+  try {
+    for (const index of [0, 2, 10]) {
+      f.editor.commands.replaceInlineRange(f.text().key, index, index, 'x');
+      await tick();
+    }
+    f.editor.repository.undo(); await tick();
+    f.editor.repository.redo(); await tick();
+    expect(collect).not.toHaveBeenCalled();
+    expect(f.service.names).toHaveBeenCalledTimes(names);
+    expect(f.service.dbMentions).toHaveBeenCalledTimes(totals);
+    expect(mutations).toEqual([]);
+    f.rows()[0].dispatchEvent(new MouseEvent('pointerenter', { bubbles:true }));
+    expect(collect).toHaveBeenCalledOnce();
+    expect(f.editor.decorations.nodes[f.text().key][0].range).toMatchObject({start:1,end:5});
+  } finally { observer.disconnect(); }
 });

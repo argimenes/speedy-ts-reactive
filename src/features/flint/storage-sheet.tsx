@@ -8,7 +8,6 @@ export function StorageSheet(props: {application: DocumentApplicationInstance; c
   const setFolder=(folder:string)=>props.setDestination({...props.destination,folder});
   const setFilename=(filename:string)=>props.setDestination({...props.destination,filename});
   const [names,setNames]=createSignal<string[]>([]),[busy,setBusy]=createSignal(false),[error,setError]=createSignal('');
-  const [comparison,setComparison]=createSignal<{external:string;generated:string;binding:string}>();
   const location=()=>props.destination;
   let live=true, dialog!:HTMLDivElement;
   onCleanup(()=>{live=false;});
@@ -28,9 +27,7 @@ export function StorageSheet(props: {application: DocumentApplicationInstance; c
           <button disabled={busy()} onClick={()=>void run(()=>app.files!.open(location()))}>Open native</button>
           <button disabled={busy()} onClick={()=>void run(()=>app.files!.open(location(),true))}>Import Markdown</button>
           <button disabled={busy()} onClick={()=>void run(()=>app.files!.recover(location()))}>Retry / Recover</button>
-          <button disabled={busy()} onClick={()=>void run(async()=>setComparison({...await app.files!.compare(),binding:JSON.stringify(app.files!.location())}))}>Compare Markdown</button>
-          <p>Native Documents save individually. Workspace saving remains unavailable when native resource semantics cannot be preserved. Changing the fields selects a file to open or a first-save destination; it does not relocate an already bound Document.</p>
-          <Show when={comparison()?.binding===JSON.stringify(app.files!.location()) && comparison()}>{value=><div class="flint-files__compare"><label>External Markdown<textarea readOnly value={value().external}/></label><label>Mutable projection<textarea readOnly value={value().generated}/></label><button disabled={busy()} onClick={()=>void run(()=>app.files!.keepMutable())}>Keep Mutable (preserve external copy)</button></div>}</Show>
+          <p>Documents save as Mutable JSON using their opened filename. Saving is manual (Command-S or Control-S). Workspace saving remains unavailable when native resource semantics cannot be preserved. Changing the fields selects a file to open or a first-save destination; it does not relocate an already bound Document.</p>
       <button disabled={busy()||app.vault?.state()?.readOnly||app.vault?.state()?.busy||!app.properties()} onClick={()=>void run(()=>app.files!.save(location()))}>Save to selected destination</button>
     </Show>
   </div></div>;

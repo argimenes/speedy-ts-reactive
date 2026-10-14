@@ -1,4 +1,4 @@
-import { For, Show, createSignal, createUniqueId, onMount, onCleanup, lazy } from 'solid-js';
+import { For, Show, createSignal, createMemo, createUniqueId, onMount, onCleanup, lazy } from 'solid-js';
 import type { DocumentApplicationInstance } from '../../feature-api/document-application';
 import { Dynamic } from "solid-js/web";
 import { KnowledgeView } from './knowledge-view';
@@ -16,6 +16,10 @@ const identity = new URL('../../../docs/assets/flint/flint-app-icon-master.png',
 export function FlintView(props:{application:DocumentApplicationInstance; materialChrome?:boolean; probe?:boolean; spatialGraph?:boolean; logo?:boolean; compactShell?:boolean}) {
   const cavern = useCurrentCavern();
   const app=props.application;
+  // Explorer selection depends on the file location, not its typing/save status.
+  const activeLocation = createMemo(() => app.properties()?.location, undefined, {
+    equals: (previous, next) => previous?.folder === next?.folder && previous?.filename === next?.filename,
+  });
   const compact = () => props.compactShell !== false;
   const preferences = createFlintLayout(compact());
   const library = () => preferences.layout.library, context = () => preferences.layout.context;
@@ -36,6 +40,15 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
     const measure = () => setShellWidth(shell.clientWidth || 1200);
     measure();
     if (typeof ResizeObserver !== 'undefined') { const observer = new ResizeObserver(measure); observer.observe(shell); onCleanup(() => observer.disconnect()); }
+    // Handle the active Flint tab before the workspace's document shortcut.
+    const saveShortcut = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 's'
+        || event.isComposing || !(event.target instanceof Node) || !shell.contains(event.target)) return;
+      event.preventDefault(); event.stopPropagation();
+      if (!storage() && app.properties() && !vault()?.readOnly && !vault()?.busy) void save();
+    };
+    window.addEventListener('keydown', saveShortcut, true);
+    onCleanup(() => window.removeEventListener('keydown', saveShortcut, true));
   });
   const vault=()=>app.vault?.state();
   const showLibrary=()=>{setLibrary(true);setNarrowPanel('library');};
@@ -91,7 +104,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
         <div class="flint-rail-heading"><h2>{compact()?"Explorer":"Library"}</h2><small>YOUR COLLECTION</small></div>
         <div class="flint-segments" role="group" aria-label="Library views"><button aria-pressed={browse()==='browse'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('browse')}>Browse</button><button aria-pressed={browse()==='search'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('search')}>Search</button></div>
         <div hidden={browse()!=='browse'}>
-          <Show when={app.vault} fallback={<p>Cavern browsing is unavailable in this host.</p>}><VaultView vault={app.vault!} compact={compact()} activeLocation={()=>app.properties()?.location}/></Show>
+          <Show when={app.vault} fallback={<p>Cavern browsing is unavailable in this host.</p>}><VaultView vault={app.vault!} compact={compact()} activeLocation={activeLocation}/></Show>
           <Show when={!vault()}><h3>Open Documents</h3><p class="flint-hint">Open a managed directory above, or continue with a Document already in this workspace.</p><For each={app.documents()}>{doc=><button class="flint-open-document" onClick={()=>app.openDocument(doc.id)}><span>{doc.title}</span></button>}</For></Show>
         </div>
         <div hidden={browse()!=='search'}><Show when={vault()&&app.knowledge} fallback={<p>Open a Cavern to search its available native Documents.</p>}><KnowledgeView knowledge={app.knowledge!} mode="search"/></Show></div>

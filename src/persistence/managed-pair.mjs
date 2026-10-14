@@ -39,7 +39,7 @@ export class ManagedPair {
   async receipt() {
     const raw = await read(path.join(this.home, "receipt.json")); if (!raw) return;
     const r = JSON.parse(raw);
-    if (!fields(r, ["version", "resourceId", "generation", "nativeHash", "markdownHash", "nativeName", "markdownName"]) || r.version !== 1 || !validGeneration(r.generation) || r.resourceId !== this.resourceId || r.nativeName !== this.nativeName || r.markdownName !== this.markdownName || ![r.nativeHash, r.markdownHash].every(h => /^[0-9a-f]{64}$/.test(h))) throw fail("Invalid pair receipt", true);
+    if (!fields(r, ["version", "resourceId", "generation", "nativeHash", "markdownHash", "nativeName", "markdownName"]) || ![1, 2].includes(r.version) || !validGeneration(r.generation) || r.resourceId !== this.resourceId || r.nativeName !== this.nativeName || r.markdownName !== this.markdownName || !/^[0-9a-f]{64}$/.test(r.nativeHash) || (r.version === 2 ? r.markdownHash !== null : !/^[0-9a-f]{64}$/.test(r.markdownHash))) throw fail("Invalid pair receipt", true);
     return r;
   }
   async dependencies(native) { return validateResourceDependencies(native,this.resourceId,this.locations); }
@@ -49,19 +49,19 @@ export class ManagedPair {
         if (await read(path.join(this.home, "pending.json"))) throw fail("Recover the pending generation first", true);
         if (generation.resourceId !== this.resourceId || !validGeneration(generation.generation)) throw fail("Wrong save identity/generation");
         await this.dependencies(generation.native);
-        const prior = await this.receipt();
+        const prior = await this.receipt(), nativeOnly = generation.markdown === undefined;
         // Production callers carry their observed version; a newer durable
         // receipt must never refresh a stale editor's permission to overwrite.
         if (baseline && (baseline.generation !== (prior?.generation ?? null) || ![baseline.nativeHash, baseline.markdownHash].every(h => h === null || typeof h === "string" && /^[0-9a-f]{64}$/.test(h)))) throw fail("Caller baseline is stale or invalid", true);
         if (baseline && prior && baseline.nativeHash !== prior.nativeHash) throw fail("Native file differs from its confirmed baseline; explicit resolution required", true);
-        if (baseline && prior && baseline.markdownHash !== prior.markdownHash && acceptMarkdownHash !== baseline.markdownHash) throw fail("Changed Markdown requires explicit Compare / Keep Mutable", true);
-        if (baseline && !prior && baseline.markdownHash !== null && acceptMarkdownHash !== baseline.markdownHash) throw fail("Existing Markdown requires explicit Compare / Keep Mutable", true);
-        const expected = { native: baseline ? baseline.nativeHash : prior?.nativeHash ?? null, markdown: acceptMarkdownHash ?? (baseline ? baseline.markdownHash : prior?.markdownHash ?? null) };
-        for (const kind of ["native", "markdown"]) if (!sameHash(await read(this.file(kind)), expected[kind])) throw fail(`External ${kind} changes or unknown destination`, true);
+        if (!nativeOnly && baseline && prior && baseline.markdownHash !== prior.markdownHash && acceptMarkdownHash !== baseline.markdownHash) throw fail("Changed Markdown requires explicit Compare / Keep Mutable", true);
+        if (!nativeOnly && baseline && !prior && baseline.markdownHash !== null && acceptMarkdownHash !== baseline.markdownHash) throw fail("Existing Markdown requires explicit Compare / Keep Mutable", true);
+        const expected = { native: baseline ? baseline.nativeHash : prior?.nativeHash ?? null, markdown: nativeOnly ? null : acceptMarkdownHash ?? (baseline ? baseline.markdownHash : prior?.markdownHash ?? null) };
+        for (const kind of nativeOnly ? ["native"] : ["native", "markdown"]) if (!sameHash(await read(this.file(kind)), expected[kind])) throw fail(`External ${kind} changes or unknown destination`, true);
         const dir = path.join(this.home, generation.generation); await fs.mkdir(dir);
-        await durableWrite(path.join(dir, "native"), generation.native); await durableWrite(path.join(dir, "markdown"), generation.markdown);
-        const intent = { version: 1, resourceId: this.resourceId, generation: generation.generation, nativeName: this.nativeName, markdownName: this.markdownName,
-          profile: generation.profile, nativeHash: hash(generation.native), markdownHash: hash(generation.markdown), expected };
+        await durableWrite(path.join(dir, "native"), generation.native); if (!nativeOnly) await durableWrite(path.join(dir, "markdown"), generation.markdown);
+        const intent = { version: nativeOnly ? 2 : 1, resourceId: this.resourceId, generation: generation.generation, nativeName: this.nativeName, markdownName: this.markdownName,
+          profile: generation.profile ?? "mutable-document", nativeHash: hash(generation.native), markdownHash: nativeOnly ? null : hash(generation.markdown), expected };
         await durableWrite(path.join(dir, "intent.json"), JSON.stringify(intent)); await syncDir(dir);
         await durableWrite(path.join(this.home, "pending.json"), JSON.stringify({ version: 1, generation: generation.generation })); await syncDir(this.home);
         return await this.attempt(intent);
@@ -73,7 +73,8 @@ export class ManagedPair {
     const p = JSON.parse(raw);
     if (!fields(p, ["version", "generation"]) || p.version !== 1 || !validGeneration(p.generation)) throw fail("Invalid pending record", true);
     const intent = JSON.parse(await fs.readFile(path.join(this.home, p.generation, "intent.json")));
-    if (!fields(intent, ["version", "resourceId", "generation", "nativeName", "markdownName", "profile", "nativeHash", "markdownHash", "expected"]) || intent.version !== 1 || intent.resourceId !== this.resourceId || intent.generation !== p.generation || intent.nativeName !== this.nativeName || intent.markdownName !== this.markdownName || !fields(intent.expected, ["native", "markdown"]) || ![intent.nativeHash, intent.markdownHash, ...Object.values(intent.expected)].every(h => h === null || /^[0-9a-f]{64}$/.test(h))) throw fail("Invalid pair intent", true);
+    if (!fields(intent, ["version", "resourceId", "generation", "nativeName", "markdownName", "profile", "nativeHash", "markdownHash", "expected"]) || ![1, 2].includes(intent.version) || intent.resourceId !== this.resourceId || intent.generation !== p.generation || intent.nativeName !== this.nativeName || intent.markdownName !== this.markdownName || !fields(intent.expected, ["native", "markdown"]) || ![intent.nativeHash, intent.markdownHash, ...Object.values(intent.expected)].every(h => h === null || /^[0-9a-f]{64}$/.test(h))) throw fail("Invalid pair intent", true);
+    if (intent.version === 2 && (intent.markdownHash !== null || intent.expected.markdown !== null)) throw fail("Invalid native-only intent", true);
     return intent;
   }
   async recover() {
@@ -82,7 +83,7 @@ export class ManagedPair {
         const intent = await this.pending();
         if (intent) return this.attempt(intent);
         const receipt = await this.receipt(); if (!receipt) return { phase: "failed", error: "No pair to recover" };
-        for (const kind of ["native", "markdown"]) if (!sameHash(await read(this.file(kind)), receipt[kind + "Hash"])) throw fail(`External ${kind} changes`, true);
+        for (const kind of receipt.version === 2 ? ["native"] : ["native", "markdown"]) if (!sameHash(await read(this.file(kind)), receipt[kind + "Hash"])) throw fail(`External ${kind} changes`, true);
         const native = (await fs.readFile(this.file("native"))).toString(); await this.dependencies(native);
         return { phase: "saved", generation: receipt.generation, native };
       } catch (error) { return { phase: "failed", error: error.message, conflict: !!error.conflict }; }
@@ -92,21 +93,22 @@ export class ManagedPair {
   async publish(intent, kind, data) { return publishManagedFile(this,intent,kind,data); }
   async attempt(intent) {
     try {
-      const dir = path.join(this.home, intent.generation), native = await fs.readFile(path.join(dir, "native")), markdown = await fs.readFile(path.join(dir, "markdown"));
-      if (hash(native) !== intent.nativeHash || hash(markdown) !== intent.markdownHash) throw fail("Captured generation bytes changed", true);
+      const dir = path.join(this.home, intent.generation), native = await fs.readFile(path.join(dir, "native")), markdown = intent.version === 2 ? undefined : await fs.readFile(path.join(dir, "markdown"));
+      const kinds = intent.version === 2 ? ["native"] : ["native", "markdown"];
+      if (hash(native) !== intent.nativeHash || (markdown !== undefined && hash(markdown) !== intent.markdownHash)) throw fail("Captured generation bytes changed", true);
       await this.dependencies(native.toString());
-      await this.publish(intent, "native", native); await this.publish(intent, "markdown", markdown);
+      await this.publish(intent, "native", native); if (markdown !== undefined) await this.publish(intent, "markdown", markdown);
       await this.fault("before-receipt", { intent });
       await this.dependencies(native.toString());
-      for (const kind of ["native", "markdown"]) { await this.displaced(intent, kind); if (!sameHash(await read(this.file(kind)), intent[kind + "Hash"])) throw fail(`External ${kind} changes at confirmation`, true); }
-      const receipt = { version: 1, resourceId: this.resourceId, generation: intent.generation, nativeName: this.nativeName, markdownName: this.markdownName, nativeHash: intent.nativeHash, markdownHash: intent.markdownHash };
+      for (const kind of kinds) { await this.displaced(intent, kind); if (!sameHash(await read(this.file(kind)), intent[kind + "Hash"])) throw fail(`External ${kind} changes at confirmation`, true); }
+      const receipt = { version: intent.version, resourceId: this.resourceId, generation: intent.generation, nativeName: this.nativeName, markdownName: this.markdownName, nativeHash: intent.nativeHash, markdownHash: intent.markdownHash };
       const temp = path.join(this.home, `receipt-${randomUUID()}`); await durableWrite(temp, JSON.stringify(receipt)); await fs.rename(temp, path.join(this.home, "receipt.json")); await syncDir(this.home);
       await this.fault("after-receipt", { intent });
-      for (const kind of ["native", "markdown"]) { await this.displaced(intent, kind); if (!sameHash(await read(this.file(kind)), intent[kind + "Hash"])) throw fail(`External ${kind} changes after receipt`, true); }
+      for (const kind of kinds) { await this.displaced(intent, kind); if (!sameHash(await read(this.file(kind)), intent[kind + "Hash"])) throw fail(`External ${kind} changes after receipt`, true); }
       await fs.unlink(path.join(this.home, "pending.json")); await syncDir(this.home);
       return { phase: "saved", generation: intent.generation, native: native.toString() };
     } catch (error) {
-      const canonical = sameHash(await read(this.file("native")), intent.nativeHash), md = sameHash(await read(this.file("markdown")), intent.markdownHash);
+      const canonical = sameHash(await read(this.file("native")), intent.nativeHash), md = intent.version === 2 || sameHash(await read(this.file("markdown")), intent.markdownHash);
       return { phase: canonical ? md ? "confirmation-pending" : "canonical-saved-markdown-pending" : "failed", generation: intent.generation, error: error.message, conflict: !!error.conflict };
     }
   }

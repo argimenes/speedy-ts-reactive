@@ -1,5 +1,5 @@
 import { entityTestApi, entityTestList, registerEntityTestViews } from "./test-support";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ReactiveEditor } from "../../reactive-editor/editor";
 import { collectDocumentEntities } from "./document-entities";
 
@@ -7,6 +7,23 @@ const cleanup: Array<() => void> = [];
 afterEach(() => cleanup.splice(0).reverse().forEach(dispose => dispose()));
 
 describe("document entity inventory", () => {
+  it("reads annotation metadata without visiting character cells or making text snapshots", () => {
+    const editor = new ReactiveEditor({ type: 'document-block', children: [{ id: 'letter', type: 'standoff-editor-block', text: 'Michelangelo '.repeat(500),
+      standoffProperties: [{ id: 'artist', type: 'codex/entity-reference', value: 'artist', start: 0, end: 11 }] }] });
+    const view = editor.createView('inventory-cost'); cleanup.push(() => editor.dispose());
+    const api = entityTestApi(editor), read = editor.node.bind(editor);
+    const node = vi.spyOn(editor, 'node').mockImplementation(key => {
+      const result = read(key);
+      if (result?.viewType === 'text-cell') throw Error('Inventory must not read character payloads');
+      return result;
+    });
+    const text = vi.spyOn(api, 'documentTexts');
+    try {
+      const result = collectDocumentEntities(api, view.state.rootKey);
+      expect(result.rows[0]).toMatchObject({ id: 'artist', documentMentions: 1, ranges: [{ start: 0, end: 12 }] });
+      expect(text).not.toHaveBeenCalled();
+    } finally { node.mockRestore(); text.mockRestore(); }
+  });
   it("counts linked segments once, ordinary properties separately and excludes nested Documents", () => {
     const editor = new ReactiveEditor({
       type: "document-block",

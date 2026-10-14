@@ -140,7 +140,7 @@ export class NativeVaultStore {
   const home=join(loc.folder,`.mutable-pair-${hash(id)}`);await this.resolve(home,{missing:true});
   const receipt=await pair.receipt(),pending=await pair.pending(),native=await this.read(p),md=await this.read(markdownProjectionName(p),true);
   const revision=await this.guard(id,loc);
-  return {pair,home,receipt,pending,baseline:{nativeHash:hash(native),markdownHash:md?hash(md):null,generation:receipt?.generation??null,...(revision?{locationRevision:revision}:{})}};
+  return {pair,home,receipt,pending,baseline:{nativeHash:hash(native),markdownHash:receipt?.version===2?null:md?hash(md):null,generation:receipt?.generation??null,...(revision?{locationRevision:revision}:{})}};
  }
  async discoverShared(vault='.',{signal}={}) {
   if(!this.shareDiscovery)return this.discover(vault,{signal});
@@ -222,8 +222,8 @@ export class NativeVaultStore {
  }
  async mkdir(vault,directory){this.writable();return this.lock(async()=>{relative(vault);relative(directory);if(!inside(vault,directory)||directory===vault)fail('Directory outside selected vault',400);await this.resolve(vault);await this.vacant(directory);for(const r of await this.records())if(!r.done)fail('Recover pending relocation first');await fs.mkdir(await this.resolve(directory,{missing:true}));await this.sync(path.posix.dirname(directory));return {directory};});}
  async checkResourceBytes(resources,moved=false) {
-  for(const r of resources){const loc=moved?r.to:r.from,native=await this.read(filename(loc)),markdown=await this.read(markdownProjectionName(filename(loc)));
-   if(hash(native)!==r.baseline.nativeHash||hash(markdown)!==r.baseline.markdownHash||decodeNative(native).resourceId!==r.resourceId)fail('Resource bytes changed from the reviewed relocation baseline');
+  for(const r of resources){const loc=moved?r.to:r.from,native=await this.read(filename(loc)),markdown=r.receipt.version===2?undefined:await this.read(markdownProjectionName(filename(loc)));
+   if(hash(native)!==r.baseline.nativeHash||(markdown?hash(markdown):null)!==r.baseline.markdownHash||decodeNative(native).resourceId!==r.resourceId)fail('Resource bytes changed from the reviewed relocation baseline');
   }
  }
  async validateDependencies(resources, dependencies, moved=false) {
@@ -264,8 +264,9 @@ export class NativeVaultStore {
   for(const item of dependencies){filename(item.location);if(located.has(item.resourceId)&&!equal(located.get(item.resourceId).location,item.location))fail('Ambiguous dependency location');located.set(item.resourceId,item);}
   const dependencyLocations=[...located.values()];await this.validateDependencies(resources,dependencyLocations);
   const moves=[];if(kind==='directory')moves.push({from:source,to:destination,signature:await this.signature(source)});
-  else {const r=resources[0],md=markdownProjectionName(source),mdTo=markdownProjectionName(destination);await this.vacant(mdTo);
-   moves.push({from:source,to:destination,signature:await this.signature(source)},{from:md,to:mdTo,signature:await this.signature(md)});
+  else {const r=resources[0],md=markdownProjectionName(source),mdTo=markdownProjectionName(destination);if(r.receipt.version!==2)await this.vacant(mdTo);
+   moves.push({from:source,to:destination,signature:await this.signature(source)});
+   if(r.receipt.version!==2)moves.push({from:md,to:mdTo,signature:await this.signature(md)});
    if(r.homeFrom!==r.homeTo){if(!await absent(await this.resolve(r.homeTo,{missing:true})))fail('Destination pair archive exists');moves.push({from:r.homeFrom,to:r.homeTo,signature:await this.signature(r.homeFrom)});}
   }
   await this.checkResourceBytes(resources);

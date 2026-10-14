@@ -25,8 +25,11 @@ export interface AnnotationCapabilities {
   path(key: string): { key: string; label: string }[];
   scope(key: string, kind?: ScopeKind): SearchScope;
   documentTexts(key: string): { scope: SearchScope; texts: AnnotationText[] };
-  /** Source-scoped entity changes. A stable signature means only occurrence
-   * coordinates changed; cached names and DB counts remain valid. */
+  /** Annotation inventory without materialising every character's text. */
+  documentAnnotations(key: string): { scope: SearchScope; texts: (Omit<AnnotationText, 'cells'> & { readonly cellCount: number })[] };
+  /** Source-scoped reference/structure changes, excluding ordinary text edits
+   * and automatic offset rebasing. A stable signature permits summary reuse;
+   * resolve current occurrence ranges on demand before preview/navigation. */
   watchDocumentEntities(key: string, listener: (change: { signature: string; removed: boolean }) => void): {
     readonly key: string; readonly signature: string; dispose(): void;
   };

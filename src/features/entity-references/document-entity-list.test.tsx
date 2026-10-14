@@ -110,7 +110,8 @@ describe("document entity listing", () => {
     await vi.waitFor(() => expect(list.state.rows[0].graphMentions).toBe(10));
     const row = list.state.rows[0];
     editor.commands.replaceInlineRange(node('a').key, 0, 0, 'Before ');
-    await vi.waitFor(() => expect(list.state.rows[0].ranges[0].start).toBe(7));
+    await Promise.resolve(); await Promise.resolve();
+    expect(list.state.rows[0].ranges[0].start).toBe(0);
     expect(list.state.rows[0]).toBe(row);
     expect(list.state.rows[0].graphMentions).toBe(10);
     list.preview('alpha');
@@ -126,6 +127,31 @@ describe("document entity listing", () => {
     expect(list.state.rows[0].graphMentions).toBe(10);
     list.refreshSummaries();
     await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
+  });
+
+  it("does no inventory or row work on typing and resolves shifted preview ranges on demand", async () => {
+    const { editor, node } = setup(false, true), list = entityTestList(editor);
+    list.open(node('a').key);
+    await vi.waitFor(() => expect(list.state.rows[0].graphMentions).toBe(10));
+    const alpha = list.state.rows.find(row => row.id === 'alpha')!;
+    const ranges = alpha.ranges;
+    const betaRanges = list.state.rows.find(row => row.id === 'beta')!.ranges;
+    const inventory = vi.spyOn(entityTestApi(editor), 'documentAnnotations');
+    editor.commands.replaceInlineRange(node('b').key, 0, 0, 'Before ');
+    await Promise.resolve(); await Promise.resolve();
+    expect(inventory).not.toHaveBeenCalled();
+    expect(list.state.rows.find(row => row.id === 'beta')!.ranges).toBe(betaRanges);
+    expect(alpha.ranges).toBe(ranges);
+    expect(list.pageOccurrenceCount('beta')).toBe(2);
+    list.preview('beta');
+    expect(inventory).toHaveBeenCalledOnce();
+    expect(editor.decorations.nodes[node('b').key][0].range.start).toBe(7);
+    editor.repository.undo();
+    await Promise.resolve(); await Promise.resolve();
+    expect(inventory).toHaveBeenCalledOnce();
+    list.preview('beta');
+    expect(editor.decorations.nodes[node('b').key][0].range.start).toBe(0);
+    expect(alpha.ranges).toBe(ranges);
   });
 
   it("invalidates a closed listing when its source links change and handles undo/redo", async () => {
@@ -144,6 +170,23 @@ describe("document entity listing", () => {
     editor.repository.redo();
     await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(4));
     expect(list.state.rows.find(row=>row.id==='beta')!.documentMentions).toBe(1);
+  });
+
+  it("resolves current navigation ranges after typing and undo without refreshing summaries", async () => {
+    const { editor, node, loader } = setup(false, true), list = entityTestList(editor);
+    const reveal = vi.spyOn(entityTestApi(editor), 'revealMarker').mockResolvedValue(true);
+    list.open(node('a').key);
+    await vi.waitFor(() => expect(list.state.rows[0].graphMentions).toBe(10));
+    editor.commands.replaceInlineRange(node('a').key, 0, 0, 'Before ');
+    await Promise.resolve(); await Promise.resolve();
+    list.focusOccurrences('beta');
+    expect(reveal.mock.calls.at(-1)?.[0].anchor).toMatchObject({kind:'text-range',range:{start:13,end:17}});
+    editor.repository.undo(); await Promise.resolve(); await Promise.resolve();
+    list.navigateConcertina(1);
+    expect(reveal.mock.calls.at(-1)?.[0].anchor).toMatchObject({kind:'text-range',range:{nodeKey:node('b').key,start:0,end:4}});
+    list.navigateConcertina(-1);
+    expect(reveal.mock.calls.at(-1)?.[0].anchor).toMatchObject({kind:'text-range',range:{start:6,end:10}});
+    expect(loader).toHaveBeenCalledOnce();
   });
 
   it("focuses an entity on the current Page and restores the Page on toggle", async () => {
@@ -227,12 +270,13 @@ describe('fast Entity listing',()=>{
     f.list.open(f.node.key);
     const activeSignal = signal;
     f.editor.commands.replaceInlineRange(f.node.key, 0, 0, 'Before ');
-    await vi.waitFor(()=>expect(f.list.state.rows[0].ranges[0].start).toBe(7));
+    await Promise.resolve(); await Promise.resolve();
     expect(f.names).toHaveBeenCalledOnce();
     expect(activeSignal?.aborted).toBe(false);
     finish([{id:'entity-0',name:'Resolved zero'},{id:'entity-1',name:'Resolved one'}]);
     await vi.waitFor(()=>expect(f.list.state.rows[0].graphMentions).toBe(42));
     expect(f.list.state.rows[0].name).toBe('Resolved zero');
+    f.list.preview('entity-0');
     expect(f.list.state.rows[0].ranges[0].start).toBe(7);
   });
   it('closing the listing cancels optional reads and prevents late updates',async()=>{

@@ -2,6 +2,7 @@ import type { ReactiveEditor } from '../reactive-editor/editor';
 import { linkedDefinitionOwner, resolveLinkedProperty } from '../block-tree/linked-annotations';
 import { resolveSearchScope } from '../runtime/text-search';
 import type { AnnotationCapabilities } from '../feature-api/annotations';
+import type { ContentRecord, RepositoryState } from '../block-tree/types';
 
 type Listener = Parameters<AnnotationCapabilities['watchDocumentEntities']>[1];
 
@@ -9,12 +10,11 @@ type Listener = Parameters<AnnotationCapabilities['watchDocumentEntities']>[1];
  * Those affect highlighting, but must not invalidate Entity summary queries. */
 function snapshot(editor: ReactiveEditor, root: string) {
   const state = editor.repository.readState(), dependencies = new Set<string>();
-  const links: string[] = [], ranges: unknown[] = [];
+  const links: string[] = [];
   const visit = (key: string) => {
     const content = state.contents[key];
     if (!content || dependencies.has(key) || (key !== root && content.viewType === 'document-block')) return;
     dependencies.add(key);
-    ranges.push([key, content.children, content.ownedRelations]);
     if (content.viewType === 'standoff-editor-block') {
       const properties = content.payload.standoffProperties;
       if (Array.isArray(properties)) properties.forEach((property, index) => {
@@ -29,11 +29,7 @@ function snapshot(editor: ReactiveEditor, root: string) {
         }
         const resolved = resolveLinkedProperty(state, property, key);
         if (resolved.isDeleted || resolved.type !== 'codex/entity-reference' || typeof resolved.value !== 'string' || !resolved.value.trim()) return;
-        // Cell identities stay stable when text is inserted before a link, but
-        // change when its actual endpoints are moved/expanded/contracted.
-        const start = content.inlineContent[Number(property.start)], end = content.inlineContent[Number(property.end)];
-        links.push(JSON.stringify([key, property.id ?? index, resolved.annotationId, resolved.value, resolved.metadata, resolved.attributes, start, end]));
-        ranges.push([key, property.id ?? index, property.start, property.end, content.inlineRevision]);
+        links.push(JSON.stringify([key, property.id ?? index, resolved.annotationId, resolved.value, resolved.metadata, resolved.attributes]));
       });
     }
     for (const placement of [...content.children, ...Object.values(content.ownedRelations)]) {
@@ -44,20 +40,53 @@ function snapshot(editor: ReactiveEditor, root: string) {
   const definitionOwners = new Set<string>();
   visit(root);
   definitionOwners.forEach(key => dependencies.add(key));
-  return {dependencies, signature:JSON.stringify(links.sort()), ranges:JSON.stringify(ranges), removed:!state.contents[root]};
+  return {dependencies, signature:JSON.stringify(links.sort()), removed:!state.contents[root]};
+}
+
+/** Inspect only changed owners, never the Document, on ordinary input. Offset
+ * rebasing is not a backlink change. Removing a reference during text deletion
+ * still changes this identity, as do retargeting and deletion flags. */
+function localReferences(content: ContentRecord, includeOffsets: boolean, state?: RepositoryState) {
+  const properties = content.payload.standoffProperties;
+  if (!Array.isArray(properties)) return '[]';
+  return JSON.stringify(properties.filter(property => property && typeof property === 'object'
+    && !Array.isArray(property) && (property.type === 'codex/entity-reference' || property.annotationId))
+    .filter(property => !state || resolveLinkedProperty(state, property, content.key).type === 'codex/entity-reference')
+    .map(({ start, end, ...property }) => includeOffsets ? { ...property, start, end } : property));
 }
 
 function source(editor: ReactiveEditor, key: string, release: () => void) {
-  let current = snapshot(editor, key), queued = false, disposed = false;
+  let current = snapshot(editor, key), queued = false, disposed = false, rangesChanged = false;
   const listeners = new Set<Listener>();
   const stop = editor.repository.subscribeChanges(change => {
-    if (queued || ![...change.previousContents.keys()].some(key => current.dependencies.has(key))) return;
+    let relevant = false;
+    const state = editor.repository.readState();
+    for (const [key, before] of change.previousContents) {
+      if (!current.dependencies.has(key)) continue;
+      const after = state.contents[key];
+      if (!before || !after || before.viewType !== after.viewType
+        || JSON.stringify([before.children, before.ownedRelations]) !== JSON.stringify([after.children, after.ownedRelations])) {
+        relevant = rangesChanged = true;
+        continue;
+      }
+      if (JSON.stringify(before.payload.linkedAnnotations) !== JSON.stringify(after.payload.linkedAnnotations)) relevant = true;
+      // Undo/redo also changes inlineRevision. It must obey the same rule as
+      // typing; explicit annotation boundary edits leave that revision alone.
+      const explicitRangeEdit = before.inlineRevision === after.inlineRevision;
+      if (localReferences(before, explicitRangeEdit) !== localReferences(after, explicitRangeEdit)
+        && localReferences(before, explicitRangeEdit, state) !== localReferences(after, explicitRangeEdit, state)) {
+        relevant = true;
+        if (explicitRangeEdit) rangesChanged = true;
+      }
+    }
+    if (!relevant || queued) return;
     queued = true;
     // Wait for every projection to receive the repository publication.
     queueMicrotask(() => {
       queued = false;
       if (disposed) return;
-      const next = snapshot(editor, key), changed = next.signature !== current.signature || next.ranges !== current.ranges || next.removed !== current.removed;
+      const next = snapshot(editor, key), changed = rangesChanged || next.signature !== current.signature || next.removed !== current.removed;
+      rangesChanged = false;
       current = next;
       if (changed) for (const listener of listeners) listener({signature:current.signature, removed:current.removed});
     });
