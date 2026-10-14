@@ -1,6 +1,7 @@
 import {isNativeDocumentName,nativeDocumentStem,isDerivedMarkdownName} from './document-file-names.mjs';
 import { batch, createSignal } from 'solid-js';
 import { createStore } from 'solid-js/store';
+import type { RepositoryChange } from '../block-tree/repository';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { DocumentLocation } from '../reactive-editor/persistence';
 import { admitNative, admitNativeWithResource, captureNative, nativeText } from './native-resource';
@@ -59,12 +60,22 @@ export class NativeDocumentSession {
         if (![...change.previousContents.keys(), ...(change.inlineOwner ? [change.inlineOwner] : [])].some(k => b.members.has(k))) continue;
         this.markDirty(id, true);
         if (!b.pending && !b.busy) b.message = 'Document changed — Save required';
-        if (!change.inlineOwner) { try { b.members = new Set(Object.keys(captureNative(editor.repository.snapshot(), id).contents)); } catch { b.message = 'Canonical source unavailable or ambiguous'; } }
+        if (!change.inlineOwner) { try { b.members = this.updateMembers(b.members, id, change); } catch { b.message = 'Canonical source unavailable or ambiguous'; } }
       }
-      for(const [id,s] of this.compatibleSources){if(![...change.previousContents.keys(),...(change.inlineOwner?[change.inlineOwner]:[])].some(k=>s.members.has(k)))continue;s.dirty=true;this.markDirty(id,true);if(!change.inlineOwner){try{s.members=new Set(Object.keys(captureNative(editor.repository.snapshot(),id).contents));}catch{s.message="Canonical source unavailable or ambiguous";}}if(!s.busy&&!s.pending)s.message="Document changed — Save required";}
+      for(const [id,s] of this.compatibleSources){if(![...change.previousContents.keys(),...(change.inlineOwner?[change.inlineOwner]:[])].some(k=>s.members.has(k)))continue;s.dirty=true;this.markDirty(id,true);if(!change.inlineOwner){try{s.members=this.updateMembers(s.members,id,change);}catch{s.message="Canonical source unavailable or ambiguous";}}if(!s.busy&&!s.pending)s.message="Document changed — Save required";}
       this.touch();
     });
     ownNativeSession(editor.repository, () => { this.disposed = true;this.notifyKnowledge();this.knowledgeListeners.clear(); stop(); window.removeEventListener('beforeunload', warn); });
+  }
+  private updateMembers(members: Set<string>, id: string, change: RepositoryChange): Set<string> {
+    if (change.emptyParagraph && members.has(change.emptyParagraph.parent)) {
+      const { child } = change.emptyParagraph;
+      // Retained definitions remain members even without a visible placement.
+      if (this.editor.repository.readState().contents[child]) members.add(child);
+      else members.delete(child);
+      return members;
+    }
+    return new Set(Object.keys(captureNative(this.editor.repository.snapshot(), id).contents));
   }
   private touch() { this.changed[1](v => v + 1); }
   private touchStorage() { this.storageChanged[1](v => v + 1);this.notifyKnowledge(); }

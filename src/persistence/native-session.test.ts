@@ -8,6 +8,7 @@ import { ReactiveEditor } from '../reactive-editor/editor';
 import { nativeDocumentSession } from './native-session';
 import { captureNative, nativeText } from './native-resource';
 import { createNativeDocumentStoreRouter } from '../../server/native-document-store.mjs';
+import { normalizeDefinitionOwnership } from '../block-tree/definition-ownership';
 import * as markdown from './markdown';
 const cleanup:Array<()=>any>=[];afterEach(async()=>{for(const dispose of cleanup.splice(0).reverse())await dispose();vi.unstubAllGlobals();vi.restoreAllMocks();});
 async function host(readOnly=false) {
@@ -102,4 +103,32 @@ it('keeps newer edits dirty when an earlier explicit save completes',async()=>{
  expect(await saving).toMatchObject({phase:'saved',dirty:true});expect(service.isDirty(id)).toBe(true);
  expect(await fs.readFile(path.join(f.root,'rich.mutable.json'),'utf8')).not.toContain('Later edit');
  expect(await service.save(id)).toMatchObject({phase:'saved',dirty:false});expect(service.isDirty(id)).toBe(false);
+});
+
+it.each([false,true])('tracks empty paragraph removal and undo incrementally (retained=%s)',async retained=>{
+ const f=await host(),{editor,service}=f.make(),id=await service.open({folder:'.',filename:'rich.mutable.json'});
+ const c=Object.values(editor.repository.readState().contents).find(c=>c.viewType==='standoff-editor-block')!;
+ const p=Object.values(editor.repository.readState().placements).find(p=>p.contentKey===c.key)!;
+ if(retained){
+   const doc=Object.values(editor.repository.readState().contents).find(c=>c.viewType==='document-block')!;
+   const members=Object.keys(captureNative(editor.repository.readState(),id).contents);
+   const normalized=normalizeDefinitionOwnership(editor.repository.readState(),new Map(members.map(k=>[k,doc.key])));
+   editor.repository.commit('Normalize definition owners',members.map(k=>({kind:'put-content',record:normalized.contents[k]})));
+ }
+ const empty=editor.commands.insertEmptyStandoffSibling(p.key,'after');
+ const child=editor.repository.readState().placements[empty].contentKey;
+ expect(!!editor.repository.readState().contents[child].definitionOwnerKey).toBe(retained);
+ await service.save(id); expect(service.isDirty(id)).toBe(false);
+ const snapshot=vi.spyOn(editor.repository,'snapshot');
+ editor.commands.remove(empty);
+ expect(service.isDirty(id)).toBe(true);
+ expect(editor.repository.readState().placements[empty]).toBeUndefined();
+ expect(!!editor.repository.readState().contents[child]).toBe(retained);
+ editor.repository.undo(); editor.repository.redo(); editor.repository.undo();
+ expect(snapshot).not.toHaveBeenCalled(); snapshot.mockRestore();
+ await service.save(id); expect(service.isDirty(id)).toBe(false);
+ editor.commands.replaceInlineRange(empty,0,0,'Restored'); expect(service.isDirty(id)).toBe(true);
+ expect(await service.save(id)).toMatchObject({phase:'saved',dirty:false});
+ const fresh=f.make(); await fresh.service.open({folder:'.',filename:'rich.mutable.json'});
+ expect(nativeText(captureNative(fresh.editor.repository.readState(),id))).toBe(nativeText(captureNative(editor.repository.readState(),id)));
 });

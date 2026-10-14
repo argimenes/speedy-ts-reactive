@@ -2,7 +2,7 @@ import {documentTabParentFor} from './document-tab-plan';
 import { batch } from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
 import { inlineOwnerFor } from "./inline-plan";
-import { emptyParagraphParentFor, splitChangeFor, type SplitChange } from "./split-plan";
+import { emptyParagraphChangeFor, splitChangeFor, type SplitChange, type EmptyParagraphChange } from "./split-plan";
 import { clone } from "./clone";
 import { UndoStorage, type StoredHistoryEntry } from "./undo-storage";
 import { isOwnedResourceTarget, validateResourceRegistrations, resourceOwnership } from "./resource-registration";
@@ -240,6 +240,8 @@ export interface RepositoryChange {
   inlineOwner?: ContentKey;
   split?: SplitChange;
   childrenOwner?: ContentKey;
+  /** Validated empty-leaf membership delta, including undo/redo. */
+  emptyParagraph?: EmptyParagraphChange;
   /** Fully validated append of fresh subtrees; existing records/edges are unchanged. */
   appendedChildrenOwner?: ContentKey;
 }
@@ -401,9 +403,10 @@ export class CanonicalRepository {
       this.commitInline(label, operations, undefined, recordHistory, metadata, split, undefined, placementDelta);
       return;
     }
-    const childrenOwner = emptyParagraphParentFor(this.readState(), operations, this.references) ?? documentTabParentFor(this.readState(), operations, this.references);
+    const emptyParagraph = emptyParagraphChangeFor(this.readState(), operations, this.references);
+    const childrenOwner = emptyParagraph?.parent ?? documentTabParentFor(this.readState(), operations, this.references);
     if (childrenOwner) {
-      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner, placementDelta);
+      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner, placementDelta, emptyParagraph);
       return;
     }
     const current = this.readState();
@@ -471,7 +474,7 @@ export class CanonicalRepository {
     });
   }
 
-  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta): void {
+  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta, emptyParagraph?: EmptyParagraphChange): void {
     const current = this.readState();
     // Capture inverse data before changing any reactive records.
     const inverse = operations.map((operation) => inverseFor(current, operation)).reverse();
@@ -538,7 +541,7 @@ export class CanonicalRepository {
       }
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
-      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner });
+      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph });
     });
   }
 

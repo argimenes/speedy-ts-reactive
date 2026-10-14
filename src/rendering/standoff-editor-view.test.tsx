@@ -360,6 +360,43 @@ describe("StandoffEditorView", () => {
     expect((editor.encodeDocument().children as any[])[0].text).toBe("x");
   });
 
+  it.each(["empty", "previous", "next"])("removes an %s empty paragraph through input without repository scans", async mode => {
+    const { editor, projection } = renderBlocks([
+      { id: "left", type: "standoff-editor-block", text: "AB" },
+      { id: "empty", type: "standoff-editor-block", text: "" },
+      { id: "right", type: "standoff-editor-block", text: "CD" },
+      { id: "unrelated", type: "standoff-editor-block", text: "x".repeat(1000) },
+    ]);
+    const node = (id: string) => Object.values(projection.state.nodes).find(n => n.payload.id === id)!;
+    const original = editor.encodeDocument();
+    const untouched = editor.mounts.get(node("unrelated").key)!.root.firstChild;
+    const active = node(mode === "empty" ? "empty" : mode === "previous" ? "right" : "left");
+    const handle = editor.mounts.get(active.key)!;
+    editor.focus.request(active.key);
+    handle.restoreInlineSelection!({ anchor: mode === "next" ? 2 : 0, head: mode === "next" ? 2 : 0 });
+    const snapshot = vi.spyOn(editor.repository, "snapshot");
+    const prune = vi.spyOn(editor.commands as any, "pruneUnreachable");
+    const diff = vi.spyOn(editor.commands as any, "diff");
+    handle.focusElement.dispatchEvent(new InputEvent("beforeinput", {
+      bubbles: true, cancelable: true, inputType: mode === "next" ? "deleteContentForward" : "deleteContentBackward",
+    }));
+    await Promise.resolve();
+    expect(node("empty")).toBeUndefined();
+    const focused = editor.mounts.get(node(mode === "previous" ? "right" : "left").key)!;
+    expect(focused.captureInlineSelection!()).toEqual({ anchor: mode === "previous" ? 0 : 2, head: mode === "previous" ? 0 : 2 });
+    editor.repository.undo();
+    expect(node("empty")).toBeDefined();
+    editor.repository.redo();
+    expect(node("empty")).toBeUndefined();
+    editor.repository.undo();
+    expect(snapshot).not.toHaveBeenCalled();
+    expect(prune).not.toHaveBeenCalled();
+    expect(diff).not.toHaveBeenCalled();
+    snapshot.mockRestore(); prune.mockRestore(); diff.mockRestore();
+    expect(editor.encodeDocument().children).toEqual(original.children);
+    expect(editor.mounts.get(node("unrelated").key)!.root.firstChild).toBe(untouched);
+  });
+
   it("Backspace at a Block start joins it to the previous Standoff Block", async () => {
     const { editor, host } = renderBlocks([
       {

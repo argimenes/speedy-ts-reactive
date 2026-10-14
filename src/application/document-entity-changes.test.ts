@@ -94,3 +94,18 @@ it('publishes reference removal caused by deleting annotated text and restores i
   expect(f.a).toHaveBeenCalledTimes(2);
   expect(f.first.signature).toBe(before);
 });
+
+it('updates empty-paragraph dependencies without rescanning links, including undo and subsequent annotation creation', async()=>{
+  const f=fixture(), resolve=vi.spyOn(linked,'resolveLinkedProperty');
+  const placement=f.editor.commands.insertEmptyStandoffSibling(f.node('text').key,'after');
+  await tick();
+  f.editor.commands.remove(placement); await tick();
+  f.editor.repository.undo(); await tick();
+  f.editor.repository.redo(); await tick();
+  f.editor.repository.undo(); await tick();
+  expect(resolve).not.toHaveBeenCalled(); expect(f.a).not.toHaveBeenCalled();
+  f.editor.commands.setPayloadField(placement,'standoffProperties',[{id:'new',type:'codex/entity-reference',value:'beta',start:0,end:0}]);
+  await tick(); expect(f.a).toHaveBeenCalledOnce();
+  f.editor.commands.remove(placement); await tick(); expect(f.a).toHaveBeenCalledTimes(2);
+  f.editor.repository.undo(); await tick(); expect(f.a).toHaveBeenCalledTimes(3);
+});

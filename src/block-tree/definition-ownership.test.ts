@@ -86,6 +86,34 @@ describe("Document definition membership", () => {
     expect(s.errors).toEqual([]);
   });
 
+  it("retains an empty definition with exact placement identity and replay through undo/redo", () => {
+    const s = fixture([paragraph("p", "")]);
+    const pk = s.key("p"), placement = { ...s.repository.readState().placements[pk] };
+    const changes: unknown[] = [];
+    s.repository.subscribeChanges(change => changes.push(change.emptyParagraph));
+    s.commands.remove(pk);
+    expect(s.repository.readState().placements[pk]).toBeUndefined();
+    expect(s.repository.readState().contents[placement.contentKey].definitionOwnerKey).toBe(s.root);
+    s.repository.undo();
+    expect(s.repository.readState().placements[pk]).toEqual(placement);
+    s.repository.redo(); s.repository.undo();
+    expect(changes).toEqual([false,true,false,true].map(attached => ({parent:s.root,child:placement.contentKey,attached})));
+    validateRepository(s.repository.readState());
+    expect(s.errors).toEqual([]);
+  });
+
+  it("preserves shared empty content when removing its owned occurrence", () => {
+    const s = fixture([paragraph("p", "")]);
+    const pk = s.key("p"), ck = s.repository.readState().placements[pk].contentKey;
+    const shared = s.commands.transclude(pk, { kind:"at", parentKey:s.key("doc"), index:1 });
+    s.commands.remove(pk);
+    expect(s.repository.readState().contents[ck]).toBeDefined();
+    expect(s.repository.readState().placements[shared].contentKey).toBe(ck);
+    s.repository.undo(); s.repository.redo();
+    validateRepository(s.repository.readState());
+    expect(s.errors).toEqual([]);
+  });
+
   it("leaves non-normalized legacy pruning unchanged", () => {
     const s = fixture([paragraph("p")], false);
     const pk = s.key("p"), ck = s.repository.readState().placements[pk].contentKey;

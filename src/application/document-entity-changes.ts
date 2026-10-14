@@ -61,6 +61,17 @@ function source(editor: ReactiveEditor, key: string, release: () => void) {
   const stop = editor.repository.subscribeChanges(change => {
     let relevant = false;
     const state = editor.repository.readState();
+    if (change.emptyParagraph && current.dependencies.has(change.emptyParagraph.parent)) {
+      const { child, attached } = change.emptyParagraph;
+      const content = state.contents[child] ?? change.previousContents.get(child);
+      // No references or definition registry: only dependency membership changed.
+      // Keep the watch current so adding an annotation after undo is still seen.
+      if (content && localReferences(content, true) === '[]' && !content.payload.linkedAnnotations) {
+        if (attached) current.dependencies.add(child);
+        else current.dependencies.delete(child);
+        return;
+      }
+    }
     for (const [key, before] of change.previousContents) {
       if (!current.dependencies.has(key)) continue;
       const after = state.contents[key];

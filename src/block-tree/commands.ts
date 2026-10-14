@@ -9,6 +9,7 @@ import { captureBlocks, cloneBlocks, remapKnownBlockReferences, type BlockFragme
 import type { BlockCommitSubject, CommandDescriptor } from "./commit-capture";
 import { isAuthoredBlock, prepareNewBlockIdentities, readBlockId } from "./identity";
 import { editAnnotation, type AnnotationAction, type AnnotationPatch } from "./annotation-commands";
+import { emptyParagraphChangeFor } from "./split-plan";
 import { isTextLeaf } from "./inline-plan";
 import { decodeDetachedSubtree, encodeDocument } from "./codecs";
 import { createBlockId, createContentKey, createPlacementKey } from "./ids";
@@ -453,7 +454,30 @@ export class TreeCommands {
     this.publish("Move Block", operations, { commandId: "tree.move", subjects: [this.subject(state, sourceKey)] });
   }
 
+  /** Plan only the affected parent and empty leaf. Complex ownership retains
+   * the general removal path; transactions already own a draft and use it. */
+  private removeEmptyParagraph(key: NodeKey | PlacementKey): boolean {
+    if (this.pending) return false;
+    const state = this.repository.readState(), resolved = this.resolveOccurrence(key);
+    const placement = resolved && state.placements[resolved];
+    const location = resolved && this.repository.locationOf(resolved);
+    if (!placement || !location || location.slot.kind !== "children") return false;
+    const child = state.contents[placement.contentKey];
+    if (!child || child.inlineKind !== "standoff" || child.inlineContent.length || child.children.length ||
+      Object.keys(child.ownedRelations).length || this.repository.contentReferenceCount(child.key) !== 1) return false;
+    const owner = state.contents[location.ownerContentKey];
+    const operations: RepositoryOperation[] = [
+      { kind: "put-content", record: this.updatedChildren(owner, owner.children.filter(k => k !== placement.key)) },
+      { kind: "remove-placement", key: placement.key },
+      ...(child.definitionOwnerKey ? [] : [{ kind: "remove-content" as const, key: child.key }]),
+    ];
+    if (!emptyParagraphChangeFor(state, operations, { get: k => this.repository.contentReferenceCount(k) })) return false;
+    this.publish("Remove Block", operations, { commandId: "tree.remove", subjects: [this.subject(state, placement.key)] });
+    return true;
+  }
+
   remove(key: NodeKey | PlacementKey): void {
+    if (this.removeEmptyParagraph(key)) return;
     const state = this.state();
     const resolved = this.resolveOccurrence(key);
     if (!resolved || !state.placements[resolved]) return;
