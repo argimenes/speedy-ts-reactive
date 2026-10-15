@@ -434,9 +434,9 @@ export function StandoffEditorView(props: BlockViewProps) {
     if (selection.anchor !== selection.head && typeof nativeSelection.extend === "function") {
       nativeSelection.extend(head.node, head.offset);
     }
-    if (editor.features.annotationRangeEvents && document.activeElement === flow) {
-      if (selection.anchor === selection.head) editor.annotationEvents.setCaret(props.nodeKey,selection.head);
-      else editor.annotationEvents.setCaret();
+    if (document.activeElement === flow) {
+      if (selection.anchor === selection.head) editor.setCaret(props.nodeKey,selection.head);
+      else editor.setCaret();
     }
   };
 
@@ -551,6 +551,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     setExclusions(controls);
   };
 
+  let caretSurface: ReturnType<typeof editor.caretModes.mount> | undefined;
   const scheduleMeasure = () => {
     if(disposed || !editor.visualEffects.alive())return;
     if (frame) {
@@ -599,12 +600,16 @@ export function StandoffEditorView(props: BlockViewProps) {
           : String(flow.children[index]?.textContent ?? projection.state.nodes[cellKey]?.payload.text ?? "");
       }).join(""),
     });
+    if (editor.features.caretModes) {
+      caretSurface = editor.caretModes.mount(props.nodeKey, flow, root.closest('[data-block-type="document-block"], [data-block-type="main-list-block"], [data-block-type="membrane-block"]') ?? root.parentElement ?? root);
+      caretSurface.visible(typeof IntersectionObserver === "undefined");
+    }
     if (typeof ResizeObserver !== "undefined") {
       observer = new ResizeObserver(scheduleMeasure);
       observer.observe(surface);
     }
     if (typeof IntersectionObserver !== "undefined") {
-      visibilityObserver = new IntersectionObserver(entries => { const visible = entries[0]?.isIntersecting ?? false; if (visible !== searchVisible) { searchVisible = visible; scheduleMeasure(); } });
+      visibilityObserver = new IntersectionObserver(entries => { const visible = entries[0]?.isIntersecting ?? false; caretSurface?.visible(visible); if (visible !== searchVisible) { searchVisible = visible; scheduleMeasure(); } });
       visibilityObserver.observe(surface);
     }
     scheduleMeasure();
@@ -638,6 +643,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     if(!projection.state.nodes[props.nodeKey])editor.decorations.removeOccurrence(props.nodeKey);
     document.removeEventListener("scroll",onCandidateScroll,true);
     if (editor.crossText.segments[props.nodeKey]) queueMicrotask(() => editor.crossText.validate());
+    caretSurface?.dispose();
     disposeMount?.();
     editor.annotationEvents.remove(props.nodeKey);
     observer?.disconnect();

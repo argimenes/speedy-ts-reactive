@@ -1,3 +1,5 @@
+import { CaretModes } from '../runtime/caret-modes';
+import { registerFocusFade } from '../rendering/focus-fade';
 import { AnnotationIdentities } from "../runtime/annotation-identities";
 import { VisualEffectRegistry } from "../runtime/visual-effect-registry";
 import { registerVisualEffectRenderers } from "../rendering/visual-effect-renderers";
@@ -65,6 +67,11 @@ export class ReactiveEditor {
   readonly annotationIdentities: AnnotationIdentities;
   /** Compatibility name and new API share a single runtime store. */
   get temporaryRanges() { return this.decorations; }
+  readonly caretModes: CaretModes;
+  setCaret = (nodeKey?: string, caret?: number) => {
+    if (this.features.annotationRangeEvents) this.annotationEvents.setCaret(nodeKey, caret);
+    this.caretModes.setCaret(nodeKey, caret);
+  };
   readonly annotationEvents = new AnnotationRangeEvents();
   readonly features: FeatureFlags;
   readonly decorations = new SessionDecorations();
@@ -123,6 +130,14 @@ export class ReactiveEditor {
     this.repository = new CanonicalRepository(decoded.state);
     this.annotationIdentities = new AnnotationIdentities(this.repository);
     registerVisualEffectRenderers(this.visualEffects);
+    registerFocusFade(this.visualEffects);
+    this.caretModes = new CaretModes(this.visualEffects, (key, caret) => {
+      const node = this.node(key), content = node && this.repository.readState().contents[node.contentKey];
+      if (!node || !content) return;
+      const projection = this.projections.get(node.viewId);
+      return { nodeKey: key, caret, revision: content.inlineRevision,
+        cells: () => node.inlineContent.map(key => { const cell = projection?.state.nodes[key]; return cell?.viewType === 'image-cell' ? '\uFFFC' : String(cell?.payload.text ?? ''); }) };
+    }, this.features.caretModes);
     this.viewVisibility = new ViewVisibility(this.repository);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
     this.textRanges = new TextRanges(key => {
@@ -163,6 +178,8 @@ export class ReactiveEditor {
       }
     });
     this.repository.subscribeChanges(({ label, previousContents }) => {
+      const caretKey = this.caretModes.focusedNode(), caretNode = caretKey && this.node(caretKey);
+      if (caretNode && previousContents.has(caretNode.contentKey)) this.caretModes.invalidate();
       if (this.events.hasSubscribers("afterChange")) {
         this.events.publish("afterChange", { label, state: this.repository.snapshot() });
       }
@@ -275,7 +292,7 @@ export class ReactiveEditor {
         void this.commandRegistry.execute(id, context);
         return true;
       },
-      this.features.annotationRangeEvents ? this.annotationEvents : undefined,
+      { setCaret: this.setCaret, setComposing: value => this.caretModes.setComposing(value) },
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
@@ -422,6 +439,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.caretModes.dispose();
     this.visualEffects.dispose();
     this.annotationIdentities.dispose();
     this.decorations.dispose();

@@ -88,3 +88,6 @@ export type { SemanticVaultServices, SemanticRecordType, SemanticCommand, Semant
 
 export type { TemporaryRange, TemporaryRangeCollection } from "../runtime/session-decorations";
 export type { VisualRenderer, VisualEffectProps, VisualEffectOwner, EffectParams, RendererBinding, PropertyTypeDefinition, AnnotationHandler, AnnotationHandlerContext } from "../runtime/visual-effect-registry";
+
+export type { CaretModeDefinition } from '../runtime/caret-modes';
+export type { FocusRegion, FocusContext, FocusProvider } from '../runtime/focus-region';

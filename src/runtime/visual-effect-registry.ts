@@ -1,6 +1,13 @@
 import { createSignal, type Accessor, type Component } from 'solid-js';
 import type { VisualFragment } from '../rendering/decorations';
 import { immutable } from './effect-contributions';
+import type { FocusRegion } from './focus-region';
+
+/** One source-neutral presentation renderer per session, not per cell/Block. */
+export interface TextPresentationEffect {
+  attach(flow: HTMLElement): () => void;
+  focus(flow: HTMLElement | undefined, region: FocusRegion | undefined): void;
+}
 
 function frozen<T>(value:T):T { (immutable as (value:unknown)=>unknown)(value); return value; }
 
@@ -21,7 +28,10 @@ export type VisualRenderer = {
   name:string; defaults:EffectParams;
   validate(params:EffectParams):void;
 } & ({ target:'range-overlay'; layoutParams:readonly string[]; laneHeight(params:EffectParams):number; View:Component<VisualEffectProps> }
-  | { target:'cell-style'; classes(params:EffectParams):readonly string[] });
+  | { target:'cell-style'; classes(params:EffectParams):readonly string[] }
+  | { target:'text-presentation'; focusKinds: readonly FocusRegion['kind'][];
+      /** Called within a Solid root; own resources with onCleanup. */
+      create(context: { owner: VisualEffectOwner; params: EffectParams; document: Document }): TextPresentationEffect });
 export interface RendererBinding { readonly id:string; readonly name:string; readonly params?:EffectParams }
 export type CaretTransition = 'caret-enter'|'caret-leave';
 export interface PropertyTypeDefinition {
@@ -53,6 +63,7 @@ function json(value:unknown, seen=new Set<object>()):void {
   if(!Array.isArray(value)&&Object.getPrototypeOf(value)!==Object.prototype)throw Error('Property definitions must use plain JSON objects');
   seen.add(value);for(const item of Object.values(value))json(item,seen);seen.delete(value);
 }
+export { json as validateEffectJson };
 export class VisualEffectRegistry {
   private renderers=new Map<string,VisualRenderer>();
   private types=new Map<string,PropertyTypeDefinition>();
@@ -65,9 +76,9 @@ export class VisualEffectRegistry {
   private touch(){this.changed[1](n=>n+1);}
   registerRenderer(definition:VisualRenderer){
     this.assertLive();if(this.renderers.has(definition.name))throw Error(`Renderer ${definition.name} already registered`);
-    if(!definition.name||!['range-overlay','cell-style'].includes(definition.target))throw Error('Unsupported renderer target');
+    if(!definition.name||!['range-overlay','cell-style','text-presentation'].includes(definition.target))throw Error('Unsupported renderer target');
     json(definition.defaults);definition.validate(definition.defaults);
-    const entry=Object.freeze({...definition,...(definition.target==='range-overlay'?{layoutParams:Object.freeze([...definition.layoutParams])}:{}),defaults:frozen(structuredClone(definition.defaults))}) as VisualRenderer;
+    const entry=Object.freeze({...definition,...(definition.target==='range-overlay'?{layoutParams:Object.freeze([...definition.layoutParams])}:{}),...(definition.target==='text-presentation'?{focusKinds:Object.freeze([...definition.focusKinds])}:{}),defaults:frozen(structuredClone(definition.defaults))}) as VisualRenderer;
     this.renderers.set(entry.name,entry);this.touch();
     return ()=>{if(this.renderers.get(entry.name)!==entry)return;this.renderers.delete(entry.name);this.touch();};
   }
@@ -83,6 +94,7 @@ export class VisualEffectRegistry {
     for(const binding of definition.renderers){
       if(!binding.id||ids.has(binding.id))throw Error('Renderer binding IDs must be unique');ids.add(binding.id);
       const renderer=this.renderers.get(binding.name);if(!renderer)throw Error(`Unknown renderer ${binding.name}`);
+      if(renderer.target==='text-presentation')throw Error('Text presentation effects require a presentation host');
       renderer.validate({...renderer.defaults,...binding.params});
     }
     const order=definition.stateOrder??Object.keys(definition.states??{});

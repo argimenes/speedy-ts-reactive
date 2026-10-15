@@ -128,6 +128,8 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     },
     bindings: { dispatch: (...args) => editor.bindings.dispatch(...args), label: (...args) => editor.bindings.label(...args) },
     register: {
+      caretMode: definition => { check(); scope.own(editor.caretModes.registerMode(definition)); },
+      focusProvider: definition => { check(); scope.own(editor.caretModes.registerProvider(definition)); },
       rangeEvent: listener => { check(); scope.own(editor.annotationEvents.subscribeTransitions(listener)); },
       propertyType: definition => { check(); scope.own(editor.visualEffects.registerType(definition)); },
       renderer: definition => { check(); scope.own(editor.visualEffects.registerRenderer(definition)); },

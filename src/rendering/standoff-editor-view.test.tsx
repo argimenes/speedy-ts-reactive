@@ -258,9 +258,8 @@ describe("StandoffEditorView", () => {
     const flow = host.querySelector<HTMLElement>(".reactive-standoff-flow")!;
     const regions = () => [...host.querySelectorAll<HTMLElement>('.reactive-standoff-blur[data-property-type="style/blur"]')];
     await vi.waitFor(() => expect(regions()).toHaveLength(3));
-    expect(regions().filter(region => region.dataset.decorationKey?.includes("multi"))).toHaveLength(2);
-    expect(regions().find(region => region.dataset.decorationKey?.includes("single"))?.style.getPropertyValue("--standoff-region-filter")).toBe("blur(3px)");
-    expect(regions().find(region => region.dataset.decorationKey?.includes("multi"))?.style.getPropertyValue("--standoff-region-filter")).toBe("blur(5px)");
+    expect(regions().filter(region => region.style.getPropertyValue("--standoff-region-filter") === "blur(5px)")).toHaveLength(2);
+    expect(regions().filter(region => region.style.getPropertyValue("--standoff-region-filter") === "blur(3px)")).toHaveLength(1);
     expect(flow.querySelector(".reactive-standoff-blur")).toBeNull();
     expect(flow.children).toHaveLength(10);
     expect(flow.textContent).toBe("abcdefghij");
@@ -269,12 +268,12 @@ describe("StandoffEditorView", () => {
 
     flow.focus(); setCaret(flow, 0, 0);
     flow.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "X" }));
-    await vi.waitFor(() => expect(regions().find(region => region.dataset.decorationKey?.includes("multi"))?.style.left).toBe("14px"));
+    await vi.waitFor(() => expect(regions().find(region => region.style.getPropertyValue("--standoff-region-filter") === "blur(5px)")?.style.left).toBe("14px"));
     expect((editor.encodeDocument().children![0].standoffProperties as any[]).find(p => p.id === "multi")).toMatchObject({ start: 3, end: 6, amount: 5 });
 
     setCaret(flow, 4, 1);
     flow.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "Y" }));
-    await vi.waitFor(() => expect(regions().find(region => region.dataset.decorationKey?.includes("multi"))?.style.width).toBe("50px"));
+    await vi.waitFor(() => expect(regions().find(region => region.style.getPropertyValue("--standoff-region-filter") === "blur(5px)")?.style.width).toBe("50px"));
     expect((editor.encodeDocument().children![0].standoffProperties as any[]).find(p => p.id === "multi")).toMatchObject({ start: 3, end: 7, amount: 5 });
     expect(document.activeElement).toBe(flow);
     expect(document.getSelection()?.anchorNode && flow.contains(document.getSelection()!.anchorNode)).toBe(true);

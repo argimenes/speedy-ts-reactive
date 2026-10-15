@@ -1,5 +1,11 @@
 # Extensible Standoff Property Registry, Events and Renderers
 
+> Follow-up implementation: [Caret Modes](CARET_MODES_ARCHITECTURE.md) now adds
+> Normal, Block Focus and Sentence Focus, with a source-neutral text-presentation
+> renderer target. The Caret Mode deferrals below describe the earlier foundational
+> scope and are superseded by that separately authorized implementation.
+
+
 Status: approved architecture; foundational renderer and Temporary Range implementation delivered on 15 October 2026. See §15 for implementation boundaries and verification.
 
 Date: 15 October 2026.

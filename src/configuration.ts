@@ -86,6 +86,8 @@ export type FeatureFlags = Readonly<{
   directDomCharacterCells: boolean;
   /** Transient caret enter/leave events and SVG emphasis for opted-in annotations. */
   annotationRangeEvents: boolean;
+  /** Session-only focus effects; Normal is the initial mode. */
+  caretModes: boolean;
   /** Shared renderer registry and transient range rendering. */
   standoffPropertyRendering: boolean;
 }>;
@@ -129,6 +131,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   textSuperposition: false,
   directDomCharacterCells: true,
   annotationRangeEvents: true,
+  caretModes: true,
   standoffPropertyRendering: true,
 });
 

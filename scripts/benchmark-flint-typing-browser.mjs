@@ -2,6 +2,8 @@
 // Reads the fixture only; never saves it. BENCHMARK_DOCUMENT_PATH selects another
 // native resource; BENCHMARK_VAULT_SIZE adds unopened entries to an in-memory
 // vault (e.g. 1000). BENCHMARK_OUTPUT selects the artifact directory.
+// BENCHMARK_CARET_MODE=normal|block-focus|sentence-focus selects session focus.
+// BENCHMARK_CARET_MODES=false disables the feature for comparison.
 // BENCHMARK_STANDOFF_RENDERING=false selects the previous rendering path.
 // BENCHMARK_ANNOTATION_RANGE_EVENTS=false disables caret emphasis for comparison.
 // Native binding/listing responses are local stubs: no user vault is opened.
@@ -27,7 +29,7 @@ const vite=await createServer({plugins:[{
  import {materializeLocalWorkspace} from '/src/reactive-editor/workspace-manifest.ts';
  import '/src/index.css';
  import '/src/demo/workspace-demo.css';
- const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true,annotationRangeEvents:${process.env.BENCHMARK_ANNOTATION_RANGE_EVENTS!=='false'},standoffPropertyRendering:${process.env.BENCHMARK_STANDOFF_RENDERING!=='false'}}});
+ const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true,annotationRangeEvents:${process.env.BENCHMARK_ANNOTATION_RANGE_EVENTS!=='false'},caretModes:${process.env.BENCHMARK_CARET_MODES!=='false'},standoffPropertyRendering:${process.env.BENCHMARK_STANDOFF_RENDERING!=='false'}}});
  const editor=session.editor;
  const bank=editor.commands.insert({type:'workspace-object-bank-block',children:[]},{kind:'at',parentKey:session.projection.state.rootKey,index:0});
  const {admitNative}=await import('/src/persistence/native-resource.ts');
@@ -63,8 +65,20 @@ try{
  await send('Page.navigate',{url:`http://127.0.0.1:${vite.httpServer.address().port}/__flint-integration`},sessionId);
  await wait("window.proof && document.querySelector('.flint-compact .reactive-standoff-flow')");
  await evaluate(`proof.root=proof.host.querySelector('.flint-application');proof.view=[...proof.editor.projections.values()].find(v=>v!==proof.session.projection);proof.text=Object.values(proof.view.state.nodes).filter(n=>n.viewType==='standoff-editor-block').sort((a,b)=>b.inlineContent.length-a.inlineContent.length)[0];proof.mount=proof.editor.mounts.get(proof.text.key);proof.flow=proof.mount.root.querySelector('.reactive-standoff-flow')??proof.mount.root;proof.editor.focus.request(proof.text.key);proof.mount.restoreInlineSelection({anchor:100,head:100});`);
- await evaluate('new Promise(r=>setTimeout(r,300))');
  if(process.env.BENCHMARK_VAULT_SIZE)await wait("proof.root.querySelectorAll('.flint-tree-document').length>0");
+ await evaluate('new Promise(r=>setTimeout(r,300))');
+ await evaluate(`proof.flow.focus();proof.mount.restoreInlineSelection({anchor:100,head:100});proof.editor.caretModes.select(${JSON.stringify(process.env.BENCHMARK_CARET_MODE??'normal')})`);
+ await wait("proof.editor.caretModes.active()==='normal' || (proof.flow.dataset.caretFocus && proof.root.querySelector('[data-caret-scope]'))");
+ const presentation=await evaluate(`({mode:proof.editor.caretModes.active(),scoped:proof.root.querySelectorAll('[data-caret-scope]').length,opacities:[...new Set([...proof.flow.children].map(cell=>getComputedStyle(cell).opacity))],focus:!!proof.flow.dataset.caretFocus,otherFlows:[...proof.root.querySelectorAll('[data-caret-scope]:not([data-caret-focus])')].map(flow=>getComputedStyle(flow).opacity)})`);
+ console.log('Caret presentation:',JSON.stringify(presentation));
+ if(presentation.mode!=='normal'){
+   assert.ok(presentation.scoped>0,'focus styling must reach visible text in the real Flint document');
+   assert.ok(presentation.focus,'the native caret Block must be focused');
+   assert.ok(presentation.otherFlows.includes(presentation.mode==='block-focus'?'0.35':'0.3'),'other visible text flows must fade');
+   assert.ok(presentation.opacities.includes('1'),'focused text remains fully visible');
+   if(presentation.mode==='sentence-focus')assert.ok(presentation.opacities.includes('0.3'),'other sentences in the same Block must fade');
+ }
+ const screenshot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'caret-mode.png'),Buffer.from(screenshot.data,'base64'));
  await send('Profiler.enable',{},sessionId);await send('Profiler.setSamplingInterval',{interval:200},sessionId);await send('Profiler.start',{},sessionId);
  const result=await evaluate(`(async()=>{
    const {editor,flow,mount}=proof;const before=mount.captureText();
@@ -77,7 +91,7 @@ try{
      await new Promise(r=>requestAnimationFrame(r));frames.push(performance.now()-start);
    }
    const stats=xs=>{xs.sort((a,b)=>a-b);return {median:xs[Math.floor(xs.length/2)],p95:xs[Math.floor(xs.length*.95)],max:xs.at(-1)}};
-   return {characters:before.length,paragraphs:proof.root.querySelectorAll('.reactive-standoff-flow').length,sync:stats(sync),settled:stats(settled),frame:stats(frames),snapshots,statusReads,vaultRows:proof.root.querySelectorAll('.flint-tree-document').length,restored:mount.captureText()===before};
+   return {caretMode:editor.caretModes.active(),characters:before.length,paragraphs:proof.root.querySelectorAll('.reactive-standoff-flow').length,sync:stats(sync),settled:stats(settled),frame:stats(frames),snapshots,statusReads,vaultRows:proof.root.querySelectorAll('.flint-tree-document').length,restored:mount.captureText()===before};
  })()`);
  const {profile:cpu}=await send('Profiler.stop',{},sessionId);await writeFile(path.join(artifacts,'typing.cpuprofile'),JSON.stringify(cpu));
  const nodeById=new Map(cpu.nodes.map(n=>[n.id,n]));const totals=new Map();

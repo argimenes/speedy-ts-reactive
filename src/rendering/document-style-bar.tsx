@@ -268,6 +268,12 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <fieldset><legend>Editor options</legend><SelectionOption /></fieldset>
   </>;
   return <nav ref={element => onCleanup(ownSelectionToolbar(element, editor.mounts))} class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": editor.features.compactEditorChrome }} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
+    <Show when={editor.features.caretModes && editor.caretModes.enabled()}>
+      <select class="document-style-bar__caret-mode" aria-label="Caret Mode" title="Session text focus" value={editor.caretModes.active()}
+        onChange={event => { editor.caretModes.select(event.currentTarget.value); restore(); }}>
+        <For each={editor.caretModes.list()}>{mode => <option value={mode.id}>{mode.label}</option>}</For>
+      </select>
+    </Show>
     <Show when={props.margins?.collapsed && props.margins.count > 0}>
       <button type="button" class="document-style-bar__margins" aria-expanded={props.margins?.open} aria-controls={props.margins?.controls} onClick={() => props.margins?.toggle()}>
         Margins ({props.margins?.count})

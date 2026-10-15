@@ -58,6 +58,8 @@ export interface AnnotationCapabilities {
   };
   bindings: Pick<BindingRegistry, "dispatch" | "label">;
   register: {
+    caretMode?(definition: import("../runtime/caret-modes").CaretModeDefinition): void;
+    focusProvider?(definition: import("../runtime/focus-region").FocusProvider): void;
     rangeEvent?(listener:(event:RangeTransitionEvent)=>void):void;
     propertyType?(definition: PropertyTypeDefinition): void;
     renderer?(definition: VisualRenderer): void;

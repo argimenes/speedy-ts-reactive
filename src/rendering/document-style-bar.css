@@ -69,3 +69,5 @@
   .document-count-bar summary [data-count-scope="Block"],
   .document-count-bar summary [data-count-scope="Page"] { display: none; }
 }
+
+.document-style-bar .document-style-bar__caret-mode { flex: 0 0 auto; max-width: 9.5rem; font-size: 12px; padding: 4px; }

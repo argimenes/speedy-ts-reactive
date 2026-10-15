@@ -1,4 +1,3 @@
-import type { AnnotationRangeEvents } from "../runtime/annotation-range-events";
 import { openBlockContextMenu } from "../runtime/open-block-context-menu";
 import type { NodeKey, PlacementKey, ViewId } from "../block-tree/types";
 import type { TreeCommands } from "../block-tree/commands";
@@ -18,6 +17,12 @@ function textareaSelection(target: HTMLTextAreaElement): NativeTextSelection {
     end: target.selectionEnd,
     direction: target.selectionDirection,
   };
+}
+
+/** Shared native caret feed; consumers need not be annotation renderers. */
+export interface CaretNotifications {
+  setCaret(nodeKey?: string, caret?: number): void;
+  setComposing?(value: boolean): void;
 }
 
 export class InputGateway {
@@ -41,7 +46,7 @@ export class InputGateway {
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
-    private readonly annotationEvents?: AnnotationRangeEvents,
+    private readonly caretEvents?: CaretNotifications,
   ) {}
 
   install(): () => void {
@@ -254,29 +259,31 @@ export class InputGateway {
     if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = this.mounts.resolveEvent(event);
     if (resolved) this.focus.adopt(resolved.nodeKey);
-    this.refreshAnnotationCaret();
+    this.refreshCaret();
   };
 
-  private refreshAnnotationCaret = () => {
-    if (!this.annotationEvents) return;
+  private refreshCaret = () => {
+    if (!this.caretEvents) return;
     const resolved = this.mounts.resolveElement(this.document.activeElement);
     const selection = resolved?.handle.inputPolicy === "standoff" ? resolved.handle.captureInlineSelection?.() : undefined;
-    if (resolved && selection && selection.anchor === selection.head) this.annotationEvents.setCaret(resolved.nodeKey,selection.head);
-    else this.annotationEvents.setCaret();
+    if (resolved && selection && selection.anchor === selection.head) this.caretEvents.setCaret(resolved.nodeKey,selection.head);
+    else this.caretEvents.setCaret();
   };
 
-  private onFocusOut = () => this.annotationEvents?.setCaret();
+  private onFocusOut = () => { this.caretEvents?.setComposing?.(false); this.caretEvents?.setCaret(); };
 
   private onCompositionStart = (event: CompositionEvent) => {
     this.bindings.cancelChord();
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
       resolved.handle.composing = true;
+      this.caretEvents?.setComposing?.(true);
     }
   };
 
   private onCompositionEnd = (event: CompositionEvent) => {
     const resolved = this.mounts.resolveEvent(event);
+    this.caretEvents?.setComposing?.(false);
     if (!resolved) return;
     resolved.handle.composing = false;
     if (resolved.handle.inputPolicy === "native-text" && event.target instanceof HTMLTextAreaElement) {
@@ -295,11 +302,11 @@ export class InputGateway {
           ? selection.anchorNode.parentNode
           : null;
     const resolved = this.mounts.resolveElement(anchorElement);
-    if (!resolved || resolved.handle.inputPolicy !== "standoff") { this.annotationEvents?.setCaret(); return; }
+    if (!resolved || resolved.handle.inputPolicy !== "standoff") { this.caretEvents?.setCaret(); return; }
     const inline = resolved.handle.captureInlineSelection?.();
     if (inline && inline.anchor === inline.head && this.document.activeElement === resolved.handle.focusElement) {
-      this.annotationEvents?.setCaret(resolved.nodeKey, inline.head);
-    } else this.annotationEvents?.setCaret();
+      this.caretEvents?.setCaret(resolved.nodeKey, inline.head);
+    } else this.caretEvents?.setCaret();
     const node = this.node(resolved.nodeKey);
     if (inline && node) {
       this.selections.setPrimary(
@@ -695,7 +702,8 @@ export class InputGateway {
     this.document.removeEventListener("beforeinput", this.onBeforeInput, true);
     this.document.removeEventListener("focusin", this.onFocusIn, true);
     this.document.removeEventListener("focusout", this.onFocusOut, true);
-    this.annotationEvents?.setCaret();
+    this.caretEvents?.setComposing?.(false);
+    this.caretEvents?.setCaret();
     this.document.removeEventListener("keydown", this.onKeyDown, true);
     this.document.removeEventListener("compositionstart", this.onCompositionStart, true);
     this.document.removeEventListener("compositionend", this.onCompositionEnd, true);
@@ -711,6 +719,6 @@ export class InputGateway {
     this.document.defaultView?.removeEventListener("blur", this.onWindowBlur);
     this.document.defaultView?.removeEventListener("focus", this.onWindowFocus);
   }
-  private onWindowFocus = () => { this.refreshAnnotationCaret(); };
-  private onWindowBlur = () => { this.bindings.cancelChord(); this.annotationEvents?.setCaret(); };
+  private onWindowFocus = () => { this.refreshCaret(); };
+  private onWindowBlur = () => { this.bindings.cancelChord(); this.caretEvents?.setComposing?.(false); this.caretEvents?.setCaret(); };
 }
