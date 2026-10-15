@@ -13,11 +13,19 @@ export class BlockClipboardService {
   private readonly open = createSignal<string>();
   readonly viewId = this.open[0];
   constructor(private editor: ReactiveEditor) {}
-  available() { return !!clipboard(); }
+  available() { return this.editor.features.mutableClipboard || !!clipboard(); }
+  gapParent() { return this.gap?.parentKey; }
+  destination(): { destination: Destination; viewId: string } {
+    const last = this.editor.blockSelection.actionTargets().at(-1);
+    if (last) return { destination: { kind: 'after', anchorKey: last.placementKey }, viewId: last.viewId };
+    if (this.gap) return { destination: { kind: 'at', parentKey: this.gap.parentKey, index: Math.min(this.gap.index, this.editor.commands.childrenOf(this.gap.parentKey).length) }, viewId: this.gap.viewId };
+    throw Error('Select a destination Block first.');
+  }
   dismiss() { this.gap = undefined; this.open[1](undefined); }
   run(id: string, event?: Event): boolean {
     if (!["selection.copy", "selection.cut", "selection.paste", "selection.delete"].includes(id)) return false;
     if (event instanceof KeyboardEvent && event.repeat) return true;
+    if (this.editor.features.mutableClipboard && id !== 'selection.delete') return this.editor.clipboard.handleBlocks(id, event);
     try {
       if (id === "selection.paste") this.paste();
       else if (id === "selection.copy") this.copy();
@@ -26,16 +34,18 @@ export class BlockClipboardService {
     return true;
   }
   copy() {
+    if (this.editor.features.mutableClipboard) { this.editor.clipboard.handleBlocks('selection.copy'); return; }
     const items = this.editor.blockSelection.actionTargets(); if (!items.length) return;
     setClipboard({ fragment: captureBlocks(this.editor.repository.readState(), items.map(item => item.placementKey)), cut: false, token: crypto.randomUUID() });
     this.editor.blockSelection.setMessage(`Copied ${items.length} Block(s). Select a destination Block and paste after it.`);
   }
-  remove(cut: boolean) {
+  remove(cut: boolean, acknowledged = false) {
+    if (cut && this.editor.features.mutableClipboard && !acknowledged) { this.editor.clipboard.handleBlocks('selection.cut'); return; }
     const selection = this.editor.blockSelection, items = selection.actionTargets(); if (!items.length) return;
     const state = this.editor.repository.readState(), location = deriveLocations(state).get(items[0].placementKey);
     if (!location || location.slot.kind !== "children") throw new Error("Select Blocks in a child list.");
     const parent = Object.values(state.placements).find(p => p.contentKey === location.ownerContentKey)!;
-    const fragment = cut ? captureBlocks(state, items.map(item => item.placementKey)) : undefined;
+    const fragment = cut && !acknowledged ? captureBlocks(state, items.map(item => item.placementKey)) : undefined;
     const token = crypto.randomUUID();
     this.editor.commands.transaction(cut ? "Cut selected Blocks" : "Delete selected Blocks", () => {
       for (const item of items) this.editor.commands.remove(item.placementKey);
@@ -50,6 +60,7 @@ export class BlockClipboardService {
     this.focus();
   }
   paste() {
+    if (this.editor.features.mutableClipboard) { this.editor.clipboard.handleBlocks('selection.paste'); return; }
     const saved = clipboard(); if (!saved) throw new Error("Copy or cut Blocks first. External clipboard data is not imported here.");
     const items = this.editor.blockSelection.actionTargets(), last = items.at(-1);
     let destination: Destination, viewId: string;

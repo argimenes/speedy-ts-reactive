@@ -1,4 +1,5 @@
 import { WorkspaceObjectBankView } from "./workspace-object-bank";
+import { OpaqueClipboardView } from './opaque-clipboard-view';
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { ContainerBlockView } from "./container-block-view";
 import {
@@ -33,6 +34,7 @@ function many(editor: ReactiveEditor, types: string[], view: any, capabilities: 
 }
 
 export function registerCoreViews(editor: ReactiveEditor, documentView = ContainerBlockView): void {
+  editor.registry.register({ type: 'mutable/opaque-block', view: OpaqueClipboardView, capabilities: ['selectable'] });
   registerTextSuperpositionCommands(editor);
   editor.registry.register({ type: "workspace-object-bank-block", view: WorkspaceObjectBankView, capabilities: ["container"] });
   editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: documentView, capabilities: ["container", "selectable"] });

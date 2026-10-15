@@ -217,6 +217,7 @@ export class CrossBlockInput {
     return true;
   }
   private key = (event: KeyboardEvent) => {
+    this.editor.clipboard.key(event);
     if (!this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("keyboard")) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target !== this.input && target?.closest('input, textarea, select, .document-style-bar, [data-block-selection-handle], [data-block-selection-inspector]')) return;
@@ -272,6 +273,10 @@ export class CrossBlockInput {
     if (target !== this.input && target?.closest('input, textarea, select, .document-style-bar, [data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = this.editor.mounts.resolveEvent(event);
     if (target !== this.input && (!resolved || !this.editor.crossText.segments[resolved.nodeKey])) return;
+    if (this.editor.features.mutableClipboard && ['copy', 'cut', 'paste'].includes(event.type)) {
+      if (this.composing) { this.stop(event); return; }
+      this.editor.clipboard.handleText(event as ClipboardEvent, true); return;
+    }
     if (event.type === "copy" || event.type === "cut") {
       this.stop(event);
       const data = (event as ClipboardEvent).clipboardData;

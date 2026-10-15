@@ -399,6 +399,7 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
   const cavern = useCurrentCavern();
   const session = new WorkspaceSession(props.loaded, props.configuration);
   const { editor, projection } = session;
+  editor.clipboard.setContext(() => ({ cavernId: cavern?.current()?.cavernGuid, session: cavern?.current()?.session }));
   const opening = createWorkspaceOpenControls(session, () => !props.workspaceBusy);
   const release = props.onEditor(editor);
   for (const [id, serverExecute, localExecute] of [["workspace.open", props.onWorkspaceOpen, props.onLocalWorkspaceOpen], ["workspace.save", props.onWorkspaceSave, props.onLocalWorkspaceSave], ["workspace.saveAs", props.onWorkspaceSave, props.onLocalWorkspaceSaveAs]] as const) {

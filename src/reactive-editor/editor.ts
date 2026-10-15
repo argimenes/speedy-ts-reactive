@@ -1,4 +1,6 @@
 import { PointerSpotlight } from '../runtime/pointer-spotlight';
+import { MutableClipboard } from '../runtime/mutable-clipboard';
+import { installClipboardStatus } from '../rendering/clipboard-status';
 import { registerPointerSpotlight } from '../rendering/pointer-spotlight';
 import { registerReadingSpotlight } from '../rendering/reading-spotlight';
 import { CaretModes } from '../runtime/caret-modes';
@@ -103,6 +105,7 @@ export class ReactiveEditor {
   readonly selections = new SelectionService();
   readonly blockSelection = new BlockSelectionService(this);
   readonly blockClipboard = new BlockClipboardService(this);
+  readonly clipboard = new MutableClipboard(this);
   readonly crossText = new CrossBlockSelection(this);
   readonly linkedAnnotations = new LinkedAnnotations(this);
   readonly currentTextOperation = new CurrentTextOperations();
@@ -126,6 +129,7 @@ export class ReactiveEditor {
   readonly projections = new Map<ViewId, BlockTreeProjection>();
   private gateway?: InputGateway;
   private crossInput?: CrossBlockInput;
+  private disposeClipboardStatus?: () => void;
 
   constructor(dto: ExistingBlockDto | LoadedWorkspace, configuration: ReactiveEditorConfiguration = {}) {
     this.features = resolveFeatureFlags(configuration);
@@ -275,6 +279,8 @@ export class ReactiveEditor {
     this.gateway?.dispose();
     this.crossInput?.dispose();
     this.disposeFindInput?.();
+    this.disposeClipboardStatus?.();
+    if (this.features.mutableClipboard) this.disposeClipboardStatus = installClipboardStatus(document, this.clipboard);
     this.disposeFindInput = this.find.install(document);
     const disposeSelectionGestures = this.selectionGestures.install(document);
     this.crossInput = new CrossBlockInput(this, document);
@@ -302,11 +308,13 @@ export class ReactiveEditor {
         return true;
       },
       { setCaret: this.setCaret, setComposing: value => this.caretModes.setComposing(value) },
+      this.clipboard,
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
     const disposeFind = this.disposeFindInput;
-    return () => { disposeFind(); disposeSelectionGestures(); crossInput.dispose(); dispose(); };
+    const disposeClipboardStatus = this.disposeClipboardStatus;
+    return () => { disposeClipboardStatus?.(); disposeFind(); disposeSelectionGestures(); crossInput.dispose(); dispose(); };
   }
 
   node(nodeKey: NodeKey) {
@@ -448,6 +456,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.clipboard.dispose(); this.disposeClipboardStatus?.();
     this.pointerSpotlight.dispose();
     this.caretModes.dispose();
     this.measurements.releaseCaret();

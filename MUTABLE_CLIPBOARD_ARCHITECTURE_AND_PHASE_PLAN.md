@@ -1,6 +1,6 @@
 # Mutable Clipboard Architecture and Four-Phase Implementation Plan
 
-Status: proposed for review; production implementation has not begun.
+Status: architecture and Section 8 defaults approved. Phase 1 implemented; see Section 10 for qualification and limitations. Phases 2–4 have not begun.
 
 Prepared against the current repository on 15 October 2026. The supplied **Mutable OS — Native Clipboard & Content Interchange** brief requires approval of this document before Phase 1, and a separate design review before Phase 4.
 
@@ -509,7 +509,7 @@ This is a targeted matrix, not a requirement to run every Cartesian combination.
 
 ## 8. Open decisions and recommended defaults
 
-The following defaults make the design implementable. Approval of this plan can approve them together; no production changes have been made to pre-empt that review.
+The following defaults were approved together before Phase 1 implementation.
 
 | Decision | Recommended default | When it must be settled |
 | --- | --- | --- |
@@ -577,4 +577,51 @@ Review actual supported Block/property policies at Phase 1 delivery. Native fide
 | Async paste targets a moved caret or closed/switched resource | Versioned destination bookmarks, cancellation and revalidation; do not silently retarget. |
 | Unsupported structures cannot merge safely | Reject with explanation or offer explicit plain conversion; preserve source and destination. |
 
-Review checkpoint: approve or amend this architecture and its Phase 1 defaults before implementation. After approval, deliver phases sequentially with a short completion report and demonstration for each; Phase 4 retains its separate design review.
+Review checkpoint: Phase 1 and its defaults were approved before implementation. Deliver subsequent phases sequentially with a short completion report and demonstration for each; Phase 4 retains its separate design review.
+
+## 10. Phase 1 implementation and qualification — 16 October 2026
+
+The default-on `mutableClipboard` flag selects the complete new clipboard route. Turning it off restores the previous handlers; both routes never handle the same event. Previously imported opaque content remains safely renderable regardless of the flag. Other feature defaults are unchanged.
+
+### Implemented behavior
+
+- Native copy/cut/paste and Command/Control-Shift-V use the existing inline, cross-Block and Block-handle selection infrastructure. Handle paste inserts after selected Blocks or into the cut gap. Disjoint inline groups pair with equally many selections, or one inline group is replicated. Ambiguous distributions and structural multi-caret paste are rejected without changes.
+- `src/interchange/` owns the versioned fragment, scalar/object coordinates, point affinity, graph/range validation, serialization, two-pass identity allocation, transport and insertion preparation. Every pasted Block, property, placement and shared annotation definition receives a new identity. Undo/redo preserves the identities of the committed paste. Existing true-move operations are unchanged.
+- `src/runtime/mutable-clipboard.ts` coordinates explicit operations without repository subscriptions. Async cut waits for clipboard-write acknowledgement and rechecks its source. Native-event fallback retains a recovery fragment before deletion. Failed writes retain the source. Recovery lasts for the editor session; event mode cannot prove OS retention or survive a crash.
+- Payloads above 10,000 transport characters prepare in a worker, with cancellation and revision, selection, view and Cavern-session checks before insertion. Environments without workers yield before preparation. One prepared insertion batch produces one history entry; no command runs per character. Structural commit validation remains on the main thread.
+- Same-Cavern entity references retain their meaning; copied Block references, anchors and linked definitions are remapped. Unselected Block targets require the same verified resource and an available target. Foreign or unavailable targets remain inert, without a naked local entity value. Live and saved knowledge fact tests verify that foreign references are excluded.
+- Unsupported types retain their original identifiers and safe JSON-authored data in persistent inert wrappers. Opaque relationships and shared-definition data survive. Recopy does not activate them. Unsupported values such as Maps, non-finite numbers and nested `undefined`, and invalid annotation ranges, are rejected rather than silently coerced or dropped.
+- Native custom MIME, an escaped HTML carrier and plain text are written together. Carrier recovery requires an exact match with its visible text projection. Bounded legacy `standoff-inline-v1` read support remains. A network-inert `parse5` AST supplies HTML-to-text fallback; external rich formatting import is deferred.
+- Existing manual native JSON save, dirty state and undo infrastructure are reused. Clipboard activity introduces no autosave, Markdown sidecars, geometry measurements or per-keystroke serialization.
+
+### Supported projections and limits
+
+The explicit allowlists in `src/interchange/materialize.ts` are the authoritative supported-type policy. They include standoff/plain text, documents and common containers, Pages/margins, lists, tables/grids and tabs; ordinary typography and existing visual annotation styles; alignment, heading/font-size, indentation and margin Block properties; and scoped entity/Block/URL references. Unknown and active Block types use a visible inactive placeholder. Their retained children do not mount through that placeholder.
+
+Inline images reuse only an already available matching image descriptor in the same Cavern. Other embeds/images retain an inactive descriptor and placeholder. No file acquisition, upload, remote fetch or portable asset transfer is implemented in Phase 1. HTML-only consumers receive a plain preformatted projection; Mutable formatting lives in the native MIME/carrier. This is not a claim of rich round-trip fidelity through arbitrary external applications.
+
+Initial ceilings are 8 MiB combined transport data, 200,000 inline positions, 10,000 Blocks, 20,000 properties, depth 64 and 256 KiB per newly quarantined opaque payload. Large copy still serializes synchronously under the clipboard gesture. Large paste preparation is cancellable, but the final atomic repository commit can still take time. No arbitrary-large-paste latency guarantee is made.
+
+### Qualification
+
+- **104 tests passed in 9 files:** native fidelity and fresh identities, overlaps/points, rich cross-Block replacement, multi-caret behavior, inert unknown/foreign data, anchors/linked definitions, safe asset reuse, malformed input, write failures and recovery, stale/disposed operations, legacy flag-off routing, one-step undo/redo, native persistence and manual saving.
+- **Typecheck passed** for reactive and server projects.
+- **Client and server builds passed.** The existing combined build has an ordering issue: the client build clears `dist`, including a SQLite foundation module imported by a server test. Qualification regenerated that module with `node scripts/build-sqlite-foundation.mjs` between `npm run build:client` and `npm run build:server`. No build-system changes were made. Existing large-chunk warnings remain.
+- **Chrome 155.0.8059.41 on macOS:** `scripts/check-mutable-clipboard-browser.mjs` passed real OS clipboard copy/paste, Shift-V, acknowledged cut, an 18,000-character worker paste and undo, and cancellation after an intervening edit. The OS exposed web custom Mutable MIME, HTML and plain text; no runtime exceptions occurred. Fixtures were in memory.
+- **Typing:** the real Flint benchmark passed editing and undo for the Michelangelo letter and `lotr_book-2_chapter-8.ink`, without saving either fixture. The original small-letter baseline was 7.6 ms median / 10.7 ms p95 synchronous input. Subsequent enabled runs varied (6.9 / 13.8 ms and 9.9 / 16.5 ms); the same-code flag-off comparison measured 9.7 / 21.2 ms. LOTR measured 12.1 / 20.2 ms. All runs reported zero repository snapshots and unrelated status reads. A focused input test additionally asserts no synchronous layout reads. These noisy headless measurements show no clear clipboard-specific typing penalty; they are not a user-visible latency guarantee or a claim that pre-existing editor costs were eliminated.
+
+Reproduction commands:
+
+```sh
+npx vitest run src/interchange/clipboard.test.ts src/rendering/mutable-clipboard.test.tsx src/runtime/block-clipboard.test.ts src/block-tree/cross-text-edit.test.ts src/rendering/cross-block-selection.test.tsx src/rendering/block-selection.test.tsx src/features/anchor-relationships/anchors.test.tsx src/persistence/native-resource.test.ts src/persistence/native-session.test.ts
+npm run typecheck
+npm run build:client
+node scripts/build-sqlite-foundation.mjs
+npm run build:server
+node scripts/check-mutable-clipboard-browser.mjs
+BENCHMARK_OUTPUT=/tmp/mutable-clipboard-letter node scripts/benchmark-flint-typing-browser.mjs
+BENCHMARK_MUTABLE_CLIPBOARD=false BENCHMARK_OUTPUT=/tmp/mutable-clipboard-legacy node scripts/benchmark-flint-typing-browser.mjs
+BENCHMARK_DOCUMENT_PATH=vaults/imported/documents/misc/lotr_book-2_chapter-8.ink BENCHMARK_OUTPUT=/tmp/mutable-clipboard-lotr node scripts/benchmark-flint-typing-browser.mjs
+```
+
+Safari, Firefox and a Ctrl-key operating system have not received real OS clipboard qualification. Native-event fallback, control/composition routing and failure handling have automated coverage; browser-specific retention and permissions still require those platform checks. Phase 2 external rich HTML, Phase 3 asset/Markdown import and Phase 4 interactions remain unimplemented. Phase 4 continues to require its separate design review.

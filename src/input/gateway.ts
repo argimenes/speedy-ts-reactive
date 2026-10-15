@@ -1,4 +1,5 @@
 import { openBlockContextMenu } from "../runtime/open-block-context-menu";
+import type { MutableClipboard } from '../runtime/mutable-clipboard';
 import type { NodeKey, PlacementKey, ViewId } from "../block-tree/types";
 import type { TreeCommands } from "../block-tree/commands";
 import type { FocusService } from "../runtime/focus";
@@ -47,6 +48,7 @@ export class InputGateway {
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
     private readonly caretEvents?: CaretNotifications,
+    private readonly clipboard?: MutableClipboard,
   ) {}
 
   install(): () => void {
@@ -106,6 +108,7 @@ export class InputGateway {
     return resolved.handle.inputPolicy === "standoff" ? ["editor/standoff", "editor"] : ["editor"];
   }
   private onKeyDown = (event: KeyboardEvent) => {
+    this.clipboard?.key(event);
     const target = event.target instanceof Element ? event.target : undefined;
     const resolved = this.mounts.resolveEvent(event);
     const field = target?.closest('input, textarea, select, [contenteditable="true"]');
@@ -270,7 +273,7 @@ export class InputGateway {
     else this.caretEvents.setCaret();
   };
 
-  private onFocusOut = () => { this.caretEvents?.setComposing?.(false); this.caretEvents?.setCaret(); };
+  private onFocusOut = () => { this.clipboard?.clearIntent(); this.caretEvents?.setComposing?.(false); this.caretEvents?.setCaret(); };
 
   private onCompositionStart = (event: CompositionEvent) => {
     this.bindings.cancelChord();
@@ -405,10 +408,12 @@ export class InputGateway {
   }
 
   private onCopy = (event: ClipboardEvent) => {
+    if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     this.writeStandoffClipboard(event);
   };
 
   private onCut = (event: ClipboardEvent) => {
+    if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     if (!this.writeStandoffClipboard(event)) return;
     const context = this.standoffClipboardContext(event);
     if (!context) return;
@@ -422,6 +427,7 @@ export class InputGateway {
   };
 
   private onPaste = (event: ClipboardEvent) => {
+    if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     const context = this.standoffClipboardContext(event);
     if (!context || !event.clipboardData) return;
     const primary = context.set.items.find((item) => item.id === context.set.primaryId);

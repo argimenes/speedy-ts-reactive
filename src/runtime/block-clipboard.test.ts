@@ -9,7 +9,7 @@ function setup(id: string | undefined = "source") {
   const editor = new ReactiveEditor({ id: "doc", type: "document-block", children: [
     { id, type: "standoff-editor-block", text: "copy me" },
     { id: "target", type: "standoff-editor-block", text: "target" },
-  ] });
+  ] }, { features: { mutableClipboard: false } });
   const view = editor.createView("clipboard-test");
   const children = () => view.node(view.state.rootKey)!.children.map(key => view.node(key)!);
   const source = children()[0], target = children()[1];

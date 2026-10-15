@@ -1,3 +1,4 @@
+import { clipProperties } from '../interchange/ranges';
 import { clone } from "./clone";
 import { createBlockId, createContentKey, createPlacementKey } from "./ids";
 import { readBlockId } from "./identity";
@@ -9,14 +10,7 @@ export interface CrossTextSegment { placementKey: string; start: number; end: nu
 export interface CrossTextEditResult { placementKey: string; caret: number; state: RepositoryState; inputs: BlockCommitSubject[]; outputs: BlockCommitSubject[] }
 
 function fragment(content: ContentRecord, from: number, to: number, offset: number): JsonObject[] {
-  const properties = content.payload.standoffProperties;
-  if (!Array.isArray(properties)) return [];
-  return properties.flatMap(property => {
-    if (!property || typeof property !== "object") return [];
-    if (!Number.isInteger(property.start) || !Number.isInteger(property.end)) return from === 0 ? [clone(property)] : [];
-    const start = Math.max(from, property.start), end = Math.min(to - 1, property.end);
-    return end < start ? [] : [{ ...clone(property), start: start + offset, end: end + offset }];
-  });
+  return clipProperties(content.payload.standoffProperties, from, to, content.inlineContent.length, offset);
 }
 
 /** Pure structural plan: untouched Cells are moved, never round-tripped as text. */

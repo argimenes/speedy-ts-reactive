@@ -35,4 +35,5 @@ export function registerVisualEffectRenderers(registry:VisualEffectRegistry){
     validate(p){if(!Array.isArray(p.classes)||p.classes.some(c=>typeof c!=='string'||!c||/\s/.test(c)||c.startsWith('reactive-')))throw Error('CSS classes must be tokens outside the reserved reactive- namespace');},
     classes:p=>p.classes as string[]});
   registry.registerType({type:'codex/claim-reference',renderers:[{id:'underline',name:'svg-underline',params:{color:'red'}}]});
+  registry.registerType({type:'mutable/opaque-property',renderers:[{id:'inactive',name:'svg-underline',params:{color:'#888',lineStyle:'dotted'}}]});
 }

@@ -1,3 +1,6 @@
+import { mapStandoffPropertiesForReplacement, pointAffinity } from '../interchange/ranges';
+import { planFragmentInsertion } from '../interchange/insertion';
+import type { MutableFragment } from '../interchange/fragment';
 import { planBlockRestore, type BlockRestorePlan, type LeafAuthoredState } from "./block-restore";
 import { type DeepReadonly } from "./commit-capture";
 import { clone } from "./clone";
@@ -39,68 +42,28 @@ export class TreeCommandError extends Error {
   }
 }
 
-function mapStandoffPropertiesForReplacement(
-  properties: unknown[],
-  start: number,
-  end: number,
-  insertedLength: number,
-  origins: (number | null)[],
-): unknown[] {
-  const removedLength = end - start;
-  const delta = insertedLength - removedLength;
-
-  return properties.flatMap((property, index) => {
-    const retain = (value: unknown) => { origins.push(index); return [value]; };
-    if (!property || typeof property !== "object") return retain(clone(property));
-    const mapped = clone(property as Record<string, unknown>);
-    const propertyStart = typeof mapped.start === "number" ? mapped.start : undefined;
-    const propertyEnd = typeof mapped.end === "number" ? mapped.end : undefined;
-    if (
-      propertyStart === undefined ||
-      propertyEnd === undefined ||
-      propertyEnd < propertyStart
-    ) {
-      return retain(mapped);
-    }
-
-    // Standoff ranges are inclusive Cell ranges, while replacement ranges are
-    // half-open boundaries. An insertion at a range edge stays outside that
-    // range; an insertion strictly inside it expands the range.
-    if (removedLength === 0) {
-      if (insertedLength === 0 || propertyEnd < start) return retain(mapped);
-      if (propertyStart >= start) {
-        mapped.start = propertyStart + insertedLength;
-        mapped.end = propertyEnd + insertedLength;
-      } else {
-        mapped.end = propertyEnd + insertedLength;
-      }
-      return retain(mapped);
-    }
-
-    if (propertyEnd < start) return retain(mapped);
-    if (propertyStart >= end) {
-      mapped.start = propertyStart + delta;
-      mapped.end = propertyEnd + delta;
-      return retain(mapped);
-    }
-
-    const survivesBefore = propertyStart < start;
-    const survivesAfter = propertyEnd >= end;
-    if (!survivesBefore && !survivesAfter) return [];
-
-    mapped.start = survivesBefore ? propertyStart : start + insertedLength;
-    mapped.end = survivesAfter ? propertyEnd + delta : start - 1;
-    return typeof mapped.start === "number" &&
-      typeof mapped.end === "number" &&
-      mapped.start <= mapped.end
-      ? retain(mapped)
-      : [];
-  });
-}
 
 export class TreeCommands {
   private pending?: PendingTransaction;
   private restorePlans = new WeakSet<object>();
+  /** Prepared fragments only: one history entry and validation batch for the entire paste. */
+  insertMutableText(edits: Array<{ segments: CrossTextSegment[]; fragment: BlockFragment; slices: MutableFragment['roots'] }>, cut = false) {
+    if (!edits.length) return [];
+    const before = this.pending?.draft ?? this.repository.readState();
+    let state = before;
+    const results: Array<{ placementKey: string; caret: number }> = [];
+    for (const edit of edits) {
+      const result = planFragmentInsertion(state, edit.segments, edit.fragment, edit.slices);
+      state = result.state; results.push({ placementKey: result.placementKey, caret: result.caret });
+    }
+    this.pruneUnreachable(state);
+    this.publish(cut ? 'Cut selected text' : 'Paste Mutable content', this.diff(before, state), {
+      commandId: cut ? 'selection.cut' : 'selection.paste',
+      subjects: results.map(r => this.subject(state, r.placementKey)),
+      clipboard: { token: crypto.randomUUID(), action: cut ? 'cut' : 'paste', preservedIds: false },
+    });
+    return results;
+  }
   prepareBlockRestore(placementKey: string, blockId: string, source: DeepReadonly<LeafAuthoredState>): DeepReadonly<BlockRestorePlan> {
     if (this.pending) throw new TreeCommandError("Finish the current transaction before preparing a restore");
     const plan = planBlockRestore(this.repository.readState(), placementKey, blockId, source);
@@ -759,6 +722,7 @@ export class TreeCommands {
         end,
         inserted.length,
         annotationOrigins,
+        content.inlineContent.length,
       );
       const surviving = new Set(mapped.flatMap(property => property && typeof property === "object" &&
         (property as Record<string, unknown>).type === "text/superposition"
@@ -986,6 +950,10 @@ export class TreeCommands {
       const end = Number(annotation.end);
       if (!Number.isFinite(start) || !Number.isFinite(end)) {
         leftAnnotations.push(clone(annotation));
+      } else if (annotation.isZeroWidth === true) {
+        const affinity = pointAffinity(annotation, content.inlineContent.length);
+        if (start < index || start === index && affinity === "before") leftAnnotations.push({ ...clone(annotation), affinity });
+        else rightAnnotations.push({ ...clone(annotation), start: start - index, end: start - index, affinity });
       } else if (end < index) {
         leftAnnotations.push(clone(annotation));
       } else if (start >= index) {

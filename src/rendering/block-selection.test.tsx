@@ -11,7 +11,7 @@ afterEach(() => { while (disposers.length) disposers.pop()!(); document.body.rep
 const paragraph = (id: string): ExistingBlockDto => ({ id, type: "standoff-editor-block", text: `Text ${id}` });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 function setup(children = ["a", "b", "c", "d"].map(paragraph)) {
-  const editor = new ReactiveEditor({ type: "document-block", children }); registerCoreViews(editor);
+  const editor = new ReactiveEditor({ type: "document-block", children }, { features: { mutableClipboard: false } }); registerCoreViews(editor);
   const projection = editor.createView("selection-test");
   const host = document.body.appendChild(document.createElement("div")); host.className = "workspace-demo";
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
