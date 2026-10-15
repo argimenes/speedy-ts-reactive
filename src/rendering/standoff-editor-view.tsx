@@ -703,18 +703,18 @@ export function StandoffEditorView(props: BlockViewProps) {
                       aria-label={String(cell()?.payload.alt ?? "Inline image")}
                     >
                       <img
-                        src={String(cell()?.payload.src ?? "")}
+                        src={String(cell()?.payload.src ?? "") || undefined}
                         alt={String(cell()?.payload.alt ?? "")}
                         width={cell()?.payload.width as number | undefined}
                         height={cell()?.payload.height as number | undefined}
                         onLoad={event => {
                           // A cached image can finish after its transient view is disposed.
-                          if (!event.currentTarget.isConnected || !editor.node(cellKey)) return;
+                          if (!event.currentTarget.isConnected || !cell()?.payload.src || !editor.node(cellKey)) return;
                           editor.commands.updateInlineImage(cellKey, { status: "ready" });
                           scheduleMeasure();
                         }}
                         onError={event => {
-                          if (event.currentTarget.isConnected && editor.node(cellKey)) editor.commands.updateInlineImage(cellKey, { status: "failed" });
+                          if (event.currentTarget.isConnected && cell()?.payload.src && editor.node(cellKey)) editor.commands.updateInlineImage(cellKey, { status: "failed" });
                         }}
                       />
                     </span>
@@ -733,7 +733,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     ) as HTMLDivElement;
     if (editor.features.directDomCharacterCells) {
       const cells = new DirectCharacterCells(element, (key, status) => {
-        if (!editor.node(key)) return;
+        if (!editor.node(key)?.payload.src) return;
         editor.commands.updateInlineImage(key, { status });
         if (status === "ready") scheduleMeasure();
       });

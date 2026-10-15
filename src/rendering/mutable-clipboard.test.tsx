@@ -9,11 +9,11 @@ import { captureNative, decodeNative, nativeEnvelope } from '../persistence/nati
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
-function setup(enabled = true) {
+function setup(enabled = true, externalHtml = true, directDomCharacterCells = true) {
   const editor = new ReactiveEditor({ type: 'document-block', id: 'doc', children: [
     { type: 'standoff-editor-block', id: 'a', text: 'Rome abc', standoffProperties: [{ id: 'p', type: 'codex/entity-reference', value: 'rome', start: 0, end: 3 }] },
     { type: 'standoff-editor-block', id: 'b', text: 'target' },
-  ] }, { features: { mutableClipboard: enabled } });
+  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells } });
   editor.clipboard.setContext(() => ({ cavernId: 'cavern', session: 'session' })); registerCoreViews(editor);
   const projection = editor.createView('clipboard-ui'), host = document.body.appendChild(document.createElement('div'));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -121,5 +121,45 @@ describe('Mutable clipboard UI routing and lifecycle', () => {
     const snapshots = vi.spyOn(s.editor.repository, 'snapshot'), layout = vi.spyOn(Element.prototype, 'getBoundingClientRect');
     target.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true }));
     expect(snapshots).not.toHaveBeenCalled(); expect(layout).not.toHaveBeenCalled(); expect(s.editor.clipboard.message()).toBe(''); expect(s.texts()[1]).toBe('taXrget');
+  });
+  it('pastes external semantic HTML through the shared gateway, with a separate rich-off preference', () => {
+    const data = { 'text/html': '<b>rich😀</b>', 'text/plain': 'plain' };
+    const on = setup(); on.dispatch('paste', on.select('b', 0, 6), data);
+    expect(on.texts()[1]).toBe('rich😀'); expect(on.node('b').payload.standoffProperties).toMatchObject([{ type: 'style/bold', start: 0, end: 4 }]);
+    on.editor.repository.undo(); expect(on.texts()[1]).toBe('target');
+    const off = setup(true, false); off.dispatch('paste', off.select('b', 0, 6), data);
+    expect(off.texts()[1]).toBe('plain'); expect(off.node('b').payload.standoffProperties).toEqual([]);
+    expect(off.dispatch('copy', off.select('a', 0, 4)).values[NATIVE_MIME]).toBeTruthy();
+  });
+  it('renders native list markers and table headers, restores an editable caret, and undoes the whole import', async () => {
+    const s = setup(), commits = vi.spyOn(s.editor.repository, 'commit');
+    s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<ol start="3"><li>three</li><li value="7">seven<ul><li>nested</li></ul></li></ol><table><tr><th>Header</th><td>Cell</td></tr></table>' });
+    await tick();
+    expect(commits).toHaveBeenCalledTimes(1);
+    expect([...s.host.querySelectorAll('.reactive-imported-list-marker')].map(n => n.textContent)).toEqual(['3.', '7.', '•']);
+    expect(s.host.querySelector('[role="columnheader"]')?.textContent).toContain('Header');
+    const active = document.activeElement!;
+    active.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'after', bubbles: true, cancelable: true }));
+    expect(s.editor.encodeDocument().children!.at(-1)!.text).toBe('after');
+    s.editor.repository.undo(); s.editor.repository.undo(); expect(s.texts()).toEqual(['Rome abc', 'target']);
+  });
+  it('does not rebuild list markers or capture repository snapshots while typing inside an imported item', async () => {
+    const s = setup(); s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<ul><li>first</li><li>second</li></ul>' }); await tick();
+    const markers = [...s.host.querySelectorAll('.reactive-imported-list-marker')];
+    const list = s.editor.encodeDocument().children![1], itemText = list.children![0].children![0];
+    const target = s.select(itemText.id!, 1), snapshots = vi.spyOn(s.editor.repository, 'snapshot');
+    const mutations: MutationRecord[] = [], observer = new MutationObserver(records => mutations.push(...records));
+    markers.forEach(marker => observer.observe(marker, { childList: true, subtree: true, characterData: true }));
+    target.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true })); await tick(); observer.disconnect();
+    expect([...s.host.querySelectorAll('.reactive-imported-list-marker')]).toEqual(markers); expect(mutations).toEqual([]); expect(snapshots).not.toHaveBeenCalled();
+  });
+  it.each([true, false])('keeps inert images out of network and history in the direct renderer=%s', async direct => {
+    const s = setup(true, true, direct), commits = vi.spyOn(s.editor.repository, 'commit');
+    s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<p>A<img src="https://clipboard-probe.invalid/map.png" alt="map">B</p>' }); await tick();
+    const image = s.host.querySelector('.reactive-inline-image img')!;
+    expect(image.hasAttribute('src')).toBe(false);
+    image.dispatchEvent(new Event('error')); image.dispatchEvent(new Event('load')); await tick();
+    expect(commits).toHaveBeenCalledTimes(1);
+    s.editor.repository.undo(); expect(s.texts()).toEqual(['Rome abc', 'target']);
   });
 });

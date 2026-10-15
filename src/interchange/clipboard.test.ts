@@ -191,7 +191,7 @@ describe('Mutable native fragments', () => {
     expect(importClipboard(data, true).fragment!.blocks[0].inline!.properties).toEqual([]);
     const changed = { 'text/html': data['text/html'].replace('&lt;hello&gt;', 'changed'), 'text/plain': '😀changed\nsecond' };
     expect(fragmentText(importClipboard(changed).fragment!)).toBe('😀changed\nsecond'); expect(importClipboard(changed).notice).toContain('carrier');
-    expect(fragmentText(importClipboard({ 'text/html': '<script>bad()</script><p>safe<img src="https://evil.test/x"></p>' }).fragment!)).toBe('safe\n');
+    expect(fragmentText(importClipboard({ 'text/html': '<script>bad()</script><p>safe<img src="https://evil.test/x"></p>' }, false, false).fragment!)).toBe('safe\n');
     expect(importClipboard({ 'text/plain': '' }).fragment).toBeUndefined();
   });
 });

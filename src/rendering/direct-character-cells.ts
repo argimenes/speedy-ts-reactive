@@ -78,7 +78,7 @@ export class DirectCharacterCells {
           const image = document.createElement("img");
           const report = (status: "ready" | "failed") => {
             // Cached image events can arrive after removal or view disposal.
-            if (!this.disposed && image.isConnected && this.entries.get(cell.key)?.element === element) this.imageStatus?.(cell.key, status);
+            if (!this.disposed && image.isConnected && image.getAttribute('src') && this.entries.get(cell.key)?.element === element) this.imageStatus?.(cell.key, status);
           };
           image.onload = () => report("ready");
           image.onerror = () => report("failed");
@@ -97,7 +97,9 @@ export class DirectCharacterCells {
       if (cell.image) {
         const image = element.firstChild as HTMLImageElement;
         setAttribute(element, "aria-label", cell.image.label);
-        setAttribute(image, "src", cell.image.src);
+        // Inert clipboard descriptors must neither load the current page via an
+        // empty src nor generate an image-status history entry on error.
+        setAttribute(image, "src", cell.image.src || undefined);
         setAttribute(image, "alt", cell.image.alt);
         setAttribute(image, "width", cell.image.width === undefined ? undefined : String(cell.image.width));
         setAttribute(image, "height", cell.image.height === undefined ? undefined : String(cell.image.height));

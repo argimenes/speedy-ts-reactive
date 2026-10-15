@@ -41,11 +41,12 @@ try {
     chrome.once('error', reject); setTimeout(() => reject(Error('Chrome startup timeout')), 15000).unref();
   });
   socket = new WebSocket(endpoint); await new Promise(resolve => socket.addEventListener('open', resolve, { once: true }));
-  let id = 0; const pending = new Map(), errors = [];
+  let id = 0; const pending = new Map(), errors = [], externalRequests = [];
   socket.addEventListener('message', event => {
     const m = JSON.parse(event.data), p = pending.get(m.id);
     if (p) { pending.delete(m.id); m.error ? p.reject(Error(JSON.stringify(m.error))) : p.resolve(m.result); }
     if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails);
+    if (m.method === 'Network.requestWillBeSent' && m.params.request.url.includes('clipboard-probe.invalid')) externalRequests.push(m.params.request.url);
   });
   const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => {
     const n = ++id, timer = setTimeout(() => { pending.delete(n); reject(Error('CDP timeout: ' + method)); }, 45000);
@@ -62,6 +63,8 @@ try {
   const origin = `http://127.0.0.1:${vite.httpServer.address().port}`;
   await send('Browser.grantPermissions', { origin, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
   await send('Runtime.enable', {}, sessionId); await send('Page.bringToFront', {}, sessionId);
+  await send('Network.enable', {}, sessionId);
+  await send('Network.setBlockedURLs', { urls: ['*clipboard-probe.invalid*'] }, sessionId);
   await send('Page.navigate', { url: origin + '/__clipboard' }, sessionId); await wait('window.proof');
   const key = async (letter, shift = false) => {
     const details = { key: letter, code: 'Key' + letter.toUpperCase(), windowsVirtualKeyCode: letter.toUpperCase().charCodeAt(0), modifiers: 4 | (shift ? 8 : 0) };
@@ -85,8 +88,25 @@ try {
   // Reject completion when the user keeps typing during preparation.
   await evaluate(`proof.select('b',0);proof.paste(proof.exportClipboard(proof.plainFragment('x'.repeat(18000))));proof.editor.commands.replaceInlineRange(proof.node('b').key,0,0,'!')`);
   await wait("proof.editor.clipboard.message().includes('Destination changed')"); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', '!target']);
+  // External rich HTML uses the same worker/undo path and existing Block views.
+  await evaluate(`proof.editor.repository.undo();proof.select('b',0,6);navigator.clipboard.write([new ClipboardItem({'text/html':new Blob(['<h2>Heading</h2><ol start="3"><li>first</li><li>second</li></ol><table><tr><th>Header</th><td>Cell</td></tr></table>'],{type:'text/html'}),'text/plain':new Blob(['Heading\\nfirst\\nsecond\\nHeader\\tCell'],{type:'text/plain'})})])`);
+  await key('v');
+  await wait(`document.querySelectorAll('.reactive-imported-list-marker').length===2`);
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('.reactive-imported-list-marker')].map(n=>n.textContent)`), ['3.', '4.']);
+  assert.equal(await evaluate(`document.querySelector('[role="columnheader"]').textContent.includes('Header')`), true);
+  await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+  await evaluate(`proof.select('b',0,6);proof.paste({'text/html':'<b>'+('x'.repeat(18000))+'</b>'})`);
+  await wait("proof.texts()[1].length===18000");
+  assert.equal(await evaluate(`proof.node('b').payload.standoffProperties[0].type`), 'style/bold');
+  await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+  await evaluate(`proof.select('b',0,6);proof.paste({'text/html':'<p onclick="window.__clipboardExecuted=true">A<img src="https://clipboard-probe.invalid/a.png" onerror="window.__clipboardExecuted=true" alt="map">B</p><script>window.__clipboardExecuted=true</script><style>@import "https://clipboard-probe.invalid/a.css";</style><iframe src="https://clipboard-probe.invalid/frame"></iframe>'})`);
+  await evaluate(`new Promise(resolve=>setTimeout(resolve,150))`);
+  assert.equal(await evaluate(`!!window.__clipboardExecuted`), false);
+  assert.equal(await evaluate(`Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell'&&c.payload.src==='').length`), 1);
+  assert.deepEqual(externalRequests, []);
+  await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: (await send('Browser.getVersion')).product, formats, nativeKeyboardCopyPaste: true, plainKeyboardPaste: true, acknowledgedCut: true, workerPasteAndUndo: true, staleWorkerCancelled: true, errors }, null, 2));
+  console.log(JSON.stringify({ browser: (await send('Browser.getVersion')).product, formats, nativeKeyboardCopyPaste: true, plainKeyboardPaste: true, acknowledgedCut: true, workerPasteAndUndo: true, staleWorkerCancelled: true, semanticHtmlRendering: true, htmlWorkerUndo: true, inertImages: true, externalRequests, errors }, null, 2));
 } finally {
   socket?.close();
   if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) { const exited = new Promise(resolve => chrome.once('exit', resolve)); chrome.kill('SIGKILL'); await exited; }

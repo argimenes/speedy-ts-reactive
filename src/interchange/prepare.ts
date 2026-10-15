@@ -6,10 +6,11 @@ import type { BlockFragment } from '../block-tree/clipboard';
 export interface PastePreparation {
   data: ClipboardRepresentations; plain: boolean; scope: InterchangeScope;
   assets: Array<[string, string]>; blocks: Array<[string, boolean]>; selections: number;
+  semanticHtml?: boolean;
 }
 export interface PreparedPaste { fragment?: MutableFragment; notice?: string; natives?: BlockFragment[] }
 export function preparePaste(input: PastePreparation): PreparedPaste {
-  const imported = importClipboard(input.data, input.plain), fragment = imported.fragment;
+  const imported = importClipboard(input.data, input.plain, input.semanticHtml), fragment = imported.fragment;
   if (!fragment) return imported;
   const groups: MutableFragment['roots'][] = [[]];
   for (const root of fragment.roots) { groups.at(-1)!.push(root); if (root.separatorAfter === 'selection-gap') groups.push([]); }

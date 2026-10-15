@@ -1,6 +1,6 @@
 # Mutable Clipboard Architecture and Four-Phase Implementation Plan
 
-Status: architecture and Section 8 defaults approved. Phase 1 implemented; see Section 10 for qualification and limitations. Phases 2–4 have not begun.
+Status: Phase 1 accepted. Phase 2 implemented; see Sections 10–11 for qualification and limitations. Phases 3–4 have not begun.
 
 Prepared against the current repository on 15 October 2026. The supplied **Mutable OS — Native Clipboard & Content Interchange** brief requires approval of this document before Phase 1, and a separate design review before Phase 4.
 
@@ -624,4 +624,52 @@ BENCHMARK_MUTABLE_CLIPBOARD=false BENCHMARK_OUTPUT=/tmp/mutable-clipboard-legacy
 BENCHMARK_DOCUMENT_PATH=vaults/imported/documents/misc/lotr_book-2_chapter-8.ink BENCHMARK_OUTPUT=/tmp/mutable-clipboard-lotr node scripts/benchmark-flint-typing-browser.mjs
 ```
 
-Safari, Firefox and a Ctrl-key operating system have not received real OS clipboard qualification. Native-event fallback, control/composition routing and failure handling have automated coverage; browser-specific retention and permissions still require those platform checks. Phase 2 external rich HTML, Phase 3 asset/Markdown import and Phase 4 interactions remain unimplemented. Phase 4 continues to require its separate design review.
+Safari, Firefox and a Ctrl-key operating system have not received real OS clipboard qualification. Native-event fallback, control/composition routing and failure handling have automated coverage; browser-specific retention and permissions still require those platform checks. These Phase 1 compatibility checks remain tracked separately and, by user direction, do not block Phase 2. Phase 4 continues to require its separate design review.
+
+## 11. Phase 2 implementation and qualification — 16 October 2026
+
+External semantic HTML now enters the existing `MutableFragment` pipeline. The default-on `externalHtmlClipboard` flag controls this importer within the existing `mutableClipboard` route. Disabling it restores text fallback without disabling native Mutable clipboard fidelity. There is no second HTML insertion or undo mechanism.
+
+### Conversion and interoperability
+
+The installed `@atjson/source-html` parser was inspected: it already uses `parse5`, retains source-tag annotations and calculates offsets using JavaScript string lengths. Reusing Phase 1's direct `parse5` AST avoids an intermediate annotation model and permits deliberate whitespace conversion and scalar/object indexing. No parser dependency was added. `html-ast.ts` centralizes bounded, network-inert parsing; `html-import.ts` emits the existing fragment schema.
+
+| HTML input | Native result |
+| --- | --- |
+| Paragraphs and block wrappers | Text Blocks; explicit paragraphs, including empty paragraphs, retain structural boundaries. Inline-only HTML merges into the selected text. |
+| H1–H6 | Existing heading Block properties; original heading level retained. H5/H6 use H4 presentation with a notice. |
+| Strong/emphasis, underline/strike, mark, super/subscript | Existing standoff properties over converted scalar/object ranges. Nested formatting and Unicode offsets are preserved. |
+| Inline font weight/style, decoration, vertical alignment and simple colours | A bounded semantic CSS subset; no foreign stylesheet or layout import. |
+| Links | Existing URL properties for safe absolute HTTP(S)/mailto links. Unsafe or relative links remain text with a notice; `<base>` and browser history are not used to infer origins. |
+| UL/OL and nested LI | Existing list and container Blocks, with ordered/unordered, start, reversed and explicit item-value metadata. Existing list views display structure-derived markers. |
+| Basic tables | Existing table/row/cell Blocks; headers and captions retained. Merged cells are flattened without duplicating text or expanding spans, with original span metadata and a notice. |
+| BR, PRE and CODE | Inline newline for BR; preformatted/code whitespace retained. Code stays editable text rather than activating a code widget; unsupported code typography is reported. |
+| Images mixed with text | One object position per image. Safe source, alt/title and bounded dimensions are retained in inert descriptors. Relative source text remains unresolved; active/data/file sources are discarded. No acquisition, download or upload occurs. |
+
+Normal HTML collapses ASCII whitespace across inline wrappers, preserves non-breaking spaces, and drops trailing collapsed spaces at Block boundaries. Annotation positions are calculated after this conversion, including each image as one position. Plain text continues to normalize CRLF/CR while preserving literal Unicode. Command/Control-Shift-V bypasses rich import; when only HTML exists, supported text can be derived without formatting.
+
+The existing multi-caret restriction remains: inline fragments may be replicated, while structured HTML requires a single destination selection. Explicit plain paste remains available.
+
+Negotiation remains native MIME → validated carrier → bounded legacy native → semantic HTML → text. A stale carrier keeps the existing visible-text fallback and fidelity notice. Unsupported passive wrappers retain their text with diagnostics. Scripts, stylesheets, active embeds, forms, foreign SVG/MathML and executable attributes are never activated. Complex office layout, CSS-generated lists, custom marker typography, merged-cell presentation and source font reproduction are not supported; this phase imports semantics, not page appearance.
+
+Two narrow editor dependencies were necessary: structural paste ending in a list/table now leaves an editable trailing paragraph, and inactive image placeholders have no DOM `src` attribute and ignore load/error events in both character renderers. The latter fixes an issue discovered in the browser test where `src=""` created an image-error history entry after paste. Image placeholders now preserve one-step undo.
+
+### Qualification
+
+- **160 focused tests passed across 12 files**, including 14 new converter tests and five additional UI cases. Coverage includes browser/office-style fixtures, malformed nesting, whitespace, astral/combining Unicode, ranges, lists/tables, inert images, unsafe URLs/attributes, depth bounds, negotiation and feature flags, worker preparation, one-commit insertion, native persistence, stable undo/redo, and existing selection/renderer regressions.
+- **Reactive and server typechecks passed.**
+- **Client and server production builds passed**, using the existing SQLite artifact prerequisite documented in Section 10. Existing bundle warnings remain; no build-system changes were made.
+- **Chrome 155 on macOS:** the browser harness passed OS HTML-only clipboard paste and native list/table rendering, an 18,000-character semantic HTML worker import and undo, and synthetic hostile HTML/image cases. Network instrumentation recorded **zero attempted external requests**, and no runtime exceptions occurred. Phase 1 native clipboard, cut acknowledgement, plain paste and stale-worker checks continued to pass.
+- **Typing qualification:** the real Flint Michelangelo-letter benchmark passed typing and undo at 8.8 ms median / 17.0 ms p95 synchronous input, with zero repository snapshots and unrelated status reads. This lies within the observed Phase 1 headless variation; it is not a latency guarantee. A focused imported-list test additionally verifies that typing does not rebuild list markers or take repository snapshots. Parsing/conversion runs only on explicit paste.
+
+Reproduce the additional checks with:
+
+```sh
+npx vitest run src/interchange/html-import.test.ts src/interchange/clipboard.test.ts src/rendering/mutable-clipboard.test.tsx src/rendering/direct-character-cells.test.tsx src/rendering/standoff-editor-view.test.tsx
+# Also run the existing Phase 1 selection, anchor and persistence suite in Section 10.
+npm run typecheck
+node scripts/check-mutable-clipboard-browser.mjs
+BENCHMARK_OUTPUT=/tmp/mutable-html-typing node scripts/benchmark-flint-typing-browser.mjs
+```
+
+Phase 3 managed assets and Markdown import have not begun. Phase 4 remains reserved for the separate design discussion. The outstanding Phase 1 Safari/Firefox/Ctrl-platform compatibility checks are unchanged.

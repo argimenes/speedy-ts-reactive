@@ -1,4 +1,5 @@
-import { parseFragment } from 'parse5';
+import { parseClipboardHtml } from './html-ast';
+import { importSemanticHtml } from './html-import';
 import { LIMITS, validateFragment, type MutableFragment } from './fragment';
 import { emptyFragment } from './fragment';
 import { fragmentText, plainFragment } from './serializer';
@@ -18,42 +19,17 @@ export function exportClipboard(fragment: MutableFragment): ClipboardRepresentat
   return representations;
 }
 
-/** AST parsing never creates DOM elements or initiates resource requests. Phase 1: text only. */
-function htmlText(html: string): { text: string; carrier?: string } {
-  // Phase 1's text fallback is deliberately conservative. Bound token expansion
-  // before constructing the AST; complex external HTML can still use text/plain.
-  let tags = 0, depth = 0;
-  for (const match of html.matchAll(/<\s*(\/?)([a-z][\w:-]*)\b[^>]*>/gi)) {
-    if (++tags > 20000) throw Error('Clipboard HTML has too many tags.');
-    if (match[1]) depth = Math.max(0, depth - 1);
-    else if (!['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'].includes(match[2].toLowerCase()) && !match[0].endsWith('/>')) depth++;
-    if (depth > LIMITS.depth) throw Error('Clipboard HTML is too deeply nested.');
-  }
-  const tree = parseFragment(html); let carrier: string | undefined, count = 0;
-  const walk = (node: any, depth: number): string => {
-    if (++count > 200000 || depth > LIMITS.depth) throw Error('Clipboard HTML is too complex.');
-    if (['script', 'style', 'iframe', 'object', 'embed', 'template'].includes(node.tagName)) return '';
-    if (node.nodeName === '#text') return node.value;
-    const marker = node.attrs?.find((a: any) => a.name === 'data-mutable-fragment')?.value;
-    if (marker) { if (carrier) throw Error('Ambiguous Mutable HTML carrier.'); carrier = marker; }
-    if (node.tagName === 'br') return '\n';
-    const value = (node.childNodes ?? []).map((n: any) => walk(n, depth + 1)).join('');
-    return value + (['p', 'li', 'h1', 'h2', 'h3', 'tr'].includes(node.tagName) ? '\n' : '');
-  };
-  return { text: walk(tree, 0), carrier };
-}
-
-export function importClipboard(data: ClipboardRepresentations, plain = false): { fragment?: MutableFragment; notice?: string } {
+export function importClipboard(data: ClipboardRepresentations, plain = false, semanticHtml = true): { fragment?: MutableFragment; notice?: string } {
   if (Object.values(data).reduce((n, s) => n + new TextEncoder().encode(s).length, 0) > LIMITS.bytes) throw Error('Clipboard exceeds the size limit.');
   const warnings: string[] = [];
   if (!plain && data[NATIVE_MIME]) {
     try { return { fragment: validateFragment(JSON.parse(data[NATIVE_MIME])) }; }
-    catch { warnings.push('Native clipboard data was invalid or unsupported; used its text fallback.'); }
+    catch { warnings.push('Native clipboard data was invalid or unsupported; used a fallback.'); }
   }
-  let html: ReturnType<typeof htmlText> | undefined;
+  let html: ReturnType<typeof parseClipboardHtml> | undefined;
   if (data['text/html'] && (!plain || data['text/plain'] === undefined)) {
     try {
-      html = htmlText(data['text/html']);
+      html = parseClipboardHtml(data['text/html']);
       if (!plain && html.carrier) {
         const fragment = validateFragment(JSON.parse(decode(html.carrier)));
         // Exact projection comparison detects carriers retained after external text edits.
@@ -82,9 +58,21 @@ export function importClipboard(data: ClipboardRepresentations, plain = false): 
       }
     } catch { warnings.push('Legacy clipboard data was invalid; used text.'); }
   }
-  const text = data['text/plain'] ?? html?.text;
+  let derivedText = html?.text;
+  // Native and legacy formats win. A failed carrier falls back to visible text,
+  // without reinterpreting its stale native projection as an external document.
+  if (semanticHtml && html && !html.carrier) {
+    try {
+      const imported = importSemanticHtml(html.tree);
+      if (imported.fragment) {
+        if (!plain) return { fragment: imported.fragment, ...((warnings.length || imported.notice) ? { notice: [...warnings, imported.notice].filter(Boolean).join(' ') } : {}) };
+        derivedText = fragmentText(imported.fragment);
+      } else warnings.push(imported.notice ?? 'HTML contained no supported content.');
+    } catch { warnings.push('HTML exceeded semantic import limits; used text when available.'); }
+  }
+  const text = data['text/plain'] ?? derivedText;
   if (!text) return { notice: 'Clipboard contains no supported text; the selection was left unchanged.' };
-  if (!plain && data['text/html'] && !warnings.length) warnings.push('Pasted text. External rich HTML import is not enabled in Phase 1.');
+  if (!plain && data['text/html'] && !warnings.length) warnings.push('Pasted text. External semantic HTML import is disabled.');
   return { fragment: plainFragment(text), ...(warnings.length ? { notice: warnings.join(' ') } : {}) };
 }
 

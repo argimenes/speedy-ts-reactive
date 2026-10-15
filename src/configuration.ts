@@ -17,6 +17,8 @@
 export type FeatureFlags = Readonly<{
   /** Shared native clipboard. Disable to restore all legacy clipboard routes together. */
   mutableClipboard: boolean;
+  /** Semantic external HTML through the shared Mutable clipboard pipeline. */
+  externalHtmlClipboard: boolean;
   /** Explicit global Cavern setup and startup lifecycle. */
   cavernStartup: boolean;
   /** Generic Desktop Window maximize/restore; normal geometry is retained. */
@@ -100,6 +102,7 @@ export type FeatureFlags = Readonly<{
 
 export const featureFlags: FeatureFlags = Object.freeze({
   mutableClipboard: true,
+  externalHtmlClipboard: true,
   cavernStartup: true,
   windowMaximize: true,
   flint: true,

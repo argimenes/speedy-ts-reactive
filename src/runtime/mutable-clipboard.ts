@@ -131,7 +131,7 @@ export class MutableClipboard {
         });
         return;
       }
-      const imported = importClipboard(data, plain);
+      const imported = importClipboard(data, plain, this.editor.features.externalHtmlClipboard);
       const notice = imported.fragment ? this.insert(b, imported.fragment) : undefined;
       this.notify(imported.notice ?? notice ?? 'Pasted Mutable content.'); return;
     }
@@ -164,6 +164,7 @@ export class MutableClipboard {
     void task().catch(e => { if (this.alive) this.error(e); }).finally(() => { this.pending = false; });
   }
   private prepare(input: PastePreparation): Promise<PreparedPaste> {
+    input = { ...input, semanticHtml: this.editor.features.externalHtmlClipboard };
     if (typeof Worker === 'undefined') return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { this.cancelPreparation = undefined; try { resolve(preparePaste(input)); } catch (e) { reject(e); } }, 0);
       this.cancelPreparation = () => { clearTimeout(timer); this.cancelPreparation = undefined; reject(Error('Paste cancelled.')); };

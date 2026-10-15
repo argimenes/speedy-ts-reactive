@@ -86,7 +86,25 @@ export function ListView(props: BlockViewProps) {
   const node = () => projection.state.nodes[props.nodeKey];
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
-  return <div ref={root} class="abstract-block reactive-list" role="list" tabIndex={-1} {...data(props.nodeKey, node)}><ChildBlocks parentKey={props.nodeKey} /></div>;
+  // Imported list semantics use the existing container and child Block views.
+  // Markers depend on structure/metadata, never paragraph text or caret updates.
+  const items = createMemo(() => {
+    const list = (node()?.payload.metadata as any)?.htmlList;
+    if (!list) return undefined;
+    let ordinal = Number.isSafeInteger(list.start) ? list.start : 1;
+    return (node()?.children ?? []).map(key => {
+      const item = (projection.state.nodes[key]?.payload.metadata as any)?.htmlListItem;
+      if (!item) return { key, marker: '' };
+      if (Number.isSafeInteger(item.value)) ordinal = item.value;
+      const marker = list.ordered ? `${ordinal}.` : '•'; ordinal += list.reversed ? -1 : 1;
+      return { key, marker };
+    });
+  });
+  return <div ref={root} class="abstract-block reactive-list" role="list" tabIndex={-1} {...data(props.nodeKey, node)}>
+    <Show when={items()} fallback={<ChildBlocks parentKey={props.nodeKey} />}>{entries => <For each={entries()}>{item =>
+      <div role="listitem" class="reactive-imported-list-item"><span class="reactive-imported-list-marker" contentEditable={false}>{item.marker}</span><BlockOutlet nodeKey={item.key} /></div>
+    }</For>}</Show>
+  </div>;
 }
 
 export function TableView(props: BlockViewProps) {
@@ -110,7 +128,7 @@ export function TableCellView(props: BlockViewProps) {
   const node = () => projection.state.nodes[props.nodeKey];
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
-  return <div ref={root} class="abstract-block reactive-table-cell" role="cell" tabIndex={-1} {...data(props.nodeKey, node)}><ChildBlocks parentKey={props.nodeKey} /></div>;
+  return <div ref={root} class="abstract-block reactive-table-cell" role={(node()?.payload.metadata as any)?.htmlTableCell?.header ? 'columnheader' : 'cell'} tabIndex={-1} {...data(props.nodeKey, node)}><ChildBlocks parentKey={props.nodeKey} /></div>;
 }
 
 export function CheckboxView(props: BlockViewProps) {

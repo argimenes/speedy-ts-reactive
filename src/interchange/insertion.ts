@@ -75,7 +75,7 @@ export function planFragmentInsertion(source: RepositoryState, segments: CrossTe
   let caret = tail.inlineContent.length, caretKey = tailKey;
   if (slices.at(-1)!.openEnd && canMerge(rootRecords.at(-1)!)) {
     tail.payload.standoffProperties = [...annotations(tail), ...shifted(suffixProperties, tail.inlineContent.length)]; tail.inlineContent.push(...suffixCells); keep(tail);
-  } else if (suffixCells.length || suffixProperties.length) {
+  } else if (suffixCells.length || suffixProperties.length || tail.inlineKind !== 'standoff') {
     const right = clone(last); right.key = createContentKey(); right.payload.id = createBlockId(); right.children = []; right.ownedRelations = {}; right.opaqueRelations = {}; delete right.definitionOwnerKey;
     if (right.payload.metadata) delete (right.payload.metadata as JsonObject).anchor;
     right.inlineContent = suffixCells; right.payload.standoffProperties = suffixProperties;
