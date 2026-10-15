@@ -554,6 +554,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   let caretSurface: ReturnType<typeof editor.caretModes.mount> | undefined;
   const scheduleMeasure = () => {
     if(disposed || !editor.visualEffects.alive())return;
+    untrack(() => editor.caretModes.invalidateLayout(props.nodeKey));
     if (frame) {
       if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
       else clearTimeout(frame);
@@ -601,7 +602,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       }).join(""),
     });
     if (editor.features.caretModes) {
-      caretSurface = editor.caretModes.mount(props.nodeKey, flow, root.closest('[data-block-type="document-block"], [data-block-type="main-list-block"], [data-block-type="membrane-block"]') ?? root.parentElement ?? root);
+      caretSurface = editor.caretModes.mount(props.nodeKey, flow, root.closest('[data-block-type="document-block"], [data-block-type="main-list-block"], [data-block-type="membrane-block"]') ?? root.parentElement ?? root, () => coordinates?.scale() ?? 1);
       caretSurface.visible(typeof IntersectionObserver === "undefined");
     }
     if (typeof ResizeObserver !== "undefined") {
@@ -644,6 +645,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     document.removeEventListener("scroll",onCandidateScroll,true);
     if (editor.crossText.segments[props.nodeKey]) queueMicrotask(() => editor.crossText.validate());
     caretSurface?.dispose();
+    editor.measurements.releaseCaret(props.nodeKey);
     disposeMount?.();
     editor.annotationEvents.remove(props.nodeKey);
     observer?.disconnect();

@@ -73,3 +73,31 @@ it('shares the native caret feed even with annotation events disabled; preserves
   f.dispose(); await tick();
   expect(document.querySelector('[data-caret-scope]')).toBeNull();
 });
+
+it('tracks spotlight geometry in bounded frames, reuses flow origins on scrolling, and releases on selection/disable', async () => {
+  const f = setup(true); await tick();
+  const snapshots = vi.spyOn(f.editor.repository, 'snapshot'), changes = vi.fn();
+  cleanups.push(f.editor.repository.subscribeChanges(changes));
+  const cells = [...f.flow.childNodes], paths = [...f.host.querySelectorAll('path')];
+  f.editor.caretModes.select('reading-spotlight'); f.caret(1); await tick();
+  expect(f.flow.dataset.readingSpotlight).toBeTruthy();
+  const flowReads = vi.spyOn(f.flow, 'getBoundingClientRect'); f.rectangles.mockClear();
+  for (let i = 2; i < 12; i++) f.caret(i);
+  await tick();
+  expect(f.rectangles).toHaveBeenCalledTimes(1); expect(flowReads).not.toHaveBeenCalled();
+  f.rectangles.mockClear();
+  document.dispatchEvent(new Event('scroll')); document.dispatchEvent(new Event('scroll')); await tick();
+  expect(f.rectangles).toHaveBeenCalledTimes(1); expect(flowReads).not.toHaveBeenCalled();
+  window.dispatchEvent(new Event('resize')); await tick(); expect(flowReads).toHaveBeenCalledTimes(1);
+  expect(snapshots).not.toHaveBeenCalled(); expect(changes).not.toHaveBeenCalled();
+  expect([...f.flow.childNodes]).toEqual(cells); expect([...f.host.querySelectorAll('path')]).toEqual(paths);
+  expect(f.host.querySelector('.document-style-bar')?.hasAttribute('data-reading-spotlight')).toBe(false);
+  f.flow.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+  f.rectangles.mockClear(); f.caret(20); await tick(); expect(f.rectangles).not.toHaveBeenCalled();
+  f.flow.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })); await tick();
+  expect(f.rectangles).toHaveBeenCalled();
+  f.mount.restoreInlineSelection?.({ anchor: 0, head: 4 });
+  expect(f.flow.dataset.readingSpotlight).toBeUndefined();
+  f.caret(2); await tick(); f.editor.caretModes.setEnabled(false);
+  expect(f.flow.dataset.readingSpotlight).toBeUndefined(); expect(document.querySelector('style[data-caret-effect]')).toBeNull();
+});

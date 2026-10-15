@@ -1,3 +1,4 @@
+import { registerReadingSpotlight } from '../rendering/reading-spotlight';
 import { CaretModes } from '../runtime/caret-modes';
 import { registerFocusFade } from '../rendering/focus-fade';
 import { AnnotationIdentities } from "../runtime/annotation-identities";
@@ -70,6 +71,7 @@ export class ReactiveEditor {
   readonly caretModes: CaretModes;
   setCaret = (nodeKey?: string, caret?: number) => {
     if (this.features.annotationRangeEvents) this.annotationEvents.setCaret(nodeKey, caret);
+    if (!nodeKey) this.measurements.releaseCaret();
     this.caretModes.setCaret(nodeKey, caret);
   };
   readonly annotationEvents = new AnnotationRangeEvents();
@@ -131,13 +133,15 @@ export class ReactiveEditor {
     this.annotationIdentities = new AnnotationIdentities(this.repository);
     registerVisualEffectRenderers(this.visualEffects);
     registerFocusFade(this.visualEffects);
-    this.caretModes = new CaretModes(this.visualEffects, (key, caret) => {
+    registerReadingSpotlight(this.visualEffects);
+    this.caretModes = new CaretModes(this.visualEffects, (key, caret, frame) => {
       const node = this.node(key), content = node && this.repository.readState().contents[node.contentKey];
       if (!node || !content) return;
       const projection = this.projections.get(node.viewId);
       return { nodeKey: key, caret, revision: content.inlineRevision,
+        caretRect: () => this.measurements.caretRect(key, caret, frame),
         cells: () => node.inlineContent.map(key => { const cell = projection?.state.nodes[key]; return cell?.viewType === 'image-cell' ? '\uFFFC' : String(cell?.payload.text ?? ''); }) };
-    }, this.features.caretModes);
+    }, this.features.caretModes, this.features.readingSpotlight);
     this.viewVisibility = new ViewVisibility(this.repository);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
     this.textRanges = new TextRanges(key => {
@@ -179,7 +183,7 @@ export class ReactiveEditor {
     });
     this.repository.subscribeChanges(({ label, previousContents }) => {
       const caretKey = this.caretModes.focusedNode(), caretNode = caretKey && this.node(caretKey);
-      if (caretNode && previousContents.has(caretNode.contentKey)) this.caretModes.invalidate();
+      if (caretNode && previousContents.has(caretNode.contentKey)) { this.measurements.releaseCaret(); this.caretModes.invalidate(); }
       if (this.events.hasSubscribers("afterChange")) {
         this.events.publish("afterChange", { label, state: this.repository.snapshot() });
       }
@@ -440,6 +444,7 @@ export class ReactiveEditor {
 
   dispose(): void {
     this.caretModes.dispose();
+    this.measurements.releaseCaret();
     this.visualEffects.dispose();
     this.annotationIdentities.dispose();
     this.decorations.dispose();

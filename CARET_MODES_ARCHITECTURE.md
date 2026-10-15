@@ -2,7 +2,7 @@
 
 Implemented 15 October 2026. The `caretModes` feature flag defaults to `true`;
 the selected mode defaults to **Normal**. The compact Document toolbar exposes
-Normal, Block Focus and Sentence Focus. Selection is editor-session state shared
+Normal, Block Focus, Sentence Focus and Reading Spotlight. Selection is editor-session state shared
 by its Document views, never a document preference or persisted annotation.
 
 ## Assessment and strategy
@@ -12,8 +12,8 @@ mounted Block occurrence and character-cell boundary. Standoff views already hav
 IntersectionObservers. The visual-effect registry already provides named TypeScript
 implementations, JSON parameters, source-neutral ownership and Solid cleanup.
 
-These are sufficient without Temporary Ranges, annotation snapshots, a new selection
-listener, document ancestor scans, or extra geometry measurement. Block Focus uses
+For Block and Sentence Focus these are sufficient without Temporary Ranges, annotation
+snapshots, a new selection listener, document ancestor scans, or extra geometry measurement. Block Focus uses
 the native occurrence. Sentence Focus calculates a logical region only in that Block.
 
 Three rendering approaches were considered:
@@ -22,7 +22,7 @@ Three rendering approaches were considered:
 | --- | --- |
 | Opacity on the entire Block | Rejected: also fades controls, selections and annotation layers. |
 | CSS on visible text surfaces | Selected: fade unfocused text flows once, and individual cells only around the focused sentence; no wrappers, layout changes or geometry reads. |
-| Viewport overlay or mask | Deferred: foreground dimming also affects chrome/highlights, selective holes require geometry, and blur adds compositing complexity. |
+| Viewport overlay or mask | Unneeded for Block/Sentence Focus. Reading Spotlight now uses masks on visible text flows only, with shared caret geometry (see below). |
 
 Both initial modes use the same `fade-outside-focus` renderer. Unfocused text flows
 receive opacity once on their contenteditable container; controls and SVG layers
@@ -65,7 +65,7 @@ order is renderer/provider, then mode. No generic plugin mechanism was introduce
 
 - `block`: mounted `nodeKey` (occurrence identity).
 - `text`: mounted `nodeKey`, `start`, `end` in half-open character-cell boundaries.
-- `geometry`: immutable rectangle inputs, reserved for future providers/effects.
+- `geometry`: immutable rectangle inputs with explicit `space: "viewport"`, now used by the `caret-position` provider.
 
 `FocusProvider` has a name, output kind and `create()` method. One provider instance
 per mode activation exposes `identify(context)` and optional `dispose()`. The
@@ -93,7 +93,7 @@ belongs to the preceding sentence. Empty Blocks yield an empty text interval.
 ```ts
 interface TextPresentationEffect {
   attach(flow: HTMLElement): () => void;
-  focus(flow: HTMLElement | undefined, region: FocusRegion | undefined): void;
+  focus(flow: HTMLElement | undefined, region: FocusRegion | undefined, frame?: PresentationFrame): void;
 }
 ```
 
@@ -121,21 +121,22 @@ until composition ends; canonical input continues through the existing gateway.
 
 The existing per-Block IntersectionObserver reports visibility. Only visible text
 surfaces in the active Document are attached to the effect. Entering/leaving the
-viewport adds/removes that surface's contribution without reading geometry. Browser
+viewport adds/removes that surface's contribution (Block/Sentence Focus need no
+geometry; Reading Spotlight measures the entering flow once). Browser
 CSS handles clipping; no viewport-sized overlay cuts off annotations near an edge.
 Without IntersectionObserver, mounted surfaces provide the fallback scope.
 
 Mode changes dispose the previous Solid effect and its provider cache, style node,
 flow attributes and queued frame. Normal and `setEnabled(false)` remove all effects.
 Unregistering the active provider/mode/renderer returns to Normal. Clearing the caret
-(blur or noncollapsed selection) clears the visual presentation on the next frame.
+(blur or noncollapsed selection) clears the visual presentation immediately.
 Unmounting the focused surface clears immediately. Document transitions release the
 previous scope before attaching visible surfaces in the new one. Editor disposal is
 terminal, cancels pending work and releases the coordinator root before the registry.
 
 One animation-frame callback coalesces optional work. Ordinary caret moves do not
 iterate all registered surfaces. Document transitions inspect the visible set only;
-in-document moves change at most two flow attributes and one short CSS rule. Moving
+Block/Sentence Focus moves change at most two flow attributes and one short CSS rule. Moving
 within the same sentence retains the rule without touching its style node. The
 service never captures a document snapshot, writes text/properties, creates history,
 marks a resource dirty, or makes network requests.
@@ -148,8 +149,8 @@ marks a resource dirty, or makes network requests.
   mounted cells subject to CSS matching. This is not character virtualization.
 - Focus follows canonical source cells. A projected alternative is one outer cell
   presentation; independently segmenting its visual glyphs is future work.
-- Geometry regions are an interface extension point; no geometry provider, spotlight,
-  scrolling mode, SVG distortion or animation system is implemented.
+- Reading Spotlight now uses geometry regions (see below). No scrolling mode, SVG
+  distortion or animation system is implemented.
 - Sentence segmentation follows browser locale heuristics, not document-specific NLP.
 - Additional presentation effects can reuse the registry and lifecycle. Modes needing
   range SVGs should get an appropriate host using shared geometry caches, without
@@ -169,7 +170,7 @@ The existing real Flint Chrome benchmark accepts `BENCHMARK_CARET_MODE` and
 Timing results are diagnostic and should not be interpreted as guaranteed visible
 input latency.
 
-Validation completed: **78 tests across 9 files**, client/server type-checking, and
+Initial Block/Sentence Focus validation: **78 tests across 9 files**, client/server type-checking, and
 real Chrome character input/undo checks. The existing blur regression was updated
 to identify regions by their rendered filter instead of assuming opaque renderer
 instance keys contain authored IDs; its old assertion also failed with Caret Modes
@@ -192,3 +193,140 @@ vary between runs, so these samples do not establish a typing speedup over Norma
 Frame outliers remain; they are not a display-latency guarantee. Screenshots and
 profiles are in `/tmp/flint-caret-block-final` and `/tmp/flint-caret-sentence-final`;
 initial controls are in `/tmp/flint-caret-disabled` and `/tmp/flint-caret-normal`.
+
+
+## Reading Spotlight — geometry mode
+
+`readingSpotlight` is a separate default-on feature flag, gated by `caretModes`.
+Normal remains the session default. The existing selector lists the registered mode
+without a separate control or document preference. The standard registration is:
+
+```json
+{
+  "id": "reading-spotlight",
+  "label": "Reading Spotlight",
+  "focusProvider": "caret-position",
+  "effect": "reading-spotlight",
+  "params": {
+    "shape": "ellipse",
+    "radiusX": 180,
+    "radiusY": 85,
+    "dimOpacity": 0.65,
+    "feather": 0.7,
+    "scope": "viewport",
+    "transitionMs": 0
+  }
+}
+```
+
+Applications can register variants through the existing mode/provider/renderer
+capabilities. Radii are positive viewport CSS pixels, dimOpacity and feather are
+fractions from zero to one. A feather of 0.7 leaves the inner 30% fully visible,
+then blends continuously to 35% text alpha at the ellipse boundary with the default
+dimming. The centre tracks immediately: nonzero transitionMs is deliberately
+unsupported to avoid trailing the native caret or adding an animation loop.
+
+### Geometry and viewport host
+
+The existing MeasurementService had selection rectangles but no caret cache.
+`caretRect(nodeKey, index, frame)` now centralizes this query: it reads the native
+collapsed Range, or uses the mounted view's existing `inlineBoundary` when an
+Element-boundary selection yields no rectangle. That boundary may itself be a text
+node. Empty Blocks/inline objects use a bounded adjacent-element fallback. There is
+no walk through character cells. The last rectangle is cached by frame timestamp,
+occurrence generation and selection boundary, and released on edits, blur, unmount
+and editor disposal. Native text-node boundaries retain the browser's bidi/wrap
+position; element-boundary fallback uses the editor's forward boundary convention.
+
+The `caret-position` provider simply returns this rectangle in a viewport-space
+geometry region. It reads no text and creates no annotation or Temporary Range.
+`PresentationFrame` supplies the existing Document scope, uniform coordinate scale
+and a layout revision to the reusable renderer.
+
+### Rendering and clipping
+
+A single Solid-owned renderer supplies radial alpha masks to **visible text
+flows only**, using the existing IntersectionObservers. There is no covering DOM
+overlay, background-colour approximation, extra hit target or glyph replacement.
+The Document scope is only a coordinate reference; it is not masked. Controls,
+menus, native scrollbars, annotation SVGs and Temporary Range layers remain outside
+these masks. Custom character presentation remains intact and fades with its text.
+
+Each attached flow has cached local bounds. Caret movement compares these cached
+visible bounds with the ellipse; intersecting flows receive a non-inherited
+`mask-image` with a local centre. Far flows keep a constant opacity and require no
+style updates until the ellipse reaches them. The shared stylesheet is static.
+There are no inherited CSS variables, dynamic rule edits, per-character updates,
+or offscreen document traversal. Existing inline flow masks are retained for
+restoration when the effect releases its contribution.
+
+Native scroll containers continue to clip text. `mask-clip: no-clip` avoids adding
+an additional box clip to the flow. CSS masks leave box geometry and hit testing
+unchanged; see the [CSS Masking rendering model](https://www.w3.org/TR/css-masking-1/#the-mask-image-rendering-model)
+and [mask clipping](https://www.w3.org/TR/css-masking-1/#the-mask-clip).
+
+### Invalidation and cleanup
+
+Caret, scroll and resize notifications share the coordinator's animation-frame
+queue. Ordinary caret motion and outer scrolling read the caret and one scope
+rectangle, reusing cached flow origins. New visible flows need only their own
+origin. Existing view layout invalidation, resize, scale changes, nested scrolling
+and Block removal refresh the visible-flow origins affected by reflow. This is
+viewport-bounded Block geometry work, never a full document or per-cell sweep.
+Geometry reads precede writes; unchanged values are not republished. View layout
+notifications run untracked so switching modes cannot accidentally subscribe the
+annotation layout effect to mode state.
+
+Blur/noncollapsed selection removes the masks immediately. IME freezes visual
+updates until composition ends. Normal, mode/provider/renderer removal, feature
+disable, view closure and editor disposal release attributes, inline masks,
+the stylesheet, cached origins, event listeners and pending frames through the
+existing Solid ownership. Spotlight cannot change document data, dirty state,
+undo history or persistence.
+
+### Limitations and checks
+
+- The spotlight intentionally affects text; annotation and highlight layers retain
+  their independent appearance.
+- It uses CSS masks, tested in Chrome; mask-capable browsers are required for the
+  feathered effect. Arbitrary competing masks on the same flow are not a new
+  composition API; descendant character masks are untouched.
+- Coordinates follow the existing positive uniform scale/translation contract;
+  arbitrary rotated or skewed text surfaces are not supported.
+- A very large single paragraph remains Block-granular: its mounted text is one
+  masked surface. This feature does not introduce character virtualization.
+- Movement easing, blur and distortion are not implemented.
+
+Focused tests cover native/element/empty caret boundaries, frame-cache invalidation,
+scale conversion, 100 caret moves without rereading flow origins or restyling far
+flows, restoration of prior flow masks, visibility and
+layout invalidation, scrolling, IME, selection, disable and cleanup. Existing
+annotation/search/character-rendering tests also pass. Chrome checks independently
+compare the gradient centre with a DOM Range at the native character boundary,
+exercise real scrolling and clipping, verify controls/SVGs remain unmasked, and
+check native input/undo and immediate restoration on selection and Normal.
+
+
+Reading Spotlight validation: **89 tests across 12 files**, client/server type checks,
+and real Chrome input/undo, alignment, scroll, selection and teardown checks pass.
+The Michelangelo fixture contains eight paragraphs; typing targets a 499-character
+paragraph with 1,001 in-memory vault rows. Final sequential runs used Chrome's default
+graphics backend (`BENCHMARK_NATIVE_GPU=1`), with 40 insert/delete operations each:
+
+| Mode | Median handler | Median including queued caret work | Median frame | p95 frame |
+| --- | ---: | ---: | ---: | ---: |
+| Normal | 5.3 ms | 7.5 ms | 16.7 ms | 17.6 ms |
+| Reading Spotlight | 5.4 ms | 7.6 ms | 16.7 ms | 18.3 ms |
+
+Both runs recorded zero document snapshots and 40 status reads. Native character
+input and undo passed. These samples show no material median typing regression on
+this fixture; they are not a cross-device latency guarantee. The benchmark's default
+SwiftShader software graphics path is slower for masks: the final software samples
+were 19.4 ms Normal versus 27.6 ms Spotlight median frame intervals, with outliers in
+both. Keep software rendering and very large single paragraphs in future performance
+checks. The optional native-GPU setting leaves the existing benchmark default intact.
+
+Screenshots, CPU profiles and JSON measurements are in
+`/tmp/flint-spotlight-native-normal` and `/tmp/flint-spotlight-native-active`;
+software comparisons are `/tmp/flint-spotlight-normal-final` and
+`/tmp/flint-spotlight-direct`.

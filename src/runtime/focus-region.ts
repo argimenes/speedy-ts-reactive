@@ -3,7 +3,7 @@
 export type FocusRegion =
   | { readonly kind: 'block'; readonly nodeKey: string }
   | { readonly kind: 'text'; readonly nodeKey: string; readonly start: number; readonly end: number }
-  | { readonly kind: 'geometry'; readonly rects: readonly DOMRectReadOnly[] };
+  | { readonly kind: 'geometry'; readonly space: 'viewport'; readonly rects: readonly DOMRectReadOnly[] };
 
 export interface FocusContext {
   readonly nodeKey: string;
@@ -11,6 +11,8 @@ export interface FocusContext {
   readonly revision: number;
   /** Lazy: Block Focus never reads text. One entry per canonical character cell. */
   cells(): readonly string[];
+  /** Shared MeasurementService query, cached for this presentation frame. */
+  caretRect?(): DOMRectReadOnly | undefined;
 }
 export interface FocusProvider {
   readonly name: string;
@@ -18,6 +20,14 @@ export interface FocusProvider {
   /** Called once per activation; caches belong to this session, not the definition. */
   create(): { identify(context: FocusContext): FocusRegion | undefined; dispose?(): void };
 }
+
+export const caretPositionProvider: FocusProvider = {
+  name: 'caret-position', kind: 'geometry',
+  create: () => ({ identify(context) {
+    const rect = context.caretRect?.();
+    return rect ? { kind: 'geometry', space: 'viewport', rects: [rect] } : undefined;
+  } }),
+};
 
 export function sentenceFocusProvider(): FocusProvider {
   return { name: 'current-sentence', kind: 'text', create() {

@@ -6,7 +6,13 @@ import type { FocusRegion } from './focus-region';
 /** One source-neutral presentation renderer per session, not per cell/Block. */
 export interface TextPresentationEffect {
   attach(flow: HTMLElement): () => void;
-  focus(flow: HTMLElement | undefined, region: FocusRegion | undefined): void;
+  focus(flow: HTMLElement | undefined, region: FocusRegion | undefined, frame?: PresentationFrame): void;
+}
+export interface PresentationFrame {
+  readonly scope: HTMLElement;
+  readonly scale: number;
+  /** Changes after reflow/resize, not ordinary caret movement or outer scrolling. */
+  readonly layoutRevision: number;
 }
 
 function frozen<T>(value:T):T { (immutable as (value:unknown)=>unknown)(value); return value; }

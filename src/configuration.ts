@@ -88,6 +88,8 @@ export type FeatureFlags = Readonly<{
   annotationRangeEvents: boolean;
   /** Session-only focus effects; Normal is the initial mode. */
   caretModes: boolean;
+  /** Viewport-geometry Reading Spotlight mode. */
+  readingSpotlight: boolean;
   /** Shared renderer registry and transient range rendering. */
   standoffPropertyRendering: boolean;
 }>;
@@ -132,6 +134,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   directDomCharacterCells: true,
   annotationRangeEvents: true,
   caretModes: true,
+  readingSpotlight: true,
   standoffPropertyRendering: true,
 });
 

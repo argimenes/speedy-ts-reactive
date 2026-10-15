@@ -7,7 +7,43 @@ export interface Point {
 }
 
 export class MeasurementService {
+  private caretCache?: { frame: number; key: string; generation: number; index: number; anchor: Node | null; offset: number; rect?: DOMRectReadOnly };
   constructor(private readonly mounts: MountRegistry) {}
+
+  /** One native collapsed Range query per frame. Element-boundary selections
+   * (including our restoreInlineSelection) may have no rect: resolve just the
+   * neighbouring boundary, never walk or measure the paragraph's cells. */
+  caretRect(nodeKey: NodeKey, index: number, frame: number): DOMRectReadOnly | undefined {
+    const handle = this.mounts.get(nodeKey), flow = handle?.focusElement;
+    if (!handle || !flow) return;
+    const selection = flow.ownerDocument.getSelection();
+    if (flow.ownerDocument.activeElement !== flow || !selection?.isCollapsed || !selection.rangeCount || !flow.contains(selection.anchorNode)) return;
+    const cached = this.caretCache;
+    if (cached?.frame === frame && cached.key === nodeKey && cached.generation === handle.generation && cached.index === index && cached.anchor === selection.anchorNode && cached.offset === selection.anchorOffset) return cached.rect;
+    const usable = (range: Range) => [...(range.getClientRects?.() ?? [])].find(r => r.height > 0 && Number.isFinite(r.left) && Number.isFinite(r.top));
+    let rect = usable(selection.getRangeAt(0));
+    if (!rect) {
+      const boundary = handle.inlineBoundary?.(index);
+      const container = boundary?.node ?? flow, offset = boundary?.offset ?? index;
+      const next = container.childNodes[offset], previous = container.childNodes[offset - 1], cell = next ?? previous;
+      const text = container.nodeType === Node.TEXT_NODE ? container : cell?.firstChild;
+      if (text?.nodeType === Node.TEXT_NODE) {
+        const range = flow.ownerDocument.createRange();
+        range.setStart(text, container === text ? offset : next ? 0 : text.textContent?.length ?? 0); range.collapse(true);
+        rect = usable(range);
+      }
+      if (!rect) {
+        const box = cell instanceof Element ? cell.getBoundingClientRect() : flow.getBoundingClientRect();
+        const x = cell && !next ? box.right : box.left;
+        rect = new DOMRectReadOnly(x, box.top, 0, box.height);
+      }
+    }
+    const retained = rect && Object.freeze(new DOMRectReadOnly(rect.x, rect.y, rect.width, rect.height));
+    this.caretCache = { frame, key: nodeKey, generation: handle.generation, index, anchor: selection.anchorNode, offset: selection.anchorOffset, rect: retained };
+    return retained;
+  }
+
+  releaseCaret(nodeKey?: string) { if (!nodeKey || this.caretCache?.key === nodeKey) this.caretCache = undefined; }
 
   blockRect(nodeKey: NodeKey): DOMRect | undefined {
     return this.mounts.get(nodeKey)?.root.getBoundingClientRect();

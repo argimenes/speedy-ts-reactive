@@ -2,8 +2,9 @@
 // Reads the fixture only; never saves it. BENCHMARK_DOCUMENT_PATH selects another
 // native resource; BENCHMARK_VAULT_SIZE adds unopened entries to an in-memory
 // vault (e.g. 1000). BENCHMARK_OUTPUT selects the artifact directory.
-// BENCHMARK_CARET_MODE=normal|block-focus|sentence-focus selects session focus.
+// BENCHMARK_CARET_MODE=normal|block-focus|sentence-focus|reading-spotlight selects session focus.
 // BENCHMARK_CARET_MODES=false disables the feature for comparison.
+// BENCHMARK_NATIVE_GPU=1 uses Chrome's default GPU instead of software SwiftShader.
 // BENCHMARK_STANDOFF_RENDERING=false selects the previous rendering path.
 // BENCHMARK_ANNOTATION_RANGE_EVENTS=false disables caret emphasis for comparison.
 // Native binding/listing responses are local stubs: no user vault is opened.
@@ -50,7 +51,7 @@ const vite=await createServer({plugins:[{
  `;},
  configureServer(server){server.middlewares.use(async(req,res,next)=>{if(req.url==='/__letter'){res.setHeader('Content-Type','application/json');res.end(fixture);return;}if(req.url!=='/__flint-integration')return next();res.setHeader('Content-Type','text/html');res.end(await server.transformIndexHtml(req.url,'<html><body><div id="root"></div><script type="module" src="/__flint-proof.js"></script></body></html>'));});}
 }],server:{host:'127.0.0.1',port:0,hmr:false}});await vite.listen();
-const chrome=spawn(process.env.CHROME_BIN??'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',['--headless=new','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-first-run','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank']);
+const chrome=spawn(process.env.CHROME_BIN??'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',['--headless=new','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows',...(process.env.BENCHMARK_NATIVE_GPU==='1'?[]:['--use-angle=swiftshader','--enable-unsafe-swiftshader']),'--no-first-run','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank']);
 let socket;
 try{
  const endpoint=await new Promise((resolve,reject)=>{let out='';chrome.stderr.on('data',b=>{out+=b;const m=out.match(/DevTools listening on (ws:\/\/[^\s]+)/);if(m)resolve(m[1]);});chrome.once('error',reject);setTimeout(()=>reject(Error('Chrome timeout')),15000).unref();});
@@ -68,15 +69,29 @@ try{
  if(process.env.BENCHMARK_VAULT_SIZE)await wait("proof.root.querySelectorAll('.flint-tree-document').length>0");
  await evaluate('new Promise(r=>setTimeout(r,300))');
  await evaluate(`proof.flow.focus();proof.mount.restoreInlineSelection({anchor:100,head:100});proof.editor.caretModes.select(${JSON.stringify(process.env.BENCHMARK_CARET_MODE??'normal')})`);
- await wait("proof.editor.caretModes.active()==='normal' || (proof.flow.dataset.caretFocus && proof.root.querySelector('[data-caret-scope]'))");
+ await wait("proof.editor.caretModes.active()==='normal' || proof.flow.dataset.readingSpotlight || (proof.flow.dataset.caretFocus && proof.root.querySelector('[data-caret-scope]'))");
  const presentation=await evaluate(`({mode:proof.editor.caretModes.active(),scoped:proof.root.querySelectorAll('[data-caret-scope]').length,opacities:[...new Set([...proof.flow.children].map(cell=>getComputedStyle(cell).opacity))],focus:!!proof.flow.dataset.caretFocus,otherFlows:[...proof.root.querySelectorAll('[data-caret-scope]:not([data-caret-focus])')].map(flow=>getComputedStyle(flow).opacity)})`);
  console.log('Caret presentation:',JSON.stringify(presentation));
- if(presentation.mode!=='normal'){
+ if(presentation.mode!=='normal' && presentation.mode!=='reading-spotlight'){
    assert.ok(presentation.scoped>0,'focus styling must reach visible text in the real Flint document');
    assert.ok(presentation.focus,'the native caret Block must be focused');
    assert.ok(presentation.otherFlows.includes(presentation.mode==='block-focus'?'0.35':'0.3'),'other visible text flows must fade');
    assert.ok(presentation.opacities.includes('1'),'focused text remains fully visible');
    if(presentation.mode==='sentence-focus')assert.ok(presentation.opacities.includes('0.3'),'other sentences in the same Block must fade');
+ }
+ if(presentation.mode==='reading-spotlight'){
+   const spotlight=await evaluate(`(proof.spotlightGeometry=()=>{
+     const css=getComputedStyle(proof.flow),box=proof.flow.getBoundingClientRect();
+     const boundary=proof.mount.inlineBoundary(100),range=document.createRange();range.setStart(boundary.node,boundary.offset);range.collapse(true);const caret=[...range.getClientRects()].find(r=>r.height>0);
+     const centre=css.maskImage.match(/at ([\\d.-]+)px ([\\d.-]+)px/);
+     const x=Number(centre?.[1])+box.left;
+     const y=Number(centre?.[2])+box.top;
+     return {mask:css.maskImage,x,y,caretX:caret.x+caret.width/2,caretY:caret.y+caret.height/2,chrome:[...proof.root.querySelectorAll('.document-style-bar,.reactive-annotation-layer,.reactive-search-layer,button')].every(e=>getComputedStyle(e).maskImage==='none')};
+   })()`);
+   console.log('Spotlight presentation:',JSON.stringify(spotlight));
+   assert.ok(spotlight.mask.includes('radial-gradient'));
+   assert.ok(Math.abs(spotlight.x-spotlight.caretX)<1 && Math.abs(spotlight.y-spotlight.caretY)<1,'spotlight must centre on the native caret');
+   assert.ok(spotlight.chrome,'controls and SVG layers must remain unmasked');
  }
  const screenshot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'caret-mode.png'),Buffer.from(screenshot.data,'base64'));
  await send('Profiler.enable',{},sessionId);await send('Profiler.setSamplingInterval',{interval:200},sessionId);await send('Profiler.start',{},sessionId);
@@ -108,6 +123,19 @@ try{
  await evaluate(`for(let i=0;i<${[...burst].length};i++)proof.editor.repository.undo()`);
  assert.equal(await evaluate('proof.mount.captureText()'),before);
  console.log('Real Chrome character input and undo: passed');
+ if(presentation.mode==='reading-spotlight'){
+   await evaluate(`proof.mount.restoreInlineSelection({anchor:100,head:100});proof.scrollPanel=proof.flow.closest('.reactive-tabs__panel');proof.scrollPanel.style.maxHeight='210px';proof.scrollPanel.style.overflow='auto';proof.scrollPanel.scrollTop=80;new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`);
+   const scrolled=await evaluate('proof.spotlightGeometry()');
+   assert.ok(Math.abs(scrolled.x-scrolled.caretX)<1 && Math.abs(scrolled.y-scrolled.caretY)<1,'spotlight must follow scrolling/reflow');
+   assert.ok(await evaluate('proof.scrollPanel.scrollTop>0'),'fixture must actually scroll');
+   await evaluate(`proof.mount.restoreInlineSelection({anchor:0,head:4})`);
+   assert.equal(await evaluate("proof.root.querySelectorAll('[data-reading-spotlight]').length"),0,'selection must remove the mask immediately');
+   await evaluate(`proof.mount.restoreInlineSelection({anchor:100,head:100});new Promise(r=>requestAnimationFrame(r))`);
+   await evaluate(`proof.editor.caretModes.select('normal')`);
+   assert.equal(await evaluate("proof.root.querySelectorAll('[data-reading-spotlight]').length"),0,'Normal must remove all masks');
+   console.log('Chrome spotlight scrolling, selection and teardown: passed');
+ }
+
  await evaluate('proof.dispose();proof.session.dispose()');
 }finally{socket?.close();chrome.kill();await vite.close();await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
 process.exit(0);
