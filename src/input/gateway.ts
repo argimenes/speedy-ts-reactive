@@ -1,3 +1,4 @@
+import type { AnnotationRangeEvents } from "../runtime/annotation-range-events";
 import { openBlockContextMenu } from "../runtime/open-block-context-menu";
 import type { NodeKey, PlacementKey, ViewId } from "../block-tree/types";
 import type { TreeCommands } from "../block-tree/commands";
@@ -40,6 +41,7 @@ export class InputGateway {
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
+    private readonly annotationEvents?: AnnotationRangeEvents,
   ) {}
 
   install(): () => void {
@@ -48,6 +50,7 @@ export class InputGateway {
     this.document.addEventListener("input", this.onInput, true);
     this.document.addEventListener("beforeinput", this.onBeforeInput, true);
     this.document.addEventListener("focusin", this.onFocusIn, true);
+    this.document.addEventListener("focusout", this.onFocusOut, true);
     this.document.addEventListener("keydown", this.onKeyDown, true);
     this.document.addEventListener("compositionstart", this.onCompositionStart, true);
     this.document.addEventListener("compositionend", this.onCompositionEnd, true);
@@ -61,6 +64,7 @@ export class InputGateway {
     this.document.addEventListener("dblclick", this.onControlClick, true);
     this.document.addEventListener("speedy-input", this.onCustomInput, true);
     this.document.defaultView?.addEventListener("blur", this.onWindowBlur);
+    this.document.defaultView?.addEventListener("focus", this.onWindowFocus);
     return () => this.dispose();
   }
 
@@ -250,7 +254,18 @@ export class InputGateway {
     if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = this.mounts.resolveEvent(event);
     if (resolved) this.focus.adopt(resolved.nodeKey);
+    this.refreshAnnotationCaret();
   };
+
+  private refreshAnnotationCaret = () => {
+    if (!this.annotationEvents) return;
+    const resolved = this.mounts.resolveElement(this.document.activeElement);
+    const selection = resolved?.handle.inputPolicy === "standoff" ? resolved.handle.captureInlineSelection?.() : undefined;
+    if (resolved && selection && selection.anchor === selection.head) this.annotationEvents.setCaret(resolved.nodeKey,selection.head);
+    else this.annotationEvents.setCaret();
+  };
+
+  private onFocusOut = () => this.annotationEvents?.setCaret();
 
   private onCompositionStart = (event: CompositionEvent) => {
     this.bindings.cancelChord();
@@ -280,8 +295,11 @@ export class InputGateway {
           ? selection.anchorNode.parentNode
           : null;
     const resolved = this.mounts.resolveElement(anchorElement);
-    if (!resolved || resolved.handle.inputPolicy !== "standoff") return;
+    if (!resolved || resolved.handle.inputPolicy !== "standoff") { this.annotationEvents?.setCaret(); return; }
     const inline = resolved.handle.captureInlineSelection?.();
+    if (inline && inline.anchor === inline.head && this.document.activeElement === resolved.handle.focusElement) {
+      this.annotationEvents?.setCaret(resolved.nodeKey, inline.head);
+    } else this.annotationEvents?.setCaret();
     const node = this.node(resolved.nodeKey);
     if (inline && node) {
       this.selections.setPrimary(
@@ -676,6 +694,8 @@ export class InputGateway {
     this.document.removeEventListener("input", this.onInput, true);
     this.document.removeEventListener("beforeinput", this.onBeforeInput, true);
     this.document.removeEventListener("focusin", this.onFocusIn, true);
+    this.document.removeEventListener("focusout", this.onFocusOut, true);
+    this.annotationEvents?.setCaret();
     this.document.removeEventListener("keydown", this.onKeyDown, true);
     this.document.removeEventListener("compositionstart", this.onCompositionStart, true);
     this.document.removeEventListener("compositionend", this.onCompositionEnd, true);
@@ -689,6 +709,8 @@ export class InputGateway {
     this.document.removeEventListener("dblclick", this.onControlClick, true);
     this.document.removeEventListener("speedy-input", this.onCustomInput, true);
     this.document.defaultView?.removeEventListener("blur", this.onWindowBlur);
+    this.document.defaultView?.removeEventListener("focus", this.onWindowFocus);
   }
-  private onWindowBlur = () => this.bindings.cancelChord();
+  private onWindowFocus = () => { this.refreshAnnotationCaret(); };
+  private onWindowBlur = () => { this.bindings.cancelChord(); this.annotationEvents?.setCaret(); };
 }

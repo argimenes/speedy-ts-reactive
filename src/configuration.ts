@@ -84,6 +84,8 @@ export type FeatureFlags = Readonly<{
   textSuperposition: boolean;
   /** Direct DOM character cells, updated by one reactive effect per paragraph. */
   directDomCharacterCells: boolean;
+  /** Transient caret enter/leave events and SVG emphasis for opted-in annotations. */
+  annotationRangeEvents: boolean;
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
@@ -124,6 +126,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   compactEditorChrome: true,
   textSuperposition: false,
   directDomCharacterCells: true,
+  annotationRangeEvents: true,
 });
 
 export type ReactiveEditorConfiguration = {

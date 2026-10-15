@@ -13,6 +13,8 @@ export interface DecorationShape {
   strokeWidth?: number;
   opacity?: number;
   propertyType?: string;
+  annotationKey?: string;
+  caretOpacity?: Readonly<{ outside: number; inside: number }>;
   dashArray?: string;
   animated?: boolean;
 }

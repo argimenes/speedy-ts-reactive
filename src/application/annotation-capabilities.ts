@@ -123,6 +123,7 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     },
     bindings: { dispatch: (...args) => editor.bindings.dispatch(...args), label: (...args) => editor.bindings.label(...args) },
     register: {
+      annotationEvent: listener => { check(); scope.own(editor.annotationEvents.subscribe(listener)); },
       panel(definition) { check(); const dispose = editor.panels.register(definition); panelTypes.add(definition.type); scope.own(dispose); },
       effect(definition) { check(); scope.own(editor.effects.register(definition)); },
       annotation(definition) { check(); scope.own(editor.annotationUI.register(definition)); },

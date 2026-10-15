@@ -1,3 +1,4 @@
+import type { AnnotationRange } from "../runtime/annotation-range-events";
 import { localFragment } from "../runtime/local-coordinates";
 import { immutable } from "../runtime/effect-contributions";
 import { For, Show, createEffect, createRenderEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
@@ -102,7 +103,7 @@ function rangeFragments(
   }, []);
 }
 
-function DecorationLayer(props: { class: string; shapes: DecorationShape[]; blendMode?: "color-dodge" }) {
+function DecorationLayer(props: { class: string; shapes: DecorationShape[]; blendMode?: "color-dodge"; active?: (key: string) => boolean }) {
   return (
     <svg class={props.class} aria-hidden="true" style={{ "mix-blend-mode": props.blendMode }}>
       <For each={props.shapes}>
@@ -114,7 +115,7 @@ function DecorationLayer(props: { class: string; shapes: DecorationShape[]; blen
             stroke={shape.stroke ?? "none"}
             fill={shape.fill ?? "none"}
             stroke-width={shape.strokeWidth}
-            opacity={shape.opacity}
+            opacity={shape.caretOpacity && shape.annotationKey ? (props.active?.(shape.annotationKey) ? shape.caretOpacity.inside : shape.caretOpacity.outside) : shape.opacity}
             stroke-dasharray={shape.dashArray}
             stroke-linejoin="round"
             classList={{ "reactive-decoration--marching": shape.animated }}
@@ -319,6 +320,14 @@ export function StandoffEditorView(props: BlockViewProps) {
   const annotations = createMemo(
     () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property, node()?.contentKey) as StandoffAnnotation),
   );
+  const annotationKey = (annotation: StandoffAnnotation, index: number) => `${props.nodeKey}:${annotation.id ?? annotation.type ?? "property"}:${index}`;
+  // Collapsed primary/secondary carets have no SVG selection geometry. Moving
+  // them should update opacity only, not schedule an annotation layout pass.
+  const selectionGeometry = createMemo(() => {
+    const set = editor.selections.sets[props.nodeKey];
+    return JSON.stringify(set?.items.filter(item => item.anchor.boundary.index !== item.head.boundary.index)
+      .map(item => [item.id,item.anchor.boundary.index,item.head.boundary.index,item.id === set.primaryId]) ?? []);
+  });
   const superpositions = createMemo(() => editor.features.textSuperposition ? textSuperpositions(node()) : []);
   const showHideRanges = createMemo(() => annotations().map((annotation, index) => ({ annotation, id: annotation.id ?? index }))
     .filter(({ annotation }) => annotation.type === "style/show-hide" && hasActiveRange(annotation)));
@@ -376,12 +385,17 @@ export function StandoffEditorView(props: BlockViewProps) {
     if (selection.anchor !== selection.head && typeof nativeSelection.extend === "function") {
       nativeSelection.extend(head.node, head.offset);
     }
+    if (editor.features.annotationRangeEvents && document.activeElement === flow) {
+      if (selection.anchor === selection.head) editor.annotationEvents.setCaret(props.nodeKey,selection.head);
+      else editor.annotationEvents.setCaret();
+    }
   };
 
   const measure = () => {
     frame = 0;
     const scale = coordinates?.scale() ?? 1;
     const foreground: DecorationShape[] = [];
+    const caretRanges: AnnotationRange[] = [];
     const highlighters: DecorationShape[] = [];
     const fragmentCache = new Map<string, VisualFragment[]>();
     const fragmentsFor = (start: number, end: number) => {
@@ -391,7 +405,10 @@ export function StandoffEditorView(props: BlockViewProps) {
       return fragments;
     };
     standoffSvgStyles(annotations(), node()?.inlineContent.length ?? 0, type => editor.effects.get(type)).forEach(({ annotation, svg, offset, index }) => {
-      const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "property"}:${index}`;
+      const key = annotationKey(annotation,index);
+      if (editor.features.annotationRangeEvents && svg.kind === "contribution" && svg.definition.caretOpacity) {
+        caretRanges.push({key,index,id:annotation.id,type:annotation.type!,start:annotation.start,end:Math.min(annotation.end,(node()?.inlineContent.length ?? 0)-1)});
+      }
       const fragments = fragmentsFor(annotation.start, annotation.end);
       let shapes: DecorationShape[] = [];
       switch (svg.kind) {
@@ -404,7 +421,8 @@ export function StandoffEditorView(props: BlockViewProps) {
         case "rectangle": shapes = outlineShapes(key, fragments, "red"); break;
         case "spiky": shapes = spikyOutlineShapes(key, fragments, "red"); break;
       }
-      foreground.push(...shapes.map((shape) => ({ ...shape, propertyType: annotation.type })));
+      foreground.push(...shapes.map((shape) => ({ ...shape, propertyType: annotation.type, annotationKey:key,
+        caretOpacity: editor.features.annotationRangeEvents && svg.kind === "contribution" ? svg.definition.caretOpacity : undefined })));
     });
     const regions: RegionEffect[] = [];
     const noises: NoiseRegion[] = [];
@@ -462,6 +480,7 @@ export function StandoffEditorView(props: BlockViewProps) {
         ),
       );
     });
+    if (editor.features.annotationRangeEvents) editor.annotationEvents.setRanges(props.nodeKey,caretRanges);
     setHighlighterShapes(highlighters);
     setForegroundShapes(foreground);
     setRegionEffects(regions);
@@ -553,7 +572,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       alternative?.inlineContent.length;
       JSON.stringify(alternative?.payload.standoffProperties);
     }
-    editor.selections.sets[props.nodeKey]?.revision;
+    selectionGeometry();
     JSON.stringify(editor.decorations.nodes[props.nodeKey]);
     editor.crossText.segments[props.nodeKey]?.start;
     editor.crossText.segments[props.nodeKey]?.end;
@@ -566,6 +585,7 @@ export function StandoffEditorView(props: BlockViewProps) {
     document.removeEventListener("scroll",onCandidateScroll,true);
     if (editor.crossText.segments[props.nodeKey]) queueMicrotask(() => editor.crossText.validate());
     disposeMount?.();
+    editor.annotationEvents.remove(props.nodeKey);
     observer?.disconnect();
     visibilityObserver?.disconnect();
     if (frame) {
@@ -712,7 +732,7 @@ export function StandoffEditorView(props: BlockViewProps) {
         <SuperpositionLayer owner={node} anchors={superpositionAnchors()} />
         <RegionEffectLayer regions={regionEffects()} />
         <NoiseLayer regions={noiseRegions()} />
-        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes()} />
+        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes()} active={key => editor.annotationEvents.isActive(props.nodeKey,key)} />
       </div>
       <RelationBlocks parentKey={props.nodeKey} />
       <ChildBlocks parentKey={props.nodeKey} />

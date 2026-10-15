@@ -13,6 +13,8 @@ export interface MeasuredEffect {
 export interface EffectDefinition {
   readonly type: string;
   readonly laneHeight: number;
+  /** Appearance only; core updates existing paths without measuring again. */
+  readonly caretOpacity?: Readonly<{ outside: number; inside: number }>;
   render(measured: MeasuredEffect): readonly DecorationShape[];
 }
 export class EffectContributions {

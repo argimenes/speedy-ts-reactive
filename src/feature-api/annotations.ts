@@ -1,3 +1,4 @@
+import type { AnnotationRangeEvent } from "../runtime/annotation-range-events";
 import type { JsonObject, CommandDefinition } from "../block-tree/types";
 import type { BindingAction, BindingRegistry } from "../input/bindings";
 import type { FeatureAction, Disposer } from "../runtime/features";
@@ -56,6 +57,8 @@ export interface AnnotationCapabilities {
   register: {
     panel(definition: PanelDefinition): void;
     effect(definition: EffectDefinition): void;
+    /** Occurrence-local enter/leave events for opted-in SVG effects; disposed with the feature scope. */
+    annotationEvent(listener: (event: AnnotationRangeEvent) => void): void;
     annotation(definition: AnnotationContribution): void;
     command(definition: CommandDefinition<void>): void;
     binding(definition: BindingAction): void;

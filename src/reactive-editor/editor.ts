@@ -25,6 +25,7 @@ import type { ExistingBlockDto, NodeKey, PlacementKey, ViewId } from "../block-t
 import { InputGateway } from "../input/gateway";
 import { FocusService } from "../runtime/focus";
 import { MountRegistry } from "../runtime/mounts";
+import { AnnotationRangeEvents } from "../runtime/annotation-range-events";
 import { SelectionService } from "../runtime/selections";
 import { PersistenceService } from "./persistence";
 import { MultiSelectionEditor } from "../input/multi-selection-editor";
@@ -57,6 +58,7 @@ export class ReactiveEditor {
   readonly panels = new PanelContributions();
   readonly annotationUI = new AnnotationContributions();
   readonly effects = new EffectContributions();
+  readonly annotationEvents = new AnnotationRangeEvents();
   readonly features: FeatureFlags;
   readonly decorations = new SessionDecorations();
   readonly minimap = new MinimapService();
@@ -259,6 +261,7 @@ export class ReactiveEditor {
         void this.commandRegistry.execute(id, context);
         return true;
       },
+      this.features.annotationRangeEvents ? this.annotationEvents : undefined,
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;
@@ -422,6 +425,7 @@ export class ReactiveEditor {
     this.bindings.dispose();
     this.gateway?.dispose();
     this.focus.dispose();
+    this.annotationEvents.dispose();
     for (const projection of this.projections.values()) projection.dispose();
     this.projections.clear();
   }

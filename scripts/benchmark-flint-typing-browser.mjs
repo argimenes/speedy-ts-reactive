@@ -2,6 +2,7 @@
 // Reads the fixture only; never saves it. BENCHMARK_DOCUMENT_PATH selects another
 // native resource; BENCHMARK_VAULT_SIZE adds unopened entries to an in-memory
 // vault (e.g. 1000). BENCHMARK_OUTPUT selects the artifact directory.
+// BENCHMARK_ANNOTATION_RANGE_EVENTS=false disables caret emphasis for comparison.
 // Native binding/listing responses are local stubs: no user vault is opened.
 // Reports handler and queued-caret costs separately; headless animation-frame
 // timings are diagnostic, not an input-to-display latency guarantee.
@@ -25,7 +26,7 @@ const vite=await createServer({plugins:[{
  import {materializeLocalWorkspace} from '/src/reactive-editor/workspace-manifest.ts';
  import '/src/index.css';
  import '/src/demo/workspace-demo.css';
- const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true}});
+ const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true,annotationRangeEvents:${process.env.BENCHMARK_ANNOTATION_RANGE_EVENTS!=='false'}}});
  const editor=session.editor;
  const bank=editor.commands.insert({type:'workspace-object-bank-block',children:[]},{kind:'at',parentKey:session.projection.state.rootKey,index:0});
  const {admitNative}=await import('/src/persistence/native-resource.ts');
