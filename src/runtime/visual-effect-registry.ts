@@ -15,6 +15,15 @@ export interface PresentationFrame {
   readonly layoutRevision: number;
 }
 
+/** One viewport decoration, independent of text ranges or persisted properties. */
+export interface ViewportPresentationFrame {
+  readonly point: { readonly x: number; readonly y: number };
+  /** Clipped bounds and pointer in host-local CSS pixels. */
+  readonly bounds: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+  readonly scale: number;
+}
+export interface ViewportPresentationEffect { update(frame?: ViewportPresentationFrame): void }
+
 function frozen<T>(value:T):T { (immutable as (value:unknown)=>unknown)(value); return value; }
 
 export type Json = null | boolean | number | string | Json[] | { [key:string]: Json };
@@ -37,7 +46,9 @@ export type VisualRenderer = {
   | { target:'cell-style'; classes(params:EffectParams):readonly string[] }
   | { target:'text-presentation'; focusKinds: readonly FocusRegion['kind'][];
       /** Called within a Solid root; own resources with onCleanup. */
-      create(context: { owner: VisualEffectOwner; params: EffectParams; document: Document }): TextPresentationEffect });
+      create(context: { owner: VisualEffectOwner; params: EffectParams; document: Document }): TextPresentationEffect }
+  | { target:'viewport-presentation';
+      create(context: { owner: VisualEffectOwner; params: EffectParams; document: Document; host: HTMLElement }): ViewportPresentationEffect });
 export interface RendererBinding { readonly id:string; readonly name:string; readonly params?:EffectParams }
 export type CaretTransition = 'caret-enter'|'caret-leave';
 export interface PropertyTypeDefinition {
@@ -82,7 +93,7 @@ export class VisualEffectRegistry {
   private touch(){this.changed[1](n=>n+1);}
   registerRenderer(definition:VisualRenderer){
     this.assertLive();if(this.renderers.has(definition.name))throw Error(`Renderer ${definition.name} already registered`);
-    if(!definition.name||!['range-overlay','cell-style','text-presentation'].includes(definition.target))throw Error('Unsupported renderer target');
+    if(!definition.name||!['range-overlay','cell-style','text-presentation','viewport-presentation'].includes(definition.target))throw Error('Unsupported renderer target');
     json(definition.defaults);definition.validate(definition.defaults);
     const entry=Object.freeze({...definition,...(definition.target==='range-overlay'?{layoutParams:Object.freeze([...definition.layoutParams])}:{}),...(definition.target==='text-presentation'?{focusKinds:Object.freeze([...definition.focusKinds])}:{}),defaults:frozen(structuredClone(definition.defaults))}) as VisualRenderer;
     this.renderers.set(entry.name,entry);this.touch();
@@ -100,7 +111,7 @@ export class VisualEffectRegistry {
     for(const binding of definition.renderers){
       if(!binding.id||ids.has(binding.id))throw Error('Renderer binding IDs must be unique');ids.add(binding.id);
       const renderer=this.renderers.get(binding.name);if(!renderer)throw Error(`Unknown renderer ${binding.name}`);
-      if(renderer.target==='text-presentation')throw Error('Text presentation effects require a presentation host');
+      if(renderer.target==='text-presentation'||renderer.target==='viewport-presentation')throw Error('Text presentation effects require a presentation host');
       renderer.validate({...renderer.defaults,...binding.params});
     }
     const order=definition.stateOrder??Object.keys(definition.states??{});

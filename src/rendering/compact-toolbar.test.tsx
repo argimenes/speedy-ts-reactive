@@ -26,6 +26,28 @@ function fixture(twoWindows = false) {
 }
 
 describe("compact editor chrome", () => {
+  it("toggles pointer spotlight without changing selection, text, annotations or history and releases its window host", () => {
+    const { editor, host, select, node, dispose } = fixture(); select();
+    const mount = editor.mounts.get(node('a-p').key)!;
+    const selection = mount.captureInlineSelection?.(), before = editor.encodeDocument(), revision = editor.repository.state.revision;
+    const snapshot = vi.spyOn(editor.repository, 'snapshot');
+    const button = host.querySelector<HTMLButtonElement>('[aria-label="Pointer Spotlight"]')!;
+    expect(button.getAttribute('aria-pressed')).toBe('false'); button.click();
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(host.querySelector('.reactive-window__content > .pointer-spotlight')).not.toBeNull();
+    expect(host.querySelector('.document-style-bar .pointer-spotlight')).toBeNull();
+    expect(mount.captureInlineSelection?.()).toEqual(selection); expect(document.activeElement).toBe(mount.focusElement);
+    button.click(); expect(host.querySelector('.pointer-spotlight')).toBeNull();
+    button.click();
+    const mode = host.querySelector<HTMLSelectElement>('[aria-label="Caret Mode"]')!;
+    mode.value = 'normal'; mode.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(editor.pointerSpotlight.active()).toBe(false); expect(host.querySelector('.pointer-spotlight')).toBeNull();
+    expect(snapshot).not.toHaveBeenCalled(); expect(editor.repository.state.revision).toBe(revision);
+    expect(editor.encodeDocument()).toEqual(before); snapshot.mockRestore();
+    button.click(); const overlay = host.querySelector('.pointer-spotlight')!;
+    dispose(); expect(overlay.isConnected).toBe(false);
+  });
+
   it("defaults on, has one footer outside scrolling content and leaves document mounts/history unchanged on switching", () => {
     const { editor, host, select, choose } = fixture(); select();
     const tree = host.querySelector('.reactive-standoff-flow'), before = editor.encodeDocument(), revision = editor.repository.state.revision;
@@ -92,9 +114,9 @@ describe("compact editor chrome", () => {
     const revision = editor.repository.state.revision;
     expect(wheel({ ctrlKey: true }).defaultPrevented).toBe(false);
     wheel(); wheel(); wheel();
-    expect(host.querySelector<HTMLSelectElement>('select')!.value).toBe("Annotations");
+    expect(host.querySelector<HTMLSelectElement>('[aria-label="Toolset"]')!.value).toBe("Annotations");
     vi.advanceTimersByTime(200); wheel();
-    expect(host.querySelector<HTMLSelectElement>('select')!.value).toBe("Visual effects");
+    expect(host.querySelector<HTMLSelectElement>('[aria-label="Toolset"]')!.value).toBe("Visual effects");
     expect(editor.repository.state.revision).toBe(revision);
   });
 

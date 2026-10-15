@@ -82,7 +82,7 @@ export function TransientDocumentView(props: {
   return <ReactiveViewProvider editor={editor} projection={projection} coordinates={parent.coordinates}>
     <section class="reactive-document-occurrence" data-document-view={projection.viewId}>
       <DocumentStyleBar editor={editor} scopeKey={projection.state.rootKey} />
-      <div class="reactive-document-occurrence__content"><DocumentTabContext.Provider value={undefined}><BlockOutlet nodeKey={projection.state.rootKey} /></DocumentTabContext.Provider></div>
+      <div class="reactive-document-occurrence__content" ref={host => onMount(() => onCleanup(editor.pointerSpotlight.mount(host, () => parent.coordinates?.scale() ?? 1)))}><DocumentTabContext.Provider value={undefined}><BlockOutlet nodeKey={projection.state.rootKey} /></DocumentTabContext.Provider></div>
     </section>
     <ReactiveViewLayers editor={editor} projection={projection} />
   </ReactiveViewProvider>;

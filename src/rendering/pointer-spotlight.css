@@ -1,0 +1,7 @@
+[data-pointer-spotlight-host] { position: relative; isolation: isolate; }
+.pointer-spotlight { position: absolute; z-index: 5; pointer-events: none; user-select: none; contain: strict; }
+.pointer-spotlight[hidden] { display: none; }
+/* Page tabs remain controls; annotation layers (1–4) receive the lighting.
+   Block handles (15), popovers and minimaps already paint above this layer. */
+[data-pointer-spotlight-host] .reactive-tabs__labels { position: relative; z-index: 6; }
+.document-style-bar .document-style-bar__spotlight { flex: 0 0 auto; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }

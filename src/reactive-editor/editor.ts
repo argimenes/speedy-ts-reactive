@@ -1,3 +1,5 @@
+import { PointerSpotlight } from '../runtime/pointer-spotlight';
+import { registerPointerSpotlight } from '../rendering/pointer-spotlight';
 import { registerReadingSpotlight } from '../rendering/reading-spotlight';
 import { CaretModes } from '../runtime/caret-modes';
 import { registerFocusFade } from '../rendering/focus-fade';
@@ -69,6 +71,7 @@ export class ReactiveEditor {
   /** Compatibility name and new API share a single runtime store. */
   get temporaryRanges() { return this.decorations; }
   readonly caretModes: CaretModes;
+  readonly pointerSpotlight: PointerSpotlight;
   setCaret = (nodeKey?: string, caret?: number) => {
     if (this.features.annotationRangeEvents) this.annotationEvents.setCaret(nodeKey, caret);
     if (!nodeKey) this.measurements.releaseCaret();
@@ -134,6 +137,7 @@ export class ReactiveEditor {
     registerVisualEffectRenderers(this.visualEffects);
     registerFocusFade(this.visualEffects);
     registerReadingSpotlight(this.visualEffects);
+    registerPointerSpotlight(this.visualEffects);
     this.caretModes = new CaretModes(this.visualEffects, (key, caret, frame) => {
       const node = this.node(key), content = node && this.repository.readState().contents[node.contentKey];
       if (!node || !content) return;
@@ -142,6 +146,7 @@ export class ReactiveEditor {
         caretRect: () => this.measurements.caretRect(key, caret, frame),
         cells: () => node.inlineContent.map(key => { const cell = projection?.state.nodes[key]; return cell?.viewType === 'image-cell' ? '\uFFFC' : String(cell?.payload.text ?? ''); }) };
     }, this.features.caretModes, this.features.readingSpotlight);
+    this.pointerSpotlight = new PointerSpotlight(this.visualEffects, this.features.pointerSpotlight, () => this.caretModes.select('normal'), this.caretModes.active);
     this.viewVisibility = new ViewVisibility(this.repository);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
     this.textRanges = new TextRanges(key => {
@@ -443,6 +448,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.pointerSpotlight.dispose();
     this.caretModes.dispose();
     this.measurements.releaseCaret();
     this.visualEffects.dispose();

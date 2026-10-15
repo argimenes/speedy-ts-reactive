@@ -5,6 +5,7 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
 import { createTextTab } from "../runtime/text-tabs";
 import "./document-style-bar.css";
+import "./pointer-spotlight.css";
 import { DocumentCountBar } from "./document-count-bar";
 import { CompactToolbar, type CompactTool, type Toolset } from "./compact-toolbar";
 import { createTextSuperposition } from "../runtime/text-superposition";
@@ -270,9 +271,17 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   return <nav ref={element => onCleanup(ownSelectionToolbar(element, editor.mounts))} class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": editor.features.compactEditorChrome }} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
     <Show when={editor.features.caretModes && editor.caretModes.enabled()}>
       <select class="document-style-bar__caret-mode" aria-label="Caret Mode" title="Session text focus" value={editor.caretModes.active()}
-        onChange={event => { editor.caretModes.select(event.currentTarget.value); restore(); }}>
+        onChange={event => { editor.pointerSpotlight.setActive(false); editor.caretModes.select(event.currentTarget.value); restore(); }}>
         <For each={editor.caretModes.list()}>{mode => <option value={mode.id}>{mode.label}</option>}</For>
       </select>
+    </Show>
+    <Show when={editor.features.pointerSpotlight}>
+      <button type="button" class="document-style-bar__spotlight" aria-label="Pointer Spotlight" title="Pointer Spotlight — follow the mouse"
+        aria-pressed={editor.pointerSpotlight.active()} onClick={() => { editor.pointerSpotlight.toggle(); restore(); }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="m7 3 6 4-3 5-6-4zM11 11l9 3-6 7-6-8M4 19h5M6.5 11v8" />
+        </svg>
+      </button>
     </Show>
     <Show when={props.margins?.collapsed && props.margins.count > 0}>
       <button type="button" class="document-style-bar__margins" aria-expanded={props.margins?.open} aria-controls={props.margins?.controls} onClick={() => props.margins?.toggle()}>

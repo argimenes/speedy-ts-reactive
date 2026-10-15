@@ -4,6 +4,7 @@
 // vault (e.g. 1000). BENCHMARK_OUTPUT selects the artifact directory.
 // BENCHMARK_CARET_MODE=normal|block-focus|sentence-focus|reading-spotlight selects session focus.
 // BENCHMARK_CARET_MODES=false disables the feature for comparison.
+// BENCHMARK_POINTER_SPOTLIGHT=1 enables and verifies the mouse-controlled lighting.
 // BENCHMARK_NATIVE_GPU=1 uses Chrome's default GPU instead of software SwiftShader.
 // BENCHMARK_STANDOFF_RENDERING=false selects the previous rendering path.
 // BENCHMARK_ANNOTATION_RANGE_EVENTS=false disables caret emphasis for comparison.
@@ -93,6 +94,18 @@ try{
    assert.ok(Math.abs(spotlight.x-spotlight.caretX)<1 && Math.abs(spotlight.y-spotlight.caretY)<1,'spotlight must centre on the native caret');
    assert.ok(spotlight.chrome,'controls and SVG layers must remain unmasked');
  }
+ if(process.env.BENCHMARK_POINTER_SPOTLIGHT==='1'){
+   await evaluate(`proof.root.querySelector('[aria-label="Pointer Spotlight"]').click();proof.pointerHost=proof.flow.closest('.reactive-document-occurrence__content')`);
+   const point=await evaluate(`(()=>{const r=proof.flow.getBoundingClientRect();return {x:r.left+r.width*.65,y:r.top+15}})()`);
+   await send('Input.dispatchMouseEvent',{type:'mouseMoved',...point},sessionId);
+   await wait("proof.pointerHost.querySelector('.pointer-spotlight:not([hidden])')");
+   const overlay=await evaluate(`(()=>{const e=proof.pointerHost.querySelector('.pointer-spotlight'),r=e.getBoundingClientRect(),bar=proof.root.querySelector('.document-style-bar').getBoundingClientRect(),css=getComputedStyle(e),p=css.backgroundImage.match(/at ([\\d.-]+)px ([\\d.-]+)px/);return {top:r.top,barBottom:bar.bottom,background:css.backgroundImage,pointerEvents:css.pointerEvents,x:r.left+Number(p[1]),y:r.top+Number(p[2]),hit:document.elementFromPoint(${point.x},${point.y})===e}})()`);
+   assert.ok(overlay.top>=overlay.barBottom,'toolbar must remain outside lighting');
+   assert.equal(overlay.pointerEvents,'none');assert.equal(overlay.hit,false);
+   assert.ok(overlay.background.includes('0.65'));assert.ok(Math.abs(overlay.x-point.x)<1&&Math.abs(overlay.y-point.y)<1);
+   const movement=await evaluate(`(async()=>{let reads=0,changes=0,snapshots=0;const host=proof.pointerHost,read=host.getBoundingClientRect.bind(host),snapshot=proof.editor.repository.snapshot.bind(proof.editor.repository),release=proof.editor.repository.subscribeChanges(()=>changes++);host.getBoundingClientRect=()=>{reads++;return read()};proof.editor.repository.snapshot=()=>{snapshots++;return snapshot()};for(let i=0;i<100;i++)proof.flow.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:${point.x}+i/10,clientY:${point.y},pointerType:'mouse'}));await new Promise(r=>requestAnimationFrame(r));release();host.getBoundingClientRect=read;proof.editor.repository.snapshot=snapshot;return {reads,changes,snapshots}})()`);
+   assert.deepEqual(movement,{reads:0,changes:0,snapshots:0});console.log('Pointer spotlight geometry, hit-testing and bounded movement: passed');
+ }
  const screenshot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'caret-mode.png'),Buffer.from(screenshot.data,'base64'));
  await send('Profiler.enable',{},sessionId);await send('Profiler.setSamplingInterval',{interval:200},sessionId);await send('Profiler.start',{},sessionId);
  const result=await evaluate(`(async()=>{
@@ -106,7 +119,7 @@ try{
      await new Promise(r=>requestAnimationFrame(r));frames.push(performance.now()-start);
    }
    const stats=xs=>{xs.sort((a,b)=>a-b);return {median:xs[Math.floor(xs.length/2)],p95:xs[Math.floor(xs.length*.95)],max:xs.at(-1)}};
-   return {caretMode:editor.caretModes.active(),characters:before.length,paragraphs:proof.root.querySelectorAll('.reactive-standoff-flow').length,sync:stats(sync),settled:stats(settled),frame:stats(frames),snapshots,statusReads,vaultRows:proof.root.querySelectorAll('.flint-tree-document').length,restored:mount.captureText()===before};
+   return {pointerSpotlight:editor.pointerSpotlight.active(),caretMode:editor.caretModes.active(),characters:before.length,paragraphs:proof.root.querySelectorAll('.reactive-standoff-flow').length,sync:stats(sync),settled:stats(settled),frame:stats(frames),snapshots,statusReads,vaultRows:proof.root.querySelectorAll('.flint-tree-document').length,restored:mount.captureText()===before};
  })()`);
  const {profile:cpu}=await send('Profiler.stop',{},sessionId);await writeFile(path.join(artifacts,'typing.cpuprofile'),JSON.stringify(cpu));
  const nodeById=new Map(cpu.nodes.map(n=>[n.id,n]));const totals=new Map();
@@ -136,6 +149,20 @@ try{
    console.log('Chrome spotlight scrolling, selection and teardown: passed');
  }
 
+ if(process.env.BENCHMARK_POINTER_SPOTLIGHT==='1'){
+   await evaluate(`proof.scrollPanel=proof.flow.closest('.reactive-tabs__panel');proof.scrollPanel.style.maxHeight='300px';proof.scrollPanel.style.overflow='auto';proof.scrollPanel.scrollTop=80;new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`);
+   const point=await evaluate(`(()=>{const r=proof.pointerHost.getBoundingClientRect(),p=proof.scrollPanel.getBoundingClientRect();return {x:r.left+250,y:Math.max(r.top,p.top)+90}})()`);
+   await send('Input.dispatchMouseEvent',{type:'mouseMoved',...point},sessionId);
+   await wait("proof.pointerHost.querySelector('.pointer-spotlight:not([hidden])')");
+   const clipped=await evaluate(`(()=>{const r=proof.pointerHost.querySelector('.pointer-spotlight').getBoundingClientRect(),p=proof.scrollPanel.getBoundingClientRect();return {top:r.top,bottom:r.bottom,parentTop:p.top,parentBottom:p.bottom,scrolled:proof.scrollPanel.scrollTop}})()`);
+   assert.ok(clipped.scrolled>0);assert.ok(clipped.top>=clipped.parentTop&&clipped.bottom<=clipped.parentBottom,'overlay must clip to scrollport');
+   await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:20,y:20},sessionId);
+   assert.equal(await evaluate("proof.pointerHost.querySelector('.pointer-spotlight').hidden"),true,'leaving must hide lighting');
+   await evaluate(`proof.root.querySelector('[aria-label="Pointer Spotlight"]').click()`);
+   assert.equal(await evaluate("proof.root.querySelectorAll('.pointer-spotlight').length"),0,'toggle off must remove overlay');
+   assert.equal(await evaluate('proof.editor.pointerSpotlight.active()'),false);
+   console.log('Pointer spotlight scrolling, leave and toggle cleanup: passed');
+ }
  await evaluate('proof.dispose();proof.session.dispose()');
 }finally{socket?.close();chrome.kill();await vite.close();await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
 process.exit(0);

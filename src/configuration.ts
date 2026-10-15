@@ -90,6 +90,8 @@ export type FeatureFlags = Readonly<{
   caretModes: boolean;
   /** Viewport-geometry Reading Spotlight mode. */
   readingSpotlight: boolean;
+  /** Optional mouse-controlled document lighting; initially switched off. */
+  pointerSpotlight: boolean;
   /** Shared renderer registry and transient range rendering. */
   standoffPropertyRendering: boolean;
 }>;
@@ -135,6 +137,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   annotationRangeEvents: true,
   caretModes: true,
   readingSpotlight: true,
+  pointerSpotlight: true,
   standoffPropertyRendering: true,
 });
 

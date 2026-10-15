@@ -330,3 +330,73 @@ Screenshots, CPU profiles and JSON measurements are in
 `/tmp/flint-spotlight-native-normal` and `/tmp/flint-spotlight-native-active`;
 software comparisons are `/tmp/flint-spotlight-normal-final` and
 `/tmp/flint-spotlight-direct`.
+
+
+## Pointer Spotlight — document lighting
+
+The spotlight icon beside the Caret Mode selector toggles **Pointer Spotlight**.
+The `pointerSpotlight` feature flag defaults on; the light starts off. State belongs
+to the editor session. Enabling it selects Normal; choosing a caret mode turns it
+off, so the two lighting approaches cannot unintentionally stack. Reading Spotlight
+remains available unchanged. Leaving the document, hovering over controls, touch
+input, pointer cancellation, window blur or page hiding suspends the light. Selection
+and editing remain available; this mode does not depend on the caret or require a
+collapsed selection.
+
+The registered `pointer-spotlight` renderer uses the small `viewport-presentation`
+contract: a host, source-neutral owner, JSON parameters and an `update(frame?)`
+method. A frame contains a local point, clipped local rectangle and the existing
+uniform coordinate scale. An absent frame hides the effect. This is a single
+viewport decoration, not a per-Block renderer or a general compositing framework.
+The annotation adapter rejects this target because it requires a viewport host.
+
+The renderer draws one empty, pointer-transparent DIV with a radial CSS gradient:
+transparent at the centre, feathering to 65% black outside an ellipse of 180 × 85
+viewport-pixel radii (inner 30% clear). Unlike Reading Spotlight's text masks, this
+also darkens the document background and annotation visuals. Their actual styling,
+SVGs, custom cells and Temporary Ranges remain intact. The overlay paints above text
+and decoration layers, below existing Block handles and floating controls. Page tabs
+are explicitly above it. It is hosted below the formatting toolbar, inside Flint's
+transient document content or the floating Document window's existing scroll area.
+Native overflow clipping and client dimensions keep it off scrollbars. Menus outside
+that content host and unrelated application chrome are unaffected.
+
+The pointer coordinator reads `PointerEvent.clientX/clientY`. It inspects only the
+host's ancestor clipping chain when enabled, caches viewport bounds, and coalesces
+pointer bursts into one animation frame. Ordinary pointer movement performs no
+geometry reads, cell/Block scans or text work. Scroll/resize, the existing reactive
+scale source, host/ancestor ResizeObservers and re-entry invalidate the bounds.
+All measurements precede style updates. Only the empty overlay's non-inherited
+background image changes as the pointer moves; unchanged output is skipped. The
+painted rectangle is bounded by the visible viewport rather than document length.
+There are no typing listeners, new caret queries, snapshots, mutations or undo entries.
+
+Solid roots own renderer instances, overlays, pointer/scroll listeners, observers and
+pending frames. Toggle-off, renderer removal, host unmount and editor disposal remove
+them. The presentation host attribute is also released. Uniform scaling is supported;
+rotation/perspective are outside the existing coordinate contract. Arbitrary custom
+control layers should retain their normal z-index above document decorations.
+
+Validation: 54 targeted tests across 8 files, client/server TypeScript checks and the
+real Flint Chrome benchmark. Tests cover bounded movement, scale, clipping/scrollbar
+gutters, leave/blur/control/touch handling, mutual exclusion, the feature flag,
+renderer teardown, selection preservation and unchanged document/history. The toolbar
+wheel test now locates the Toolset selector by its accessible label rather than
+assuming it is the first select (the Caret Mode selector precedes it).
+
+The Chrome benchmark supports `BENCHMARK_POINTER_SPOTLIGHT=1`. It checks real mouse
+tracking and hit-testing, then scroll clipping, leaving the document and toggling off.
+A burst of 100 pointer events recorded zero host geometry reads, zero repository
+changes and zero snapshots after the initial viewport measurement. Native character
+input and undo passed with the light enabled. Sequential default-GPU runs
+(`BENCHMARK_NATIVE_GPU=1`, Michelangelo letter, 1,001 in-memory vault rows, 40 edits):
+
+| Mode | Median handler | Median including queued work | Median frame |
+| --- | ---: | ---: | ---: |
+| Normal | 8.1 ms | 11.5 ms | 16.9 ms |
+| Pointer Spotlight | 8.0 ms | 11.3 ms | 16.7 ms |
+
+Both recorded zero document snapshots and 40 status reads. These samples indicate
+no material typing regression on this fixture; they do not establish a speedup or
+cross-device latency guarantee. Screenshot/CPU/JSON artifacts are in
+`/tmp/flint-pointer-normal` and `/tmp/flint-pointer-active`.
