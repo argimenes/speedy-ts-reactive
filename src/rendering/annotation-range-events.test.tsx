@@ -50,7 +50,7 @@ it('clears on selection/blur, refreshes after range edits and undo, and disposes
  f.release();await tick();const count=f.events.mock.calls.length;f.caret(2);expect(f.events).toHaveBeenCalledTimes(count);expect(f.paths()).toHaveLength(0);
 });
 it('keeps legacy full-opacity underlines and emits no events when disabled',async()=>{
- const f=setup(false);await tick();f.caret(2);await tick();expect(f.paths()).toHaveLength(2);expect(f.paths().every(p=>!p.hasAttribute('opacity'))).toBe(true);expect(f.events).not.toHaveBeenCalled();
+ const f=setup(false);await tick();f.caret(2);await tick();expect(f.paths()).toHaveLength(2);expect(f.paths().every(p=>Number(p.getAttribute('opacity')??1)===1)).toBe(true);expect(f.events).not.toHaveBeenCalled();
 });
 
 it('emphasizes every line fragment only in the focused occurrence of shared content',async()=>{
@@ -62,6 +62,7 @@ it('emphasizes every line fragment only in the focused occurrence of shared cont
  const dispose=render(()=><ReactiveTreeView editor={f.editor} projection={other}/>,host);cleanup.push(dispose);
  await tick();expect(f.paths()).toHaveLength(4);
  const paths=[...host.querySelectorAll('path[data-property-type="codex/entity-reference"]')];expect(paths).toHaveLength(4);
+ expect(new Set([...f.paths(),...paths].map(path=>path.getAttribute('data-decoration-key'))).size).toBe(8);
  f.caret(2);expect(f.paths().every(p=>p.getAttribute('opacity')==='1')).toBe(true);expect(paths.every(p=>p.getAttribute('opacity')==='0.5')).toBe(true);
  const key=other.node(other.state.rootKey)!.children[0], mount=f.editor.mounts.get(key)!;
  mount.focusElement.focus();mount.restoreInlineSelection!({anchor:2,head:2});

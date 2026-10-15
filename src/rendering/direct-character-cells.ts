@@ -6,6 +6,7 @@ export interface CharacterCellPresentation {
   text: string;
   style?: JSX.CSSProperties;
   concealed?: boolean;
+  classes?: string;
   hiddenSource?: boolean;
   image?: { src: string; alt: string; label: string; width?: number; height?: number };
   alternative?: { id: string; end: number; cells: CharacterCellPresentation[] };
@@ -114,7 +115,6 @@ export class DirectCharacterCells {
           } else element.replaceChildren(document.createTextNode(cell.text));
           entry.text = cell.text;
         }
-        setAttribute(element, "class", cell.hiddenSource ? "reactive-superposition-source-cell" : cell.concealed ? "reactive-standoff-cell--concealed" : undefined);
         setAttribute(element, "aria-hidden", cell.hiddenSource ? "true" : undefined);
         if (entry.style !== cell.style) {
           for (const name of Object.keys(entry.style ?? {})) if (!(name in (cell.style ?? {}))) element.style.removeProperty(name);
@@ -124,6 +124,7 @@ export class DirectCharacterCells {
           entry.style = cell.style;
         }
       }
+      setAttribute(element, "class", [cell.image ? "reactive-inline-image" : cell.alternative ? "reactive-superposition-projection" : cell.hiddenSource ? "reactive-superposition-source-cell" : cell.concealed ? "reactive-standoff-cell--concealed" : "", cell.classes].filter(Boolean).join(" ") || undefined);
       if (!structureChanged) continue;
       if (!element.parentNode) {
         (fragment ??= document.createDocumentFragment()).appendChild(element);

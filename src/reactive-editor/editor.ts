@@ -1,3 +1,6 @@
+import { AnnotationIdentities } from "../runtime/annotation-identities";
+import { VisualEffectRegistry } from "../runtime/visual-effect-registry";
+import { registerVisualEffectRenderers } from "../rendering/visual-effect-renderers";
 import { ViewVisibility } from './view-visibility';
 import { assertLegacySaveAllowed } from "../persistence/native-bindings";
 import { WindowPresentation } from "../runtime/window-presentation";
@@ -58,6 +61,10 @@ export class ReactiveEditor {
   readonly panels = new PanelContributions();
   readonly annotationUI = new AnnotationContributions();
   readonly effects = new EffectContributions();
+  readonly visualEffects = new VisualEffectRegistry();
+  readonly annotationIdentities: AnnotationIdentities;
+  /** Compatibility name and new API share a single runtime store. */
+  get temporaryRanges() { return this.decorations; }
   readonly annotationEvents = new AnnotationRangeEvents();
   readonly features: FeatureFlags;
   readonly decorations = new SessionDecorations();
@@ -114,6 +121,8 @@ export class ReactiveEditor {
     const loadedWorkspace = "state" in dto && "references" in dto ? dto as LoadedWorkspace : undefined;
     const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : isHistoryDocument(dto) ? decodeHistoryDocument(dto) : decodeBlockTree(dto as ExistingBlockDto);
     this.repository = new CanonicalRepository(decoded.state);
+    this.annotationIdentities = new AnnotationIdentities(this.repository);
+    registerVisualEffectRenderers(this.visualEffects);
     this.viewVisibility = new ViewVisibility(this.repository);
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
     this.textRanges = new TextRanges(key => {
@@ -124,9 +133,13 @@ export class ReactiveEditor {
         version: cell ? content.inlineRevision : content.revision,
         length: cell ? node.inlineContent.length : String(node.payload.text ?? "").length, coordinate: cell ? "cell" : "utf16" };
     });
+    this.decorations.configureValidation(ranges => this.textRanges.validate(ranges), range => this.visualEffects.validateType({
+      type:range.type??'editor/temporary-range',renderers:range.renderers??this.visualEffects.type(range.type)?.renderers??[],
+      ...(range.states?{states:range.states}:{}),...(range.stateOrder?{stateOrder:range.stateOrder}:{}),...(range.events?{events:range.events}:{})
+    }));
     this.rangeAnnotations = new RangeAnnotations({ ranges: this.textRanges,
       properties: key => unwrap((this.node(key)?.payload.standoffProperties ?? []) as Record<string, unknown>[]),
-      write: (key, properties) => this.commands.setPayloadField(key, "standoffProperties", properties),
+      write: (key, properties, origins) => this.commands.setPayloadField(key, "standoffProperties", properties, undefined, origins),
       transaction: (label, apply) => this.commands.transaction(label, apply),
     }, result => this.showHide.annotationApplied(result));
     this.persistence = new PersistenceService(this);
@@ -200,6 +213,7 @@ export class ReactiveEditor {
     if (cross && (keys.has(cross.anchor.occurrenceKey) || keys.has(cross.head.occurrenceKey))) this.crossText.clear();
     for (const overlay of [...this.overlays.overlays]) if (keys.has(overlay.ownerKey)) this.overlays.close(overlay.key, false);
     if (this.blockSelection.state.viewId === projection.viewId) this.blockSelection.clear();
+    for (const key of Object.keys(this.decorations.nodes)) if(keys.has(key))this.decorations.removeOccurrence(key);
     for (const key of keys) {
       this.focus.clearRemoved(key);
       this.selections.removeOccurrence(key);
@@ -408,6 +422,9 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.visualEffects.dispose();
+    this.annotationIdentities.dispose();
+    this.decorations.dispose();
     this.persistence.dispose();
     this.featureHost.dispose();
     this.disposeFindInput?.();

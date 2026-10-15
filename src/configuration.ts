@@ -86,6 +86,8 @@ export type FeatureFlags = Readonly<{
   directDomCharacterCells: boolean;
   /** Transient caret enter/leave events and SVG emphasis for opted-in annotations. */
   annotationRangeEvents: boolean;
+  /** Shared renderer registry and transient range rendering. */
+  standoffPropertyRendering: boolean;
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
@@ -127,6 +129,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   textSuperposition: false,
   directDomCharacterCells: true,
   annotationRangeEvents: true,
+  standoffPropertyRendering: true,
 });
 
 export type ReactiveEditorConfiguration = {

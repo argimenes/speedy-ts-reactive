@@ -15,6 +15,7 @@ export function createEntityReferencesFeature(capabilities: (scope: FeatureScope
       const api = capabilities(scope);
       list = new DocumentEntityList(api, summaries);
       scope.own(() => list?.dispose());
+      api.register.propertyType?.({type:'codex/entity-reference',renderers:[{id:'underline',name:'svg-underline',params:{color:'purple',opacity:api.caretEvents===false?1:.5}}],stateOrder:['caret-inside'],states:{'caret-inside':{underline:{opacity:1}}}});
       api.register.effect({ type: "codex/entity-reference", laneHeight: 2, caretOpacity: { outside: .5, inside: 1 }, render: ({ key, fragments, offset }) => fragments.map((fragment, index) => ({
         key: `${key}:underline:${index}`, path: `M ${fragment.x} ${fragment.y + fragment.height + 1.5 + offset} H ${fragment.x + fragment.width}`, stroke: "purple", fill: "none", strokeWidth: 2,
       })) });

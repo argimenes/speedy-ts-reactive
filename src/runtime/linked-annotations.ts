@@ -70,7 +70,7 @@ export class LinkedAnnotations {
     const operations: RepositoryOperation[] = [];
     for (const key of new Set([...registries.keys(), ...updates.keys()])) {
       const content = state.contents[key];
-      operations.push({ kind: "put-content", record: { ...content, payload: { ...content.payload,
+      operations.push({ kind: "put-content", ...(updates.has(key) ? { annotationOrigins: updates.get(key)!.map((_,i)=> i < (Array.isArray(content.payload.standoffProperties)?content.payload.standoffProperties.length:0)?i:null) } : {}), record: { ...content, payload: { ...content.payload,
         ...(registries.has(key) ? { linkedAnnotations: registries.get(key)! } : {}),
         ...(updates.has(key) ? { standoffProperties: updates.get(key)! } : {}),
       } } });

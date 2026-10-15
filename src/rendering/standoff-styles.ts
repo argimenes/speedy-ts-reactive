@@ -188,23 +188,23 @@ export function cellStyleAt(runs: readonly CellStyleRun[], index: number): JSX.C
 }
 
 /** Allocate pixels only to overlapping SVG underlines; rainbows occupy 14px. */
-export function standoffSvgStyles(annotations: readonly StandoffAnnotation[], cellCount: number, effect: (type?: string) => EffectDefinition | undefined = () => undefined) {
-  const occupied: Array<{ start: number; end: number; offset: number; height: number }> = [];
+export type UnderlineLane = { start:number; end:number; offset:number; height:number };
+export function allocateUnderlineLane(occupied:UnderlineLane[],start:number,end:number,height:number) {
+  let offset=0;
+  if(height){const overlaps=occupied.filter(range=>range.start<=end&&start<=range.end);let conflict;
+    while((conflict=overlaps.find(range=>offset<range.offset+range.height+1&&offset+height+1>range.offset)))offset=conflict.offset+conflict.height+1;
+    occupied.push({start,end,offset,height});
+  }
+  return offset;
+}
+export function standoffSvgStyles(annotations: readonly StandoffAnnotation[], cellCount: number, effect: (type?: string) => EffectDefinition | undefined = () => undefined, occupied:UnderlineLane[] = []) {
   return annotations.flatMap((annotation, index) => {
     if (!hasActiveRange(annotation) || annotation.start >= cellCount) return [];
     const definition = effect(annotation.type);
     const svg: SvgStyle | undefined = definition ? { kind: "contribution", definition } : standoffStyleSchema(annotation.type)?.svg;
     if (!svg) return [];
-    let offset = 0;
     const height = svg.kind === "contribution" ? svg.definition.laneHeight : svg.kind === "rainbow" ? 14 : svg.kind === "underline" ? 2 : 0;
-    if (height) {
-      const overlaps = occupied.filter((range) => range.start <= annotation.end && annotation.start <= range.end);
-      let conflict;
-      while ((conflict = overlaps.find((range) => offset < range.offset + range.height + 1 && offset + height + 1 > range.offset))) {
-        offset = conflict.offset + conflict.height + 1;
-      }
-      occupied.push({ start: annotation.start, end: annotation.end, offset, height });
-    }
+    const offset = allocateUnderlineLane(occupied,annotation.start,annotation.end,height);
     return [{ annotation, svg, offset, index }];
   });
 }

@@ -85,3 +85,6 @@ export type { PresentationCapabilities } from "./presentation";
 export type { AnchorCapabilities, AnchorRecord } from "./anchors";
 export type { WindowPresentationPort, WindowPresentationInstance, WindowPresentationContribution } from "../runtime/window-presentation";
 export type { SemanticVaultServices, SemanticRecordType, SemanticCommand, SemanticQuery, CanonicalSemanticRecord } from './semantics';
+
+export type { TemporaryRange, TemporaryRangeCollection } from "../runtime/session-decorations";
+export type { VisualRenderer, VisualEffectProps, VisualEffectOwner, EffectParams, RendererBinding, PropertyTypeDefinition, AnnotationHandler, AnnotationHandlerContext } from "../runtime/visual-effect-registry";

@@ -32,6 +32,11 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     texts.set(key, snapshot); return snapshot;
   };
   return {
+    caretEvents: editor.features.annotationRangeEvents,
+    temporaryRanges(owner) {
+      check();const collection=editor.temporaryRanges.createCollection(`${scope.owner}:${owner}`);
+      return {...collection,dispose:scope.own(collection.dispose)};
+    },
     entities: owner=>{check();const service=entityService(editor,owner);return {...service,dispose:scope.own(()=>service.dispose())};},
     replaceAndAnnotate(range,replacement,type,value,metadata,revision){
       check();if(editor.repository.state.revision!==revision)throw Error('The Document changed. Select the text again.');
@@ -123,6 +128,10 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     },
     bindings: { dispatch: (...args) => editor.bindings.dispatch(...args), label: (...args) => editor.bindings.label(...args) },
     register: {
+      rangeEvent: listener => { check(); scope.own(editor.annotationEvents.subscribeTransitions(listener)); },
+      propertyType: definition => { check(); scope.own(editor.visualEffects.registerType(definition)); },
+      renderer: definition => { check(); scope.own(editor.visualEffects.registerRenderer(definition)); },
+      handler: (name, handler) => { check(); scope.own(editor.visualEffects.registerHandler(name, handler)); },
       annotationEvent: listener => { check(); scope.own(editor.annotationEvents.subscribe(listener)); },
       panel(definition) { check(); const dispose = editor.panels.register(definition); panelTypes.add(definition.type); scope.own(dispose); },
       effect(definition) { check(); scope.own(editor.effects.register(definition)); },

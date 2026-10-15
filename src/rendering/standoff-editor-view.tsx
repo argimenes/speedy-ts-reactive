@@ -1,7 +1,9 @@
+import { createRangeRendering, RangeEffectLayer, classesAt, type RangeEffectSource } from "./range-rendering";
+import { allocateUnderlineLane, type UnderlineLane } from "./standoff-styles";
 import type { AnnotationRange } from "../runtime/annotation-range-events";
 import { localFragment } from "../runtime/local-coordinates";
 import { immutable } from "../runtime/effect-contributions";
-import { For, Show, createEffect, createRenderEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createEffect, createRenderEffect, createMemo, createSignal, untrack, onCleanup, onMount } from "solid-js";
 import type { BlockNode, BlockViewProps, NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { BlockOutlet, ChildBlocks, RelationBlocks } from "./block-outlet";
@@ -127,6 +129,7 @@ function DecorationLayer(props: { class: string; shapes: DecorationShape[]; blen
 }
 
 interface RegionEffect extends VisualFragment {
+  annotationKey:string;
   key: string;
   type: string;
   filter: string;
@@ -161,6 +164,7 @@ function RegionEffectLayer(props: { regions: RegionEffect[] }) {
 }
 
 interface NoiseRegion extends VisualFragment {
+  annotationKey:string;
   key: string;
   type: string;
   frequency: number;
@@ -294,7 +298,7 @@ function noiseAppearance(annotation: StandoffAnnotation): Pick<NoiseRegion, "fre
   }
 }
 
-function ProjectedAlternative(props: { nodeKey: NodeKey; sourceIndex: number; sourceEnd: number; propertyId: string }) {
+function ProjectedAlternative(props: { nodeKey: NodeKey; sourceIndex: number; sourceEnd: number; propertyId: string; classes?:string }) {
   const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const runs = createMemo(() => compileCellStyleRuns(
@@ -302,7 +306,7 @@ function ProjectedAlternative(props: { nodeKey: NodeKey; sourceIndex: number; so
       .map(property => editor.linkedAnnotations.resolve(property, node()?.contentKey) as StandoffAnnotation),
   ));
   return <span
-    class="reactive-superposition-projection"
+    class={["reactive-superposition-projection",props.classes].filter(Boolean).join(" ")}
     data-inline-index={props.sourceIndex}
     data-superposition-end={props.sourceEnd}
     data-superposition-id={props.propertyId}
@@ -320,7 +324,51 @@ export function StandoffEditorView(props: BlockViewProps) {
   const annotations = createMemo(
     () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property, node()?.contentKey) as StandoffAnnotation),
   );
-  const annotationKey = (annotation: StandoffAnnotation, index: number) => `${props.nodeKey}:${annotation.id ?? annotation.type ?? "property"}:${index}`;
+  const identities = editor.features.standoffPropertyRendering ? editor.annotationIdentities.acquire(node()!.contentKey) : undefined;
+  onCleanup(() => identities?.dispose());
+  const annotationKey = (annotation: StandoffAnnotation, index: number) => identities?.keys()[index]
+    ? JSON.stringify([props.nodeKey,identities.keys()[index]])
+    : `${props.nodeKey}:${annotation.id ?? annotation.type ?? "property"}:${index}`;
+  const rendering = createRangeRendering({registry:editor.visualEffects, events:editor.annotationEvents, nodeKey:props.nodeKey, eventsEnabled:editor.features.annotationRangeEvents, visible:source=>source.owner.kind==='annotation'||searchVisible,
+    sources:()=>{
+      if(!editor.features.standoffPropertyRendering)return [];
+      const count=node()?.inlineContent.length??0;
+      const result:RangeEffectSource[]=annotations().flatMap((annotation,index)=>{
+        const definition=editor.visualEffects.type(annotation.type);
+        const point=annotation.isZeroWidth===true&&!annotation.isDeleted&&Number.isInteger(annotation.start)&&Number(annotation.start)>=0&&Number(annotation.start)<=count;
+        if(!definition||(!point&&(!hasActiveRange(annotation)||annotation.start>=count)))return [];
+        const key=annotationKey(annotation,index);
+        return [{key,owner:{kind:'annotation' as const,key:identities?.keys()[index]??key},start:Number(annotation.start),end:point?Number(annotation.start):Math.min(Number(annotation.end)+1,count),type:annotation.type!,definition,data:annotation,index}];
+      });
+      for(const d of editor.decorations.nodes[props.nodeKey]??[]){
+        if(d.range.coordinate!=='cell'||d.range.start>=count)continue;
+        const base=d.temporary&&!d.temporary.renderers?editor.visualEffects.type(d.type):undefined;
+        result.push({key:d.runtimeKey,owner:{kind:'session',key:d.runtimeKey},start:d.range.start,end:Math.min(d.range.end,count),type:d.type,
+          definition:{type:d.type,renderers:d.temporary?.renderers??base?.renderers??d.renderers,
+            states:d.temporary?.states??base?.states,
+            stateOrder:d.temporary?.stateOrder??(d.temporary?.states?Object.keys(d.temporary.states):base?.stateOrder),
+            events:d.temporary?.events??base?.events},data:d.temporary??{id:d.id,type:d.type},index:result.length});
+      }
+      return result;
+    }});
+  const legacyAnnotations=createMemo(()=>annotations().map(annotation=>editor.features.standoffPropertyRendering&&editor.visualEffects.type(annotation.type)?{...annotation,isDeleted:true}:annotation));
+  // Removal is logical and synchronous; old measured legacy shapes must not
+  // remain visible until the next animation frame.
+  const activeVisualKeys=createMemo(()=>new Set(legacyAnnotations().flatMap((annotation,index)=>hasActiveRange(annotation)?[annotationKey(annotation,index)]:[])));
+  const legacySvgKeys=createMemo(()=>new Set(legacyAnnotations().flatMap((annotation,index)=>hasActiveRange(annotation)&&(editor.effects.get(annotation.type)||standoffStyleSchema(annotation.type)?.svg)?[annotationKey(annotation,index)]:[])));
+  const temporaryLayout=createMemo(()=>JSON.stringify((editor.decorations.nodes[props.nodeKey]??[]).map(d=>editor.features.standoffPropertyRendering
+    ? [d.runtimeKey,d.range.start,d.range.end,d.excludable,d.excludeLabel,d.excludeTitle,d.active]
+    : d)));
+  const logicalRanges=createMemo(()=>{
+    const ranges:AnnotationRange[]=[...rendering.eventRanges()];
+    if(editor.features.annotationRangeEvents)legacyAnnotations().forEach((annotation,index)=>{
+      if(!hasActiveRange(annotation)||annotation.start>=(node()?.inlineContent.length??0)||!editor.effects.get(annotation.type)?.caretOpacity)return;
+      ranges.push({key:annotationKey(annotation,index),index,id:annotation.id,type:annotation.type!,start:annotation.start,end:Math.min(annotation.end,(node()?.inlineContent.length??0)-1)});
+    });
+    return ranges;
+  },undefined,{equals:(a,b)=>JSON.stringify(a)===JSON.stringify(b)});
+  createRenderEffect(()=>{const ranges=logicalRanges();untrack(()=>{if(editor.features.annotationRangeEvents)editor.annotationEvents.setRanges(props.nodeKey,ranges);});});
+
   // Collapsed primary/secondary carets have no SVG selection geometry. Moving
   // them should update opacity only, not schedule an annotation layout pass.
   const selectionGeometry = createMemo(() => {
@@ -345,6 +393,7 @@ export function StandoffEditorView(props: BlockViewProps) {
   let visibilityObserver: IntersectionObserver | undefined;
   let searchVisible = true;
   let frame = 0;
+  let disposed = false;
   const [highlighterShapes, setHighlighterShapes] = createSignal<DecorationShape[]>([]);
   const [foregroundShapes, setForegroundShapes] = createSignal<DecorationShape[]>([]);
   const [regionEffects, setRegionEffects] = createSignal<RegionEffect[]>([]);
@@ -393,9 +442,10 @@ export function StandoffEditorView(props: BlockViewProps) {
 
   const measure = () => {
     frame = 0;
+    if(disposed || !editor.visualEffects.alive())return;
     const scale = coordinates?.scale() ?? 1;
     const foreground: DecorationShape[] = [];
-    const caretRanges: AnnotationRange[] = [];
+    const occupied: UnderlineLane[] = [];
     const highlighters: DecorationShape[] = [];
     const fragmentCache = new Map<string, VisualFragment[]>();
     const fragmentsFor = (start: number, end: number) => {
@@ -404,11 +454,8 @@ export function StandoffEditorView(props: BlockViewProps) {
       if (!fragments) fragmentCache.set(key, fragments = rangeFragments(flow, surface, start, end, scale));
       return fragments;
     };
-    standoffSvgStyles(annotations(), node()?.inlineContent.length ?? 0, type => editor.effects.get(type)).forEach(({ annotation, svg, offset, index }) => {
+    standoffSvgStyles(legacyAnnotations(), node()?.inlineContent.length ?? 0, type => editor.effects.get(type), occupied).forEach(({ annotation, svg, offset, index }) => {
       const key = annotationKey(annotation,index);
-      if (editor.features.annotationRangeEvents && svg.kind === "contribution" && svg.definition.caretOpacity) {
-        caretRanges.push({key,index,id:annotation.id,type:annotation.type!,start:annotation.start,end:Math.min(annotation.end,(node()?.inlineContent.length ?? 0)-1)});
-      }
       const fragments = fragmentsFor(annotation.start, annotation.end);
       let shapes: DecorationShape[] = [];
       switch (svg.kind) {
@@ -416,7 +463,7 @@ export function StandoffEditorView(props: BlockViewProps) {
         case "rainbow": shapes = rainbowShapes(key, fragments, offset); break;
         case "underline": shapes = underlineShapes(key, fragments, svg.colour, offset); break;
         case "highlighter":
-          highlighters.push(...highlightShapes(key, fragments, "yellow").map((shape) => ({ ...shape, opacity: 1, propertyType: annotation.type })));
+          highlighters.push(...highlightShapes(key, fragments, "yellow").map((shape) => ({ ...shape, annotationKey:key, opacity: 1, propertyType: annotation.type })));
           return;
         case "rectangle": shapes = outlineShapes(key, fragments, "red"); break;
         case "spiky": shapes = spikyOutlineShapes(key, fragments, "red"); break;
@@ -430,12 +477,12 @@ export function StandoffEditorView(props: BlockViewProps) {
       if (!hasActiveRange(annotation) || annotation.start >= (node()?.inlineContent.length ?? 0)) return;
       const schema = standoffStyleSchema(annotation.type);
       if (!schema?.regionEffect && !schema?.noiseEffect) return;
-      const key = `${props.nodeKey}:${annotation.id ?? annotation.type ?? "effect"}:${annotationIndex}`;
+      const key = annotationKey(annotation,annotationIndex);
       fragmentsFor(annotation.start, annotation.end).forEach((fragment, fragmentIndex) => {
         const region = schema.regionEffect ? regionAppearance(annotation) : undefined;
-        if (region) regions.push({ ...fragment, ...region, key: `${key}:region:${fragmentIndex}`, type: String(annotation.type) });
+        if (region) regions.push({ ...fragment, ...region, annotationKey:key, key: `${key}:region:${fragmentIndex}`, type: String(annotation.type) });
         const noise = schema.noiseEffect ? noiseAppearance(annotation) : undefined;
-        if (noise) noises.push({ ...fragment, ...noise, key: `${key}:noise:${fragmentIndex}`, type: String(annotation.type) });
+        if (noise) noises.push({ ...fragment, ...noise, annotationKey:key, key: `${key}:noise:${fragmentIndex}`, type: String(annotation.type) });
       });
     });
     const superpositionRegions: SuperpositionAnchor[] = [];
@@ -480,29 +527,32 @@ export function StandoffEditorView(props: BlockViewProps) {
         ),
       );
     });
-    if (editor.features.annotationRangeEvents) editor.annotationEvents.setRanges(props.nodeKey,caretRanges);
-    setHighlighterShapes(highlighters);
-    setForegroundShapes(foreground);
-    setRegionEffects(regions);
-    setNoiseRegions(noises);
-    setSuperpositionAnchors(superpositionRegions);
-    setSelectionShapes(selected);
     const search: DecorationShape[] = [];
     const controls: ReturnType<typeof exclusions> = [];
     const origin = searchVisible && (editor.decorations.nodes[props.nodeKey] ?? []).some(d => d.excludable) ? surface.getBoundingClientRect() : undefined;
     if (origin) measuredOrigin = { x: origin.left,y: origin.top };
     for (const decoration of searchVisible ? editor.decorations.nodes[props.nodeKey] ?? [] : []) {
       const fragments = fragmentsFor(decoration.range.start, decoration.range.end - 1);
-      search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
-      if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
+      if(!editor.features.standoffPropertyRendering){
+        search.push(...highlightShapes(decoration.id, fragments, decoration.fill).map(shape => ({ ...shape, propertyType: decoration.type })));
+        if (decoration.active) search.push(...outlineShapes(`${decoration.id}:active`, fragments, "#8a5100"));
+      }
       const position = decoration.excludable && origin ? exclusionPosition(fragments,{ left: origin.left / scale - surface.scrollLeft, top: origin.top / scale - surface.scrollTop, width: origin.width / scale },{ width: window.innerWidth / scale,height: window.innerHeight / scale }) : undefined;
       if (position) controls.push({ owner: decoration.owner,id: decoration.id,label: decoration.excludeLabel,title: decoration.excludeTitle,...position,active: decoration.active,fragments });
     }
+    rendering.measure(fragmentsFor,(start,end,height)=>allocateUnderlineLane(occupied,start,end,height));
+    setHighlighterShapes(highlighters);
+    setForegroundShapes(foreground);
+    setRegionEffects(regions);
+    setNoiseRegions(noises);
+    setSuperpositionAnchors(superpositionRegions);
+    setSelectionShapes(selected);
     setSearchShapes(search);
     setExclusions(controls);
   };
 
   const scheduleMeasure = () => {
+    if(disposed || !editor.visualEffects.alive())return;
     if (frame) {
       if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
       else clearTimeout(frame);
@@ -563,6 +613,8 @@ export function StandoffEditorView(props: BlockViewProps) {
   createEffect(() => {
     coordinates?.scale();
     editor.effects.track();
+    rendering.layout();
+    rendering.classes();
     node()?.inlineContent.length;
     concealedRanges();
     selectedShowHideRanges();
@@ -573,7 +625,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       JSON.stringify(alternative?.payload.standoffProperties);
     }
     selectionGeometry();
-    JSON.stringify(editor.decorations.nodes[props.nodeKey]);
+    temporaryLayout();
     editor.crossText.segments[props.nodeKey]?.start;
     editor.crossText.segments[props.nodeKey]?.end;
     const preview = editor.overlays.overlays.find(overlay => overlay.ownerKey === props.nodeKey && overlay.viewType === "annotation-panel")?.annotationPreview;
@@ -582,6 +634,8 @@ export function StandoffEditorView(props: BlockViewProps) {
   });
 
   onCleanup(() => {
+    disposed = true;
+    if(!projection.state.nodes[props.nodeKey])editor.decorations.removeOccurrence(props.nodeKey);
     document.removeEventListener("scroll",onCandidateScroll,true);
     if (editor.crossText.segments[props.nodeKey]) queueMicrotask(() => editor.crossText.validate());
     disposeMount?.();
@@ -617,7 +671,7 @@ export function StandoffEditorView(props: BlockViewProps) {
                 !!node()?.ownedRelations[property.active]);
               return (
                 <Show when={!projected() || index() === projected()!.start} fallback={<span
-                  class="reactive-superposition-source-cell"
+                  class={["reactive-superposition-source-cell",classesAt(rendering.classes(),index())].filter(Boolean).join(" ")}
                   data-inline-key={cellKey}
                   data-inline-index={index()}
                   aria-hidden="true"
@@ -627,12 +681,13 @@ export function StandoffEditorView(props: BlockViewProps) {
                     fallback={<span
                       data-inline-key={cellKey}
                       data-inline-index={index()}
+                      class={classesAt(rendering.classes(),index())}
                       style={cellStyleAt(cellStyles(), index())}
                       classList={{ "reactive-standoff-cell--concealed": concealedRanges().some(({ annotation }) => hasActiveRange(annotation) && annotation.start <= index() && annotation.end >= index()) }}
                     >{(cell()?.payload.text as string | undefined) ?? ""}</span>}
                   >
                     <span
-                      class="reactive-inline-image"
+                      class={["reactive-inline-image",classesAt(rendering.classes(),index())].filter(Boolean).join(" ")}
                       data-inline-key={cellKey}
                       data-inline-index={index()}
                       contentEditable={false}
@@ -660,6 +715,7 @@ export function StandoffEditorView(props: BlockViewProps) {
                     sourceIndex={index()}
                     sourceEnd={property().end}
                     propertyId={property().id}
+                    classes={classesAt(rendering.classes(),index())}
                   />}</Show>
                 </Show>
               );
@@ -676,6 +732,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       createRenderEffect(() => {
         const owner = node();
         const styles = cellStyles();
+        const classRuns = rendering.classes();
         const concealed = concealedRanges();
         const projected = superpositions().filter(property => property.active !== "source" && !!owner?.ownedRelations[property.active]);
         const alternatives = new Map(projected.map(property => {
@@ -691,15 +748,16 @@ export function StandoffEditorView(props: BlockViewProps) {
         }));
         cells.update((owner?.inlineContent ?? []).map((key, index): CharacterCellPresentation => {
           const cell = projection.state.nodes[key];
+          const classes=classesAt(classRuns,index);
           const property = projected.find(property => index >= property.start && index <= property.end);
-          if (property) return { key, index, text: String(cell?.payload.text ?? ""),
+          if (property) return { key, index, classes, text: String(cell?.payload.text ?? ""),
             hiddenSource: index !== property.start,
             alternative: index === property.start ? alternatives.get(property.id) : undefined };
-          if (cell?.viewType === "image-cell") return { key, index, text: "", image: {
+          if (cell?.viewType === "image-cell") return { key, index, classes, text: "", image: {
             src: String(cell.payload.src ?? ""), alt: String(cell.payload.alt ?? ""), label: String(cell.payload.alt ?? "Inline image"),
             width: cell.payload.width as number | undefined, height: cell.payload.height as number | undefined,
           } };
-          return { key, index, text: String(cell?.payload.text ?? ""), style: cellStyleAt(styles, index),
+          return { key, index, text: String(cell?.payload.text ?? ""), classes, style: cellStyleAt(styles, index),
             concealed: concealed.some(({ annotation }) => hasActiveRange(annotation) && annotation.start <= index && annotation.end >= index) };
         }));
       });
@@ -720,7 +778,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       data-block-type="standoff-editor-block"
     >
       <div ref={surface} class="reactive-standoff-surface" onPointerMove={hoverCandidate} onPointerLeave={() => setHovered(undefined)}>
-        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes()} blendMode="color-dodge" />
+        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes().filter(shape=>!shape.annotationKey||legacySvgKeys().has(shape.annotationKey))} blendMode="color-dodge" />
         <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />
         <DecorationLayer class="reactive-selection-layer reactive-search-layer" shapes={searchShapes()} />
         <For each={exclusions()}>{control => <button type="button" class="candidate-exclusion" data-candidate-exclusion data-native-context-menu aria-label={control.label ?? "Exclude this match"} title={control.title ?? "Exclude this match"} classList={{ "candidate-exclusion--visible": control.active || hovered() === `${control.owner}:${control.id}` }} style={{ left: `${control.x}px`,top: `${control.y}px` }}
@@ -728,11 +786,13 @@ export function StandoffEditorView(props: BlockViewProps) {
           onClick={event => { event.preventDefault(); event.stopPropagation(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); }}
           onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); editor.decorations.exclude(control.owner,control.id, document.activeElement === event.currentTarget); } }}
         >×</button>}</For>
+        <RangeEffectLayer class="reactive-selection-layer reactive-search-layer" bindings={rendering.overlays().filter(binding=>binding.source().owner.kind==='session')} />
         <CharacterFlow />
         <SuperpositionLayer owner={node} anchors={superpositionAnchors()} />
-        <RegionEffectLayer regions={regionEffects()} />
-        <NoiseLayer regions={noiseRegions()} />
-        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes()} active={key => editor.annotationEvents.isActive(props.nodeKey,key)} />
+        <RangeEffectLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" bindings={rendering.overlays().filter(binding=>binding.source().owner.kind==='annotation')} />
+        <RegionEffectLayer regions={regionEffects().filter(region=>activeVisualKeys().has(region.annotationKey))} />
+        <NoiseLayer regions={noiseRegions().filter(region=>activeVisualKeys().has(region.annotationKey))} />
+        <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={foregroundShapes().filter(shape=>!shape.annotationKey||legacySvgKeys().has(shape.annotationKey))} active={key => editor.annotationEvents.isActive(props.nodeKey,key)} />
       </div>
       <RelationBlocks parentKey={props.nodeKey} />
       <ChildBlocks parentKey={props.nodeKey} />

@@ -44,12 +44,14 @@ function mapStandoffPropertiesForReplacement(
   start: number,
   end: number,
   insertedLength: number,
+  origins: (number | null)[],
 ): unknown[] {
   const removedLength = end - start;
   const delta = insertedLength - removedLength;
 
-  return properties.flatMap((property) => {
-    if (!property || typeof property !== "object") return [clone(property)];
+  return properties.flatMap((property, index) => {
+    const retain = (value: unknown) => { origins.push(index); return [value]; };
+    if (!property || typeof property !== "object") return retain(clone(property));
     const mapped = clone(property as Record<string, unknown>);
     const propertyStart = typeof mapped.start === "number" ? mapped.start : undefined;
     const propertyEnd = typeof mapped.end === "number" ? mapped.end : undefined;
@@ -58,28 +60,28 @@ function mapStandoffPropertiesForReplacement(
       propertyEnd === undefined ||
       propertyEnd < propertyStart
     ) {
-      return [mapped];
+      return retain(mapped);
     }
 
     // Standoff ranges are inclusive Cell ranges, while replacement ranges are
     // half-open boundaries. An insertion at a range edge stays outside that
     // range; an insertion strictly inside it expands the range.
     if (removedLength === 0) {
-      if (insertedLength === 0 || propertyEnd < start) return [mapped];
+      if (insertedLength === 0 || propertyEnd < start) return retain(mapped);
       if (propertyStart >= start) {
         mapped.start = propertyStart + insertedLength;
         mapped.end = propertyEnd + insertedLength;
       } else {
         mapped.end = propertyEnd + insertedLength;
       }
-      return [mapped];
+      return retain(mapped);
     }
 
-    if (propertyEnd < start) return [mapped];
+    if (propertyEnd < start) return retain(mapped);
     if (propertyStart >= end) {
       mapped.start = propertyStart + delta;
       mapped.end = propertyEnd + delta;
-      return [mapped];
+      return retain(mapped);
     }
 
     const survivesBefore = propertyStart < start;
@@ -91,7 +93,7 @@ function mapStandoffPropertiesForReplacement(
     return typeof mapped.start === "number" &&
       typeof mapped.end === "number" &&
       mapped.start <= mapped.end
-      ? [mapped]
+      ? retain(mapped)
       : [];
   });
 }
@@ -132,7 +134,7 @@ export class TreeCommands {
     const next = editAnnotation(properties[index], action, content, () => content.inlineContent.map(key => String(state.contents[state.placements[key].contentKey].payload.text ?? "\uFFFC")).join(""));
     if (JSON.stringify(next) === JSON.stringify(properties[index])) return next;
     const updated = clone(properties); updated[index] = next;
-    this.publish("Edit Standoff annotation", [{ kind: "put-content", record: {
+    this.publish("Edit Standoff annotation", [{ kind: "put-content", annotationOrigins: properties.map((_, i) => i), record: {
       ...clone(content), payload: { ...clone(content.payload), standoffProperties: updated }, revision: content.revision + 1,
     } }], { commandId: "tree.editStandoffProperty", subjects: [this.subject(state, this.placementKey(key, state))] });
     return clone(next);
@@ -146,7 +148,7 @@ export class TreeCommands {
       const state=this.state(),content=state.contents[state.placements[this.placementKey(key,state)].contentKey];
       const properties=clone(content.payload.standoffProperties as Record<string,unknown>[]??[]);
       properties.push({id:crypto.randomUUID(),type,value,metadata:clone(metadata),start,end:start+[...text].length-1});
-      this.setPayloadField(key,'standoffProperties',properties);
+      this.setPayloadField(key,'standoffProperties',properties,undefined,properties.map((_,i)=>i<properties.length-1?i:null));
     });
   }
 
@@ -680,6 +682,7 @@ export class TreeCommands {
     field: string,
     value: unknown,
     label = "Update Block",
+    annotationOrigins?: (number|null)[],
   ): void {
     if (field === "children" || field === "relation") {
       throw new TreeCommandError(`${field} must be changed through structural commands`);
@@ -691,6 +694,7 @@ export class TreeCommands {
     this.publish(label, [
       {
         kind: "put-content",
+        ...(field === "standoffProperties" && annotationOrigins ? { annotationOrigins } : {}),
         record: {
           ...clone(content),
           payload: { ...clone(content.payload), [field]: clone(value) },
@@ -746,6 +750,7 @@ export class TreeCommands {
     nextInline.splice(start, end - start, ...inserted);
     const payload = clone(content.payload);
     const removedSuperpositionRelations: string[] = [];
+    const annotationOrigins: (number | null)[] = [];
     if (Array.isArray(payload.standoffProperties)) {
       const previous = payload.standoffProperties;
       const mapped = mapStandoffPropertiesForReplacement(
@@ -753,6 +758,7 @@ export class TreeCommands {
         start,
         end,
         inserted.length,
+        annotationOrigins,
       );
       const surviving = new Set(mapped.flatMap(property => property && typeof property === "object" &&
         (property as Record<string, unknown>).type === "text/superposition"
@@ -768,7 +774,7 @@ export class TreeCommands {
     if (removedSuperpositionRelations.length) incremental = false;
     const ownedRelations = { ...content.ownedRelations };
     for (const relation of removedSuperpositionRelations) delete ownedRelations[relation];
-    operations.push({ kind: "put-content", record: {
+    operations.push({ kind: "put-content", annotationOrigins, record: {
       ...clone(content),
       payload,
       inlineContent: nextInline,

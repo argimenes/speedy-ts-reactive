@@ -24,6 +24,18 @@ import type {
   RepositoryState,
 } from "./types";
 
+function annotationOrigins(operations: RepositoryOperation[]) {
+  const hints = new Map<ContentKey, readonly (number | null)[]>();
+  const touched=new Set<string>();
+  for (const op of operations) if (op.kind === 'put-content') {
+    const previous=hints.get(op.record.key);
+    if(op.annotationOrigins)hints.set(op.record.key,op.annotationOrigins.map(i=>i===null?null:touched.has(op.record.key)?previous?.[i]??null:i));
+    else hints.delete(op.record.key);
+    touched.add(op.record.key);
+  }
+  return hints;
+}
+
 export class ModelInvariantError extends Error {
   constructor(message: string) {
     super(message);
@@ -55,7 +67,7 @@ function inverseFor(state: RepositoryState, operation: RepositoryOperation): Rep
     case "put-content": {
       const previous = state.contents[operation.record.key];
       return previous
-        ? { kind: "put-content", record: clone(previous) }
+        ? { kind: "put-content", record: clone(previous), ...(operation.annotationOrigins ? { annotationOrigins: (Array.isArray(previous.payload.standoffProperties) ? previous.payload.standoffProperties : []).map((_, i) => { const n = operation.annotationOrigins!.indexOf(i); return n < 0 ? null : n; }) } : {}) }
         : { kind: "remove-content", key: operation.record.key };
     }
     case "remove-content": {
@@ -234,6 +246,7 @@ type CaptureAttempt = {
 type HistorySubscriber = { listener: (event: DeepReadonly<HistoryChanges>) => void; onError: CommitSubscriber["onError"] };
 
 export interface RepositoryChange {
+  annotationOrigins?: ReadonlyMap<ContentKey, readonly (number | null)[]>;
   label: string;
   previousContents: Map<ContentKey, ContentRecord | undefined>;
   /** Present only for a validated, single-owner leaf-text edit. */
@@ -470,7 +483,8 @@ export class CanonicalRepository {
       }
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
-      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, appendedChildrenOwner });
+      const origins = annotationOrigins(operations);
+      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, appendedChildrenOwner, annotationOrigins: origins });
     });
   }
 
@@ -541,7 +555,8 @@ export class CanonicalRepository {
       }
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
-      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph });
+      const origins = annotationOrigins(operations);
+      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph, annotationOrigins: origins });
     });
   }
 

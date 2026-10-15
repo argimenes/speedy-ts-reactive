@@ -1,4 +1,5 @@
-import type { AnnotationRangeEvent } from "../runtime/annotation-range-events";
+import type { PropertyTypeDefinition, VisualRenderer, AnnotationHandler } from "../runtime/visual-effect-registry";
+import type { AnnotationRangeEvent, RangeTransitionEvent } from "../runtime/annotation-range-events";
 import type { JsonObject, CommandDefinition } from "../block-tree/types";
 import type { BindingAction, BindingRegistry } from "../input/bindings";
 import type { FeatureAction, Disposer } from "../runtime/features";
@@ -17,6 +18,8 @@ export interface AnnotationText {
   readonly properties: readonly JsonObject[];
 }
 export interface AnnotationCapabilities {
+  readonly caretEvents?:boolean;
+  temporaryRanges?(owner:string): import("../runtime/session-decorations").TemporaryRangeCollection;
   entities?(owner:string):import('./entities').EntityService;
   replaceAndAnnotate?(range:SearchRange,text:string,type:string,value:string,metadata:JsonObject,revision:number):void;
   focusRange?(range:SearchRange,revision:number):void;
@@ -55,6 +58,10 @@ export interface AnnotationCapabilities {
   };
   bindings: Pick<BindingRegistry, "dispatch" | "label">;
   register: {
+    rangeEvent?(listener:(event:RangeTransitionEvent)=>void):void;
+    propertyType?(definition: PropertyTypeDefinition): void;
+    renderer?(definition: VisualRenderer): void;
+    handler?(name: string, handler: AnnotationHandler): void;
     panel(definition: PanelDefinition): void;
     effect(definition: EffectDefinition): void;
     /** Occurrence-local enter/leave events for opted-in SVG effects; disposed with the feature scope. */

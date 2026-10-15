@@ -97,7 +97,7 @@ export type Destination =
   | { kind: "after"; anchorKey: NodeKey | PlacementKey };
 
 export type RepositoryOperation =
-  | { kind: "put-content"; record: ContentRecord }
+  | { kind: "put-content"; record: ContentRecord; /** Runtime continuity hint: next property index -> previous index; never document data. */ annotationOrigins?: (number | null)[] }
   | { kind: "remove-content"; key: ContentKey }
   | { kind: "put-placement"; record: PlacementRecord }
   | { kind: "remove-placement"; key: PlacementKey }
