@@ -5,7 +5,7 @@ import os from 'node:os';
 import {randomUUID} from 'node:crypto';
 import Database from 'better-sqlite3';
 import {SqliteKnowledgeHost} from './sqlite-knowledge-host';
-import {openSqliteFoundation} from '../dist/server/knowledge-sqlite/client.mjs';
+import {openSqliteFoundation} from '../src/knowledge-sqlite/client.mjs';
 
 const cleanup:Array<()=>any>=[];
 afterEach(async()=>{for(const f of cleanup.splice(0).reverse())await f();vi.restoreAllMocks();});
