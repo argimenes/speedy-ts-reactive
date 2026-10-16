@@ -1,7 +1,7 @@
 # Mutable OS Application Services Foundation
 
 Date: 2026-10-17  
-Status: Implemented and qualified; awaiting acceptance. Phase 3.6, Phase 4 and Electron/Tauri implementation have not begun.
+Status: Accepted and complete. Phase 3.6 architecture planning is separately authorized; Phase 3.6 production implementation, Phase 4 and Electron/Tauri implementation have not begun.
 
 ## Implementation
 
@@ -92,4 +92,4 @@ The filesystem/locking implementation is qualified here on macOS. Windows/Linux 
 
 There is no general job scheduler, journal maintenance UI or automatic garbage collection. Limits produce explicit errors and retain evidence. Future document-writing/publishing jobs need their own reviewed commit/recovery policy; the preparation workflow does not authorize them. Existing clipboard browser limitations, asset maintenance/relocation follow-ups and manual video-playback qualification remain unchanged.
 
-The foundation is ready for acceptance. Stop here before Phase 3.6 or Phase 4.
+The user has accepted the foundation implementation and qualification. No further foundation work is required by this milestone. The separately requested [Phase 3.6 architecture and implementation plan](MUTABLE_PHASE_3_6_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md) requires review before publishing implementation begins; Phase 4 remains outside authorization.
