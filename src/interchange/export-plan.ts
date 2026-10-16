@@ -1,3 +1,6 @@
+import { isSourceType, sourceFormat } from './source-block';
+import { compileSourcePreview } from './source-preview';
+import { convertSource } from './document-import';
 import { validateFragment, safeUrl, type MutableFragment, type FragmentBlock, type Property } from './fragment';
 import { diagnostic, type InterchangeDiagnostic } from './diagnostics';
 import type { ExportFormat } from './formats';
@@ -74,7 +77,13 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   if(seen.has(b.localId)){warn('repeated-block','Repeated or cyclic Block bodies are exported once.');return format==='html'?`<a href="#${escapeHtml(b.localId)}">Repeated Block</a>`:'[Repeated Block]';}seen.add(b.localId);
   const meta=b.data.metadata as any??{},children=()=>b.children.map(visit).join(format==='html'?'':format==='text'?'\n':'\n\n');
   let result='';
-  if(b.type==='standoff-editor-block'||b.type==='plain-text-block'){
+  if(isSourceType(b.type)){
+   const kind=sourceFormat(b.type,b.data),source=String(b.data.text);
+   if(format==='html'){const preview=compileSourcePreview(source,kind);result=preview.body;for(const detail of preview.warnings)warn('source-preview-policy',detail);if(preview.links.length)warn('source-links','Source links export as inert text; navigation targets are omitted.');}
+   else {const converted=convertSource(source,kind),projected=exportFragment(converted.fragment,format);result=projected.text;diagnostics.push(...converted.diagnostics,...projected.diagnostics);}
+   if(b.blockProperties.length||b.data.standoffProperties||b.data.inactiveSourceAnnotations)warn('source-annotations','Inactive source annotations and Block presentation are omitted from semantic export.');
+   result+=(format==='html'?'':'\n\n')+children();
+  }else if(b.type==='standoff-editor-block'||b.type==='plain-text-block'){
    const body=inline(b),h=Number(meta.htmlHeadingLevel)||Number(b.blockProperties.find(p=>/block\/font\/size\/h[1-4]$/.test(p.type))?.type.at(-1))||Number(b.blockProperties.find(p=>p.type==='block/font/size')?.attributes.value?.toString().replace('h',''));
    const heading=h>=1&&h<=6?Math.floor(h):0;
    if(meta.htmlPreformatted){

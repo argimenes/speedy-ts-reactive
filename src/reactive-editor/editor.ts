@@ -1,3 +1,4 @@
+import { sourceTextTypes } from '../knowledge/policy';
 import { ManagedAssets, type AssetContext } from '../runtime/managed-assets';
 import { DocumentInterchange } from '../runtime/document-interchange';
 import { installInterchangeStatus } from '../rendering/interchange-status';
@@ -164,7 +165,7 @@ export class ReactiveEditor {
     this.commands = new TreeCommands(this.repository, (key) => this.occurrences.resolve(key));
     this.textRanges = new TextRanges(key => {
       const node = this.node(key), content = node && this.repository.readState().contents[node.contentKey];
-      if (!node || !content || !["standoff-editor-block", "plain-text-block"].includes(node.viewType)) return;
+      if (!node || !content || !["standoff-editor-block", "plain-text-block", ...sourceTextTypes].includes(node.viewType)) return;
       const cell = node.viewType === "standoff-editor-block";
       return { nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey,
         version: cell ? content.inlineRevision : content.revision,

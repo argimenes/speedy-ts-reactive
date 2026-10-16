@@ -1,3 +1,5 @@
+import { isSourceType } from '../interchange/source-block';
+import { Show } from 'solid-js';
 import { onCleanup, onMount } from "solid-js";
 import type { BlockViewProps } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
@@ -30,6 +32,7 @@ export function UnknownBlockView(props: BlockViewProps) {
       data-block-type={(node()?.payload.type as string | undefined) ?? node()?.viewType}
     >
       <div class="reactive-unknown-block__label">{node()?.viewType}</div>
+      <Show when={isSourceType(node()?.viewType??'')}><pre style={{"white-space":"pre-wrap"}}>{String(node()?.payload.text??'')}</pre></Show>
       <RelationBlocks parentKey={props.nodeKey} />
       <ChildBlocks parentKey={props.nodeKey} />
     </div>

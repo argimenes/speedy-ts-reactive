@@ -1,3 +1,4 @@
+import { sourcePayload, sourceType } from '../interchange/source-block';
 // @vitest-environment jsdom
 import {afterEach,expect,it} from 'vitest';
 import Database from 'better-sqlite3';
@@ -101,3 +102,8 @@ it('SQL traversal applies the existing 10,000-visit budget and reports incomplet
  const bytes=new TextEncoder().encode(JSON.stringify(wire)),x=await indexed(bytes),sql=await sqlSavedFacts(x.db,x.source),oracle=await lightweightFacts(bytes);
  expect(decodeFacts(sql.wire)).toEqual(normalized(oracle.facts));expect(sql.facts.blocks).toHaveLength(10000);expect(sql.facts.diagnostics).toContain('Block budget reached');
 },30000);
+
+it('source Blocks have literal UTF16 text and no annotation assertions in full, lightweight and SQL readers',async()=>{
+ const h=host([doc('doc',['markdown','html'].map((format:any)=>({id:format,type:sourceType(format),...sourcePayload(format,'<b>Rome</b>\r\n**literal**\n😀'),standoffProperties:[{id:'inactive-'+format,type:'codex/entity-reference',value:'never-infer',start:999,end:1000}]})))]);
+ const r=await parity(h.capture());expect(r.facts.mentions).toEqual([]);expect(r.facts.blocks.find(b=>b.id==='html')?.text).toEqual({coordinate:'utf16',runs:[{text:'<b>Rome</b>\r\n**literal**\n😀'}]});
+});

@@ -1,12 +1,12 @@
 /** Read-only SQL Facts. No RepositoryState, Cells, admission or serialized Resource reconstruction. */
 import {decodeAuthoredValue,encodeAuthoredValue} from '../history/preplan-spike/wire';
 import {annotationCollector} from '../knowledge/facts-annotations';
-import {normalizePolicy,opaqueType,policyKey,type ExtractionPolicy} from '../knowledge/policy';
+import {normalizePolicy,opaqueType,policyKey,nativeTextTypes,sourceTextTypes,type ExtractionPolicy} from '../knowledge/policy';
 import {encodeFacts} from '../knowledge/transport';
 import type {Facts} from '../knowledge/facts';
 const unpack=(s:string)=>decodeAuthoredValue(JSON.parse(s)) as any;
 const rawKey=(v:unknown)=>JSON.stringify(encodeAuthoredValue(v));
-const PROFILE='mutable-saved-sql-v1:';
+const PROFILE='mutable-saved-sql-v2:';
 export interface SqlFactsRequest {resourceId:string;path:string;byteHash:string;policy:ExtractionPolicy}
 /** Copy only one consistent bounded SQL snapshot; async semantic work starts after the read transaction. */
 function snapshot(db:any,request:SqlFactsRequest,check:()=>void){
@@ -28,7 +28,7 @@ function snapshot(db:any,request:SqlFactsRequest,check:()=>void){
    if(seen.has(edge.targetBlockGuid))continue;seen.add(edge.targetBlockGuid);
    const b=block.get(resource.guid,edge.targetBlockGuid);if(!b)throw Error('Saved SQL local Block unavailable');
    const attrs=decode(b.attributes),payload=attrs.payload;
-   const omitted=opaqueType(b.typename,request.policy)||b.coordinate!=='cell'&&!['plain-text-block','text-block'].includes(b.typename)&&typeof payload.text==='string'&&!!payload.text;
+   const omitted=opaqueType(b.typename,request.policy)||b.coordinate!=='cell'&&!nativeTextTypes.includes(b.typename)&&typeof payload.text==='string'&&!!payload.text;
    const item:any={b,payload,ordinal,omitted};visits.push(item);if(omitted)continue;
    if(b.coordinate){item.runs=runs.all(b.guid).map((r:any)=>{bytes+=r.text.length*2+(r.boundaries?.length??0);if(bytes>64*1024*1024)throw Error('Saved SQL snapshot budget exceeded');return {text:r.text,...r.boundaries!==null?{boundaries:JSON.parse(r.boundaries)}:{}};});if(!item.runs.length)throw Error('Saved SQL text runs unavailable');}
    const links=new Map<string,any>();for(const s of segments.all(b.guid)){
@@ -57,7 +57,7 @@ export async function sqlSavedFacts(db:any,input:SqlFactsRequest,check:()=>void=
   // Native Cell boundaries are retained in runs; image gaps get the existing readable placeholder.
   const cells=new Map<number,string>();if(b.coordinate==='cell')for(const run of v.runs){for(let i=0;i<run.text.length;){check();const start=run.boundaries[i];let j=i+1;while(j<run.boundaries.length&&run.boundaries[j]===-1)j++;if(start<0||j>=run.boundaries.length)throw Error('Saved SQL Cell boundaries unavailable');cells.set(start,run.text.slice(i,j));i=j;}}
   const snippet=(from:number,to:number)=>{let text='';for(let i=from;i<to;i++)text+=cells.get(i)??'[inline object]';return text;};
-  for(const raw of Array.isArray(payload.standoffProperties)?payload.standoffProperties:[]){
+  for(const raw of !sourceTextTypes.includes(b.typename)&&Array.isArray(payload.standoffProperties)?payload.standoffProperties:[]){
    await annotations.add({raw,blockId:b.guid,standoff:b.coordinate==='cell',length:b.cellCount??0,snippet,resolve:raw=>{const r=v.links.get(rawKey(raw));if(!r)throw Error('Saved annotation evidence unavailable');return r;}});
   }
  }

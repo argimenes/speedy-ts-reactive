@@ -536,3 +536,7 @@ Following review, Stage A alone was authorized with the Section 14 defaults. Nat
 Stage A loss reporting uses a concise confirmation covering affected annotations, unsupported semantics and potential losses. It does not implement the richer side-by-side preview reserved for Stage C.
 
 Implementation and executed qualification are tracked in [the Stage A report](MUTABLE_PHASE_3_5_STAGE_A_QUALIFICATION.md). The documentation-only status in Section 15 describes the original planning deliverable, not the subsequent authorized Stage A implementation. No authorization to implement Stage B or later is inferred from Stage A completion.
+
+## Stage B implementation status — 2026-10-16
+
+Stage B was explicitly authorized after Stage A acceptance. Implementation and executed qualification are recorded in [the Stage B report](MUTABLE_PHASE_3_5_STAGE_B_QUALIFICATION.md). The implementation uses Source/Preview modes without Split, preserves foreign source annotations in an inactive data envelope during interchange, and leaves source images as inert placeholders without introducing resource mappings. Preview and semantic export share the safe source projection. Stage C and later implementation still require separate authorization.

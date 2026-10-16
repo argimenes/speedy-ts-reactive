@@ -10,7 +10,7 @@ export const attribute = (node: HtmlNode, name: string) => node.attrs?.find(a =>
 export const activeTags = new Set(['script', 'style', 'iframe', 'object', 'embed', 'template', 'noscript', 'svg', 'math', 'form', 'input', 'textarea', 'select', 'button', 'audio', 'video', 'canvas']);
 
 /** Bound parsing and traversal; no DOM construction, URL resolution or fetching. */
-export function parseClipboardHtml(html: string): { tree: HtmlNode; text: string; carrier?: string } {
+export function parseClipboardHtml(html: string, readCarrier = true): { tree: HtmlNode; text: string; carrier?: string } {
   if (new TextEncoder().encode(html).length > LIMITS.bytes) throw Error('Clipboard HTML exceeds the size limit.');
   let tags = 0, depth = 0;
   for (const match of html.matchAll(/<\s*(\/?)([a-z][\w:-]*)\b[^>]*>/gi)) {
@@ -26,7 +26,7 @@ export function parseClipboardHtml(html: string): { tree: HtmlNode; text: string
     if (activeTags.has(node.tagName ?? '') || ['head', 'title'].includes(node.tagName ?? '')) return '';
     if (node.nodeName === '#text') return node.value ?? '';
     const marker = attribute(node, 'data-mutable-fragment');
-    if (marker) { if (carrier) throw Error('Ambiguous Mutable HTML carrier.'); carrier = marker; }
+    if (marker && readCarrier) { if (carrier) throw Error('Ambiguous Mutable HTML carrier.'); carrier = marker; }
     if (node.tagName === 'br') return '\n';
     const value = (node.childNodes ?? []).map(n => walk(n, depth + 1)).join('');
     return value + (['p', 'li', 'h1', 'h2', 'h3', 'tr'].includes(node.tagName ?? '') ? '\n' : '');

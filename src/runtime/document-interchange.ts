@@ -1,3 +1,5 @@
+import { sourceFormat } from '../interchange/source-block';
+import { diagnostic } from '../interchange/diagnostics';
 import { createSignal } from 'solid-js';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { Destination } from '../block-tree/types';
@@ -31,7 +33,7 @@ export class DocumentInterchange {
  private busySignal=createSignal(false); readonly busy=this.busySignal[0];
  private questionSignal=createSignal<Question>(); readonly question=this.questionSignal[0];
  private answer?: (value:string[]|undefined)=>void;
- private pickerSignal=createSignal<{title:string;run:(files:SuppliedFile[],format?:ImportFormat)=>void}>();readonly picker=this.pickerSignal[0];
+ private pickerSignal=createSignal<{title:string;embed?:boolean;run:(files:SuppliedFile[],format?:ImportFormat)=>void}>();readonly picker=this.pickerSignal[0];
  constructor(private editor:ReactiveEditor){}
  respond(value:string[]|undefined){if(value===undefined)this.controller?.abort();this.answer?.(value);}
  closePicker(){this.pickerSignal[1](undefined);this.pickerView=undefined;}
@@ -76,6 +78,37 @@ export class DocumentInterchange {
  }
  pickNew(host:ImportHost){if(!this.editor.features.documentInterchange)return;this.pickerView=undefined;this.pickerSignal[1]({title:'Import external files as new Ink documents',run:(files,format)=>{this.closePicker();void this.importNew(files,host,format);}});}
  pickInsert(key:string){try{const t=this.selection(key);this.pickerView=t.viewId;this.pickerSignal[1]({title:'Insert external files at the captured selection',run:(files,format)=>{this.closePicker();void this.insertFiles(files,t,format);}});}catch(e){this.status[1](String(e));}}
+ pickEmbed(key:string){
+  if(!this.editor.features.documentInterchange)return;
+  try{const node=this.editor.node(key);if(!node||this.editor.mounts.get(key)?.composing)throw Error('Finish editing the source before embedding.');
+   const t=this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);t.viewId=node.viewId;
+   t.destination=node.viewType==='document-block'?{kind:'at',parentKey:node.placementKey,index:node.children.length}:{kind:'after',anchorKey:node.placementKey};
+   this.pickerView=t.viewId;this.pickerSignal[1]({title:'Embed HTML or Markdown source as a Block',embed:true,run:(files,format)=>{this.closePicker();void this.task(async signal=>{
+    this.check(t);const fragments=await runInterchange({kind:'embed',files,format},signal);this.check(t);
+    await this.commit(joinFragments(fragments),[],t,signal,'import');this.status[1]('Embedded an independent source copy. Save the Ink document to retain it. The external file is unchanged.');
+   });}});
+  }catch(e){this.status[1](String(e));}
+ }
+ async convertSourceBlock(key:string){return this.task(async signal=>{
+  const node=this.editor.node(key),mount=this.editor.mounts.get(key);if(!node||mount?.composing)throw Error('Finish source editing before conversion.');
+  const state=this.editor.repository.readState(),content=state.contents[node.contentKey],placement=state.placements[node.placementKey];
+  const format=sourceFormat(content.viewType,content.payload);
+  if(placement.kind!=='owned'||placement.externalReference||placement.resolvedReference||Object.values(state.placements).filter(p=>p.contentKey===content.key).length!==1)throw Error('Shared or referenced source Blocks must be detached before conversion.');
+  if(content.children.length||Object.keys(content.ownedRelations).length||Object.keys(content.opaqueRelations).length)throw Error('Move child and related Blocks outside the source Block before conversion.');
+  const parent=Object.values(state.contents).find(c=>c.children.includes(placement.key));if(!parent)throw Error('Only a whole source Block in an ordinary child slot can be converted.');
+  const t=this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);t.viewId=node.viewId;
+  const owner=resourceOwner(state,node.contentKey);if(owner)t.scope.resourceId=resourceSource(owner)?.resourceId;
+  this.check(t);const converted=await runInterchange({kind:'convert',source:String(content.payload.text),format},signal);this.check(t);
+  const losses=[diagnostic('source-conversion','The source Block becomes native Ink. Source syntax, source metadata and any Block or inactive annotations are replaced; Undo restores the original Block exactly.'),...converted.diagnostics];
+  await this.confirm(losses);this.check(t);const admitted=await this.admit(converted.fragment,[],t,signal);
+  const native=await runInterchange({kind:'materialize',fragment:admitted.fragment,scope:t.scope,assets:admitted.admitted},signal);this.check(t);
+  let roots:string[]=[];
+  this.editor.commands.transaction('Convert source Block to Mutable Ink',()=>{
+   roots=this.editor.commands.insertFragment(native,{kind:'before',anchorKey:placement.key});this.editor.commands.remove(placement.key);
+  },{commandId:'interchange.convert-source-block',subjects:[]});
+  this.committed=true;this.status[1]('Converted the whole source Block. Undo restores the original source, identity and metadata.');
+  queueMicrotask(()=>{if(!this.alive)return;const next=this.editor.nodeForPlacementInView(roots[0],node.viewId);if(next)this.editor.focus.request(next.key,{reason:'context-menu',caret:'start'});});
+ });}
  async importNew(files:SuppliedFile[],host:ImportHost,format?:ImportFormat){return this.task(async signal=>{
   if(!this.editor.features.nativeDocumentPersistence)throw Error('Native document persistence is required for new Ink imports.');checkFiles(files);
   const ticket=this.base(host.current),outcomes:string[]=[];

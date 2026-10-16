@@ -22,6 +22,8 @@ export interface MountHandle {
   inlineBoundary?(index: number): { node: Node; offset: number };
   inlinePointAt?(x: number, y: number): number;
   captureText?(): string;
+  /** Native textarea normalization back to authoritative source; called only on input. */
+  authoredNativeText?(value: string): string;
   composing?: boolean;
 }
 

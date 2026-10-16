@@ -60,6 +60,8 @@ describe("Block context menu", () => {
     const { editor, element, host, key } = mount([{ id: "plain", type: "plain-text-block", text: "native" }, text("first")]);
     const native = new MouseEvent("contextmenu", { button: 2, bubbles: true, cancelable: true }); host.querySelector("textarea")!.dispatchEvent(native); expect(native.defaultPrevented).toBe(false);
     editor.focus.request(key("first")); element("first").dispatchEvent(new KeyboardEvent("keydown", { key: "F10", shiftKey: true, bubbles: true, cancelable: true })); await tick();
+    // Interchange actions can precede Add Block; navigate to the intended submenu.
+    for (let i=0;i<20&&document.activeElement!==menuButton("Add Block");i++)document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", {key:"ArrowDown",bubbles:true,cancelable:true}));
     expect(document.activeElement).toBe(menuButton("Add Block"));
     document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })); await tick();
     menuButton("Image URL…").click(); await tick(); const input = document.querySelector<HTMLInputElement>(".reactive-block-menu input")!;

@@ -4,7 +4,7 @@ import {canonicalSearchSource} from '../runtime/canonical-search-source';
 import type {SearchSource} from '../runtime/search-matching';
 import type {RepositoryState} from '../block-tree/types';
 import type {Facts,BlockFact} from './facts';
-import {normalizePolicy,opaqueType,type ExtractionPolicy} from './policy';
+import {normalizePolicy,opaqueType,nativeTextTypes,sourceTextTypes,type ExtractionPolicy} from './policy';
 /** Inline text adapter; never used by native admission/save. */
 export interface InlineFacts {
  length:number; text:Omit<SearchSource,'contentKey'|'version'>;
@@ -38,18 +38,18 @@ export async function collectFacts(state:RepositoryState,resourceId:string,signa
   if(p.kind==='reference'){warn('External resource body not expanded');continue;} // inspect canonical owned content once, never occurrence multiplicity
   const c=state.contents[p.contentKey];if(!c||seen.has(c.key))continue;seen.add(c.key);
   const blockId=String(c.payload.id),block:BlockFact={id:blockId,type:c.viewType,ordinal:visits,cellCount:0};facts.blocks.push(block);
-  if(opaqueType(c.viewType,extraction)||c.inlineKind!=='standoff'&&!['plain-text-block','text-block'].includes(c.viewType)&&typeof c.payload.text==='string'&&!!c.payload.text){warn(`Unsupported hosted content (${c.viewType}) omitted.`);continue;}
+  if(opaqueType(c.viewType,extraction)||c.inlineKind!=='standoff'&&!nativeTextTypes.includes(c.viewType)&&typeof c.payload.text==='string'&&!!c.payload.text){warn(`Unsupported hosted content (${c.viewType}) omitted.`);continue;}
   block.cellCount=c.inlineContent.length;
   let inline:InlineFacts|undefined;const textStart=performance.now();
   if(c.inlineKind==='standoff') {
    if(inlineReader){inline=await inlineReader(blockId,signal);block.text=inline.text;block.cellCount=inline.length;}
    else {const {contentKey:_,version:__,...text}=await canonicalSearchSource(state,c.key,0,signal,2000000);block.text=text;}
   }
-  else if(c.viewType==='plain-text-block'||c.viewType==='text-block') {
+  else if(nativeTextTypes.includes(c.viewType)) {
    const {contentKey:_,version:__,...text}=await canonicalSearchSource(state,c.key,0,signal,2000000);block.text=text;
   }
   policy?.check?.();if(policy?.timings)policy.timings.textMs+=performance.now()-textStart;const annotationStart=performance.now();
-  for(const raw of Array.isArray(c.payload.standoffProperties)?c.payload.standoffProperties:[]) {
+  for(const raw of !sourceTextTypes.includes(c.viewType)&&Array.isArray(c.payload.standoffProperties)?c.payload.standoffProperties:[]) {
    await annotations.add({raw,blockId,standoff:c.inlineKind==='standoff',length:inline?.length??c.inlineContent.length,
     resolve:raw=>{const owner=linkedDefinitionOwner(state,raw,c.key);return {property:resolveLinkedProperty(state,raw,c.key),owner:owner?{root:owner.key===root.key,blockId:String(owner.payload.id)}:undefined};},
     snippet:(from,to,context)=>inline?inline.snippet(from,to):c.inlineContent.slice(from,to).map(key=>{

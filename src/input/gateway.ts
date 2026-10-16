@@ -650,7 +650,8 @@ export class InputGateway {
 
   private recordNativeText(nodeKey: NodeKey, target: HTMLTextAreaElement): void {
     this.mounts.rememberSelection(nodeKey, textareaSelection(target));
-    this.commands.setPayloadField(nodeKey, "text", target.value, "Edit PlainText");
+    const source = this.mounts.get(nodeKey)?.authoredNativeText;
+    this.commands.setPayloadField(nodeKey, "text", source ? source(target.value) : target.value, source ? "Edit Source" : "Edit PlainText");
   }
 
   private reconcileStandoffText(

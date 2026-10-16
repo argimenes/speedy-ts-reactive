@@ -1,3 +1,5 @@
+import { SourceBlockView } from "./source-block-view";
+import { sourceTypes } from "../interchange/source-block";
 import { WorkspaceObjectBankView } from "./workspace-object-bank";
 import { OpaqueClipboardView } from './opaque-clipboard-view';
 import type { ReactiveEditor } from "../reactive-editor/editor";
@@ -38,6 +40,7 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
   registerTextSuperpositionCommands(editor);
   editor.registry.register({ type: "workspace-object-bank-block", view: WorkspaceObjectBankView, capabilities: ["container"] });
   editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: documentView, capabilities: ["container", "selectable"] });
+  if (editor.features.documentInterchange) many(editor, [...sourceTypes], SourceBlockView, ["native-text", "container", "selectable"]);
   editor.registry.register({ type: "plain-text-block", view: PlainTextBlockView, capabilities: ["native-text", "container", "selectable"] });
   editor.registry.register({ type: "standoff-editor-block", view: StandoffEditorView, capabilities: ["inline-editor", "container", "selectable", "annotations"] });
   editor.registry.register({ type: "checkbox-block", view: CheckboxView, capabilities: ["control", "container", "selectable"] });

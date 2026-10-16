@@ -10,11 +10,13 @@ import { encodeAuthoredValue } from '../history/preplan-spike/wire';
 import { linkedDefinitionOwner, resolveLinkedProperty } from '../block-tree/linked-annotations';
 import { externalDefinitionLink } from '../block-tree/external-reference';
 import { canonicalSearchSource } from '../runtime/canonical-search-source';
-import { normalizePolicy, opaqueType, type ExtractionPolicy } from '../knowledge/policy';
+import { normalizePolicy, opaqueType, nativeTextTypes, sourceTextTypes, type ExtractionPolicy } from '../knowledge/policy';
 import type { RepositoryState, ContentRecord } from '../block-tree/types';
 
 const namespace='38e2b9ce-d3e7-5a14-b67d-b265437bcad8';
-export const PROFILE='mutable-saved-sql-v1';
+export const PROFILE='mutable-saved-sql-v2';
+// Extraction changes invalidate evidence, not the stable identity of authored SQL objects.
+const identityProfile='mutable-saved-sql-v1';
 const digest=(v:string|Uint8Array)=>createHash('sha256').update(v).digest('hex');
 const json=(v:unknown)=>JSON.stringify(encodeAuthoredValue(v));
 const id=(v:unknown):v is string=>typeof v==='string'&&!!v.trim();
@@ -58,7 +60,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
   const blocks=Object.values(state.contents).filter(c=>!cell(c)),ids=new Set<string>();
   requireValue(blocks.length<=100000,'Block budget exceeded');
   for(const c of blocks){requireValue(id(c.payload.id)&&!ids.has(c.payload.id),'missing/duplicate persistent Block identity');ids.add(c.payload.id);}
-  const key=(...parts:unknown[])=>uuid(JSON.stringify([PROFILE,vaultGuid,resourceId,...parts]),namespace);
+  const key=(...parts:unknown[])=>uuid(JSON.stringify([identityProfile,vaultGuid,resourceId,...parts]),namespace);
   const diagnostics:string[]=[],warn=(s:string)=>{if(!diagnostics.includes(s))diagnostics.push(s);};
   const suppressed=new Set<string>();
   const suppress=(ck:string)=>{if(suppressed.has(ck))return;suppressed.add(ck);const c=state.contents[ck];for(const pk of [...c.children,...Object.values(c.ownedRelations)]){const p=state.placements[pk];if(p.kind==='owned'&&!p.externalReference&&!p.resolvedReference)suppress(p.contentKey);}};
@@ -70,7 +72,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
   for(const c of blocks) {
     check();
     const blockId=String(c.payload.id),p=c.payload as any;
-    const coordinate=c.inlineKind==='standoff'?'cell':['plain-text-block','text-block'].includes(c.viewType)?'utf16':null;
+    const coordinate=c.inlineKind==='standoff'?'cell':nativeTextTypes.includes(c.viewType)?'utf16':null;
     const units=c.inlineContent.map(pk=>state.contents[state.placements[pk].contentKey]);
     const text=coordinate==='cell'?units.map(c=>c.viewType==='text-cell'?c.payload.text:'\ufffc').join(''):coordinate==='utf16'?String(p.text??''):null;
     const attrs={payload:p,opaqueRelations:c.opaqueRelations,wireChildren:c.wireChildren,wireRelation:c.wireRelation,
@@ -112,7 +114,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
           value:scalar(raw.value),valueJson:json(raw.value),isDeleted:raw.isDeleted?1:0,attributes:json(raw)});
       }
     }
-    if(p.standoffProperties!==undefined){requireValue(Array.isArray(p.standoffProperties),'invalid StandoffProperties');p.standoffProperties.forEach((raw:any,ordinal:number)=>{
+    if(!sourceTextTypes.includes(c.viewType)&&p.standoffProperties!==undefined){requireValue(Array.isArray(p.standoffProperties),'invalid StandoffProperties');p.standoffProperties.forEach((raw:any,ordinal:number)=>{
       requireValue(raw&&typeof raw==='object'&&!Array.isArray(raw),'invalid StandoffProperty');
       const a=resolveLinkedProperty(state,raw,c.key),owner=linkedDefinitionOwner(state,raw,c.key),external=externalDefinitionLink(raw);
       const definition=owner?.payload.linkedAnnotations?.[raw.annotationId];

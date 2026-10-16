@@ -652,7 +652,7 @@ export class TreeCommands {
     if (field === "children" || field === "relation") {
       throw new TreeCommandError(`${field} must be changed through structural commands`);
     }
-    const state = this.state();
+    const state = this.pending?.draft ?? this.repository.readState();
     const placement = state.placements[this.placementKey(key, state)];
     const content = state.contents[placement.contentKey];
     if (Object.is(content.payload[field], value)) return;

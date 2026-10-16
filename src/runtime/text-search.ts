@@ -1,3 +1,4 @@
+import { sourceTextTypes } from '../knowledge/policy';
 import { canonicalSearchSource } from "./canonical-search-source";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { BlockNode } from "../block-tree/types";
@@ -38,7 +39,7 @@ export function scopeNodes(editor: ReactiveEditor, scope: SearchScope) {
     if (key !== scope.rootKey && node.viewType === "document-block") return;
     if (scope.region === "main" && key !== scope.rootKey && side.test(node.viewType)) return;
     const route = [...path, key], names = [...labels, nodeLabel(node)], next = new Set(seen).add(node.contentKey);
-    if (["standoff-editor-block", "text-block", "plain-text-block"].includes(node.viewType)) found.push({ node, path: route, breadcrumb: names.join(" / ") });
+    if (["standoff-editor-block", "text-block", "plain-text-block", ...sourceTextTypes].includes(node.viewType)) found.push({ node, path: route, breadcrumb: names.join(" / ") });
     else if (typeof node.payload.text === "string" && node.payload.text) unsupported.add(node.viewType);
     for (const child of node.children) visit(child, route, names, next);
     for (const [, child] of Object.entries(node.ownedRelations).sort(([a], [b]) => a.localeCompare(b))) visit(child, route, names, next);

@@ -15,7 +15,7 @@ const element = (tagName: string, childNodes: HtmlNode[] = [], attrs: Record<str
  * Reuse HTML's semantic policy, then the ordinary fragment materializer/insertion path.
  * Raw HTML is literal text; nothing here resolves URLs, fetches assets or executes code.
  */
-export function importMarkdown(source: string) {
+export function markdownTree(source: string) {
   // Bound parser input as well as its output. Runtime Markdown preparation runs in
   // the existing cancellable worker, even for small input.
   if ([...source].length > LIMITS.cells || new TextEncoder().encode(source).length > LIMITS.bytes) throw Error('Markdown exceeds the import size limit.');
@@ -70,7 +70,11 @@ export function importMarkdown(source: string) {
         return [text(source.slice(node.position?.start.offset ?? 0, node.position?.end.offset ?? 0))];
     }
   }
-  const imported = importSemanticHtml({ nodeName: '#document-fragment', childNodes: convert(tree) });
+  return { tree: { nodeName: '#document-fragment', childNodes: convert(tree) } as HtmlNode, codeMetadata, warnings };
+}
+export function importMarkdown(source: string) {
+  const {tree,codeMetadata,warnings}=markdownTree(source);
+  const imported = importSemanticHtml(tree);
   let codeIndex = 0;
   for (const block of imported.fragment?.blocks ?? []) {
     const metadata = block.data.metadata as Record<string, unknown> | undefined;

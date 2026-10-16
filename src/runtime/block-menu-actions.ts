@@ -1,3 +1,4 @@
+import { sourcePayload, sourceType } from '../interchange/source-block';
 import type { BlockNode, ExistingBlockDto, NodeKey } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { unwrap as unwrapStore } from "solid-js/store";
@@ -105,9 +106,11 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   }
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if (doc) {
+    if(editor.features.documentInterchange)items.push({label:"Embed source file…",run:()=>editor.interchange.pickEmbed(key)});
     items.push(command("sticky.createFloating", "New Sticky Note"));
     items.push({ label: "Add Block", children: [
       { label: "Text", run: () => add(text()) }, { label: "Code", run: () => add({ ...dto("code-mirror-block"), text: "" }) },
+      ...(editor.features.documentInterchange ? (['markdown','html'] as const).map(format=>({label:format==='markdown'?'Markdown source':'HTML source',run:()=>add({...dto(sourceType(format)),...sourcePayload(format)})})) : []),
       ...editor.featureActions.list("add-block-menu").map(item => command(item.command, item.label)),
       { label: "Insert Sticky Note Here", run: () => add(stickyNoteDto()) },
       mediaInput("Image URL…", "image-block"), mediaInput("YouTube video URL…", "youtube-video-block"),

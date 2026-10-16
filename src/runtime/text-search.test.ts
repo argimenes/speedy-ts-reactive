@@ -132,3 +132,9 @@ describe("scoped text search", () => {
     expect((await search.searchText({ query: "Right", scope })).matches).toHaveLength(1);
   });
 });
+it('searches authored source once in UTF16 without activating source annotations or interpreting preview syntax',async()=>{
+ const editor=new ReactiveEditor({id:'doc',type:'document-block',children:[{id:'source',type:'mutable/html-source-block',text:'<b>Rome</b>\r\nRome',sourceFormat:{version:1,format:'html',profile:'mutable-html-source-v1'}}]}),view=editor.createView(),node=Object.values(view.state.nodes).find(n=>n.payload.id==='source')!;
+ const search=new TextSearch(editor,async(s,q,o)=>matchSources(s,q,o));cleanup.push(()=>{search.dispose();editor.dispose();});
+ const results=await search.searchText({query:'Rome',scope:resolveSearchScope(editor,node.key,'document')});expect(results.matches).toHaveLength(2);expect(results.matches.map(m=>m.ranges[0].start)).toEqual([3,13]);expect(results.matches.every(m=>!m.capabilities.annotate&&!m.capabilities.highlight&&m.ranges[0].coordinate==='utf16')).toBe(true);
+ const markup=await search.searchText({query:'<b>',scope:resolveSearchScope(editor,node.key,'document')});expect(markup.matches).toHaveLength(1);expect(editor.repository.state.revision).toBe(0);
+});

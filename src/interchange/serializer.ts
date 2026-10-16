@@ -1,3 +1,4 @@
+import { isSourceType } from './source-block';
 import { managedAsset } from './managed-asset';
 import { clone } from '../block-tree/clone';
 import { linkedDefinitionOwner, linkedRegistry } from '../block-tree/linked-annotations';
@@ -62,7 +63,8 @@ export function serializeSelection(state: RepositoryState, slices: Slice[], scop
     }
     const b: FragmentBlock = { localId, type: c.viewType, data: omit(c.payload, ['id', 'type', 'text', 'standoffProperties', 'blockProperties', 'linkedAnnotations']), blockProperties: [], children: [], relations: {} };
     if (Object.keys(c.opaqueRelations).length) b.data.opaqueRelations = clone(c.opaqueRelations);
-    if (c.viewType === 'plain-text-block') b.data.text = String(c.payload.text ?? '');
+    if (c.viewType === 'plain-text-block' || isSourceType(c.viewType)) b.data.text = String(c.payload.text ?? '');
+    if(isSourceType(c.viewType) && c.payload.standoffProperties!==undefined)b.data.standoffProperties=clone(c.payload.standoffProperties);
     f.blocks.push(b);
     const anchor = (b.data.metadata as any)?.anchor;
     if (anchor && typeof anchor.blockId === 'string') {

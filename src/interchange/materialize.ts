@@ -1,3 +1,4 @@
+import { isSourceType, sourceFormat } from './source-block';
 import { managedAsset, assetKey } from './managed-asset';
 import { clone } from '../block-tree/clone';
 import { createBlockId, createContentKey, createPlacementKey } from '../block-tree/ids';
@@ -60,7 +61,8 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
   }));
   const embeds = new Map(f.embeds.map(e => [e.localId, e]));
   for (const b of f.blocks) {
-    const supported = passiveBlocks.has(b.type) || b.type === 'mutable/opaque-block';
+    let source=false;try{if(isSourceType(b.type)){sourceFormat(b.type,b.data);source=!b.inline;}}catch{}
+    const supported = source || passiveBlocks.has(b.type) || b.type === 'mutable/opaque-block';
     const payload = clone(b.data);
     for (const key of ['id', 'type', 'standoffProperties', 'blockProperties', 'linkedAnnotations', 'children', 'relation', 'externalReference', 'definitionOwnerKey']) delete payload[key];
     // Layout/relationship metadata is authored, but executable styles and raw anchors are not imported.
@@ -68,10 +70,13 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
       const metadata = payload.metadata as JsonObject;
       delete metadata.anchor; delete metadata.documentId; delete metadata.workspaceId;
     }
+    // Source ranges are foreign authored data, not native annotation links. Keeping
+    // them out of the reserved field also prevents save/move dependency resolution.
+    if(source&&b.data.standoffProperties!==undefined)payload.inactiveSourceAnnotations={version:1,properties:clone(b.data.standoffProperties),...(payload.inactiveSourceAnnotations!==undefined?{previous:payload.inactiveSourceAnnotations}:{})};
     delete payload.style; delete payload.css; delete payload.html;
     const record = contentRecord(keys.get(b.localId)!, supported ? b.type : 'mutable/opaque-block', supported
       ? { ...payload, id: ids.get(b.localId), type: b.type }
-      : { id: ids.get(b.localId), type: 'mutable/opaque-block', original: opaque(b.type, b.data), preview: b.inline?.atoms.map(a => a.kind === 'text' ? a.text : '\uFFFC').join('') ?? String(b.data.text ?? '') });
+      : { id: ids.get(b.localId), type: 'mutable/opaque-block', original: opaque(b.type, isSourceType(b.type)&&b.inline?{...b.data,inactiveSourceInline:clone(b.inline)}:b.data), preview: b.inline?.atoms.map(a => a.kind === 'text' ? a.text : '\uFFFC').join('') ?? String(b.data.text ?? '') });
     record.payload.blockProperties = b.blockProperties.map(p => resolveProperty(p.type, p.attributes, p.target, true));
     record.children = b.children.map(k => edges.get(k)!);
     record.ownedRelations = Object.fromEntries(Object.entries(b.relations).map(([name, key]) => [name, edges.get(key)!]));
@@ -80,7 +85,7 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
       delete record.payload.opaqueRelations;
     }
     if (Object.keys(record.ownedRelations).length || Object.keys(record.opaqueRelations).length) record.wireRelation = 'present';
-    if (b.inline) {
+    if (b.inline && !isSourceType(b.type)) {
       record.inlineKind = 'standoff';
       record.payload.standoffProperties = b.inline.properties.map(p => ({ ...resolveProperty(p.type, p.attributes, p.target), start: p.startIndex, end: p.endIndex - (p.isZeroWidth ? 0 : 1), ...(p.isZeroWidth ? { isZeroWidth: true, affinity: p.affinity ?? (p.startIndex === b.inline!.atoms.reduce((n, a) => n + (a.kind === 'text' ? [...a.text].length : 1), 0) ? 'before' : 'after') } : {}) }));
       for (const atom of b.inline.atoms) {
