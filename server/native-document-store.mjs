@@ -1,3 +1,4 @@
+import {collectionInventory,guardCollectionCreate} from './collection-inventory.mjs';
 import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName,isWorkspaceName} from '../src/persistence/document-file-names.mjs';
 /** Bounded native Document routes. No Workspace writer or global resource catalog. */
 import { RecognizedDocumentStore } from './recognized-document-store.mjs';
@@ -54,6 +55,7 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
  installNativeKnowledgeRoutes(route,vault);
  const writable=()=>{if(readOnly)fail('Server Documents are read-only. Paired Save requires a writable managed server store.',403);};
  route('get','/list',async req=>{const dir=await directory(req.query.folder??'.');return {files:(await fs.readdir(dir,{withFileTypes:true})).filter(e=>e.isFile()&&!e.name.startsWith('.')&&!isDerivedMarkdownName(e.name)&&(isNativeDocumentName(e.name)||e.name.endsWith('.md'))).map(e=>e.name).sort(),readOnly};});
+ route('post','/collection/inventory',async (req,res)=>{if(!featureFlags.documentInterchange)fail('Document interchange is disabled',403);await directory(req.body.folder);const controller=new AbortController();const closed=()=>{if(!res.writableEnded)controller.abort();};res.once('close',closed);try{return {entries:await collectionInventory(vault,req.body.folder,controller.signal),readOnly};}finally{res.off('close',closed);}});
  route('get','/vault/default',async()=>({vault:defaultVault}));
  route('post','/vault/establish',async req=>{
   const root=await directory(req.body.vault);
@@ -121,7 +123,8 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
    await vault.guard(resource.resourceId,location,observed);
    // Recheck paths after acquiring the publication lock.
    await guardedHome(pair.home);await read(pair.file('native'));await read(pair.file('markdown'));
-   const current=await read(pair.file('native'));if(current&&decodeNative(current).resourceId!==resource.resourceId)fail('Another resource owns this destination');
+   const current=await read(pair.file('native'));if(req.body.collectionCreate){if(!featureFlags.documentInterchange||!nativeOnly||observed.nativeHash!==null||observed.generation!==null)fail('Invalid collection create',400);await guardCollectionCreate(dir,location.filename,current,generation);}
+   if(current&&decodeNative(current).resourceId!==resource.resourceId)fail('Another resource owns this destination');
    const pending=await pair.pending();
    if(pending){
     if(pending.generation!==generation.generation||pending.nativeHash!==hash(generation.native)||pending.markdownHash!==markdownHash)fail('A different generation is pending');

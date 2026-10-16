@@ -1,0 +1,8 @@
+.collection-dialog { box-sizing: border-box; width: 100%; min-height: 0; overflow: auto; background: var(--flint-surface, #faf9f6); color: var(--flint-text, #292723); padding: 20px; font: 14px/1.5 system-ui, sans-serif; }
+.collection-dialog label { display: block; margin: 8px 0; }
+.collection-dialog input:not([type=checkbox]), .collection-dialog select { margin-left: 12px; max-width: 100%; }
+.collection-dialog button { margin: 6px 8px 6px 0; }
+.collection-dialog table { width: 100%; border-collapse: collapse; text-align: left; }
+.collection-dialog th, .collection-dialog td { border-bottom: 1px solid #d9d4ca; padding: 6px; overflow-wrap: anywhere; }
+.collection-dialog details { margin: 12px 0; max-height: 260px; overflow: auto; overflow-wrap: anywhere; }
+.collection-dialog .collection-file { margin: 2px 0; }

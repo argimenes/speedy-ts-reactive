@@ -15,7 +15,11 @@ const element = (tagName: string, childNodes: HtmlNode[] = [], attrs: Record<str
  * Reuse HTML's semantic policy, then the ordinary fragment materializer/insertion path.
  * Raw HTML is literal text; nothing here resolves URLs, fetches assets or executes code.
  */
-export function markdownTree(source: string) {
+export interface MarkdownAdapter {
+ text?(node: Extract<Nodes,{type:'text'}>): HtmlNode[] | undefined;
+ reference?(node: Nodes, url:string, image:boolean, children:HtmlNode[]): HtmlNode[] | undefined;
+}
+export function markdownTree(source: string, adapter?:MarkdownAdapter) {
   // Bound parser input as well as its output. Runtime Markdown preparation runs in
   // the existing cancellable worker, even for small input.
   if ([...source].length > LIMITS.cells || new TextEncoder().encode(source).length > LIMITS.bytes) throw Error('Markdown exceeds the import size limit.');
@@ -37,7 +41,7 @@ export function markdownTree(source: string) {
   function convert(node: Nodes): HtmlNode[] {
     switch (node.type) {
       case 'root': return children(node);
-      case 'text': return [text(node.value)];
+      case 'text': return adapter?.text?.(node) ?? [text(node.value)];
       case 'paragraph': return [element('p', children(node))];
       case 'heading': return [element(`h${node.depth}`, children(node))];
       case 'strong': return [element('strong', children(node))];
@@ -50,11 +54,12 @@ export function markdownTree(source: string) {
       case 'blockquote': return [element('blockquote', children(node))];
       case 'list': return [element(node.ordered ? 'ol' : 'ul', children(node), node.ordered ? { start: String(node.start ?? 1) } : {})];
       case 'listItem': return [element('li', children(node))];
-      case 'link': return [link(node, node.url, node.title)];
-      case 'image': return [image(node.alt, node.url, node.title)];
+      case 'link': return adapter?.reference?.(node,node.url,false,children(node)) ?? [link(node, node.url, node.title)];
+      case 'image': return adapter?.reference?.(node,node.url,true,[text(node.alt??'')]) ?? [image(node.alt, node.url, node.title)];
       case 'linkReference': case 'imageReference': {
         const definition = definitions.get(node.identifier);
         if (!definition) return node.type === 'imageReference' ? [text(node.alt ?? '')] : children(node);
+        const adapted=adapter?.reference?.(node,definition.url,node.type==='imageReference',node.type==='imageReference'?[text(node.alt??'')]:children(node));if(adapted)return adapted;
         return [node.type === 'imageReference' ? image(node.alt, definition.url, definition.title) : link(node, definition.url, definition.title)];
       }
       case 'definition': return [];
@@ -72,8 +77,8 @@ export function markdownTree(source: string) {
   }
   return { tree: { nodeName: '#document-fragment', childNodes: convert(tree) } as HtmlNode, codeMetadata, warnings };
 }
-export function importMarkdown(source: string, baseUrl?:string) {
-  const {tree,codeMetadata,warnings}=markdownTree(source);
+export function importMarkdown(source: string, baseUrl?:string, adapter?:MarkdownAdapter) {
+  const {tree,codeMetadata,warnings}=markdownTree(source,adapter);
   const imported = importSemanticHtml(tree,baseUrl);
   let codeIndex = 0;
   for (const block of imported.fragment?.blocks ?? []) {

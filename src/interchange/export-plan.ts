@@ -9,8 +9,9 @@ export const escapeHtml=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 const md=(s:string)=>s.replace(/[\\`*_[\]{}<>#!|~&+.=\-]/g,'\\$&');
 interface Mark {id:string;order:number;start:number;end:number;type:string;open:string;close:string}
 /** Read-only operation-local projection. Never traverses mounted DOM or resolves URLs. */
-export function exportFragment(input:MutableFragment,format:ExportFormat,title='Document',document=false, options:{images?:Record<string,string>;entities?:boolean;rootOnly?:boolean;maxBytes?:number}={}) {
+export function exportFragment(input:MutableFragment,format:ExportFormat,title='Document',document=false, options:{links?:Record<string,string>;images?:Record<string,string>;entities?:boolean;rootOnly?:boolean;maxBytes?:number}={}) {
  const f=validateFragment(input),diagnostics:InterchangeDiagnostic[]=[],reported=new Set<string>(),warn=(code:string,detail:string)=>{const key=code+'\0'+detail;if(!reported.has(key)){reported.add(key);diagnostics.push(diagnostic(code,detail));}};
+ for(const b of f.blocks){const collection=(b.data.metadata as any)?.collection;if(b.type==='document-block'&&collection?.mode==='source'&&collection.assets&&Object.keys(collection.assets).length)warn('collection-source-assets','This semantic projection does not resolve collection source bindings. Use source-format collection export for a document containing a single source Block to retain its attachments and reconciled links.');}
  const blocks=new Map(f.blocks.map(b=>[b.localId,b])),edges=new Map(f.placements.map(p=>[p.localId,p])),embeds=new Map(f.embeds.map(e=>[e.localId,e])),definitions=new Map(f.definitions.map(d=>[d.localId,d]));
  const image=(id:string)=>{const e=embeds.get(id)!,url=options.images?.[id];if(url){const alt=String(e.data.alt??'Image');return format==='html'?`<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`:format==='markdown'?`![${md(alt)}](<${url}>)`:alt;}warn('image-reference','Images are exported as alt-text placeholders. Portable asset bundles are not part of this export.');const text=`[Image: ${String(e.data.alt??'Image')}]`;return format==='html'?escapeHtml(text):format==='markdown'?md(text):text;};
  const inline=(b:FragmentBlock)=>{
@@ -28,6 +29,8 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
     if(format==='html'){open=`<${htmlTags[p.type]}>`;close=`</${htmlTags[p.type]}>`;}
     else if(p.type==='style/bold'||p.type==='style/italics'){open=close=p.type==='style/bold'?'**':'*';}
     else warn('markdown-mark',`Markdown omits ${p.type}.`);
+   }else if(options.links?.[occurrence.localId]){
+    const url=options.links[occurrence.localId];open=format==='html'?`<a href="${escapeHtml(url)}">`:'[';close=format==='html'?'</a>':`](<${url}>)`;
    }else if(p.type==='reference/url'&&p.target?.kind==='url'&&safeUrl(p.target.url)){
     const url=p.target.url.trim();
     if(format==='html'){open=`<a href="${escapeHtml(url)}" rel="noopener noreferrer">`;close='</a>';}

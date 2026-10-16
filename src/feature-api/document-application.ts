@@ -23,6 +23,8 @@ export interface DocumentApplicationInstance {
   properties(): ApplicationDocumentProperties | undefined;
   setProperties(id: string, value: {title: string; tags: readonly string[]}): void;
   interchange?: {
+    importCollection():void;
+    exportCollection():void;
     importFiles():void;
     importPackage():void;
     exportPackage():void;

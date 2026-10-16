@@ -1,3 +1,4 @@
+import {collectionOperation,type CollectionRequest} from './collection/operations';
 import type { AcquiredText } from './uri';
 import { portableProjection } from './package/projection';
 import { createPackage, openPackage, type PackageAsset, type PackageManifest } from './package/format';
@@ -13,6 +14,7 @@ import type { SuppliedFile } from './file-input';
 import type { ImportFormat, ExportFormat } from './formats';
 import type { MutableFragment, InterchangeScope } from './fragment';
 export type InterchangeRequest =
+ | {kind:'collection';request:CollectionRequest}
  | {kind:'linked-text';resource:AcquiredText;mode:'native'|'embed'|'link'}
  | {kind:'portable-export';fragment:MutableFragment;assets:PackageAsset[];format:'html'|'markdown';standalone?:boolean;title:string}
  | {kind:'package-create';native:Uint8Array;source:PackageManifest['source'];data:PackageData;schema:unknown;assets:PackageAsset[]}
@@ -26,6 +28,7 @@ export type InterchangeRequest =
  | {kind:'materialize';fragment:MutableFragment;scope:InterchangeScope;assets:[string,string][]};
 export async function prepareInterchange(request:InterchangeRequest) {
  switch(request.kind){
+  case 'collection':return collectionOperation(request.request);
   case 'linked-text':return prepareLinkedText(request.resource,request.mode);
   case 'portable-export':return portableProjection(request.fragment,request.assets,request.format,request.standalone,request.title);
   case 'package-create':return createPackage(request.native,request.source,request.data,request.schema,request.assets);
@@ -39,7 +42,7 @@ export async function prepareInterchange(request:InterchangeRequest) {
   case 'materialize':return materializeFragment(request.fragment,request.scope,new Map(request.assets));
  }
 }
-export type Prepared<R extends InterchangeRequest> = R extends {kind:'linked-text'} ? Awaited<ReturnType<typeof prepareLinkedText>> : R extends {kind:'portable-export'} ? Awaited<ReturnType<typeof portableProjection>> : R extends {kind:'package-create'} ? Uint8Array : R extends {kind:'package-open'} ? Awaited<ReturnType<typeof openPackage>>&{fragment:MutableFragment} : R extends {kind:'package-materialize'} ? ReturnType<typeof materializePackage> : R extends {kind:'preview'} ? ReturnType<typeof compileSourcePreview> : R extends {kind:'embed'} ? Awaited<ReturnType<typeof prepareSourceFiles>> : R extends {kind:'files'} ? Awaited<ReturnType<typeof prepareFiles>> : R extends {kind:'convert'} ? ReturnType<typeof convertSource> : R extends {kind:'export'} ? ReturnType<typeof exportFragment> : ReturnType<typeof materializeFragment>;
+export type Prepared<R extends InterchangeRequest> = R extends {kind:'collection'} ? Awaited<ReturnType<typeof collectionOperation>> : R extends {kind:'linked-text'} ? Awaited<ReturnType<typeof prepareLinkedText>> : R extends {kind:'portable-export'} ? Awaited<ReturnType<typeof portableProjection>> : R extends {kind:'package-create'} ? Uint8Array : R extends {kind:'package-open'} ? Awaited<ReturnType<typeof openPackage>>&{fragment:MutableFragment} : R extends {kind:'package-materialize'} ? ReturnType<typeof materializePackage> : R extends {kind:'preview'} ? ReturnType<typeof compileSourcePreview> : R extends {kind:'embed'} ? Awaited<ReturnType<typeof prepareSourceFiles>> : R extends {kind:'files'} ? Awaited<ReturnType<typeof prepareFiles>> : R extends {kind:'convert'} ? ReturnType<typeof convertSource> : R extends {kind:'export'} ? ReturnType<typeof exportFragment> : ReturnType<typeof materializeFragment>;
 
 async function prepareSourceFiles(files:SuppliedFile[],format?:ImportFormat) {
  checkFiles(files);const fragments=[];

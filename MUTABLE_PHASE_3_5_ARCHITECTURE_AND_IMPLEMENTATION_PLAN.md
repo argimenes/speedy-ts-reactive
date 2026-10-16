@@ -451,6 +451,8 @@ Initial planning envelope: 1,000 text documents / 5,000 inventoried files / 512 
 
 Stage E go/no-go must approve directory permission/fallback UX, the named Markdown-vault subset, collision defaults, explicit batch-save semantics, resumability and resource budgets. Tests include cyclic inter-document references, duplicate names/case, nested attachments, broken links, unsupported plugin syntax, permission loss, restart/cancellation after each commit, destination conflicts, bounded memory and round-trip collection export. Until that review, no Stage E production work is authorized.
 
+**Stage E update (2026-10-17):** The user subsequently authorised Stage E. Execution decisions are recorded in [Stage E execution plan](MUTABLE_PHASE_3_5_STAGE_E_EXECUTION_PLAN.md); implementation and qualification are recorded in [Stage E qualification](MUTABLE_PHASE_3_5_STAGE_E_QUALIFICATION.md). Stage E now awaits acceptance. Phase 3.6 and Phase 4 remain unauthorised.
+
 ## 10. Supported-format and fidelity matrix
 
 | Content | A import/convert | A export | B source/preview | C package/viewer | D/E additions |

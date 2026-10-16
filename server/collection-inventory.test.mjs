@@ -1,0 +1,9 @@
+import {it,expect,afterEach} from 'vitest';
+import {promises as fs} from 'node:fs';import os from 'node:os';import path from 'node:path';
+import {collectionInventory,guardCollectionCreate} from './collection-inventory.mjs';
+import {NativeVaultStore} from './native-vault-store.mjs';
+const cleanup=[];afterEach(async()=>{for(const root of cleanup.splice(0))await fs.rm(root,{recursive:true,force:true});});
+async function fixture(){const root=await fs.mkdtemp(path.join(os.tmpdir(),'collection-inventory-'));cleanup.push(root);return {root,vault:new NativeVaultStore({root})};}
+it('inventories regular paths, reserves links without following them and skips private trees',async()=>{const {root,vault}=await fixture();await fs.mkdir(path.join(root,'nested'));await fs.mkdir(path.join(root,'.private'));await fs.writeFile(path.join(root,'nested','a.md'),'a');await fs.symlink(os.tmpdir(),path.join(root,'outside'));const entries=await collectionInventory(vault,'.');expect(entries.map(e=>e.path)).toEqual(['nested','nested/a.md','outside']);expect(entries.at(-1).directory).toBe(false);});
+it('bounds inventory and obeys cancellation',async()=>{const {root,vault}=await fixture();const c=new AbortController();c.abort();await fs.writeFile(path.join(root,'a'),'a');await expect(collectionInventory(vault,'.',c.signal)).rejects.toThrow();});
+it('rejects case aliases, occupied destinations and permits only exact-byte recovery',async()=>{const {root}=await fixture();await fs.writeFile(path.join(root,'Taken.ink'),'old');await expect(guardCollectionCreate(root,'taken.ink',undefined,{native:'new'})).rejects.toThrow(/collision/);await expect(guardCollectionCreate(root,'Taken.ink',Buffer.from('old'),{native:'new'})).rejects.toThrow(/no overwrite/);await expect(guardCollectionCreate(root,'Taken.ink',Buffer.from('old'),{native:'old'})).resolves.toBeUndefined();});
