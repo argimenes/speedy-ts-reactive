@@ -145,3 +145,7 @@
 .flint-application:not(.flint-compact) .flint-vault-options > summary { display:none; }
 .flint-compact .flint-tree-document button { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .flint-compact .flint-tree-document button small { display:none; }
+
+/* File drops name their actual gap; internal Block drags keep their own owner. */
+.flint-application [data-interchange-drop] { outline: 2px dashed var(--flint-accent, #56857b); outline-offset: 3px; }
+.flint-application [data-interchange-drop]::after { content: attr(data-interchange-drop); display: block; color: var(--flint-accent, #56857b); font: 12px system-ui; border-top: 2px solid currentColor; }

@@ -98,6 +98,11 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   if (node.viewType === 'standoff-editor-block' && editor.features.mutableClipboard && editor.features.markdownClipboard) {
     items.push({ label: 'Paste as Markdown', run: () => editor.clipboard.pasteMarkdown(key) });
   }
+  if (node.viewType === 'standoff-editor-block' && editor.features.documentInterchange) {
+    items.push({label:'Insert file…',run:()=>editor.interchange.pickInsert(key)},
+      {label:'Convert to Mutable Ink',children:[{label:'From Markdown',run:()=>{void editor.interchange.convert(key,'markdown');}},{label:'From HTML',run:()=>{void editor.interchange.convert(key,'html');}}]},
+      {label:'Copy as',children:[{label:'HTML',run:()=>{void editor.interchange.copyAs(key,'html');}},{label:'Markdown',run:()=>{void editor.interchange.copyAs(key,'markdown');}}]});
+  }
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if (doc) {
     items.push(command("sticky.createFloating", "New Sticky Note"));

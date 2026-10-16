@@ -1,3 +1,6 @@
+import { ManagedAssets, type AssetContext } from '../runtime/managed-assets';
+import { DocumentInterchange } from '../runtime/document-interchange';
+import { installInterchangeStatus } from '../rendering/interchange-status';
 import { PointerSpotlight } from '../runtime/pointer-spotlight';
 import { MutableClipboard } from '../runtime/mutable-clipboard';
 import { installClipboardStatus } from '../rendering/clipboard-status';
@@ -105,6 +108,11 @@ export class ReactiveEditor {
   readonly selections = new SelectionService();
   readonly blockSelection = new BlockSelectionService(this);
   readonly blockClipboard = new BlockClipboardService(this);
+  private assetContext: () => AssetContext = () => ({});
+  readonly assets = new ManagedAssets(() => this.assetContext(), () => this.features.managedAssetClipboard);
+  setAssetContext(read: () => AssetContext) { this.assetContext = read; }
+  readAssetContext() { return this.assetContext(); }
+  readonly interchange = new DocumentInterchange(this);
   readonly clipboard = new MutableClipboard(this);
   readonly crossText = new CrossBlockSelection(this);
   readonly linkedAnnotations = new LinkedAnnotations(this);
@@ -129,6 +137,7 @@ export class ReactiveEditor {
   readonly projections = new Map<ViewId, BlockTreeProjection>();
   private gateway?: InputGateway;
   private crossInput?: CrossBlockInput;
+  private disposeInterchangeStatus?: () => void;
   private disposeClipboardStatus?: () => void;
 
   constructor(dto: ExistingBlockDto | LoadedWorkspace, configuration: ReactiveEditorConfiguration = {}) {
@@ -235,6 +244,7 @@ export class ReactiveEditor {
   /** End a transient view without changing its canonical placements/content. */
   disposeView(projection: BlockTreeProjection): void {
     if (this.projections.get(projection.viewId) !== projection) return;
+    this.interchange.closeView(projection.viewId);
     const keys = new Set(projection.occurrenceKeys());
     if (this.find.state.scope && keys.has(this.find.state.scope.rootKey)) this.find.close(false);
     const operation = this.currentTextOperation.active();
@@ -276,11 +286,13 @@ export class ReactiveEditor {
   }
 
   installGateway(document: Document): () => void {
+    this.disposeInterchangeStatus?.();
+    this.disposeInterchangeStatus = this.features.documentInterchange ? installInterchangeStatus(document, this.interchange) : undefined;
     this.gateway?.dispose();
     this.crossInput?.dispose();
     this.disposeFindInput?.();
     this.disposeClipboardStatus?.();
-    if (this.features.mutableClipboard) this.disposeClipboardStatus = installClipboardStatus(document, this.clipboard);
+    if (this.features.mutableClipboard || this.features.documentInterchange) this.disposeClipboardStatus = installClipboardStatus(document, this.clipboard);
     this.disposeFindInput = this.find.install(document);
     const disposeSelectionGestures = this.selectionGestures.install(document);
     this.crossInput = new CrossBlockInput(this, document);
@@ -314,7 +326,8 @@ export class ReactiveEditor {
     const crossInput = this.crossInput;
     const disposeFind = this.disposeFindInput;
     const disposeClipboardStatus = this.disposeClipboardStatus;
-    return () => { disposeClipboardStatus?.(); disposeFind(); disposeSelectionGestures(); crossInput.dispose(); dispose(); };
+    const disposeInterchangeStatus = this.disposeInterchangeStatus;
+    return () => { disposeInterchangeStatus?.(); disposeClipboardStatus?.(); disposeFind(); disposeSelectionGestures(); crossInput.dispose(); dispose(); };
   }
 
   node(nodeKey: NodeKey) {
@@ -456,7 +469,8 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
-    this.clipboard.dispose(); this.disposeClipboardStatus?.();
+    this.interchange.dispose(); this.disposeInterchangeStatus?.();
+    this.clipboard.dispose(); this.assets.dispose(); this.disposeClipboardStatus?.();
     this.pointerSpotlight.dispose();
     this.caretModes.dispose();
     this.measurements.releaseCaret();

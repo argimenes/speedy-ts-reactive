@@ -22,6 +22,13 @@ export interface DocumentApplicationInstance {
   };
   properties(): ApplicationDocumentProperties | undefined;
   setProperties(id: string, value: {title: string; tags: readonly string[]}): void;
+  interchange?: {
+    importFiles():void;
+    exportDocument(format:'html'|'markdown'|'text'):void;
+    suggestedFilename():string|undefined;
+    drag(event:DragEvent,drop?:boolean):void;
+    clearDrop():void;
+  };
   files?: {
     list(folder: string): Promise<string[]>;
     open(location: {folder: string; filename: string}, importMarkdown?: boolean): Promise<void>;

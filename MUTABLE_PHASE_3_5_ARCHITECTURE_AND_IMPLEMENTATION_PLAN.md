@@ -528,3 +528,11 @@ Dependency selection for ZIP support and provider-specific player permissions is
 This deliverable is documentation only. No Stage A or later production code, feature flag, dependency, handler, persistent storage or UI has been introduced. The repository inventory and proposal have been reviewed against the supplied brief; implementation acceptance tests above are **planned**, not reported as executed.
 
 The brief's mandatory gate says: **“Stop after submitting the plan for approval. Do not begin Stage A or later work until approved.”** The next action is approval of this plan and its Stage A defaults. Phase 3.6 and Phase 4 remain untouched.
+
+## 16. Stage A authorization clarifications and implementation
+
+Following review, Stage A alone was authorized with the Section 14 defaults. Native Open, external Import-as-new, source-preserving Embed and external Link retain distinct operation identities, ownership and save semantics even when adapters are shared. Stage A exposes Open and Import separately; it does not silently convert an opened external file or bind an import to its original source. Embed and Link remain later-stage operations.
+
+Stage A loss reporting uses a concise confirmation covering affected annotations, unsupported semantics and potential losses. It does not implement the richer side-by-side preview reserved for Stage C.
+
+Implementation and executed qualification are tracked in [the Stage A report](MUTABLE_PHASE_3_5_STAGE_A_QUALIFICATION.md). The documentation-only status in Section 15 describes the original planning deliverable, not the subsequent authorized Stage A implementation. No authorization to implement Stage B or later is inferred from Stage A completion.

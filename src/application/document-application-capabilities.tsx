@@ -1,3 +1,4 @@
+import { hasInternalBlockDrag } from '../rendering/block-selection';
 import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName} from '../persistence/document-file-names.mjs';
 import { DocumentBrowser } from "../demo/document-browser";
 import { useCurrentCavern } from './cavern-startup';
@@ -373,9 +374,31 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         async keepMutable() { guard(); await native.keepMutable(requireId()); },
         status: () => native.status(activeId()), location: () => native.location(activeId()),
       } : undefined;
+      let dropIndicator: HTMLElement | undefined;
+      const clearDrop = () => { if(dropIndicator) {delete dropIndicator.dataset.interchangeDrop;dropIndicator=undefined;} };
+      onCleanup(() => {clearDrop();queueMicrotask(()=>editor.interchange.cancelUnavailable());});
+      const interchange = editor.features.documentInterchange ? {
+        importFiles() {guard();editor.interchange.pickNew({current:()=>mounted&&scope.active(),open:openDocument});},
+        exportDocument(format:'html'|'markdown'|'text') {guard();const id=requireId();void editor.interchange.exportDocument(id,format,()=>mounted&&scope.active()&&activeId()===id);},
+        suggestedFilename() {const id=activeId(),doc=id&&resolve(id);return doc ? (editor.repository.readState().contents[doc.contentKey].payload.metadata as any)?.interchange?.suggestedFilename : undefined;},
+        clearDrop,
+        drag(event:DragEvent,drop=false) {
+          if(hasInternalBlockDrag(editor))return;
+          if(!Array.from(event.dataTransfer?.items??[]).some(i=>i.kind==='file')&&!event.dataTransfer?.files.length)return;
+          const target=event.target instanceof Element?event.target:undefined;
+          const library=!!target?.closest('.flint-application__vault');
+          const resolved=editor.mounts.resolveElement(target??null),node=resolved&&editor.node(resolved.nodeKey),view=liveViews.get(activeTab()??'');
+          if(!library&&(!node||!view||node.viewId!==view.viewId||node.viewType!=='standoff-editor-block'))return;
+          event.preventDefault();event.stopPropagation();if(event.dataTransfer)event.dataTransfer.dropEffect='copy';
+          clearDrop();if(!drop){dropIndicator=library?target!.closest<HTMLElement>('.flint-application__vault')!:resolved!.handle.root as HTMLElement;dropIndicator!.dataset.interchangeDrop=library?'Import as new Ink documents':'Insert files after this Block';return;}
+          const files=Array.from(event.dataTransfer?.files??[]).map(blob=>({blob,name:blob.name}));
+          if(library)void editor.interchange.importNew(files,{current:()=>mounted&&scope.active(),open:openDocument});
+          else {const id=activeId();void editor.interchange.dropFiles(files,node!.key,()=>mounted&&scope.active()&&activeId()===id);}
+        },
+      } : undefined;
       return <><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
-          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, entityBacklinks: EntityBacklinks,
+          documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, interchange, entityBacklinks: EntityBacklinks,
           entities: {
             rows: () => entityList.state.rows,
             pending: () => entityList.state.pending,

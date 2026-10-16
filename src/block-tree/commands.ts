@@ -1,3 +1,4 @@
+import { conversionSource } from '../interchange/conversion';
 import { mapStandoffPropertiesForReplacement, pointAffinity } from '../interchange/ranges';
 import { planFragmentInsertion } from '../interchange/insertion';
 import type { MutableFragment } from '../interchange/fragment';
@@ -47,20 +48,21 @@ export class TreeCommands {
   private pending?: PendingTransaction;
   private restorePlans = new WeakSet<object>();
   /** Prepared fragments only: one history entry and validation batch for the entire paste. */
-  insertMutableText(edits: Array<{ segments: CrossTextSegment[]; fragment: BlockFragment; slices: MutableFragment['roots'] }>, cut = false) {
+  insertMutableText(edits: Array<{ segments: CrossTextSegment[]; fragment: BlockFragment; slices: MutableFragment['roots'] }>, cut = false, operation: 'paste' | 'import' | 'convert' = 'paste') {
     if (!edits.length) return [];
     const before = this.pending?.draft ?? this.repository.readState();
     let state = before;
     const results: Array<{ placementKey: string; caret: number }> = [];
     for (const edit of edits) {
-      const result = planFragmentInsertion(state, edit.segments, edit.fragment, edit.slices);
+      const source = operation === 'convert' ? conversionSource(state, edit.segments).state : state;
+      const result = planFragmentInsertion(source, edit.segments, edit.fragment, edit.slices);
       state = result.state; results.push({ placementKey: result.placementKey, caret: result.caret });
     }
     this.pruneUnreachable(state);
-    this.publish(cut ? 'Cut selected text' : 'Paste Mutable content', this.diff(before, state), {
-      commandId: cut ? 'selection.cut' : 'selection.paste',
+    this.publish(cut ? 'Cut selected text' : operation === 'convert' ? 'Convert source to Mutable Ink' : operation === 'import' ? 'Insert external content' : 'Paste Mutable content', this.diff(before, state), {
+      commandId: cut ? 'selection.cut' : operation === 'convert' ? 'interchange.convert' : operation === 'import' ? 'interchange.insert' : 'selection.paste',
       subjects: results.map(r => this.subject(state, r.placementKey)),
-      clipboard: { token: crypto.randomUUID(), action: cut ? 'cut' : 'paste', preservedIds: false },
+      ...(operation === "paste" ? {clipboard: { token: crypto.randomUUID(), action: cut ? 'cut' as const : 'paste' as const, preservedIds: false }} : {}),
     });
     return results;
   }

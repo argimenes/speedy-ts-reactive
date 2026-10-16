@@ -1,4 +1,4 @@
-import { ManagedAssets, type AssetLease } from './managed-assets';
+import { type AssetLease } from './managed-assets';
 import { captureFiles, imagesFragment, resolveClipboardImages, type ClipboardFile } from '../interchange/clipboard-images';
 import { createSignal } from 'solid-js';
 import type { ReactiveEditor } from '../reactive-editor/editor';
@@ -25,7 +25,7 @@ export class MutableClipboard {
   readonly message = this.status[0];
   private readonly recoverySignal = createSignal<MutableFragment>();
   readonly recovery = this.recoverySignal[0];
-  private context: () => { cavernId?: string; session?: string } = () => ({});
+  private context = () => this.editor.readAssetContext();
   private alive = true;
   private pending = false;
   private cancelPreparation?: () => void;
@@ -33,7 +33,7 @@ export class MutableClipboard {
   private plainTarget?: EventTarget | null;
   private markdownIntent?: { until: number; target: Element; bookmark: Bookmark };
   private markdownReadEpoch = 0;
-  readonly assets = new ManagedAssets(() => this.context(), () => this.editor.features.managedAssetClipboard);
+  get assets() { return this.editor.assets; }
   private readonly imagePromptSignal = createSignal<{ urls: string[]; error?: string }>();
   readonly imagePrompt = this.imagePromptSignal[0];
   private chooseImageResult?: (urls: string[] | undefined) => void;
@@ -44,7 +44,7 @@ export class MutableClipboard {
 
   constructor(private editor: ReactiveEditor) {}
   enabled() { return this.editor.features.mutableClipboard; }
-  setContext(read: () => { cavernId?: string; session?: string }) { this.context = read; }
+  setContext(read: () => { cavernId?: string; session?: string }) { this.editor.setAssetContext(read); }
   notify(message: string) { if (this.alive) this.status[1](message); }
   dismiss() { if (this.imagePrompt()) this.cancel(); this.status[1](''); }
   cancel() { this.markdownReadEpoch++; this.markdownIntent = undefined; this.importController?.abort(); this.chooseImages(undefined); this.cancelPreparation?.(); }
@@ -61,6 +61,33 @@ export class MutableClipboard {
     let resourceId: string | undefined;
     try { if (resource) resourceId = resourceSource(resource)?.resourceId; } catch { /* Legacy untitled documents have no portable identity. */ }
     return { ...(this.context().cavernId ? { cavernId: this.context().cavernId } : {}), ...(resourceId ? { resourceId } : {}) };
+  }
+  private projectionIntent?: { representations: Record<string,string>; valid: () => boolean; accepts: (event:ClipboardEvent) => boolean; until: number };
+  async copyProjection(representations: Record<string,string>, valid: () => boolean, accepts: (event:ClipboardEvent) => boolean = () => true) {
+    this.projectionIntent=undefined;
+    if(this.pending)throw Error('Finish the current clipboard operation first.');
+    if (!this.editor.features.documentInterchange || !this.alive || !valid()) throw Error('The copy selection changed.');
+    if (canWriteAsync()) {
+      this.pending=true;
+      try { await writeAsyncClipboard(representations); this.notify('Copied semantic projection.'); return; }
+      catch { /* Recover using the existing trusted native copy-event owner. */ }
+      finally { this.pending=false; }
+    }
+    if (!valid()) throw Error('The copy selection changed.');
+    this.projectionIntent = {representations,valid,accepts,until:Date.now()+15000};
+    this.notify('Press Command/Control-C on the unchanged selection within 15 seconds to copy this projection.');
+  }
+  copyProjectionEvent(event: ClipboardEvent): boolean {
+    const intent=this.projectionIntent;
+    if(event.type!=='copy'||!intent)return false;
+    if(!intent.accepts(event)){this.projectionIntent=undefined;return false;}
+    // A field or dialog retains normal browser copy ownership.
+    const target=event.target instanceof Element?event.target:undefined;
+    if(target?.closest('input,textarea,select,[role="dialog"]')&&!target?.matches('[data-cross-text-input]'))return false;
+    this.projectionIntent=undefined;this.stop(event);
+    try { if(!event.cancelable||!this.editor.features.documentInterchange||Date.now()>intent.until||!intent.valid())throw Error('Projection copy expired or the selection changed. Choose Copy as again.');
+      writeEventClipboard(event.clipboardData,intent.representations);this.notify('Projection supplied to the browser clipboard. The native-event API cannot acknowledge OS acceptance.');
+    }catch(e){this.error(e);}return true;
   }
   private textBookmark(event?: Event, cross = false, nodeKey?: string): Bookmark | undefined {
     const active = cross && this.editor.crossText.range();
@@ -137,6 +164,7 @@ export class MutableClipboard {
     } catch (error) { this.error(error); }
   }
   handleText(event: ClipboardEvent, cross = false): boolean {
+    if(this.copyProjectionEvent(event))return true;
     if (!this.enabled()) return false;
     try {
       const bookmark = this.textBookmark(event, cross); if (!bookmark) return true;
@@ -351,5 +379,5 @@ export class MutableClipboard {
     this.asyncTask(async () => { await writeAsyncClipboard(exportClipboard(fragment)); this.notify('Recovered the cut content to the clipboard.'); });
   }
   private error(error: unknown) { this.notify(error instanceof Error ? error.message : String(error)); }
-  dispose() { this.alive = false; this.cancel(); this.assets.dispose(); this.clearIntent(); this.recoverySignal[1](undefined); this.dismiss(); }
+  dispose() { this.alive = false; this.projectionIntent=undefined; this.cancel(); this.clearIntent(); this.recoverySignal[1](undefined); this.dismiss(); }
 }

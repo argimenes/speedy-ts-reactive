@@ -7,6 +7,7 @@ import "./block-selection.css";
 
 interface DragSession { source: string; targets: Set<string>; indicator?: HTMLElement; moved: boolean; dropped: boolean }
 const drags = new WeakMap<ReactiveEditor, DragSession>();
+export const hasInternalBlockDrag = (editor: ReactiveEditor) => drags.has(editor);
 function clearDrag(editor: ReactiveEditor) {
   const drag = drags.get(editor); if (drag?.indicator) delete drag.indicator.dataset.blockDrop;
   drags.delete(editor);
@@ -87,6 +88,11 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
       const drag = drags.get(editor); if (!drag) return;
       drag.dropped = true;
       event.preventDefault(); event.stopPropagation();
+      if (event.dataTransfer?.files.length || Array.from(event.dataTransfer?.items ?? []).some(item => item.kind === 'file')) {
+        selection.setMessage('Mixed internal Block and external file drops are not supported. Import files separately.');
+        if (drag.indicator) delete drag.indicator.dataset.blockDrop;
+        return;
+      }
       if (drag.targets.has(props.nodeKey)) {
         try {
           drag.moved = selection.moveTo(props.nodeKey, side(event));

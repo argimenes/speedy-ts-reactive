@@ -273,6 +273,7 @@ export class CrossBlockInput {
     if (target !== this.input && target?.closest('input, textarea, select, .document-style-bar, [data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = this.editor.mounts.resolveEvent(event);
     if (target !== this.input && (!resolved || !this.editor.crossText.segments[resolved.nodeKey])) return;
+    if (event.type === 'copy' && this.editor.clipboard.copyProjectionEvent(event as ClipboardEvent)) return;
     if (this.editor.features.mutableClipboard && ['copy', 'cut', 'paste'].includes(event.type)) {
       if (this.composing) { this.stop(event); return; }
       this.editor.clipboard.handleText(event as ClipboardEvent, true); return;

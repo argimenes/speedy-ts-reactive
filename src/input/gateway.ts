@@ -408,6 +408,7 @@ export class InputGateway {
   }
 
   private onCopy = (event: ClipboardEvent) => {
+    if(this.clipboard?.copyProjectionEvent(event))return;
     if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     this.writeStandoffClipboard(event);
   };

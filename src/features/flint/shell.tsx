@@ -55,20 +55,22 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
   const focusLibrary=()=>{showLibrary();setBrowse('browse');queueMicrotask(()=>{const input=shell.querySelector<HTMLInputElement>('[aria-label="Vault directory"]');for(let parent=input?.parentElement;parent&&parent!==shell;parent=parent.parentElement)if(parent instanceof HTMLDetailsElement)parent.open=true;input?.focus();});};
   const chooseVault=()=>app.vault?.choose?app.vault.choose():focusLibrary();
   const showSearch=()=>{showLibrary();setBrowse('search');queueMicrotask(()=>shell.querySelector<HTMLInputElement>('[aria-label="Search vault"]')?.focus());};
-  const openStorage=(invoker?:HTMLElement)=>{storageInvoker=invoker??menuButton;const bound=app.files?.location();if(bound)setDestination(bound);setMenu(false);setStorage(true);};
+  const openStorage=(invoker?:HTMLElement)=>{storageInvoker=invoker??menuButton;const bound=app.files?.location();if(bound)setDestination(bound);else setDestination({folder:vault()?.root??'.',filename:app.interchange?.suggestedFilename()??'Document.ink'});setMenu(false);setStorage(true);};
   const closeStorage=()=>{setStorage(false);queueMicrotask(()=>{const target=storageInvoker?.isConnected?storageInvoker:menuButton;if(target?.isConnected)target.focus();});};
   const save=async()=>{if(!app.files||busy())return;if(!app.files.location()){openStorage();return;}setBusy(true);setError('');try{await app.files.save(destination());}catch(e){setError(String(e));}finally{setBusy(false);}};
   const toggle=(rail:'library'|'context')=>{const open=rail==='library'?library():context(),set=rail==='library'?setLibrary:setContext;
     if(narrow(rail)){set(true);setNarrowPanel(narrowPanel()===rail?'':rail);}else set(!open);
   };
-  return <div ref={shell} class="flint-application" classList={{'flint-compact':compact()}} data-density={compact() ? preferences.layout.density : undefined}
+  return <div ref={shell} onDragOver={event=>app.interchange?.drag(event)} onDrop={event=>app.interchange?.drag(event,true)} onDragLeave={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))app.interchange?.clearDrop();}} class="flint-application" classList={{'flint-compact':compact()}} data-density={compact() ? preferences.layout.density : undefined}
     style={compact() ? { '--flint-explorer-width': `${preferences.layout.explorerWidth}px`, '--flint-inspector-width': `${preferences.layout.inspectorWidth}px` } : undefined} data-material-chrome={props.materialChrome !== false && !compact()} data-view={view()} data-library={library()} data-context={context()} data-narrow-panel={narrowPanel()}>
     <div class="flint-surfaces" inert={storage()}>
     <header class="flint-application__header">
       <div class="flint-menu-anchor" onKeyDown={e=>{if(menu()&&e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}><button ref={menuButton} class="flint-brand" aria-label="Flint application menu" aria-expanded={menu()} onClick={()=>setMenu(!menu())}><Show when={!compact()} fallback={<span class="flint-compact-mark" aria-hidden="true">◈</span>}><FlintLogo enabled={props.logo !== false} root={()=>shell} image={identity}/></Show><strong>FLINT</strong><span aria-hidden="true">⌄</span></button>
         <Show when={menu()}><div class="flint-menu" role="group" aria-label="Flint actions" onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}>
           <button disabled={!app.vault} onClick={()=>{setMenu(false);chooseVault();}}>Open Another Cavern…</button>
-          <button onClick={()=>openStorage()}>Files</button>
+          <button onClick={()=>openStorage()}>Open / Save native Ink…</button>
+          <Show when={app.interchange}><button onClick={()=>{setMenu(false);app.interchange!.importFiles();}}>Import external files…</button>
+          <For each={['html','markdown','text'] as const}>{format=><button disabled={!app.properties()} onClick={()=>{setMenu(false);app.interchange!.exportDocument(format);}}>Export as {format==='html'?'HTML':format==='markdown'?'Markdown':'Plain text'}…</button>}</For></Show>
           <button disabled={!app.properties()} onClick={()=>{app.closeActiveTab();setMenu(false);menuButton.focus();}}>Close tab</button>
           <button onClick={()=>{setMenu(false);menuButton.focus();}}>Dismiss menu</button>
         </div></Show>

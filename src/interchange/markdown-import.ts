@@ -18,7 +18,7 @@ const element = (tagName: string, childNodes: HtmlNode[] = [], attrs: Record<str
 export function importMarkdown(source: string) {
   // Bound parser input as well as its output. Runtime Markdown preparation runs in
   // the existing cancellable worker, even for small input.
-  if (source.length > LIMITS.cells || new TextEncoder().encode(source).length > LIMITS.bytes) throw Error('Markdown exceeds the import size limit.');
+  if ([...source].length > LIMITS.cells || new TextEncoder().encode(source).length > LIMITS.bytes) throw Error('Markdown exceeds the import size limit.');
   const tree = fromMarkdown(source, { extensions: [gfmTable()], mdastExtensions: [gfmTableFromMarkdown()] });
   const definitions = new Map<string, Definition>(), warnings = new Set<string>();
   const codeMetadata: Array<{ language?: string; meta?: string }> = [];

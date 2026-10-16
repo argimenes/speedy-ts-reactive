@@ -1,0 +1,67 @@
+import { parse } from 'parse5';
+import { parseClipboardHtml, type HtmlNode } from './html-ast';
+import { importSemanticHtml } from './html-import';
+import { importMarkdown } from './markdown-import';
+import { plainFragment } from './serializer';
+import { emptyFragment, validateFragment, type MutableFragment, type Reference } from './fragment';
+import { diagnostic, type InterchangeDiagnostic } from './diagnostics';
+import type { ImportFormat } from './formats';
+import { imagesFragment } from './clipboard-images';
+import { checkFiles, readSelectedFile, type SuppliedFile } from './file-input';
+
+export function convertSource(source: string, format: 'html'|'markdown'|'text', fullDocument=false) {
+  const normalized=source.replace(/\r\n?/g,'\n');
+  let result: {fragment?:MutableFragment;notice?:string}; let title: string|undefined;
+  if (format==='markdown') result=importMarkdown(normalized);
+  else if (format==='html') {
+    // Apply the existing bounds before using parse5's full-document mode. Never
+    // use a native carrier, DOMParser, <base>, or a charset tag as authority.
+    const bounded=parseClipboardHtml(normalized);
+    const tree=fullDocument ? parse(normalized) as HtmlNode : bounded.tree;
+    if (fullDocument) {
+      const html=tree.childNodes?.find(n=>n.tagName==='html'),head=html?.childNodes?.find(n=>n.tagName==='head');
+      const node=head?.childNodes?.find(n=>n.tagName==='title');
+      title=node?.childNodes?.filter(n=>n.nodeName==='#text').map(n=>n.value??'').join('').trim().slice(0,200);
+      result=importSemanticHtml(html?.childNodes?.find(n=>n.tagName==='body')??tree);
+    } else result=importSemanticHtml(tree);
+  } else result={fragment:plainFragment(normalized)};
+  const diagnostics:InterchangeDiagnostic[]=result.notice?[diagnostic('semantic-loss',result.notice)]:[];
+  if (/\r/.test(source)) diagnostics.push(diagnostic('normalized-newlines','Source line endings become logical newlines in Ink.',false));
+  // An empty file is a legitimate empty document; active-only HTML is not.
+  if (!result.fragment && source.trim()) throw Error('The source contains no supported native content. Nothing was changed.');
+  return {fragment:result.fragment??plainFragment(''),diagnostics,title};
+}
+export function joinFragments(inputs: MutableFragment[]): MutableFragment {
+  const output=emptyFragment();
+  inputs.forEach((input,index)=>{
+    const f=structuredClone(input),id=(value:string)=>`part${index}-${value}`;
+    const reference=(r?:Reference)=>{if(r?.kind==='local')r.id=id(r.id);};
+    f.roots.forEach(r=>{r.placement=id(r.placement);r.openStart=false;r.openEnd=false;});
+    f.blocks.forEach(b=>{b.localId=id(b.localId);b.children=b.children.map(id);b.relations=Object.fromEntries(Object.entries(b.relations).map(([k,v])=>[k,id(v)]));b.inline?.atoms.forEach(a=>{if(a.kind==='embed')a.embed=id(a.embed);});[...b.blockProperties,...b.inline?.properties??[]].forEach(p=>{p.localId=id(p.localId);reference(p.target);});});
+    f.placements.forEach(p=>{p.localId=id(p.localId);reference(p.target);});
+    f.definitions.forEach(d=>{d.localId=id(d.localId);reference(d.target);});
+    f.embeds.forEach(e=>{e.localId=id(e.localId);reference(e.asset);});
+    f.assets.forEach(a=>{a.localId=id(a.localId);});
+    f.links.forEach(l=>{l.localId=id(l.localId);l.from.id=id(l.from.id);reference(l.to);});
+    for(const table of ['roots','blocks','placements','definitions','embeds','assets','links'] as const)(output[table] as any[]).push(...f[table]);
+  });
+  return validateFragment(output);
+}
+export function documentFragment(fragment:MutableFragment,title:string,filename:string) {
+  const f=structuredClone(fragment),id='document-'+crypto.randomUUID(),edge=id+'-edge';
+  f.blocks.push({localId:id,type:'document-block',data:{metadata:{title,interchange:{version:1,suggestedFilename:filename}}},children:f.roots.map(r=>r.placement),relations:{},blockProperties:[]});
+  f.placements.push({localId:edge,kind:'owned',target:{kind:'local',object:'block',id}});
+  f.roots=[{placement:edge,openStart:false,openEnd:false,clippedStart:false,clippedEnd:false}];return validateFragment(f);
+}
+export async function prepareFiles(files:SuppliedFile[],explicit?:ImportFormat) {
+  checkFiles(files);
+  const results=[];
+  for(let index=0;index<files.length;index++) {
+    const file=files[index],read=await readSelectedFile(file,explicit);
+    const converted=read.format==='png'||read.format==='jpeg'?{fragment:imagesFragment([file]),diagnostics:[],title:undefined}:convertSource(read.source,read.format,true);
+    converted.fragment.assets.forEach(a=>{if(a.source.kind==='transfer')a.source.index=index;});
+    const title=read.title;
+    results.push({fragment:converted.fragment,title,filename:read.filename,diagnostics:[...read.diagnostics,...converted.diagnostics].map(d=>({...d,sourceName:file.name})),provenance:{version:1,filename:file.name.split(/[\\/]/).at(-1)!,format:read.format,byteHash:read.byteHash,...('encoding' in read?{encoding:read.encoding,bom:read.bom}:{})}});
+  }
+  return results;
+}

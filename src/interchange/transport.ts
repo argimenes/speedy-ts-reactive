@@ -98,17 +98,21 @@ export function captureClipboard(data: DataTransfer | null): ClipboardRepresenta
 }
 export function writeEventClipboard(data: DataTransfer | null, representations: ClipboardRepresentations) {
   if (!data) throw Error('Clipboard access failed; nothing was removed.');
-  data.setData('text/plain', representations['text/plain']);
-  data.setData('text/html', representations['text/html']);
-  try { data.setData(NATIVE_MIME, representations[NATIVE_MIME]); } catch { /* HTML carrier remains the native fallback. */ }
+  for (const type of ['text/plain', 'text/html', ...MARKDOWN_MIMES, NATIVE_MIME]) if (representations[type] !== undefined) {
+    if (type === 'text/plain' || type === 'text/html') data.setData(type, representations[type]);
+    else try { data.setData(type, representations[type]); } catch { /* Mandatory plain projection remains available. */ }
+  }
 }
 export function canWriteAsync() { return typeof navigator !== 'undefined' && !!navigator.clipboard?.write && typeof ClipboardItem !== 'undefined'; }
 export async function writeAsyncClipboard(representations: ClipboardRepresentations) {
-  const data: Record<string, Blob> = { 'text/plain': new Blob([representations['text/plain']], { type: 'text/plain' }), 'text/html': new Blob([representations['text/html']], { type: 'text/html' }) };
-  const custom = `web ${NATIVE_MIME}`;
-  if (ClipboardItem.supports?.(custom)) data[custom] = new Blob([representations[NATIVE_MIME]], { type: NATIVE_MIME });
+  const data: Record<string, Blob> = {};
+  for (const type of ['text/plain', 'text/html', ...MARKDOWN_MIMES, NATIVE_MIME]) if (representations[type] !== undefined) {
+    const native = type === 'text/plain' || type === 'text/html', name = native ? type : `web ${type}`;
+    if (native || ClipboardItem.supports?.(name)) data[name] = new Blob([representations[type]], {type});
+  }
   await navigator.clipboard.write([new ClipboardItem(data)]);
 }
+
 export async function readAsyncClipboardBundle(images = false): Promise<{ data: ClipboardRepresentations; files: Array<{blob: Blob; name: string}> }> {
   if (!navigator.clipboard?.read) throw Error('Use Command/Control-V to paste with this browser.');
   const items = await navigator.clipboard.read(), out: ClipboardRepresentations = {};

@@ -186,7 +186,7 @@ describe("Flint composite transient hosting", () => {
       expect(f.views()[0]).toBe(view);expect(f.editor.mounts.get(node.key)).toBe(mount);
     }
     expect(f.editor.repository.snapshot()).toEqual(before); expect(history).toBe(0);stop();
-    shell.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!.click();click('Files');await tick();
+    shell.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!.click();click('Open / Save native Ink…');await tick();
     const sheet=shell.querySelector<HTMLElement>('[aria-label="Storage and recovery"]')!;
     expect(sheet.contains(document.activeElement)).toBe(true);
     sheet.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await tick();

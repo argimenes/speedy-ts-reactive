@@ -17,6 +17,8 @@
 export type FeatureFlags = Readonly<{
   /** Shared native clipboard. Disable to restore all legacy clipboard routes together. */
   mutableClipboard: boolean;
+  /** Explicit file import, source conversion and semantic export. */
+  documentInterchange: boolean;
   /** Semantic external HTML through the shared Mutable clipboard pipeline. */
   externalHtmlClipboard: boolean;
   /** Explicit Markdown command and Markdown MIME through the shared clipboard. */
@@ -106,6 +108,7 @@ export type FeatureFlags = Readonly<{
 
 export const featureFlags: FeatureFlags = Object.freeze({
   mutableClipboard: true,
+  documentInterchange: true,
   externalHtmlClipboard: true,
   markdownClipboard: true,
   managedAssetClipboard: true,
