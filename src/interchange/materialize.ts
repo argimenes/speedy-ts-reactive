@@ -1,3 +1,4 @@
+import { managedAsset, assetKey } from './managed-asset';
 import { clone } from '../block-tree/clone';
 import { createBlockId, createContentKey, createPlacementKey } from '../block-tree/ids';
 import type { BlockFragment } from '../block-tree/clipboard';
@@ -85,6 +86,10 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
       for (const atom of b.inline.atoms) {
         const values = atom.kind === 'text' ? [...atom.text].map(text => ({ type: 'text-cell', payload: { text } as JsonObject })) : (() => {
           const e = embeds.get(atom.embed)!;
+          const asset = managedAsset(e.data.asset);
+          if (e.type === 'image-cell' && !e.data.original && asset && asset.cavernId === scope.cavernId && availableAssets.get(assetKey(asset)) === asset.assetId) {
+            return [{ type: 'image-cell', payload: { id: crypto.randomUUID(), asset: { ...asset }, src: '', status: 'ready', alt: String(e.data.alt ?? ''), ...(typeof e.data.title === 'string' ? { title: e.data.title } : {}), ...(typeof e.data.width === 'number' ? { width: e.data.width } : {}), ...(typeof e.data.height === 'number' ? { height: e.data.height } : {}) } }];
+          }
           // Reuse only a matching image already admitted in this Cavern. Never
           // accept a foreign /uploads URL merely because its filename matches.
           if (e.type === 'image-cell' && !e.data.original && f.provenance?.cavernId && f.provenance.cavernId === scope.cavernId && typeof e.data.assetId === 'string' && typeof e.data.src === 'string' && availableAssets.get(e.data.assetId) === e.data.src && /^\/uploads\/[^?#]+$/.test(e.data.src)) {

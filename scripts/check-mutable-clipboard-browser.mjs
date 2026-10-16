@@ -1,11 +1,23 @@
-// Isolated real Chrome clipboard/worker qualification. In-memory documents only.
+// Isolated Chrome clipboard/worker qualification; temporary Cavern assets and native reload.
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
+import express from 'express';
+import sharp from 'sharp';
+import { createManagedAssetService } from '../server/managed-assets-router.mjs';
+import { closeFilesystemWorkers } from './stage-c-gates/filesystem.mjs';
 const profile = await mkdtemp(path.join(tmpdir(), 'mutable-clipboard-'));
+const assetRoot = await mkdtemp(path.join(tmpdir(), 'mutable-clipboard-assets-'));
+const assetService = createManagedAssetService({ root: assetRoot, cavernId: 'proof', session: 'proof' });
+await assetService.recover();
+const assetApp = express(); assetApp.use(express.json());
+assetApp.use('/api/assets',(req,res,next)=>req.header('X-Mutable-Cavern') === 'proof' ? next() : res.sendStatus(409));
+assetApp.use('/api/assets', assetService.router);
+const imageBytes = await sharp({ create:{width:3,height:2,channels:3,background:'#c06020'} }).png().toBuffer();
+const imageBase64 = imageBytes.toString('base64');
 const vite = await createServer({ plugins: [{
   name: 'mutable-clipboard-proof',
   resolveId(id) { if (id === '/__clipboard.js') return '\0clipboard-proof'; },
@@ -15,19 +27,27 @@ const vite = await createServer({ plugins: [{
     import {registerCoreViews} from '/src/rendering/register-core-views.ts';
     import {ReactiveTreeView} from '/src/rendering/reactive-tree-view.tsx';
     import {exportClipboard,NATIVE_MIME} from '/src/interchange/transport.ts';
+    import {captureNative,nativeEnvelope,admitNative} from '/src/persistence/native-resource.ts';
     import {plainFragment} from '/src/interchange/serializer.ts';
     import '/src/index.css';
+    document.addEventListener('paste',event=>{const f=event.clipboardData?.files[0];if(f)window.receivedImageBytes=f.arrayBuffer().then(b=>Array.from(new Uint8Array(b)));},true);
     const editor=new ReactiveEditor({id:'doc',type:'document-block',children:[
       {id:'a',type:'standoff-editor-block',text:'Rome abc',standoffProperties:[{id:'old',type:'codex/entity-reference',value:'rome',start:0,end:3}]},
       {id:'b',type:'standoff-editor-block',text:'target'}]});
     editor.clipboard.setContext(()=>({cavernId:'proof',session:'proof'}));registerCoreViews(editor);
-    const projection=editor.createView('proof');render(()=>createComponent(ReactiveTreeView,{editor,projection}),document.getElementById('root'));editor.installGateway(document);
+    const projection=editor.createView('proof');const disposeView=render(()=>createComponent(ReactiveTreeView,{editor,projection}),document.getElementById('root'));editor.installGateway(document);
     const node=id=>Object.values(projection.state.nodes).find(n=>n.payload.id===id);
     const select=(id,start,end=start)=>{const n=node(id),m=editor.mounts.get(n.key);m.focus();m.restoreInlineSelection({anchor:start,head:end});editor.selections.setPrimary(n.key,n.contentKey,n.viewId,start,end);return m.focusElement;};
     const paste=(data)=>{const transfer=new DataTransfer();for(const [type,value] of Object.entries(data))transfer.setData(type,value);document.activeElement.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:transfer}));};
-    window.proof={editor,node,select,paste,exportClipboard,plainFragment,NATIVE_MIME,texts:()=>editor.encodeDocument().children.map(c=>c.text)};
+    window.proof={editor,node,select,paste,reopen:bytes=>{
+      disposeView();editor.dispose();
+      const fresh=new ReactiveEditor({id:'bank',type:'workspace-object-bank-block',children:[]},{features:{directDomCharacterCells:false}});fresh.clipboard.setContext(()=>({cavernId:'proof',session:'proof'}));registerCoreViews(fresh);
+      const bank=Object.values(fresh.repository.readState().contents).find(c=>c.viewType==='workspace-object-bank-block');
+      const admitted=admitNative(fresh.repository,bytes,bank.key);const view=fresh.createView('reopened',admitted.placementKey);
+      render(()=>createComponent(ReactiveTreeView,{editor:fresh,projection:view}),document.getElementById('root'));fresh.installGateway(document);
+    },captureNative,nativeEnvelope,admitNative,exportClipboard,plainFragment,NATIVE_MIME,texts:()=>editor.encodeDocument().children.map(c=>c.text)};
   `; },
-  configureServer(server) { server.middlewares.use(async (req, res, next) => {
+  configureServer(server) { server.middlewares.use(assetApp); server.middlewares.use(async (req, res, next) => {
     if (req.url !== '/__clipboard') return next(); res.setHeader('Content-Type', 'text/html');
     res.end(await server.transformIndexHtml(req.url, '<html><body><div id="root"></div><script type="module" src="/__clipboard.js"></script></body></html>'));
   }); },
@@ -100,15 +120,66 @@ try {
   assert.equal(await evaluate(`proof.node('b').payload.standoffProperties[0].type`), 'style/bold');
   await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
   await evaluate(`proof.select('b',0,6);proof.paste({'text/html':'<p onclick="window.__clipboardExecuted=true">A<img src="https://clipboard-probe.invalid/a.png" onerror="window.__clipboardExecuted=true" alt="map">B</p><script>window.__clipboardExecuted=true</script><style>@import "https://clipboard-probe.invalid/a.css";</style><iframe src="https://clipboard-probe.invalid/frame"></iframe>'})`);
-  await evaluate(`new Promise(resolve=>setTimeout(resolve,150))`);
+  await wait('!!proof.editor.clipboard.imagePrompt()');
+  await evaluate(`proof.editor.clipboard.chooseImages([])`);
+  await wait(`Object.values(proof.editor.repository.readState().contents).some(c=>c.viewType==='image-cell'&&c.payload.src==='')`);
   assert.equal(await evaluate(`!!window.__clipboardExecuted`), false);
   assert.equal(await evaluate(`Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell'&&c.payload.src==='').length`), 1);
   assert.deepEqual(externalRequests, []);
   await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+  // Explicit Markdown uses the real OS read, existing menu and cancellable worker.
+  await evaluate(`proof.select('b',0,6);navigator.clipboard.writeText('# Markdown\\n\\n3. item\\n4. next\\n\\n| A | B |\\n| - | - |\\n| x | y |')`);
+  await evaluate(`proof.editor.overlays.open({ownerKey:proof.node('b').key,viewType:'context-menu',anchor:{x:20,y:20}})`);
+  await wait(`[...document.querySelectorAll('[role="menuitem"]')].some(n=>n.textContent==='Paste as Markdown')`);
+  await evaluate(`[...document.querySelectorAll('[role="menuitem"]')].find(n=>n.textContent==='Paste as Markdown').click()`);
+  await wait(`document.querySelectorAll('.reactive-imported-list-marker').length===2`);
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('.reactive-imported-list-marker')].map(n=>n.textContent)`), ['3.', '4.']);
+  assert.equal(await evaluate(`proof.editor.encodeDocument().children[1].blockProperties[0].type`), 'block/font/size/h1');
+  assert.equal(await evaluate(`document.querySelector('[role="columnheader"]').textContent.includes('A')`), true);
+  await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+  await evaluate('proof.editor.repository.redo()');
+  assert.equal(await evaluate(`!!document.querySelector('[role="columnheader"]')`), true);
+  await evaluate('proof.editor.repository.undo()');
+  // MIME recognition, inert images and raw HTML share the same policies as HTML.
+  await evaluate(`proof.select('b',0,6);proof.paste({'text/markdown':'A![map](https://clipboard-probe.invalid/md.png "Map")B\\n\\n<script>window.__clipboardExecuted=true</script>'})`);
+  await wait('!!proof.editor.clipboard.imagePrompt()');
+  await evaluate(`proof.editor.clipboard.chooseImages([])`);
+  await wait(`Object.values(proof.editor.repository.readState().contents).some(c=>c.viewType==='image-cell'&&c.payload.src==='')`);
+  assert.equal(await evaluate(`!!window.__clipboardExecuted`), false);
+  assert.equal(await evaluate(`document.querySelector('.reactive-inline-image img').hasAttribute('src')`), false);
+  await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+  await evaluate(`proof.select('b',0,6);proof.paste({'text/plain':'**literal**'})`);
+  assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', '**literal**']);
+  await evaluate('proof.editor.repository.undo()');
+  await evaluate(`proof.select('b',0,6);proof.paste({'text/markdown':'**'+('x'.repeat(18000))+'**'})`);
+  await wait("proof.texts()[1].length===18000");
+  await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+  // A real OS image-only clipboard import: original bytes -> Cavern -> runtime URL.
+  await evaluate(`proof.select('b',0,6);navigator.clipboard.write([new ClipboardItem({'image/png':new Blob([Uint8Array.from(atob(${JSON.stringify(imageBase64)}),c=>c.charCodeAt(0))],{type:'image/png'})})])`);
+  await key('v');
+  await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
+  const reference=await evaluate(`Object.values(proof.editor.repository.readState().contents).find(c=>c.viewType==='image-cell').payload.asset`);
+  assert.equal(reference.cavernId,'proof');
+  assert.deepEqual((await assetService.store.get(reference.assetId,'proof')).bytes,Buffer.from(await evaluate('window.receivedImageBytes')));
+  const imageState=await evaluate(`JSON.stringify(proof.nativeEnvelope(proof.captureNative(proof.editor.repository.readState(),'doc')))`);
+  assert.ok(imageState.includes(reference.assetId));assert.equal(imageState.includes('blob:'),false);
+  await evaluate('proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','target']);
+  await evaluate('proof.editor.repository.redo()');await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
+  // Native recopy resolves an admitted asset but gives the pasted Cell a fresh identity.
+  await evaluate(`proof.select('b',0,1)`);await key('c');await wait(`proof.editor.clipboard.message().startsWith('Copied')`);
+  const firstImageKey=await evaluate(`Object.values(proof.editor.repository.readState().contents).find(c=>c.viewType==='image-cell').key`);
+  await evaluate(`proof.select('a',0)`);await key('v');await wait(`document.querySelectorAll('.reactive-inline-image img').length===2`);
+  assert.equal(await evaluate(`new Set(Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell').map(c=>c.key)).size`),2);
+  assert.equal(await evaluate(`Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell').every(c=>c.payload.asset?.assetId===${JSON.stringify(reference.assetId)})`),true, JSON.stringify(await evaluate(`({message:proof.editor.clipboard.message(),images:Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell').map(c=>c.payload)})`)));
+  await evaluate('proof.editor.repository.undo();proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','target']);
+  // Reopen native bytes through the real codec, then resolve the same portable original.
+  await evaluate(`proof.reopen(new TextEncoder().encode(${JSON.stringify(imageState)}))`);
+  await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: (await send('Browser.getVersion')).product, formats, nativeKeyboardCopyPaste: true, plainKeyboardPaste: true, acknowledgedCut: true, workerPasteAndUndo: true, staleWorkerCancelled: true, semanticHtmlRendering: true, htmlWorkerUndo: true, inertImages: true, externalRequests, errors }, null, 2));
+  assert.deepEqual(externalRequests, []);
+  console.log(JSON.stringify({ browser: (await send('Browser.getVersion')).product, formats, nativeKeyboardCopyPaste: true, plainKeyboardPaste: true, acknowledgedCut: true, workerPasteAndUndo: true, staleWorkerCancelled: true, semanticHtmlRendering: true, htmlWorkerUndo: true, markdownMenuAndOsRead: true, markdownMime: true, markdownWorkerUndo: true, managedImageOsPaste: true, managedImageUndoRedo: true, managedImageNativeReload: true, inertImages: true, externalRequests, errors }, null, 2));
 } finally {
   socket?.close();
   if (chrome.pid && chrome.exitCode === null && chrome.signalCode === null) { const exited = new Promise(resolve => chrome.once('exit', resolve)); chrome.kill('SIGKILL'); await exited; }
-  await vite.close(); await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  await vite.close(); await assetService.close(); await closeFilesystemWorkers(); await rm(assetRoot,{recursive:true,force:true}); await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

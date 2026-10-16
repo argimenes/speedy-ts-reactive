@@ -1,3 +1,4 @@
+import { managedAsset } from '../interchange/managed-asset';
 import { createRangeRendering, RangeEffectLayer, classesAt, type RangeEffectSource } from "./range-rendering";
 import { allocateUnderlineLane, type UnderlineLane } from "./standoff-styles";
 import type { AnnotationRange } from "../runtime/annotation-range-events";
@@ -703,11 +704,13 @@ export function StandoffEditorView(props: BlockViewProps) {
                       aria-label={String(cell()?.payload.alt ?? "Inline image")}
                     >
                       <img
-                        src={String(cell()?.payload.src ?? "") || undefined}
+                        ref={image => { createEffect(() => { const asset = managedAsset(cell()?.payload.asset); if (asset) { const release = editor.clipboard.assets.bind(image, asset); onCleanup(release); } }); }}
+                        src={managedAsset(cell()?.payload.asset) ? undefined : String(cell()?.payload.src ?? "") || undefined}
                         alt={String(cell()?.payload.alt ?? "")}
                         width={cell()?.payload.width as number | undefined}
                         height={cell()?.payload.height as number | undefined}
                         onLoad={event => {
+                          if (managedAsset(cell()?.payload.asset)) { scheduleMeasure(); return; }
                           // A cached image can finish after its transient view is disposed.
                           if (!event.currentTarget.isConnected || !cell()?.payload.src || !editor.node(cellKey)) return;
                           editor.commands.updateInlineImage(cellKey, { status: "ready" });
@@ -733,10 +736,11 @@ export function StandoffEditorView(props: BlockViewProps) {
     ) as HTMLDivElement;
     if (editor.features.directDomCharacterCells) {
       const cells = new DirectCharacterCells(element, (key, status) => {
+        if (managedAsset(editor.node(key)?.payload.asset)) { if (status === "ready") scheduleMeasure(); return; }
         if (!editor.node(key)?.payload.src) return;
         editor.commands.updateInlineImage(key, { status });
         if (status === "ready") scheduleMeasure();
-      });
+      }, (image, asset) => editor.clipboard.assets.bind(image, asset));
       createRenderEffect(() => {
         const owner = node();
         const styles = cellStyles();
@@ -762,7 +766,7 @@ export function StandoffEditorView(props: BlockViewProps) {
             hiddenSource: index !== property.start,
             alternative: index === property.start ? alternatives.get(property.id) : undefined };
           if (cell?.viewType === "image-cell") return { key, index, classes, text: "", image: {
-            src: String(cell.payload.src ?? ""), alt: String(cell.payload.alt ?? ""), label: String(cell.payload.alt ?? "Inline image"),
+            asset: managedAsset(cell.payload.asset), src: String(cell.payload.src ?? ""), alt: String(cell.payload.alt ?? ""), label: String(cell.payload.alt ?? "Inline image"),
             width: cell.payload.width as number | undefined, height: cell.payload.height as number | undefined,
           } };
           return { key, index, text: String(cell?.payload.text ?? ""), classes, style: cellStyleAt(styles, index),

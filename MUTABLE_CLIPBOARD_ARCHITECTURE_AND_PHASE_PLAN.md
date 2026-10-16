@@ -1,6 +1,6 @@
 # Mutable Clipboard Architecture and Four-Phase Implementation Plan
 
-Status: Phase 1 accepted. Phase 2 implemented; see Sections 10–11 for qualification and limitations. Phases 3–4 have not begun.
+Status: Phases 1–2 accepted. Phase 3 explicit Markdown implemented; see Section 13 for qualification. Managed-image storage is proposed in Section 12 and awaits approval before implementation. Phase 4 has not begun.
 
 Prepared against the current repository on 15 October 2026. The supplied **Mutable OS — Native Clipboard & Content Interchange** brief requires approval of this document before Phase 1, and a separate design review before Phase 4.
 
@@ -672,4 +672,138 @@ node scripts/check-mutable-clipboard-browser.mjs
 BENCHMARK_OUTPUT=/tmp/mutable-html-typing node scripts/benchmark-flint-typing-browser.mjs
 ```
 
-Phase 3 managed assets and Markdown import have not begun. Phase 4 remains reserved for the separate design discussion. The outstanding Phase 1 Safari/Firefox/Ctrl-platform compatibility checks are unchanged.
+The Phase 2 report ends here. The outstanding Phase 1 Safari/Firefox/Ctrl-platform compatibility checks are unchanged. Phase 3 progress and its approval checkpoint follow; Phase 4 remains reserved for the separate design discussion.
+
+## 12. Phase 3 asset-storage checkpoint — approved
+
+The user approved this design, including conservative retention, on 16 October 2026. The facility is Cavern-wide immutable **binary asset storage**, with PNG/JPEG as the only Phase 3 admission policy. The exact validated imported binary is the immutable original. Future previews, thumbnails, compression or alternative representations would be separate derived resources; none are implemented here. Section 14 records implementation and qualification.
+
+### Existing infrastructure and reuse
+
+- `server/cavern-lifecycle.ts` establishes the durable `cavernGuid`, a fresh activation `session`, the selected application root and the `X-Mutable-Cavern` request fence. It drains requests before switching Caverns and creates scoped native/history stores. Mount the asset service in that existing scoped router.
+- `server/index.ts` currently accepts PNG/JPEG by client-declared MIME, writes timestamp-named files directly into `<Cavern>/uploads`, and exposes them through `/uploads`. It has no upload byte limit, decoded-image validation, hash deduplication or operation ledger. Reuse the multipart transport tooling, **not** that publication protocol for clipboard assets. Preserve legacy uploads without a bulk migration.
+- `server/native-vault-store.mjs`, `src/persistence/managed-pair.mjs` and the pinned-directory filesystem operations already provide no-follow confinement, writer locking, SHA-256, exclusive writes, fsync and recoverable publication patterns. Reuse these primitives, adding only asset-specific records; do not turn document saving or SQLite knowledge leases into asset leases.
+- MutableFragment already has scoped asset descriptors. Native persistence retains authored image payload data; repository undo/redo retains forward/inverse operations, and saved history has independent immutable publications. Reuse these paths, without an asset scan on typing or a second history system.
+
+### Identity, storage and portable references
+
+Use an immutable reference `{ kind: "managed", cavernId, assetId: "sha256:<digest>" }`. The pair `(cavernId, assetId)` is the asset identity; the hash is of the validated original bytes. Each pasted image Cell/Block still gets a new identity. Immutable binary reuse does not turn a paste into a move.
+
+Store bytes in `<Cavern>/.mutable/assets/objects/<prefix>/<digest>` with validated MIME, byte length and decoded dimensions in an immutable manifest. Keep staging and operation records in sibling private directories. These assets are portable Cavern data and must be included when copying/backing up the Cavern, unlike a disposable index. Moving the complete Cavern retains its GUID and resolves the same references. Moving a document alone does not carry its bytes; cross-Cavern references remain unresolved until a deliberate transfer supplies validated bytes to the destination service.
+
+Persist neither absolute paths, localhost URLs, session tokens nor `blob:` URLs. An editor-owned resolver reads through the scoped `/api/assets` service and uses cached object URLs for rendering. Cache keys include Cavern activation and asset identity; release object URLs when their last mounted consumer is disposed. Responses from an old activation cannot populate the new cache. A render URL is not proof of asset identity. Legacy `/uploads` payloads remain readable through the current compatibility path and are never inferred to be new managed assets from URL equality.
+
+Deduplication is **within the destination Cavern**, after streaming SHA-256 and raster validation. Use create-only publication under the existing writer lock; concurrent identical imports reuse the verified object. An existing hash path must have matching manifest/length/hash, otherwise fail closed. Client-supplied hashes, names, MIME and foreign identifiers are hints, never authority. No cross-Cavern existence probing or automatic lookup in another open folder.
+
+### Staging, publication, leases and recovery
+
+Keep a small durable operation ledger rather than a new asset database. Suggested API operations under the Cavern router are `begin`, multipart `stage`, `publish`, `status`, `renew`, `finish` and `abort`; an operation UUID makes retries idempotent. Bind each import to the Cavern GUID/activation and an unguessable lease token. Proposed bounds: 20 images / 40 MiB per import, 10 MiB per image, 16,384 pixels per dimension and 40 million decoded pixels; PNG/JPEG only initially. Validate file signatures and decode under memory/time limits off the server request loop. MIME declarations alone are insufficient; SVG, animation, executable/polyglot content and unsupported formats remain inert with a notice.
+
+1. **Staging:** create an exclusive operation directory, record the lease, stream bounded bytes into private temporary files, validate and hash. No fragment reference is live yet. Lease activity is driven by the import, not keystrokes; use a renewable ten-minute operation lease.
+2. **Prepared/publication:** recheck the destination bookmark and Cavern session. Under the writer lock, durably record intent, publish immutable objects/manifests create-only, sync directories and write a durable publication receipt. Return admitted references only after this completes. Reused objects are recorded separately from newly published ones.
+3. **Insertion:** recheck the existing occurrence/selection/revision/session bookmark immediately before the shared one-batch fragment insertion. No transaction stays open during upload. An optional `finish` acknowledgement records the editor commit ID; it does not save a document or create another undo step.
+4. **Abort/expiry:** release the operation lease and remove only its unpublished temporary bytes when ownership is proven. Never remove reused objects. Any object already published, or with ambiguous publication status, is retained and classified as an orphan/recovery candidate. A timeout does not prove that publication failed.
+5. **Restart:** inspect the bounded operation ledger on Cavern open, reconcile intent/receipt/hash evidence and complete or classify interrupted publication idempotently. Expired leases cannot be resumed by a different session without a deliberate status/recovery action. Do not replay an editor insertion or remote download on startup. Invalid records are quarantined/reported, not guessed through.
+
+This refines Section 5's “release new unreferenced blobs”: unpublished stage bytes can be removed immediately; published candidates are released from the operation but conservatively retained. Publication and an in-memory edit are separate commit points, so automatic deletion after a lost acknowledgement would be unsafe.
+
+### Retention across unsaved changes and history
+
+**Recommended Phase 3 default: no automatic garbage collection of published objects.** A published asset survives Undo, Redo, redo-stack replacement, failed Save, tab closure, crash, lease expiry and old saved-history references. Undo removes the image objects through existing history operations; Redo uses the same immutable asset bytes. Open unsaved documents do not require background saves or per-edit reference accounting. Lease expiry cleans staging, not retained assets.
+
+The tradeoff is retained orphan disk space. Record candidates for later explicit maintenance, but do not provide a destructive collector until its reachability analysis accounts for saved resources, retained native generations, durable history, unresolved references and live/unsaved editors. Such analysis belongs to an explicit maintenance operation, never the typing path. Retaining an image does **not** make unsaved document edits crash-recoverable; manual document saving remains unchanged.
+
+### Safe remote-image acquisition and consent
+
+HTML/Markdown parsing remains network-inert. Present the exact remote URLs and image count in a focused confirmation; default to **Keep placeholders** with an explicit **Download selected images** action. Consent is per import and bound to the selected normalized URLs and Cavern activation. Copying, previewing, reopening, undoing or retrying a stale operation never implies new consent. Supplied clipboard files require no remote fetch; reconcile them to descriptors only with unambiguous evidence and retain HTML order.
+
+Acquisition runs on the scoped server after consent. Initially allow HTTPS on the standard port only, reject credentials/local files/data URLs, forward no cookies or authorization, and enforce streaming byte/deadline/decode limits. Resolve and vet all IPv4/IPv6 answers, reject nonpublic/reserved/private/link-local/loopback and mixed public/private results, and pin a vetted address for the actual connection while preserving TLS hostname validation. Disable automatic redirects; allow at most three same-origin HTTPS redirects with all checks repeated, and require new consent for a different origin. This prevents a hostname rebind or redirect from bypassing address checks. URLs remain untrusted even after consent.
+
+Use the same validation/staging/dedup protocol as supplied files. Cancel/denial leaves inert descriptors. A failed image import never partially inserts text or deletes the selected destination: offer an explicit placeholder-only retry through the same fragment plan. Network work can be cancelled on selection/session changes and disposal; any published bytes still follow conservative recovery/retention.
+
+### Required qualification after approval
+
+Test image/file ordering and HTML reconciliation; same-Cavern hash races and foreign identity isolation; byte/signature/decode bounds; denied consent and SSRF/redirect/DNS-rebinding cases; fault injection at each ledger/publication boundary; lease expiry and restart; stale destination/session cancellation; repeated paste identity freshness; one-step undo/redo; native Save/reload and full-Cavern relocation. Existing legacy uploads must still work. Only after that work is complete will a full Phase 3 qualification report be issued.
+
+## 13. Phase 3 Markdown implementation and interim qualification
+
+Access: open the existing **TextBlock context menu → Paste as Markdown**. It reads the clipboard asynchronously in the user action, restores the menu's captured selection, and imports through `MutableFragment`, shared preparation/materialization, insertion and undo. If clipboard read is denied/unavailable, a one-shot prompt permits Command/Control-V at the same unchanged destination within 15 seconds. Focus loss, changed destination/session, disposal or intervening typing prevents that intent from being reused.
+
+`markdownClipboard` is default-on and subordinate to the single shared `mutableClipboard` route. There is no competing clipboard listener. Normal negotiation remains native → carrier → legacy → semantic HTML → Markdown MIME → plain text. `text/markdown` and `text/x-markdown` are recognized, including web-custom forms on async read. The explicit menu command instead chooses Markdown MIME or plain text intentionally. Plain-paste intent wins; ordinary `text/plain` is never guessed to be Markdown.
+
+The existing Lezer/CodeMirror Markdown parser supplies editor syntax trees, not the required semantic reference/entity conversion. The existing persistence Markdown subset is also unsuitable for this clipboard dialect. This implementation uses [mdast-util-from-markdown](https://github.com/syntax-tree/mdast-util-from-markdown) with the [GFM table extension](https://github.com/syntax-tree/mdast-util-gfm-table). A data-only semantic-node adapter reuses the existing HTML converter's structures and security policies; it never emits/mounts HTML. Both existing Vite configurations narrowly select the entity decoder's data-only entry because its browser entry requires DOM and fails in workers. No other build-system behavior is changed.
+
+Supported dialect: CommonMark paragraphs, ATX/setext headings, emphasis/strong, hard/soft breaks, ordered/unordered nested lists, links/reference definitions/autolinks, inline/fenced/indented code and image descriptors; plus basic GFM tables. Code whitespace and fence language/info are retained as inert data; code remains editable text. Raw HTML is literal text. Existing H5/H6, blockquote, horizontal-rule, code-typography and table-alignment degradation is reported. Task-list controls, footnotes, extra GFM extensions, executable code and visual Markdown preview are outside this subset. At this interim checkpoint images remained inert; the subsequently approved image implementation is recorded in Section 14.
+
+All Markdown preparation uses the existing cancellable worker where available, even for short input. Source length, AST depth/count and fragment limits are bounded, with a ten-second worker deadline; no parsing subscribes to typing. Async results revalidate the destination before a single commit. Native paragraph/structural identity rules and existing multi-caret restrictions apply unchanged. Manual Mutable JSON saving and opened filenames are unaffected.
+
+Qualification:
+
+- **67 tests passed across four focused files**, covering Markdown semantics/security/limits/negotiation and the existing native/HTML pipeline. UI tests cover restored menu selection, one commit and undo/redo, fresh identities, importer/core flags, native-event fallback, cancelled reads and stale selection/document/Cavern/disposal. Existing bounded-typing and imported-list checks pass.
+- **Reactive/server typechecks and client/server production builds passed.** Use the existing SQLite artifact prerequisite between client and server builds described in Section 10; typechecking the tests must follow completed server declaration generation. Existing bundle-size warnings remain.
+- **Chrome 155 on macOS:** real OS clipboard read from the TextBlock menu, headings/list/table rendering and undo/redo passed. Markdown MIME and 18,000-character worker imports passed; image descriptors and literal raw HTML caused **zero attempted external requests** and no runtime exceptions. Existing native/HTML/cut/worker browser checks passed. MIME checks use synthetic supplied formats; the menu test uses the real OS clipboard. Safari/Firefox and Ctrl-platform qualification remains open.
+- **Real Flint letter typing/undo benchmark:** 8.1 ms median / 10.5 ms p95 synchronous input, zero repository snapshots and unrelated status reads; undo restored the fixture. The accepted Phase 2 run was 8.8 / 17.0 ms. These are headless diagnostic runs, not a user-visible latency guarantee. Clipboard parsing runs only on explicit paste.
+
+```sh
+npx vitest run src/interchange/markdown-import.test.ts src/interchange/html-import.test.ts src/interchange/clipboard.test.ts src/rendering/mutable-clipboard.test.tsx
+npm run typecheck
+node scripts/check-mutable-clipboard-browser.mjs
+BENCHMARK_OUTPUT=/tmp/mutable-markdown-typing node scripts/benchmark-flint-typing-browser.mjs
+```
+
+Interim limitations at the time of this report: image bytes were not yet acquired or stored; CommonMark plus basic tables is the documented subset, not every Markdown extension. Environments without Worker use the existing bounded deferred preparation fallback, which cannot preempt synchronous parsing. Async clipboard availability remains browser-dependent, with the recoverable native-event path described above. This is an interim Markdown report, not completion of Phase 3. Section 12 was subsequently approved and implemented as recorded below; Phase 4 has not begun.
+
+
+## 14. Phase 3 completion — managed images and explicit Markdown
+
+The approved scope is implemented. `managedAssetClipboard` is enabled by default and subordinate to the existing `mutableClipboard` coordinator; it introduces no competing clipboard handler. `markdownClipboard` and all accepted Phase 1/2 negotiation and insertion behavior remain in place. Phase 4 has not begun.
+
+### Import, ownership and original bytes
+
+- Image-only native clipboard events and asynchronous clipboard reads admit supplied PNG/JPEG files. HTML/Markdown retain authored image positions. An explicitly matching, unique `cid:<filename>` binds a supplied file to its descriptor; unmatched or ambiguous files are reported instead of guessed or appended as duplicates. Remote image descriptors remain inert until the user chooses **Download selected images**. **Keep placeholders** and **Cancel paste** perform no acquisition.
+- Parsing and materialization still use the shared worker, `MutableFragment`, bookmark validation, insertion planner and repository history. Image publication precedes one document commit. Destination changes, cancelled preparation, editor disposal or Cavern activation changes reject stale insertion. Acquisition failure offers an explicit placeholder-only retry; it never silently deletes the destination or partially inserts text.
+- Known, same-Cavern managed references are verified by the scoped service before reuse, including OS clipboard HTML carriers. Foreign references are not probed. Opaque/unsupported authored descriptors remain inactive even if another image admits the same binary. Every pasted image receives a new cell/object identity; its immutable asset may be shared. True move behavior is unchanged.
+- `ManagedAssetStore` is a general binary store; its HTTP admission adapter currently accepts only PNG/JPEG. SHA-256 is calculated from the **original received bytes**. Signatures, framing, single-frame status, dimensions and a full raster decode are validated in a disposable Node child using Sharp. Validation returns metadata, never replacement pixels. Originals are never resized, recompressed or stripped. No derived resources or other media importers were added.
+- Bounds: 10 MiB/image, 40 MiB/import, 20 supplied/acquired images, 16,384 pixels/dimension and 40 million decoded pixels. A decoder has a ten-second deadline, a 128 MiB V8 heap cap, one Sharp thread and no Sharp cache; native decoding memory is additionally bounded by image dimensions, not by the V8 heap cap. At most two decoder/service operations run concurrently. Multipart and remote bodies are bounded buffers; this implementation does not claim streaming decode or streaming hash computation.
+
+### Cavern publication, recovery and retention
+
+Storage is `<Cavern>/.mutable/assets/objects/<hash-prefix>/<hash>/original` plus an immutable manifest. The canonical reference contains only `{kind:"managed", cavernId, assetId:"sha256:…"}`. No runtime URL, filesystem path or activation token is persisted. Include `.mutable/assets` in complete Cavern backups/moves. A document copied alone to another Cavern retains unresolved references; automatic cross-Cavern byte transfer is outside Phase 3.
+
+The existing Cavern lifecycle mounts `/api/assets` behind its activation fence. Explicit old-session headers are not overwritten by the browser's scoped-fetch wrapper. Publication reuses pinned-directory, no-follow, create-only, fsync and writer-lock primitives. Existing manifests/lengths/hashes must agree; duplicates reuse an original. Legacy `/upload` and `/uploads` behavior is unchanged.
+
+Each import has a Cavern/session-bound UUID, secret lease token and renewable ten-minute expiry. Durable begin, staging, publication intent/receipt, finish/abort and cleanup records distinguish the two commit points. Publication receipts record objects that existed at publication; recovery conservatively retains ambiguous objects. Finish/abort remove only identified operation staging files. A completed cleanup marker avoids repeating file cleanup on subsequent startup.
+
+On Cavern open, recovery completes an interrupted local publication from validated staging evidence, checks identities/hashes, and cleans obsolete staging. It neither downloads images nor replays document edits. Corrupt/conflicting evidence is retained and reported through service diagnostics and the server log. Startup uses the existing bounded directory enumeration (up to 10,100 operation records); exceeding it reports incomplete recovery without deleting assets or preventing Cavern access. There is no maintenance UI or automatic ledger compaction in this phase.
+
+**All published originals are retained indefinitely.** Undo, Redo, replacing a redo stack, failed Save, closing an unsaved tab, lease expiry and lost acknowledgements cannot collect them. This deliberately permits unused disk space. It does not recover unsaved document edits after a crash. Document saving remains manual and keeps the opened filename; there are no clipboard-triggered document saves or Markdown sidecars.
+
+### Acquisition and rendering boundaries
+
+Remote acquisition requires per-import consent for the displayed normalized HTTPS URLs. The server accepts standard port 443 only, rejects credentials and nonpublic/reserved IPv4/IPv6 (including mixed DNS answers), pins a vetted address for TLS connection, forwards no cookies/authorization, and rechecks up to three same-origin redirects. Different-origin redirects fail and require a new deliberate paste/consent decision. A fifteen-second total deadline, streaming response cap and the same raster validator apply. There is no automatic remote fetch on copy, rendering, reload, undo, recovery or placeholder retry.
+
+An editor-owned resolver verifies the returned original's SHA-256 and creates a ref-counted runtime object URL shared by mounted consumers. Both direct character cells and the Solid fallback renderer release their own bindings on removal. The last release revokes the URL; editor disposal aborts pending reads and releases the cache. Image loading refreshes geometry without updating document payloads or history. Neighbouring typing does not rebind images, fetch assets, measure them independently or rewrite runtime URLs. Asset preparation runs only on explicit imports, and resolution only on mounting/changing an image reference.
+
+### Qualification
+
+**127 automated tests passed**: 110 Vitest checks across nine focused files and 17 Node server/security checks. Final results and reproducible commands are recorded below. The browser harness uses an isolated temporary Cavern and disposable browser profile; it does not write user documents. Remote security cases use deterministic injected DNS/transport, not external network probes.
+
+- Focused native/HTML/Markdown, image preparation, UI lifecycle, cache and direct-renderer tests cover original descriptor order, explicit CID matching, ambiguous files, consent/denial, failed-download placeholders, stale destinations, fresh identities, managed-carrier recopy, unknown-type nonactivation, cache cleanup and bounded typing work.
+- Real server tests cover PNG/JPEG full decoding and exact-byte preservation, hash deduplication, lease expiry/renewal, interrupted staging and every publication boundary, repeated recovery, symlink confinement, scoped retrieval, HTTP multipart admission and denied remote consent. SSRF tests cover private/mapped addresses, mixed DNS answers, pinned lookup, redirects, rebinding, response bounds and cancellation.
+- The real Cavern router is tested for service mounting and stale-session rejection. The real native persistence session is tested for explicit Save to the existing filename, unchanged on-disk document before Save, reopen with the portable reference, undo/redo retention and unchanged original bytes. Storage relocation is tested by copying the entire private asset subtree and reopening it under the same Cavern identity.
+- **Chrome 155 on macOS:** real OS image paste, exact preservation of the bytes delivered by the browser, managed-image recopy through the native HTML carrier, new cell identities, one-step undo/redo, and native reload in the fallback renderer passed. Existing native/cut/plain/HTML/Markdown worker checks also passed, with **zero runtime exceptions and zero attempted external image requests** for unconsented images. Chrome may normalize a PNG before delivering it from the OS clipboard; the imported original is the byte stream actually supplied to Mutable, not a pre-clipboard fixture.
+- **Real Flint letter typing benchmark:** 6.6 ms median / 9.9 ms p95 synchronous input, zero repository snapshots and unrelated status reads, and Undo restored the fixture. The accepted Markdown-only run was 8.1 / 10.5 ms. This diagnostic run shows no observed typing regression; headless frame timing is not a user-visible latency guarantee.
+- Production client/server builds and reactive/server typechecks pass. A production-bundle HTTP smoke check also passed multipart admission, the bundled decoder and byte-identical publication. Existing client bundle-size warnings remain. Browser validation is Chrome/macOS; Safari/Firefox and Ctrl-platform clipboard qualification remain open. Remote transport is deterministically qualified, not a live third-party server interoperability matrix.
+
+```sh
+npx vitest run src/interchange src/runtime/managed-assets.test.ts src/rendering/direct-character-cells.test.tsx src/rendering/mutable-clipboard.test.tsx server/cavern-lifecycle.test.ts src/persistence/native-vault-session.test.ts
+node --test server/managed-assets.test.mjs server/asset-remote.test.mjs
+npm run build:client
+node scripts/build-sqlite-foundation.mjs
+npm run build:server
+npm run typecheck
+node scripts/check-mutable-clipboard-browser.mjs
+BENCHMARK_OUTPUT=/tmp/mutable-phase3-typing node scripts/benchmark-flint-typing-browser.mjs
+```
+
+Limits retained intentionally: PNG/JPEG only; no SVG/GIF/animated-image import, data-URL acquisition, automatic foreign-Cavern resolution, derived images, garbage collector or Phase 4 paste-choice product work. Existing asynchronous clipboard browser restrictions and the bounded no-Worker fallback remain as previously documented.

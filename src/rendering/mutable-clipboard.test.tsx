@@ -6,14 +6,15 @@ import { ReactiveTreeView } from './reactive-tree-view';
 import { exportClipboard, NATIVE_MIME } from '../interchange/transport';
 import { plainFragment } from '../interchange/serializer';
 import { captureNative, decodeNative, nativeEnvelope } from '../persistence/native-resource';
+import { blockMenuItems } from '../runtime/block-menu-actions';
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
-function setup(enabled = true, externalHtml = true, directDomCharacterCells = true) {
+function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false) {
   const editor = new ReactiveEditor({ type: 'document-block', id: 'doc', children: [
     { type: 'standoff-editor-block', id: 'a', text: 'Rome abc', standoffProperties: [{ id: 'p', type: 'codex/entity-reference', value: 'rome', start: 0, end: 3 }] },
     { type: 'standoff-editor-block', id: 'b', text: 'target' },
-  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells } });
+  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard } });
   editor.clipboard.setContext(() => ({ cavernId: 'cavern', session: 'session' })); registerCoreViews(editor);
   const projection = editor.createView('clipboard-ui'), host = document.body.appendChild(document.createElement('div'));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -30,6 +31,126 @@ function setup(enabled = true, externalHtml = true, directDomCharacterCells = tr
 }
 
 describe('Mutable clipboard UI routing and lifecycle', () => {
+  const clipboardRead = (read: () => Promise<unknown>) => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { read } });
+    cleanup.push(() => { delete (navigator as any).clipboard; });
+  };
+  const markdownItems = (value: string) => [{ types: ['text/plain'], getType: async () => ({ size: value.length, text: async () => value }) }];
+  it('exposes explicit Markdown in the existing menu, restores its selection, and commits once', async () => {
+    clipboardRead(async () => markdownItems('**bold**'));
+    const s = setup(); s.select('b', 0, 6); const commits = vi.spyOn(s.editor.repository, 'commit');
+    const key = s.node('b').key;
+    s.editor.overlays.open({ ownerKey: key, viewType: 'context-menu', anchor: { x: 0, y: 0 } });
+    await tick();
+    blockMenuItems(s.editor, key).find(i => i.label === 'Paste as Markdown')!.run!();
+    await vi.waitFor(() => expect(s.texts()).toEqual(['Rome abc', 'bold']));
+    const inserted = s.editor.encodeDocument().children![1];
+    expect(commits).toHaveBeenCalledTimes(1); expect(inserted.standoffProperties).toMatchObject([{ type: 'style/bold' }]);
+    expect(s.editor.overlays.overlays).toHaveLength(0);
+    expect(document.activeElement).toBe(s.editor.mounts.get(s.node(inserted.id!).key)!.focusElement);
+    s.editor.repository.undo(); expect(s.texts()).toEqual(['Rome abc', 'target']);
+    s.editor.repository.redo(); expect(s.texts()).toEqual(['Rome abc', 'bold']);
+  });
+  it('uses supplied Markdown MIME via preparation and never guesses ordinary plain text', async () => {
+    const s = setup(); s.dispatch('paste', s.select('b', 0, 6), { 'text/markdown': '**typed**' });
+    await vi.waitFor(() => expect(s.texts()[1]).toBe('typed'));
+    expect(s.editor.encodeDocument().children![1].standoffProperties).toMatchObject([{ type: 'style/bold' }]);
+    s.editor.repository.undo(); s.dispatch('paste', s.select('b', 0, 6), { 'text/plain': '**literal**' });
+    expect(s.texts()[1]).toBe('**literal**'); expect(s.node('b').payload.standoffProperties).toEqual([]);
+  });
+  it('keeps Markdown behind both the shared flag and its importer preference', () => {
+    for (const s of [setup(false), setup(true, true, true, false)]) {
+      expect(blockMenuItems(s.editor, s.node('b').key).some(i => i.label === 'Paste as Markdown')).toBe(false);
+      const commit = vi.spyOn(s.editor.repository, 'commit'); s.editor.clipboard.pasteMarkdown(s.node('b').key);
+      expect(commit).not.toHaveBeenCalled();
+    }
+    const s = setup(true, true, true, false); s.dispatch('paste', s.select('b', 0, 6), { 'text/markdown': '**literal**' });
+    expect(s.texts()[1]).toBe('**literal**');
+  });
+  it('offers a one-shot native-event fallback when asynchronous clipboard reading is denied', async () => {
+    clipboardRead(async () => { throw Error('denied'); });
+    const s = setup(), target = s.select('b', 0, 6); s.editor.clipboard.pasteMarkdown(s.node('b').key);
+    await vi.waitFor(() => expect(s.editor.clipboard.message()).toContain('Press Command/Control-V'));
+    expect(s.texts()[1]).toBe('target');
+    s.dispatch('paste', target, { 'text/plain': '**bold**' });
+    await vi.waitFor(() => expect(s.texts()[1]).toBe('bold'));
+    s.editor.repository.undo(); s.dispatch('paste', s.select('b', 0, 6), { 'text/plain': '**literal**' });
+    expect(s.texts()[1]).toBe('**literal**');
+  });
+  it.each(['typing', 'selection', 'cavern', 'cancel', 'dispose'])('rejects asynchronous Markdown completion after %s changes', async change => {
+    let resolve!: (items: unknown) => void;
+    clipboardRead(() => new Promise(r => { resolve = r; }));
+    const s = setup(); s.select('b', 0, 6); s.editor.clipboard.pasteMarkdown(s.node('b').key);
+    if (change === 'typing') s.editor.commands.replaceInlineRange(s.node('b').key, 0, 0, '!');
+    if (change === 'selection') s.select('b', 2);
+    if (change === 'cavern') s.editor.clipboard.setContext(() => ({ cavernId: 'other', session: 'other' }));
+    if (change === 'cancel') [...document.querySelectorAll<HTMLButtonElement>('[data-mutable-clipboard-status] button')].find(b => b.textContent === 'Cancel paste')!.click();
+    if (change === 'dispose') s.editor.clipboard.dispose();
+    const commit = vi.spyOn(s.editor.repository, 'commit'); resolve(markdownItems('**stale**')); await tick();
+    expect(commit).not.toHaveBeenCalled(); expect(s.texts()[1]).toBe(change === 'typing' ? '!target' : 'target');
+  });
+  it.each([true, false])('offers explicit remote consent with no automatic fetch (direct=%s)', async direct => {
+    const s = setup(true, true, direct, true, true), fetch = vi.spyOn(globalThis, 'fetch');
+    s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<p>A<img src="https://clipboard-probe.invalid/map.png" alt="map">B</p>' });
+    await vi.waitFor(() => expect(s.editor.clipboard.imagePrompt()?.urls).toEqual(['https://clipboard-probe.invalid/map.png']));
+    expect(fetch).not.toHaveBeenCalled(); expect(s.texts()[1]).toBe('target');
+    const button = [...document.querySelectorAll<HTMLButtonElement>('[data-mutable-image-consent] button')].find(b => b.textContent === 'Keep placeholders')!;
+    button.focus();
+    button.click();
+    expect(document.activeElement, 'focus after consent').toBe(s.editor.mounts.get(s.node('b').key)!.focusElement);
+    await vi.waitFor(() => expect(s.host.querySelector('.reactive-inline-image img'), s.editor.clipboard.message()).not.toBeNull());
+    expect(s.host.querySelector('.reactive-inline-image img')!.hasAttribute('src')).toBe(false);expect(fetch).not.toHaveBeenCalled();
+    s.editor.repository.undo();expect(s.texts()).toEqual(['Rome abc', 'target']);
+  });
+  it('cancels consent without changing the document', async () => {
+    const s = setup(true, true, true, true, true), commits = vi.spyOn(s.editor.repository, 'commit');
+    s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<img src="https://example.com/a">' });
+    await vi.waitFor(() => expect(s.editor.clipboard.imagePrompt()).toBeDefined());s.editor.clipboard.cancel();await tick();expect(commits).not.toHaveBeenCalled();expect(s.texts()[1]).toBe('target');
+  });
+  it('admits carrier-only managed images through the same verified import path', async () => {
+    const s = setup(true, true, true, true, true);
+    const ref = {kind:'managed',cavernId:'cavern',assetId:'sha256:'+'a'.repeat(64)};
+    const fragment = plainFragment('');
+    fragment.embeds.push({localId:'image',type:'image-cell',data:{asset:ref,alt:'original'}});
+    fragment.blocks[0].inline!.atoms.push({kind:'embed',embed:'image'});
+    const verify = vi.spyOn(s.editor.clipboard.assets,'verify').mockResolvedValue({...ref,kind:'managed',mediaType:'image/png',byteLength:10,width:3,height:2});
+    vi.spyOn(s.editor.clipboard.assets,'bind').mockImplementation(()=>()=>{});
+    const carrier = exportClipboard(fragment);
+    s.dispatch('paste',s.select('b',0,6),{'text/html':carrier['text/html'],'text/plain':carrier['text/plain']});
+    await vi.waitFor(()=>expect(Object.values(s.editor.repository.readState().contents).find(c=>c.viewType==='image-cell')?.payload.asset).toEqual(ref));
+    expect(verify).toHaveBeenCalledTimes(1);
+    s.editor.repository.undo();expect(s.texts()[1]).toBe('target');
+  });
+  it.each(['success','failure','stale'])('handles consented remote acquisition and %s completion', async outcome => {
+    const s = setup(true,true,true,true,true), assets=s.editor.clipboard.assets;
+    const lease={id:'op',token:'token',cavernId:'cavern'};
+    const manifest={kind:'managed' as const,cavernId:'cavern',assetId:'sha256:'+'b'.repeat(64),mediaType:'image/png',byteLength:10,width:3,height:2};
+    vi.spyOn(assets,'begin').mockResolvedValue(lease);
+    vi.spyOn(assets,'bind').mockImplementation(()=>()=>{});
+    const action=vi.spyOn(assets,'action').mockResolvedValue({});
+    const remote=vi.spyOn(assets,'remote').mockImplementation(async()=>{
+      if(outcome==='failure')throw Error('Download rejected');
+      if(outcome==='stale')s.editor.commands.replaceInlineRange(s.node('b').key,0,0,'!');
+      return manifest;
+    });
+    s.dispatch('paste',s.select('b',0,6),{'text/html':'<IMG src="https://example.com/image.png">'});
+    await vi.waitFor(()=>expect(s.editor.clipboard.imagePrompt()).toBeDefined());
+    expect(remote).not.toHaveBeenCalled();
+    const checkbox=document.querySelector<HTMLInputElement>('[data-mutable-image-consent] input')!;
+    checkbox.checked=true;checkbox.dispatchEvent(new Event('change',{bubbles:true}));
+    const download=[...document.querySelectorAll<HTMLButtonElement>('[data-mutable-image-consent] button')].find(b=>b.textContent==='Download selected images')!;
+    download.focus();download.click();
+    if(outcome==='failure'){
+      await vi.waitFor(()=>expect(s.editor.clipboard.imagePrompt()?.error).toContain('Download rejected'));
+      s.editor.clipboard.chooseImages([]);
+    }
+    await vi.waitFor(()=>expect(s.editor.clipboard.message()).not.toBe('Preparing paste…'));
+    await vi.waitFor(()=>expect(action).toHaveBeenCalledWith(lease,outcome==='success'?'finish':'abort'));
+    const image=Object.values(s.editor.repository.readState().contents).find(c=>c.viewType==='image-cell');
+    if(outcome==='success')expect(image?.payload.asset).toMatchObject({assetId:manifest.assetId});
+    if(outcome==='failure')expect(image?.payload.status).toBe('failed');
+    if(outcome==='stale'){expect(image).toBeUndefined();expect(s.texts()[1]).toBe('!target');}
+  });
   it('copies and pastes native annotations, with exactly one new handler and one undo entry', () => {
     const s = setup(), copy = s.dispatch('copy', s.select('a', 0, 4));
     expect(copy.values[NATIVE_MIME]).toBeTruthy(); expect(copy.values['application/json']).toBeUndefined();

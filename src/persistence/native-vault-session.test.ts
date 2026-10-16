@@ -58,3 +58,42 @@ it('cannot use relocation to adopt an externally moved same-ID pair with unchang
  const scan=await f.service.discoverVault('outside-move');expect(scan.documents[0].state).toBe('paired');const q={operationId:crypto.randomUUID(),vault:'outside-move',kind:'pair' as const,source:'outside-move/rich.mutable.json',destination:'outside-move/renamed.mutable.json',baselines:scan.documents.map((d:any)=>({resourceId:d.resourceId,baseline:d.baseline}))};
  await expect(f.service.relocateVault(q)).rejects.toThrow('differs from the live binding');expect(f.service.location(f.id)?.filename).toBe('rich.mutable.json');expect(await fs.stat(path.join(f.root,'outside-move/rich.mutable.json'))).toBeTruthy();
 });
+
+
+it('manually saves portable managed image references to the opened filename and reopens them without fetching or rewriting originals',async()=>{
+ const {imagesFragment}=await import('../interchange/clipboard-images');
+ const {materializeFragment}=await import('../interchange/materialize');
+ const {assetKey}=await import('../interchange/managed-asset');
+ const f=await host();
+ // Run the actual Node service outside jsdom's transformed import.meta.url.
+ const item=JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',`
+   import {ManagedAssetStore} from './server/managed-assets.mjs';
+   import {validateImportedImage} from './server/asset-image-validation.mjs';
+   import {closeFilesystemWorkers} from './scripts/stage-c-gates/filesystem.mjs';
+   import sharp from 'sharp';
+   const store=new ManagedAssetStore({root:process.argv[1],cavernId:'saved-cavern',session:'save-session'});
+   const bytes=await sharp({create:{width:3,height:2,channels:3,background:'blue'}}).jpeg().toBuffer();
+   const lease=await store.begin(),item=await store.stage(lease,bytes,await validateImportedImage(bytes));
+   await store.publish(lease);await store.finish(lease);await store.close();await closeFilesystemWorkers();
+   console.log(JSON.stringify(item));
+ `,f.root],{encoding:'utf8'}));
+ const originalPath=path.join(f.root,'.mutable/assets/objects',item.assetId.slice(7,9),item.assetId.slice(7),'original');
+ const bytes=await fs.readFile(originalPath);
+ const ref={kind:'managed' as const,cavernId:'saved-cavern',assetId:item.assetId};
+ const fragment=imagesFragment([{name:'photo.jpg',blob:new Blob()}]);fragment.embeds[0].data.asset=ref;
+ const materialized=materializeFragment(fragment,{cavernId:ref.cavernId},new Map([[assetKey(ref),ref.assetId]]));
+ const root=Object.values(f.editor.repository.readState().contents).find(c=>c.viewType==='document-block')!;
+ const placement=Object.values(f.editor.repository.readState().placements).find(p=>p.contentKey===root.key)!;
+ const view=f.editor.createView('image-save',placement.key);
+ const before=await fs.readFile(path.join(f.root,'rich.mutable.json'),'utf8');
+ f.editor.commands.insertFragment(materialized,{kind:'at',parentKey:view.state.rootKey,index:0});
+ expect(await fs.readFile(path.join(f.root,'rich.mutable.json'),'utf8')).toBe(before);
+ expect((await f.service.save(f.id))?.phase).toBe('saved');
+ expect(f.service.location(f.id)?.filename).toBe('rich.mutable.json');
+ const saved=await fs.readFile(path.join(f.root,'rich.mutable.json'),'utf8');expect(saved).toContain(ref.assetId);expect(saved).not.toContain('blob:');
+ const fresh=f.make();await fresh.service.open({folder:'.',filename:'rich.mutable.json'});
+ expect(Object.values(fresh.editor.repository.readState().contents).find(c=>c.viewType==='image-cell'&&(c.payload.asset as any)?.assetId===ref.assetId)?.payload.asset).toEqual(ref);
+ f.editor.repository.undo();expect((await fs.readFile(originalPath)).equals(bytes)).toBe(true);
+ f.editor.repository.redo();expect(Object.values(f.editor.repository.readState().contents).some(c=>c.viewType==='image-cell'&&(c.payload.asset as any)?.assetId===ref.assetId)).toBe(true);
+ expect(await fs.readFile(path.join(f.root,'rich.mutable.json'),'utf8')).toBe(saved);
+});

@@ -1,3 +1,4 @@
+import { managedAsset } from './managed-asset';
 import { clone } from '../block-tree/clone';
 import { linkedDefinitionOwner, linkedRegistry } from '../block-tree/linked-annotations';
 import type { JsonObject, RepositoryState } from '../block-tree/types';
@@ -82,7 +83,7 @@ export function serializeSelection(state: RepositoryState, slices: Slice[], scop
           const embed = id(); b.inline.atoms.push({ kind: 'embed', embed });
           // Retain source descriptors inertly. Phase 1 does not fetch foreign URLs.
           const asset = id();
-          f.assets.push({ localId: asset, source: scope.cavernId && typeof cell.payload.assetId === 'string'
+          f.assets.push({ localId: asset, source: managedAsset(cell.payload.asset) ? { ...managedAsset(cell.payload.asset)! } : scope.cavernId && typeof cell.payload.assetId === 'string'
             ? { kind: 'managed', cavernId: scope.cavernId, assetId: cell.payload.assetId }
             : { kind: 'unresolved', description: String(cell.payload.alt ?? 'Inline object') } });
           f.embeds.push({ localId: embed, type: cell.viewType, data: omit(cell.payload, ['id']), asset: { kind: 'local', object: 'asset', id: asset } });

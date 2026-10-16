@@ -99,7 +99,7 @@ export function importSemanticHtml(tree: HtmlNode): { fragment?: MutableFragment
         const relativeSource = !src && source && !/^(?:[a-z][\w+.-]*:|\/\/)|[\u0000-\u001f]/i.test(source) ? source : undefined;
         const alt = attribute(node, 'alt') ?? '', title = attribute(node, 'title');
         const dimensions = Object.fromEntries(['width', 'height'].flatMap(name => { const n = integer(attribute(node, name), 0); return n > 0 && n <= 10000 ? [[name, n]] : []; }));
-        f.assets.push({ localId: asset, source: src ? { kind: 'remote', url: src } : { kind: 'unresolved', description: alt || 'Image', ...(relativeSource ? { relativeSource } : {}) } });
+        f.assets.push({ localId: asset, source: src ? { kind: 'remote', url: src } : { kind: 'unresolved', description: alt || 'Image', ...(relativeSource ? { relativeSource } : {}), ...(/^cid:[^\s<>]+$/i.test(source) ? { contentId: source.slice(4) } : {}) } });
         // No inferred base URL, data URLs, style bags, srcset or event attributes.
         f.embeds.push({ localId: embed, type: 'image-cell', asset: { kind: 'local', object: 'asset', id: asset }, data: { src, alt, ...(relativeSource ? { relativeSource } : {}), ...(title ? { title } : {}), ...dimensions } });
         emit({ kind: 'embed', embed }, marks); warn('Images were preserved as inactive placeholders.'); return;

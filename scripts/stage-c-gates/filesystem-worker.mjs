@@ -2,7 +2,7 @@
 // mutation, then verifies its inode. Operations use single relative components;
 // swapping an ancestor with a symlink cannot redirect a write to another tree.
 import { constants } from 'node:fs';
-import { open, mkdir, lstat, opendir, link } from 'node:fs/promises';
+import { open, mkdir, lstat, opendir, link, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 const identity = s => ({ dev: String(s.dev), ino: String(s.ino) });
 const same = (a, b) => a.dev === b.dev && a.ino === b.ino;
@@ -58,6 +58,10 @@ async function handle(request) {
       const stat = await file.stat();
       if (!stat.isFile()) throw new Error('not a regular file');
       if (op.expectedIdentity && !same(identity(stat), op.expectedIdentity)) throw new Error('file identity changed');
+      if (op.kind === 'unlink') {
+        if (!op.expectedIdentity) throw new Error('removal requires identity');
+        await unlink(name); await dir.sync(); return {};
+      }
       if (op.kind === 'read') {
         const offset = op.offset ?? 0, length = op.length ?? stat.size;
         if (!Number.isSafeInteger(op.maxBytes) || op.maxBytes < 0 || !Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(length) || length < 0 || length > op.maxBytes || offset + length > stat.size) throw new Error('read byte limit');

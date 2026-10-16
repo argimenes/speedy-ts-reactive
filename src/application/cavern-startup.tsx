@@ -52,7 +52,7 @@ export function CavernStartup(props: { children: (cavern: CurrentCavern) => JSX.
     const address = new URL(input instanceof Request ? input.url : String(input), window.location.href);
     if (address.origin === window.location.origin && ((address.pathname.startsWith('/api/') && !address.pathname.startsWith('/api/cavern/')) || address.pathname === '/upload')) {
       const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
-      if (generation) headers.set('X-Mutable-Cavern', generation);
+      if (generation && !headers.has('X-Mutable-Cavern')) headers.set('X-Mutable-Cavern', generation);
       return originalFetch.call(window, input, { ...init, headers });
     }
     return originalFetch.call(window, input, init);

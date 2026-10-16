@@ -19,6 +19,10 @@ export type FeatureFlags = Readonly<{
   mutableClipboard: boolean;
   /** Semantic external HTML through the shared Mutable clipboard pipeline. */
   externalHtmlClipboard: boolean;
+  /** Explicit Markdown command and Markdown MIME through the shared clipboard. */
+  markdownClipboard: boolean;
+  /** Managed PNG/JPEG clipboard import through the Cavern immutable asset facility. */
+  managedAssetClipboard: boolean;
   /** Explicit global Cavern setup and startup lifecycle. */
   cavernStartup: boolean;
   /** Generic Desktop Window maximize/restore; normal geometry is retained. */
@@ -103,6 +107,8 @@ export type FeatureFlags = Readonly<{
 export const featureFlags: FeatureFlags = Object.freeze({
   mutableClipboard: true,
   externalHtmlClipboard: true,
+  markdownClipboard: true,
+  managedAssetClipboard: true,
   cavernStartup: true,
   windowMaximize: true,
   flint: true,

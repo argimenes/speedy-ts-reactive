@@ -9,3 +9,5 @@ await build({entryPoints:[fileURLToPath(new URL('../server/native-document-store
 await import('./build-relocation-helper.mjs');
 
 await import('./build-native-knowledge-worker.mjs');
+
+await import('./build-managed-assets.mjs');

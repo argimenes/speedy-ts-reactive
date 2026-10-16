@@ -1,3 +1,5 @@
+import { ManagedAssets, type AssetLease } from './managed-assets';
+import { captureFiles, imagesFragment, resolveClipboardImages, type ClipboardFile } from '../interchange/clipboard-images';
 import { createSignal } from 'solid-js';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { Destination } from '../block-tree/types';
@@ -6,7 +8,7 @@ import { serializeSelection, plainFragment, type Slice } from '../interchange/se
 import { materializeFragment } from '../interchange/materialize';
 import { inlineMergePredicate } from '../interchange/insertion';
 import { fragmentGroup, validateFragment, type InterchangeScope, type MutableFragment } from '../interchange/fragment';
-import { canWriteAsync, captureClipboard, exportClipboard, importClipboard, readAsyncClipboard, writeAsyncClipboard, writeEventClipboard } from '../interchange/transport';
+import { canWriteAsync, captureClipboard, exportClipboard, importClipboard, MARKDOWN_MIMES, readAsyncClipboard, readAsyncClipboardBundle, writeAsyncClipboard, writeEventClipboard } from '../interchange/transport';
 import { preparePaste, type PastePreparation, type PreparedPaste } from '../interchange/prepare';
 import type { BlockFragment } from '../block-tree/clipboard';
 
@@ -29,18 +31,30 @@ export class MutableClipboard {
   private cancelPreparation?: () => void;
   private plainUntil = 0;
   private plainTarget?: EventTarget | null;
+  private markdownIntent?: { until: number; target: Element; bookmark: Bookmark };
+  private markdownReadEpoch = 0;
+  readonly assets = new ManagedAssets(() => this.context(), () => this.editor.features.managedAssetClipboard);
+  private readonly imagePromptSignal = createSignal<{ urls: string[]; error?: string }>();
+  readonly imagePrompt = this.imagePromptSignal[0];
+  private chooseImageResult?: (urls: string[] | undefined) => void;
+  private importController?: AbortController;
+  private assetLease?: AssetLease;
+  private assetInserted = false;
+  chooseImages(urls: string[] | undefined) { this.chooseImageResult?.(urls); }
+
   constructor(private editor: ReactiveEditor) {}
   enabled() { return this.editor.features.mutableClipboard; }
   setContext(read: () => { cavernId?: string; session?: string }) { this.context = read; }
   notify(message: string) { if (this.alive) this.status[1](message); }
-  dismiss() { this.status[1](''); }
-  cancel() { this.cancelPreparation?.(); }
+  dismiss() { if (this.imagePrompt()) this.cancel(); this.status[1](''); }
+  cancel() { this.markdownReadEpoch++; this.markdownIntent = undefined; this.importController?.abort(); this.chooseImages(undefined); this.cancelPreparation?.(); }
   key(event: KeyboardEvent) {
     if (!this.enabled()) return;
     if (event.isComposing) { this.clearIntent(); return; }
+    if (this.markdownIntent && !['Meta', 'Control', 'Shift', 'Alt'].includes(event.key) && event.key.toLowerCase() !== 'v') this.markdownIntent = undefined;
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'v') { this.plainUntil = Date.now() + 1500; this.plainTarget = event.target; }
   }
-  clearIntent() { this.plainUntil = 0; this.plainTarget = undefined; }
+  clearIntent() { this.plainUntil = 0; this.plainTarget = undefined; this.markdownIntent = undefined; }
   private scope(contentKey?: string): InterchangeScope {
     const state = this.editor.repository.readState();
     const resource = contentKey && resourceOwner(state, contentKey);
@@ -48,15 +62,16 @@ export class MutableClipboard {
     try { if (resource) resourceId = resourceSource(resource)?.resourceId; } catch { /* Legacy untitled documents have no portable identity. */ }
     return { ...(this.context().cavernId ? { cavernId: this.context().cavernId } : {}), ...(resourceId ? { resourceId } : {}) };
   }
-  private textBookmark(event: Event, cross = false): Bookmark | undefined {
+  private textBookmark(event?: Event, cross = false, nodeKey?: string): Bookmark | undefined {
     const active = cross && this.editor.crossText.range();
     if (active) {
       const slices = this.editor.crossText.resolve(active.anchor, active.head).map(s => ({ placementKey: this.editor.node(s.nodeKey)!.placementKey, start: s.start, end: s.end }));
       return { kind: 'text', viewId: active.viewId, slices, disjoint: false, signature: JSON.stringify(active), revision: this.editor.repository.state.revision, scope: this.scope(this.editor.node(active.head.occurrenceKey)?.contentKey), session: this.context().session };
     }
-    const target = event.target instanceof Element ? event.target : undefined;
+    const mount = nodeKey ? this.editor.mounts.get(nodeKey) : undefined;
+    const target = mount?.root ?? (event?.target instanceof Element ? event.target : undefined);
     if (target?.closest('[data-block-selection-handle], [data-block-selection-inspector], input, textarea, select, [role="dialog"]')) return;
-    const resolved = this.editor.mounts.resolveEvent(event);
+    const resolved = mount && nodeKey ? { nodeKey, handle: mount } : event ? this.editor.mounts.resolveEvent(event) : undefined;
     if (!resolved || resolved.handle.inputPolicy !== 'standoff' || resolved.handle.composing) return;
     const node = this.editor.node(resolved.nodeKey); if (!node) return;
     const set = this.editor.selections.sets[node.key];
@@ -81,8 +96,45 @@ export class MutableClipboard {
   private valid(bookmark: Bookmark, event?: Event, cross = false): boolean {
     if (!this.alive || bookmark.revision !== this.editor.repository.state.revision || bookmark.session !== this.context().session || bookmark.scope.cavernId !== this.context().cavernId || !this.editor.projections.has(bookmark.viewId)) return false;
     if (bookmark.kind === 'blocks') return bookmark.signature === JSON.stringify(this.editor.blockSelection.actionTargets().map(i => i.nodeKey));
-    if (!cross && bookmark.nodeKey && this.editor.mounts.get(bookmark.nodeKey)?.root.contains(document.activeElement) !== true) return false;
-    return !!event && this.textBookmark(event, cross)?.signature === bookmark.signature;
+    if (!cross && bookmark.nodeKey && this.editor.mounts.get(bookmark.nodeKey)?.root.contains(document.activeElement) !== true && !document.activeElement?.closest('[data-mutable-image-consent]')) return false;
+    return this.textBookmark(event, cross, bookmark.nodeKey)?.signature === bookmark.signature;
+  }
+  /** Minimal explicit command, exposed in the existing TextBlock menu. */
+  pasteMarkdown(nodeKey: string) {
+    if (!this.enabled() || !this.editor.features.markdownClipboard || !this.alive) return;
+    try {
+      if (this.pending) throw Error('A clipboard operation is already in progress.');
+      const mount = this.editor.mounts.get(nodeKey);
+      if (!mount || mount.inputPolicy !== 'standoff' || mount.composing) return;
+      // Menus already retain the exact native selection. Restore before bookmarking,
+      // and close without scheduling a second focus/selection restoration.
+      const menu = this.editor.overlays.overlays.find(o => o.viewType === 'context-menu' && o.ownerKey === nodeKey);
+      const selection = menu?.returnFocusKey === nodeKey ? menu.returnInlineSelection : mount.captureInlineSelection?.();
+      if (menu) this.editor.overlays.close(menu.key, false);
+      mount.focus(); if (selection) mount.restoreInlineSelection?.(selection);
+      const cross = !!this.editor.crossText.range();
+      const bookmark = this.textBookmark(undefined, cross, nodeKey); if (!bookmark) return;
+      this.clearIntent();
+      const readEpoch = this.markdownReadEpoch;
+      this.notify('Reading clipboard…');
+      this.asyncTask(async () => {
+        let data, files: ClipboardFile[] = [];
+        try { const bundle = await readAsyncClipboardBundle(this.editor.features.managedAssetClipboard); data = bundle.data; files = bundle.files; }
+        catch {
+          if (readEpoch !== this.markdownReadEpoch) throw Error('Paste cancelled.');
+          if (!this.valid(bookmark, undefined, cross)) throw Error('Destination changed; paste cancelled.');
+          this.markdownIntent = { until: Date.now() + 15000, target: mount.focusElement, bookmark };
+          this.notify('Clipboard read unavailable. Press Command/Control-V here within 15 seconds to paste as Markdown.'); return;
+        }
+        if (readEpoch !== this.markdownReadEpoch) throw Error('Paste cancelled.');
+        if (!this.valid(bookmark, undefined, cross)) throw Error('Destination changed; paste cancelled.');
+        this.notify('Preparing Markdown…');
+        const prepared = await this.prepareImport({ data, plain: false, asMarkdown: true, scope: bookmark.scope, assets: [...this.availableAssets()], blocks: [...this.availableBlocks(bookmark.scope)], selections: bookmark.disjoint ? bookmark.slices.length : 1 }, files, bookmark, undefined, cross);
+        if (!this.valid(bookmark, undefined, cross)) throw Error('Destination changed; paste cancelled.');
+        const notice = prepared.fragment ? this.insert(bookmark, prepared.fragment, false, prepared.natives) : undefined;
+        this.notify(prepared.notice ?? notice ?? 'Pasted Markdown.');
+      });
+    } catch (error) { this.error(error); }
   }
   handleText(event: ClipboardEvent, cross = false): boolean {
     if (!this.enabled()) return false;
@@ -100,9 +152,9 @@ export class MutableClipboard {
       else {
         if (this.pending) throw Error('A clipboard operation is already in progress.');
         if (id === 'selection.paste') this.asyncTask(async () => {
-          const data = await readAsyncClipboard(); if (!this.valid(bookmark)) throw Error('Destination changed; paste cancelled.');
+          const { data, files } = await readAsyncClipboardBundle(this.editor.features.managedAssetClipboard); if (!this.valid(bookmark)) throw Error('Destination changed; paste cancelled.');
           this.notify('Preparing paste…');
-          const imported = await this.prepare({ data, plain: false, scope: bookmark.scope, assets: [...this.availableAssets()], blocks: [...this.availableBlocks(bookmark.scope)], selections: 1 });
+          const imported = await this.prepareImport({ data, plain: false, scope: bookmark.scope, assets: [...this.availableAssets()], blocks: [...this.availableBlocks(bookmark.scope)], selections: 1 }, files, bookmark);
           if (!this.valid(bookmark)) throw Error('Destination changed; paste cancelled.');
           const notice = imported.fragment ? this.insert(bookmark, imported.fragment, false, imported.natives) : undefined; this.notify(imported.notice ?? notice ?? 'Pasted Blocks.');
         });
@@ -119,19 +171,23 @@ export class MutableClipboard {
     this.stop(event);
     if (this.pending) throw Error('A clipboard operation is already in progress.');
     if (event.type === 'paste') {
-      const plain = this.plainUntil >= Date.now() && this.plainTarget === event.target; this.clearIntent();
+      const plain = this.plainUntil >= Date.now() && this.plainTarget === event.target;
+      const intent = this.markdownIntent;
+      const asMarkdown = !!intent && intent.until >= Date.now() && intent.target === event.target && this.valid(intent.bookmark, event, cross);
+      this.clearIntent();
       const data = captureClipboard(event.clipboardData);
-      if (Object.values(data).reduce((n, value) => n + value.length, 0) > 10000) {
+      const files = this.editor.features.managedAssetClipboard && !plain ? captureFiles(event.clipboardData) : [];
+      if ((!plain && this.editor.features.managedAssetClipboard && (files.length > 0 || Object.values(data).some(value => /image-cell|data-mutable-fragment|<img\b|!\[/i.test(value)))) || (this.editor.features.markdownClipboard && !plain && (asMarkdown || MARKDOWN_MIMES.some(type => data[type] !== undefined))) || Object.values(data).reduce((n, value) => n + value.length, 0) > 10000) {
         this.notify('Preparing paste…');
         this.asyncTask(async () => {
-          const prepared = await this.prepare({ data, plain, scope: b.scope, assets: [...this.availableAssets()], blocks: [...this.availableBlocks(b.scope)], selections: b.disjoint ? b.slices.length : 1 });
+          const prepared = await this.prepareImport({ data, plain, asMarkdown, scope: b.scope, assets: [...this.availableAssets()], blocks: [...this.availableBlocks(b.scope)], selections: b.disjoint ? b.slices.length : 1 }, files, b, event, cross);
           if (!this.valid(b, event, cross)) throw Error('Destination changed; paste cancelled.');
           const notice = prepared.fragment ? this.insert(b, prepared.fragment, false, prepared.natives) : undefined;
           this.notify(prepared.notice ?? notice ?? 'Pasted Mutable content.');
         });
         return;
       }
-      const imported = importClipboard(data, plain, this.editor.features.externalHtmlClipboard);
+      const imported = importClipboard(data, plain, this.editor.features.externalHtmlClipboard, this.editor.features.markdownClipboard);
       const notice = imported.fragment ? this.insert(b, imported.fragment) : undefined;
       this.notify(imported.notice ?? notice ?? 'Pasted Mutable content.'); return;
     }
@@ -161,17 +217,54 @@ export class MutableClipboard {
   }
   private asyncTask(task: () => Promise<void>) {
     this.pending = true;
-    void task().catch(e => { if (this.alive) this.error(e); }).finally(() => { this.pending = false; });
+    this.importController = new AbortController(); this.assetInserted = false;
+    void task().catch(e => { if (this.alive) this.error(e); }).finally(async () => {
+      const lease = this.assetLease, inserted = this.assetInserted; this.assetLease = undefined;
+      this.pending = false; this.importController = undefined;
+      if (lease) { try { await this.assets.action(lease, inserted ? 'finish' : 'abort'); } catch { /* Durable ledger retains publication and recovers staging on next Cavern open. */ } }
+    });
+  }
+  private async prepareImport(input: PastePreparation, files: ClipboardFile[], bookmark: Bookmark, event?: Event, cross = false): Promise<PreparedPaste> {
+    if (!this.editor.features.managedAssetClipboard || input.plain) return this.prepare(input);
+    const parsed = await this.prepare({ ...input, parseOnly: true });
+    const fragment = parsed.fragment ?? (files.length ? imagesFragment(files) : undefined);
+    if (!fragment) return parsed;
+    const valid = () => this.valid(bookmark, event, cross);
+    const choose = (urls: string[], error?: string) => new Promise<string[] | undefined>(resolve => {
+      if (!valid()) { resolve(undefined); return; }
+      this.imagePromptSignal[1]({ urls, error });
+      this.chooseImageResult = selected => {
+        const restore = valid() && !!document.activeElement?.closest('[data-mutable-image-consent]');
+        this.chooseImageResult = undefined;
+        if (restore && bookmark.nodeKey) { const mount = this.editor.mounts.get(bookmark.nodeKey); const slice = bookmark.slices[bookmark.primaryIndex ?? 0]; const selection = mount?.captureInlineSelection?.() ?? { anchor: slice.start!, head: slice.end! }; mount?.focus(); if (selection) mount?.restoreInlineSelection?.(selection); }
+        this.imagePromptSignal[1](undefined); resolve(selected);
+      };
+    });
+    let resolved;
+    try {
+      resolved = await resolveClipboardImages({ fragment, files, assets: this.assets, cavernId: bookmark.scope.cavernId, signal: this.importController!.signal, valid, choose, lease: value => { this.assetLease = value; } });
+    } catch (error) {
+      if (!valid() || this.importController!.signal.aborted || (error as Error).message === 'Paste cancelled.') throw error;
+      const choice = await choose([], `${(error as Error).message} Keep images as placeholders instead?`);
+      if (!choice) throw Error('Paste cancelled.');
+      const lease = this.assetLease; this.assetLease = undefined;
+      if (lease) await this.assets.action(lease, 'abort').catch(() => {});
+      resolved = { fragment, admitted: [], notice: 'Images were retained as inactive placeholders.' };
+    }
+    if (!valid()) throw Error('Destination changed; paste cancelled.');
+    const prepared = await this.prepare({ ...input, fragment: resolved.fragment, assets: [...input.assets, ...resolved.admitted] });
+    return { ...prepared, notice: [resolved.notice, (parsed.fragment ? parsed.notice : undefined)?.replace('Images were preserved as inactive placeholders.', resolved.admitted.length ? '' : 'Images were preserved as inactive placeholders.')].filter(Boolean).join(' ') || undefined };
   }
   private prepare(input: PastePreparation): Promise<PreparedPaste> {
-    input = { ...input, semanticHtml: this.editor.features.externalHtmlClipboard };
+    input = { ...input, semanticHtml: this.editor.features.externalHtmlClipboard, markdown: this.editor.features.markdownClipboard };
     if (typeof Worker === 'undefined') return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { this.cancelPreparation = undefined; try { resolve(preparePaste(input)); } catch (e) { reject(e); } }, 0);
       this.cancelPreparation = () => { clearTimeout(timer); this.cancelPreparation = undefined; reject(Error('Paste cancelled.')); };
     });
     return new Promise((resolve, reject) => {
       const worker = new Worker(new URL('../interchange/prepare.worker.ts', import.meta.url), { type: 'module' });
-      const finish = () => { worker.terminate(); this.cancelPreparation = undefined; };
+      const finish = () => { clearTimeout(deadline); worker.terminate(); this.cancelPreparation = undefined; };
+      const deadline = setTimeout(() => { finish(); reject(Error('Paste preparation timed out; nothing was changed.')); }, 10000);
       worker.onmessage = event => { finish(); if (event.data.error) reject(Error(event.data.error)); else resolve(event.data.result); };
       worker.onerror = () => { finish(); reject(Error('Paste preparation failed; nothing was changed.')); };
       this.cancelPreparation = () => { finish(); reject(Error('Paste cancelled.')); };
@@ -215,7 +308,7 @@ export class MutableClipboard {
     if (b.kind === 'blocks') {
       const native = prepared?.[0] ?? materialize(fragment);
       const keys = this.editor.commands.insertFragment(native, b.destination!, { commandId: 'selection.paste', subjects: [], clipboard: { token: crypto.randomUUID(), action: 'paste', preservedIds: false } });
-      this.editor.blockSelection.replaceKeys(keys.map(k => this.editor.nodeForPlacementInView(k, b.viewId)!.key)); this.editor.blockClipboard.dismiss(); return diagnostic(native);
+      this.editor.blockSelection.replaceKeys(keys.map(k => this.editor.nodeForPlacementInView(k, b.viewId)!.key)); this.editor.blockClipboard.dismiss(); this.assetInserted = true; return diagnostic(native);
     }
     // Multiple disjoint source groups preserve their dependencies before allocation.
     const groups: MutableFragment['roots'][] = [[]];
@@ -233,7 +326,7 @@ export class MutableClipboard {
       const root = e.fragment.state.contents[e.fragment.state.placements[e.fragment.roots[0]].contentKey];
       return !inlineMergePredicate(e.fragment, 'standoff-editor-block')(root);
     })) throw Error('Paste structured content into a single text selection.');
-    const results = this.editor.commands.insertMutableText(edits, cut);
+    const results = this.editor.commands.insertMutableText(edits, cut); this.assetInserted = true;
     const positions = results.map((r, i) => ({ ...r, caret: r.caret + edits.slice(i + 1).reduce((delta, e) => {
       const root = e.fragment.state.contents[e.fragment.state.placements[e.fragment.roots[0]].contentKey];
       return delta + root.inlineContent.length - (e.segments[0].end - e.segments[0].start);
@@ -258,5 +351,5 @@ export class MutableClipboard {
     this.asyncTask(async () => { await writeAsyncClipboard(exportClipboard(fragment)); this.notify('Recovered the cut content to the clipboard.'); });
   }
   private error(error: unknown) { this.notify(error instanceof Error ? error.message : String(error)); }
-  dispose() { this.alive = false; this.cancel(); this.clearIntent(); this.recoverySignal[1](undefined); this.dismiss(); }
+  dispose() { this.alive = false; this.cancel(); this.assets.dispose(); this.clearIntent(); this.recoverySignal[1](undefined); this.dismiss(); }
 }

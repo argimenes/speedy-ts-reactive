@@ -95,6 +95,9 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   }
 
   const items: BlockMenuItem[] = [...(editor.mounts.get(key)?.contextActions?.() ?? []), historyEntry];
+  if (node.viewType === 'standoff-editor-block' && editor.features.mutableClipboard && editor.features.markdownClipboard) {
+    items.push({ label: 'Paste as Markdown', run: () => editor.clipboard.pasteMarkdown(key) });
+  }
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if (doc) {
     items.push(command("sticky.createFloating", "New Sticky Note"));

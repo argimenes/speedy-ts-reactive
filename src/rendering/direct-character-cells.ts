@@ -1,3 +1,4 @@
+import { managedAsset, assetKey, type ManagedAssetReference } from '../interchange/managed-asset';
 import type { JSX } from "solid-js";
 
 export interface CharacterCellPresentation {
@@ -8,7 +9,7 @@ export interface CharacterCellPresentation {
   concealed?: boolean;
   classes?: string;
   hiddenSource?: boolean;
-  image?: { src: string; alt: string; label: string; width?: number; height?: number };
+  image?: { asset?: ManagedAssetReference; src: string; alt: string; label: string; width?: number; height?: number };
   alternative?: { id: string; end: number; cells: CharacterCellPresentation[] };
 }
 
@@ -18,6 +19,8 @@ type Entry = {
   text?: string;
   style?: JSX.CSSProperties;
   alternative?: DirectCharacterCells;
+  assetKey?: string;
+  releaseAsset?: () => void;
 };
 
 /** Owns only a paragraph's character DOM. The canonical editor still owns all
@@ -33,6 +36,7 @@ export class DirectCharacterCells {
   constructor(
     private readonly flow: HTMLElement,
     private readonly imageStatus?: (key: string, status: "ready" | "failed") => void,
+    private readonly bindAsset?: (image: HTMLImageElement, asset: ManagedAssetReference) => () => void,
   ) {}
 
   update(cells: readonly CharacterCellPresentation[]): void {
@@ -45,7 +49,7 @@ export class DirectCharacterCells {
     const retained = new Set(keys);
     for (const [key, entry] of this.entries) {
       if (retained.has(key)) continue;
-      entry.alternative?.dispose();
+      entry.alternative?.dispose(); entry.releaseAsset?.();
       entry.element.remove();
       this.entries.delete(key);
     }
@@ -61,7 +65,7 @@ export class DirectCharacterCells {
       let entry = this.entries.get(cell.key);
       if (entry && entry.kind !== kind) {
         if (cursor === entry.element) cursor = cursor.nextSibling;
-        entry.alternative?.dispose();
+        entry.alternative?.dispose(); entry.releaseAsset?.();
         entry.element.remove();
         this.entries.delete(cell.key);
         entry = undefined;
@@ -99,7 +103,9 @@ export class DirectCharacterCells {
         setAttribute(element, "aria-label", cell.image.label);
         // Inert clipboard descriptors must neither load the current page via an
         // empty src nor generate an image-status history entry on error.
-        setAttribute(image, "src", cell.image.src || undefined);
+        const asset = managedAsset(cell.image.asset), key = asset ? assetKey(asset) : undefined;
+        if (key !== entry.assetKey) { entry.releaseAsset?.(); entry.releaseAsset = undefined; entry.assetKey = key; image.removeAttribute('src'); if (asset) entry.releaseAsset = this.bindAsset?.(image, asset); }
+        if (!asset) setAttribute(image, "src", cell.image.src || undefined);
         setAttribute(image, "alt", cell.image.alt);
         setAttribute(image, "width", cell.image.width === undefined ? undefined : String(cell.image.width));
         setAttribute(image, "height", cell.image.height === undefined ? undefined : String(cell.image.height));
@@ -144,7 +150,7 @@ export class DirectCharacterCells {
   dispose(): void {
     this.disposed = true;
     for (const entry of this.entries.values()) {
-      entry.alternative?.dispose();
+      entry.alternative?.dispose(); entry.releaseAsset?.();
       if (entry.kind === "image") {
         const image = entry.element.firstChild as HTMLImageElement;
         image.onload = image.onerror = null;

@@ -13,6 +13,7 @@ import { createNativeDocumentStoreRouter } from './native-document-store.mjs';
 import { createDocumentStoreRouter } from './document-store.js';
 import { createWorkspaceStoreRouter } from './workspace-store.js';
 import { featureFlags } from '../src/configuration.js';
+import { createManagedAssetService } from './managed-assets-router.mjs';
 import { normalizePolicy } from '../src/knowledge/policy.js';
 
 type Cavern = { path: string; name: string; cavernGuid: string; session: string };
@@ -85,6 +86,8 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
     api.use(createDocumentStoreRouter({ root, coordinate, history }));
     // Workspace files are ordinary files within this same Cavern.
     api.use(createWorkspaceStoreRouter({ documentRoot: root, workspaceRoot: root, coordinate }));
+    let assets: ReturnType<typeof createManagedAssetService> | undefined;
+    api.use('/assets', (req, res, next) => assets ? assets.router(req, res, next) : res.status(409).json({ Success: false, Error: 'Managed assets are unavailable.' }));
     let indexLease: string | undefined;
     let indexPolicy: ReturnType<typeof normalizePolicy> | undefined;
     let indexWork: ReturnType<typeof sql.status> | undefined;
@@ -108,9 +111,10 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
       return indexWork;
     };
     return { api, sql,
+      async activateAssets(cavern: Cavern) { if (featureFlags.managedAssetClipboard) { assets = createManagedAssetService({ root, cavernId: cavern.cavernGuid, session: cavern.session }); return assets.recover(); } },
       async index(policy: any) { indexPolicy ??= normalizePolicy(policy); return indexStatus(); },
       async status() { return indexPolicy ? indexStatus() : undefined; },
-      async close() { await indexWork?.catch(() => {}); await sql.close(); await history.dispose(); },
+      async close() { await assets?.close(); await indexWork?.catch(() => {}); await sql.close(); await history.dispose(); },
     };
   }
   const establish = async (input: unknown, intent: unknown, confirmed = false) => {
@@ -136,6 +140,8 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
       next = stores(target.path);
       const established = await next.sql.establish('.');
       const selected: Cavern = { path: target.path, name: target.name, cavernGuid: established.vaultGuid, session: randomUUID() };
+      const assetRecovery = await next.activateAssets(selected);
+      if (assetRecovery?.diagnostics.length) console.warn('Managed asset recovery requires review:', assetRecovery.diagnostics);
       await persist({ lastCavernPath: selected.path, recentCaverns: [
         { path: selected.path, name: selected.name, cavernGuid: selected.cavernGuid },
         ...preferences.recentCaverns.filter(c => c.cavernGuid !== selected.cavernGuid && c.path !== selected.path),

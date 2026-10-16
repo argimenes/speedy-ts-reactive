@@ -21,6 +21,7 @@ async function fixture() {
   const app = express();
   app.use(express.json());
   app.use('/api/cavern', lifecycle.router);
+  app.use('/api', lifecycle.middleware);
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>(resolve => server.once('listening', resolve));
   cleanup.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
@@ -39,7 +40,11 @@ async function fixture() {
   expect((await call('index', { session: current.session, policy })).Success).toBe(true);
   const host = acquire.mock.contexts[0] as SqliteKnowledgeHost;
   const lease = (await acquire.mock.results[0].value).lease;
-  return { call, current, policy, host, lease, acquire };
+  const asset = async (action: string, session = current.session, body: unknown = {}) => {
+    const response = await fetch(`http://127.0.0.1:${port}/api/assets/${action}`, {method:'POST',headers:{'Content-Type':'application/json','X-Mutable-Cavern':session},body:JSON.stringify(body)});
+    return {status:response.status,...await response.json()};
+  };
+  return { call, current, policy, host, lease, acquire, asset };
 }
 
 it('reopens the idle Cavern index once for concurrent startup/status requests, preserving policy and session', async () => {
@@ -72,4 +77,14 @@ it('does not retry unrelated SQLite failures or accept stale Cavern sessions', a
   expect(await f.call('startup', {})).toMatchObject({ Success: false, Error: 'SQLite unavailable' });
   expect(await f.call('index', { session: 'old', policy: f.policy })).toMatchObject({ Success: false, Error: 'The current Cavern changed.' });
   expect(f.acquire).toHaveBeenCalledTimes(1);
+});
+
+
+it('mounts managed assets in the active Cavern and rejects stale activation headers', async () => {
+  const f = await fixture();
+  const begin = await f.asset('begin');
+  expect(begin.Success, begin.Error).toBe(true);
+  expect(begin.Data.cavernId).toBe(f.current.cavernGuid);
+  expect(await f.asset('begin', 'stale-session')).toMatchObject({status:409,Success:false});
+  expect(await f.asset('verify', f.current.session, {cavernId:'foreign',assetId:'sha256:'+'a'.repeat(64)})).toMatchObject({Success:false,Error:'Asset belongs to another Cavern.'});
 });
