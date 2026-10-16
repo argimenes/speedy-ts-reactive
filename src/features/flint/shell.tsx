@@ -70,6 +70,12 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
           <button disabled={!app.vault} onClick={()=>{setMenu(false);chooseVault();}}>Open Another Cavern…</button>
           <button onClick={()=>openStorage()}>Open / Save native Ink…</button>
           <Show when={app.interchange}><button onClick={()=>{setMenu(false);app.interchange!.importFiles();}}>Import external files…</button>
+          <button onClick={()=>{setMenu(false);app.interchange!.importPackage();}}>Import Ink package…</button>
+          <button disabled={!app.properties()} onClick={()=>{setMenu(false);app.interchange!.exportPackage();}}>Export archival Ink package…</button>
+          <button disabled={!app.properties()} onClick={()=>{setMenu(false);app.interchange!.inspectPackage();}}>Packaged database context…</button>
+          <button onClick={()=>{setMenu(false);app.interchange!.downloadViewer();}}>Download offline Ink Viewer</button>
+          <For each={['html','markdown'] as const}>{format=><button disabled={!app.properties()} onClick={()=>{setMenu(false);app.interchange!.exportPortable(format);}}>Export {format==='html'?'HTML':'Markdown'} with assets…</button>}</For>
+          <button disabled={!app.properties()} onClick={()=>{setMenu(false);app.interchange!.exportPortable('html',true);}}>Export standalone HTML…</button>
           <For each={['html','markdown','text'] as const}>{format=><button disabled={!app.properties()} onClick={()=>{setMenu(false);app.interchange!.exportDocument(format);}}>Export as {format==='html'?'HTML':format==='markdown'?'Markdown':'Plain text'}…</button>}</For></Show>
           <button disabled={!app.properties()} onClick={()=>{app.closeActiveTab();setMenu(false);menuButton.focus();}}>Close tab</button>
           <button onClick={()=>{setMenu(false);menuButton.focus();}}>Dismiss menu</button>

@@ -57,3 +57,10 @@ it('routes native beforeinput undo/redo to canonical history, retaining exact en
  const undo=new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'historyUndo'});f.textarea.dispatchEvent(undo);expect(undo.defaultPrevented).toBe(true);expect(f.node().payload.text).toBe(original);
  const redo=new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'historyRedo'});f.textarea.dispatchEvent(redo);expect(redo.defaultPrevented).toBe(true);expect(f.node().payload.text).toBe('changed\nsource');
 });
+it('linked source typing performs no hash, acquisition or preview work; reconnect cancellation preserves the baseline',async()=>{
+ const f=mount('original');f.editor.commands.setPayloadField(f.node().key,'metadata',{sourceLink:{version:1,linkId:'link',filename:'source.md',format:'markdown',byteHash:'0'.repeat(64),textHash:'1'.repeat(64)}});
+ const hash=vi.spyOn(crypto.subtle,'digest'),fetch=vi.spyOn(globalThis,'fetch'),prepare=vi.spyOn(worker,'runInterchange'),baseline=JSON.stringify(f.node().payload.metadata);
+ f.textarea.focus();f.textarea.setSelectionRange(8,8);f.textarea.dispatchEvent(new InputEvent('beforeinput',{bubbles:true,inputType:'insertText',data:'!'}));f.textarea.value='original!';f.textarea.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText'}));
+ expect(hash).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(prepare).not.toHaveBeenCalled();expect(JSON.stringify(f.node().payload.metadata)).toBe(baseline);
+ const revision=f.editor.repository.state.revision;f.editor.interchange.refreshSource(f.node().key);expect(f.editor.interchange.picker()?.link).toBe(true);f.editor.interchange.closePicker();expect(f.editor.repository.state.revision).toBe(revision);expect(JSON.stringify(f.node().payload.metadata)).toBe(baseline);
+});

@@ -58,6 +58,7 @@ export function SourceBlockView(props:BlockViewProps) {
    <button aria-pressed={mode()==='preview'} disabled={pending()||!format()} onClick={()=>void renderPreview()}>Preview</button>
    <Show when={mode()==='preview'}><button disabled={pending()} onClick={()=>void renderPreview()}>Refresh preview</button></Show>
    <button disabled={!format()} onClick={()=>void editor.interchange.convertSourceBlock(props.nodeKey)}>Convert to Mutable Ink…</button>
+   <Show when={(node()?.payload.metadata as any)?.sourceLink}><button onClick={()=>editor.interchange.refreshSource(props.nodeKey)}>Reconnect / refresh source…</button></Show>
    <Show when={pending()}><span role="status">Preparing preview…</span></Show>
    <Show when={preview()&&renderedSource()!==text()}><span role="status">Preview is out of date.</span></Show>
   </div>

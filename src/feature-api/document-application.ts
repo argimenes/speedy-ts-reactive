@@ -24,6 +24,11 @@ export interface DocumentApplicationInstance {
   setProperties(id: string, value: {title: string; tags: readonly string[]}): void;
   interchange?: {
     importFiles():void;
+    importPackage():void;
+    exportPackage():void;
+    exportPortable(format:'html'|'markdown',standalone?:boolean):void;
+    inspectPackage():void;
+    downloadViewer():void;
     exportDocument(format:'html'|'markdown'|'text'):void;
     suggestedFilename():string|undefined;
     drag(event:DragEvent,drop?:boolean):void;

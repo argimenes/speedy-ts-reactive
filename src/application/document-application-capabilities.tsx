@@ -378,6 +378,11 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const clearDrop = () => { if(dropIndicator) {delete dropIndicator.dataset.interchangeDrop;dropIndicator=undefined;} };
       onCleanup(() => {clearDrop();queueMicrotask(()=>editor.interchange.cancelUnavailable());});
       const interchange = editor.features.documentInterchange ? {
+        importPackage() {guard();editor.interchange.pickPackage({current:()=>mounted&&scope.active(),open:openDocument});},
+        exportPortable(format:'html'|'markdown',standalone=false) {guard();const id=requireId();void editor.interchange.exportPortable(id,format,standalone,()=>mounted&&scope.active()&&activeId()===id);},
+        exportPackage() {guard();const id=requireId();void editor.interchange.exportPackage(id,selectedVault()?.root,()=>mounted&&scope.active()&&activeId()===id);},
+        inspectPackage() {guard();const id=requireId();void editor.interchange.inspectPackage(id,()=>mounted&&scope.active()&&activeId()===id);},
+        downloadViewer() {guard();const a=document.createElement('a');a.href='/ink-viewer.html';a.download='Ink Viewer.html';a.click();},
         importFiles() {guard();editor.interchange.pickNew({current:()=>mounted&&scope.active(),open:openDocument});},
         exportDocument(format:'html'|'markdown'|'text') {guard();const id=requireId();void editor.interchange.exportDocument(id,format,()=>mounted&&scope.active()&&activeId()===id);},
         suggestedFilename() {const id=activeId(),doc=id&&resolve(id);return doc ? (editor.repository.readState().contents[doc.contentKey].payload.metadata as any)?.interchange?.suggestedFilename : undefined;},

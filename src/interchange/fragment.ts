@@ -125,7 +125,7 @@ export function validateFragment(input: unknown): MutableFragment {
     for (const e of [...b.children, ...Object.values(b.relations)]) {
       assert(!edges.has(e), 'A placement has multiple owners.'); edges.add(e);
       const p = placements.get(e)!;
-      if (p.target.kind === 'local') walk(p.target.id, depth + 1);
+      if (p.target.kind === 'local' && !(p.kind==='reference' && visiting.has(p.target.id))) walk(p.target.id, depth + 1);
     }
     visiting.delete(id); visited.add(id);
   };

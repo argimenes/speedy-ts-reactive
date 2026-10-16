@@ -26,6 +26,7 @@
     "src/input/**/*",
     "src/reactive-editor/**/*",
     "src/rendering/**/*",
-    "src/runtime/**/*"
+    "src/runtime/**/*",
+    "src/ink-viewer/**/*"
   ]
 }

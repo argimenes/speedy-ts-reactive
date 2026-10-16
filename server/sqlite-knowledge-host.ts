@@ -166,9 +166,9 @@ export class SqliteKnowledgeHost {
   }
   /** Selector reads are vault-scoped, not Document/Save operations. A separate
    * read-only connection keeps them out of the writer's reconciliation queue. */
-  async entityLookup(body:any,signal?:AbortSignal){
+  async entityLookup(body:any,signal?:AbortSignal,archive=false){
     if(this.closed || this.options.entitiesEnabled===false)throw Error('Canonical Entity service is unavailable');
-    if(typeof body.vault!=='string' || !['search','get'].includes(body.request?.op))throw Error('Invalid Entity lookup');
+    if(typeof body.vault!=='string' || !(archive || ['search','get'].includes(body.request?.op)))throw Error('Invalid Entity lookup');
     signal?.throwIfAborted();
     const root=await this.store.resolve(body.vault),file=await this.store.resolve(path.posix.join(body.vault,'.mutable/mutable.db'));
     const stamp=await stat(file),identity=`${stamp.dev}:${stamp.ino}`;
@@ -186,7 +186,7 @@ export class SqliteKnowledgeHost {
     try{
       const client=await reader.opening;
       signal?.throwIfAborted();if(this.closed)throw Error('Entity reader closed');
-      return await client.entityLookup(body.request,signal);
+      return archive ? await client.packageData(body.request,signal) : await client.entityLookup(body.request,signal);
     }catch(error){
       // Failed opens/timeouts can be retried on a new reader. Never replay a write.
       if(!signal?.aborted&&this.readers.get(root)===reader){this.readers.delete(root);void reader.opening.then(c=>c.close(),()=>{}).catch(()=>{});}
@@ -277,8 +277,8 @@ export class SqliteKnowledgeHost {
       catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),outcome:'unknown-after-dispatch'});}
       finally{req.off('aborted',cancel);res.off('close',cancel);}
     });
-    for(const route of ['entities','entity-lookup','entity-mutate'])router.post('/'+route,async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
-      try{const data=await (route==='entities'?this.entities(req.body??{},c.signal):route==='entity-mutate'?this.entityMutate(req.body??{},c.signal):this.entityLookup(req.body??{},c.signal));if(!c.signal.aborted)res.json({Success:true,Data:data});}
+    for(const route of ['entities','entity-lookup','entity-mutate','package-data'])router.post('/'+route,async(req,res)=>{const c=new AbortController();const cancel=()=>{if(!res.writableEnded)c.abort(Error('Entity request disconnected'));};req.on('aborted',cancel);res.on('close',cancel);
+      try{const data=await (route==='entities'?this.entities(req.body??{},c.signal):route==='entity-mutate'?this.entityMutate(req.body??{},c.signal):this.entityLookup(req.body??{},c.signal,route==='package-data'));if(!c.signal.aborted)res.json({Success:true,Data:data});}
       catch(error){if(!c.signal.aborted)res.status(409).json({Success:false,Error:String(error),...((error as any)?.entityCreationOutcome==='not-created'?{entityCreationOutcome:'not-created'}:{})});}
       finally{req.off('aborted',cancel);res.off('close',cancel);}
     });

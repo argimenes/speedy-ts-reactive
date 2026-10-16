@@ -8,10 +8,10 @@ export const escapeHtml=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 const md=(s:string)=>s.replace(/[\\`*_[\]{}<>#!|~&+.=\-]/g,'\\$&');
 interface Mark {id:string;order:number;start:number;end:number;type:string;open:string;close:string}
 /** Read-only operation-local projection. Never traverses mounted DOM or resolves URLs. */
-export function exportFragment(input:MutableFragment,format:ExportFormat,title='Document',document=false) {
+export function exportFragment(input:MutableFragment,format:ExportFormat,title='Document',document=false, options:{images?:Record<string,string>;entities?:boolean;rootOnly?:boolean;maxBytes?:number}={}) {
  const f=validateFragment(input),diagnostics:InterchangeDiagnostic[]=[],reported=new Set<string>(),warn=(code:string,detail:string)=>{const key=code+'\0'+detail;if(!reported.has(key)){reported.add(key);diagnostics.push(diagnostic(code,detail));}};
  const blocks=new Map(f.blocks.map(b=>[b.localId,b])),edges=new Map(f.placements.map(p=>[p.localId,p])),embeds=new Map(f.embeds.map(e=>[e.localId,e])),definitions=new Map(f.definitions.map(d=>[d.localId,d]));
- const image=(id:string)=>{const e=embeds.get(id)!;warn('image-reference','Images are exported as alt-text placeholders. Portable asset bundles are not part of this export.');const text=`[Image: ${String(e.data.alt??'Image')}]`;return format==='html'?escapeHtml(text):format==='markdown'?md(text):text;};
+ const image=(id:string)=>{const e=embeds.get(id)!,url=options.images?.[id];if(url){const alt=String(e.data.alt??'Image');return format==='html'?`<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`:format==='markdown'?`![${md(alt)}](<${url}>)`:alt;}warn('image-reference','Images are exported as alt-text placeholders. Portable asset bundles are not part of this export.');const text=`[Image: ${String(e.data.alt??'Image')}]`;return format==='html'?escapeHtml(text):format==='markdown'?md(text):text;};
  const inline=(b:FragmentBlock)=>{
   if(!b.inline)return format==='html'?escapeHtml(String(b.data.text??'')):format==='markdown'?md(String(b.data.text??'')):String(b.data.text??'');
   const tokens=b.inline.atoms.flatMap(a=>a.kind==='text'?[...a.text].map(text=>({text})): [{text:'\uFFFC',embed:a.embed}]);
@@ -33,6 +33,8 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
     else {open='[';close=`](<${url.replace(/[<>\\\s|]/g,c=>encodeURIComponent(c))}>)`;}
    }else if(p.type==='codex/block-reference'&&p.target?.kind==='local'&&p.target.object==='block'){
     open=format==='html'?`<a href="#${escapeHtml(p.target.id)}">`:'[';close=format==='html'?'</a>':`](#${encodeURIComponent(p.target.id)})`;
+   }else if(options.entities&&format==='html'&&['codex/claim-reference','codex/time-reference'].includes(p.type)&&typeof p.attributes.value==='string'){open=`<button type="button" data-ink-${p.type==='codex/claim-reference'?'claim':'entity'}="${escapeHtml(p.attributes.value)}">`;close='</button>';
+   }else if(options.entities&&format==='html'&&p.type==='codex/entity-reference'&&p.target?.kind==='external'&&p.target.object==='entity'){open=`<button type="button" data-ink-entity="${escapeHtml(p.target.id)}">`;close='</button>';
    }else warn('annotation-unsupported',`Export retains text but omits ${p.type} semantics.`);
    if(open){
     let start=p.startIndex,end=p.endIndex;
@@ -62,7 +64,7 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   boundaries.forEach((at,i)=>{
    ends.get(at)?.forEach(m=>active.delete(m));starts.get(at)?.forEach(m=>active.add(m));
    let next=[...active].sort((a,b)=>a.start-b.start||b.end-a.end||a.order-b.order);
-   const links=next.filter(m=>m.open.startsWith('<a ')||m.open==='[');
+   const links=next.filter(m=>m.open.startsWith('<a ')||m.open.startsWith('<button ')||m.open==='[');
    if(links.length>1){const winner=[...links].sort((a,b)=>(a.end-a.start)-(b.end-b.start)||a.order-b.order)[0];next=next.filter(m=>!links.includes(m)||m===winner);warn('overlapping-links','Overlapping links use the most specific target; other targets are omitted.');}
    transition(next);
    if(format==='html')for(const p of points.get(at)??[])out+=`<span data-ink-point="${escapeHtml(p.localId)}" title="${escapeHtml(p.type)}">&#x25C7;</span>`;
@@ -75,6 +77,7 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   if(--budget<0)throw Error('Export traversal limit exceeded.');
   const b=get(edge);if(!b){warn('external-block','Out-of-document Blocks remain unresolved links.');return '[Unresolved Block]';}
   if(seen.has(b.localId)){warn('repeated-block','Repeated or cyclic Block bodies are exported once.');return format==='html'?`<a href="#${escapeHtml(b.localId)}">Repeated Block</a>`:'[Repeated Block]';}seen.add(b.localId);
+  if(b.data.packageAuthoredSource)warn('authored-value-preserved','Non-JSON authored values are preserved in an inactive native-codec carrier and are not used for presentation.');
   const meta=b.data.metadata as any??{},children=()=>b.children.map(visit).join(format==='html'?'':format==='text'?'\n':'\n\n');
   let result='';
   if(isSourceType(b.type)){
@@ -120,8 +123,8 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   for(const [name,relation]of Object.entries(b.relations)){warn('relation-layout',`Related ${name} content is exported after its owner.`);result+=(format==='html'?`<aside><p>${escapeHtml(name)}</p>${visit(relation)}</aside>`:`\n\n[${format==='markdown'?md(name):name}]\n${visit(relation)}`);}
   return result;
  };
- const body=f.roots.map(r=>visit(r.placement)).join(format==='html'?'':format==='text'?'\n':'\n\n');
- const text=format==='html'&&document?`<!doctype html>\n<html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'"><title>${escapeHtml(title)}</title></head><body>${body}</body></html>`:body;
- if(new TextEncoder().encode(text).length>16*1024*1024)throw Error('Export exceeds the 16 MiB output limit.');
+ const body=(options.rootOnly?f.roots.slice(0,1):f.roots).map(r=>visit(r.placement)).join(format==='html'?'':format==='text'?'\n':'\n\n');
+ const text=format==='html'&&document?`<!doctype html>\n<html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; ${options.images?"img-src 'self' data: blob:; ":''}base-uri 'none'; form-action 'none'"><title>${escapeHtml(title)}</title></head><body>${body}</body></html>`:body;
+ if(new TextEncoder().encode(text).length>(options.maxBytes??16*1024*1024))throw Error('Export exceeds the 16 MiB output limit.');
  return {text,diagnostics,mediaType:format==='html'?'text/html':format==='markdown'?'text/markdown':'text/plain',extension:format==='html'?'html':format==='markdown'?'md':'txt'};
 }

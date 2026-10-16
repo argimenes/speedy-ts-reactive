@@ -23,6 +23,19 @@ export class ManagedAssets {
   }
   remote(lease: AssetLease, url: string, signal?: AbortSignal): Promise<AssetManifest> { return this.request(`${lease.id}/images/remote`, { url }, signal, lease); }
   action(lease: AssetLease, action: string, signal?: AbortSignal) { return this.request(`${lease.id}/${action}`, {}, signal, lease); }
+  async original(asset: ManagedAssetReference, signal: AbortSignal): Promise<{reference:ManagedAssetReference;mediaType:'image/png'|'image/jpeg';bytes:Uint8Array}> {
+    const scope=this.context();
+    if(!this.alive||!this.enabled()||!scope.session||asset.cavernId!==scope.cavernId)throw Error('Original asset is outside the active Cavern.');
+    const manifest=await this.verify(asset,signal);
+    const response=await fetch(`/api/assets/${encodeURIComponent(asset.assetId)}/content?cavernId=${encodeURIComponent(asset.cavernId)}`,{headers:{'X-Mutable-Cavern':scope.session},signal});
+    if(!response.ok||!response.body)throw Error('Original asset unavailable.');
+    const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
+    try{for(;;){signal.throwIfAborted();const part=await reader.read();if(part.done)break;if((size+=part.value.length)>10*1024*1024)throw Error('Original asset size limit');chunks.push(part.value);}}finally{await reader.cancel();}
+    const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length;}
+    const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
+    if(!this.alive||scope.session!==this.context().session||asset.cavernId!==this.context().cavernId||manifest.byteLength!==size||asset.assetId!==`sha256:${digest}`||!['image/png','image/jpeg'].includes(manifest.mediaType))throw Error('Original asset integrity/session mismatch');
+    return {reference:asset,mediaType:manifest.mediaType as 'image/png'|'image/jpeg',bytes};
+  }
   bind(image: HTMLImageElement, value: unknown): () => void {
     const asset = managedAsset(value), scope = this.context();
     if (!asset || !this.alive || !this.enabled() || asset.cavernId !== scope.cavernId || !scope.session) { image.removeAttribute('src'); return () => {}; }

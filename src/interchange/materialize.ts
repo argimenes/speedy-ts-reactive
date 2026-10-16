@@ -17,7 +17,7 @@ export const opaque = (type: string, data: JsonObject, target?: Reference) => {
 export const contentRecord = (key: string, viewType: string, payload: JsonObject): ContentRecord => ({ key, viewType, payload, children: [], inlineContent: [], inlineRevision: 0, ownedRelations: {}, opaqueRelations: {}, wireChildren: 'present', wireRelation: 'omitted', revision: 0 });
 
 /** Two passes: allocate every owned identity, then resolve typed references only. */
-export function materializeFragment(input: MutableFragment, scope: InterchangeScope = {}, availableAssets: ReadonlyMap<string, string> = new Map(), availableBlocks: ReadonlyMap<string, boolean> = new Map()): BlockFragment {
+export function materializeFragment(input: MutableFragment, scope: InterchangeScope = {}, availableAssets: ReadonlyMap<string, string> = new Map(), availableBlocks: ReadonlyMap<string, boolean> = new Map(), retainedBlocks: ReadonlySet<string> = new Set(), allowExternalEntities = true): BlockFragment {
   const f = validateFragment(input);
   const keys = new Map(f.blocks.map(b => [b.localId, createContentKey()])), ids = new Map(f.blocks.map(b => [b.localId, createBlockId()]));
   const edges = new Map(f.placements.map(p => [p.localId, createPlacementKey()]));
@@ -37,7 +37,7 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
       if (target.object === 'definition') { annotationId = definitions.get(target.id); resolved = !!annotationId; }
       else if (target.object === 'block') { value = ids.get(target.id); resolved = !!value; }
     } else if (target?.kind === 'external') {
-      resolved = sameScope(target) && target.object === 'entity' || localExternalBlock(target); value = target.id;
+      resolved = allowExternalEntities && sameScope(target) && target.object === 'entity' || localExternalBlock(target); value = target.id;
     }
     // A forged raw value is not a scoped semantic target.
     if (['codex/entity-reference', 'codex/block-reference', 'reference/url'].includes(type) && !target) resolved = false;
@@ -69,6 +69,7 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
     if (payload.metadata && typeof payload.metadata === 'object') {
       const metadata = payload.metadata as JsonObject;
       delete metadata.anchor; delete metadata.documentId; delete metadata.workspaceId;
+      if(source && metadata.sourceLink && typeof metadata.sourceLink==='object') (metadata.sourceLink as JsonObject).linkId=crypto.randomUUID();
     }
     // Source ranges are foreign authored data, not native annotation links. Keeping
     // them out of the reserved field also prevents save/move dependency resolution.
@@ -109,6 +110,7 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
         }
       }
     }
+    if(retainedBlocks.has(b.localId)){const edge=f.placements.find(p=>p.localId===f.roots[0].placement)!;if(edge.target.kind==='local')record.definitionOwnerKey=keys.get(edge.target.id);}
     state.contents[record.key] = record;
   }
   for (const p of f.placements) {

@@ -1,3 +1,4 @@
+import { extractPackageData } from './package-data.mjs';
 import { parentPort, workerData } from 'node:worker_threads';
 import { openFoundation, restoreSnapshot } from './foundation.mjs';
 import { prepareHome } from './paths.mjs';
@@ -27,9 +28,10 @@ if (store) {
         let value;
         const check=()=>{if(payload?.cancellation&&Atomics.load(payload.cancellation,0))throw Error('Saved indexing canceled');};
         check();
-        if(workerData.entityReader && !['entity-lookup','close'].includes(operation))throw Error('Entity reader only accepts lookups');
+        if(workerData.entityReader && !['entity-lookup','package-data','close'].includes(operation))throw Error('Entity reader only accepts lookups');
         if(['inspect-saved','stage-saved'].includes(operation)&&payload.vaultGuid!==store.vaultGuid)throw Error('Saved indexing vault identity mismatch');
         switch (operation) {
+          case 'package-data': value=store.readKnowledge(db=>extractPackageData(db,payload,check));break;
           case 'entity-lookup': value=store.readKnowledge(db=>lookup(db,payload,check));break;
           case 'entities': { const {cancellation,...input}=payload; value=store.entities(input,check);break; }
           case 'semantics': { const {cancellation,...input}=payload; value=store.semantics(input,check);break; }

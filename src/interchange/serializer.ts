@@ -10,8 +10,8 @@ export interface Slice { placementKey: string; start?: number; end?: number; gap
 const omit = (data: JsonObject, keys: string[]) => Object.fromEntries(Object.entries(clone(data)).filter(([key, v]) => !keys.includes(key) && v !== undefined));
 
 /** Selected authored data only. Inline Cells are compact runs, never repository keys. */
-export function serializeSelection(state: RepositoryState, slices: Slice[], scope: InterchangeScope = {}): MutableFragment {
-  const f = emptyFragment(); f.provenance = { producer: 'Mutable', ...scope };
+export function serializeSelection(state: RepositoryState, slices: Slice[], scope: InterchangeScope = {}, packageDefinitions = false): MutableFragment {
+  const f = emptyFragment(); if(packageDefinitions)Object.assign(f,{packageRetainedBlocks:[]}); f.provenance = { producer: 'Mutable', ...scope };
   let serial = 0; const id = () => `f${++serial}`;
   const contentIds = new Map<string, string>(), placementIds = new Map<string, string>(), blockIds = new Map<string, string>(), definitionIds = new Map<string, string>();
   const pending: Array<{ reference: Reference; sourceId: string }> = [];
@@ -66,6 +66,7 @@ export function serializeSelection(state: RepositoryState, slices: Slice[], scop
     if (c.viewType === 'plain-text-block' || isSourceType(c.viewType)) b.data.text = String(c.payload.text ?? '');
     if(isSourceType(c.viewType) && c.payload.standoffProperties!==undefined)b.data.standoffProperties=clone(c.payload.standoffProperties);
     f.blocks.push(b);
+    if(packageDefinitions && c.definitionOwnerKey)(f as MutableFragment&{packageRetainedBlocks:string[]}).packageRetainedBlocks.push(b.localId);
     const anchor = (b.data.metadata as any)?.anchor;
     if (anchor && typeof anchor.blockId === 'string') {
       f.links.push({ localId: id(), type: 'anchor', from: { object: 'block', id: localId }, to: external('block', anchor.blockId), attributes: { offset: clone(anchor.offset ?? { x: 0, y: 0 }) } });
@@ -107,6 +108,7 @@ export function serializeSelection(state: RepositoryState, slices: Slice[], scop
     }
     return edge;
   };
+  if (packageDefinitions) for (const c of Object.values(state.contents)) for (const [annotationId, d] of Object.entries(linkedRegistry(state,c.key))) property({type:d.type,annotationId},c.key);
   for (let i = 0; i < slices.length; i++) {
     const s = slices[i], partial = s.start !== undefined;
     const c = state.contents[state.placements[s.placementKey]?.contentKey];

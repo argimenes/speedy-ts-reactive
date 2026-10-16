@@ -106,7 +106,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   }
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if (doc) {
-    if(editor.features.documentInterchange)items.push({label:"Embed source file…",run:()=>editor.interchange.pickEmbed(key)});
+    if(editor.features.documentInterchange)items.push({label:"Embed source file…",run:()=>editor.interchange.pickEmbed(key)},{label:"Link to source file…",run:()=>editor.interchange.pickEmbed(key,true)});
     items.push(command("sticky.createFloating", "New Sticky Note"));
     items.push({ label: "Add Block", children: [
       { label: "Text", run: () => add(text()) }, { label: "Code", run: () => add({ ...dto("code-mirror-block"), text: "" }) },
