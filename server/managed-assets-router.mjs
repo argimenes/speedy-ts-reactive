@@ -2,8 +2,8 @@ import { Router } from 'express';
 import multer from 'multer';
 import { ManagedAssetStore } from './managed-assets.mjs';
 import { IMAGE_LIMITS, validateImportedImage } from './asset-image-validation.mjs';
-import { acquireRemoteAsset, remoteAssetUrl } from './asset-remote.mjs';
-/** Policy adapters expose only the approved PNG/JPEG operations over a general binary store. */
+import { acquireRemoteAsset, acquireRemoteText, textPolicy, remoteAssetUrl } from './asset-remote.mjs';
+/** Approved PNG/JPEG admission and explicitly consented text acquisition share Cavern leases. */
 export function createManagedAssetService(options) {
   const store = new ManagedAssetStore(options), router = Router();
   const upload = multer({ storage:multer.memoryStorage(),limits:{fileSize:IMAGE_LIMITS.bytes,files:1,fields:2,parts:3} }).single('asset');
@@ -24,6 +24,17 @@ export function createManagedAssetService(options) {
     const consent=req.body?.remoteConsent??[];
     if(!Array.isArray(consent)||consent.length>IMAGE_LIMITS.count||consent.some(v=>typeof v!=='string'))throw Error('Invalid remote-image consent.');
     return store.begin(consent.map(v=>remoteAssetUrl(v).href));
+  });
+  route('post','/begin-text',async req=>{
+    const url=remoteAssetUrl(req.body?.url).href,format=req.body?.format;textPolicy(format);
+    return store.begin([],[{url,format}]);
+  });
+  route('post','/:operation/text/remote',async(req,_res,signal)=>{
+    const url=remoteAssetUrl(req.body?.url).href,format=req.body?.format;textPolicy(format);
+    await store.authorizeAcquisition(lease(req),url,format);
+    const result=await acquireRemoteText(url,format,signal,options.remoteTextDependencies);
+    signal.throwIfAborted();await store.authorizeAcquisition(lease(req),url,format);
+    return result;
   });
   route('post','/:operation/images/stage',async(req,_res,signal)=>{
     await store.status(lease(req));

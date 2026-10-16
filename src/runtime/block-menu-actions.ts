@@ -105,6 +105,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
       {label:'Copy as',children:[{label:'HTML',run:()=>{void editor.interchange.copyAs(key,'html');}},{label:'Markdown',run:()=>{void editor.interchange.copyAs(key,'markdown');}}]});
   }
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
+  if(doc&&editor.features.documentInterchange)items.push(input('Inspect / Import linked resource…',value=>{void editor.interchange.inspectLinkedResource(key,value);}));
   if (doc) {
     if(editor.features.documentInterchange)items.push({label:"Embed source file…",run:()=>editor.interchange.pickEmbed(key)},{label:"Link to source file…",run:()=>editor.interchange.pickEmbed(key,true)});
     items.push(command("sticky.createFloating", "New Sticky Note"));

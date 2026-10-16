@@ -424,6 +424,16 @@ The **Load player** action explicitly discloses third-party network/cookie impli
 
 Steps: syntax-only classification → shared protected text acquisition → generic import integration → passive VideoBlock → deliberate player activation → security/browser qualification. Test zero network on ordinary links, spoofed hosts/IDs, DNS/rebinding/redirect failures, revoked/stale consent, changed destination, passive save/reopen/undo, activation/disposal, provider failure and no autoplay. **Stop after the Stage D report.**
 
+### Stage D implementation (2026-10-16)
+
+Implemented behind the existing default-on `documentInterchange` flag. The Block context menu's **Inspect / Import linked resource…** input opens local classification and a single-operation chooser. It inserts links and passive video descriptors without acquisition; native HTML/Markdown/text import, independent source embedding and linked source snapshots require a second explicit acquisition confirmation. Source refresh requires fresh consent and a review of replacement versus separate insertion.
+
+Text acquisition reuses the image transport and Cavern operation leases, with a separate exact URL + format consent record. Initial text admission is intentionally strict: `text/html`, `text/markdown` or `text/plain` as selected (explicit Markdown also accepts `text/plain`), UTF-8/US-ASCII, identity encoding, 2 MiB and 200,000 Unicode scalars; the shared 15-second deadline, three same-origin redirects, public DNS pinning and service concurrency limit remain unchanged. Only the final response URL supplies a base for relative references; authored HTML `<base>` is ignored. Image admission remains a separate operation/consent and uses its existing limits.
+
+Passive video activation is transient per mounted occurrence. Only validated version-1 YouTube/Vimeo descriptors produce a provider player, and only after **Load player — connect to provider**. The iframe uses fixed URLs, no autoplay, `allow-scripts allow-same-origin allow-presentation`, fullscreen/picture-in-picture permissions and `strict-origin-when-cross-origin`. Unload, descriptor change, hidden presentation, view/editor disposal and deletion remove it. HTML/Markdown/plain exports and the offline viewer emit a provider link only. No executable player state enters persistence or history.
+
+Qualification and limits: [Stage D qualification](MUTABLE_PHASE_3_5_STAGE_D_QUALIFICATION.md). Stage E has not begun.
+
 ## 9. Stage E — collection interchange, separate go/no-go
 
 Recommend a **separate follow-on project**, after A–D acceptance and explicit UI/scale review. It requires filesystem authority over a set, two-pass link resolution, job recovery and partial-result UX; it is materially larger than multi-file Stage A import. A–D should retain operation IDs, scoped path maps and structured diagnostics so E does not require a new pipeline.

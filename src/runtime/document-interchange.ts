@@ -1,3 +1,5 @@
+import { inspectUri, urlFragment, videoFragment, type LinkedTextFormat } from '../interchange/uri';
+import { emptyFragment } from '../interchange/fragment';
 import { nativeBytes } from '../persistence/native-resource';
 import { nativeInventory } from '../interchange/package/format';
 import { hash, PACKAGE_LIMITS } from '../interchange/package/archive';
@@ -25,10 +27,12 @@ import { runInterchange } from './interchange-worker';
 import type { AssetLease } from './managed-assets';
 export interface ImportHost { current():boolean; open(id:string):void }
 interface Ticket { revision:number; session?:string; scope:InterchangeScope; viewId?:string; segments?:CrossTextSegment[]; destination?:Destination; current():boolean }
-type Question = {title:string;details:string[];urls?:string[];options?:string[]};
+type Question = {title:string;details:string[];urls?:string[];options?:string[];single?:boolean};
 /** Explicit actions only: no repository, selection, layout or typing subscriptions. */
 export class DocumentInterchange {
  private alive=true;
+ private players=new Map<()=>void,string>();
+ registerVideo(viewId:string,unload:()=>void){if(!this.alive){unload();return()=>{};}this.players.set(unload,viewId);return()=>{this.players.delete(unload);};}
  private controller?:AbortController;
  private lease?:AssetLease;
  private committed=false;
@@ -48,7 +52,7 @@ export class DocumentInterchange {
  private async confirm(diagnostics:InterchangeDiagnostic[]) {const details=[...new Set(diagnostics.filter(d=>d.loss).map(d=>`${d.sourceName?d.sourceName+': ':''}${d.detail}`))];if(details.length&&(await this.ask({title:'Confirm conversion losses',details:details.length>50?[...details.slice(0,50),`${details.length-50} further unsupported semantics are omitted from this projection.`]:details}))===undefined)throw Error('Operation cancelled.');}
  private base(current:()=>boolean=()=>true):Ticket {const context=this.editor.readAssetContext();return {revision:this.editor.repository.state.revision,session:context.session,scope:{...(context.cavernId?{cavernId:context.cavernId}:{})},current};}
  private valid(t:Ticket){const context=this.editor.readAssetContext();return this.alive&&!this.controller?.signal.aborted&&t.current()&&t.revision===this.editor.repository.state.revision&&t.session===context.session&&t.scope.cavernId===context.cavernId&&(!t.viewId||this.editor.projections.has(t.viewId));}
- closeView(viewId:string){if(this.activeTicket?.viewId===viewId||this.pickerView===viewId){this.cancel();this.status[1]('The view closed; operation cancelled.');}}
+ closeView(viewId:string){for(const [stop,view] of this.players)if(view===viewId)stop();if(this.activeTicket?.viewId===viewId||this.pickerView===viewId){this.cancel();this.status[1]('The view closed; operation cancelled.');}}
  cancelUnavailable(){if(this.activeTicket&&!this.activeTicket.current())this.cancel();}
  private check(t:Ticket){this.activeTicket=t;if(!this.valid(t))throw Error('The destination, Document or Cavern changed. Nothing further was inserted.');}
  private async task(run:(signal:AbortSignal)=>Promise<void>){
@@ -81,6 +85,54 @@ export class DocumentInterchange {
   const result=await resolveClipboardImages({fragment,files,assets:this.editor.assets,cavernId:t.scope.cavernId,signal,valid:()=>this.valid(t),lease:value=>{this.lease=value;},choose:urls=>this.ask({title:'External images',details:['Download only explicitly selected remote images, or keep inert placeholders. Relative resources are never read automatically.'],urls})});
   this.check(t);return result;
  }
+ /** Explicit context action. Classification and choosing link/video do not acquire anything. */
+ async inspectLinkedResource(key:string,value:string){return this.task(async signal=>{
+  const info=inspectUri(value),node=this.editor.node(key);if(!node)throw Error('Destination is unavailable.');
+  const t=node.viewType==='standoff-editor-block'?this.selection(key):this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);
+  if(!t.segments){t.viewId=node.viewId;t.destination=node.viewType==='document-block'?{kind:'at',parentKey:node.placementKey,index:node.children.length}:{kind:'after',anchorKey:node.placementKey};}
+  this.check(t);
+  const choices=[{label:'Insert URL link (no network)',kind:'url'},...(info.video?[{label:'Insert passive VideoBlock (no network)',kind:'video'}]:[]),
+   ...(info.acquirable?[...[info.format,...(['html','markdown','text'] as const).filter(f=>f!==info.format)].map(format=>({label:`Import ${format} as native Ink at the destination`,kind:'native',format})),
+   ...(['html','markdown'] as const).flatMap(format=>[{label:`Embed ${format} source copy`,kind:'embed',format},{label:`Link ${format} source snapshot (explicit refresh)`,kind:'link',format}]),{label:'Import PNG/JPEG image',kind:'image'}]:[])];
+  const selection=await this.ask({title:'Inspect / Import linked resource',details:[info.url,info.video?`Recognized ${info.video.provider} video. No provider has been contacted.`:'Syntax inspected locally. No resource has been contacted.', 'Choose one operation. Import creates Ink content; embed owns a source copy; link retains an explicit refresh URL. No operation overwrites the external source.',...(info.acquirable?[]:['Acquisition requires HTTPS port 443 without a fragment. This URL can still be inserted as a link.'])],options:choices.map(c=>c.label),single:true});
+  if(!selection)throw Error('URI operation cancelled.');const chosen=choices.find(c=>c.label===selection[0]);if(selection.length!==1||!chosen)throw Error('Choose exactly one URI operation.');this.check(t);
+  if(chosen.kind==='url'||chosen.kind==='video'){await this.commit(chosen.kind==='url'?urlFragment(info.url):videoFragment(info.video!),[],t,signal,'import');this.status[1]('Inserted without contacting the resource. Save Ink explicitly to retain it.');return;}
+  if(chosen.kind==='image'){
+   const f=emptyFragment(),text=urlFragment(info.url);f.blocks=text.blocks;f.placements=text.placements;f.roots=text.roots;
+   f.blocks[0].inline={atoms:[{kind:'embed',embed:'remote-image'}],properties:[]};
+   f.embeds=[{localId:'remote-image',type:'image-cell',data:{alt:'Linked image',src:''},asset:{kind:'local',object:'asset',id:'remote-asset'}}];f.assets=[{localId:'remote-asset',source:{kind:'remote',url:info.url}}];
+   const admitted=await this.admit(f,[],t,signal);await this.commit(admitted.fragment,admitted.admitted,t,signal,'import');this.status[1]('Inserted image or inert placeholder. Save Ink explicitly.');return;
+  }
+  const format=('format' in chosen?chosen.format:undefined) as LinkedTextFormat;
+  const resource=await this.acquireLinkedText(info.url,format,t,signal);
+  const result=await runInterchange({kind:'linked-text',resource,mode:chosen.kind as 'native'|'embed'|'link'},signal);this.check(t);await this.confirm(result.diagnostics);this.check(t);
+  const admitted=await this.admit(result.fragment,[],t,signal);await this.commit(admitted.fragment,admitted.admitted,t,signal,'import');
+  this.status[1]('Imported linked content. Save Ink explicitly; the external source is unchanged.');
+ });}
+ private async acquireLinkedText(url:string,format:LinkedTextFormat,t:Ticket,signal:AbortSignal){
+  if(!inspectUri(url).acquirable)throw Error('Linked acquisition requires HTTPS port 443 without credentials or fragments.');
+  if(await this.ask({title:'Allow linked-resource acquisition?',details:[url,`Fetch one ${format} resource into this Cavern. The remote server receives the request from this app’s server; it may contain private URL query values. No cookies or credentials are sent.`, 'Only same-origin redirects are allowed. Images require separate consent. No scripts, crawling, or video downloads.']})===undefined)throw Error('Acquisition cancelled.');this.check(t);
+  const lease=await this.editor.assets.beginText(url,format,signal);
+  try{this.check(t);const resource=await this.editor.assets.acquireText(lease,url,format,signal);this.check(t);return resource;}
+  finally{await this.editor.assets.action(lease,'abort').catch(()=>{});}
+ }
+ async refreshRemoteSource(key:string){return this.task(async signal=>{
+  const node=this.editor.node(key);if(!node||this.editor.mounts.get(key)?.composing)throw Error('Finish source editing before refresh.');
+  const t=this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);t.viewId=node.viewId;this.check(t);
+  const meta=structuredClone(this.editor.repository.readState().contents[node.contentKey].payload.metadata as any??{}),baseline=meta.sourceLink,format=sourceFormat(node.viewType,node.payload);
+  if(baseline?.version!==1||typeof baseline.url!=='string'||typeof baseline.byteHash!=='string'||typeof baseline.textHash!=='string'||baseline.format!==format)throw Error('Invalid remote source baseline.');
+  const resource=await this.acquireLinkedText(baseline.url,format,t,signal);
+  if(resource.byteHash===baseline.byteHash){this.status[1]('Source bytes are unchanged; local edits were retained.');return;}
+  const result=await runInterchange({kind:'linked-text',resource,mode:'link'},signal);this.check(t);
+  const incoming=result.fragment.blocks[0],nextMeta=incoming.data.metadata as any,current=String(node.payload.text),conflict=await hash(new TextEncoder().encode(current))!==baseline.textHash;this.check(t);
+  const choice=await this.ask({title:conflict?'Source and local text have changed':'Review source refresh',details:[resource.url,`Local text: ${current.slice(0,600)}`,`Incoming source: ${resource.source.slice(0,600)}`,'Replace restores text and baseline together with Undo. Insert separate preserves this Block.'],options:['Replace this source Block','Insert as a separate linked Block'],single:true});
+  if(!choice)throw Error('Refresh cancelled.');this.check(t);
+  if(choice.length!==1)throw Error('Choose exactly one refresh action.');
+  if(choice[0]==='Insert as a separate linked Block'){t.destination={kind:'after',anchorKey:node.placementKey};await this.commit(result.fragment,[],t,signal,'import');}
+  else if(choice[0]==='Replace this source Block'){this.editor.commands.transaction('Refresh remote source',()=>{this.editor.commands.setPayloadField(key,'text',incoming.data.text);this.editor.commands.setPayloadField(key,'metadata',{...meta,...nextMeta,sourceLink:{...nextMeta.sourceLink,linkId:baseline.linkId}});},{commandId:'interchange.refresh-source',subjects:[]});this.committed=true;}
+  else throw Error('Unknown refresh action.');
+  this.status[1]('Refreshed source snapshot. Save Ink explicitly; the external source is unchanged.');
+ });}
  pickNew(host:ImportHost){if(!this.editor.features.documentInterchange)return;this.pickerView=undefined;this.pickerSignal[1]({title:'Import external files as new Ink documents',run:(files,format)=>{this.closePicker();void this.importNew(files,host,format);}});}
  pickInsert(key:string){try{const t=this.selection(key);this.pickerView=t.viewId;this.pickerSignal[1]({title:'Insert external files at the captured selection',run:(files,format)=>{this.closePicker();void this.insertFiles(files,t,format);}});}catch(e){this.status[1](String(e));}}
  pickEmbed(key:string,link=false){
@@ -96,6 +148,7 @@ export class DocumentInterchange {
   }catch(e){this.status[1](String(e));}
  }
  refreshSource(key:string){
+  if((this.editor.node(key)?.payload.metadata as any)?.sourceLink?.url){void this.refreshRemoteSource(key);return;}
   if(!this.editor.features.documentInterchange)return;
   try{const node=this.editor.node(key);if(!node||this.editor.mounts.get(key)?.composing)throw Error('Finish source editing before refresh.');
    const t=this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);t.viewId=node.viewId;this.pickerView=node.viewId;
@@ -242,5 +295,5 @@ export class DocumentInterchange {
  }
  /** Drop at an explicit Block gap. It never guesses a pixel-to-character position. */
  dropFiles(files:SuppliedFile[],key:string,current:()=>boolean){try{const node=this.editor.node(key);if(!node)throw Error('Drop over a Document Block.');const t=this.base(current);t.viewId=node.viewId;t.destination={kind:'after',anchorKey:node.placementKey};return this.insertFiles(files,t);}catch(e){this.status[1](String(e));}}
- dispose(){this.alive=false;this.cancel();this.status[1]('');}
+ dispose(){for(const stop of this.players.keys())stop();this.players.clear();this.alive=false;this.cancel();this.status[1]('');}
 }

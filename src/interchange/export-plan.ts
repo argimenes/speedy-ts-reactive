@@ -1,3 +1,4 @@
+import { passiveVideo } from './uri';
 import { isSourceType, sourceFormat } from './source-block';
 import { compileSourcePreview } from './source-preview';
 import { convertSource } from './document-import';
@@ -80,7 +81,9 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   if(b.data.packageAuthoredSource)warn('authored-value-preserved','Non-JSON authored values are preserved in an inactive native-codec carrier and are not used for presentation.');
   const meta=b.data.metadata as any??{},children=()=>b.children.map(visit).join(format==='html'?'':format==='text'?'\n':'\n\n');
   let result='';
-  if(isSourceType(b.type)){
+  if(b.type==='mutable/video-block'&&passiveVideo(b.data.video)){
+   const v=passiveVideo(b.data.video)!;result=format==='html'?`<p><a href="${escapeHtml(v.canonicalUrl)}" rel="noopener noreferrer">${escapeHtml(v.title??v.canonicalUrl)}</a></p>`:format==='markdown'?`[${md(v.title??v.canonicalUrl)}](<${v.canonicalUrl}>)`:v.canonicalUrl;
+  }else if(isSourceType(b.type)){
    const kind=sourceFormat(b.type,b.data),source=String(b.data.text);
    if(format==='html'){const preview=compileSourcePreview(source,kind);result=preview.body;for(const detail of preview.warnings)warn('source-preview-policy',detail);if(preview.links.length)warn('source-links','Source links export as inert text; navigation targets are omitted.');}
    else {const converted=convertSource(source,kind),projected=exportFragment(converted.fragment,format);result=projected.text;diagnostics.push(...converted.diagnostics,...projected.diagnostics);}

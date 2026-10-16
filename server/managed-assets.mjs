@@ -36,9 +36,9 @@ export class ManagedAssetStore {
     }); this.tail=task.catch(()=>{}); return task;
   }
   async operation(home,id,fd) { if(!validId(id))fail('Invalid import operation.'); return this.directory(await this.directory(home,'operations',true,fd),id,false,fd); }
-  async begin(remoteConsent = []) { return this.locked(async(home,fd)=>{
+  async begin(remoteConsent = [], acquisitionConsent = []) { return this.locked(async(home,fd)=>{
     const id=randomUUID(), token=randomUUID(), dir=await this.directory(await this.directory(home,'operations',true,fd),id,true,fd);
-    await this.write(dir,'begin.json',{version:1,id,cavernId:this.cavernId,session:this.session,tokenHash:hash(token),remoteConsent,expires:this.now()+LIMIT.lease},fd);
+    await this.write(dir,'begin.json',{version:1,id,cavernId:this.cavernId,session:this.session,tokenHash:hash(token),remoteConsent,acquisitionConsent,expires:this.now()+LIMIT.lease},fd);
     return {id,token,cavernId:this.cavernId};
   }); }
   async authority(dir,lease,fd,allowExpired=false) {
@@ -51,6 +51,7 @@ export class ManagedAssetStore {
     return begin;
   }
   async authorizeRemote(lease,url) {return this.locked(async(home,fd)=>{const dir=await this.operation(home,lease.id,fd),begin=await this.authority(dir,lease,fd);if(!begin.remoteConsent?.includes(url))fail('Explicit consent is required for this image URL.');});}
+  async authorizeAcquisition(lease,url,format) {return this.locked(async(home,fd)=>{const dir=await this.operation(home,lease.id,fd),begin=await this.authority(dir,lease,fd);if(await this.json(dir,'finished.json',fd)||!begin.acquisitionConsent?.some(c=>c.url===url&&c.format===format))fail('Explicit current consent is required for this URL and format.');});}
   async renew(lease) {return this.locked(async(home,fd)=>{const dir=await this.operation(home,lease.id,fd);await this.authority(dir,lease,fd);for(let n=0;n<100;n++)if(!await this.read(dir,`renew-${n}.json`,65536,fd)){await this.write(dir,`renew-${n}.json`,{expires:this.now()+LIMIT.lease},fd);return;}fail('Lease renewal limit reached.');});}
   async stages(dir,fd) {const rows=[];for(let i=0;i<LIMIT.count;i++){const row=await this.json(dir,`stage-${i}.json`,fd);if(!row)break;rows.push(row);}return rows;}
   // metadata is produced by a trusted admission adapter, never HTTP request data.

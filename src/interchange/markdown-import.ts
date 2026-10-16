@@ -72,9 +72,9 @@ export function markdownTree(source: string) {
   }
   return { tree: { nodeName: '#document-fragment', childNodes: convert(tree) } as HtmlNode, codeMetadata, warnings };
 }
-export function importMarkdown(source: string) {
+export function importMarkdown(source: string, baseUrl?:string) {
   const {tree,codeMetadata,warnings}=markdownTree(source);
-  const imported = importSemanticHtml(tree);
+  const imported = importSemanticHtml(tree,baseUrl);
   let codeIndex = 0;
   for (const block of imported.fragment?.blocks ?? []) {
     const metadata = block.data.metadata as Record<string, unknown> | undefined;

@@ -8,7 +8,8 @@ const color = (value: string) => /^(#[\da-f]{3,8}|[a-z]{1,24}|rgba?\([\d.,%\s]+\
 const integer = (value: string | undefined, fallback: number) => value !== undefined && /^-?\d+$/.test(value) && Math.abs(Number(value)) <= 1000000 ? Number(value) : fallback;
 
 /** HTML semantics only. Outputs the same fragment used by native paste. */
-export function importSemanticHtml(tree: HtmlNode): { fragment?: MutableFragment; notice?: string } {
+export function importSemanticHtml(tree: HtmlNode, baseUrl?: string): { fragment?: MutableFragment; notice?: string } {
+  const resolveUrl=(value:string)=>{if(!baseUrl||!value)return value;try{const url=new URL(value,baseUrl);return ['https:','http:'].includes(url.protocol)&&!url.username&&!url.password?url.href:value;}catch{return value;}};
   const f = emptyFragment(), warnings = new Set<string>(), closed = new Set<string>();
   const blocksByEdge = new Map<string, FragmentBlock>();
   let serial = 0, positions = 0, propertyCount = 0;
@@ -33,7 +34,7 @@ export function importSemanticHtml(tree: HtmlNode): { fragment?: MutableFragment
     const tag = node.tagName ?? '';
     if (inlineTypes[tag]) set(inlineTypes[tag]);
     if (tag === 'a' && attribute(node, 'href') !== undefined) {
-      const url = attribute(node, 'href')!.trim();
+      const url = resolveUrl(attribute(node, 'href')!.trim());
       if (safeUrl(url)) set('reference/url', true, {}, { kind: 'url', url });
       else warn('Unsafe or relative links were retained as text.');
     }
@@ -94,13 +95,13 @@ export function importSemanticHtml(tree: HtmlNode): { fragment?: MutableFragment
       const marks = marksFor(node, inherited), keepSpace = preformatted(node, pre);
       if (tag === 'br') { pendingSpace = undefined; emit({ kind: 'text', text: '\n' }, marks); return; }
       if (tag === 'img') {
-        space(); const embed = id(), asset = id(), source = (attribute(node, 'src') ?? '').trim();
+        space(); const embed = id(), asset = id(), source = resolveUrl((attribute(node, 'src') ?? '').trim());
         const src = /^https?:\/\//i.test(source) && safeUrl(source) ? source : '';
         const relativeSource = !src && source && !/^(?:[a-z][\w+.-]*:|\/\/)|[\u0000-\u001f]/i.test(source) ? source : undefined;
         const alt = attribute(node, 'alt') ?? '', title = attribute(node, 'title');
         const dimensions = Object.fromEntries(['width', 'height'].flatMap(name => { const n = integer(attribute(node, name), 0); return n > 0 && n <= 10000 ? [[name, n]] : []; }));
         f.assets.push({ localId: asset, source: src ? { kind: 'remote', url: src } : { kind: 'unresolved', description: alt || 'Image', ...(relativeSource ? { relativeSource } : {}), ...(/^cid:[^\s<>]+$/i.test(source) ? { contentId: source.slice(4) } : {}) } });
-        // No inferred base URL, data URLs, style bags, srcset or event attributes.
+        // No inferred or authored base URL, data URLs, style bags, srcset or event attributes.
         f.embeds.push({ localId: embed, type: 'image-cell', asset: { kind: 'local', object: 'asset', id: asset }, data: { src, alt, ...(relativeSource ? { relativeSource } : {}), ...(title ? { title } : {}), ...dimensions } });
         emit({ kind: 'embed', embed }, marks); warn('Images were preserved as inactive placeholders.'); return;
       }

@@ -59,3 +59,15 @@ test('HTTP multipart admission, scoped retrieval and denied remote consent use t
  await post(`/${lease.id}/finish`,{},lease.token);
  }finally{await service.close();await new Promise(r=>server.close(r));}
 });
+
+test('text consent is exact, format-scoped, Cavern/session-bound, expiring and revocable',async()=>{
+ let now=0;const {store,root}=await fixture({now:()=>now}),url='https://example.org/page';
+ const imageOnly=await store.begin([url]);await assert.rejects(store.authorizeAcquisition(imageOnly,url,'html'),/consent/);
+ const lease=await store.begin([],[{url,format:'html'}]);await store.authorizeAcquisition(lease,url,'html');
+ await assert.rejects(store.authorizeRemote(lease,url),/consent/);await assert.rejects(store.authorizeAcquisition(lease,url,'text'),/consent/);await assert.rejects(store.authorizeAcquisition(lease,url+'?extra','html'),/consent/);
+ await assert.rejects(store.authorizeAcquisition({...lease,token:'bad'},url,'html'),/stale/);
+ const other=new ManagedAssetStore({root,cavernId:'cavern',session:'other'});await assert.rejects(other.authorizeAcquisition(lease,url,'html'),/stale/);
+ await store.abort(lease);await assert.rejects(store.authorizeAcquisition(lease,url,'html'),/aborted/);
+ const expires=await store.begin([],[{url,format:'html'}]);now=1000000;await assert.rejects(store.authorizeAcquisition(expires,url,'html'),/expired/);
+ const finished=await store.begin([],[{url,format:'html'}]);const bytes=await png();await store.stage(finished,bytes,await validateImportedImage(bytes));await store.publish(finished);await store.finish(finished);await assert.rejects(store.authorizeAcquisition(finished,url,'html'),/consent/);
+});

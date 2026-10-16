@@ -1,3 +1,4 @@
+import type { AcquiredText, LinkedTextFormat } from '../interchange/uri';
 import { assetKey, managedAsset, type AssetManifest, type ManagedAssetReference } from '../interchange/managed-asset';
 export interface AssetContext { cavernId?: string; session?: string }
 export interface AssetLease { id: string; token: string; cavernId: string }
@@ -16,6 +17,8 @@ export class ManagedAssets {
     return result.Data;
   }
   begin(remoteConsent: string[], signal?: AbortSignal): Promise<AssetLease> { return this.request('begin', { remoteConsent }, signal); }
+  beginText(url:string, format:LinkedTextFormat, signal?:AbortSignal):Promise<AssetLease> {return this.request('begin-text',{url,format},signal);}
+  acquireText(lease:AssetLease,url:string,format:LinkedTextFormat,signal?:AbortSignal):Promise<AcquiredText> {return this.request(`${lease.id}/text/remote`,{url,format},signal,lease);}
   verify(asset: ManagedAssetReference, signal?: AbortSignal): Promise<AssetManifest> { return this.request('verify', asset, signal); }
   async stage(lease: AssetLease, file: Blob, signal?: AbortSignal): Promise<AssetManifest> {
     const form = new FormData(); form.append('asset', file, 'clipboard-image');

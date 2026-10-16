@@ -9,10 +9,10 @@ import type { ImportFormat } from './formats';
 import { imagesFragment } from './clipboard-images';
 import { checkFiles, readSelectedFile, type SuppliedFile } from './file-input';
 
-export function convertSource(source: string, format: 'html'|'markdown'|'text', fullDocument=false) {
+export function convertSource(source: string, format: 'html'|'markdown'|'text', fullDocument=false, baseUrl?:string) {
   const normalized=source.replace(/\r\n?/g,'\n');
   let result: {fragment?:MutableFragment;notice?:string}; let title: string|undefined;
-  if (format==='markdown') result=importMarkdown(normalized);
+  if (format==='markdown') result=importMarkdown(normalized,baseUrl);
   else if (format==='html') {
     // Apply the existing bounds before using parse5's full-document mode. Never
     // use a native carrier, DOMParser, <base>, or a charset tag as authority.
@@ -22,8 +22,8 @@ export function convertSource(source: string, format: 'html'|'markdown'|'text', 
       const html=tree.childNodes?.find(n=>n.tagName==='html'),head=html?.childNodes?.find(n=>n.tagName==='head');
       const node=head?.childNodes?.find(n=>n.tagName==='title');
       title=node?.childNodes?.filter(n=>n.nodeName==='#text').map(n=>n.value??'').join('').trim().slice(0,200);
-      result=importSemanticHtml(html?.childNodes?.find(n=>n.tagName==='body')??tree);
-    } else result=importSemanticHtml(tree);
+      result=importSemanticHtml(html?.childNodes?.find(n=>n.tagName==='body')??tree,baseUrl);
+    } else result=importSemanticHtml(tree,baseUrl);
   } else result={fragment:plainFragment(normalized)};
   const diagnostics:InterchangeDiagnostic[]=result.notice?[diagnostic('semantic-loss',result.notice)]:[];
   if (/\r/.test(source)) diagnostics.push(diagnostic('normalized-newlines','Source line endings become logical newlines in Ink.',false));

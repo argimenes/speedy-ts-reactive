@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { request } from 'node:https';
 import ipaddr from 'ipaddr.js';
@@ -12,6 +13,9 @@ export function publicAddress(address) {
 }
 /** Explicit consent is checked by the route. DNS and redirects cannot change the allowed origin/address policy. */
 export async function acquireRemoteAsset(value, signal, dependencies = {}) {
+  return (await acquire(value, signal, dependencies, {accept:'image/png, image/jpeg', bytes:IMAGE_LIMITS.bytes})).bytes;
+}
+async function acquire(value, signal, dependencies, policy) {
   const origin = remoteAssetUrl(value).origin, resolve = dependencies.lookup ?? lookup, connect = dependencies.request ?? request;
   const controller = new AbortController(), cancel = () => controller.abort();
   signal?.throwIfAborted(); signal?.addEventListener('abort', cancel, { once: true });
@@ -27,18 +31,39 @@ export async function acquireRemoteAsset(value, signal, dependencies = {}) {
       if (!answers.length || answers.some(a => !publicAddress(a.address))) throw Error('Remote image address is not public.');
       const address = answers[0];
       const result = await new Promise((resolve, reject) => {
-        const req = connect(url, { agent: false, signal: controller.signal, headers: { Accept: 'image/png, image/jpeg', 'Accept-Encoding': 'identity' }, lookup: (_host, options, cb) => options?.all ? cb(null, [address]) : cb(null, address.address, address.family) }, res => {
+        const req = connect(url, { agent: false, signal: controller.signal, headers: { Accept: policy.accept, 'Accept-Encoding': 'identity' }, lookup: (_host, options, cb) => options?.all ? cb(null, [address]) : cb(null, address.address, address.family) }, res => {
           if ([301,302,303,307,308].includes(res.statusCode)) { const redirect = res.headers.location; res.destroy(); resolve({ redirect }); return; }
-          if (res.statusCode !== 200 || res.headers['content-encoding'] && res.headers['content-encoding'] !== 'identity' || Number(res.headers['content-length'] ?? 0) > IMAGE_LIMITS.bytes) { res.destroy(); reject(Error('Remote image response was rejected.')); return; }
+          if (res.statusCode !== 200 || res.headers['content-encoding'] && res.headers['content-encoding'] !== 'identity' || Number(res.headers['content-length'] ?? 0) > policy.bytes) { res.destroy(); reject(Error('Remote image response was rejected.')); return; }
           const chunks = []; let size = 0;
-          res.on('data', chunk => { size += chunk.length; if (size > IMAGE_LIMITS.bytes) { req.destroy(Error('Remote image exceeds the byte limit.')); return; } chunks.push(chunk); });
-          res.on('end', () => resolve({ bytes: Buffer.concat(chunks) })); res.on('error', reject); res.on('aborted', () => reject(Error('Remote image response was interrupted.')));
+          res.on('data', chunk => { size += chunk.length; if (size > policy.bytes) { req.destroy(Error('Remote image exceeds the byte limit.')); return; } chunks.push(chunk); });
+          res.on('end', () => resolve({ bytes: Buffer.concat(chunks), mediaType: res.headers['content-type'], url:url.href })); res.on('error', reject); res.on('aborted', () => reject(Error('Remote image response was interrupted.')));
         });
         req.on('error', reject); req.end();
       });
-      if (result.bytes) return result.bytes;
+      if (result.bytes) return result;
       if (!result.redirect || hop === 3) throw Error('Remote image redirect limit exceeded.');
       url = remoteAssetUrl(new URL(result.redirect, url).href);
     }
   } finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
+}
+
+export const TEXT_POLICIES = Object.freeze({html:'text/html', markdown:'text/markdown', text:'text/plain'});
+export function textPolicy(format) {
+  if (!Object.hasOwn(TEXT_POLICIES, format)) throw Error('Unsupported linked-resource format.');
+  return TEXT_POLICIES[format];
+}
+/** Same protected transport as images; text is never rendered or executed here. */
+export async function acquireRemoteText(value, format, signal, dependencies = {}) {
+  const expected=textPolicy(format);
+  const result=await acquire(value,signal,dependencies,{accept:format==='markdown'?'text/markdown, text/plain':expected,bytes:2*1024*1024});
+  const parts=String(result.mediaType??'').toLowerCase().split(';').map(p=>p.trim());
+  const mediaType=parts.shift();
+  if(mediaType!==expected&&!(format==='markdown'&&mediaType==='text/plain'))throw Error('Linked resource Content-Type does not match the chosen format.');
+  if(parts.some(p=>!/^charset=(?:"?(?:utf-8|us-ascii)"?)$/.test(p)))throw Error('Linked text requires UTF-8 or US-ASCII; unsupported charset or Content-Type parameter.');
+  let source;try{source=new TextDecoder('utf-8',{fatal:true}).decode(result.bytes);}catch{throw Error('Linked text is not valid UTF-8.');}
+  if(parts.some(p=>p.includes('us-ascii'))&&/[^\x00-\x7f]/.test(source))throw Error('Linked text does not match its US-ASCII charset.');
+  if(/[\u0000-\u0008\u000b\u000e-\u001f]/.test(source)||[...source].length>200000)throw Error('Linked text contains binary controls or exceeds 200,000 characters.');
+  if(format==='html')for(const meta of source.match(/<meta\b[^>]*>/gi)??[])for(const match of meta.matchAll(/charset\s*=\s*["']?([^\s"'/>;]+)/gi))if(!['utf-8','us-ascii'].includes(match[1].toLowerCase()))throw Error('HTML declares an unsupported charset.');
+  if(format==='markdown'&&/^\s*(?:<!doctype\s+html|<html\b)/i.test(source))throw Error('The response is HTML, not Markdown.');
+  return {source,format,url:result.url,mediaType,byteHash:createHash('sha256').update(result.bytes).digest('hex')};
 }

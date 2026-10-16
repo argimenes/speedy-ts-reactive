@@ -1,3 +1,4 @@
+import type { AcquiredText } from './uri';
 import { portableProjection } from './package/projection';
 import { createPackage, openPackage, type PackageAsset, type PackageManifest } from './package/format';
 import { packageFragment, materializePackage } from './package/native';
@@ -12,6 +13,7 @@ import type { SuppliedFile } from './file-input';
 import type { ImportFormat, ExportFormat } from './formats';
 import type { MutableFragment, InterchangeScope } from './fragment';
 export type InterchangeRequest =
+ | {kind:'linked-text';resource:AcquiredText;mode:'native'|'embed'|'link'}
  | {kind:'portable-export';fragment:MutableFragment;assets:PackageAsset[];format:'html'|'markdown';standalone?:boolean;title:string}
  | {kind:'package-create';native:Uint8Array;source:PackageManifest['source'];data:PackageData;schema:unknown;assets:PackageAsset[]}
  | {kind:'package-open';bytes:Uint8Array}
@@ -24,6 +26,7 @@ export type InterchangeRequest =
  | {kind:'materialize';fragment:MutableFragment;scope:InterchangeScope;assets:[string,string][]};
 export async function prepareInterchange(request:InterchangeRequest) {
  switch(request.kind){
+  case 'linked-text':return prepareLinkedText(request.resource,request.mode);
   case 'portable-export':return portableProjection(request.fragment,request.assets,request.format,request.standalone,request.title);
   case 'package-create':return createPackage(request.native,request.source,request.data,request.schema,request.assets);
   case 'package-open':{const result=await openPackage(request.bytes);return {...result,fragment:packageFragment(result.snapshot,result.manifest.source.cavernId)};}
@@ -36,11 +39,21 @@ export async function prepareInterchange(request:InterchangeRequest) {
   case 'materialize':return materializeFragment(request.fragment,request.scope,new Map(request.assets));
  }
 }
-export type Prepared<R extends InterchangeRequest> = R extends {kind:'portable-export'} ? Awaited<ReturnType<typeof portableProjection>> : R extends {kind:'package-create'} ? Uint8Array : R extends {kind:'package-open'} ? Awaited<ReturnType<typeof openPackage>>&{fragment:MutableFragment} : R extends {kind:'package-materialize'} ? ReturnType<typeof materializePackage> : R extends {kind:'preview'} ? ReturnType<typeof compileSourcePreview> : R extends {kind:'embed'} ? Awaited<ReturnType<typeof prepareSourceFiles>> : R extends {kind:'files'} ? Awaited<ReturnType<typeof prepareFiles>> : R extends {kind:'convert'} ? ReturnType<typeof convertSource> : R extends {kind:'export'} ? ReturnType<typeof exportFragment> : ReturnType<typeof materializeFragment>;
+export type Prepared<R extends InterchangeRequest> = R extends {kind:'linked-text'} ? Awaited<ReturnType<typeof prepareLinkedText>> : R extends {kind:'portable-export'} ? Awaited<ReturnType<typeof portableProjection>> : R extends {kind:'package-create'} ? Uint8Array : R extends {kind:'package-open'} ? Awaited<ReturnType<typeof openPackage>>&{fragment:MutableFragment} : R extends {kind:'package-materialize'} ? ReturnType<typeof materializePackage> : R extends {kind:'preview'} ? ReturnType<typeof compileSourcePreview> : R extends {kind:'embed'} ? Awaited<ReturnType<typeof prepareSourceFiles>> : R extends {kind:'files'} ? Awaited<ReturnType<typeof prepareFiles>> : R extends {kind:'convert'} ? ReturnType<typeof convertSource> : R extends {kind:'export'} ? ReturnType<typeof exportFragment> : ReturnType<typeof materializeFragment>;
 
 async function prepareSourceFiles(files:SuppliedFile[],format?:ImportFormat) {
  checkFiles(files);const fragments=[];
  for(const file of files){const read=await readSelectedFile(file,format);if(read.format!=='html'&&read.format!=='markdown')throw Error('Embed source accepts HTML or Markdown files only.');
  fragments.push(sourceFragment(read.format,read.source,{provenance:{version:1,filename:file.name.split(/[\\/]/).at(-1)!,encoding:read.encoding!,bom:read.bom!,byteHash:read.byteHash}}));}
  return fragments;
+}
+
+async function prepareLinkedText(resource:AcquiredText, mode:'native'|'embed'|'link') {
+ const provenance={version:1,url:resource.url,format:resource.format,byteHash:resource.byteHash,encoding:'utf-8'};
+ if(mode==='native') {const result=convertSource(resource.source,resource.format,true,resource.url);for(const b of result.fragment.blocks)b.data.metadata={...(b.data.metadata as Record<string,unknown>??{}),importedSource:provenance};return result;}
+ if(resource.format==='text')throw Error('Source Blocks require HTML or Markdown.');
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(resource.source));
+ const textHash=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+ const sourceLink={...provenance,linkId:crypto.randomUUID(),textHash};
+ return {fragment:sourceFragment(resource.format,resource.source,{provenance,...(mode==='link'?{sourceLink}:{})}),diagnostics:[]};
 }
