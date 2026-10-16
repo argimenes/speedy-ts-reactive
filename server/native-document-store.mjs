@@ -20,7 +20,7 @@ const LIMIT = 20 * 1024 * 1024;
 const fail = (message, status = 409) => { throw Object.assign(new Error(message), { status }); };
 const read = async file => { try { const s = await fs.lstat(file); if (!s.isFile() || s.isSymbolicLink() || s.size > LIMIT) fail('Expected a bounded regular file', 400); return await fs.readFile(file); } catch(e) { if(e.code !== 'ENOENT') throw e; } };
 const fields = (v, names) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === names.length && Object.keys(v).every(k => names.includes(k));
-export function createNativeDocumentStoreRouter({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true, vaultDiscoveryCache = featureFlags.vaultDiscoveryCache, coordinate = action => action(), establishVault, defaultVault}) {
+export function createNativeDocumentStore({root, readOnly = false, fault = async () => {}, nativeDiscoveryWorker = true, vaultDiscoveryCache = featureFlags.vaultDiscoveryCache, coordinate = action => action(), establishVault, defaultVault}) {
  const vault = new NativeVaultStore({root,readOnly,fault,nativeDiscoveryWorker});
  const listings = new VaultListingCache(vault);
  const recognizedStore=new RecognizedDocumentStore(vault);
@@ -94,22 +94,23 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
   let saveCapability='in-place',saveReason;try{encodeRecognizedDocument(recognized.resource,recognized.format);}catch(e){saveCapability='unavailable';saveReason=e.message;}
   return {text:bytes.toString('utf8'),byteHash:hash(bytes),format:recognized.format,resourceId:recognized.resource.resourceId,readOnly,saveCapability,saveReason};
  });
- route('post','/open',async req=>{
-  if(isNativeDocumentName(req.body.location?.filename))await vault.guardPath(req.body.location);
-  const {file}=await locate(req.body.location),data=await read(file);if(!data)fail('File not found',404);
-  if(isDerivedMarkdownName(req.body.location.filename))fail('Derived Markdown files are projections; open the native Document',400);
-  if(req.body.location.filename.endsWith('.md'))return {kind:'markdown',text:data.toString(),readOnly};
+ const open = async location => {
+  if(isNativeDocumentName(location?.filename))await vault.guardPath(location);
+  const {file}=await locate(location),data=await read(file);if(!data)fail('File not found',404);
+  if(isDerivedMarkdownName(location.filename))fail('Derived Markdown files are projections; open the native Document',400);
+  if(location.filename.endsWith('.md'))return {kind:'markdown',text:data.toString(),readOnly};
   // Open only needs validated identity and the original bytes. Use the same
   // read-only structural/text validator as saved inspection; expanding every
   // character into editor Cells here duplicates the client's admission work.
-  const native=data.toString(),{resourceId}=prepareLightweightFacts(data).inspection,pair=await store(req.body.location,resourceId);
+  const native=data.toString(),{resourceId}=prepareLightweightFacts(data).inspection,pair=await store(location,resourceId);
   await fault('open-native-read',{file});
   const pending=await pair.pending(),observed=await baseline(pair);
   // Bind the caller's permission to the exact native bytes returned, never to
   // a later receipt/file sampled after another writer replaced those bytes.
   if(hash(data)!==observed.nativeHash)fail('Native file changed while opening; retry Open');
   return {kind:'native',native,resourceId,baseline:observed,pending:pending?{generation:pending.generation,resourceId}:null,readOnly};
- });
+ };
+ route('post','/open',req=>open(req.body.location));
  route('post','/save',async req=>{
   writable();const {location,generation,baseline:observed,dependencies,acceptMarkdownHash}=req.body;
   if(!(fields(observed,['nativeHash','markdownHash','generation'])||fields(observed,['nativeHash','markdownHash','generation','locationRevision'])&&typeof observed.locationRevision==='string') || ![observed.nativeHash,observed.markdownHash].every(h=>h===null||typeof h==='string'&&/^[a-f0-9]{64}$/.test(h)) || !(observed.generation===null||typeof observed.generation==='string'))fail('Caller baseline required',400);
@@ -146,5 +147,12 @@ export function createNativeDocumentStoreRouter({root, readOnly = false, fault =
   });
  });
  route('post','/compare',async req=>{await vault.guard(req.body.resourceId,req.body.location);const pair=await store(req.body.location,req.body.resourceId);return pair.compare('');});
- return router;
+ return {router, async readNative(location, signal) {
+  signal?.throwIfAborted();
+  if(!isNativeDocumentName(location?.filename))fail('Native document required',400);
+  const result=await open(location);signal?.throwIfAborted();
+  if(result.pending)fail('Native publication is pending; recover before export');
+  return result;
+ }};
 }
+export function createNativeDocumentStoreRouter(options) {return createNativeDocumentStore(options).router;}

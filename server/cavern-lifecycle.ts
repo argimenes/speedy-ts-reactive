@@ -1,3 +1,4 @@
+import {createApplicationServiceHost} from './application-services/host.js';
 /** One application-level folder context; existing stores remain confined to it. */
 import { Router, type RequestHandler } from 'express';
 import { promises as fs, constants } from 'node:fs';
@@ -87,6 +88,8 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
     // Workspace files are ordinary files within this same Cavern.
     api.use(createWorkspaceStoreRouter({ documentRoot: root, workspaceRoot: root, coordinate }));
     let assets: ReturnType<typeof createManagedAssetService> | undefined;
+    let services: ReturnType<typeof createApplicationServiceHost> | undefined;
+    api.use('/services', (req,res,next)=>services ? services.router(req,res,next) : res.status(404).json({Success:false,Error:'Application services unavailable'}));
     api.use('/assets', (req, res, next) => assets ? assets.router(req, res, next) : res.status(409).json({ Success: false, Error: 'Managed assets are unavailable.' }));
     let indexLease: string | undefined;
     let indexPolicy: ReturnType<typeof normalizePolicy> | undefined;
@@ -111,10 +114,12 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
       return indexWork;
     };
     return { api, sql,
-      async activateAssets(cavern: Cavern) { if (featureFlags.managedAssetClipboard) { assets = createManagedAssetService({ root, cavernId: cavern.cavernGuid, session: cavern.session }); return assets.recover(); } },
+      async activateAssets(cavern: Cavern) {
+        if(featureFlags.applicationServices)services=createApplicationServiceHost({root,cavernId:cavern.cavernGuid,nativeEnabled:featureFlags.nativeDocumentPersistence,assets:()=>assets?.store,knowledge:(request,signal)=>sql.entityLookup({vault:'.',request},signal,true)});
+        if (featureFlags.managedAssetClipboard) { assets = createManagedAssetService({ root, cavernId: cavern.cavernGuid, session: cavern.session }); return assets.recover(); } },
       async index(policy: any) { indexPolicy ??= normalizePolicy(policy); return indexStatus(); },
       async status() { return indexPolicy ? indexStatus() : undefined; },
-      async close() { await assets?.close(); await indexWork?.catch(() => {}); await sql.close(); await history.dispose(); },
+      async close() { await services?.close(); await assets?.close(); await indexWork?.catch(() => {}); await sql.close(); await history.dispose(); },
     };
   }
   const establish = async (input: unknown, intent: unknown, confirmed = false) => {

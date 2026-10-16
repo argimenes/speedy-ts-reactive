@@ -11,3 +11,5 @@ await import('./build-relocation-helper.mjs');
 await import('./build-native-knowledge-worker.mjs');
 
 await import('./build-managed-assets.mjs');
+
+await import('./build-application-services.mjs');

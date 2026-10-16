@@ -17,6 +17,7 @@
     "src/feature-api/**/*",
     "src/knowledge/**/*",
     "src/application/**/*",
+    "src/application-services/**/*",
     "src/features/**/*",
     "src/index.tsx",
     "src/App.tsx",
