@@ -1,3 +1,4 @@
+import {readerArtifact} from '../../src/publication/shell';
 import {publicRoute} from '../../src/publication/directory';
 /** Publication records share the Cavern job facility and its pinned filesystem primitives.
  * Version-1 preparation records are neither migrated nor interpreted here. */
@@ -73,7 +74,7 @@ export class CavernPublicationStorage implements PublicationStorage {
   // remove immutable blobs, receipts, canonical data or managed asset originals.
   for(const name of await this.names(dir,fd))if(/^stage-[a-f0-9-]{36}$/.test(name)){const fs=await filesystem(),s=await fs.atDirectory(dir,{kind:'stat',name},fd);await fs.atDirectory(dir,{kind:'unlink',name,expectedIdentity:s.identity},fd);}
  }
- private async unitDir(id:string,key:string,fd:number,create=false){if(!/^(?:doc-[0-9]{4}|inventory)$/.test(key))throw Error('Invalid publication unit');return this.dir(await this.dir(await this.jobDir(id,fd),'units',create,fd),key,create,fd);}
+ private async unitDir(id:string,key:string,fd:number,create=false){if(!/^(?:doc-[0-9]{4}|inventory|reader)$/.test(key))throw Error('Invalid publication unit');return this.dir(await this.dir(await this.jobDir(id,fd),'units',create,fd),key,create,fd);}
  unit<T>(id:string,key:string,value?:T):Promise<T|undefined>{return this.transaction(async(_,fd)=>{
   let dir:Dir;try{dir=await this.unitDir(id,key,fd,value!==undefined);}catch(e){if((e as any).code==='ENOENT'&&value===undefined)return;throw e;}
   if(value!==undefined){await this.clearUnitStages(dir,fd);const b=json(value);if(b.length>2*1024*1024)throw Error('Unit receipt budget exceeded');await this.putFile(dir,'receipt.json',json({value,digest:sha(b)}),fd);await this.fault('unit');return value;}
@@ -86,10 +87,10 @@ export class CavernPublicationStorage implements PublicationStorage {
  read(id:string,h:string,unit?:string){hash(h);return this.transaction(async(_,fd)=>{const dir=unit?await this.unitDir(id,unit,fd):await this.jobDir(id,fd),b=await this.bytes(dir,`blob-${h}`,16*1024*1024,fd);if(sha(b)!==h)throw Error('Publication artifact integrity mismatch');return new Uint8Array(b);});}
  private async releaseDir(home:Dir,siteId:string,release:string,fd:number,create=false){hash(release);return this.dir(await this.dir(await this.siteDir(home,siteId,fd),'releases',create,fd),release,create,fd);}
  private async publicPath(dir:Dir,p:string,fd:number,create=false){
-  if(!publicRoute(p)&&! /^(?:reader\.css|assets\/[a-f0-9]{64}\.(?:png|jpg))$/.test(p))throw Error('Invalid public artifact path');
+  if(!publicRoute(p)&&!readerArtifact(p)&&! /^(?:reader\.css|assets\/[a-f0-9]{64}\.(?:png|jpg))$/.test(p))throw Error('Invalid public artifact path');
   const parts=p.split('/');for(const part of parts.slice(0,-1))dir=await this.dir(dir,part,create,fd);return {dir,name:parts.at(-1)!};
  }
- commit(record:PublicationRecord,signal?:AbortSignal){if(record.site.directory)return this.commitDirectory(record,signal);return this.transaction(async(home,fd)=>{
+ commit(record:PublicationRecord,signal?:AbortSignal){if(record.site.directory||record.site.profile.reader)return this.commitDirectory(record,signal);return this.transaction(async(home,fd)=>{
   const files=[...record.files].sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0),release=sha(json(files)),site=await this.siteAt(home,record.site.id,fd);
   if(site.committedJobs?.[record.job.id]===release&&site.releases.includes(release))return release;
   if(site.revision!==record.site.revision)throw Error('Site changed; review required');if(site.releases.length>=100)throw Error('Retained release limit; maintenance required');

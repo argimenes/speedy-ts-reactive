@@ -1,7 +1,7 @@
 import type {DirectoryInventory,DirectoryScope} from '../publication/directory';
 import type {PublicationSite,PublicationJob,PublicFile} from './publication-contracts';
 import type {ServiceCapabilities,JobLease} from './capabilities';
-export interface PublicationRecord {job:PublicationJob;site:PublicationSite;approved?:string;files:PublicFile[];directory?:DirectoryInventory}
+export interface PublicationRecord {job:PublicationJob;site:PublicationSite;approved?:string;files:PublicFile[];directory?:DirectoryInventory;research?:import('../publication/research').ResearchBundle}
 export interface PublicationStorage {
  sites():Promise<PublicationSite[]>;
  site(id:string):Promise<PublicationSite>;
@@ -21,6 +21,7 @@ export interface PublicationStorage {
  close():Promise<void>;
 }
 export interface PublicationPorts {
+ packageData?:ServiceCapabilities['packageData'];
  inventory?:(scope:DirectoryScope,signal?:AbortSignal)=>Promise<DirectoryInventory>;
  native:ServiceCapabilities['readNative'];asset:ServiceCapabilities['originalAsset'];executor:ServiceCapabilities['executor'];
  storage:PublicationStorage;cavernId:string;hash(bytes:Uint8Array):string;

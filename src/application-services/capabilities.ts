@@ -5,14 +5,15 @@ import type {ManagedAssetReference} from '../interchange/managed-asset';
 import type {PublicationProfile} from './publication-contracts';
 import type {Projection} from '../publication/projection';
 export type ExecutionTask =
- | {kind:'publication-project';native:Uint8Array;profile:PublicationProfile;cavernId:string;directory?:import('../publication/directory').DirectoryProjectionContext}
+ | {kind:'publication-project';native:Uint8Array;profile:PublicationProfile;cavernId:string;namespace?:string;directory?:import('../publication/directory').DirectoryProjectionContext;research?:import('../publication/research').ResearchBundle}
+ | {kind:'publication-inspect';native:Uint8Array;profile:PublicationProfile;cavernId:string;blockId?:string}
  | {kind:'publication-zip';members:Record<string,Uint8Array>}
  | Extract<Preparation,{kind:'convert'}>
  | {kind:'inventory';native:Uint8Array}
  | {kind:'package';native:Uint8Array;source:PackageManifest['source'];context:PackageDataResult;assets:PackageAsset[]};
 export interface Inventory {entities:string[];claims:string[];assets:ManagedAssetReference[]}
 export interface Executor {
- run(task:ExecutionTask,signal?:AbortSignal):Promise<PreparationResult|Inventory|Projection|{bytes:Uint8Array}>;
+ run(task:ExecutionTask,signal?:AbortSignal):Promise<PreparationResult|Inventory|Projection|import('../publication/research').ResearchInspection|{bytes:Uint8Array}>;
  close():Promise<void>;
 }
 export interface JobRecord {summary:JobSummary;preparation:Preparation;result?:{file:string;sha256:string;bytes:number}}

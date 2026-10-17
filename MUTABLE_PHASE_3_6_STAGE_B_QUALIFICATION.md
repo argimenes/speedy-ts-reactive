@@ -1,7 +1,7 @@
 # Phase 3.6 Stage B — Directory Publication
 
 Date: 2026-10-17  
-Status: Implemented and qualified; awaiting Stage B acceptance. Stage A and the Vault architecture amendment are accepted. Stage C has not begun.
+Status: Implemented, qualified and accepted. Stage C — Reader Experience is separately authorized and tracked in its [qualification report](MUTABLE_PHASE_3_6_STAGE_C_QUALIFICATION.md). Stage A and the Vault architecture amendment are accepted.
 
 ## Implementation
 
@@ -110,4 +110,4 @@ Public routes are explicitly reviewed ASCII paths; source Unicode/case differenc
 
 The static folder resides on the service host. Browser-only arbitrary destination writing, remote preview access, Firefox/WebKit qualification, Windows/Linux durability and desktop packaging are not claimed. A retained older release or exported copy is not retracted by changing the next release's scope.
 
-Vault identity and service scope remain independent of physical location. Site configuration is portable authored data; jobs, execution receipts, leases and preview authorization remain local operational state. This milestone introduces no synchronization, archive mounting, multi-Vault lifecycle changes, Stage C/D features, Phase 4 or Electron/Tauri packaging. Existing Phase 3.5 maintenance/browser follow-ups and the separate manual video-playback check remain unchanged. Stop after Stage B qualification for acceptance.
+Vault identity and service scope remain independent of physical location. Site configuration is portable authored data; jobs, execution receipts, leases and preview authorization remain local operational state. This milestone introduced no synchronization, archive mounting, multi-Vault lifecycle changes, Stage C/D features, Phase 4 or Electron/Tauri packaging. Existing Phase 3.5 maintenance/browser follow-ups and the separate manual video-playback check remain unchanged. Stage B is accepted; subsequent milestones require their own qualification and acceptance.
