@@ -1,3 +1,5 @@
+import {projectionReuse} from './publication-incremental';
+import {publicManifest} from '../publication/incremental';
 import {validateReader} from '../publication/reader';
 import {researchSources,researchPlan,approvedResearch} from './publication-research';
 import {readerArtifacts} from './publication-reader';
@@ -22,6 +24,13 @@ export class PublicationService {
  async call<K extends keyof PublicationOperations>(op:K,input:PublicationOperations[K]['input'],signal?:AbortSignal):Promise<PublicationOperations[K]['output']>{
   if(this.closed)throw Error('Publication host closed');signal?.throwIfAborted();const v=input as any;let out:unknown;
   switch(op){
+   case 'publication.maintenance.list':object(v,['siteId','offset']);jobId(v.siteId);out=await this.p.storage.maintenanceList(v.siteId,v.offset);break;
+   case 'publication.maintenance.inspect':object(v,['siteId','target']);jobId(v.siteId);out=await this.p.storage.maintenanceInspect(v.siteId,v.target);break;
+   case 'publication.maintenance.delete':{
+    object(v,['review']);object(v.review,['siteId','siteRevision','target','jobRevision','bytes','files','blocked','pending']);jobId(v.review.siteId);
+    if(v.review.target?.kind==='release')await this.p.revokeRelease?.(v.review.siteId,v.review.target.id);
+    await this.p.storage.maintenanceDelete(v.review as unknown as import('./publication-maintenance').MaintenanceReview,signal);out={deleted:true};break;
+   }
    case 'publication.research.sources':case 'publication.research.plan':{
     object(v,op==='publication.research.sources'?['siteId','expectedRevision']:['siteId','expectedRevision','source']);jobId(v.siteId);const site=await this.p.storage.site(v.siteId);if(site.revision!==v.expectedRevision)throw Error('Site changed; review required');
     out=op==='publication.research.sources'?await researchSources(this.p,site,signal):(await researchPlan(this.p,site,v.source,signal)).plan;break;
@@ -60,8 +69,8 @@ export class PublicationService {
     out=await this.p.storage.writeSite({version:1,id:v.id,revision:0,resourceId:doc.resourceId,location:v.location,profile:normalized,releases:old?.releases??[],committedJobs:old?.committedJobs??{},...(old?.active?{active:old.active}:{})},v.expectedRevision);break;
    }
    case 'publication.review.create':{
-    object(v,['id','siteId','expectedRevision']);jobId(v.id);jobId(v.siteId);const site=await this.p.storage.site(v.siteId);if(site.revision!==v.expectedRevision)throw Error('Site revision changed');
-    const r=await this.p.storage.create({job:{version:2,id:v.id,siteId:v.siteId,revision:0,state:'reviewing',phase:'Saved input'},site,files:[]});
+    object(v,['id','siteId','expectedRevision','buildMode']);if(v.buildMode!==undefined&&!['full','incremental'].includes(v.buildMode))throw Error('Invalid build mode');jobId(v.id);jobId(v.siteId);const site=await this.p.storage.site(v.siteId);if(site.revision!==v.expectedRevision)throw Error('Site revision changed');
+    const r=await this.p.storage.create({job:{version:2,id:v.id,siteId:v.siteId,revision:0,state:'reviewing',phase:'Saved input',buildMode:v.buildMode??'incremental'},site,files:[]});
     if(r.job.state==='reviewing'&&!this.running.has(r.job.id))await this.launch(r,false);out=(await this.p.storage.load(v.id)).job;break;
    }
    case 'publication.jobs.list':{object(v,['siteId','after']);jobId(v.siteId);if(v.after!==undefined)jobId(v.after);const page=await this.p.storage.list(v.siteId,v.after);out={jobs:page.records.map(r=>r.job),...page.next?{next:page.next}:{}};break;}
@@ -83,9 +92,9 @@ export class PublicationService {
    case 'publication.releases.preview':object(v,['siteId','release']);jobId(v.siteId);await this.p.storage.release(v.siteId,v.release);out=await this.p.preview(v.siteId,v.release);break;
    case 'publication.preview.close':object(v,['grant']);jobId(v.grant);await this.p.closePreview(v.grant);out={closed:true};break;
    case 'publication.releases.export':{
-    object(v,['siteId','release']);jobId(v.siteId);const files=await this.p.storage.release(v.siteId,v.release);if(files.reduce((n,f)=>n+f.size,0)>60*1024*1024)throw Error('ZIP delivery exceeds 60 MiB; use the complete static folder');
+    object(v,['siteId','release']);jobId(v.siteId);const lease=await this.p.storage.leaseRelease(v.siteId,v.release);try{const files=await this.p.storage.release(v.siteId,v.release);if(files.reduce((n,f)=>n+f.size,0)>60*1024*1024)throw Error('ZIP delivery exceeds 60 MiB; use the complete static folder');
     const members:Record<string,Uint8Array>={};for(const file of files){signal?.throwIfAborted();members[file.path]=await this.p.storage.file(v.siteId,v.release,file);}
-    const result:any=await this.p.executor.run({kind:'publication-zip',members},signal);out={bytes:result.bytes,mediaType:'application/zip',filename:`site-${v.siteId}.zip`};break;
+    const result:any=await this.p.executor.run({kind:'publication-zip',members},signal);out={bytes:result.bytes,mediaType:'application/zip',filename:`site-${v.siteId}.zip`};}finally{await lease.close();}break;
    }
    default:throw Error('Unknown publication operation');
   }
@@ -116,25 +125,27 @@ export class PublicationService {
   let r=initial;
   try{
    // Reconcile a committed release before checking the now-advanced site revision.
-   if(build&&r.files.length){const expected=this.releaseHash(r.files),site=await this.p.storage.site(r.site.id);if(site.committedJobs?.[r.job.id]===expected&&site.releases.includes(expected)){r={...r,job:{...r.job,release:expected}};await this.save(r,'completed','Complete');return;}}
+   if(build&&r.files.length){const committed=await this.committed(r);if(committed){r={...r,job:{...r.job,release:committed}};await this.save(r,'completed','Complete');return;}}
    const capture=!build&&r.site.profile.reader?.preset==='research'&&!r.research;
    if(capture){r={...r,research:await approvedResearch(this.p,r.site,signal)};r=await this.save(r,'reviewing','Captured reviewed semantics');}
    const doc=await this.current(r,signal,!capture);
    if(!build&&r.site.directory){r=await prepareDirectory(this.p,r,signal,(next,phase)=>this.save(next,'reviewing',phase));await this.current(r,signal);await this.save(r,'awaiting-approval','Review directory content');return;}
    if(!build){
     const native=bytes(doc.native);await this.p.storage.put(r.job.id,native);
-    const projection=await this.p.executor.run({kind:'publication-project',native,profile:r.site.profile,cavernId:this.p.cavernId,namespace:r.site.id,research:r.research},signal) as Projection;
+    const entry={resourceId:doc.resourceId,location:r.site.location!,hash:doc.sha256,size:native.length,route:r.site.profile.route,title:r.site.profile.title},cache=await projectionReuse(this.p,r,signal);
+    let cached;try{cached=await cache.project(entry,native,'doc-0000');r={...r,job:{...r.job,reuse:cache.stats()}};}finally{await cache.close();}
+    const projection=cached.projection;
     let html=projection.html,total=0;const files:PublicFile[]=[];const seen=new Set<string>();
     for(const a of projection.assets){
      if(seen.has(a.reference.assetId))continue;seen.add(a.reference.assetId);if(seen.size>20)throw Error('Stage A supports at most 20 image originals');
      const original=await this.p.asset(a.reference.assetId,signal);if(original.bytes.length>10*1024*1024||(total+=original.bytes.length)>40*1024*1024)throw Error('Stage A image budget exceeded');
-     if(!['image/png','image/jpeg'].includes(original.mediaType)||`sha256:${this.p.hash(original.bytes)}`!==a.reference.assetId)throw Error('Original image integrity mismatch');
+     if(original.cavernId!==this.p.cavernId||!['image/png','image/jpeg'].includes(original.mediaType)||`sha256:${this.p.hash(original.bytes)}`!==a.reference.assetId)throw Error('Original image integrity mismatch');
      const path=`${a.path}.${original.mediaType==='image/png'?'png':'jpg'}`;html=html.split(`src="${a.path}"`).join(`src="${path}"`);
      files.push({path,hash:await this.p.storage.put(r.job.id,original.bytes),size:original.bytes.length,mediaType:original.mediaType});
      signal.throwIfAborted();
     }
-    for(const [path,text,mediaType] of [[r.site.profile.route,html,'text/html'],...r.site.profile.reader?[]:[['reader.css',READER_CSS,'text/css']]]){const b=bytes(text);files.push({path,hash:await this.p.storage.put(r.job.id,b),size:b.length,mediaType});}
-    if(r.site.profile.reader){const receipt={entry:{resourceId:doc.resourceId,location:r.site.location!,hash:doc.sha256,size:native.length,route:r.site.profile.route,title:r.site.profile.title},files,text:projection.text,diagnostics:projection.diagnostics,omittedAnnotations:projection.omittedAnnotations,omittedBlocks:projection.omittedBlocks,headings:projection.headings,search:projection.search,occurrences:projection.occurrences};files.push(...await readerArtifacts(this.p,r,(async function*(){yield receipt;})(),signal));}
+    for(const [path,text,mediaType] of [[r.site.profile.route,html,'text/html'],...r.site.profile.reader?[]:[['reader.css',READER_CSS,'text/css']]]){const b=bytes(text);files.push({path,hash:await this.p.storage.put(r.job.id,b),size:b.length,mediaType,...mediaType==='text/html'?{entry:true as const}:{}});}
+    const receipt={projection:cached.receipt,entry,files:[...files],text:projection.text,diagnostics:projection.diagnostics,omittedAnnotations:projection.omittedAnnotations,omittedBlocks:projection.omittedBlocks,headings:projection.headings,search:projection.search,occurrences:projection.occurrences};await this.p.storage.unit(r.job.id,'doc-0000',receipt);if(r.site.profile.reader){files.push(...await readerArtifacts(this.p,r,(async function*(){yield receipt;})(),signal));}
     files.sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);
     const digest=this.p.hash(bytes(JSON.stringify({version:PUBLICATION_VERSION,site:r.site,nativeHash:doc.sha256,files,research:r.research})));
     r={...r,files,job:{...r.job,review:{digest,nativeHash:doc.sha256,profile:r.site.profile,text:projection.text,diagnostics:projection.diagnostics,files,omittedAnnotations:projection.omittedAnnotations,omittedBlocks:projection.omittedBlocks,...r.research?{semantics:r.research.entries}:{}}}};
@@ -147,12 +158,16 @@ export class PublicationService {
    }
   }catch(error){
    // Commit is authoritative even when its acknowledgement or final job checkpoint was lost.
-   try{r=await this.p.storage.load(r.job.id);const site=await this.p.storage.site(r.site.id),expected=r.approved&&this.releaseHash(r.files);if(expected&&site.committedJobs?.[r.job.id]===expected&&site.releases.includes(expected)){await this.save({...r,job:{...r.job,release:expected}},'completed','Complete');return;}
+   try{r=await this.p.storage.load(r.job.id);const committed=r.approved&&await this.committed(r);if(committed){await this.save({...r,job:{...r.job,release:committed}},'completed','Complete');return;}
     const message=String((error as Error).message).slice(0,400);await this.save(r,this.closed||signal.reason?.message?.includes('work allowance')?'interrupted':signal.aborted?'cancelled':/changed|review required/i.test(message)?'review-required':'failed','Stopped',message);
    }catch{/* Immutable receipts remain recoverable after a storage failure. */}
   }
  }
- private releaseHash(files:PublicFile[]){return this.p.hash(bytes(JSON.stringify([...files].sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0))));}
+ private async committed(r:PublicationRecord){
+  const site=await this.p.storage.site(r.site.id),release=site.committedJobs?.[r.job.id];if(!release||!site.releases.includes(release))return;
+  const manifest=await this.p.storage.release(site.id,release);if(JSON.stringify(publicManifest(manifest))!==JSON.stringify(publicManifest(r.files)))throw Error('Committed release does not match prepared artifacts');
+  return release; // Includes older sealed manifests whose identities contained staging fields.
+ }
  private async inspect(id:string){
   const r=await this.p.storage.load(id);if(!['running','reviewing'].includes(r.job.state)||this.running.has(id))return r;
   let lease;try{lease=await this.p.storage.acquire(id);}catch(e){if((e as Error).message.includes('another host'))return r;throw e;}

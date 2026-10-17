@@ -2,7 +2,7 @@
 // mutation, then verifies its inode. Operations use single relative components;
 // swapping an ancestor with a symlink cannot redirect a write to another tree.
 import { constants } from 'node:fs';
-import { open, mkdir, lstat, opendir, link, unlink } from 'node:fs/promises';
+import { open, mkdir, rmdir, lstat, opendir, link, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 const identity = s => ({ dev: String(s.dev), ino: String(s.ino) });
 const same = (a, b) => a.dev === b.dev && a.ino === b.ino;
@@ -26,6 +26,14 @@ async function handle(request) {
       const s = await lstat(name);
       if (s.isSymbolicLink()) throw new Error('symlink rejected');
       return { identity: identity(s), size: s.size, directory: s.isDirectory(), file: s.isFile() };
+    }
+    if (op.kind === 'rmdir') {
+      if (!op.expectedIdentity) throw new Error('directory removal requires identity');
+      const child = await open(name, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+      try {
+        if (!same(identity(await child.stat()), op.expectedIdentity)) throw new Error('directory identity changed');
+        await rmdir(name); await dir.sync(); return {};
+      } finally { await child.close(); }
     }
     if (op.kind === 'list') {
       if (!Number.isSafeInteger(op.limit) || op.limit < 1 || op.limit > 100 || !Number.isSafeInteger(op.offset) || op.offset < 0 || op.offset > 10000) throw new Error('directory scan limit');

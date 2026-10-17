@@ -1,7 +1,7 @@
 # Mutable OS — Phase 3.6: Publish to Web
 
 Date: 2026-10-17  
-Status: Architecture approved, including Section 14 defaults. Stage A is accepted; its [qualification report](MUTABLE_PHASE_3_6_STAGE_A_QUALIFICATION.md) records the completed milestone. Stage B — Directory Publication is accepted. Stage C — Reader Experience is implemented and qualified, awaiting acceptance; its [qualification report](MUTABLE_PHASE_3_6_STAGE_C_QUALIFICATION.md) records results and limitations. Stage D requires separate authorization.
+Status: Architecture approved, including Section 14 defaults. Stage A is accepted; its [qualification report](MUTABLE_PHASE_3_6_STAGE_A_QUALIFICATION.md) records the completed milestone. Stage B — Directory Publication is accepted. Stage C — Reader Experience is accepted; its [qualification report](MUTABLE_PHASE_3_6_STAGE_C_QUALIFICATION.md) records results and limitations. Stage D — Incremental Builds, Release Maintenance and Final Qualification is implemented and qualified, awaiting acceptance.
 
 ## 1. Objective and boundary
 
@@ -287,4 +287,4 @@ Approve saved-native inputs; explicit scope and privacy review per build; Public
 
 The Application Services Foundation remains accepted and complete. This document proposes only the publishing-specific extensions needed to use it. Phase 3.5 remains unchanged, and Phase 4 and Electron/Tauri packaging remain separate projects.
 
-**Current approval gate:** Stages A–B and the Vault architecture amendment are accepted. Stage C — Reader Experience is implemented and qualified: Reader/Compact themes, public-content search and explicitly reviewed Research semantics. Its [qualification report](MUTABLE_PHASE_3_6_STAGE_C_QUALIFICATION.md) is submitted for acceptance; implementation stops here. Stage D, Vault synchronization, temporary archive mounting, Phase 4 and Electron/Tauri packaging remain outside this authorization.
+**Current approval gate:** Stages A–C and the Vault architecture amendment are accepted. Stage D — Incremental Builds, Release Maintenance and Final Qualification is implemented and qualified, awaiting acceptance. The [consolidated qualification](MUTABLE_PHASE_3_6_QUALIFICATION.md) records results and limitations. Work is stopped for acceptance. Phase 4, Vault synchronization, temporary archive mounting and Electron/Tauri packaging remain outside this authorization.

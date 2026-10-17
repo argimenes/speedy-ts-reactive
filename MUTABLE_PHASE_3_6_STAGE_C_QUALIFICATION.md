@@ -1,7 +1,7 @@
 # Phase 3.6 Stage C — Reader Experience
 
 Date: 2026-10-17  
-Status: Implemented and qualified; awaiting Stage C acceptance. Stages A–B are accepted. Stage D has not begun.
+Status: Implemented, qualified and accepted. Stages A–B are accepted. Stage D is separately authorized and tracked in the [consolidated qualification](MUTABLE_PHASE_3_6_QUALIFICATION.md).
 
 ## Use in Flint
 
@@ -117,4 +117,4 @@ Interactive search/previews are supported through static HTTP, including offline
 
 Search supports normalized whole words, not prefixes, stemming, fuzzy/semantic search or arbitrary-language segmentation. Fixed public palettes replace an unrestricted colour picker. Research does not expose relationship graphs, evidence, actors, participant expansion, general archival tables or live knowledge APIs. Large fields/candidate sets require narrower disclosure rather than silent truncation. Unsupported and unresolved semantics retain readable text.
 
-Existing Stage A/B and Phase 3.5 browser/storage maintenance limitations remain. Stage D incremental builds/maintenance, synchronization, archive mounting, multi-Vault lifecycle changes, Phase 4 and Electron/Tauri packaging are unstarted. Stop after Stage C qualification for acceptance.
+Existing Stage A/B and Phase 3.5 browser/storage maintenance limitations remain. Stage C introduced no Stage D incremental builds/maintenance, synchronization, archive mounting, multi-Vault lifecycle changes, Phase 4 or Electron/Tauri packaging. Subsequent work has its own qualification and acceptance gate.

@@ -4,13 +4,13 @@ import type {PublicationStorage} from '../../src/application-services/publicatio
 import {INTERACTIVE_CSP} from '../../src/publication/policy';
 /** No app routes/cookies, filesystem mount, directory listing or privileged bridge. */
 export class PublicationPreview {
- private server?:Server;private starting?:Promise<void>;private closed=false;private port=0;private grants=new Map<string,{site:string;release:string;route:string;expires:number}>();
+ private server?:Server;private starting?:Promise<void>;private closed=false;private port=0;private grants=new Map<string,{site:string;release:string;route:string;expires:number;lease:{close:()=>Promise<void>};timer:ReturnType<typeof setTimeout>}>();
  constructor(private storage:PublicationStorage){}
  async open(site:string,release:string){
   if(this.closed)throw Error('Preview host closed');
   const files=await this.storage.release(site,release);if(this.closed)throw Error('Preview host closed');
-  const route=(files.find(f=>f.mediaType==='text/html'&&!f.unit)??files.find(f=>f.mediaType==='text/html'))?.path;if(!route)throw Error('Release has no page');
-  for(const [key,g] of this.grants)if(g.expires<Date.now())this.grants.delete(key);
+  const route=(files.find(f=>f.entry)??files.find(f=>f.mediaType==='text/html'&&!f.unit)??files.find(f=>f.mediaType==='text/html'))?.path;if(!route)throw Error('Release has no page');
+  for(const [key,g] of this.grants)if(g.expires<Date.now())await this.revoke(key);
   if(this.grants.size>=16)throw Error('Close another preview before opening more');
   if(!this.server){this.server=createServer((req,res)=>{void(async()=>{
    res.setHeader('Cache-Control','no-store');res.setHeader('Content-Security-Policy',`${INTERACTIVE_CSP}; frame-ancestors 'none'`);res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cross-Origin-Resource-Policy','same-origin');
@@ -24,8 +24,9 @@ export class PublicationPreview {
   }
   await this.starting;
   if(this.closed)throw Error('Preview host closed');
-  const grant=randomUUID();this.grants.set(grant,{site,release,route,expires:Date.now()+15*60*1000});return {url:`http://127.0.0.1:${this.port}/${grant}/${route}`,grant};
+  const lease=await this.storage.leaseRelease(site,release);if(this.closed){await lease.close();throw Error('Preview host closed');}const grant=randomUUID(),timer=setTimeout(()=>void this.revoke(grant),15*60*1000);timer.unref();this.grants.set(grant,{site,release,route,expires:Date.now()+15*60*1000,lease,timer});return {url:`http://127.0.0.1:${this.port}/${grant}/${route}`,grant};
  }
- revoke(grant:string){this.grants.delete(grant);}
- async close(){this.closed=true;this.grants.clear();await this.starting?.catch(()=>{});if(this.server){this.server.closeAllConnections();await new Promise<void>(resolve=>this.server!.close(()=>resolve()));this.server=undefined;}}
+ async revoke(grant:string){const g=this.grants.get(grant);this.grants.delete(grant);if(g){clearTimeout(g.timer);await g.lease.close();}}
+ async revokeRelease(site:string,release:string){for(const [id,g] of this.grants)if(g.site===site&&g.release===release)await this.revoke(id);}
+ async close(){this.closed=true;await Promise.all([...this.grants.keys()].map(id=>this.revoke(id)));await this.starting?.catch(()=>{});if(this.server){this.server.closeAllConnections();await new Promise<void>(resolve=>this.server!.close(()=>resolve()));this.server=undefined;}}
 }

@@ -1,3 +1,4 @@
+import {projectionReuse,type ProjectionReceipt} from './publication-incremental';
 import {readerArtifacts} from './publication-reader';
 import type {PublicationPorts,PublicationRecord} from './publication-ports';
 import type {PublicFile} from './publication-contracts';
@@ -6,7 +7,7 @@ import {DIRECTORY_LIMITS,directoryIndex} from '../publication/directory';
 import {READER_CSS,PUBLICATION_VERSION} from '../publication/policy';
 import type {Projection} from '../publication/projection';
 const bytes=(s:string)=>new TextEncoder().encode(s);
-export interface DocumentReceipt {entry:DirectoryEntry;files:PublicFile[];text:string;diagnostics:string[];omittedAnnotations:number;omittedBlocks:number;headings?:string[];search?:import('../publication/search').SearchEntry;occurrences?:import('../publication/research').SemanticOccurrence[]}
+export interface DocumentReceipt {projection?:ProjectionReceipt;entry:DirectoryEntry;files:PublicFile[];text:string;diagnostics:string[];omittedAnnotations:number;omittedBlocks:number;headings?:string[];search?:import('../publication/search').SearchEntry;occurrences?:import('../publication/research').SemanticOccurrence[]}
 export function inventoryHash(p:PublicationPorts,inventory:DirectoryInventory){return p.hash(bytes(JSON.stringify(inventory.documents.map(d=>({location:d.location,resourceId:d.resourceId,hash:d.hash,size:d.size})))));}
 export function directoryDigest(p:PublicationPorts,r:PublicationRecord){return p.hash(bytes(JSON.stringify({version:PUBLICATION_VERSION,site:r.site,nativeHash:inventoryHash(p,r.directory!),files:r.files,research:r.research})));}
 export async function validateDirectory(p:PublicationPorts,r:PublicationRecord,signal:AbortSignal){
@@ -30,17 +31,20 @@ export async function prepareDirectory(p:PublicationPorts,initial:PublicationRec
  const files=new Map<string,PublicFile>();let assetBytes=0,omittedAnnotations=0,omittedBlocks=0,reused=0;
  const add=(f:PublicFile)=>{const existing=files.get(f.path);if(existing&&existing.hash!==f.hash)throw Error('Public artifact collision');if(!existing){files.set(f.path,f);if(f.path.startsWith('assets/'))assetBytes+=f.size;}
   if(files.size>DIRECTORY_LIMITS.files||[...files.values()].reduce((n,f)=>n+f.size,0)>DIRECTORY_LIMITS.outputBytes||assetBytes>DIRECTORY_LIMITS.assetBytes||[...files.keys()].filter(k=>k.startsWith('assets/')).length>DIRECTORY_LIMITS.assets)throw Error('Directory artifact budget exceeded');};
+ const cache=await projectionReuse(p,r,signal);
+ try{
  const pages=inventory.documents.map(({resourceId,route,title})=>({resourceId,route,title}));
  for(let i=0;i<inventory.documents.length;i++){
   signal.throwIfAborted();const entry=inventory.documents[i],key=`doc-${String(i).padStart(4,'0')}`;
   let receipt=await p.storage.unit<DocumentReceipt>(r.job.id,key);
   if(receipt){if(JSON.stringify(receipt.entry)!==JSON.stringify(entry))throw Error('Unit input changed; review required');
+   if(receipt.projection?.fingerprint!==cache.key(entry,{namespace:r.site.id,route:entry.route,home:r.site.profile.route,pages}))throw Error('Unit projection policy changed; fresh review required');
    const native=await p.storage.read(r.job.id,entry.hash,key);if(native.length!==entry.size)throw Error('Captured input integrity mismatch');
    for(const f of receipt.files){const b=await p.storage.read(r.job.id,f.hash,f.unit);if(b.length!==f.size)throw Error('Unit output integrity mismatch');}reused++;
   }else{
    const doc=await p.native({location:entry.location,expectedHash:entry.hash},signal);if(doc.resourceId!==entry.resourceId)throw Error('Saved identity changed; review required');
    await p.storage.put(r.job.id,bytes(doc.native),key);
-   const projection=await p.executor.run({kind:'publication-project',native:bytes(doc.native),profile:{...r.site.profile,title:entry.title,route:entry.route},cavernId:p.cavernId,research:r.research,directory:{namespace:r.site.id,route:entry.route,home:r.site.profile.route,pages}},signal) as Projection;
+   const cached=await cache.project(entry,bytes(doc.native),key,{namespace:r.site.id,route:entry.route,home:r.site.profile.route,pages}),projection=cached.projection;
    let html=projection.html;const unitFiles:PublicFile[]=[];const seen=new Set<string>();
    for(const a of projection.assets){if(seen.has(a.reference.assetId))continue;seen.add(a.reference.assetId);
     let f=[...files.values()].find(f=>f.path.startsWith(a.path+'.'));
@@ -53,15 +57,16 @@ export async function prepareDirectory(p:PublicationPorts,initial:PublicationRec
    }
    const b=bytes(html);if(b.length>16*1024*1024)throw Error('Public page exceeds limit');
    unitFiles.push({path:entry.route,hash:await p.storage.put(r.job.id,b,key),size:b.length,mediaType:'text/html',unit:key});
-   receipt={entry,files:unitFiles,text:projection.text,diagnostics:projection.diagnostics,omittedAnnotations:projection.omittedAnnotations,omittedBlocks:projection.omittedBlocks,headings:projection.headings,search:projection.search,occurrences:projection.occurrences};
+   receipt={projection:cached.receipt,entry,files:unitFiles,text:projection.text,diagnostics:projection.diagnostics,omittedAnnotations:projection.omittedAnnotations,omittedBlocks:projection.omittedBlocks,headings:projection.headings,search:projection.search,occurrences:projection.occurrences};
    await p.storage.unit(r.job.id,key,receipt);
   }
   receipt.files.forEach(add);omittedAnnotations+=receipt.omittedAnnotations;omittedBlocks+=receipt.omittedBlocks;
   if((i+1)%25===0)r=await checkpoint(r,`Prepared ${i+1}/${inventory.documents.length} documents (${reused} recovered units)`);
  }
- for(const [path,text,mediaType] of [[r.site.profile.route,directoryIndex(r.site.profile,pages),'text/html'],...r.site.profile.reader?[]:[['reader.css',READER_CSS,'text/css']]]){const b=bytes(text);add({path,hash:await p.storage.put(r.job.id,b),size:b.length,mediaType});}
+ for(const [path,text,mediaType] of [[r.site.profile.route,directoryIndex(r.site.profile,pages),'text/html'],...r.site.profile.reader?[]:[['reader.css',READER_CSS,'text/css']]]){const b=bytes(text);add({path,hash:await p.storage.put(r.job.id,b),size:b.length,mediaType,...mediaType==='text/html'?{entry:true as const}:{}});}
  if(r.site.profile.reader){const jobId=r.job.id;const receipts=async function*(){for(let i=0;i<inventory.documents.length;i++){signal.throwIfAborted();const receipt=await p.storage.unit<DocumentReceipt>(jobId,`doc-${String(i).padStart(4,'0')}`);if(!receipt)throw Error('Missing reader document receipt');yield receipt;}};for(const f of await readerArtifacts(p,r,receipts(),signal))add(f);}
  r={...r,files:[...files.values()].sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0)};
- r={...r,job:{...r.job,review:{digest:directoryDigest(p,r),nativeHash:inventoryHash(p,inventory),profile:r.site.profile,text:`${pages.length} saved documents. Review each page and its diagnostics below. Public navigation includes every approved page title and route.`,diagnostics:inventory.diagnostics,files:r.files,omittedAnnotations,omittedBlocks,...r.research?{semantics:r.research.entries}:{}}}};
+ r={...r,job:{...r.job,reuse:cache.stats(),review:{digest:directoryDigest(p,r),nativeHash:inventoryHash(p,inventory),profile:r.site.profile,text:`${pages.length} saved documents. Review each page and its diagnostics below. Public navigation includes every approved page title and route.`,diagnostics:inventory.diagnostics,files:r.files,omittedAnnotations,omittedBlocks,...r.research?{semantics:r.research.entries}:{}}}};
  await validateDirectory(p,r,signal);return r;
+ }finally{await cache.close();}
 }

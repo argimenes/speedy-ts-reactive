@@ -4,7 +4,7 @@ import path from 'node:path';import os from 'node:os';import {spawn} from 'node:
 import assert from 'node:assert/strict';import {unzipSync} from 'fflate';import express from 'express';import {createServer} from 'vite';
 import {createCavernLifecycle} from '../dist/server/cavern-lifecycle.js';
 import {closeFilesystemWorkers} from './stage-c-gates/filesystem.mjs';
-const directoryMode=process.env.PUBLICATION_DIRECTORY==='1',readerUi=process.env.PUBLICATION_READER_UI==='1';
+const directoryMode=process.env.PUBLICATION_DIRECTORY==='1',readerUi=process.env.PUBLICATION_READER_UI==='1',maintenanceUi=process.env.PUBLICATION_MAINTENANCE_UI==='1';
 const root=await mkdtemp(path.join(os.tmpdir(),'publication-browser-')),profile=await mkdtemp(path.join(os.tmpdir(),'publication-chrome-'));
 const fixture=await readFile('vaults/imported/documents/michelangelo-letters/1507-02-13-[a7a41cd3].ink');
 const lifecycle=createCavernLifecycle({stateFile:path.join(root,'preferences.json')}),app=express();app.use(express.json());app.use('/api/cavern',lifecycle.router);app.use('/api',lifecycle.middleware);
@@ -74,8 +74,19 @@ try{
  assert.ok(downloaded,'Browser must complete the ZIP download');const exported=unzipSync(await readFile(path.join(root,'downloads',downloaded)));assert.ok(exported['index.html']);assert.ok(exported['reader.css']);if(directoryMode){assert.equal(Object.keys(exported).filter(p=>p.endsWith('.html')).length,readerUi?6:3);await click('Locate static folder');await wait("document.querySelector('.publication-dialog').textContent.includes('Complete static folder')");const link=await send('Runtime.evaluate',{expression:"document.querySelector('nav[aria-label=Contents] a').href",returnByValue:true},previewSession);await send('Page.navigate',{url:link.result.value},previewSession);await wait(`location.href===${JSON.stringify(link.result.value)} && document.readyState==='complete' && !!document.querySelector('nav') && document.styleSheets.length>0`,previewSession);const nested=await send('Runtime.evaluate',{expression:"({title:document.title,nav:!!document.querySelector('nav'),css:document.styleSheets.length})",returnByValue:true},previewSession);assert.ok(nested.result.value.nav);assert.ok(nested.result.value.css);}
  const apiConnect=`window.client=new(await import('/src/runtime/application-services.ts')).HttpApplicationServices(()=>scope);`;
  const result=await evaluate(`(async()=>{${apiConnect}const s=(await client.call('publication.sites.list',{})).sites[0];return {site:s,jobs:(await client.call('publication.jobs.list',{siteId:s.id})).jobs}})()`);assert.equal(result.jobs[0].state,'completed');
+ if(maintenanceUi){
+  await click('Review publication');await wait("document.querySelector('.publication-dialog').textContent.includes('awaiting-approval')");
+  assert.ok(await evaluate(`document.querySelector('.publication-dialog').textContent.includes('${directoryMode?2:1} unchanged document projections reused; 0 prepared.')`));
+  await click('Approve reviewed content and build');await wait("document.querySelector('.publication-dialog').textContent.includes('completed — Complete')");
+  await evaluate("[...document.querySelectorAll('summary')].find(s=>s.textContent==='Release and job maintenance').parentElement.open=true");await click('Inspect retained publication data');await wait("!document.querySelector('.publication-dialog fieldset').disabled");
+  await evaluate(`[...document.querySelectorAll('.publication-dialog p')].find(p=>p.textContent.startsWith('job ${result.jobs[0].id.slice(0,12)} ')).querySelector('button').click()`);
+  await wait("document.querySelector('[aria-label=\"Deletion review\"]')?.textContent.includes('retained bytes')");await click('Confirm deletion of reviewed data');await wait("!document.querySelector('.publication-dialog fieldset').disabled");
+  assert.equal(await evaluate(`(async()=>{const jobs=(await client.call('publication.jobs.list',{siteId:'${result.site.id}'})).jobs;return jobs.some(j=>j.id==='${result.jobs[0].id}')})()`),false);
+  await evaluate(`[...document.querySelectorAll('.publication-dialog p')].find(p=>p.textContent.startsWith('release ${result.site.active.slice(0,12)} ')).querySelector('button').click()`);await wait("document.querySelector('[aria-label=\"Deletion review\"]')?.textContent.includes('active release cannot be deleted')");
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Deletion review\"] button').disabled"),true);
+ }
  await click('Close');await wait("!document.querySelector('.publication-dialog')");assert.equal((await fetch(preview)).status,404);
  assert.deepEqual(await readFile(path.join(root,'cavern','letter.ink')),fixture);
  assert.equal(await evaluate('proof.editor.repository.state.revision'),await evaluate('beforePublicationRevision'));assert.equal(await evaluate('publicationSnapshots'),0);
- console.log(JSON.stringify({browser:await evaluate('navigator.userAgent'),directoryMode,readerUi,flintMenu:true,savedOnly:true,siteId:result.site.id,workflow:result.jobs[0].state,isolatedPreview:page.result.value,originalNativeUnchanged:true,editorRevisionUnchanged:true,editorSnapshots:0,downloadedZipVerified:true},null,2));
+ console.log(JSON.stringify({browser:await evaluate('navigator.userAgent'),directoryMode,readerUi,maintenanceUi,flintMenu:true,savedOnly:true,siteId:result.site.id,workflow:result.jobs[0].state,isolatedPreview:page.result.value,originalNativeUnchanged:true,editorRevisionUnchanged:true,editorSnapshots:0,downloadedZipVerified:true},null,2));
 }finally{socket?.close();chrome.kill();await vite.close();await lifecycle.close();await closeFilesystemWorkers();await rm(root,{recursive:true,force:true});await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}

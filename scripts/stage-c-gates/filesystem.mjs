@@ -59,12 +59,12 @@ export async function createDirectory(parent, name, lockFd) {
   return { path: join(parent.path, name), identity: result.identity };
 }
 
-export async function lockFile(directory, name, expectedIdentity) {
+export async function lockFile(directory, name, expectedIdentity, shared = false) {
   // The lock inode is created by the pinned worker, never by an unconfined open.
   const fd = await open(join(directory.path, name), constants.O_RDWR | constants.O_NOFOLLOW);
   try {
     if (!same(fileIdentity(await fd.stat()), expectedIdentity)) throw new Error('lock identity changed');
-    await new Promise((resolve, reject) => fsExt.flock(fd.fd, 'exnb', e => e ? reject(e) : resolve()));
+    await new Promise((resolve, reject) => fsExt.flock(fd.fd, shared ? 'shnb' : 'exnb', e => e ? reject(e) : resolve()));
     return { fd: fd.fd, close: async () => { await sessions.get(fd.fd)?.close(); await fd.close(); } };
   } catch (error) { await fd.close(); throw error; }
 }

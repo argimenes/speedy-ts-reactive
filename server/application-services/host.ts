@@ -26,7 +26,7 @@ export function createApplicationServiceHost(options:{root:string;cavernId:strin
  };
  const preparation=new ApplicationService(ports),enabled=options.publicationEnabled===true;
  const storage=enabled?new CavernPublicationStorage(options.root,options.cavernId):undefined,preview=storage?new PublicationPreview(storage):undefined;
- const publication=storage?new PublicationService({packageData:ports.packageData,inventory:(scope,signal)=>publicationInventory(options.root,scope,ports.readNative,signal),native:ports.readNative,asset:ports.originalAsset,executor,storage,cavernId:options.cavernId,hash:sha,preview:(site,release)=>preview!.open(site,release),closePreview:async grant=>preview!.revoke(grant)}):undefined;
+ const publication=storage?new PublicationService({packageData:ports.packageData,inventory:(scope,signal)=>publicationInventory(options.root,scope,ports.readNative,signal),native:ports.readNative,asset:ports.originalAsset,executor,storage,cavernId:options.cavernId,hash:sha,preview:(site,release)=>preview!.open(site,release),closePreview:async grant=>preview!.revoke(grant),revokeRelease:(site,release)=>preview!.revokeRelease(site,release)}):undefined;
  const service:ApplicationServices={call:(operation,input,signal)=>operation.startsWith('publication.')?(publication?publication.call(operation as any,input as any,signal) as any:Promise.reject(Error('Web publishing is disabled'))):preparation.call(operation,input,signal)};
  return {service,router:applicationServiceRouter(service,options.cavernId,enabled),executor,async close(){await preview?.close();await publication?.close();await preparation.close();}};
 }
