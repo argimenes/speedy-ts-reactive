@@ -8,7 +8,15 @@ test('rejects nonpublic IPv4/IPv6, mapped addresses and unsafe schemes/credentia
 const answer=[{address:'8.8.8.8',family:4}];
 const transport=(responses,inspect=()=>{})=>(url,options,callback)=>{inspect(url,options);const req=new EventEmitter();req.destroy=e=>req.emit('error',e);req.end=()=>queueMicrotask(()=>{const response=responses.shift();const stream=Readable.from(response.bytes?[response.bytes]:[]);stream.statusCode=response.status??200;stream.headers=response.headers??{};callback(stream);});return req;};
 test('pins vetted DNS to the actual connection and sends no credentials or cookies',async()=>{
- let pins=0;const bytes=await acquireRemoteAsset('https://example.com/a',undefined,{lookup:async()=>answer,request:transport([{bytes:Buffer.from('original')}],(_url,options)=>{assert.equal(options.agent,false);assert.deepEqual(Object.keys(options.headers).sort(),['Accept','Accept-Encoding']);options.lookup('example.com',{},(error,address,family)=>{assert.equal(address,'8.8.8.8');assert.equal(family,4);pins++;});})});assert.equal(bytes.toString(),'original');assert.equal(pins,1);
+ let pins=0;const bytes=await acquireRemoteAsset('https://example.com/a',undefined,{lookup:async()=>answer,request:transport([{bytes:Buffer.from('original')}],(_url,options)=>{assert.equal(options.agent,false);assert.deepEqual(Object.keys(options.headers).sort(),['Accept','Accept-Encoding','User-Agent']);options.lookup('example.com',{},(error,address,family)=>{assert.equal(address,'8.8.8.8');assert.equal(family,4);pins++;});})});assert.equal(bytes.toString(),'original');assert.equal(pins,1);
+});
+test('identifies the importer on every redirect without changing the consented query',async()=>{
+ const url='https://upload.wikimedia.org/wikipedia/commons/b/b2/Josef_Hofman.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail_unscaled',seen=[];
+ const result=await acquireRemoteAsset(url,undefined,{lookup:async()=>answer,request:transport([{status:302,headers:{location:'/original.jpg?source=clipboard'}},{bytes:Buffer.from('original JPEG bytes')}],(u,options)=>{seen.push(u.href);assert.equal(options.headers['User-Agent'],'MutableOS/0.0.0 (Flint; user-requested resource import)');assert.equal(options.headers.Accept,'image/png, image/jpeg');})});
+ assert.deepEqual(seen,[url,'https://upload.wikimedia.org/original.jpg?source=clipboard']);assert.equal(result.toString(),'original JPEG bytes');
+});
+test('reports the remote HTTP status instead of a generic rejection',async()=>{
+ for(const status of [403,404,429])await assert.rejects(acquireRemoteAsset('https://example.com/a',undefined,{lookup:async()=>answer,request:transport([{status}])}),new RegExp(`HTTP ${status}`));
 });
 test('rejects mixed public/private DNS before connecting',async()=>{await assert.rejects(acquireRemoteAsset('https://example.com/a',undefined,{lookup:async()=>[...answer,{address:'127.0.0.1',family:4}],request:()=>{assert.fail('must not connect');}}),/not public/);});
 test('revalidates same-origin redirects and refuses a changed origin or rebound address',async()=>{

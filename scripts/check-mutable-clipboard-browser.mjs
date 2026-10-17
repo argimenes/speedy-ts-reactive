@@ -18,6 +18,8 @@ assetApp.use('/api/assets',(req,res,next)=>req.header('X-Mutable-Cavern') === 'p
 assetApp.use('/api/assets', assetService.router);
 const imageBytes = await sharp({ create:{width:3,height:2,channels:3,background:'#c06020'} }).png().toBuffer();
 const imageBase64 = imageBytes.toString('base64');
+// Optional live regression for a consented remote image; ordinary qualification stays network-independent.
+const remoteImageUrl = process.env.CLIPBOARD_REMOTE_IMAGE_URL;
 const vite = await createServer({ plugins: [{
   name: 'mutable-clipboard-proof',
   resolveId(id) { if (id === '/__clipboard.js') return '\0clipboard-proof'; },
@@ -154,6 +156,22 @@ try {
   await evaluate(`proof.select('b',0,6);proof.paste({'text/markdown':'**'+('x'.repeat(18000))+'**'})`);
   await wait("proof.texts()[1].length===18000");
   await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+  if (remoteImageUrl) {
+    const html = `<img src="${remoteImageUrl.replaceAll('&','&amp;').replaceAll('"','&quot;')}" alt="Remote image regression">`;
+    await evaluate(`proof.select('b',0,6);proof.paste({'text/html':${JSON.stringify(html)}})`);
+    await wait('!!proof.editor.clipboard.imagePrompt()');
+    assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+    assert.deepEqual(await evaluate('proof.editor.clipboard.imagePrompt().urls'), [remoteImageUrl]);
+    await evaluate(`[...document.querySelectorAll('[data-mutable-image-consent] button')].find(b=>b.textContent==='Download selected images').click()`);
+    await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth>0`);
+    const ref=await evaluate(`Object.values(proof.editor.repository.readState().contents).find(c=>c.viewType==='image-cell').payload.asset`);
+    const stored=await assetService.store.get(ref.assetId,'proof');
+    assert.ok(stored.bytes.length>0);assert.equal(stored.manifest.byteLength,stored.bytes.length);
+    await evaluate('proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+    await evaluate('proof.editor.repository.redo()');await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth>0`);
+    await evaluate('proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+    console.log('Consented remote image download, managed display and Undo/Redo: passed', JSON.stringify({bytes:stored.bytes.length,mediaType:stored.manifest.mediaType}));
+  }
   // A real OS image-only clipboard import: original bytes -> Cavern -> runtime URL.
   await evaluate(`proof.select('b',0,6);navigator.clipboard.write([new ClipboardItem({'image/png':new Blob([Uint8Array.from(atob(${JSON.stringify(imageBase64)}),c=>c.charCodeAt(0))],{type:'image/png'})})])`);
   await key('v');

@@ -31,9 +31,11 @@ async function acquire(value, signal, dependencies, policy) {
       if (!answers.length || answers.some(a => !publicAddress(a.address))) throw Error('Remote image address is not public.');
       const address = answers[0];
       const result = await new Promise((resolve, reject) => {
-        const req = connect(url, { agent: false, signal: controller.signal, headers: { Accept: policy.accept, 'Accept-Encoding': 'identity' }, lookup: (_host, options, cb) => options?.all ? cb(null, [address]) : cb(null, address.address, address.family) }, res => {
+        // Some hosts reject anonymous clients. Identify the application without impersonating a browser or sending user data.
+        const req = connect(url, { agent: false, signal: controller.signal, headers: { Accept: policy.accept, 'Accept-Encoding': 'identity', 'User-Agent': 'MutableOS/0.0.0 (Flint; user-requested resource import)' }, lookup: (_host, options, cb) => options?.all ? cb(null, [address]) : cb(null, address.address, address.family) }, res => {
           if ([301,302,303,307,308].includes(res.statusCode)) { const redirect = res.headers.location; res.destroy(); resolve({ redirect }); return; }
-          if (res.statusCode !== 200 || res.headers['content-encoding'] && res.headers['content-encoding'] !== 'identity' || Number(res.headers['content-length'] ?? 0) > policy.bytes) { res.destroy(); reject(Error('Remote image response was rejected.')); return; }
+          if (res.statusCode !== 200) { res.destroy(); reject(Error(`Remote server refused the download (HTTP ${res.statusCode}).`)); return; }
+          if (res.headers['content-encoding'] && res.headers['content-encoding'] !== 'identity' || Number(res.headers['content-length'] ?? 0) > policy.bytes) { res.destroy(); reject(Error('Remote image response was rejected.')); return; }
           const chunks = []; let size = 0;
           res.on('data', chunk => { size += chunk.length; if (size > policy.bytes) { req.destroy(Error('Remote image exceeds the byte limit.')); return; } chunks.push(chunk); });
           res.on('end', () => resolve({ bytes: Buffer.concat(chunks), mediaType: res.headers['content-type'], url:url.href })); res.on('error', reject); res.on('aborted', () => reject(Error('Remote image response was interrupted.')));
