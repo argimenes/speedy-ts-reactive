@@ -186,6 +186,23 @@ textarea {
   height: auto;
 }
 
+/* Inert imported images still occupy a selectable cell. Generated content keeps
+   the hint out of authored text, clipboard text and native caret offsets. */
+.reactive-inline-image[data-image-placeholder] {
+  padding: 3px 8px;
+  border: 1px dashed #929992;
+  border-radius: 3px;
+  background: #f3f3ef;
+  color: #565d56;
+  font: 0.85em/1.5 sans-serif;
+  cursor: text;
+}
+.reactive-inline-image[data-image-placeholder] img { display: none; }
+.reactive-inline-image[data-image-placeholder]::after {
+  content: attr(data-image-placeholder);
+  pointer-events: none;
+}
+
 .reactive-annotation-layer,
 .reactive-selection-layer {
   position: absolute;

@@ -185,7 +185,20 @@ export class MutableClipboard {
     if(this.copyProjectionEvent(event))return true;
     if (!this.enabled()) return false;
     try {
-      const bookmark = this.textBookmark(event, cross); if (!bookmark) return true;
+      const bookmark = this.textBookmark(event, cross);
+      if (!bookmark) {
+        // Whitespace between Blocks focuses the document container, not an
+        // insertion boundary. Never guess a destination or fail silently there.
+        const target = event.target instanceof Element ? event.target : undefined;
+        const resolved = this.editor.mounts.resolveEvent(event);
+        if (event.type === 'paste' && resolved && !resolved.handle.composing &&
+          !target?.closest('input, textarea, select, button, [role="dialog"], [role="menu"], [contenteditable="true"]:not(.reactive-standoff-flow)') &&
+          (resolved.handle.inputPolicy === 'standoff' || resolved.handle.inputPolicy === 'container')) {
+          this.stop(event);
+          this.notify('Click inside a text paragraph or beside an image placeholder to place the caret, then paste again.');
+        }
+        return true;
+      }
       this.consume(event, bookmark, cross);
     } catch (error) { this.stop(event); this.error(error); }
     return true;

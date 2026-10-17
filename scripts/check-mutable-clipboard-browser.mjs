@@ -188,6 +188,27 @@ try {
   await evaluate('proof.editor.repository.redo()');await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
   await evaluate('proof.editor.repository.undo();proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','target']);
   console.log('Empty TextBlock image Command-V and Undo/Redo: passed');
+  // An image-only paragraph must not masquerade as empty document whitespace.
+  await evaluate(`proof.select('b',0,6);proof.paste({'text/html':'<p><img src="https://clipboard-probe.invalid/missing.png" alt=""></p>'})`);
+  await wait('!!proof.editor.clipboard.imagePrompt()');
+  await evaluate('proof.editor.clipboard.chooseImages([])');
+  await wait(`!!document.querySelector('[data-image-placeholder]')`);
+  const inertState=await evaluate(`JSON.stringify(proof.nativeEnvelope(proof.captureNative(proof.editor.repository.readState(),'doc')))`);
+  const placeholderPoint=await evaluate(`(()=>{const el=document.querySelector('[data-image-placeholder]');el.scrollIntoView();const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,width:r.width,height:r.height,label:el.getAttribute('aria-label'),text:el.textContent};})()`);
+  assert.ok(placeholderPoint.width>40 && placeholderPoint.height>15);
+  assert.equal(placeholderPoint.label,'Image not loaded');assert.equal(placeholderPoint.text,'');
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,x:placeholderPoint.x,y:placeholderPoint.y},sessionId);
+  await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:placeholderPoint.x,y:placeholderPoint.y},sessionId);
+  assert.ok(await evaluate(`proof.editor.mounts.resolveElement(document.querySelector('[data-image-placeholder]')).handle.captureInlineSelection()`));
+  await key('v');
+  await wait(`!!document.querySelector('.reactive-inline-image img[src]')?.naturalWidth`);
+  assert.equal(await evaluate(`document.querySelectorAll('.reactive-inline-image').length`),2);
+  await evaluate('proof.editor.repository.undo()');
+  assert.equal(await evaluate(`JSON.stringify(proof.nativeEnvelope(proof.captureNative(proof.editor.repository.readState(),'doc')))`),inertState);
+  await evaluate('proof.editor.repository.redo()');await wait(`!!document.querySelector('.reactive-inline-image img[src]')?.naturalWidth`);
+  await evaluate('proof.editor.repository.undo();proof.editor.repository.undo()');
+  assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','target']);
+  console.log('Visible inert image target, real click/Command-V and exact Undo: passed');
   await evaluate(`proof.select('b',0,6);navigator.clipboard.write([new ClipboardItem({'image/png':new Blob([Uint8Array.from(atob(${JSON.stringify(imageBase64)}),c=>c.charCodeAt(0))],{type:'image/png'})})])`);
   await key('v');
   await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);

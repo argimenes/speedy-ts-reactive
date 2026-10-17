@@ -107,6 +107,36 @@ describe('Mutable clipboard UI routing and lifecycle', () => {
     s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<img src="https://example.com/a">' });
     await vi.waitFor(() => expect(s.editor.clipboard.imagePrompt()).toBeDefined());s.editor.clipboard.cancel();await tick();expect(commits).not.toHaveBeenCalled();expect(s.texts()[1]).toBe('target');
   });
+  it('explains paste with document whitespace focus without guessing a destination or touching field paste', () => {
+    const s=setup();
+    const container=s.host.querySelector<HTMLElement>('[data-block-type="document-block"]')!;
+    container.focus();document.getSelection()!.removeAllRanges();s.editor.selections.clearExcept();
+    const commit=vi.spyOn(s.editor.repository,'commit');
+    const {event}=s.dispatch('paste',container,{'text/plain':'not inserted'});
+    expect(event.defaultPrevented).toBe(true);
+    expect(s.editor.clipboard.message()).toContain('place the caret');
+    expect(commit).not.toHaveBeenCalled();
+    s.editor.clipboard.dismiss();
+    const input=container.appendChild(document.createElement('input'));input.focus();
+    expect(s.dispatch('paste',input,{'text/plain':'field'}).event.defaultPrevented).toBe(false);
+    expect(s.editor.clipboard.message()).toBe('');
+    expect(commit).not.toHaveBeenCalled();
+  });
+  it.each([true,false])('pastes beside an inert image-only paragraph and preserves its descriptor and Undo (direct=%s)', async direct => {
+    const s=setup(true,true,direct,true,true);
+    s.editor.commands.replaceInlineRange(s.node('b').key,0,6,'');
+    s.editor.commands.insertInlineImage(s.node('b').key,0,{assetId:'original',src:'',alt:'',status:'failed'});
+    const before=nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'));
+    const commit=vi.spyOn(s.editor.repository,'commit');
+    s.dispatch('paste',s.select('b',1),{'text/html':'<img src="https://example.com/new.png">'});
+    await vi.waitFor(()=>expect(s.editor.clipboard.imagePrompt()).toBeDefined());
+    s.editor.clipboard.chooseImages([]);
+    await vi.waitFor(()=>expect(s.host.querySelectorAll('.reactive-inline-image')).toHaveLength(2));
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(s.host.querySelectorAll('[data-image-placeholder]')).toHaveLength(2);
+    s.editor.repository.undo();expect(nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'))).toEqual(before);
+    s.editor.repository.redo();expect(s.host.querySelectorAll('.reactive-inline-image')).toHaveLength(2);
+  });
   it.each(['keyboard', 'paste'])('establishes an empty focused paragraph caret for image %s without a prior browser selection', async route => {
     const s=setup(true,true,true,true,true);
     s.editor.commands.replaceInlineRange(s.node('b').key,0,6,'');

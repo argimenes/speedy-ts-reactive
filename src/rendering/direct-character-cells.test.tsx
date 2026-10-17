@@ -90,6 +90,28 @@ describe.each([true, false])("character renderer compatibility (direct=%s)", dir
     expect(flow.firstChild).toBe(a); expect(other.firstChild).toBe(otherA);
     editor.repository.undo(); expect(flow.textContent).toBe("AB"); expect(other.textContent).toBe("AB");
   });
+
+  it("keeps source-less image cells visible without adding authored text or fetching", () => {
+    const { editor, projection, owner, flow } = mount("", direct);
+    const placement = editor.commands.insertInlineImage(owner.key, 0, { assetId: "inert", src: "", alt: "", status: "failed" });
+    const key = projection.nodeForPlacement(placement)!.key;
+    const cell = flow.firstElementChild!;
+    const image = cell.firstElementChild!;
+    expect(cell.getAttribute('data-image-placeholder')).toBe('Image not loaded');
+    expect(cell.getAttribute('aria-label')).toBe('Image not loaded');
+    expect(image.hasAttribute('src')).toBe(false);
+    expect(flow.textContent).toBe('');
+    expect(editor.mounts.get(owner.key)!.captureText!()).toBe('');
+    const commit = vi.spyOn(editor.repository, 'commit');
+    image.dispatchEvent(new Event('error'));
+    expect(commit).not.toHaveBeenCalled();
+    editor.commands.updateInlineImage(key, { src: 'data:image/png;base64,', alt: 'available' });
+    expect(flow.firstElementChild).toBe(cell);
+    expect(cell.hasAttribute('data-image-placeholder')).toBe(false);
+    expect(cell.getAttribute('aria-label')).toBe('available');
+    editor.repository.undo();
+    expect(cell.getAttribute('data-image-placeholder')).toBe('Image not loaded');
+  });
 });
 
 it("does not allocate reactive computations per character in the default renderer", () => {

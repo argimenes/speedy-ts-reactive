@@ -100,10 +100,12 @@ export class DirectCharacterCells {
       if (cell.index !== undefined) setAttribute(element, "data-inline-index", String(cell.index));
       if (cell.image) {
         const image = element.firstChild as HTMLImageElement;
-        setAttribute(element, "aria-label", cell.image.label);
         // Inert clipboard descriptors must neither load the current page via an
         // empty src nor generate an image-status history entry on error.
         const asset = managedAsset(cell.image.asset), key = asset ? assetKey(asset) : undefined;
+        const placeholder = !asset && !cell.image.src ? "Image not loaded" : undefined;
+        setAttribute(element, "data-image-placeholder", placeholder);
+        setAttribute(element, "aria-label", placeholder ? `${placeholder}${cell.image.alt ? `: ${cell.image.alt}` : ""}` : cell.image.label || "Inline image");
         if (key !== entry.assetKey) { entry.releaseAsset?.(); entry.releaseAsset = undefined; entry.assetKey = key; image.removeAttribute('src'); if (asset) entry.releaseAsset = this.bindAsset?.(image, asset); }
         if (!asset) setAttribute(image, "src", cell.image.src || undefined);
         setAttribute(image, "alt", cell.image.alt);

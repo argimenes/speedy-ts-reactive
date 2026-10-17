@@ -701,7 +701,10 @@ export function StandoffEditorView(props: BlockViewProps) {
                       data-inline-index={index()}
                       contentEditable={false}
                       role="img"
-                      aria-label={String(cell()?.payload.alt ?? "Inline image")}
+                      data-image-placeholder={!managedAsset(cell()?.payload.asset) && !cell()?.payload.src ? "Image not loaded" : undefined}
+                      aria-label={!managedAsset(cell()?.payload.asset) && !cell()?.payload.src
+                        ? `Image not loaded${cell()?.payload.alt ? `: ${cell()!.payload.alt}` : ""}`
+                        : String(cell()?.payload.alt || "Inline image")}
                     >
                       <img
                         ref={image => { createEffect(() => { const asset = managedAsset(cell()?.payload.asset); if (asset) { const release = editor.clipboard.assets.bind(image, asset); onCleanup(release); } }); }}
