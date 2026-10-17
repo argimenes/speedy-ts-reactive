@@ -4,7 +4,7 @@ import {escapeHtml} from '../export-plan';
 import {managedAsset,assetKey} from '../managed-asset';
 import {relativeLink} from './plan';
 /** Reconcile only known original bindings. Edited/new targets are not inferred from title/basename. */
-export function rewriteCollectionSource(source:string,format:'markdown'|'html',collection:any,path:string,paths:Record<string,string>,assets:Record<string,string>) {
+export function rewriteCollectionSource(source:string,format:'markdown'|'html',collection:any,path:string,paths:Record<string,string>,assets:Record<string,string>,documentUrl?:(path:string)=>string) {
  const edits:Array<{start:number;end:number;text:string}>=[],diagnostics=new Set<string>();
  const bindings=(Array.isArray(collection?.bindings)?collection.bindings:[]) as Array<{path:string;id?:string;image:boolean;url:string;wiki:boolean}>;
  const target=(url:string,image:boolean,wiki=false)=>{
@@ -14,7 +14,7 @@ export function rewriteCollectionSource(source:string,format:'markdown'|'html',c
   const b=bindings.find(b=>b.url===url&&b.wiki===wiki&&b.image===image),asset=b&&managedAsset(collection?.assets?.[b.path]);
   const out=b&&(image?(asset&&assets[assetKey(asset)]):(b.id&&paths[b.id]));
   if(!out){diagnostics.add(`Source reference retained unresolved: ${url}`);return;}
-  return relativeLink(path,out);
+  return !image&&documentUrl?documentUrl(out):relativeLink(path,out);
  };
  if(format==='markdown'){
   const adapter:MarkdownAdapter={

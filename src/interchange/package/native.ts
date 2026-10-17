@@ -8,7 +8,7 @@ import type { MutableFragment } from '../fragment';
 import { createBlockId, createContentKey } from '../../block-tree/ids';
 import type { PackageData } from './data';
 /** Only operation-local synthetic edges. Retained definitions never enter reading order. */
-export function packageFragment(snapshot:DeepReadonly<ResourceSnapshot>,cavernId?:string){
+export function packageFragment(snapshot:DeepReadonly<ResourceSnapshot>,cavernId?:string,observeBlock?:(localId:string,canonicalId:string)=>void){
  const state=resourceToRepository(snapshot),slices=[{placementKey:state.rootPlacementKey}];
  // MutableFragment is JSON-only. Retain non-JSON authored values in an inert
  // native-codec carrier, rather than coercing them through JSON serialization.
@@ -27,7 +27,7 @@ export function packageFragment(snapshot:DeepReadonly<ResourceSnapshot>,cavernId
  for(const c of Object.values(state.contents))if(!reached.has(c.key)){
   const key=`package-retained:${c.key}`;state.placements[key]={key,contentKey:c.key,kind:'owned',placementId:key};slices.push({placementKey:key});visit(c.key);
  }
- return serializeSelection(state,slices,{...(cavernId?{cavernId}:{}),resourceId:snapshot.resourceId},true);
+ return serializeSelection(state,slices,{...(cavernId?{cavernId}:{}),resourceId:snapshot.resourceId},true,observeBlock);
 }
 export function materializePackage(fragment:MutableFragment,cavernId:string|undefined,assets:[string,string][],context:{data:PackageData;schema:unknown;source:unknown}){
  // A package is always a foreign copy, even if its source claims the active Cavern.

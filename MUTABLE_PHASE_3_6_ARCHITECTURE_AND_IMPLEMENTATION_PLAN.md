@@ -1,7 +1,7 @@
 # Mutable OS — Phase 3.6: Publish to Web
 
 Date: 2026-10-17  
-Status: Architecture approved, including Section 14 defaults. Stage A implementation is separately authorized; its [qualification report](MUTABLE_PHASE_3_6_STAGE_A_QUALIFICATION.md) records the acceptance boundary. Stages B–D require separate implementation authorization after preceding qualification.
+Status: Architecture approved, including Section 14 defaults. Stage A is accepted; its [qualification report](MUTABLE_PHASE_3_6_STAGE_A_QUALIFICATION.md) records the completed milestone. Stage B — Directory Publication is authorized. Stages C–D require separate implementation authorization after preceding qualification.
 
 ## 1. Objective and boundary
 
@@ -287,4 +287,4 @@ Approve saved-native inputs; explicit scope and privacy review per build; Public
 
 The Application Services Foundation remains accepted and complete. This document proposes only the publishing-specific extensions needed to use it. Phase 3.5 remains unchanged, and Phase 4 and Electron/Tauri packaging remain separate projects.
 
-**Current approval gate:** Stage A is authorized. Complete its qualification and stop for acceptance before Stage B. Approval of the architecture does not authorize Stages B–D, Phase 4 or Electron/Tauri packaging.
+**Current approval gate:** Stage A and the Vault architecture amendment are accepted. The authorized Stage B — Directory Publication implementation is complete: directory scope, two-pass route/link resolution, navigation and durable multi-document jobs. Its [qualification report](MUTABLE_PHASE_3_6_STAGE_B_QUALIFICATION.md) records the tests, browser checks, 1,000-document execution, typing measurements and limitations. Stage B now awaits acceptance. Stages C–D, Phase 4 and Electron/Tauri packaging require separate authorization and have not begun.

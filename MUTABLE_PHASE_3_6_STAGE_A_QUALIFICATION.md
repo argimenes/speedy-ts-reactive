@@ -1,7 +1,7 @@
 # Phase 3.6 Stage A — Safe Single-Document Publication
 
 Date: 2026-10-17  
-Status: Implemented and qualified; awaiting Stage A acceptance. Stage B has not begun.
+Status: Implemented, qualified and accepted. Stage B — Directory Publication is separately authorized.
 
 ## Implementation
 
@@ -92,4 +92,4 @@ Build client and server sequentially: the client build clears `dist`, including 
 
 Stage A establishes safe single-document publication. Cross-browser qualification beyond the recorded browser, Windows/Linux filesystem durability, remote browser access to a host-local preview, large directory builds, deployment-provider integration and desktop packaging are not claimed. Preview is local to the service host; current localhost development is the qualified environment.
 
-Phase 3.5 browser/storage follow-ups and the pending manual YouTube/Vimeo playback check remain unchanged. Stop for Stage A acceptance. Stages B–D, Phase 4 and Electron/Tauri packaging are not implemented by this milestone.
+Phase 3.5 browser/storage follow-ups and the pending manual YouTube/Vimeo playback check remain unchanged. Stage A is accepted. Stage B is separately authorized and reported in its own qualification; Stages C–D, Phase 4 and Electron/Tauri packaging remain outside this milestone.

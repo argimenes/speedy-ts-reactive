@@ -9,7 +9,7 @@ export class PublicationPreview {
  async open(site:string,release:string){
   if(this.closed)throw Error('Preview host closed');
   const files=await this.storage.release(site,release);if(this.closed)throw Error('Preview host closed');
-  const route=files.find(f=>f.mediaType==='text/html')?.path;if(!route)throw Error('Release has no page');
+  const route=(files.find(f=>f.mediaType==='text/html'&&!f.unit)??files.find(f=>f.mediaType==='text/html'))?.path;if(!route)throw Error('Release has no page');
   for(const [key,g] of this.grants)if(g.expires<Date.now())this.grants.delete(key);
   if(this.grants.size>=16)throw Error('Close another preview before opening more');
   if(!this.server){this.server=createServer((req,res)=>{void(async()=>{

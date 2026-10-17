@@ -1,3 +1,5 @@
+import {directoryScope,routeEntries,allocateRoutes} from '../publication/directory';
+import {prepareDirectory,validateDirectory,type DocumentReceipt} from './publication-directory-job';
 import type {PublicationOperations,PublicationJob,PublicationProfile,PublicFile} from './publication-contracts';
 import type {PublicationPorts,PublicationRecord} from './publication-ports';
 import {object,jobId,nativeRead} from './validation';
@@ -16,6 +18,28 @@ export class PublicationService {
  async call<K extends keyof PublicationOperations>(op:K,input:PublicationOperations[K]['input'],signal?:AbortSignal):Promise<PublicationOperations[K]['output']>{
   if(this.closed)throw Error('Publication host closed');signal?.throwIfAborted();const v=input as any;let out:unknown;
   switch(op){
+   case 'publication.directories.plan':{
+    object(v,['id','scope','home']);jobId(v.id);directoryScope(v.scope);publicationProfile({title:'Directory',route:v.home,images:false,outboundLinks:false,includeMargins:false});
+    if(!this.p.inventory)throw Error('Directory publication unavailable');let old;try{old=await this.p.storage.site(v.id);}catch(e){if((e as any).code!=='ENOENT')throw e;}
+    const inventory=await this.p.inventory(v.scope,signal);out={...inventory,documents:allocateRoutes(inventory,old?.directory?.pages??[],v.home,id=>this.p.hash(bytes(v.id+'\0'+id)).slice(0,24))};break;
+   }
+   case 'publication.directories.save':{
+    object(v,['id','expectedRevision','scope','profile','pages','reviewedRoutes']);jobId(v.id);directoryScope(v.scope);publicationProfile(v.profile);routeEntries(v.pages,v.profile.route);
+    if(!Number.isInteger(v.expectedRevision)||v.expectedRevision< -1||JSON.stringify(v.pages)!==JSON.stringify(v.reviewedRoutes))throw Error('Explicit route review required');
+    if(!this.p.inventory)throw Error('Directory publication unavailable');const inventory=await this.p.inventory(v.scope,signal);
+    if(inventory.documents.length!==v.pages.length||inventory.documents.some(d=>!v.pages.some((p:any)=>p.resourceId===d.resourceId)))throw Error('Directory membership changed; review required');
+    let old;try{old=await this.p.storage.site(v.id);}catch(e){if(v.expectedRevision!==-1||(e as any).code!=='ENOENT')throw e;}
+    if(old&&!old.directory)throw Error('Create another site for a directory scope');
+    const directory={scope:{folder:v.scope.folder,recursive:v.scope.recursive,excluded:v.scope.excluded},pages:v.pages.map((p:any)=>({resourceId:p.resourceId,route:p.route,title:p.title}))},profile={title:v.profile.title,route:v.profile.route,images:v.profile.images,outboundLinks:v.profile.outboundLinks,includeMargins:v.profile.includeMargins};
+    if(old&&old.revision===v.expectedRevision+1&&JSON.stringify(old.directory)===JSON.stringify(directory)&&JSON.stringify(old.profile)===JSON.stringify(profile)){out=old;break;}
+    out=await this.p.storage.writeSite({version:1,kind:'directory',id:v.id,revision:0,profile,directory,releases:old?.releases??[],committedJobs:old?.committedJobs??{},...(old?.active?{active:old.active}:{})},v.expectedRevision);break;
+   }
+   case 'publication.review.documents':{
+    object(v,['id','offset']);jobId(v.id);if(!Number.isInteger(v.offset)||v.offset<0||v.offset>1000)throw Error('Invalid review page');const r=await this.p.storage.load(v.id);if(!r.directory)throw Error('No directory review');
+    const documents=[];for(let i=v.offset;i<Math.min(v.offset+10,r.directory.documents.length);i++){signal?.throwIfAborted();const receipt=await this.p.storage.unit<DocumentReceipt>(v.id,`doc-${String(i).padStart(4,'0')}`);if(!receipt)throw Error('Document review is not prepared');documents.push({entry:receipt.entry,text:receipt.text,diagnostics:receipt.diagnostics});}
+    out={documents,...v.offset+10<r.directory.documents.length?{next:v.offset+10}:{}};break;
+   }
+   case 'publication.releases.folder':object(v,['siteId','release']);jobId(v.siteId);out=await this.p.storage.folder(v.siteId,v.release);break;
    case 'publication.sites.list':object(v,[]);out={sites:await this.p.storage.sites()};break;
    case 'publication.sites.write':{
     object(v,['id','expectedRevision','location','profile','reviewedRoute']);jobId(v.id);nativeRead({location:v.location});publicationProfile(v.profile);
@@ -23,6 +47,7 @@ export class PublicationService {
     const doc=await this.p.native({location:v.location},signal);let old;try{old=await this.p.storage.site(v.id);}catch(e){if(v.expectedRevision!==-1||(e as any).code!=='ENOENT')throw e;}
     const normalized={title:v.profile.title,route:v.profile.route,images:v.profile.images,outboundLinks:v.profile.outboundLinks,includeMargins:v.profile.includeMargins};
     if(old&&old.revision===v.expectedRevision+1&&old.resourceId===doc.resourceId&&JSON.stringify(old.profile)===JSON.stringify(normalized)&&old.location.folder===v.location.folder&&old.location.filename===v.location.filename){out=old;break;}
+    if(old?.directory)throw Error('Create another site for a single document');
     if(old&&old.resourceId!==doc.resourceId)throw Error('A site scope cannot silently switch document identity; create another site');
     out=await this.p.storage.writeSite({version:1,id:v.id,revision:0,resourceId:doc.resourceId,location:v.location,profile:normalized,releases:old?.releases??[],committedJobs:old?.committedJobs??{},...(old?.active?{active:old.active}:{})},v.expectedRevision);break;
    }
@@ -50,7 +75,7 @@ export class PublicationService {
    case 'publication.releases.preview':object(v,['siteId','release']);jobId(v.siteId);await this.p.storage.release(v.siteId,v.release);out=await this.p.preview(v.siteId,v.release);break;
    case 'publication.preview.close':object(v,['grant']);jobId(v.grant);await this.p.closePreview(v.grant);out={closed:true};break;
    case 'publication.releases.export':{
-    object(v,['siteId','release']);jobId(v.siteId);const files=await this.p.storage.release(v.siteId,v.release);if(files.reduce((n,f)=>n+f.size,0)>60*1024*1024)throw Error('ZIP delivery exceeds Stage A limit');
+    object(v,['siteId','release']);jobId(v.siteId);const files=await this.p.storage.release(v.siteId,v.release);if(files.reduce((n,f)=>n+f.size,0)>60*1024*1024)throw Error('ZIP delivery exceeds 60 MiB; use the complete static folder');
     const members:Record<string,Uint8Array>={};for(const file of files){signal?.throwIfAborted();members[file.path]=await this.p.storage.file(v.siteId,v.release,file);}
     const result:any=await this.p.executor.run({kind:'publication-zip',members},signal);out={bytes:result.bytes,mediaType:'application/zip',filename:`site-${v.siteId}.zip`};break;
    }
@@ -62,6 +87,7 @@ export class PublicationService {
  private save(r:PublicationRecord,state:PublicationJob['state'],phase:string,error?:string){return this.p.storage.checkpoint({...r,job:{...r.job,state,phase,error}},r.job.revision);}
  private async current(r:PublicationRecord,signal:AbortSignal){
   signal.throwIfAborted();
+  if(r.site.directory){await validateDirectory(this.p,r,signal);return {native:'',resourceId:'',sha256:'',generation:null};}
   if(r.job.review&&r.job.review.digest!==this.p.hash(bytes(JSON.stringify({version:PUBLICATION_VERSION,site:r.site,nativeHash:r.job.review.nativeHash,files:r.files}))))throw Error('Publication policy or prepared inputs changed; review required');
   const site=await this.p.storage.site(r.site.id);
   if(site.revision!==r.site.revision)throw Error('Site changed; review required');
@@ -83,6 +109,7 @@ export class PublicationService {
    // Reconcile a committed release before checking the now-advanced site revision.
    if(build&&r.files.length){const expected=this.releaseHash(r.files),site=await this.p.storage.site(r.site.id);if(site.committedJobs?.[r.job.id]===expected&&site.releases.includes(expected)){r={...r,job:{...r.job,release:expected}};await this.save(r,'completed','Complete');return;}}
    const doc=await this.current(r,signal);
+   if(!build&&r.site.directory){r=await prepareDirectory(this.p,r,signal,(next,phase)=>this.save(next,'reviewing',phase));await this.save(r,'awaiting-approval','Review directory content');return;}
    if(!build){
     const native=bytes(doc.native);await this.p.storage.put(r.job.id,native);
     const projection=await this.p.executor.run({kind:'publication-project',native,profile:r.site.profile,cavernId:this.p.cavernId},signal) as Projection;
@@ -102,9 +129,9 @@ export class PublicationService {
     await this.current(r,signal);await this.save(r,'awaiting-approval','Review public content');
    }else{
     if(r.approved!==r.job.review?.digest)throw Error('Privacy approval missing');
-    for(const f of r.files){signal.throwIfAborted();const b=await this.p.storage.read(r.job.id,f.hash);if(b.length!==f.size)throw Error('Artifact size mismatch');}
+    if(!r.site.directory)for(const f of r.files){signal.throwIfAborted();const b=await this.p.storage.read(r.job.id,f.hash,f.unit);if(b.length!==f.size)throw Error('Artifact size mismatch');}
     r=await this.save(r,'running','Seal complete release');await this.current(r,signal);
-    const release=await this.p.storage.commit(r);r={...r,job:{...r.job,release}};await this.save(r,'completed','Complete');
+    const release=await this.p.storage.commit(r,signal);r={...r,job:{...r.job,release}};await this.save(r,'completed','Complete');
    }
   }catch(error){
    // Commit is authoritative even when its acknowledgement or final job checkpoint was lost.

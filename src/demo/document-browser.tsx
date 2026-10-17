@@ -7,6 +7,7 @@ import "./document-browser.css";
 export interface DocumentBrowserProps {
   mode: "open" | "save" | "directory";
   initialLocation?: DocumentLocation;
+  directoryPurpose?: "publication";
   busy?: boolean;
   error?: string;
   conflict?: boolean;
@@ -135,7 +136,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
       queueMicrotask(() => document.getElementById(id)?.scrollIntoView?.({ block: "nearest" }));
     }
   };
-  return <DocumentDialog title={props.mode === "directory" ? "Choose vault directory" : props.mode === "open" ? "Open document" : "Save document as"} onClose={props.onClose} busy={props.busy}
+  return <DocumentDialog title={props.mode === "directory" ? props.directoryPurpose === "publication" ? "Choose publication directory" : "Choose vault directory" : props.mode === "open" ? "Open document" : "Save document as"} onClose={props.onClose} busy={props.busy}
     resizable={{ initial: { width: 880, height: 600 }, minimum: { width: 560, height: 360 } }}>
     <div class="document-browser__path">
       <button type="button" disabled={folder() === "." || props.busy} onClick={() => selectFolder(parentPath(folder()))} aria-label="Parent folder">↑</button>
@@ -153,7 +154,7 @@ export function DocumentBrowser(props: DocumentBrowserProps) {
           <Show when={tree.errors[row.path]}><p class="document-browser__tree-error" role="alert">{tree.errors[row.path]} <button type="button" onClick={() => void loadChildren(row.path, true)}>Retry</button></p></Show>
         </>}</For>
       </div>
-      <Show when={props.mode !== "directory"} fallback={<div class="document-browser__files document-browser__directory"><h3>Choose this directory as a vault</h3><p>Documents{folder() === "." ? "" : ` / ${folder()}`}</p><p>Browse the server Documents directory using the folder tree or Parent folder. This is the permitted managed store, not the browser device’s filesystem.</p><p>Flint shows the directory’s files and folders. Open recognizes compatible JSON Documents from their contents; browsing does not convert or enroll files.</p><p role="status">{tree.loading[folder()] ? "Loading folders…" : tree.children[folder()]?.length === 0 ? "No subfolders. You may still choose this directory." : "Select a folder, then Choose directory."}</p></div>}><div class="document-browser__files">
+      <Show when={props.mode !== "directory"} fallback={<div class="document-browser__files document-browser__directory"><h3>{props.directoryPurpose === "publication" ? "Publish saved Ink from this directory" : "Choose this directory as a vault"}</h3><p>Documents{folder() === "." ? "" : ` / ${folder()}`}</p><p>Browse the server Documents directory using the folder tree or Parent folder. This is the permitted managed store, not the browser device’s filesystem.</p><p>{props.directoryPurpose === "publication" ? "This selects publication scope inside the current Vault. It does not open another Vault, save documents or acquire linked resources." : "Flint shows the directory’s files and folders. Open recognizes compatible JSON Documents from their contents; browsing does not convert or enroll files."}</p><p role="status">{tree.loading[folder()] ? "Loading folders…" : tree.children[folder()]?.length === 0 ? "No subfolders. You may still choose this directory." : "Select a folder, then Choose directory."}</p></div>}><div class="document-browser__files">
         <label class="document-browser__filter">Find in this folder<input data-autofocus type="search" value={filter()} onInput={(event) => setFilter(event.currentTarget.value)} placeholder="Filter documents…" /></label>
         <div class="document-browser__list" role="listbox" aria-label="Documents in selected folder" aria-busy={loading()} aria-activedescendant={selected() ? fileId(selected()) : undefined} tabIndex={0} onKeyDown={listKey}>
           <Show when={!loading()} fallback={<p role="status">Loading documents…</p>}>

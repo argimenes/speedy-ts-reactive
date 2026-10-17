@@ -5,7 +5,7 @@ import type {ManagedAssetReference} from '../interchange/managed-asset';
 import type {PublicationProfile} from './publication-contracts';
 import type {Projection} from '../publication/projection';
 export type ExecutionTask =
- | {kind:'publication-project';native:Uint8Array;profile:PublicationProfile;cavernId:string}
+ | {kind:'publication-project';native:Uint8Array;profile:PublicationProfile;cavernId:string;directory?:import('../publication/directory').DirectoryProjectionContext}
  | {kind:'publication-zip';members:Record<string,Uint8Array>}
  | Extract<Preparation,{kind:'convert'}>
  | {kind:'inventory';native:Uint8Array}

@@ -10,7 +10,7 @@ export interface Slice { placementKey: string; start?: number; end?: number; gap
 const omit = (data: JsonObject, keys: string[]) => Object.fromEntries(Object.entries(clone(data)).filter(([key, v]) => !keys.includes(key) && v !== undefined));
 
 /** Selected authored data only. Inline Cells are compact runs, never repository keys. */
-export function serializeSelection(state: RepositoryState, slices: Slice[], scope: InterchangeScope = {}, packageDefinitions = false): MutableFragment {
+export function serializeSelection(state: RepositoryState, slices: Slice[], scope: InterchangeScope = {}, packageDefinitions = false, observeBlock?: (localId:string, canonicalId:string)=>void): MutableFragment {
   const f = emptyFragment(); if(packageDefinitions)Object.assign(f,{packageRetainedBlocks:[]}); f.provenance = { producer: 'Mutable', ...scope };
   let serial = 0; const id = () => `f${++serial}`;
   const contentIds = new Map<string, string>(), placementIds = new Map<string, string>(), blockIds = new Map<string, string>(), definitionIds = new Map<string, string>();
@@ -56,6 +56,7 @@ export function serializeSelection(state: RepositoryState, slices: Slice[], scop
     if (!slice && contentIds.has(c.key)) return edge;
     if (!slice) contentIds.set(c.key, localId);
     if (typeof c.payload.id === 'string') {
+      observeBlock?.(localId,c.payload.id);
       const previous = blockIds.get(c.payload.id);
       // Disjoint text slices intentionally have distinct output identities.
       if (previous && previous !== localId && !slice) throw Error('Ambiguous source Block identity.');
