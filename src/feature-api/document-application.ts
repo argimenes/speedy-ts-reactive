@@ -5,6 +5,7 @@ import type { ExistingBlockDto } from "./index";
 export interface ApplicationDocument { id: string; title: string }
 /** The first composite Document application: core owns the rendered tabs/editors. */
 export interface DocumentApplicationInstance {
+  publish?:()=>void;
   documents(): readonly ApplicationDocument[];
   openDocument(id: string): void;
   renameDocument(id: string, title: string): void;

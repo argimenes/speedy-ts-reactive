@@ -1,4 +1,5 @@
 import { CollectionDialog } from '../rendering/collection-dialog';
+import { PublicationDialog } from '../rendering/publication-dialog';
 import { hasInternalBlockDrag } from '../rendering/block-selection';
 import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName} from '../persistence/document-file-names.mjs';
 import { DocumentBrowser } from "../demo/document-browser";
@@ -379,6 +380,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const clearDrop = () => { if(dropIndicator) {delete dropIndicator.dataset.interchangeDrop;dropIndicator=undefined;} };
       onCleanup(() => {clearDrop();queueMicrotask(()=>editor.interchange.cancelUnavailable());});
       const [collectionMode,setCollectionMode]=createSignal<'import'|'export'>();
+      const [publication,setPublication]=createSignal<{initial?:{folder:string;filename:string}}>();
       const interchange = editor.features.documentInterchange ? {
         importCollection() {guard();setCollectionMode('import');},
         exportCollection() {guard();setCollectionMode('export');},
@@ -405,9 +407,10 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           else {const id=activeId();void editor.interchange.dropFiles(files,node!.key,()=>mounted&&scope.active()&&activeId()===id);}
         },
       } : undefined;
-      return <><Show when={collectionMode()}>{mode=><CollectionDialog editor={editor} vault={selectedVault()?.root??'.'} current={()=>mounted&&scope.active()} mode={mode()} close={()=>setCollectionMode(undefined)}/>}</Show><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
+      return <><Show when={publication()}>{p=><PublicationDialog editor={editor} initial={p().initial} close={()=>setPublication(undefined)}/>}</Show><Show when={collectionMode()}>{mode=><CollectionDialog editor={editor} vault={selectedVault()?.root??'.'} current={()=>mounted&&scope.active()} mode={mode()} close={()=>setCollectionMode(undefined)}/>}</Show><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
           documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, interchange, entityBacklinks: EntityBacklinks,
+          publish:editor.features.webPublishing&&editor.features.applicationServices?()=>{guard();setPublication({initial:native?.location(activeId())});}:undefined,
           entities: {
             rows: () => entityList.state.rows,
             pending: () => entityList.state.pending,

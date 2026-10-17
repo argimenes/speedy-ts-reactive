@@ -69,6 +69,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
         <Show when={menu()}><div class="flint-menu" role="group" aria-label="Flint actions" onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setMenu(false);menuButton.focus();}}}>
           <button disabled={!app.vault} onClick={()=>{setMenu(false);chooseVault();}}>Open Another Cavern…</button>
           <button onClick={()=>openStorage()}>Open / Save native Ink…</button>
+          <Show when={app.publish}><button onClick={()=>{setMenu(false);app.publish!();}}>Publish to Web…</button></Show>
           <Show when={app.interchange}><button onClick={()=>{setMenu(false);app.interchange!.importCollection();}}>Import collection…</button><button onClick={()=>{setMenu(false);app.interchange!.exportCollection();}}>Export collection…</button><button onClick={()=>{setMenu(false);app.interchange!.importFiles();}}>Import external files…</button>
           <button onClick={()=>{setMenu(false);app.interchange!.importPackage();}}>Import Ink package…</button>
           <button disabled={!app.properties()} onClick={()=>{setMenu(false);app.interchange!.exportPackage();}}>Export archival Ink package…</button>

@@ -6,7 +6,11 @@ import {CavernJobStorage} from './job-storage';
 import {NodePreparationExecutor} from './executor';
 import {applicationServiceRouter} from './http';
 import type {ServiceCapabilities} from '../../src/application-services/capabilities';
-export function createApplicationServiceHost(options:{root:string;cavernId:string;nativeEnabled:boolean;assets:()=>{get(id:string,cavernId:string):Promise<any>}|undefined;knowledge:(request:any,signal?:AbortSignal)=>Promise<any>}){
+import {PublicationService} from '../../src/application-services/publication-service';
+import {CavernPublicationStorage,sha} from './publication-storage';
+import {PublicationPreview} from './publication-preview';
+import type {ApplicationServices} from '../../src/application-services/contracts';
+export function createApplicationServiceHost(options:{root:string;cavernId:string;nativeEnabled:boolean;publicationEnabled?:boolean;assets:()=>{get(id:string,cavernId:string):Promise<any>}|undefined;knowledge:(request:any,signal?:AbortSignal)=>Promise<any>}){
  const documents=createNativeDocumentStore({root:options.root,readOnly:true});
  const jobs=new CavernJobStorage(options.root,options.cavernId),executor=new NodePreparationExecutor();
  const ports:ServiceCapabilities={cavernId:options.cavernId,jobs,executor,
@@ -19,6 +23,9 @@ export function createApplicationServiceHost(options:{root:string;cavernId:strin
   async originalAsset(assetId,signal){signal?.throwIfAborted();const store=options.assets();if(!store)throw Error('Managed assets unavailable');const {bytes,manifest}=await store.get(assetId,options.cavernId);signal?.throwIfAborted();return {assetId,cavernId:options.cavernId,mediaType:manifest.mediaType,bytes:new Uint8Array(bytes)};},
   async packageData(request,signal){signal?.throwIfAborted();return options.knowledge(request,signal);},
  };
- const service=new ApplicationService(ports);
- return {service,router:applicationServiceRouter(service,options.cavernId),executor,close:()=>service.close()};
+ const preparation=new ApplicationService(ports),enabled=options.publicationEnabled===true;
+ const storage=enabled?new CavernPublicationStorage(options.root,options.cavernId):undefined,preview=storage?new PublicationPreview(storage):undefined;
+ const publication=storage?new PublicationService({native:ports.readNative,asset:ports.originalAsset,executor,storage,cavernId:options.cavernId,hash:sha,preview:(site,release)=>preview!.open(site,release),closePreview:async grant=>preview!.revoke(grant)}):undefined;
+ const service:ApplicationServices={call:(operation,input,signal)=>operation.startsWith('publication.')?(publication?publication.call(operation as any,input as any,signal) as any:Promise.reject(Error('Web publishing is disabled'))):preparation.call(operation,input,signal)};
+ return {service,router:applicationServiceRouter(service,options.cavernId,enabled),executor,async close(){await preview?.close();await publication?.close();await preparation.close();}};
 }

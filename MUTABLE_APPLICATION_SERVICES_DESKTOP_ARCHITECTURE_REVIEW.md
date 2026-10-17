@@ -7,7 +7,7 @@ Mutable's existing Node backend is a suitable starting point for desktop applica
 
 The main portability gap is where workflows are coordinated, rather than the conversion or storage implementations themselves. This review recommends incremental changes that support the current browser-hosted development environment, a future Electron application and a possible Tauri application.
 
-This document records the approved architectural analysis. The minimum Application Services Foundation work in Section 7 is complete. [Phase 3.6 planning](MUTABLE_PHASE_3_6_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md) is separately authorized, with production implementation gated on review. Electron/Tauri implementation and Phase 4 advanced interchange remain outside authorization. The existing [Phase 3.5 architecture](MUTABLE_PHASE_3_5_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md) and qualified behavior remain the baseline.
+This document records the approved architectural analysis. The minimum Application Services Foundation work in Section 7 is complete. The [Phase 3.6 plan](MUTABLE_PHASE_3_6_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md) is subsequently approved, with only Stage A implementation authorized. Electron/Tauri implementation and Phase 4 advanced interchange remain outside authorization. The existing [Phase 3.5 architecture](MUTABLE_PHASE_3_5_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md) and qualified behavior remain the baseline.
 
 ## 1. Current boundaries
 

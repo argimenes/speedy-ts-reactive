@@ -1,0 +1,5 @@
+.publication-dialog{padding:12px;overflow:auto;max-height:75vh;font-size:14px}
+.publication-dialog fieldset{display:grid;gap:8px;border:1px solid var(--border,#aaa)}
+.publication-dialog label{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.publication-dialog input:not([type=checkbox]),.publication-dialog select{flex:1;min-width:160px}
+.publication-dialog button{margin:4px}.publication-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto}

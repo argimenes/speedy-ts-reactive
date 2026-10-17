@@ -3,6 +3,7 @@
 import type {MutableFragment} from '../interchange/fragment';
 import type {InterchangeDiagnostic} from '../interchange/diagnostics';
 import type {PackageData} from '../interchange/package/data';
+import type {PublicationOperations} from './publication-contracts';
 
 export interface NativeLocation {folder:string;filename:string}
 export interface NativeRead {location:NativeLocation;expectedHash?:string}
@@ -20,7 +21,7 @@ export type PreparationResult =
 export type JobState='ready'|'running'|'interrupted'|'completed'|'cancelled'|'failed';
 export interface JobSummary {version:1;id:string;cavernId:string;revision:number;state:JobState;kind:Preparation['kind'];created:string;updated:string;error?:string;resultBytes?:number}
 export interface JobPage {jobs:JobSummary[];diagnostics:Array<{id:string;message:string}>;next?:string}
-export interface OperationMap {
+export interface OperationMap extends PublicationOperations {
  'native.read':{input:NativeRead;output:NativeDocument};
  'assets.original':{input:{assetId:string};output:OriginalAsset};
  'knowledge.packageData':{input:PackageDataRequest;output:PackageDataResult};

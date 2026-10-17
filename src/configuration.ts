@@ -21,6 +21,8 @@ export type FeatureFlags = Readonly<{
   documentInterchange: boolean;
   /** Cavern application services, durable preparation jobs and bounded host execution. */
   applicationServices: boolean;
+  /** Explicit reviewed static publication; independent of ordinary editing. */
+  webPublishing: boolean;
   /** Semantic external HTML through the shared Mutable clipboard pipeline. */
   externalHtmlClipboard: boolean;
   /** Explicit Markdown command and Markdown MIME through the shared clipboard. */
@@ -112,6 +114,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   mutableClipboard: true,
   documentInterchange: true,
   applicationServices: true,
+  webPublishing: true,
   externalHtmlClipboard: true,
   markdownClipboard: true,
   managedAssetClipboard: true,

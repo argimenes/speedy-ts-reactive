@@ -1,0 +1,86 @@
+/** Pure publication projection. All source/retained metadata is discarded before HTML export. */
+import {decodeNative} from '../persistence/native-resource';
+import {packageFragment} from '../interchange/package/native';
+import {emptyFragment,type MutableFragment,type FragmentBlock} from '../interchange/fragment';
+import {exportFragment,escapeHtml} from '../interchange/export-plan';
+import {managedAsset,type ManagedAssetReference} from '../interchange/managed-asset';
+import {isSourceType,sourceFormat} from '../interchange/source-block';
+import {convertSource} from '../interchange/document-import';
+import {rewriteCollectionSource} from '../interchange/collection/source-export';
+import type {PublicationProfile} from '../application-services/publication-contracts';
+import {PUBLICATION_CSP} from './policy';
+export interface Projection {html:string;text:string;diagnostics:string[];assets:Array<{reference:ManagedAssetReference;path:string}>;omittedAnnotations:number;omittedBlocks:number}
+const formats=new Set(['style/bold','style/italics','style/underline','style/strike','style/strikethrough','style/superscript','style/subscript']);
+const containers=new Set(['document-block','container-block','book-block','page-block','left-margin-block','right-margin-block','indented-list-block','table-block','grid-block','table-row-block','grid-row-block','table-cell-block','grid-cell-block']);
+export function publicProjection(native:Uint8Array,profile:PublicationProfile,cavernId:string):Projection {
+ if(native.length>8*1024*1024)throw Error('Publication native input exceeds 8 MiB');
+ const source=packageFragment(decodeNative(native),cavernId),f=emptyFragment(),notes=new Set<string>(),assets:Projection['assets']=[];
+ const rootTarget=source.placements.find(p=>p.localId===source.roots[0].placement)?.target;
+ const collection=(source.blocks.find(b=>rootTarget?.kind==='local'&&b.localId===rootTarget.id)?.data.metadata as any)?.collection;
+ let serial=0,omittedAnnotations=0,omittedBlocks=0;const id=()=>`p${++serial}`;
+ const append=(input:MutableFragment,edge:string,parent?:FragmentBlock,depth=0,stack=new Set<string>())=>{
+  if(depth>64||serial>50000)throw Error('Publication traversal limit');
+  const placement=input.placements.find(p=>p.localId===edge),targetId=placement?.target.kind==='local'?placement.target.id:undefined,original=input.blocks.find(b=>b.localId===targetId);
+  if(!original||placement?.kind==='reference'||stack.has(original.localId)){notes.add('External, repeated or reference Blocks are omitted; no linked content was acquired.');omittedBlocks++;return;}
+  if(original.type==='mutable/package-data-block'){omittedBlocks++;return;}
+  if(isSourceType(original.type)){
+   const text=String(original.data.text??'');if(text.length>200000)throw Error('Source Block exceeds conversion limit');
+   const format=sourceFormat(original.type,original.data),paths:Record<string,string>={},references=new Map<string,ManagedAssetReference>();
+   for(const binding of Array.isArray(collection?.bindings)?collection.bindings:[]){const ref=binding.image&&managedAsset(collection?.assets?.[binding.path]);if(ref){const url=`assets/${ref.assetId.slice(7)}`;paths[`${ref.cavernId}/${ref.assetId}`]=url;references.set(url,ref);}}
+   if(format==='markdown'&&/^---\r?\n/.test(text))notes.add('Markdown frontmatter may appear as reading text; review its contents before publication.');
+   const rewritten=collection?rewriteCollectionSource(text,format,collection,'document.md',{},paths):undefined;
+   const converted=convertSource(rewritten?.text??text,format);converted.diagnostics.forEach(d=>notes.add(d.detail));
+   for(const embed of converted.fragment.embeds){const ref=references.get(String(embed.data.relativeSource??''));if(ref)embed.data.asset={...ref};}
+   notes.add('Source Blocks use semantic conversion; authored source, CSS and inactive annotations are not published. Only exact imported image bindings are resolved; other relative references remain inert.');
+   converted.fragment.roots.forEach(r=>append(converted.fragment,r.placement,parent,depth+1));return;
+  }
+  const textBlock=['standoff-editor-block','plain-text-block'].includes(original.type);
+  if(!textBlock&&!containers.has(original.type)){omittedBlocks++;notes.add('Unsupported Blocks (including legacy HTML and video) are omitted.');return;}
+  const b:FragmentBlock={localId:id(),type:['page-block','left-margin-block','right-margin-block'].includes(original.type)?'container-block':original.type,data:{},blockProperties:[],children:[],relations:{}};
+  const e=id();f.blocks.push(b);f.placements.push({localId:e,kind:'owned',target:{kind:'local',object:'block',id:b.localId}});
+  if(parent)parent.children.push(e);else f.roots.push({placement:e,openStart:false,openEnd:false,clippedStart:false,clippedEnd:false});
+  const meta=original.data.metadata as any??{},clean:any={};
+  if(Number.isInteger(meta.htmlHeadingLevel)&&meta.htmlHeadingLevel>=1&&meta.htmlHeadingLevel<=6)clean.htmlHeadingLevel=meta.htmlHeadingLevel;
+  if(meta.htmlPreformatted===true)clean.htmlPreformatted=true;
+  for(const name of ['htmlList','htmlListItem','htmlTableCell'])if(meta[name]&&typeof meta[name]==='object'){
+   clean[name]={};for(const key of ['ordered','reversed','header','start','value','colSpan','rowSpan'])if(typeof meta[name][key]==='boolean'||Number.isSafeInteger(meta[name][key]))clean[name][key]=meta[name][key];
+  }
+  b.data.metadata=clean;
+  for(const p of original.blockProperties)if(p.type==='block/font/size'&&/^h[1-6]$/.test(String(p.attributes.value)))clean.htmlHeadingLevel=Number(String(p.attributes.value).slice(1));else if(/^block\/font\/size\/h[1-4]$/.test(p.type))b.blockProperties.push({localId:id(),type:p.type,attributes:{}});else omittedAnnotations++;
+  if(textBlock){
+   b.inline={atoms:[],properties:[]};const atoms=original.inline?.atoms??[{kind:'text' as const,text:String(original.data.text??'')}];
+   for(const atom of atoms){
+    if(atom.kind==='text'){b.inline.atoms.push({kind:'text',text:atom.text});continue;}
+    const embed=input.embeds.find(v=>v.localId===atom.embed),ref=managedAsset(embed?.data.asset);
+    if(profile.images&&ref){
+     if(ref.cavernId!==cavernId)throw Error('A published image belongs to another Cavern');
+     const localId=id(),path=`assets/${ref.assetId.slice(7)}`;
+     b.inline.atoms.push({kind:'embed',embed:localId});f.embeds.push({localId,type:'image-cell',data:{alt:typeof embed?.data.alt==='string'?embed.data.alt:'Image'}});
+     assets.push({reference:ref,path});(f.embeds.at(-1)!.data as any).publicationPath=path;
+    }else{const localId=id();b.inline.atoms.push({kind:'embed',embed:localId});f.embeds.push({localId,type:'image-cell',data:{alt:profile.images&&typeof embed?.data.alt==='string'?embed.data.alt:'omitted'}});notes.add('Unapproved or unavailable image descriptors remain inert placeholders; nothing is fetched.');}
+   }
+   for(let p of original.inline?.properties??[]){
+    if(p.target?.kind==='local'&&p.target.object==='definition'){const target=p.target.id,d=input.definitions.find(d=>d.localId===target);if(d)p={...p,type:d.type,attributes:d.attributes,target:d.target};}
+    if(!p.isZeroWidth&&formats.has(p.type))b.inline.properties.push({localId:id(),type:p.type,startIndex:p.startIndex,endIndex:p.endIndex,isZeroWidth:false,attributes:{}});
+    else if(!p.isZeroWidth&&profile.outboundLinks&&p.type==='reference/url'&&p.target?.kind==='url'&&/^https?:\/\//i.test(p.target.url)&&!/[\u0000-\u0020]/.test(p.target.url)){
+     let url:URL;try{url=new URL(p.target.url);}catch{omittedAnnotations++;notes.add('Malformed outbound URL omitted.');continue;}if(url.username||url.password){omittedAnnotations++;continue;}
+     notes.add(`Public outbound URL: ${url.href}`);b.inline.properties.push({localId:id(),type:'reference/url',startIndex:p.startIndex,endIndex:p.endIndex,isZeroWidth:false,attributes:{},target:{kind:'url',url:url.href}});
+    }else omittedAnnotations++;
+   }
+  }
+  const next=new Set(stack).add(original.localId);original.children.forEach(c=>append(input,c,b,depth+1,next));
+  const relations=Object.entries(original.relations);
+  for(const [name,relation] of relations)if(profile.includeMargins&&/^(left|right)[-_/ ]?margin$/i.test(name))append(input,relation,b,depth+1,next);else {omittedBlocks++;notes.add('Non-reading owned relations and unapproved margins are omitted.');}
+ };
+ append(source,source.roots[0].placement);
+ if(!f.roots.length)throw Error('No supported public reading content');
+ const images=Object.fromEntries(f.embeds.filter(e=>typeof e.data.publicationPath==='string').map(e=>[e.localId,String(e.data.publicationPath)]));
+ const body=exportFragment(f,'html',profile.title,false,{images}),plain=exportFragment(f,'text');body.diagnostics.forEach(d=>notes.add(d.code==='image-reference'?'Unavailable images remain alt-text placeholders; approved originals are included.':d.detail));
+ notes.add('Retained definitions, annotation identities, PackageData, source metadata and native files are excluded.');
+ if(assets.length)notes.add('Images retain original bytes, including any embedded private metadata.');
+ if(profile.outboundLinks)notes.add('Reviewed outbound URLs may disclose their paths and query parameters when followed.');
+ // Fragment traversal IDs are not stable public anchors. Stage A has no internal-link support.
+ const content=body.text.replace(/ id="p\d+"/g,'');
+ const html=`<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${PUBLICATION_CSP}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(profile.title)}</title><link rel="stylesheet" href="reader.css"></head><body><main><h1>${escapeHtml(profile.title)}</h1>${content}</main></body></html>\n`;
+ return {html,text:plain.text,diagnostics:[...notes].sort(),assets,omittedAnnotations,omittedBlocks};
+}

@@ -1,7 +1,7 @@
 # Mutable OS — Phase 3.6: Publish to Web
 
 Date: 2026-10-17  
-Status: Proposed architecture and implementation plan; awaiting approval. No Phase 3.6 production implementation is authorized by this document.
+Status: Architecture approved, including Section 14 defaults. Stage A implementation is separately authorized; its [qualification report](MUTABLE_PHASE_3_6_STAGE_A_QUALIFICATION.md) records the acceptance boundary. Stages B–D require separate implementation authorization after preceding qualification.
 
 ## 1. Objective and boundary
 
@@ -50,6 +50,10 @@ Entry points are **Publish document…** and **Publish directory…** in existin
 Only **saved native revisions** are inputs. If an included open document is dirty, offer **Save through the existing command and review again**, **Use saved version**, or **Cancel**. Do not silently save, capture unsaved repositories, mark tabs clean, modify history or manufacture temporary native documents. Unopened documents use the same saved-read service.
 
 Profiles are versioned private configuration under `.mutable/publications/`, written only by explicit profile operations with revision conflict checks. They are not standoff properties or document content. A profile contains scope rules, public titles/routes, exclusions, theme tokens, ordering, language, link policy, semantic disclosure fields, search options and an optional deployment base path. Every job pins an immutable profile version and resolved scope.
+
+Approved Stage A clarification: one Cavern supports multiple independent sites. Each site has a stable identity, its own scope/profile, public URL namespace, active release and retained release history. A document may belong to several sites with different policies. Public routes are profile-owned: ordinary document edits, title changes and renames cannot change them. Changing a route requires an explicit reviewed profile operation. Rebinding a renamed native file must verify its existing resource identity.
+
+Stage A establishes the complete Select → Review → Build → Preview → Export workflow through a modest Flint dialog. Advanced theme controls, navigation, search and semantic interactions remain in their planned later stages.
 
 Initial presets:
 
@@ -281,4 +285,4 @@ Approve saved-native inputs; explicit scope and privacy review per build; Public
 
 The Application Services Foundation remains accepted and complete. This document proposes only the publishing-specific extensions needed to use it. Phase 3.5 remains unchanged, and Phase 4 and Electron/Tauri packaging remain separate projects.
 
-**Approval gate:** review this plan before authorizing Phase 3.6 production implementation. Stop after submitting it.
+**Current approval gate:** Stage A is authorized. Complete its qualification and stop for acceptance before Stage B. Approval of the architecture does not authorize Stages B–D, Phase 4 or Electron/Tauri packaging.

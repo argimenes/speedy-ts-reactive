@@ -1,12 +1,13 @@
 import {Router,json} from 'express';
 import type {ApplicationServices,Operation} from '../../src/application-services/contracts';
 import {operations} from '../../src/application-services/validation';
+import {publicationOperations} from '../../src/application-services/publication-contracts';
 /** Mounted only behind the Cavern lifecycle session gate. */
-export function applicationServiceRouter(service:ApplicationServices,cavernId:string){
+export function applicationServiceRouter(service:ApplicationServices,cavernId:string,publicationEnabled=false){
  const router=Router();router.use(json({limit:'1mb'}));let requests=0;
  router.post('/:operation',async(req,res)=>{
   if(requests>=8){res.status(429).json({Success:false,Error:'Application service is busy'});return;}
-  if(!operations.includes(req.params.operation as Operation)){res.status(404).json({Success:false,Error:'Unknown application operation'});return;}
+  if(!operations.includes(req.params.operation as Operation)&&!(publicationEnabled&&publicationOperations.includes(req.params.operation as any))){res.status(404).json({Success:false,Error:'Unknown application operation'});return;}
   requests++;const c=new AbortController(),cancel=()=>{if(!res.writableEnded)c.abort();};res.once('close',cancel);
   try{
    const result:any=await service.call(req.params.operation as Operation,req.body,c.signal);if(c.signal.aborted)return;

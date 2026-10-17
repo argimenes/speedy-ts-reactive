@@ -6,7 +6,8 @@ import {existsSync} from 'node:fs';
 import type {Executor,ExecutionTask,Inventory} from '../../src/application-services/capabilities';
 import type {PreparationResult} from '../../src/application-services/contracts';
 import {SERVICE_LIMITS} from '../../src/application-services/validation';
-type Item={task:ExecutionTask;bytes:number;resolve:(v:PreparationResult|Inventory)=>void;reject:(e:Error)=>void;signal?:AbortSignal;cancel:()=>void;timer:ReturnType<typeof setTimeout>;worker?:Worker;finished:boolean};
+type Result=Awaited<ReturnType<Executor['run']>>;
+type Item={task:ExecutionTask;bytes:number;resolve:(v:Result)=>void;reject:(e:Error)=>void;signal?:AbortSignal;cancel:()=>void;timer:ReturnType<typeof setTimeout>;worker?:Worker;finished:boolean};
 export class NodePreparationExecutor implements Executor {
  private queue:Item[]=[];private active?:Item;private bytes=0;private closed=false;private stopping=new Set<Promise<unknown>>();
  private readonly workerPath:string;
@@ -16,7 +17,7 @@ export class NodePreparationExecutor implements Executor {
   this.workerPath=workerPath??(existsSync(sibling)?sibling:path.resolve('dist/server/application-services/preparation-worker.mjs'));
  }
  get status(){return {active:this.active?1:0,queued:this.queue.length,bytes:this.bytes};}
- run(task:ExecutionTask,signal?:AbortSignal):Promise<PreparationResult|Inventory>{
+ run(task:ExecutionTask,signal?:AbortSignal):Promise<Result>{
   if(this.closed)return Promise.reject(Error('Preparation executor closed'));
   if(signal?.aborted)return Promise.reject(Error('Preparation cancelled'));
   if(this.queue.length>=SERVICE_LIMITS.queue)return Promise.reject(Error('Preparation queue is full'));
@@ -40,7 +41,7 @@ export class NodePreparationExecutor implements Executor {
    worker.postMessage(item.task);
   }catch(error){void this.finish(item,error as Error);}
  }
- private async finish(item:Item,error?:Error,value?:PreparationResult|Inventory){
+ private async finish(item:Item,error?:Error,value?:Result){
   if(item.finished)return;item.finished=true;clearTimeout(item.timer);item.signal?.removeEventListener('abort',item.cancel);
   if(!error&&serialize(value).byteLength>SERVICE_LIMITS.resultBytes)error=Error('Preparation output byte budget exceeded');
   if(item.worker){const stop=item.worker.terminate();this.stopping.add(stop);try{await stop;}finally{this.stopping.delete(stop);}}

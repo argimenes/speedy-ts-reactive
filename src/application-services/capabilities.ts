@@ -2,13 +2,17 @@
 import type {NativeRead,NativeDocument,OriginalAsset,PackageDataRequest,PackageDataResult,Preparation,PreparationResult,JobSummary,JobPage} from './contracts';
 import type {PackageAsset,PackageManifest} from '../interchange/package/format';
 import type {ManagedAssetReference} from '../interchange/managed-asset';
+import type {PublicationProfile} from './publication-contracts';
+import type {Projection} from '../publication/projection';
 export type ExecutionTask =
+ | {kind:'publication-project';native:Uint8Array;profile:PublicationProfile;cavernId:string}
+ | {kind:'publication-zip';members:Record<string,Uint8Array>}
  | Extract<Preparation,{kind:'convert'}>
  | {kind:'inventory';native:Uint8Array}
  | {kind:'package';native:Uint8Array;source:PackageManifest['source'];context:PackageDataResult;assets:PackageAsset[]};
 export interface Inventory {entities:string[];claims:string[];assets:ManagedAssetReference[]}
 export interface Executor {
- run(task:ExecutionTask,signal?:AbortSignal):Promise<PreparationResult|Inventory>;
+ run(task:ExecutionTask,signal?:AbortSignal):Promise<PreparationResult|Inventory|Projection|{bytes:Uint8Array}>;
  close():Promise<void>;
 }
 export interface JobRecord {summary:JobSummary;preparation:Preparation;result?:{file:string;sha256:string;bytes:number}}
