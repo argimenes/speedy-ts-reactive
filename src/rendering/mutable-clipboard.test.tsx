@@ -107,6 +107,35 @@ describe('Mutable clipboard UI routing and lifecycle', () => {
     s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<img src="https://example.com/a">' });
     await vi.waitFor(() => expect(s.editor.clipboard.imagePrompt()).toBeDefined());s.editor.clipboard.cancel();await tick();expect(commits).not.toHaveBeenCalled();expect(s.texts()[1]).toBe('target');
   });
+  it.each(['keyboard', 'paste'])('establishes an empty focused paragraph caret for image %s without a prior browser selection', async route => {
+    const s=setup(true,true,true,true,true);
+    s.editor.commands.replaceInlineRange(s.node('b').key,0,6,'');
+    const target=s.select('b',0), mount=s.editor.mounts.get(s.node('b').key)!;
+    document.getSelection()!.removeAllRanges();s.editor.selections.clearExcept();
+    const commit=vi.spyOn(s.editor.repository,'commit');
+    if(route==='keyboard') {
+      target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',metaKey:true,bubbles:true,cancelable:true}));
+      expect(mount.captureInlineSelection!()).toEqual({anchor:0,head:0});expect(commit).not.toHaveBeenCalled();
+    }
+    s.dispatch('paste',target,{'text/html':'<img src="https://example.com/map.png">'});
+    await vi.waitFor(()=>expect(s.editor.clipboard.imagePrompt()?.urls).toEqual(['https://example.com/map.png']));
+    const keep=[...document.querySelectorAll<HTMLButtonElement>('[data-mutable-image-consent] button')].find(b=>b.textContent==='Keep placeholders')!;
+    keep.focus();keep.click();
+    await vi.waitFor(()=>expect(s.host.querySelector('.reactive-inline-image')).not.toBeNull());
+    expect(commit).toHaveBeenCalledTimes(1);s.editor.repository.undo();expect(s.texts()).toEqual(['Rome abc','']);
+    s.editor.repository.redo();expect(s.host.querySelector('.reactive-inline-image')).not.toBeNull();
+  });
+  it('does not invent a caret in populated or composing blocks or replace another block selection', () => {
+    const s=setup(),target=s.select('b',0),mount=s.editor.mounts.get(s.node('b').key)!;
+    const pasteKey=()=>target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',metaKey:true,bubbles:true,cancelable:true}));
+    document.getSelection()!.removeAllRanges();s.editor.selections.clearExcept();pasteKey();
+    expect(mount.captureInlineSelection!()).toBeUndefined();
+    s.editor.commands.replaceInlineRange(s.node('b').key,0,6,'');mount.composing=true;pasteKey();
+    expect(mount.captureInlineSelection!()).toBeUndefined();mount.composing=false;
+    mount.focus();s.editor.mounts.get(s.node('a').key)!.restoreInlineSelection!({anchor:0,head:4});
+    expect(document.getSelection()!.isCollapsed).toBe(false);pasteKey();
+    expect(document.getSelection()!.toString()).toBe('Rome');expect(mount.captureInlineSelection!()).toBeUndefined();
+  });
   it('admits carrier-only managed images through the same verified import path', async () => {
     const s = setup(true, true, true, true, true);
     const ref = {kind:'managed',cavernId:'cavern',assetId:'sha256:'+'a'.repeat(64)};

@@ -158,21 +158,36 @@ try {
   await evaluate('proof.editor.repository.undo()'); assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
   if (remoteImageUrl) {
     const html = `<img src="${remoteImageUrl.replaceAll('&','&amp;').replaceAll('"','&quot;')}" alt="Remote image regression">`;
-    await evaluate(`proof.select('b',0,6);proof.paste({'text/html':${JSON.stringify(html)}})`);
+    await evaluate(`proof.editor.commands.replaceInlineRange(proof.node('b').key,0,6,'');proof.select('b',0);proof.paste({'text/html':${JSON.stringify(html)}})`);
     await wait('!!proof.editor.clipboard.imagePrompt()');
-    assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+    assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', '']);
     assert.deepEqual(await evaluate('proof.editor.clipboard.imagePrompt().urls'), [remoteImageUrl]);
     await evaluate(`[...document.querySelectorAll('[data-mutable-image-consent] button')].find(b=>b.textContent==='Download selected images').click()`);
     await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth>0`);
     const ref=await evaluate(`Object.values(proof.editor.repository.readState().contents).find(c=>c.viewType==='image-cell').payload.asset`);
     const stored=await assetService.store.get(ref.assetId,'proof');
     assert.ok(stored.bytes.length>0);assert.equal(stored.manifest.byteLength,stored.bytes.length);
-    await evaluate('proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+    await evaluate('proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', '']);
     await evaluate('proof.editor.repository.redo()');await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth>0`);
-    await evaluate('proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
+    await evaluate('proof.editor.repository.undo();proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'), ['Rome abc', 'target']);
     console.log('Consented remote image download, managed display and Undo/Redo: passed', JSON.stringify({bytes:stored.bytes.length,mediaType:stored.manifest.mediaType}));
   }
   // A real OS image-only clipboard import: original bytes -> Cavern -> runtime URL.
+  await evaluate(`proof.select('b',0,6);proof.paste({'text/html':'<p>before</p><p></p><p>after</p>'});navigator.clipboard.write([new ClipboardItem({'image/png':new Blob([Uint8Array.from(atob(${JSON.stringify(imageBase64)}),c=>c.charCodeAt(0))],{type:'image/png'})})])`);
+  assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','before','','after']);
+  const emptyPoint=await evaluate(`(()=>{const n=Object.values(proof.editor.projections.get('proof').state.nodes).find(n=>n.viewType==='standoff-editor-block'&&!n.inlineContent.length);proof.emptyKey=n.key;const el=proof.editor.mounts.get(n.key).focusElement;el.scrollIntoView();const r=el.getBoundingClientRect();return {x:r.left+10,y:r.top+r.height/2};})()`);
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...emptyPoint},sessionId);
+  await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...emptyPoint},sessionId);
+  // Empty contenteditable hosts can retain focus without a native caret range.
+  await evaluate(`document.getSelection().removeAllRanges();proof.editor.selections.clearExcept();`);
+  assert.equal(await evaluate(`document.activeElement===proof.editor.mounts.get(proof.emptyKey).focusElement`),true);
+  assert.equal(await evaluate(`!!proof.editor.mounts.get(proof.emptyKey).captureInlineSelection()`),false);
+  await key('v');
+  await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
+  await evaluate('proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','before','','after']);
+  await evaluate('proof.editor.repository.redo()');await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
+  await evaluate('proof.editor.repository.undo();proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','target']);
+  console.log('Empty TextBlock image Command-V and Undo/Redo: passed');
   await evaluate(`proof.select('b',0,6);navigator.clipboard.write([new ClipboardItem({'image/png':new Blob([Uint8Array.from(atob(${JSON.stringify(imageBase64)}),c=>c.charCodeAt(0))],{type:'image/png'})})])`);
   await key('v');
   await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);

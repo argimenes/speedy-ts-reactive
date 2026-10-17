@@ -9,6 +9,7 @@
 // BENCHMARK_STANDOFF_RENDERING=false selects the previous rendering path.
 // BENCHMARK_ANNOTATION_RANGE_EVENTS=false disables caret emphasis for comparison.
 // BENCHMARK_MUTABLE_CLIPBOARD=false selects legacy clipboard routing for comparison.
+// BENCHMARK_FLINT_RECENTS=false disables recent-document navigation history for comparison.
 // Native binding/listing responses are local stubs: no user vault is opened.
 // Reports handler and queued-caret costs separately; headless animation-frame
 // timings are diagnostic, not an input-to-display latency guarantee.
@@ -32,7 +33,7 @@ const vite=await createServer({plugins:[{
  import {materializeLocalWorkspace} from '/src/reactive-editor/workspace-manifest.ts';
  import '/src/index.css';
  import '/src/demo/workspace-demo.css';
- const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{webPublishing:${process.env.BENCHMARK_WEB_PUBLISHING!=='false'},applicationServices:${process.env.BENCHMARK_APPLICATION_SERVICES!=='false'},documentInterchange:${process.env.BENCHMARK_DOCUMENT_INTERCHANGE!=='false'},mutableClipboard:${process.env.BENCHMARK_MUTABLE_CLIPBOARD!=='false'},nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true,annotationRangeEvents:${process.env.BENCHMARK_ANNOTATION_RANGE_EVENTS!=='false'},caretModes:${process.env.BENCHMARK_CARET_MODES!=='false'},standoffPropertyRendering:${process.env.BENCHMARK_STANDOFF_RENDERING!=='false'}}});
+ const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{flintRecentDocuments:${process.env.BENCHMARK_FLINT_RECENTS!=='false'},webPublishing:${process.env.BENCHMARK_WEB_PUBLISHING!=='false'},applicationServices:${process.env.BENCHMARK_APPLICATION_SERVICES!=='false'},documentInterchange:${process.env.BENCHMARK_DOCUMENT_INTERCHANGE!=='false'},mutableClipboard:${process.env.BENCHMARK_MUTABLE_CLIPBOARD!=='false'},nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true,annotationRangeEvents:${process.env.BENCHMARK_ANNOTATION_RANGE_EVENTS!=='false'},caretModes:${process.env.BENCHMARK_CARET_MODES!=='false'},standoffPropertyRendering:${process.env.BENCHMARK_STANDOFF_RENDERING!=='false'}}});
  const editor=session.editor;
  const bank=editor.commands.insert({type:'workspace-object-bank-block',children:[]},{kind:'at',parentKey:session.projection.state.rootKey,index:0});
  const {admitNative}=await import('/src/persistence/native-resource.ts');

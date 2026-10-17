@@ -37,6 +37,8 @@ export type FeatureFlags = Readonly<{
   flint: boolean;
   /** Compact HTML shell, resizable panels and local editor-density preferences. */
   flintCompactShell: boolean;
+  /** Vault-scoped list of the ten most recently opened Documents. */
+  flintRecentDocuments: boolean;
   /** Ink-native character screen and amber material presentation. */
   phosphor: boolean;
   /** Physical Phosphor emblem with a local, slowly migrating discharge. */
@@ -122,6 +124,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   windowMaximize: true,
   flint: true,
   flintCompactShell: true,
+  flintRecentDocuments: true,
   phosphor: true,
   phosphorNixie: true,
   phosphorStudioDrift: true,

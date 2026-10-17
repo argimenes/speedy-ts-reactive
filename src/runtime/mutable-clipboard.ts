@@ -11,6 +11,7 @@ import { fragmentGroup, validateFragment, type InterchangeScope, type MutableFra
 import { canWriteAsync, captureClipboard, exportClipboard, importClipboard, MARKDOWN_MIMES, readAsyncClipboard, readAsyncClipboardBundle, writeAsyncClipboard, writeEventClipboard } from '../interchange/transport';
 import { preparePaste, type PastePreparation, type PreparedPaste } from '../interchange/prepare';
 import type { BlockFragment } from '../block-tree/clipboard';
+import type { MountHandle } from './mounts';
 
 interface Bookmark {
   kind: 'text' | 'blocks'; viewId: string; slices: Slice[]; disjoint: boolean;
@@ -51,10 +52,26 @@ export class MutableClipboard {
   key(event: KeyboardEvent) {
     if (!this.enabled()) return;
     if (event.isComposing) { this.clearIntent(); return; }
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'v') {
+      const resolved = this.editor.mounts.resolveEvent(event);
+      if (resolved) this.ensureEmptyCaret(resolved.nodeKey, resolved.handle);
+    }
     if (this.markdownIntent && !['Meta', 'Control', 'Shift', 'Alt'].includes(event.key) && event.key.toLowerCase() !== 'v') this.markdownIntent = undefined;
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'v') { this.plainUntil = Date.now() + 1500; this.plainTarget = event.target; }
   }
   clearIntent() { this.plainUntil = 0; this.plainTarget = undefined; this.markdownIntent = undefined; }
+  /** An empty editing host has one valid insertion point, even before a browser establishes its native range. */
+  private ensureEmptyCaret(nodeKey: string, mount: MountHandle) {
+    const document = mount.focusElement.ownerDocument;
+    if (mount.inputPolicy !== 'standoff' || mount.composing || document.activeElement !== mount.focusElement) return;
+    const node = this.editor.node(nodeKey);
+    if (!node || node.inlineContent.length || mount.captureInlineSelection?.()) return;
+    const selection = document.getSelection();
+    // A selection belonging to another block must never be silently replaced.
+    if (selection?.rangeCount && !selection.isCollapsed) return;
+    mount.restoreInlineSelection?.({ anchor: 0, head: 0 });
+    this.editor.selections.setPrimary(node.key, node.contentKey, node.viewId, 0, 0);
+  }
   private scope(contentKey?: string): InterchangeScope {
     const state = this.editor.repository.readState();
     const resource = contentKey && resourceOwner(state, contentKey);
@@ -101,6 +118,7 @@ export class MutableClipboard {
     const resolved = mount && nodeKey ? { nodeKey, handle: mount } : event ? this.editor.mounts.resolveEvent(event) : undefined;
     if (!resolved || resolved.handle.inputPolicy !== 'standoff' || resolved.handle.composing) return;
     const node = this.editor.node(resolved.nodeKey); if (!node) return;
+    if (event?.type === 'paste') this.ensureEmptyCaret(node.key, resolved.handle);
     const set = this.editor.selections.sets[node.key];
     const native = resolved.handle.captureInlineSelection?.();
     let ranges = set?.items.length > 1 ? set.items.map(i => ({ start: Math.min(i.anchor.boundary.index, i.head.boundary.index), end: Math.max(i.anchor.boundary.index, i.head.boundary.index) }))

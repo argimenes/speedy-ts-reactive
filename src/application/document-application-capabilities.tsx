@@ -1,4 +1,5 @@
 import { CollectionDialog } from '../rendering/collection-dialog';
+import { createRecentDocuments } from './recent-documents';
 import { PublicationDialog } from '../rendering/publication-dialog';
 import { hasInternalBlockDrag } from '../rendering/block-selection';
 import {isNativeDocumentName,markdownProjectionName,isDerivedMarkdownName} from '../persistence/document-file-names.mjs';
@@ -48,6 +49,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
   };
   return { register(definition) {
     requireActive();
+    const recents = definition.type === 'flint-application-block' && editor.features.flintRecentDocuments ? createRecentDocuments() : undefined;
     const native = editor.features.nativeDocumentPersistence ? nativeDocumentSession(editor) : undefined;
     const factsHost = native && editor.features.nativeKnowledge ? createNativeKnowledgeHost(editor.repository, native, {
       read: () => ({version: 1, opaqueTypes: editor.registry.typesWithCapability('opaque-widget')}),
@@ -155,6 +157,14 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         </div>;
       }}</For></div><For each={tabKeys()}>{key=><Show when={activeTab()===key}><div class="reactive-tabs__panel" role="tabpanel"><Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show></div></Show>}</For></div>;
       const activeId = () => { const key = activeTab(); return key && tabId(key); };
+      const recentVaultId = () => cavern?.current()?.cavernGuid ?? editor.readAssetContext().cavernId;
+      if (recents) {
+        // Track only tab identity, Vault identity and native binding. Typing/save-status changes do no history work.
+        const opened = createMemo(() => { const id = activeId(), location = native?.location(id); return { id, location, vaultId: recentVaultId() }; }, undefined, {
+          equals: (a, b) => a?.id === b.id && a?.vaultId === b.vaultId && a?.location?.folder === b.location?.folder && a?.location?.filename === b.location?.filename,
+        });
+        createEffect(() => { const current = opened(); untrack(() => { const doc = current.id ? resolve(current.id) : undefined; if (doc?.placement) recents.record({ id: doc.id, title: doc.title, location: current.location }, current.vaultId); }); });
+      }
       const requireId = () => { const id = activeId(); if (!id || !resolve(id)) throw new Error("Select an available Document tab"); return id; };
       const openDocument = (id: string, transient = false) => {
             guard(); const doc = resolve(id), r = row(); if (!doc?.placement || !r) return;
@@ -165,7 +175,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
               const placement = editor.commands.insert({ id: crypto.randomUUID(), type: "tab-block", metadata: { name: doc.title, documentTarget: { version: 1, documentId: id } } }, { kind: "at", parentKey: r.key, index: r.children.length });
               target = editor.nodeForPlacementInView(placement, r.viewId)?.key;
             }
-            if (target) chooseTab(target);
+            if (target) { chooseTab(target); recents?.record({ id, title: doc.title, location: native?.location(id) }, recentVaultId()); }
           };
       const [selectedVault, setSelectedVault] = createSignal<DocumentVaultLease>();
       onCleanup(registerDocumentApplicationNavigation(editor, props.nodeKey, id => openDocument(id)));
@@ -410,6 +420,18 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       return <><Show when={publication()}>{p=><PublicationDialog editor={editor} initial={p().initial} close={()=>setPublication(undefined)}/>}</Show><Show when={collectionMode()}>{mode=><CollectionDialog editor={editor} vault={selectedVault()?.root??'.'} current={()=>mounted&&scope.active()} mode={mode()} close={()=>setCollectionMode(undefined)}/>}</Show><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
           documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, interchange, entityBacklinks: EntityBacklinks,
+          recentDocuments: recents ? {
+            items: () => recents.items(recentVaultId()).map(d => ({ ...d, title: resolve(d.id)?.title ?? d.title, location: native?.location(d.id) ?? d.location })),
+            async open(id) {
+              guard();
+              if (!recents.items(recentVaultId()).some(d => d.id === id)) throw Error('This Document is no longer in the recent list.');
+              if (resolve(id)?.placement) { openDocument(id); return; }
+              const v = lease(), matches = v.listing().documents.filter(d => d.resourceId === id);
+              if (matches.length !== 1) throw Error('Document missing or ambiguous in this Vault. Refresh the Library to locate it.');
+              // Stored paths are display hints, never filesystem authority. Resolve current identity through the existing Vault opener.
+              await vault!.openFile(matches[0].location);
+            },
+          } : undefined,
           publish:editor.features.webPublishing&&editor.features.applicationServices?()=>{guard();setPublication({initial:native?.location(activeId())});}:undefined,
           entities: {
             rows: () => entityList.state.rows,

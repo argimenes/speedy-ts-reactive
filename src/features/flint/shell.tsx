@@ -3,6 +3,7 @@ import type { DocumentApplicationInstance } from '../../feature-api/document-app
 import { Dynamic } from "solid-js/web";
 import { KnowledgeView } from './knowledge-view';
 import { VaultView, DocumentProperties } from './vault-view';
+import { RecentDocuments } from './recent-documents';
 import { StorageSheet } from './storage-sheet';
 import { useCurrentCavern } from '../../application/cavern-startup';
 import { MaterialChrome, materialChromePresentation } from './material/material-chrome';
@@ -113,6 +114,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
         <div class="flint-rail-heading"><h2>{compact()?"Explorer":"Library"}</h2><small>YOUR COLLECTION</small></div>
         <div class="flint-segments" role="group" aria-label="Library views"><button aria-pressed={browse()==='browse'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('browse')}>Browse</button><button aria-pressed={browse()==='search'} onPointerDown={e=>e.preventDefault()} onClick={()=>setBrowse('search')}>Search</button></div>
         <div hidden={browse()!=='browse'}>
+          <Show when={app.recentDocuments}>{recent => <RecentDocuments recent={recent()}/>}</Show>
           <Show when={app.vault} fallback={<p>Cavern browsing is unavailable in this host.</p>}><VaultView vault={app.vault!} compact={compact()} activeLocation={activeLocation}/></Show>
           <Show when={!vault()}><h3>Open Documents</h3><p class="flint-hint">Open a managed directory above, or continue with a Document already in this workspace.</p><For each={app.documents()}>{doc=><button class="flint-open-document" onClick={()=>app.openDocument(doc.id)}><span>{doc.title}</span></button>}</For></Show>
         </div>

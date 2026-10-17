@@ -3,11 +3,13 @@ import type { Component } from "solid-js";
 import type { ExistingBlockDto } from "./index";
 
 export interface ApplicationDocument { id: string; title: string }
+export interface RecentApplicationDocument extends ApplicationDocument { location?: {folder: string; filename: string} }
 /** The first composite Document application: core owns the rendered tabs/editors. */
 export interface DocumentApplicationInstance {
   publish?:()=>void;
   documents(): readonly ApplicationDocument[];
   openDocument(id: string): void;
+  recentDocuments?: { items(): readonly RecentApplicationDocument[]; open(id: string): Promise<void> };
   renameDocument(id: string, title: string): void;
   closeActiveTab(): void;
   tabs: Component;

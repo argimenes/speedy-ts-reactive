@@ -63,6 +63,10 @@
 .flint-application .flint-tree-document button,.flint-open-document,.flint-search-hit,.flint-backlink { width:100%; text-align:left; margin:4px 0; }
 .flint-application .flint-tree-document button { border-color:transparent; background:#2b302e; }
 .flint-application .flint-tree-document small,.flint-open-document small,.flint-knowledge small,.flint-backlink small { display:block; color:var(--flint-muted); font-size:11px; overflow-wrap:anywhere; margin-top:3px; }
+.flint-recent-documents { margin:8px 0 12px; }
+.flint-recent-documents > summary { cursor:pointer; font-size:12px; font-weight:600; }
+.flint-recent-documents ol { list-style:none; padding:0; margin:4px 0; }
+.flint-recent-documents .flint-open-document span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .flint-application .flint-vault-controls > button { margin:3px 3px 3px 0; }
 .flint-application .flint-vault-controls details:not(.flint-tree-folder) { border-top:1px solid var(--flint-line); padding-top:10px; margin-top:12px; }
 .flint-application .flint-vault-controls summary { cursor:pointer; }
