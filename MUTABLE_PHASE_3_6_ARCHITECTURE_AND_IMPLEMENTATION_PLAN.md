@@ -135,6 +135,8 @@ The public semantic DTO is a small read model, not raw SQLite rows or a new docu
 
 ## 7. Application-service design and durable orchestration
 
+**Vault context and portability:** A Vault owns the complete workspace root; Cavern is its Flint presentation. Preserve logical identity independently of filesystem location and keep publication services bound to explicit authorized Vault contexts. The [desktop architecture clarification](MUTABLE_APPLICATION_SERVICES_DESKTOP_ARCHITECTURE_REVIEW.md#8-vault-identity-portability-and-future-replication) distinguishes portable site identities/profiles/routes from device-local jobs, locks, recovery receipts, caches and preview grants. Existing site records contain both categories; future replication must not treat them as an undifferentiated portable record. S3 is a future replication layer over local Vaults, not a replacement for filesystem or SQLite semantics. Archive inspection must remain isolated from active canonical knowledge and assets. These constraints require no synchronization, mounting or multi-Vault lifecycle implementation in Phase 3.6.
+
 Keep three concerns explicit:
 
 | Concern | Proposed responsibility |

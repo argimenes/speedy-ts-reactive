@@ -135,3 +135,33 @@ Moving all Stage E orchestration, replacing browser clipboard integrations, impl
 The qualification should establish equivalent results through the service boundary, explicit recovery after interrupted writes, safe rejection of stale destinations and bounded background work. Use the existing matched typing benchmark when implementation affects editor-triggered work; a worker boundary alone is not proof of responsiveness.
 
 No static-site generation, themes, navigation, search or publishing implementation is included in this review. Phase 3.6 and Phase 4 require their own authorization.
+
+## 8. Vault identity, portability and future replication
+
+Clarification recorded 2026-10-17. A **Vault** is the complete workspace root: documents, assets, canonical knowledge and `.mutable` system data. **Cavern** is Flint's presentation of that workspace, not a second storage identity. This matches the current [lifecycle](server/cavern-lifecycle.ts), which assigns `cavernGuid` from the established `vaultGuid`. Existing names need not be renamed as part of publishing.
+
+Keep logical Vault identity independent of its filesystem location. A filesystem root is an authorized location; a mount/context identity and session grant identify a particular activation. Neither replaces the logical Vault identity. Future replicas or read-only inspections can share provenance without sharing execution ownership, sessions or write authority.
+
+The [application-service host](server/application-services/host.ts) already receives an explicit root, logical identity and scoped asset/knowledge capabilities. Publishing should retain that instance-bound model rather than resolve a global active Cavern during jobs. Contracts, workflows and platform adapters remain separate. The current single-active UI/HTTP lifecycle is an existing limitation, not a service-contract requirement. Future multiple hosts must retain separate authorization, storage, SQLite and preview contexts, with bounded aggregate execution resources.
+
+### Canonical data versus local state
+
+Storage beneath `.mutable` does not imply either portability or disposability. Classify by responsibility:
+
+| Data | Future portability boundary |
+| --- | --- |
+| Native documents, stable identities, relative hierarchy, original immutable assets and portable references | Canonical Vault data; preserve across relocation and deliberate replication. |
+| Authored knowledge and schema information | Canonical data, distinct from rebuildable indexes and caches. SQLite needs a consistent snapshot or logical replication protocol; copying live database/WAL files is not a synchronization design. |
+| Site identities, scope/resource bindings, disclosure profiles and explicit public routes | Portable authored publication configuration. One document may belong to multiple independently configured sites. |
+| Generated releases and manifests | Derived immutable artifacts, intentionally exportable; retention/replication policy is separate from authored configuration. |
+| Jobs, execution leases, locks, staging, recovery receipts, caches and preview grants | Device-local operational state, even when durably stored inside the Vault. Do not synchronize or automatically replay another device's execution claims. |
+
+Stage A's [site record](src/application-services/publication-contracts.ts) currently combines authored configuration with `active`, `releases`, `committedJobs` and a local concurrency revision. Its [storage](server/application-services/publication-storage.ts) persists these together. A future synchronization adapter must separate their meaning rather than merge or replicate the complete record blindly. `active` denotes the locally committed release, not a remotely deployed site's state; the revision is not a distributed conflict clock. Local receipts remain authoritative for local crash recovery. Preview grants are already memory-only and must never become portable authorization. No storage migration is required for current publishing.
+
+### Future capabilities and present scope
+
+S3-compatible storage is a future replication layer over local Vaults. It must not replace capabilities that require local locking, atomic publication, filesystem authority or SQLite transactions. A future synchronization service will exchange canonical state and immutable payloads using its own conflict/recovery protocol; local services continue operating against authorized local contexts.
+
+Temporary archive inspection must use an isolated read-only context, never the active Vault's canonical knowledge database or asset store. Source provenance is distinct from mount authorization. Current host startup and journal facilities are writable, so they are not already an archive-mount implementation. Future inspection must withhold write capabilities and direct any necessary operational scratch work to a separate authorized local location; explicit import remains the operation that copies data into a writable Vault.
+
+No inspected boundary prevents these future capabilities. The single-active lifecycle and mixed publication records are concrete future adaptation points, not reasons to rewrite qualified features now. Synchronization, temporary mounting, multi-Vault lifecycle changes and Electron/Tauri packaging remain outside Phase 3.6. Typing, selection, IME, previews and Undo/Redo remain editor-owned. Stage A is qualified and awaiting acceptance; this clarification does not authorize Stage B.
