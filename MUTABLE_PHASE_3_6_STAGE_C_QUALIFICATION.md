@@ -1,7 +1,7 @@
 # Phase 3.6 Stage C — Reader Experience
 
 Date: 2026-10-17  
-Status: Implemented, qualified and accepted. Stages A–B are accepted. Stage D is separately authorized and tracked in the [consolidated qualification](MUTABLE_PHASE_3_6_QUALIFICATION.md).
+Status: Implemented, qualified and accepted. Stages A–D are now accepted and Phase 3.6 is complete; see the [consolidated qualification](MUTABLE_PHASE_3_6_QUALIFICATION.md) for final results and deferred follow-ups.
 
 ## Use in Flint
 

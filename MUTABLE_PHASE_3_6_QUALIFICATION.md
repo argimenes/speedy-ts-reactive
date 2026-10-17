@@ -1,7 +1,7 @@
 # Phase 3.6 — Publish to Web: consolidated qualification
 
 Date: 2026-10-17  
-Status: Stages A–C accepted. Stage D implemented and qualified; awaiting acceptance. No subsequent project has begun.
+Status: Stages A–D accepted. Phase 3.6 — Publish to Web is complete, accepted on 2026-10-17. No subsequent project has begun.
 
 ## Scope and operation
 
@@ -120,6 +120,13 @@ Interactive sites are qualified under ordinary static HTTP, including loopback h
 
 Cache reuse skips conversion/projection work, not saved-input validation, asset integrity checks, privacy review, current-scope bundle generation or durable publication. Changes to conversion/template/tokenizer semantics must advance the explicit generator policy version. Large-site timing is background-job throughput, not an editing latency promise. Small retained maintenance tombstones and bounded site history are explicit maintenance limitations. Corrupt ownership records fail closed; maintenance does not guess which site owns damaged journal metadata.
 
+## Retained follow-up items
+
+1. **Large-site incremental throughput:** the 500-document qualification establishes correct projection reuse and deterministic output, but end-to-end times remain high. Retain as future performance optimisation; no further refactoring is authorized now.
+2. **Compatibility qualification:** Safari/Firefox and Windows/Linux remain follow-up qualification work; this acceptance does not extend the recorded browser or platform evidence.
+3. **Publication retention and bounded history:** retain the existing limits and maintenance considerations, including small deletion tombstones and the 255-revision site history ceiling.
+4. **Phase 3.5 follow-ups:** retain full-Cavern relocation/portability qualification, managed-asset maintenance considerations, and focused manual YouTube/Vimeo playback verification. Do not broaden player permissions or undertake unrelated provider work.
+
 ## Acceptance boundary
 
-Stage D qualification is complete. Stop here for acceptance; no subsequent implementation is authorized by this report. Phase 4, Vault synchronization, temporary archive mounting and Electron/Tauri packaging have not begun.
+All four stages of Phase 3.6 are accepted and Publish to Web is complete. No further Phase 3.6 work is required or additional implementation authorized at this stage. The follow-ups above remain deferred. Phase 4 — Advanced Mutable Interchange, temporary Vault/archive mounting, multi-Vault lifecycle, S3 synchronization and Electron/Tauri packaging remain separate projects requiring their own planning and authorization.
