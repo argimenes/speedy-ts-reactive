@@ -62,3 +62,13 @@ test('explicit Markdown accepts text/plain without admitting an HTML response',a
  const result=await acquireRemoteText('https://example.com/readme.md','markdown',undefined,dependencies('# Heading'));assert.equal(result.format,'markdown');assert.equal(result.source,'# Heading');assert.equal(result.mediaType,'text/plain');
  await assert.rejects(acquireRemoteText('https://example.com/readme.md','markdown',undefined,dependencies('<!doctype html><html>')),/not Markdown/);
 });
+
+
+test('scholarly acquisition fixes provider endpoints and preserves remote security boundaries',async()=>{
+ const {acquireScholarlyJson}=await import('./asset-remote.mjs');
+ let seen;const r=await acquireScholarlyJson('datacite','10.1234/a/b',undefined,{lookup:async()=>answer,request:transport([{bytes:Buffer.from('{"data":{}}'),headers:{'content-type':'application/vnd.api+json'}}],u=>seen=u.href)});
+ assert.equal(seen,'https://api.datacite.org/dois/10.1234%2Fa%2Fb');assert.equal(new TextDecoder().decode(r.bytes),'{"data":{}}');
+ await assert.rejects(acquireScholarlyJson('arbitrary','10.1234/a'),/Invalid/);
+ for(const response of [{status:302,headers:{location:'https://private.example/x'}},{headers:{'content-type':'text/html'}},{headers:{'content-type':'application/json','content-length':String(2*1024*1024+1)}}])await assert.rejects(acquireScholarlyJson('crossref','10.1234/a',undefined,{lookup:async()=>answer,request:transport([response])}));
+ await assert.rejects(acquireScholarlyJson('crossref','10.1234/a',undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}]}),/not public/);
+});

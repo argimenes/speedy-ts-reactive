@@ -46,14 +46,14 @@ for (const [label, sql, message] of [
 test('failed future migration rolls back DDL, data and migration metadata together', t => {
   const db = current(t), before = db.serialize();
   const sql = "CREATE TABLE FutureProof(id INTEGER); INSERT INTO Entity(guid,name,nameKey) VALUES('e','Poe','poe'); INSERT INTO Missing VALUES(1)";
-  assert.throws(() => migrate(db,'mutable',{steps:[...migrations.mutable,{version:3,sql,checksum:hash(sql)}]}), /Missing/);
-  assert.deepEqual(db.serialize(),before); assert.equal(validateSchema(db,'mutable').version,2);
+  assert.throws(() => migrate(db,'mutable',{steps:[...migrations.mutable,{version:migrations.mutable.length+1,sql,checksum:hash(sql)}]}), /Missing/);
+  assert.deepEqual(db.serialize(),before); assert.equal(validateSchema(db,'mutable').version,migrations.mutable.length);
 });
 
 test('successful future migration is transactional and repeatable; old runner rejects it', t => {
   const db = current(t), sql='CREATE TABLE FutureProof(id INTEGER PRIMARY KEY) STRICT';
-  const steps=[...migrations.mutable,{version:3,sql,checksum:hash(sql)}];
-  const next=migrate(db,'mutable',{steps}); assert.equal(next.version,3);
+  const steps=[...migrations.mutable,{version:migrations.mutable.length+1,sql,checksum:hash(sql)}];
+  const next=migrate(db,'mutable',{steps}); assert.equal(next.version,migrations.mutable.length+1);
   assert.deepEqual(migrate(db,'mutable',{steps}),next);
   assert.throws(() => validateSchema(db,'mutable'), /schema version/);
 });

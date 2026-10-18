@@ -30,7 +30,7 @@ export interface AnnotationCapabilities {
   scope(key: string, kind?: ScopeKind): SearchScope;
   documentTexts(key: string): { scope: SearchScope; texts: AnnotationText[] };
   /** Annotation inventory without materialising every character's text. */
-  documentAnnotations(key: string): { scope: SearchScope; texts: (Omit<AnnotationText, 'cells'> & { readonly cellCount: number })[] };
+  documentAnnotations(key: string): { scope: SearchScope; texts: (Omit<AnnotationText, 'cells'> & { readonly cellCount: number })[]; blockReferences?: {contentKey:string;properties:readonly JsonObject[]}[] };
   /** Source-scoped reference/structure changes, excluding ordinary text edits
    * and automatic offset rebasing. A stable signature permits summary reuse;
    * resolve current occurrence ranges on demand before preview/navigation. */

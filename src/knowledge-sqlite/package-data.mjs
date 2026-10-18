@@ -1,5 +1,5 @@
 /** Read-only archival extraction. Never uses the presentation service's lossy wire projection. */
-export const PACKAGE_TABLES = ['Actor','Entity','EntityAlias','Relationship','Time','Claim','ClaimParticipant','ClaimQualifier','ClaimEvidence','DataSet','DataPoint','DataPointDimension','DataSetMembership'];
+export const PACKAGE_TABLES = ['ExternalIdentity','SourceSnapshot','Actor','Entity','EntityAlias','Relationship','Time','Claim','ClaimParticipant','ClaimQualifier','ClaimEvidence','DataSet','DataPoint','DataPointDimension','DataSetMembership'];
 const quote = name => '"'+name.replaceAll('"','""')+'"';
 export function sqlValue(value) {
   if(value===null)return ['null'];
@@ -15,7 +15,8 @@ export function extractPackageData(db, request, check=()=>{}) {
   const options={relationships:request.relationships===true,claims:request.claims===true,evidence:request.evidence===true,actors:request.actors===true,observedAliases:request.observedAliases===true};
   if(options.evidence&&!options.claims&&!claimSeeds.length)throw Error('Evidence requires explicit claim inclusion');
   return db.transaction(()=>{
-    const tables=new Map(PACKAGE_TABLES.map(name=>[name,new Map()])),unresolved=[],excluded=[];
+    const available=PACKAGE_TABLES.filter(t=>db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(t));
+    const tables=new Map(available.map(name=>[name,new Map()])),unresolved=[],excluded=[];
     let count=0,bytes=0,queries=0;
     const select=(table,column,value,where='')=>{
       check();queries++;
@@ -47,11 +48,14 @@ export function extractPackageData(db, request, check=()=>{}) {
     for(const r of tables.get('Relationship').values()){entity(r.sourceEntityGuid);entity(r.targetEntityGuid);}
     for(const table of ['ClaimParticipant','ClaimQualifier'])for(const r of tables.get(table).values())entity(r.entityGuid);
     for(const r of tables.get('Entity').values()){select('Time','entityGuid',r.guid);select('EntityAlias','entityGuid',r.guid,options.observedAliases?'':"AND origin IN ('curated','imported')");}
+    if(tables.has('ExternalIdentity'))for(const r of tables.get('Entity').values())select('ExternalIdentity','entityGuid',r.guid);
+    for(const r of tables.get('ExternalIdentity')?.values()??[])select('SourceSnapshot','identityGuid',r.guid);
+    for(const r of tables.get('SourceSnapshot')?.values()??[])unresolved.push({table:'SourceSnapshot',value:r.guid,reason:'Capture metadata and original asset identity retained; scholarly JSON original is not bundled by the image-only package profile.'});
     const actors=new Set();
     for(const rows of tables.values())for(const r of rows.values())for(const field of ['createdByActorGuid','lastUpdatedByActorGuid'])if(r[field])actors.add(r[field]);
     for(const guid of actors){if(options.actors){if(!select('Actor','guid',guid).length)unresolved.push({table:'Actor',column:'guid',value:guid,reason:'Missing actor'});}else excluded.push({table:'Actor',column:'guid',value:guid,reason:'Actor records require explicit inclusion'});}
     for(const r of tables.get('ClaimEvidence').values())unresolved.push({table:'Resource',column:'guid',value:r.resourceGuid,reason:'Historical evidence source is not exported or verified; sourceContentHash is retained'});
-    const schemaTables=PACKAGE_TABLES.map(name=>({name,sql:db.prepare("SELECT sql FROM sqlite_schema WHERE type='table' AND name=?").get(name).sql,columns:db.prepare(`PRAGMA table_xinfo(${quote(name)})`).all(),foreignKeys:db.prepare(`PRAGMA foreign_key_list(${quote(name)})`).all(),indexes:db.prepare("SELECT name,sql FROM sqlite_schema WHERE type='index' AND tbl_name=? ORDER BY name").all(name)}));
+    const schemaTables=available.map(name=>({name,sql:db.prepare("SELECT sql FROM sqlite_schema WHERE type='table' AND name=?").get(name).sql,columns:db.prepare(`PRAGMA table_xinfo(${quote(name)})`).all(),foreignKeys:db.prepare(`PRAGMA foreign_key_list(${quote(name)})`).all(),indexes:db.prepare("SELECT name,sql FROM sqlite_schema WHERE type='index' AND tbl_name=? ORDER BY name").all(name)}));
     const keyIndexes=new Map();
     for(const table of schemaTables)for(const fk of table.foreignKeys){
       const key=fk.table+'\0'+fk.to;let index=keyIndexes.get(key);

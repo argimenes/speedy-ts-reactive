@@ -1,3 +1,4 @@
+import {doiInput} from '../interchange/scholarly';
 import type {NativeRead,PackageDataRequest,Preparation,Operation,JobSummary} from './contracts';
 export const SERVICE_LIMITS=Object.freeze({source:200000,inputBytes:16*1024*1024,resultBytes:64*1024*1024,jobs:1000,revisions:256,active:1,queue:2,deadlineMs:30000});
 export const operations:readonly Operation[]=['native.read','assets.original','knowledge.packageData','jobs.create','jobs.list','jobs.inspect','jobs.run','jobs.cancel','jobs.result'];
@@ -20,7 +21,8 @@ export function packageRequest(value:unknown):asserts value is PackageDataReques
  if(documentHash!==undefined&&(typeof documentHash!=='string'||!/^[a-f0-9]{64}$/.test(documentHash)))throw Error('Invalid document hash');
 }
 export function preparation(value:unknown):asserts value is Preparation {
- if((value as Preparation)?.kind==='convert'){
+ if((value as Preparation)?.kind==='academic'){object(value,['kind','source']);if(!doiInput(value.source))throw Error('Invalid scholarly DOI');}
+ else if((value as Preparation)?.kind==='convert'){
   object(value,['kind','format','source']);if(!['markdown','html','text'].includes(value.format)||typeof value.source!=='string'||value.source.length>SERVICE_LIMITS.source)throw Error('Conversion source exceeds supported limits');
  }else{
   object(value,['kind','document','knowledge']);if(value.kind!=='package')throw Error('Unsupported preparation');nativeRead(value.document);if(!value.document.expectedHash)throw Error('Package preparation requires reviewed native hash');knowledgeOptions(value.knowledge);
@@ -28,7 +30,7 @@ export function preparation(value:unknown):asserts value is Preparation {
 }
 export function jobSummary(value:unknown,id:string,cavernId:string):asserts value is JobSummary {
  object(value,['version','id','cavernId','revision','state','kind','created','updated','error','resultBytes']);
- if(value.version!==1||value.id!==id||value.cavernId!==cavernId||!Number.isSafeInteger(value.revision)||value.revision<0||value.revision>=SERVICE_LIMITS.revisions||!['ready','running','interrupted','completed','cancelled','failed'].includes(value.state)||!['convert','package'].includes(value.kind))throw Error('Invalid job recovery evidence');
+ if(value.version!==1||value.id!==id||value.cavernId!==cavernId||!Number.isSafeInteger(value.revision)||value.revision<0||value.revision>=SERVICE_LIMITS.revisions||!['ready','running','interrupted','completed','cancelled','failed'].includes(value.state)||!['convert','package','academic'].includes(value.kind))throw Error('Invalid job recovery evidence');
  for(const key of ['created','updated'])if(typeof value[key]!=='string'||value[key].length>40||!Number.isFinite(Date.parse(value[key])))throw Error('Invalid job timestamp');
  if(value.error!==undefined&&(typeof value.error!=='string'||value.error.length>500))throw Error('Invalid job error');
  if(value.resultBytes!==undefined&&(!Number.isSafeInteger(value.resultBytes)||value.resultBytes<0||value.resultBytes>SERVICE_LIMITS.resultBytes))throw Error('Invalid job result size');

@@ -4,6 +4,7 @@
 // loadDocumentJson URL). A supplied document benchmarks its longest paragraph.
 // BENCHMARK_PRESENTATION=desktop|spatial optionally hosts the same fixture in a Window.
 // BENCHMARK_BACKLINKS=1 adds the real C3 panel/service over an in-memory bound fixture.
+// BENCHMARK_ACADEMIC=off|idle|pending qualifies DOI loader isolation (pending uses a controlled service response).
 // Requires Node 22+ (WebSocket).
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -29,6 +30,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    return result.result.value;
  };
 
+ await send('Page.bringToFront',{},sessionId);
  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false},sessionId);
  await send('Page.navigate',{url:process.env.BENCHMARK_URL ?? 'http://localhost:3000/'},sessionId);
  await evaluate('new Promise(resolve => setTimeout(resolve, 1500))');
@@ -59,7 +61,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
        if(!session.spatial.document.activate('block:bench-window'))throw new Error('Benchmark Document authorization failed');
      }
    } else {
-     editor = new ReactiveEditor(dto); registerApplicationViews(editor);
+     editor = new ReactiveEditor(dto,{features:{academicResourceLoaders:${JSON.stringify(process.env.BENCHMARK_ACADEMIC !== 'off')}}}); registerApplicationViews(editor);
      projection = editor.createView('browser-performance');
      dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}), host);
    }
@@ -95,6 +97,17 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    const caret = index => { const r=document.createRange(); r.setStart(flow,index);r.collapse(true);selection.removeAllRanges();selection.addRange(r); };
    const midpoint=documentUrl ? Math.floor(flow.childNodes.length/2) : 50;
    caret(midpoint);
+   let academicRequests=0,finishAcademic;const academicMode=${JSON.stringify(process.env.BENCHMARK_ACADEMIC ?? '')};
+   if(academicMode==='pending'){
+     editor.clipboard.setContext(()=>({cavernId:'fixture',session:'fixture'}));
+     const originalFetch=window.fetch.bind(window);window.fetch=(input,init)=>{
+       if(String(input).includes('/api/services/academic.import')){academicRequests++;return new Promise((_resolve,reject)=>{finishAcademic=()=>reject(Error('Controlled acquisition ended'));init.signal?.addEventListener('abort',()=>reject(Error('Cancelled')),{once:true});});}
+       return originalFetch(input,init);
+     };
+     flow.dispatchEvent(new KeyboardEvent('keydown',{key:'v',metaKey:true,shiftKey:true,bubbles:true}));
+     const data=new DataTransfer();data.setData('text/plain','10.1234/typing');flow.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));
+     await Promise.resolve();if(academicRequests!==1)throw Error('Academic preparation did not start');
+   }
    const samples=[];let snapshots=0; const snapshot=editor.repository.snapshot.bind(editor.repository);
    editor.repository.snapshot=()=>{snapshots++;return snapshot();};
    const before=flow.textContent;
@@ -108,10 +121,11 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
      samples.push(performance.now()-start);
      await new Promise(resolve=>requestAnimationFrame(resolve));
    }
+   finishAcademic?.();await Promise.resolve();
    const restored=flow.textContent===before;
    window.typingBench={editor,projection,host,flow,dispose:()=>{stopBacklinks();dispose();},stopMarkdown,caret,midpoint,before,originalCell,unrelated};
    samples.sort((a,b)=>a-b);
-   return {backlinks:${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')},markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
+   return {academicMode,academicRequests,backlinks:${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')},markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
  })()`);
  console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
  const before = await evaluate('window.typingBench.before');

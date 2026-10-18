@@ -15,8 +15,8 @@ function snapshot(editor: ReactiveEditor, root: string) {
     const content = state.contents[key];
     if (!content || dependencies.has(key) || (key !== root && content.viewType === 'document-block')) return;
     dependencies.add(key);
-    if (content.viewType === 'standoff-editor-block') {
-      const properties = content.payload.standoffProperties;
+    if (content.viewType === 'standoff-editor-block' || content.viewType === 'mutable/citation-block') {
+      const properties = content.viewType==='mutable/citation-block'?content.payload.blockProperties:content.payload.standoffProperties;
       if (Array.isArray(properties)) properties.forEach((property, index) => {
         if (!property || typeof property !== 'object' || Array.isArray(property)) return;
         // A definition can live on the Document or, for cross-resource links,
@@ -47,7 +47,7 @@ function snapshot(editor: ReactiveEditor, root: string) {
  * rebasing is not a backlink change. Removing a reference during text deletion
  * still changes this identity, as do retargeting and deletion flags. */
 function localReferences(content: ContentRecord, includeOffsets: boolean, state?: RepositoryState) {
-  const properties = content.payload.standoffProperties;
+  const properties = content.viewType==='mutable/citation-block'?content.payload.blockProperties:content.payload.standoffProperties;
   if (!Array.isArray(properties)) return '[]';
   return JSON.stringify(properties.filter(property => property && typeof property === 'object'
     && !Array.isArray(property) && (property.type === 'codex/entity-reference' || property.annotationId))

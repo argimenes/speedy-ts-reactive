@@ -1,3 +1,4 @@
+import {scholarly} from './scholarly.mjs';
 import { sqlRevision } from './reconcile.mjs';
 import {canonicalLedger,canonicalTables} from './canonical-ledger.mjs';
 import {decodeAuthoredValue} from '../history/preplan-spike/authored-values.mjs';
@@ -6,7 +7,7 @@ const string = (v, max = 1000) => { if (typeof v !== 'string' || !v.trim() || v.
 const guid = v => { string(v, 512); if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)) throw Error('Supply a stable UUID'); return v; };
 const expected = v => { if (!Number.isSafeInteger(v) || v < 0) throw Error('Expected revision required'); return v; };
 const entity = (db, id) => { const row = db.prepare('SELECT guid AS id,name,revision,description,typename,attributes FROM Entity WHERE guid=?').get(string(id,512)); if (!row) return; return {...row,attributes:row.attributes===null?null:JSON.parse(row.attributes), aliases: db.prepare("SELECT guid AS id,alias AS name,origin,revision FROM EntityAlias WHERE entityGuid=? AND origin IN ('curated','imported') ORDER BY aliasKey,guid LIMIT 201").all(id)}; };
-export const entityMutation = op => ['create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(op);
+export const entityMutation = op => ['scholarly-commit','create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(op);
 /** Typed semantic dispatch keeps the existing Entity/Relationship operation names. */
 export function entityCommand(request){
  const {recordType,...input}=request;
@@ -19,6 +20,7 @@ export function canonicalEntities(db, request, check = () => {}, ledger = canoni
   check();
   if (!request || typeof request !== 'object' || Buffer.byteLength(JSON.stringify(request)) > 32768) throw Error('Entity request budget exceeded');
   const {op}=request;
+  if(op?.startsWith('scholarly-'))return scholarly(db,request,ledger,check);
   if (!entityMutation(op)) return db.transaction(() => {
     const revision = sqlRevision(db); let result;
     if (op === 'current') result = {};
@@ -33,6 +35,7 @@ export function canonicalEntities(db, request, check = () => {}, ledger = canoni
           // Saved annotation segments, not logical mentions or graph edges.
           // The existing (targetEntityGuid,typename) index bounds this lookup.
           const counts = new Map(db.prepare(`SELECT targetEntityGuid AS id,COUNT(*) AS mentions FROM StandoffProperty WHERE targetEntityGuid IN (${placeholders}) AND typename='codex/entity-reference' AND isDeleted=0 GROUP BY targetEntityGuid`).all(...ids).map(row=>[row.id,row.mentions]));
+          for(const row of db.prepare(`SELECT value AS id,COUNT(*) AS mentions FROM BlockProperty WHERE value IN (${placeholders}) AND typename='codex/entity-reference' AND isDeleted=0 GROUP BY value`).all(...ids))counts.set(row.id,(counts.get(row.id)??0)+row.mentions);
           result = {rows:ids.map(id=>({id,mentions:counts.get(id)??0}))};
         }
       }

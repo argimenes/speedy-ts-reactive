@@ -70,7 +70,9 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
       const node = editor.node(key);
       const origin = node?.viewType === "document-window-block" ? node.children.find(child => editor.node(child)?.viewType === "document-block") ?? key : key;
       const scope = resolveSearchScope(editor, origin, "document");
-      return { scope, texts: scopeNodes(editor, scope).found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => immutable({
+      const found=scopeNodes(editor,scope,['mutable/citation-block']).found;
+      const blockReferences=found.filter(({node})=>node.viewType==='mutable/citation-block').map(({node})=>({contentKey:node.contentKey,properties:immutable(Array.isArray(node.payload.blockProperties)?node.payload.blockProperties:[])}));
+      return { scope, blockReferences, texts: found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => immutable({
         key: node.key, contentKey: node.contentKey, placementKey: node.placementKey,
         version: editor.repository.state.contents[node.contentKey]?.inlineRevision ?? 0,
         cellCount: node.inlineContent.length,

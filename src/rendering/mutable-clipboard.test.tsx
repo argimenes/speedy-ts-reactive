@@ -1,3 +1,6 @@
+import {annotationCapabilities} from '../application/annotation-capabilities';
+import {collectDocumentEntities} from '../features/entity-references/document-entities';
+import {normalizeScholarly} from '../interchange/scholarly';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'solid-js/web';
 import { ReactiveEditor } from '../reactive-editor/editor';
@@ -11,11 +14,11 @@ import { featureFlags } from '../configuration';
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
-function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false, automaticClipboardImages = false, resourceUrlPaste = true) {
+function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false, automaticClipboardImages = false, resourceUrlPaste = true, academicResourceLoaders = true) {
   const editor = new ReactiveEditor({ type: 'document-block', id: 'doc', children: [
     { type: 'standoff-editor-block', id: 'a', text: 'Rome abc', standoffProperties: [{ id: 'p', type: 'codex/entity-reference', value: 'rome', start: 0, end: 3 }] },
     { type: 'standoff-editor-block', id: 'b', text: 'target' },
-  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard, automaticClipboardImages, resourceUrlPaste } });
+  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard, automaticClipboardImages, resourceUrlPaste, academicResourceLoaders } });
   editor.clipboard.setContext(() => ({ cavernId: 'cavern', session: 'session' })); registerCoreViews(editor);
   const projection = editor.createView('clipboard-ui'), host = document.body.appendChild(document.createElement('div'));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -441,4 +444,32 @@ describe('Mutable clipboard UI routing and lifecycle', () => {
     expect(commits).toHaveBeenCalledTimes(1);
     s.editor.repository.undo(); expect(s.texts()).toEqual(['Rome abc', 'target']);
   });
+});
+
+
+describe('Academic citation paste',()=>{
+ const citation=()=>({version:1,entityId:crypto.randomUUID(),resourceId:crypto.randomUUID(),snapshotId:crypto.randomUUID(),provider:'crossref',retrievedAt:'2026-10-18T00:00:00Z',endpoint:'https://api.crossref.org/works/10.1234%2Fabc',asset:{kind:'managed',cavernId:'cavern',assetId:'sha256:'+'a'.repeat(64)},metadata:normalizeScholarly('crossref','10.1234/abc',new TextEncoder().encode(JSON.stringify({message:{DOI:'10.1234/abc',title:['A retained work'],type:'dataset'}})))});
+ it.each(['metaKey','ctrlKey'])('inserts once with %s and restores Undo/Redo without requests',async modifier=>{
+  const c=citation(),request=vi.fn(async()=>new Response(JSON.stringify({Success:true,Data:{citation:c,jobId:crypto.randomUUID()}}),{headers:{'Content-Type':'application/json'}}));vi.stubGlobal('fetch',request);
+  const s=setup(),target=s.select('b',3),before=nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'));
+  target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',[modifier]:true,shiftKey:true,bubbles:true}));s.dispatch('paste',target.firstElementChild??target,{'text/plain':'https://doi.org/10.1234/ABC?utm=x'});
+  await vi.waitFor(()=>expect(s.host.querySelector('.mutable-citation-block')).not.toBeNull());
+  expect(request).toHaveBeenCalledTimes(1);const block=s.editor.encodeDocument().children!.find(b=>b.type==='mutable/citation-block')!;
+  expect(block.sourceUrl).toBe('https://doi.org/10.1234/ABC?utm=x');expect((block.blockProperties as any[])[0].value).toBe(c.entityId);
+  const api=annotationCapabilities(s.editor,{owner:'academic-test',active:()=>true,own:(fn:any)=>fn} as any);
+  expect(collectDocumentEntities(api,s.node('b').key).rows.find(r=>r.id===c.entityId)).toMatchObject({documentMentions:1,ranges:[]});
+  expect(JSON.stringify(decodeNative(new TextEncoder().encode(JSON.stringify(nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'))))))).toContain(c.snapshotId);
+  s.editor.repository.undo();expect(nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'))).toEqual(before);s.editor.repository.redo();expect(s.host.textContent).toContain('A retained work');expect(request).toHaveBeenCalledTimes(1);
+ });
+ it('leaves plain paste and disabled academic paste network-free',()=>{
+  const request=vi.fn();vi.stubGlobal('fetch',request);
+  for(const enabled of [true,false]){const s=setup(true,true,true,true,false,false,true,enabled),target=s.select('b',0);if(!enabled)target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',ctrlKey:true,shiftKey:true,bubbles:true}));s.dispatch('paste',target,{'text/plain':'10.1234/abc'});expect(s.host.querySelector('.mutable-citation-block')).toBeNull();}expect(request).not.toHaveBeenCalled();
+ });
+ it.each(['stale','cancel','typing'])('does not insert after %s while acquisition is pending',async action=>{
+  let complete!:(value:Response)=>void;const request=vi.fn(()=>new Promise<Response>(resolve=>complete=resolve));vi.stubGlobal('fetch',request);const s=setup(),target=s.select('b',3);
+  target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',metaKey:true,shiftKey:true,bubbles:true}));s.dispatch('paste',target,{'text/plain':'10.1234/abc'});
+  await vi.waitFor(()=>expect(request).toHaveBeenCalledTimes(1));if(action==='cancel')s.editor.clipboard.cancel();else if(action==='typing')s.editor.commands.replaceInlineRange(s.node('b').key,3,3,'!');else s.select('a',0);
+  complete(new Response(JSON.stringify({Success:true,Data:{citation:citation(),jobId:crypto.randomUUID()}}),{headers:{'Content-Type':'application/json'}}));
+  await vi.waitFor(()=>expect(s.editor.clipboard.message()).not.toBe('Resolving DOI…'));expect(s.host.querySelector('.mutable-citation-block')).toBeNull();
+ });
 });

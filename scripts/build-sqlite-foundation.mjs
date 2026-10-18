@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const source = new URL('../src/knowledge-sqlite/', import.meta.url);
 const destination = new URL('../dist/server/knowledge-sqlite/', import.meta.url);
 for (const name of ['client.mjs', 'vault-scope.mjs', 'paths.mjs', 'foundation.mjs', 'schema.mjs', 'reconcile.mjs', 'entities.mjs', 'semantics.mjs', 'canonical-ledger.mjs',
-  'migrations/mutable/0001-foundation.sql', 'migrations/mutable/0002-semantic-knowledge.sql', 'migrations/audit/0001-foundation.sql']) {
+  'migrations/mutable/0001-foundation.sql', 'migrations/mutable/0002-semantic-knowledge.sql', 'migrations/mutable/0003-scholarly-identities.sql', 'migrations/audit/0001-foundation.sql']) {
   const target = new URL(name, destination);
   await mkdir(new URL('.', target), { recursive: true });
   await copyFile(new URL(name, source), target);

@@ -17,7 +17,7 @@ test('version-1 upgrade retains canonical identities and baseline checksum; cons
  const db=new Database(':memory:');try{
   migrate(db,'mutable',{fresh:true,steps:migrations.mutable.slice(0,1)});const identity=validateSchema(db,'mutable').vaultGuid;
   db.prepare('INSERT INTO Entity(guid,name,nameKey) VALUES(?,?,?)').run('existing','Existing','existing');migrate(db,'mutable');
-  assert.equal(validateSchema(db,'mutable').version,2);assert.equal(validateSchema(db,'mutable').vaultGuid,identity);
+  assert.equal(validateSchema(db,'mutable').version,migrations.mutable.length);assert.equal(validateSchema(db,'mutable').vaultGuid,identity);
   assert.equal(db.prepare('SELECT guid FROM Entity').get().guid,'existing');assert.equal(db.prepare("SELECT value FROM SchemaInfo WHERE key='migration:1'").get().value,migrations.mutable[0].checksum);
   const pointColumns=db.prepare('PRAGMA table_info(DataPoint)').all().map(x=>x.name);assert.ok(!pointColumns.includes('datasetGuid'));assert.ok(!pointColumns.includes('dataSetGuid'));
   db.exec("INSERT INTO DataSet(guid) VALUES('s1'),('s2'); INSERT INTO DataPoint(guid,valueJson,valueType) VALUES('p1','1','number'),('p2','1','number')");

@@ -49,6 +49,7 @@ export class ApplicationService implements ApplicationServices {
    signal.throwIfAborted();r=await this.transition(r,'running');
    try{
     const p=r.preparation;let result:PreparationResult;
+    if(p.kind==='academic')throw Error('Use academic.resume for scholarly jobs');
     if(p.kind==='convert')result=await this.ports.executor.run(p,signal) as PreparationResult;
     else{
      const document=await this.ports.readNative(p.document,signal),native=new TextEncoder().encode(document.native);

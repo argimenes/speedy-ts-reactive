@@ -115,7 +115,7 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
     };
     return { api, sql,
       async activateAssets(cavern: Cavern) {
-        if(featureFlags.applicationServices)services=createApplicationServiceHost({root,cavernId:cavern.cavernGuid,nativeEnabled:featureFlags.nativeDocumentPersistence,publicationEnabled:featureFlags.webPublishing,assets:()=>assets?.store,knowledge:(request,signal)=>sql.entityLookup({vault:'.',request},signal,true)});
+        if(featureFlags.applicationServices)services=createApplicationServiceHost({root,cavernId:cavern.cavernGuid,nativeEnabled:featureFlags.nativeDocumentPersistence,publicationEnabled:featureFlags.webPublishing,academicEnabled:featureFlags.academicResourceLoaders,academic:(request,signal)=>sql.academic(request,signal),assets:()=>assets?.store,knowledge:(request,signal)=>sql.entityLookup({vault:'.',request},signal,true)});
         if (featureFlags.managedAssetClipboard) { assets = createManagedAssetService({ root, cavernId: cavern.cavernGuid, session: cavern.session }); return assets.recover(); } },
       async index(policy: any) { indexPolicy ??= normalizePolicy(policy); return indexStatus(); },
       async status() { return indexPolicy ? indexStatus() : undefined; },

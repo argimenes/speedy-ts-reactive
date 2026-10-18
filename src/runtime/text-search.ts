@@ -32,14 +32,14 @@ export function resolveSearchScope(editor: ReactiveEditor, key: string, kind: Sc
   }
   return { kind, viewId: root.viewId, rootKey: root.key, placementKey: root.placementKey, region, label: `${nodeLabel(root)}${region === "main" ? " / main text" : ""}`, fallback };
 }
-export function scopeNodes(editor: ReactiveEditor, scope: SearchScope) {
+export function scopeNodes(editor: ReactiveEditor, scope: SearchScope, extraTypes: readonly string[] = []) {
   const found: { node: BlockNode; path: string[]; breadcrumb: string }[] = [], unsupported = new Set<string>();
   const visit = (key: string, path: string[], labels: string[], seen: Set<string>) => {
     const node = editor.node(key); if (!node || seen.has(node.contentKey)) return;
     if (key !== scope.rootKey && node.viewType === "document-block") return;
     if (scope.region === "main" && key !== scope.rootKey && side.test(node.viewType)) return;
     const route = [...path, key], names = [...labels, nodeLabel(node)], next = new Set(seen).add(node.contentKey);
-    if (["standoff-editor-block", "text-block", "plain-text-block", ...sourceTextTypes].includes(node.viewType)) found.push({ node, path: route, breadcrumb: names.join(" / ") });
+    if (["standoff-editor-block", "text-block", "plain-text-block", ...sourceTextTypes,...extraTypes].includes(node.viewType)) found.push({ node, path: route, breadcrumb: names.join(" / ") });
     else if (typeof node.payload.text === "string" && node.payload.text) unsupported.add(node.viewType);
     for (const child of node.children) visit(child, route, names, next);
     for (const [, child] of Object.entries(node.ownedRelations).sort(([a], [b]) => a.localeCompare(b))) visit(child, route, names, next);

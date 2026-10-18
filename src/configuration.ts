@@ -33,6 +33,7 @@ export type FeatureFlags = Readonly<{
   automaticClipboardImages: boolean;
   /** Primary-Shift-V turns a single HTTP(S) URL into its resource Block. */
   resourceUrlPaste: boolean;
+  academicResourceLoaders: boolean;
   /** Explicit global Cavern setup and startup lifecycle. */
   cavernStartup: boolean;
   /** Generic Desktop Window maximize/restore; normal geometry is retained. */
@@ -126,6 +127,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   managedAssetClipboard: true,
   automaticClipboardImages: true,
   resourceUrlPaste: true,
+  academicResourceLoaders: true,
   cavernStartup: true,
   windowMaximize: true,
   flint: true,

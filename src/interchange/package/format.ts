@@ -8,6 +8,7 @@ export interface PackageManifest {kind:'mutable-ink-package';version:1;profile:'
 export function nativeInventory(snapshot:ReturnType<typeof decodeNative>){
  const entities=new Set<string>(),claims=new Set<string>(),assets=new Map<string,ManagedAssetReference>();const unresolvedAssets:Array<{blockId:string;reason:string}>=[];let annotations=0,points=0;
  for(const c of Object.values(snapshot.contents)){
+  if(c.viewType==='mutable/citation-block')unresolvedAssets.push({blockId:String(c.payload.id??c.key),reason:'Scholarly metadata/snapshot references are retained. The image-only package profile does not bundle captured provider JSON originals.'});
   const collection=(c.payload.metadata as any)?.collection;
   if(c.viewType==='document-block'&&collection?.mode==='source'&&collection.assets&&Object.values(collection.assets).some(a=>!!managedAsset(a)))unresolvedAssets.push({blockId:String(c.payload.id??c.key),reason:'Collection source-bound attachments require Export collection. This package preserves their source/binding metadata but does not bundle or rebind those binaries.'});
   const a=managedAsset(c.payload.asset);if(a)assets.set(assetKey(a),a);else if(c.viewType==='image-cell')unresolvedAssets.push({blockId:String(c.payload.id??c.key),reason:'Unmanaged or unresolved image: original binary is not included; only its native descriptor is preserved.'});

@@ -21,9 +21,14 @@ function metadataName(value: unknown): string | undefined {
 
 /** Model-only inventory. Counts canonical logical mentions while retaining every occurrence range for previews. */
 export function collectDocumentEntities(editor: AnnotationCapabilities, originKey: string): DocumentEntityInventory {
-  const { scope, texts } = editor.documentAnnotations(originKey);
+  const { scope, texts, blockReferences = [] } = editor.documentAnnotations(originKey);
   const grouped = new Map<string, { name?: string; mentions: Set<string>; ranges: SearchRange[]; rangeKeys: Set<string> }>();
 
+  for(const block of blockReferences)for(const [index,p] of block.properties.entries()){
+    if(p.isDeleted||p.type!=='codex/entity-reference'||typeof p.value!=='string'||!p.value)continue;
+    let row=grouped.get(p.value);if(!row)grouped.set(p.value,row={name:metadataName(p.metadata),mentions:new Set(),ranges:[],rangeKeys:new Set()});
+    row.mentions.add(`block:${block.contentKey}:${p.id??index}`);
+  }
   for (const node of texts) {
     const properties = node.properties;
     if (!Array.isArray(properties)) continue;

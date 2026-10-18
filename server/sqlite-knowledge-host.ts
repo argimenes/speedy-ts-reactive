@@ -123,6 +123,7 @@ export class SqliteKnowledgeHost {
   /** Canonical Entity authority is separate from saved-index coverage. Source context
    * must still name one currently verified native resource in this vault. */
   async entities(body:any,signal?:AbortSignal){
+    if(typeof body.request?.op==='string'&&body.request.op.startsWith('scholarly-'))throw Error('Use the scoped academic application service');
     let dispatched=false;
     try {
     if(this.options.entitiesEnabled===false)throw Error('Canonical Entity service is disabled');
@@ -163,6 +164,17 @@ export class SqliteKnowledgeHost {
       if(!dispatched&&body.request?.op==='create')throw Object.assign(new Error(String(error)),{entityCreationOutcome:'not-created'});
       throw error;
     }
+  }
+  /** Host-internal scholarly operations; the authenticated application host binds the Vault. */
+  async academic(request:any,signal?:AbortSignal){
+    if(this.closed||this.options.entitiesEnabled===false||this.options.readOnly)throw Error('Scholarly storage unavailable');
+    if(!['scholarly-lookup','scholarly-commit','scholarly-backlinks'].includes(request?.op))throw Error('Invalid scholarly operation');
+    await this.store.resolve('.mutable/mutable.db');
+    return this.foreground(async()=>{
+      const opened=await this.acquireContext('.',normalizePolicy(undefined),true);
+      try{signal?.throwIfAborted();return await this.entry(opened.lease).client!.entities(request,signal);}
+      finally{await this.release(opened.lease);}
+    });
   }
   /** Selector reads are vault-scoped, not Document/Save operations. A separate
    * read-only connection keeps them out of the writer's reconciliation queue. */

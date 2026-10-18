@@ -1,3 +1,6 @@
+import {doiInput} from '../interchange/scholarly';
+import {citationBlock} from '../interchange/citation-block';
+import {HttpApplicationServices} from './application-services';
 import { type AssetLease } from './managed-assets';
 import { captureFiles, imagesFragment, resolveClipboardImages, type ClipboardFile } from '../interchange/clipboard-images';
 import { createSignal } from 'solid-js';
@@ -58,7 +61,7 @@ export class MutableClipboard {
       if (resolved) this.ensureEmptyCaret(resolved.nodeKey, resolved.handle);
     }
     if (this.markdownIntent && !['Meta', 'Control', 'Shift', 'Alt'].includes(event.key) && event.key.toLowerCase() !== 'v') this.markdownIntent = undefined;
-    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'v') { this.plainUntil = Date.now() + 1500; this.plainTarget = event.target; }
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'v') { this.plainUntil = Date.now() + 1500; this.plainTarget = this.editor.mounts.resolveEvent(event)?.handle.focusElement ?? event.target; }
   }
   clearIntent() { this.plainUntil = 0; this.plainTarget = undefined; this.markdownIntent = undefined; }
   /** An empty editing host has one valid insertion point, even before a browser establishes its native range. */
@@ -231,11 +234,13 @@ export class MutableClipboard {
     this.stop(event);
     if (this.pending) throw Error('A clipboard operation is already in progress.');
     if (event.type === 'paste') {
-      const plain = this.plainUntil >= Date.now() && this.plainTarget === event.target;
+      const plain = this.plainUntil >= Date.now() && this.plainTarget === (this.editor.mounts.resolveEvent(event)?.handle.focusElement ?? event.target);
       const intent = this.markdownIntent;
       const asMarkdown = !!intent && intent.until >= Date.now() && intent.target === event.target && this.valid(intent.bookmark, event, cross);
       this.clearIntent();
       const data = captureClipboard(event.clipboardData);
+      const doi = plain && this.editor.features.academicResourceLoaders ? doiInput(data['text/plain']) : undefined;
+      if(doi){this.pasteAcademic(b,doi.sourceUrl,event,cross);return;}
       const resource = plain && this.editor.features.resourceUrlPaste ? resourceUrl(data['text/plain'] ?? '') : undefined;
       if (resource) { this.pasteResource(b, resource, data['text/plain'].trim(), event, cross); return; }
       const files = this.editor.features.managedAssetClipboard && !plain ? captureFiles(event.clipboardData) : [];
@@ -256,6 +261,18 @@ export class MutableClipboard {
     if (!b.slices.length || b.kind === 'text' && b.slices.every(s => s.start === s.end)) return;
     if (b.kind === 'text' && b.disjoint) b = { ...b, slices: b.slices.filter(s => s.start !== s.end) };
     this.write(b, event.type === 'cut', event, cross);
+  }
+  private pasteAcademic(bookmark:Bookmark,source:string,event:ClipboardEvent,cross:boolean){
+    if(bookmark.disjoint)throw Error('Paste a citation into one selection.');
+    const id=crypto.randomUUID();this.notify('Resolving DOI…');
+    this.asyncTask(async()=>{
+      const signal=this.importController!.signal;
+      const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; citation insertion cancelled. Canonical metadata may have been retained.');};
+      check();const api=new HttpApplicationServices(()=>{const scope=this.context();if(!scope?.cavernId||!scope.session)throw Error('Open a Vault before importing a DOI');return {cavernId:scope.cavernId,session:scope.session};});
+      const result=await api.call('academic.import',{id,source},signal);check();
+      const prepared=citationBlock(result.citation,source);check();this.insert(bookmark,prepared.fragment,false,[prepared.native]);
+      this.notify('Pasted citation. Save the document to retain this occurrence.');
+    });
   }
   private pasteResource(bookmark: Bookmark, resource: ResourceUrl, sourceUrl: string, event: ClipboardEvent, cross: boolean) {
     if (bookmark.disjoint) throw Error('Paste a resource Block into a single text selection.');

@@ -49,6 +49,15 @@ async function acquire(value, signal, dependencies, policy) {
   } finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
 }
 
+/** Internal DOI adapters only; callers cannot choose an arbitrary API endpoint. */
+export async function acquireScholarlyJson(provider,doi,signal,dependencies={}) {
+  if(!['agency','crossref','datacite'].includes(provider)||typeof doi!=='string'||doi.length>4096||!/^10\.\d{4,9}\/[^\s]+$/.test(doi))throw Error('Invalid scholarly endpoint');
+  const encoded=encodeURIComponent(doi),endpoint=provider==='datacite'?`https://api.datacite.org/dois/${encoded}`:`https://api.crossref.org/works/${encoded}${provider==='agency'?'/agency':''}`;
+  const result=await acquire(endpoint,signal,dependencies,{accept:'application/json, application/vnd.api+json',bytes:2*1024*1024});
+  if(!/^application\/(?:json|vnd\.api\+json)(?:;|$)/i.test(String(result.mediaType)))throw Error('Scholarly response is not JSON');
+  return {bytes:new Uint8Array(result.bytes),endpoint:result.url};
+}
+
 export const TEXT_POLICIES = Object.freeze({html:'text/html', markdown:'text/markdown', text:'text/plain'});
 export function textPolicy(format) {
   if (!Object.hasOwn(TEXT_POLICIES, format)) throw Error('Unsupported linked-resource format.');
