@@ -5,6 +5,7 @@ import type {ManagedAssetReference} from '../interchange/managed-asset';
 import type {PublicationProfile} from './publication-contracts';
 import type {Projection} from '../publication/projection';
 export type ExecutionTask =
+ | {kind:'iiif-normalize';bytes:Uint8Array}
  | import('./encyclopedia-contracts').EncyclopediaTask
  | {kind:'academic-normalize';doi:string;provider:import('../interchange/scholarly').ScholarlyProvider;bytes:Uint8Array}
  | {kind:'publication-project';native:Uint8Array;profile:PublicationProfile;cavernId:string;namespace?:string;directory?:import('../publication/directory').DirectoryProjectionContext;research?:import('../publication/research').ResearchBundle}
@@ -15,7 +16,7 @@ export type ExecutionTask =
  | {kind:'package';native:Uint8Array;source:PackageManifest['source'];context:PackageDataResult;assets:PackageAsset[]};
 export interface Inventory {entities:string[];claims:string[];assets:ManagedAssetReference[]}
 export interface Executor {
- run(task:ExecutionTask,signal?:AbortSignal):Promise<import('./encyclopedia-contracts').EncyclopediaProjection|import('./academic-contracts').AcademicNormalized|PreparationResult|Inventory|Projection|import('../publication/research').ResearchInspection|{bytes:Uint8Array}>;
+ run(task:ExecutionTask,signal?:AbortSignal):Promise<import('../iiif/model').Projection|import('./encyclopedia-contracts').EncyclopediaProjection|import('./academic-contracts').AcademicNormalized|PreparationResult|Inventory|Projection|import('../publication/research').ResearchInspection|{bytes:Uint8Array}>;
  close():Promise<void>;
 }
 export interface JobRecord {summary:JobSummary;preparation:Preparation;result?:{file:string;sha256:string;bytes:number}}

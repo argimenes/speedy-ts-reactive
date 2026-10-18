@@ -95,3 +95,17 @@ export async function acquireEncyclopedia(source,signal,dependencies={}) {
  const second=await get(api({action:'parse',oldid:String(revision),prop:'text|wikitext|revid',disableeditsection:'1'}));
  return {endpoint:second.endpoint,responses:[first.bytes,second.bytes]};
 }
+
+/** IIIF URLs are selected only by scoped application operations. Redirects stay
+ * on their reviewed origin; public DNS is pinned for every request. */
+export async function acquireIIIF(url,format,signal,dependencies={}) {
+ if(!['json','tile'].includes(format))throw Error('Invalid IIIF acquisition format');
+ const r=await acquire(url,signal,dependencies,{accept:format==='json'?(/\/info\.json(?:\?|$)/.test(url)?'application/ld+json, application/json':'application/ld+json;profile="http://iiif.io/api/presentation/3/context.json", application/json'):'image/jpeg, image/png',bytes:(format==='json'?8:2)*1024*1024});
+ if(format==='json'){
+  if(!/^application\/(?:ld\+)?json(?:;|$)/i.test(String(r.mediaType)))throw Error('IIIF information is not JSON');
+  return {bytes:new Uint8Array(r.bytes),endpoint:r.url};
+ }
+ if(!/^image\/(?:jpeg|png)(?:;|$)/i.test(String(r.mediaType)))throw Error('IIIF tile is not PNG/JPEG');
+ const {validateIIIFTile}=await import('./asset-image-validation.mjs'),metadata=await validateIIIFTile(r.bytes,signal);
+ return {bytes:new Uint8Array(r.bytes),endpoint:r.url,width:metadata.width,height:metadata.height};
+}

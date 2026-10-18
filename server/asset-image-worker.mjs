@@ -1,7 +1,8 @@
 import sharp from 'sharp';
-import { IMAGE_LIMITS as L } from './asset-image-validation.mjs';
+import { IMAGE_LIMITS } from './asset-image-validation.mjs';
 sharp.cache(false); sharp.concurrency(1);
-process.once('message', async bytes => {
+process.once('message', async input => {
+  const bytes=input.bytes??input, L=input.limits??IMAGE_LIMITS;
   try {
     const png = bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
     const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;

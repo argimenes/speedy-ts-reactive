@@ -1,6 +1,7 @@
+import {IIIFService} from '../../src/application-services/iiif-service';
 import {EncyclopediaService} from '../../src/application-services/encyclopedia-service';
 import {AcademicService} from '../../src/application-services/academic-service';
-import {acquireScholarlyJson,acquireEncyclopedia} from '../asset-remote.mjs';
+import {acquireScholarlyJson,acquireEncyclopedia,acquireIIIF} from '../asset-remote.mjs';
 import {randomUUID} from 'node:crypto';
 import {publicationInventory} from './publication-inventory';
 /** Initial Node capability adapter and composition root. Replaceable independently
@@ -15,7 +16,7 @@ import {PublicationService} from '../../src/application-services/publication-ser
 import {CavernPublicationStorage,sha} from './publication-storage';
 import {PublicationPreview} from './publication-preview';
 import type {ApplicationServices} from '../../src/application-services/contracts';
-export function createApplicationServiceHost(options:{root:string;cavernId:string;nativeEnabled:boolean;publicationEnabled?:boolean;academicEnabled?:boolean;academic?:(request:any,signal?:AbortSignal)=>Promise<any>;assets:()=>any;knowledge:(request:any,signal?:AbortSignal)=>Promise<any>}){
+export function createApplicationServiceHost(options:{root:string;cavernId:string;nativeEnabled:boolean;publicationEnabled?:boolean;academicEnabled?:boolean;iiifEnabled?:boolean;academic?:(request:any,signal?:AbortSignal)=>Promise<any>;assets:()=>any;knowledge:(request:any,signal?:AbortSignal)=>Promise<any>}){
  const documents=createNativeDocumentStore({root:options.root,readOnly:true});
  const jobs=new CavernJobStorage(options.root,options.cavernId),executor=new NodePreparationExecutor();
  const ports:ServiceCapabilities={cavernId:options.cavernId,jobs,executor,
@@ -49,6 +50,11 @@ export function createApplicationServiceHost(options:{root:string;cavernId:strin
    try{const asset=await store.stage(lease,Buffer.from(bytes),{mediaType:'application/json'});signal.throwIfAborted();await store.publish(lease);await store.finish(lease,'encyclopedia-capture');done=true;return {kind:'managed' as const,cavernId:options.cavernId,assetId:asset.assetId};}finally{if(!done)await store.abort(lease);}},
   async original(asset,signal){signal.throwIfAborted();if(asset.cavernId!==options.cavernId)throw Error('Wrong Vault capture');const store=options.assets();if(!store)throw Error('Managed assets unavailable');const original=await store.get(asset.assetId,asset.cavernId);if(original.manifest.mediaType!=='application/json')throw Error('Wrong capture type');signal.throwIfAborted();return new Uint8Array(original.bytes);}
  }):undefined;
- const service:ApplicationServices={call:(operation,input,signal)=>operation.startsWith('encyclopedia.')?(encyclopedia?encyclopedia.call(operation as any,input as any,signal) as any:Promise.reject(Error('Academic resource loaders are disabled'))):operation.startsWith('academic.')?(academic?academic.call(operation as any,input as any,signal) as any:Promise.reject(Error('Academic resource loaders are disabled'))):operation.startsWith('publication.')?(publication?publication.call(operation as any,input as any,signal) as any:Promise.reject(Error('Web publishing is disabled'))):preparation.call(operation,input,signal)};
- return {service,router:applicationServiceRouter(service,options.cavernId,enabled,!!academic),executor,async close(){await encyclopedia?.close();await academic?.close();await preview?.close();await publication?.close();await preparation.close();}};
+ const iiif=options.iiifEnabled&&options.academic?new IIIFService({cavernId:options.cavernId,jobs,executor,knowledge:options.academic,uuid:randomUUID,now:()=>new Date().toISOString(),acquire:acquireIIIF,
+  async retain(bytes,format,signal){signal.throwIfAborted();const store=options.assets();if(!store)throw Error('Managed assets unavailable');const lease=await store.begin();let done=false;
+   try{const mediaType=format==='json'?'application/json':bytes[0]===137?'image/png':'image/jpeg';const asset=await store.stage(lease,Buffer.from(bytes),{mediaType});signal.throwIfAborted();await store.publish(lease);await store.finish(lease,'iiif-capture');done=true;return {kind:'managed' as const,cavernId:options.cavernId,assetId:asset.assetId};}finally{if(!done)await store.abort(lease);}},
+  async original(asset,signal){signal.throwIfAborted();if(asset.cavernId!==options.cavernId)throw Error('Wrong Vault capture');const store=options.assets();if(!store)throw Error('Managed assets unavailable');const original=await store.get(asset.assetId,asset.cavernId);if(!['application/json','image/png','image/jpeg'].includes(original.manifest.mediaType))throw Error('Wrong IIIF asset type');signal.throwIfAborted();return new Uint8Array(original.bytes);}
+ }):undefined;
+ const service:ApplicationServices={call:(operation,input,signal)=>operation.startsWith('iiif.')?(iiif?iiif.call(operation as any,input as any,signal) as any:Promise.reject(Error('IIIF loaders are disabled'))):operation.startsWith('encyclopedia.')?(encyclopedia?encyclopedia.call(operation as any,input as any,signal) as any:Promise.reject(Error('Academic resource loaders are disabled'))):operation.startsWith('academic.')?(academic?academic.call(operation as any,input as any,signal) as any:Promise.reject(Error('Academic resource loaders are disabled'))):operation.startsWith('publication.')?(publication?publication.call(operation as any,input as any,signal) as any:Promise.reject(Error('Web publishing is disabled'))):preparation.call(operation,input,signal)};
+ return {service,router:applicationServiceRouter(service,options.cavernId,enabled,!!academic,!!iiif),executor,async close(){await iiif?.close();await encyclopedia?.close();await academic?.close();await preview?.close();await publication?.close();await preparation.close();}};
 }

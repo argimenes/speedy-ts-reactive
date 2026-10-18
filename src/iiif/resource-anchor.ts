@@ -1,0 +1,7 @@
+import {identity} from './model';
+/** Only the IIIF variant is implemented. Other resource coordinate types belong
+ * in this discriminated union when needed, never in native standoff offsets. */
+export interface ResourceAnchor {version:1;kind:'iiif-canvas';coordinateVersion:1;manifestId:string;canvasId:string;snapshotId:string;canvasWidth:number;canvasHeight:number;region:{x:number;y:number;width:number;height:number}}
+export interface ResourceAnnotation {id:string;type:'mutable/resource-annotation';anchor:ResourceAnchor;value:string;metadata:{origin:'authored';createdAt:string}}
+export function validAnchor(value:unknown):value is ResourceAnchor {try{const a=value as ResourceAnchor;if(a?.version!==1||a.kind!=='iiif-canvas'||a.coordinateVersion!==1||typeof a.snapshotId!=='string'||!a.snapshotId||a.snapshotId.length>100)return false;identity(a.manifestId);identity(a.canvasId);const r=a.region;if(!r||![a.canvasWidth,a.canvasHeight,r.x,r.y,r.width,r.height].every(Number.isFinite)||a.canvasWidth<=0||a.canvasHeight<=0||r.x<0||r.y<0||r.width<=0||r.height<=0)return false;return r.x+r.width<=a.canvasWidth&&r.y+r.height<=a.canvasHeight;}catch{return false;}}
+export function annotation(value:unknown):ResourceAnnotation|undefined {const a=value as ResourceAnnotation;return a?.type==='mutable/resource-annotation'&&typeof a.id==='string'&&a.id.length<=100&&a.id.length>0&&typeof a.value==='string'&&a.value.length<=4000&&validAnchor(a.anchor)?a:undefined;}

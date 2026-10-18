@@ -4,6 +4,7 @@
 // loadDocumentJson URL). A supplied document benchmarks its longest paragraph.
 // BENCHMARK_PRESENTATION=desktop|spatial optionally hosts the same fixture in a Window.
 // BENCHMARK_BACKLINKS=1 adds the real C3 panel/service over an in-memory bound fixture.
+// BENCHMARK_IIIF=off|idle|active qualifies IIIF isolation with a controlled tile service.
 // BENCHMARK_ENCYCLOPEDIA=off|idle|pending uses the Wikipedia dispatcher instead.
 // BENCHMARK_ACADEMIC=off|idle|pending qualifies DOI loader isolation (pending uses a controlled service response).
 // Requires Node 22+ (WebSocket).
@@ -46,6 +47,14 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    host.style.cssText = 'position:fixed;inset:0;overflow:auto;background:white;z-index:99999';
    const documentUrl = ${JSON.stringify(process.env.BENCHMARK_DOCUMENT_URL ?? "")};
    const dto = documentUrl ? (await (await fetch(documentUrl)).json()).Data.document : {id:'typing-benchmark-document',type:'document-block',children:Array.from({length:250},(_,i)=>({id:'bench-'+i,type:'standoff-editor-block',text:'x'.repeat(100),standoffProperties:[{type:'style/bold',start:40,end:60}]}))};
+   const iiifMode=${JSON.stringify(process.env.BENCHMARK_IIIF??'')};let iiifCalls=0;
+   if(iiifMode){
+    const {imageFixture,jsonBytes}=await import('/src/iiif/fixtures.ts'),{normalizeIIIF}=await import('/src/iiif/model.ts');
+    const p=normalizeIIIF(jsonBytes(imageFixture())),snapshot={version:1,kind:'iiif-image',snapshotId:crypto.randomUUID(),identityId:crypto.randomUUID(),entityId:crypto.randomUUID(),resourceId:crypto.randomUUID(),sourceUrl:p.id+'/info.json',resourceUrl:p.id,retrievedAt:'2026-10-18T00:00:00Z',label:'IIIF benchmark',asset:{kind:'managed',cavernId:'fixture',assetId:'sha256:'+'a'.repeat(64)}};
+    dto.children.push({id:'iiif-bench',type:'mutable/iiif-image-block',iiif:snapshot});
+    const cv=document.createElement('canvas');cv.width=cv.height=512;const ctx=cv.getContext('2d');ctx.fillStyle='#abc';ctx.fillRect(0,0,512,512);const bytes=await new Promise(r=>cv.toBlob(r));
+    const originalFetch=window.fetch.bind(window);window.fetch=async(input,init)=>{if(String(input).startsWith('/api/services/iiif.')){iiifCalls++;const op=String(input).split('.').at(-1);if(op==='tile')return new Response(bytes,{headers:{'Content-Type':'application/octet-stream','X-Mutable-Cavern-Id':'fixture','X-Mutable-Result':'{"availability":"cached"}'}});return new Response(JSON.stringify({Success:true,Data:op==='read'?{snapshot,projection:p}:op==='open'?{grant:crypto.randomUUID(),info:p,retained:0,cached:0}:{closed:true}}));}return originalFetch(input,init);};
+   }
    const presentation = ${JSON.stringify(process.env.BENCHMARK_PRESENTATION ?? "")};
    let editor, projection, dispose;
    if (presentation) {
@@ -62,9 +71,17 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
        if(!session.spatial.document.activate('block:bench-window'))throw new Error('Benchmark Document authorization failed');
      }
    } else {
-     editor = new ReactiveEditor(dto,{features:{academicResourceLoaders:${JSON.stringify((process.env.BENCHMARK_ENCYCLOPEDIA??process.env.BENCHMARK_ACADEMIC) !== 'off')}}}); registerApplicationViews(editor);
+     editor = new ReactiveEditor(dto,{features:{iiifResourceLoaders:iiifMode!=='off',academicResourceLoaders:${JSON.stringify((process.env.BENCHMARK_ENCYCLOPEDIA??process.env.BENCHMARK_ACADEMIC) !== 'off')}}}); registerApplicationViews(editor);
+     if(iiifMode)editor.clipboard.setContext(()=>({cavernId:'fixture',session:'fixture'}));
      projection = editor.createView('browser-performance');
      dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}), host);
+   }
+   if(iiifMode==='active'){
+    for(let i=0;i<200&&!host.querySelector('.mutable-iiif select option');i++)await new Promise(r=>setTimeout(r,20));
+    const block=host.querySelector('.mutable-iiif');block.style.cssText='position:fixed;right:0;top:0;width:500px;z-index:100000;background:white';
+    [...block.querySelectorAll('button')].find(b=>b.textContent==='Activate online viewer').click();
+    for(let i=0;i<200&&!block.querySelector('canvas');i++)await new Promise(r=>setTimeout(r,20));
+    if(!block.querySelector('canvas'))throw Error('IIIF viewer did not activate');await new Promise(r=>setTimeout(r,1000));
    }
    editor.installGateway(document);
    let stopMarkdown = () => {};
@@ -109,7 +126,7 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
      const data=new DataTransfer();data.setData('text/plain',${JSON.stringify(process.env.BENCHMARK_ENCYCLOPEDIA?'https://en.wikipedia.org/wiki/Typing':'10.1234/typing')});flow.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));
      await Promise.resolve();if(academicRequests!==1)throw Error('Academic preparation did not start');
    }
-   const samples=[];let snapshots=0; const snapshot=editor.repository.snapshot.bind(editor.repository);
+   const iiifBefore=iiifCalls;const samples=[];let snapshots=0; const snapshot=editor.repository.snapshot.bind(editor.repository);
    editor.repository.snapshot=()=>{snapshots++;return snapshot();};
    const before=flow.textContent;
    for(let i=0;i<20;i++){
@@ -126,9 +143,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    const restored=flow.textContent===before;
    window.typingBench={editor,projection,host,flow,dispose:()=>{stopBacklinks();dispose();},stopMarkdown,caret,midpoint,before,originalCell,unrelated};
    samples.sort((a,b)=>a-b);
-   return {academicMode,academicRequests,backlinks:${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')},markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
+   return {iiifMode,iiifCallsDuringTyping:iiifCalls-iiifBefore,academicMode,academicRequests,backlinks:${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')},markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
  })()`);
- console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
+ console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);if(result.iiifMode)assert.equal(result.iiifCallsDuringTyping,0);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
  const before = await evaluate('window.typingBench.before');
  const midpoint = await evaluate('window.typingBench.midpoint');
  const inserted = [...before].slice(0,midpoint).join('')+'Q'+[...before].slice(midpoint).join('');

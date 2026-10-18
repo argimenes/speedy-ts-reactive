@@ -117,7 +117,8 @@ type CanvasRegionAnchor = {
   manifestId: string;
   canvasId: string;
   snapshotId: string;
-  coordinateSpace: 'iiif-canvas';
+  kind: 'iiif-canvas';
+  coordinateVersion: 1;
   canvasWidth: number;
   canvasHeight: number;
   region: { x: number; y: number; width: number; height: number };
@@ -256,3 +257,32 @@ Native article conversion, prepared Block-fragment insertion and Mutable text-fr
 The repository applies and validates the batch atomically. Undo stores a single inverse batch; Redo reuses the same authored identities. Identity/ownership validation, changed-record notifications and full/compact history capture inspect a streaming record view without allocating a per-character operation array. Existing durable history and native file formats are unchanged: their exact record data remains necessary for reconstruction. This is not constant-time import—cell construction, validation, rendering and serialization still scale with content size. Cancellation/stale-destination checks remain before publication, and no document is saved automatically.
 
 See the Douglas Adams regression section of the Milestone B qualification report for the reproduced failure, large-article browser exercise, record-count assertions and matched typing measurements. This correction does not authorise Milestone C.
+
+## 15. Milestone C execution and ResourceAnchor decisions
+
+Milestone B, including the bulk insertion correction, is accepted. Milestone C is authorised; Milestone D and AI-assisted ingestion remain unauthorised.
+
+The existing `feature-api/anchors.ts` describes relationships between positioned Blocks; it is not a resource-coordinate annotation contract. Native text standoff properties and saved `StandoffProperty`/segment rows carry cell ranges. They remain authoritative and are not repurposed for images. Saved `BlockProperty` projection already preserves a scoped authored ID, complete attributes and its owning Block without fabricated text coordinates. C therefore stores independent `mutable/resource-annotation` Block properties containing a versioned `ResourceAnchor` and a plain-text note. Ownership follows the canonical containing Block; the derived knowledge index uses the existing saved BlockProperty path. No parallel annotation database or automatic per-view canonical writes are introduced.
+
+The initial ResourceAnchor discriminator is `iiif-canvas` with manifest/image identity, canvas identity, pinned snapshot identity, coordinate version, canvas dimensions and a rectangular region. Future PDF/page, media/time and mesh-relative variants can share annotation identity, provenance and ownership while defining their own coordinate payloads. Native text need not migrate into this representation. OCR alignment would associate retained transcription spans and native ranges with canvas rectangles and a snapshot-specific alignment map; C does not run OCR or manufacture text ranges.
+
+OpenSeadragon 6.1.1 provides the tile renderer, viewport transforms and independent overlays through a small SolidJS-owned adapter. Only an explicitly activated canvas gets a viewer. The host generates requests from validated Image API tile descriptors and numeric tile coordinates; client-supplied arbitrary tile URLs are not a capability. Explicit activation reviews declared origins. Manifest import never loads canvases, tiles, contexts or external annotation pages automatically. Unsupported painting compositions remain diagnosed in the immutable manifest.
+
+Initial bounds: 8 MiB JSON input, 2,000 canvases, 32 nested JSON levels, 100,000 JSON nodes, one painting image/service per supported canvas, 128–512 pixel tiles, four concurrent tile requests per viewer with a host-wide bound, a 64-tile viewer cache target, a 32 MiB/128-entry compressed host cache, and at most four active grants per Vault service. Image information is captured separately for the selected canvas and pinned to the manifest snapshot. Retention copies up to 32 already acquired tiles per action, with a 256-tile cap per canvas snapshot, preserving original validated PNG/JPEG bytes. It does not fetch an overview or imply a retained full-resolution original. Full resolution is available offline only to the extent actually retained/cached; missing tiles remain unavailable without silent network fallback.
+
+A viewer owns requests, decoded tile cache, overlays and DOM through Solid cleanup. The bounded shared host cache is device-local and may survive viewer closure; it is cleared when its Vault service closes. Transient pan/zoom/navigation do not write canonical document state. Annotation create/delete uses the existing command/history system; each overlay is keyed by annotation instance identity. Refresh requires an explicit new import/capture; existing Blocks and annotations remain pinned with no automatic geometry migration. Native document projection and bulk insertion remain unchanged. Progressive native rendering, off-main-thread validation and responsive scheduling of non-atomic work remain future performance options, not C scope.
+
+Implementation sequence: bounded IIIF models/anchors and tests; protected host acquisition and immutable capture/jobs; native Blocks and viewer/annotation controls; automated, Chrome and separate live-provider qualification; final report and acceptance stop. Sources: [Presentation v3](https://iiif.io/api/presentation/3.0/), [Image v3](https://iiif.io/api/image/3.0/), [OpenSeadragon API](https://openseadragon.github.io/docs/OpenSeadragon.html).
+
+
+### Milestone C delivered scope and qualification
+
+The default-enabled `iiifResourceLoaders` flag gates recognition and the host operations. Command/Control-Shift-V recognizes `info.json`, conventional manifest URLs and `/presentation/v3/…` URLs. Native types are `mutable/iiif-manifest-block` and `mutable/iiif-image-block`. No institutional HTML crawler is introduced. Presentation v3 and advertised power-of-two Image API 2/3 tile grids are supported; equivalent v2/v3 advertisements of one service URI are accepted. Distinct image services, multi-image painting, external AnnotationPages, OCR ingestion and complex selectors remain inert in the original source with diagnostics. Standalone Image API resources use their image-service identity as the explicitly typed canvas identity.
+
+`iiif.import/inspect/resume/read/open/tile/retain/close` are transport-independent, explicitly Vault-scoped operations. Import jobs checkpoint immutable originals and canonical receipts in existing durable storage. Source URLs, final JSON acquisition endpoints, original content-hash assets and independent representation IDs are retained. Tile grants are transient, capped at four per Vault and expire after 30 minutes; closing is allowed even while normal request slots are occupied. All remote acquisition uses public pinned DNS, credential-free HTTPS and same-origin redirects. Tile requests accept validated numeric coordinates, not arbitrary URLs. The Node build keeps the acquisition adapter and decoder worker at their correct host-relative locations.
+
+Migration `0005-iiif.sql` adds the `iiif` external-identity namespace and a source-association index while retaining existing identities, snapshots and accepted/rejected Wikidata claim reviews. It creates no spatial annotation table. Spatial notes are manually saved native BlockProperties and are projected into the existing saved index. Rectangle selection currently uses visible-image bounds or accessible numeric controls; freehand/polygon tools are not included. Each overlap owns its own overlay and is independently undoable/removable.
+
+A pinned manifest and image-info JSON do not make the remote pixel server immutable. Retained tile originals are immutable; unretained regions still depend on provider availability and unchanged source pixels. C does not claim a complete archival scan, automatic refresh/migration, or complete IIIF original-asset closure in `.inkpkg`. No OCR service, PDF work, Milestone D or AI ingestion has begun.
+
+See [Milestone C qualification](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_C_QUALIFICATION.md) for reproducible tests, actual Chrome exercises, live-provider results, memory bounds and typing measurements. C is implemented and submitted for acceptance; A/B remain accepted.

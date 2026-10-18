@@ -83,3 +83,14 @@ test('Wikipedia acquisition resolves once and pins the second call to the select
  await assert.rejects(acquireEncyclopedia('Q42',undefined,{lookup:async()=>answer,request:transport([{status:302,headers:{location:'https://evil.test/api'}}])}),/consent/);
  await assert.rejects(acquireEncyclopedia('Q42',undefined,{lookup:async()=>answer,request:transport([{bytes:Buffer.from('<html>'),headers:{'content-type':'text/html'}}])}),/JSON/);
 });
+
+test('IIIF JSON uses protected acquisition, rejects wrong MIME, origin changes and nonpublic DNS',async()=>{
+ const {acquireIIIF}=await import('./asset-remote.mjs');const bytes=Buffer.from('{"exact":"source"}');const r=await acquireIIIF('https://example.com/manifest','json',undefined,{lookup:async()=>answer,request:transport([{bytes,headers:{'content-type':'application/ld+json; charset=utf-8'}}])});assert.deepEqual(Buffer.from(r.bytes),bytes);
+ await assert.rejects(acquireIIIF('https://example.com/manifest','json',undefined,{lookup:async()=>answer,request:transport([{bytes,headers:{'content-type':'text/html'}}])}),/not JSON/);
+ await assert.rejects(acquireIIIF('https://example.com/manifest','json',undefined,{lookup:async()=>answer,request:transport([{status:302,headers:{location:'https://other.example/manifest'}}])}),/new consent/);
+ await assert.rejects(acquireIIIF('https://example.com/manifest','json',undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}],request:()=>assert.fail('private request')}),/not public/);
+ await assert.rejects(acquireIIIF('https://example.com/manifest','json',undefined,{lookup:async()=>answer,request:transport([{headers:{'content-length':String(9*1024*1024)}}])}),/rejected/);
+});
+test('IIIF tile decoding is bounded and original PNG bytes are preserved',async()=>{
+ const sharp=(await import('sharp')).default,{acquireIIIF}=await import('./asset-remote.mjs');for(const size of [512,513]){const bytes=await sharp({create:{width:size,height:size,channels:3,background:'#abc'}}).png().toBuffer();const result=acquireIIIF('https://example.com/tile','tile',undefined,{lookup:async()=>answer,request:transport([{bytes,headers:{'content-type':'image/png'}}])});if(size===513)await assert.rejects(result,/limit/);else{const r=await result;assert.equal(r.width,512);assert.deepEqual(Buffer.from(r.bytes),bytes);}}
+});
