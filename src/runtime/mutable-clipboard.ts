@@ -301,7 +301,12 @@ export class MutableClipboard {
     });
     let resolved;
     try {
-      resolved = await resolveClipboardImages({ fragment, files, assets: this.assets, cavernId: bookmark.scope.cavernId, signal: this.importController!.signal, valid, choose, lease: value => { this.assetLease = value; } });
+      resolved = await resolveClipboardImages({ fragment, files, assets: this.assets, cavernId: bookmark.scope.cavernId, signal: this.importController!.signal, valid,
+        // This policy applies only to an explicit clipboard paste. Other import
+        // operations retain their own consent; the service still authorises the
+        // exact URL list and validates every acquired image.
+        choose: this.editor.features.automaticClipboardImages ? async urls => urls : choose,
+        lease: value => { this.assetLease = value; } });
     } catch (error) {
       if (!valid() || this.importController!.signal.aborted || (error as Error).message === 'Paste cancelled.') throw error;
       const choice = await choose([], `${(error as Error).message} Keep images as placeholders instead?`);

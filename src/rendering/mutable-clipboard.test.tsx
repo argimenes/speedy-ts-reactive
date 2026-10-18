@@ -7,14 +7,15 @@ import { exportClipboard, NATIVE_MIME } from '../interchange/transport';
 import { plainFragment } from '../interchange/serializer';
 import { captureNative, decodeNative, nativeEnvelope } from '../persistence/native-resource';
 import { blockMenuItems } from '../runtime/block-menu-actions';
+import { featureFlags } from '../configuration';
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
-function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false) {
+function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false, automaticClipboardImages = false) {
   const editor = new ReactiveEditor({ type: 'document-block', id: 'doc', children: [
     { type: 'standoff-editor-block', id: 'a', text: 'Rome abc', standoffProperties: [{ id: 'p', type: 'codex/entity-reference', value: 'rome', start: 0, end: 3 }] },
     { type: 'standoff-editor-block', id: 'b', text: 'target' },
-  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard } });
+  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard, automaticClipboardImages } });
   editor.clipboard.setContext(() => ({ cavernId: 'cavern', session: 'session' })); registerCoreViews(editor);
   const projection = editor.createView('clipboard-ui'), host = document.body.appendChild(document.createElement('div'));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -106,6 +107,53 @@ describe('Mutable clipboard UI routing and lifecycle', () => {
     const s = setup(true, true, true, true, true), commits = vi.spyOn(s.editor.repository, 'commit');
     s.dispatch('paste', s.select('b', 0, 6), { 'text/html': '<img src="https://example.com/a">' });
     await vi.waitFor(() => expect(s.editor.clipboard.imagePrompt()).toBeDefined());s.editor.clipboard.cancel();await tick();expect(commits).not.toHaveBeenCalled();expect(s.texts()[1]).toBe('target');
+  });
+  it.each(['success','failure','stale','cancel'])('automatically acquires pasted remote images and handles %s', async outcome => {
+    expect(featureFlags.automaticClipboardImages).toBe(true);
+    const s=setup(true,true,true,true,true,true),assets=s.editor.assets;
+    const lease={id:'auto',token:'token',cavernId:'cavern'};
+    const manifest={kind:'managed' as const,cavernId:'cavern',assetId:'sha256:'+'b'.repeat(64),mediaType:'image/png',byteLength:10,width:3,height:2};
+    const begin=vi.spyOn(assets,'begin').mockResolvedValue(lease);
+    vi.spyOn(assets,'bind').mockImplementation(()=>()=>{});
+    const action=vi.spyOn(assets,'action').mockResolvedValue({});
+    let finish!:()=>void;
+    const remote=vi.spyOn(assets,'remote').mockImplementation(async()=>{
+      expect(s.editor.clipboard.imagePrompt()).toBeUndefined();
+      await new Promise<void>(resolve=>{finish=resolve;});
+      if(outcome==='failure')throw Error('Download rejected');
+      return manifest;
+    });
+    const commit=vi.spyOn(s.editor.repository,'commit');
+    s.dispatch('paste',s.select('b',0,6),{'text/html':'<img src="https://example.com/image.png">'});
+    await vi.waitFor(()=>expect(remote).toHaveBeenCalledTimes(1));
+    expect(begin).toHaveBeenCalledWith(['https://example.com/image.png'],expect.any(AbortSignal));
+    expect(commit).not.toHaveBeenCalled();
+    if(outcome==='stale')s.editor.commands.replaceInlineRange(s.node('b').key,0,0,'!');
+    if(outcome==='cancel')s.editor.clipboard.cancel();
+    finish();
+    if(outcome==='failure'){
+      await vi.waitFor(()=>expect(s.editor.clipboard.imagePrompt()?.error).toContain('Download rejected'));
+      expect(commit).not.toHaveBeenCalled();
+      s.editor.clipboard.chooseImages([]);
+    }
+    await vi.waitFor(()=>expect(action).toHaveBeenCalledWith(lease,outcome==='success'?'finish':'abort'));
+    const image=Object.values(s.editor.repository.readState().contents).find(c=>c.viewType==='image-cell');
+    if(outcome==='success'){
+      expect(image?.payload.asset).toMatchObject({assetId:manifest.assetId});
+      expect(commit).toHaveBeenCalledTimes(1);expect(s.editor.clipboard.imagePrompt()).toBeUndefined();
+      s.editor.repository.undo();expect(s.texts()[1]).toBe('target');
+      s.editor.repository.redo();expect(s.host.querySelector('.reactive-inline-image')).not.toBeNull();
+    }else if(outcome==='failure')expect(image?.payload.status).toBe('failed');
+    else {expect(image).toBeUndefined();expect(s.texts()[1]).toBe(outcome==='stale'?'!target':'target');}
+  });
+  it('does not acquire images for plain-text paste or ordinary URL text', () => {
+    const s=setup(true,true,true,true,true,true),begin=vi.spyOn(s.editor.assets,'begin');
+    const target=s.select('b',0,6);
+    target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',metaKey:true,shiftKey:true,bubbles:true}));
+    s.dispatch('paste',target,{'text/html':'<img src="https://example.com/image.png">','text/plain':'caption'});
+    expect(s.texts()[1]).toBe('caption');expect(begin).not.toHaveBeenCalled();
+    s.dispatch('paste',s.select('b',0,7),{'text/plain':'https://example.com/image.png'});
+    expect(begin).not.toHaveBeenCalled();expect(s.editor.clipboard.imagePrompt()).toBeUndefined();
   });
   it('explains paste with document whitespace focus without guessing a destination or touching field paste', () => {
     const s=setup();

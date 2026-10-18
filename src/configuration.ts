@@ -29,6 +29,8 @@ export type FeatureFlags = Readonly<{
   markdownClipboard: boolean;
   /** Managed PNG/JPEG clipboard import through the Cavern immutable asset facility. */
   managedAssetClipboard: boolean;
+  /** A user paste authorises acquisition of its remote images; failures remain recoverable. */
+  automaticClipboardImages: boolean;
   /** Explicit global Cavern setup and startup lifecycle. */
   cavernStartup: boolean;
   /** Generic Desktop Window maximize/restore; normal geometry is retained. */
@@ -120,6 +122,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   externalHtmlClipboard: true,
   markdownClipboard: true,
   managedAssetClipboard: true,
+  automaticClipboardImages: true,
   cavernStartup: true,
   windowMaximize: true,
   flint: true,

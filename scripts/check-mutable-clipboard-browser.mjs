@@ -35,13 +35,21 @@ const vite = await createServer({ plugins: [{
     document.addEventListener('paste',event=>{const f=event.clipboardData?.files[0];if(f)window.receivedImageBytes=f.arrayBuffer().then(b=>Array.from(new Uint8Array(b)));},true);
     const editor=new ReactiveEditor({id:'doc',type:'document-block',children:[
       {id:'a',type:'standoff-editor-block',text:'Rome abc',standoffProperties:[{id:'old',type:'codex/entity-reference',value:'rome',start:0,end:3}]},
-      {id:'b',type:'standoff-editor-block',text:'target'}]});
+      {id:'b',type:'standoff-editor-block',text:'target'}]},{features:{automaticClipboardImages:false}});
     editor.clipboard.setContext(()=>({cavernId:'proof',session:'proof'}));registerCoreViews(editor);
     const projection=editor.createView('proof');const disposeView=render(()=>createComponent(ReactiveTreeView,{editor,projection}),document.getElementById('root'));editor.installGateway(document);
     const node=id=>Object.values(projection.state.nodes).find(n=>n.payload.id===id);
     const select=(id,start,end=start)=>{const n=node(id),m=editor.mounts.get(n.key);m.focus();m.restoreInlineSelection({anchor:start,head:end});editor.selections.setPrimary(n.key,n.contentKey,n.viewId,start,end);return m.focusElement;};
     const paste=(data)=>{const transfer=new DataTransfer();for(const [type,value] of Object.entries(data))transfer.setData(type,value);document.activeElement.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:transfer}));};
-    window.proof={editor,node,select,paste,reopen:bytes=>{
+    window.proof={editor,node,select,paste,automatic:()=>{
+      const editor=new ReactiveEditor({id:'auto-doc',type:'document-block',children:[{id:'auto-text',type:'standoff-editor-block',text:''}]});
+      editor.clipboard.setContext(()=>({cavernId:'proof',session:'proof'}));registerCoreViews(editor);
+      const projection=editor.createView('automatic'),host=document.body.appendChild(document.createElement('div'));
+      const dispose=render(()=>createComponent(ReactiveTreeView,{editor,projection}),host);editor.installGateway(document);
+      const node=Object.values(projection.state.nodes).find(n=>n.payload.id==='auto-text'),mount=editor.mounts.get(node.key);
+      mount.focus();mount.restoreInlineSelection({anchor:0,head:0});
+      return {editor,host,mount,close:()=>{dispose();editor.dispose();host.remove();}};
+    },reopen:bytes=>{
       disposeView();editor.dispose();
       const fresh=new ReactiveEditor({id:'bank',type:'workspace-object-bank-block',children:[]},{features:{directDomCharacterCells:false}});fresh.clipboard.setContext(()=>({cavernId:'proof',session:'proof'}));registerCoreViews(fresh);
       const bank=Object.values(fresh.repository.readState().contents).find(c=>c.viewType==='workspace-object-bank-block');
@@ -226,6 +234,24 @@ try {
   assert.equal(await evaluate(`new Set(Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell').map(c=>c.key)).size`),2);
   assert.equal(await evaluate(`Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell').every(c=>c.payload.asset?.assetId===${JSON.stringify(reference.assetId)})`),true, JSON.stringify(await evaluate(`({message:proof.editor.clipboard.message(),images:Object.values(proof.editor.repository.readState().contents).filter(c=>c.viewType==='image-cell').map(c=>c.payload)})`)));
   await evaluate('proof.editor.repository.undo();proof.editor.repository.undo()');assert.deepEqual(await evaluate('proof.texts()'),['Rome abc','target']);
+  // Default clipboard policy: the trusted paste itself authorises remote image
+  // acquisition. A separate editor exercises defaults, while earlier probes
+  // retain coverage of the opt-in confirmation policy.
+  const automaticUrl=remoteImageUrl??'https://example.com/clipboard-image.png';
+  await evaluate(`proof.auto=proof.automatic();true`);
+  assert.equal(await evaluate('proof.auto.editor.features.automaticClipboardImages'),true);
+  if(!remoteImageUrl)await evaluate(`proof.auto.editor.assets.remote=(lease,_url,signal)=>proof.auto.editor.assets.stage(lease,new Blob([Uint8Array.from(atob(${JSON.stringify(imageBase64)}),c=>c.charCodeAt(0))],{type:'image/png'}),signal)`);
+  await evaluate(`navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([${JSON.stringify(`<img src="${automaticUrl.replaceAll('&','&amp;').replaceAll('"','&quot;')}">`)}],{type:'text/html'})})])`);
+  await key('v');
+  await wait(`proof.auto.host.querySelector('.reactive-inline-image img')?.naturalWidth>0`);
+  assert.equal(await evaluate('!!proof.auto.editor.clipboard.imagePrompt()'),false);
+  const autoRef=await evaluate(`Object.values(proof.auto.editor.repository.readState().contents).find(c=>c.viewType==='image-cell').payload.asset`);
+  const autoStored=await assetService.store.get(autoRef.assetId,'proof');assert.ok(autoStored.bytes.length>0);
+  await evaluate('proof.auto.editor.repository.undo()');assert.equal(await evaluate('proof.auto.mount.captureText()'),'');
+  assert.equal(await evaluate(`!!proof.auto.host.querySelector('.reactive-inline-image')`),false);
+  await evaluate('proof.auto.editor.repository.redo()');await wait(`proof.auto.host.querySelector('.reactive-inline-image img')?.naturalWidth>0`);
+  await evaluate('proof.auto.close()');
+  console.log('Automatic image Command-V, managed storage and Undo/Redo: passed',JSON.stringify({liveRemote:!!remoteImageUrl,bytes:autoStored.bytes.length}));
   // Reopen native bytes through the real codec, then resolve the same portable original.
   await evaluate(`proof.reopen(new TextEncoder().encode(${JSON.stringify(imageState)}))`);
   await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
