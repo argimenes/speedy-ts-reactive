@@ -1,4 +1,6 @@
 import { createWindowMaximize } from "./window-maximize";
+import { managedAsset } from '../interchange/managed-asset';
+import { inspectUri } from '../interchange/uri';
 import { createWindowPresentation } from "./window-presentation";
 import { useDocumentTabHost, tabDocumentTarget } from "./document-tab-context";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
@@ -382,7 +384,7 @@ export function TabPanelView(props: BlockViewProps) {
 }
 
 export function ImageView(props: BlockViewProps) {
-  const { projection } = useReactiveView();
+  const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const metadata = () => node()?.payload.metadata as Record<string, unknown> | undefined;
   const appearance = createMemo(() => blockAppearance(node()));
@@ -390,7 +392,10 @@ export function ImageView(props: BlockViewProps) {
   useContainerMount(props.nodeKey, () => root);
   return (
     <figure ref={root} class={`abstract-block reactive-image ${appearance().classes.join(" ")}`} style={appearance().style} tabIndex={-1} {...data(props.nodeKey, node)}>
-      <img src={String(metadata()?.url ?? node()?.payload.filename ?? "")} alt={String(metadata()?.alt ?? "")} />
+      <img ref={image => createEffect(() => {
+        const asset = managedAsset(node()?.payload.asset);
+        if (asset) { const release = editor.assets.bind(image, asset); onCleanup(release); }
+      })} src={managedAsset(node()?.payload.asset) ? undefined : String(metadata()?.url ?? node()?.payload.filename ?? "") || undefined} alt={String(metadata()?.alt ?? "")} />
       <ChildBlocks parentKey={props.nodeKey} />
     </figure>
   );
@@ -400,9 +405,21 @@ export function IframeView(props: BlockViewProps) {
   const { projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const metadata = () => node()?.payload.metadata as Record<string, unknown> | undefined;
+  const resource = () => metadata()?.resourceEmbed === true;
+  const url = () => {
+    const value = String(metadata()?.url ?? node()?.payload.url ?? 'about:blank');
+    if (!resource()) return value;
+    try { return inspectUri(value).url; } catch { return 'about:blank'; }
+  };
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
-  return <div ref={root} class="abstract-block reactive-iframe" tabIndex={-1} {...data(props.nodeKey, node)}><iframe src={String(metadata()?.url ?? node()?.payload.url ?? "about:blank")} title={String(metadata()?.title ?? "Embedded content")} /><ChildBlocks parentKey={props.nodeKey} /></div>;
+  return <div ref={root} class="abstract-block reactive-iframe" tabIndex={-1} {...data(props.nodeKey, node)}>
+    <Show when={resource()}><p><a href={url()} target="_blank" rel="noopener noreferrer">Open externally ↗</a> · Some sites do not permit embedding.</p></Show>
+    <iframe src={url()} title={String(metadata()?.title ?? "Embedded content")}
+      sandbox={resource() ? 'allow-scripts allow-forms allow-presentation' : undefined}
+      referrerpolicy={resource() ? 'no-referrer' : undefined}
+      style={resource() ? { width: '100%', height: `${Math.max(200, Math.min(1200, Number(metadata()?.height) || 600))}px` } : undefined} />
+    <ChildBlocks parentKey={props.nodeKey} /></div>;
 }
 
 export function YouTubeView(props: BlockViewProps) {

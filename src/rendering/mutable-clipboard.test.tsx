@@ -11,11 +11,11 @@ import { featureFlags } from '../configuration';
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
-function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false, automaticClipboardImages = false) {
+function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false, automaticClipboardImages = false, resourceUrlPaste = true) {
   const editor = new ReactiveEditor({ type: 'document-block', id: 'doc', children: [
     { type: 'standoff-editor-block', id: 'a', text: 'Rome abc', standoffProperties: [{ id: 'p', type: 'codex/entity-reference', value: 'rome', start: 0, end: 3 }] },
     { type: 'standoff-editor-block', id: 'b', text: 'target' },
-  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard, automaticClipboardImages } });
+  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard, automaticClipboardImages, resourceUrlPaste } });
   editor.clipboard.setContext(() => ({ cavernId: 'cavern', session: 'session' })); registerCoreViews(editor);
   const projection = editor.createView('clipboard-ui'), host = document.body.appendChild(document.createElement('div'));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -37,6 +37,57 @@ describe('Mutable clipboard UI routing and lifecycle', () => {
     cleanup.push(() => { delete (navigator as any).clipboard; });
   };
   const markdownItems = (value: string) => [{ types: ['text/plain'], getType: async () => ({ size: value.length, text: async () => value }) }];
+  it.each([
+    ['metaKey','https://youtu.be/M7lc1UVf-VE?si=historical','youtube-player-block','www.youtube-nocookie.com'],
+    ['ctrlKey','https://vimeo.com/76979871?share=copy','vimeo-player-block','player.vimeo.com'],
+    ['metaKey','https://example.org/page?q=history','iframe-block','example.org'],
+  ])('creates a resource Block with %s, preserves surrounding text and restores exact Undo', async (modifier,url,type,host) => {
+    const s=setup(),target=s.select('b',3),before=nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'));
+    const commit=vi.spyOn(s.editor.repository,'commit'),fetch=vi.spyOn(globalThis,'fetch');
+    target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',[modifier]:true,shiftKey:true,bubbles:true,cancelable:true}));
+    s.dispatch('paste',target,{'text/plain':url,'text/html':'<b>ignored rich representation</b>'});
+    await vi.waitFor(()=>expect(s.host.querySelector(`[data-block-type="${type}"] iframe`)).not.toBeNull());
+    const block=Object.values(s.editor.repository.readState().contents).find(c=>c.viewType===type)!;
+    expect(block.payload.sourceUrl).toBe(url);expect(commit).toHaveBeenCalledTimes(1);expect(fetch).not.toHaveBeenCalled();
+    const frame=s.host.querySelector<HTMLIFrameElement>(`[data-block-type="${type}"] iframe`)!;
+    expect(new URL(frame.src).hostname).toBe(host);
+    if(type==='iframe-block'){expect(frame.style.height).toBe('600px');expect(frame.getAttribute('sandbox')).not.toContain('allow-same-origin');}
+    else expect(new URL(frame.src).searchParams.get('autoplay')).toBe('0');
+    expect(s.editor.encodeDocument().children!.map(b=>b.text)).toEqual(['Rome abc','tar',undefined,'get']);
+    const saved=new TextEncoder().encode(JSON.stringify(nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'))));
+    expect(JSON.stringify(decodeNative(saved))).toContain(url);
+    s.editor.repository.undo();expect(nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'))).toEqual(before);
+    s.editor.repository.redo();expect(s.host.querySelector(`[data-block-type="${type}"] iframe`)).not.toBeNull();
+  });
+  it('retains ordinary and disabled-feature URL paste as text, with no acquisition', () => {
+    for(const enabled of [true,false]){
+      const s=setup(true,true,true,true,true,false,enabled),target=s.select('b',0,6),begin=vi.spyOn(s.editor.assets,'begin');
+      if(!enabled)target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',metaKey:true,shiftKey:true,bubbles:true}));
+      s.dispatch('paste',target,{'text/plain':'https://example.org/photo.png'});
+      expect(s.texts()[1]).toBe('https://example.org/photo.png');expect(begin).not.toHaveBeenCalled();
+    }
+  });
+  it.each(['success','failure','stale','cancel'])('downloads an ImageBlock for resource paste: %s',async outcome=>{
+    const s=setup(true,true,true,true,true),assets=s.editor.assets,url='https://example.org/photo.png?original=1';
+    const lease={id:'resource',token:'token',cavernId:'cavern'},manifest={kind:'managed' as const,cavernId:'cavern',assetId:'sha256:'+'c'.repeat(64),mediaType:'image/png',byteLength:10,width:3,height:2};
+    vi.spyOn(assets,'begin').mockResolvedValue(lease);const bind=vi.spyOn(assets,'bind').mockImplementation(()=>()=>{});
+    const action=vi.spyOn(assets,'action').mockResolvedValue({});let finish!:()=>void;
+    const remote=vi.spyOn(assets,'remote').mockImplementation(async()=>{await new Promise<void>(r=>{finish=r});if(outcome==='failure')throw Error('Invalid image');return manifest;});
+    const target=s.select('b',0,6),before=nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'));
+    target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',ctrlKey:true,shiftKey:true,bubbles:true}));
+    s.dispatch('paste',target,{'text/plain':url});await vi.waitFor(()=>expect(remote).toHaveBeenCalledTimes(1));
+    expect(s.editor.clipboard.imagePrompt()).toBeUndefined();
+    if(outcome==='stale')s.editor.commands.replaceInlineRange(s.node('b').key,0,0,'!');
+    if(outcome==='cancel')s.editor.clipboard.cancel();finish();
+    await vi.waitFor(()=>expect(action).toHaveBeenCalledWith(lease,outcome==='success'?'finish':'abort'));
+    const block=Object.values(s.editor.repository.readState().contents).find(c=>c.viewType==='image-block');
+    if(outcome==='success'){
+      expect(block?.payload.sourceUrl).toBe(url);expect(block?.payload.asset).toMatchObject({assetId:manifest.assetId});
+      expect(bind).toHaveBeenCalled();expect(s.host.querySelector('.reactive-image img')).not.toBeNull();
+      s.editor.repository.undo();expect(nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'))).toEqual(before);
+      s.editor.repository.redo();expect(s.host.querySelector('.reactive-image img')).not.toBeNull();
+    }else{expect(block).toBeUndefined();expect(s.texts()[1]).toBe(outcome==='stale'?'!target':'target');}
+  });
   it('exposes explicit Markdown in the existing menu, restores its selection, and commits once', async () => {
     clipboardRead(async () => markdownItems('**bold**'));
     const s = setup(); s.select('b', 0, 6); const commits = vi.spyOn(s.editor.repository, 'commit');

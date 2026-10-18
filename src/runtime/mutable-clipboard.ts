@@ -12,6 +12,7 @@ import { canWriteAsync, captureClipboard, exportClipboard, importClipboard, MARK
 import { preparePaste, type PastePreparation, type PreparedPaste } from '../interchange/prepare';
 import type { BlockFragment } from '../block-tree/clipboard';
 import type { MountHandle } from './mounts';
+import { resourceUrl, resourceBlock, type ResourceUrl } from '../interchange/resource-url';
 
 interface Bookmark {
   kind: 'text' | 'blocks'; viewId: string; slices: Slice[]; disjoint: boolean;
@@ -235,6 +236,8 @@ export class MutableClipboard {
       const asMarkdown = !!intent && intent.until >= Date.now() && intent.target === event.target && this.valid(intent.bookmark, event, cross);
       this.clearIntent();
       const data = captureClipboard(event.clipboardData);
+      const resource = plain && this.editor.features.resourceUrlPaste ? resourceUrl(data['text/plain'] ?? '') : undefined;
+      if (resource) { this.pasteResource(b, resource, data['text/plain'].trim(), event, cross); return; }
       const files = this.editor.features.managedAssetClipboard && !plain ? captureFiles(event.clipboardData) : [];
       if ((!plain && this.editor.features.managedAssetClipboard && (files.length > 0 || Object.values(data).some(value => /image-cell|data-mutable-fragment|<img\b|!\[/i.test(value)))) || (this.editor.features.markdownClipboard && !plain && (asMarkdown || MARKDOWN_MIMES.some(type => data[type] !== undefined))) || Object.values(data).reduce((n, value) => n + value.length, 0) > 10000) {
         this.notify('Preparing paste…');
@@ -253,6 +256,25 @@ export class MutableClipboard {
     if (!b.slices.length || b.kind === 'text' && b.slices.every(s => s.start === s.end)) return;
     if (b.kind === 'text' && b.disjoint) b = { ...b, slices: b.slices.filter(s => s.start !== s.end) };
     this.write(b, event.type === 'cut', event, cross);
+  }
+  private pasteResource(bookmark: Bookmark, resource: ResourceUrl, sourceUrl: string, event: ClipboardEvent, cross: boolean) {
+    if (bookmark.disjoint) throw Error('Paste a resource Block into a single text selection.');
+    this.notify(resource.kind === 'image' ? 'Downloading image…' : 'Creating resource Block…');
+    this.asyncTask(async () => {
+      const signal = this.importController!.signal;
+      const check = () => { signal.throwIfAborted(); if (!this.valid(bookmark, event, cross)) throw Error('Destination changed; paste cancelled.'); };
+      check();
+      let image;
+      if (resource.kind === 'image') {
+        if (!this.editor.features.managedAssetClipboard) throw Error('Managed image import is disabled.');
+        const lease = await this.assets.begin([resource.url], signal); this.assetLease = lease; check();
+        image = await this.assets.remote(lease, resource.url, signal); check();
+        await this.assets.action(lease, 'publish', signal); check();
+      }
+      const prepared = resourceBlock(sourceUrl, image); check();
+      this.insert(bookmark, prepared.fragment, false, [prepared.native]);
+      this.notify(`Pasted ${resource.video ? `${resource.video.provider === 'youtube' ? 'YouTube' : 'Vimeo'} player` : resource.kind === 'image' ? 'image' : 'web page'} Block.`);
+    });
   }
   private write(b: Bookmark, cut: boolean, event?: ClipboardEvent, cross = false) {
     const fragment = serializeSelection(this.editor.repository.readState(), b.slices, b.scope);

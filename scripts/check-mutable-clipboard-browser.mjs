@@ -71,10 +71,13 @@ try {
     chrome.once('error', reject); setTimeout(() => reject(Error('Chrome startup timeout')), 15000).unref();
   });
   socket = new WebSocket(endpoint); await new Promise(resolve => socket.addEventListener('open', resolve, { once: true }));
-  let id = 0; const pending = new Map(), errors = [], externalRequests = [];
+  let id = 0; const pending = new Map(), errors = [], externalRequests = [], failedRequests = [], requests = new Map();
   socket.addEventListener('message', event => {
     const m = JSON.parse(event.data), p = pending.get(m.id);
     if (p) { pending.delete(m.id); m.error ? p.reject(Error(JSON.stringify(m.error))) : p.resolve(m.result); }
+    if(m.method==='Network.requestWillBeSent')requests.set(m.params.requestId,m.params.request.url);
+    if(m.method==='Network.loadingFailed')failedRequests.push({url:requests.get(m.params.requestId),...m.params});
+    if(m.method==='Network.responseReceived'&&m.params.response.status>=400)failedRequests.push({url:m.params.response.url,status:m.params.response.status});
     if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails);
     if (m.method === 'Network.requestWillBeSent' && m.params.request.url.includes('clipboard-probe.invalid')) externalRequests.push(m.params.request.url);
   });
@@ -89,7 +92,7 @@ try {
     const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true }, sessionId);
     if (r.exceptionDetails) throw Error(JSON.stringify(r.exceptionDetails)); return r.result.value;
   };
-  const wait = expression => evaluate(`(async()=>{for(let i=0;i<300;i++){if(${expression})return;await new Promise(r=>setTimeout(r,30));}throw Error('Timed out: '+${JSON.stringify(expression)}+'; '+proof?.editor.clipboard.message())})()`);
+  const wait = expression => evaluate(`(async()=>{for(let i=0;i<300;i++){if(${expression})return;await new Promise(r=>setTimeout(r,30));}throw Error('Timed out: '+${JSON.stringify(expression)}+'; '+(proof?.auto?.editor.clipboard.message()??proof?.editor.clipboard.message()))})()`);
   const origin = `http://127.0.0.1:${vite.httpServer.address().port}`;
   await send('Browser.grantPermissions', { origin, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
   await send('Runtime.enable', {}, sessionId); await send('Page.bringToFront', {}, sessionId);
@@ -252,9 +255,35 @@ try {
   await evaluate('proof.auto.editor.repository.redo()');await wait(`proof.auto.host.querySelector('.reactive-inline-image img')?.naturalWidth>0`);
   await evaluate('proof.auto.close()');
   console.log('Automatic image Command-V, managed storage and Undo/Redo: passed',JSON.stringify({liveRemote:!!remoteImageUrl,bytes:autoStored.bytes.length}));
+  // Real OS Primary-Shift-V dispatch, including native pasteAndMatchStyle.
+  // Provider frames are blocked in this routing test; it does not qualify playback.
+  await send('Network.setBlockedURLs',{urls:['*clipboard-probe.invalid*','*youtube-nocookie.com*','*player.vimeo.com*','https://example.org/*']},sessionId);
+  for(const [url,type] of [
+    ['https://youtu.be/M7lc1UVf-VE?si=original','youtube-player-block'],
+    ['https://vimeo.com/76979871?share=copy','vimeo-player-block'],
+    ['https://example.org/page?original=1','iframe-block'],
+    [automaticUrl.match(/\.(png|jpe?g)(?:\?|$)/i)?automaticUrl:'https://example.com/photo.png','image-block'],
+  ]){
+    await evaluate('proof.auto=proof.automatic();true');
+    if(type==='image-block'&&!remoteImageUrl)await evaluate(`proof.auto.editor.assets.remote=(lease,_url,signal)=>proof.auto.editor.assets.stage(lease,new Blob([Uint8Array.from(atob(${JSON.stringify(imageBase64)}),c=>c.charCodeAt(0))],{type:'image/png'}),signal)`);
+    await evaluate(`navigator.clipboard.writeText(${JSON.stringify(url)})`);await key('v',true);
+    await wait(`!!proof.auto.host.querySelector('[data-block-type="${type}"]')`);
+    if(type==='image-block')await wait(`proof.auto.host.querySelector('.reactive-image img')?.naturalWidth>0`);
+    else assert.ok(await evaluate(`!!proof.auto.host.querySelector('[data-block-type="${type}"] iframe')`));
+    if(type==='iframe-block')assert.equal(await evaluate(`proof.auto.host.querySelector('iframe').getBoundingClientRect().height`),600);
+    const source=await evaluate(`Object.values(proof.auto.editor.repository.readState().contents).find(c=>c.viewType===${JSON.stringify(type)}).payload.sourceUrl`);
+    assert.equal(source,url);
+    const native=await evaluate(`JSON.stringify(proof.nativeEnvelope(proof.captureNative(proof.auto.editor.repository.readState(),'auto-doc')))`);assert.ok(native.includes(url));
+    await evaluate('proof.auto.editor.repository.undo()');assert.equal(await evaluate(`!!proof.auto.host.querySelector('[data-block-type="${type}"]')`),false);
+    await evaluate('proof.auto.editor.repository.redo()');assert.ok(await evaluate(`!!proof.auto.host.querySelector('[data-block-type="${type}"]')`));
+    if(type==='image-block')await wait(`proof.auto.host.querySelector('.reactive-image img')?.naturalWidth>0`);
+    await evaluate('proof.auto.close()');
+  }
+  console.log('Resource URL Shift-Command-V: provider frames, 600px iframe, managed ImageBlock, source URL and Undo/Redo passed');
   // Reopen native bytes through the real codec, then resolve the same portable original.
   await evaluate(`proof.reopen(new TextEncoder().encode(${JSON.stringify(imageState)}))`);
-  await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`);
+  try { await wait(`document.querySelector('.reactive-inline-image img')?.naturalWidth===3`); }
+  catch(error) { console.log('Failed requests',failedRequests);console.log('Native reload diagnostics',await evaluate(`({images:[...document.querySelectorAll('img')].map(i=>({html:i.outerHTML,width:i.naturalWidth})),errors:document.body.innerText.slice(-1000)})`)); throw error; }
   assert.deepEqual(errors, []);
   assert.deepEqual(externalRequests, []);
   console.log(JSON.stringify({ browser: (await send('Browser.getVersion')).product, formats, nativeKeyboardCopyPaste: true, plainKeyboardPaste: true, acknowledgedCut: true, workerPasteAndUndo: true, staleWorkerCancelled: true, semanticHtmlRendering: true, htmlWorkerUndo: true, markdownMenuAndOsRead: true, markdownMime: true, markdownWorkerUndo: true, managedImageOsPaste: true, managedImageUndoRedo: true, managedImageNativeReload: true, inertImages: true, externalRequests, errors }, null, 2));

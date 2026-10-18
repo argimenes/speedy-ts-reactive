@@ -3,11 +3,11 @@ import type { BlockViewProps } from '../block-tree/types';
 import { useReactiveView } from '../reactive-editor/context';
 import { passiveVideo, playerUrl } from '../interchange/uri';
 /** Activation belongs to this mounted occurrence only. It is never saved/copied/undone. */
-export function VideoBlockView(props:BlockViewProps) {
+export function VideoBlockView(props:BlockViewProps & { loadOnMount?: boolean }) {
  const {editor,projection}=useReactiveView(),node=()=>projection.state.nodes[props.nodeKey];
  const video=createMemo(()=>passiveVideo(node()?.payload.video));
  const [active,setActive]=createSignal(false);let root!:HTMLDivElement;
- createEffect(()=>{video();setActive(false);});
+ createEffect(()=>{video();setActive(props.loadOnMount ?? false);});
  onMount(()=>{const unregister=editor.mounts.register(props.nodeKey,{root,focusElement:root,inputPolicy:'opaque-widget',focus:()=>root.focus()});onCleanup(unregister);});
  createEffect(()=>{
   if(!active())return;
@@ -19,7 +19,7 @@ export function VideoBlockView(props:BlockViewProps) {
   const visibility=()=>{if(document.hidden)setActive(false);};document.addEventListener('visibilitychange',visibility);hide();
   onCleanup(()=>{observer.disconnect();document.removeEventListener('visibilitychange',visibility);});
  });
- return <div ref={root} tabindex="0" class="abstract-block mutable-video-block" data-runtime-key={props.nodeKey} data-client-id={props.nodeKey} data-block-type="mutable/video-block" style={{margin:'10px 0',padding:'12px',border:'1px solid var(--flint-border,#ddd)'}}>
+ return <div ref={root} tabindex="0" class="abstract-block mutable-video-block" data-runtime-key={props.nodeKey} data-client-id={props.nodeKey} data-block-type={node()?.viewType ?? 'mutable/video-block'} style={{margin:'10px 0',padding:'12px',border:'1px solid var(--flint-border,#ddd)'}}>
   <Show when={video()} fallback={<p>Unsupported video descriptor. Original data retained; no player loaded.</p>}>{v=><>
    <strong>{v().title??`${v().provider==='youtube'?'YouTube':'Vimeo'} video`}</strong>{' '}
    <a href={v().canonicalUrl} target="_blank" rel="noopener noreferrer">Open on {v().provider==='youtube'?'YouTube':'Vimeo'} ↗</a>
