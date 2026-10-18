@@ -192,7 +192,7 @@ export class ResourceBoundaryBookkeeping {
 export function preservesResourceOwnership(state:RepositoryState,ops:readonly RepositoryOperation[]):boolean {
  const created=new Map<string,ContentRecord>();for(const op of ops)if(op.kind==='put-content')created.set(op.record.key,op.record);
  for(const op of ops){
-  if(op.kind==='set-root')return false;
+  if(op.kind==='set-root'||op.kind==='record-batch')return false;
   if(op.kind==='put-content'||op.kind==='remove-content'){
    const key=op.kind==='put-content'?op.record.key:op.key,before=state.contents[key],after=op.kind==='put-content'?op.record:undefined;
    // Existing fast recognizers prove sequences/retained edges; additionally exclude

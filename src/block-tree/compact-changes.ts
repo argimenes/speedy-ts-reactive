@@ -1,3 +1,4 @@
+import { recordOperations } from "./record-batch";
 import { clone } from "./clone";
 import { equal, freeze, type DeepReadonly, type RecordDelta, type RepositoryCommitResult } from "./commit-capture";
 import type { ContentRecord, PlacementRecord, RepositoryOperation, RepositoryState } from "./types";
@@ -67,7 +68,7 @@ export interface PreparedHistoryChanges {
 
 export function prepareHistoryChanges(before: RepositoryState, operations: readonly RepositoryOperation[], final?: RepositoryState): PreparedHistoryChanges {
   const contents = new Map<string, ContentRecord | null>(), placements = new Map<string, PlacementRecord | null>();
-  for (const op of operations) {
+  for (const op of recordOperations(operations)) {
     if (op.kind === "put-content") contents.set(op.record.key, op.record);
     if (op.kind === "remove-content") contents.set(op.key, null);
     if (op.kind === "put-placement") placements.set(op.record.key, op.record);

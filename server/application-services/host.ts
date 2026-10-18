@@ -1,5 +1,6 @@
+import {EncyclopediaService} from '../../src/application-services/encyclopedia-service';
 import {AcademicService} from '../../src/application-services/academic-service';
-import {acquireScholarlyJson} from '../asset-remote.mjs';
+import {acquireScholarlyJson,acquireEncyclopedia} from '../asset-remote.mjs';
 import {randomUUID} from 'node:crypto';
 import {publicationInventory} from './publication-inventory';
 /** Initial Node capability adapter and composition root. Replaceable independently
@@ -43,6 +44,11 @@ export function createApplicationServiceHost(options:{root:string;cavernId:strin
   },
   async verify(asset,signal){signal.throwIfAborted();if(asset.cavernId!==options.cavernId)throw Error('Capture belongs to another Vault');const store=options.assets();if(!store)throw Error('Managed assets unavailable');const original=await store.get(asset.assetId,asset.cavernId);if(original.manifest.mediaType!=='application/json')throw Error('Invalid scholarly capture type');signal.throwIfAborted();}
  }):undefined;
- const service:ApplicationServices={call:(operation,input,signal)=>operation.startsWith('academic.')?(academic?academic.call(operation as any,input as any,signal) as any:Promise.reject(Error('Academic resource loaders are disabled'))):operation.startsWith('publication.')?(publication?publication.call(operation as any,input as any,signal) as any:Promise.reject(Error('Web publishing is disabled'))):preparation.call(operation,input,signal)};
- return {service,router:applicationServiceRouter(service,options.cavernId,enabled,!!academic),executor,async close(){await academic?.close();await preview?.close();await publication?.close();await preparation.close();}};
+ const encyclopedia=options.academicEnabled&&options.academic?new EncyclopediaService({cavernId:options.cavernId,jobs,executor,knowledge:options.academic,uuid:randomUUID,now:()=>new Date().toISOString(),acquire:acquireEncyclopedia,
+  async retain(bytes,signal){signal.throwIfAborted();const store=options.assets();if(!store)throw Error('Managed assets unavailable');const lease=await store.begin();let done=false;
+   try{const asset=await store.stage(lease,Buffer.from(bytes),{mediaType:'application/json'});signal.throwIfAborted();await store.publish(lease);await store.finish(lease,'encyclopedia-capture');done=true;return {kind:'managed' as const,cavernId:options.cavernId,assetId:asset.assetId};}finally{if(!done)await store.abort(lease);}},
+  async original(asset,signal){signal.throwIfAborted();if(asset.cavernId!==options.cavernId)throw Error('Wrong Vault capture');const store=options.assets();if(!store)throw Error('Managed assets unavailable');const original=await store.get(asset.assetId,asset.cavernId);if(original.manifest.mediaType!=='application/json')throw Error('Wrong capture type');signal.throwIfAborted();return new Uint8Array(original.bytes);}
+ }):undefined;
+ const service:ApplicationServices={call:(operation,input,signal)=>operation.startsWith('encyclopedia.')?(encyclopedia?encyclopedia.call(operation as any,input as any,signal) as any:Promise.reject(Error('Academic resource loaders are disabled'))):operation.startsWith('academic.')?(academic?academic.call(operation as any,input as any,signal) as any:Promise.reject(Error('Academic resource loaders are disabled'))):operation.startsWith('publication.')?(publication?publication.call(operation as any,input as any,signal) as any:Promise.reject(Error('Web publishing is disabled'))):preparation.call(operation,input,signal)};
+ return {service,router:applicationServiceRouter(service,options.cavernId,enabled,!!academic),executor,async close(){await encyclopedia?.close();await academic?.close();await preview?.close();await publication?.close();await preparation.close();}};
 }

@@ -101,6 +101,6 @@ describe('academic durable workflow and canonical identities',()=>{
   f.ledger.deliver();expect(f.audit.prepare("SELECT count(*) n FROM AuditEvent WHERE recordType IN ('ExternalIdentity','SourceSnapshot')").get().n).toBe(2);
  });
  it('upgrades schema 2 transactionally without changing existing Entity identities',()=>{
-  const db=new Database(':memory:');try{migrate(db,'mutable',{fresh:true,steps:migrations.mutable.slice(0,2)});db.prepare('INSERT INTO Entity(guid,name,nameKey) VALUES(?,?,?)').run('existing','Name','name');migrate(db,'mutable');expect(validateSchema(db,'mutable').version).toBe(3);expect(db.prepare('SELECT guid FROM Entity').get().guid).toBe('existing');expect(db.pragma('foreign_key_check')).toEqual([]);}finally{db.close();}
+  const db=new Database(':memory:');try{migrate(db,'mutable',{fresh:true,steps:migrations.mutable.slice(0,2)});db.prepare('INSERT INTO Entity(guid,name,nameKey) VALUES(?,?,?)').run('existing','Name','name');migrate(db,'mutable');expect(validateSchema(db,'mutable').version).toBe(migrations.mutable.length);expect(db.prepare('SELECT guid FROM Entity').get().guid).toBe('existing');expect(db.pragma('foreign_key_check')).toEqual([]);}finally{db.close();}
  });
 });

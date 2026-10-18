@@ -1,3 +1,4 @@
+import {WebArticleBlockView} from './web-article-block-view';
 import {CitationBlockView} from './citation-block-view';
 import { VideoBlockView } from './video-block-view';
 import { createComponent } from 'solid-js';
@@ -43,6 +44,7 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
   if (editor.features.documentInterchange) many(editor, ["mutable/video-block"], VideoBlockView, ["media", "opaque-widget", "selectable"]);
   if (editor.features.resourceUrlPaste) many(editor, ["youtube-player-block", "vimeo-player-block"],
     (props: import('../block-tree/types').BlockViewProps) => createComponent(VideoBlockView, { ...props, loadOnMount: true }), ["media", "opaque-widget", "selectable"]);
+  many(editor, ['mutable/web-article-block'], WebArticleBlockView, ['selectable','opaque-widget']);
   many(editor, ['mutable/citation-block'], CitationBlockView, ['selectable','opaque-widget']);
   registerTextSuperpositionCommands(editor);
   editor.registry.register({ type: "workspace-object-bank-block", view: WorkspaceObjectBankView, capabilities: ["container"] });

@@ -96,7 +96,15 @@ export type Destination =
   | { kind: "before"; anchorKey: NodeKey | PlacementKey }
   | { kind: "after"; anchorKey: NodeKey | PlacementKey };
 
+/** One atomic structural edit; null removes a record. Never used for typing. */
+export interface RecordBatch {
+  kind: "record-batch";
+  contents: Record<ContentKey, ContentRecord | null>;
+  placements: Record<PlacementKey, PlacementRecord | null>;
+}
+
 export type RepositoryOperation =
+  | RecordBatch
   | { kind: "put-content"; record: ContentRecord; /** Runtime continuity hint: next property index -> previous index; never document data. */ annotationOrigins?: (number | null)[] }
   | { kind: "remove-content"; key: ContentKey }
   | { kind: "put-placement"; record: PlacementRecord }

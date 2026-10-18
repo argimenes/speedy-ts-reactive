@@ -114,6 +114,9 @@ export class UndoStorage {
     // Match legacy clone isolation before replacing sequence storage. The
     // existing commit planner/inverse generation and their validation stay intact.
     const copied = clone(source);
+    // Bulk imports already own a compact record table. Keep it as one operation;
+    // do not repack every fresh character as an individual history operation.
+    if (copied.every(op => op.kind === "record-batch")) return copied;
     if (Object.keys(copied).some((key, index) => key !== String(index)) || !plainTree(copied)) return copied;
     return copied.map(operation => {
       if (operation.kind !== "put-content" || !stringSequence(operation.record.children) ||

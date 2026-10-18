@@ -1,6 +1,6 @@
 # Mutable Academic Resource Loaders Architecture and Implementation Plan
 
-18 October 2026 · Approved with refinements · Milestone A implemented and submitted for acceptance; B–D not started.
+18 October 2026 · Milestone A accepted (including user-tested live DOI import). Milestone B implemented and submitted for acceptance; C–D not started.
 
 The academic ingestion brief calls for DOI, Wikipedia/Wikidata and IIIF resources to become native, citable Mutable content, with PDF integration. Extend the existing explicit resource-paste operation and application services. Keep canonical identities, captured source versions and document representations separate, so repeated imports reuse knowledge without losing the provenance of each occurrence.
 
@@ -204,7 +204,7 @@ The brief's five acceptance scenarios map to A (one Work/two backlinks), B (revi
 | OAI-PMH | Separate bulk-harvesting work with durable jobs and reviewable limits. |
 | IIIF Content Search | Provider-backed viewer search, separate from the Vault knowledge index. |
 
-Proceed in A–D order, with qualification attached to each implementation increment. Milestone A is implemented and submitted for review in the [Milestone A qualification report](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_A_QUALIFICATION.md). Stop here; Milestones B–D require later authorisation.
+Proceed in A–D order, with qualification attached to each implementation increment. Milestone A and its real DOI import have been accepted. Milestone B is submitted in the [Milestone B qualification report](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_B_QUALIFICATION.md). Stop after B; Milestones C–D require later authorisation.
 
 ## 13. Approved refinements and Milestone A boundary
 
@@ -217,3 +217,42 @@ The future ResourceAnchor direction is a discriminated union of text ranges, can
 Current knowledge-index standoff segments and ClaimEvidence are text-oriented. Future spatial/temporal indexing needs explicit typed projections with source-version checks, not invented cell positions. Review this boundary before Milestone C. Milestone A adds no unused anchor implementation and does not replace standoff properties.
 
 Milestone A qualification must distinguish automated fixtures, actual browser checks, live provider probes and untested scenarios. Include concurrent DOI deduplication, exact identifier preservation, interrupted canonical commits, offline reopening, stale destinations, cancellation, one-step Undo/Redo, typing isolation and derived-index rebuild. Preserve source snapshots and canonical identity through package extraction; preserve existing package behaviour and disclose compatibility limits.
+
+## 14. Milestone B execution decisions
+
+Wikipedia resource paste accepts language-site article URLs and explicit `oldid` URLs. Resolve redirects and page identity through the Action API, then parse that exact revision with `oldid`; verify returned page/revision identity. Retain both original API responses as immutable assets. Parser output is a capture at retrieval time: transcluded templates can evolve independently of the pinned article revision. Preserve the returned wikitext as part of the original response, without claiming historical template reconstruction.
+
+Use separate accepted `wikipedia` (site/page ID) and `wikidata` (QID) identities. The article has its own canonical WikipediaArticle Entity/resource; its subject is a separate Entity, shared across language editions only through the accepted QID. Page-properties QID association is observed at capture time, not represented as a historically revisioned assertion. Missing QIDs leave the article without an invented subject. Never merge on names or titles.
+
+WebArticleBlock retains an independent Block identity, a pinned capture descriptor and a sanitized offline display projection. Reuse the script-free source preview and semantic HTML converter. Explicit whole-Block conversion creates native editable text with per-Block source/snapshot provenance and exact Undo restoration; it does not rewrite captured source. No preview regeneration or acquisition occurs on ordinary typing.
+
+Enrichment is a separate explicit action against one QID. Capture one bounded Wikidata entity response, retain its revision and original bytes, and offer at most 50 statements from a fixed useful property set (instance/subclass, occupation, citizenship, birth/death dates and places, inception, official website). No related-entity graph acquisition. Preserve rank, unknown/no-value states, qualifiers and references. Unsupported values remain inert in the capture with diagnostics.
+
+Review is explicit per statement, with no preselected acceptance. Accepted statements create source-imported Claims and a subject participant through the existing canonical ledger/model. Resource-specific typed values, qualifiers and references live in versioned Claim attributes; do not invent Entity or text-range coordinates for scalar qualifiers. Review receipts bind snapshot and statement identity. Rejecting records a review decision without creating a Claim. Existing authored/imported facts remain untouched; conflicting statements coexist with their provenance and review status. A subsequent source revision requires a fresh review.
+
+Reuse durable Cavern job storage, bounded host workers, protected acquisition and existing editor insertion/history. Keep the existing academic feature flag coherent across A/B. Extend canonical/package closure only as necessary for article captures and review provenance. The existing snapshot-JSON package-original limitation remains visible; no Milestone C/D or general interchange redesign is included.
+
+### Implemented B contracts and compatibility
+
+The typed operations are `encyclopedia.import`, `encyclopedia.enrich`, `encyclopedia.inspect`, `encyclopedia.resume` and `encyclopedia.review`. Import/enrichment use existing filesystem journals with an `encyclopedia` preparation discriminator; review uses the canonical transaction/outbox receipt and re-reads the retained snapshot before accepting a decision. The browser cannot submit its own statement body as canonical truth. Generic semantic/entity authoring cannot dispatch these internal ingestion operations.
+
+Schema migration 0004 broadens ExternalIdentity's accepted namespaces to DOI, Wikipedia and Wikidata while preserving existing rows. SourceSnapshot gains a unique identity/revision capture key. SourceClaimReview records one immutable decision per snapshot/statement, with an optional Claim link. Existing Claim/ClaimParticipant records hold accepted assertions and their subject; versioned Claim attributes retain the source snapshot/resource/revision, original statement ID, rank, typed value, qualifiers/order and references. No text ClaimEvidence coordinates or related-object Entities are fabricated. These scalar/resource qualifiers are preserved data, not newly indexed ClaimQualifier Entity relationships. Re-reviewing a different decision requires later explicit review-maintenance work; B does not silently reverse an accepted/rejected decision.
+
+The initial property set is P31, P279, P106, P27, P569, P570, P19, P20, P571 and P856. Review displays English labels with `mul` fallback, plus the original QID. It preserves full language metadata in original bytes but does not create canonical aliases or overwrite existing Entity labels. Supported value carriers are item IDs, strings/external IDs/URLs, time, quantity, monolingual text and explicit somevalue/novalue states. Unsupported carriers in a main value, qualifier or reference disable acceptance for that statement; they remain in the immutable original. Statements over 12,000 UTF-8 bytes are also deferred without truncating an accepted Claim.
+
+One active encyclopedia operation and at most 16 accepted in-flight operations per service instance use the existing shared worker executor. Each response is capped at 2 MiB; article capture uses two responses, enrichment one. The active workflow deadline is 60 seconds, each network deadline 15 seconds, and worker deadline 30 seconds. Up to 50 statements are offered; existing subject-claim summaries are limited to 100 visible rows and 2,000 expression characters each. No automatic graph or media retrieval occurs. Aggregate cross-process/multi-Vault rate limiting remains future work.
+
+WebArticleBlock uses the existing script-free iframe/CSP and bounded CSS sanitizer. Stored display text is sanitized again in a view-owned worker on reopening; this creates no history or document save. Native conversion reuses whole-source-Block conversion and records provenance on resulting Blocks. This is an editable derivative with native standoff coordinates, not a mapping back into Wikipedia wikitext, historical templates or a PDF/IIIF coordinate system. Internal article anchors are inert, external links are listed separately (up to 100), and images/media remain text placeholders. Very large/complex conversions can hit existing fragment limits and fail without replacing the article.
+
+Reopening needs only saved display data. A deliberate new URL import or enrichment acquisition requests current provider data; existing Blocks remain pinned. A completed durable job can be replayed offline using retained originals. Wikipedia diff/edit/history views and non-main-namespace pages are outside B's article loader. Oldid captures pin the article revision, while current page-property association and template expansion limitations remain disclosed.
+
+Package extraction follows reviewed Claim → review receipt → snapshot → accepted identity/entity closure. It preserves canonical rows without activating archived assertions. Original JSON binaries remain outside the current image-only package profile and are reported as omitted. B does not claim complete cross-Vault source-original reconstruction or automatic publishing of these new Blocks.
+
+
+### Bulk native conversion correction — 18 October 2026
+
+Native article conversion, prepared Block-fragment insertion and Mutable text-fragment paste now publish a `record-batch`: one structural repository operation containing the changed content/placement tables. Source conversion replaces the source leaf directly, rather than inserting the derivative and then cloning and pruning the expanded document to remove the source. Ordinary typing, cut and other existing editing commands retain their existing command paths.
+
+The repository applies and validates the batch atomically. Undo stores a single inverse batch; Redo reuses the same authored identities. Identity/ownership validation, changed-record notifications and full/compact history capture inspect a streaming record view without allocating a per-character operation array. Existing durable history and native file formats are unchanged: their exact record data remains necessary for reconstruction. This is not constant-time import—cell construction, validation, rendering and serialization still scale with content size. Cancellation/stale-destination checks remain before publication, and no document is saved automatically.
+
+See the Douglas Adams regression section of the Milestone B qualification report for the reproduced failure, large-article browser exercise, record-count assertions and matched typing measurements. This correction does not authorise Milestone C.

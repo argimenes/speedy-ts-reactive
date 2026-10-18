@@ -1,3 +1,4 @@
+import { recordOperations } from "./record-batch";
 import {documentTabParentFor} from './document-tab-plan';
 import { batch } from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
@@ -27,7 +28,7 @@ import type {
 function annotationOrigins(operations: RepositoryOperation[]) {
   const hints = new Map<ContentKey, readonly (number | null)[]>();
   const touched=new Set<string>();
-  for (const op of operations) if (op.kind === 'put-content') {
+  for (const op of recordOperations(operations)) if (op.kind === 'put-content') {
     const previous=hints.get(op.record.key);
     if(op.annotationOrigins)hints.set(op.record.key,op.annotationOrigins.map(i=>i===null?null:touched.has(op.record.key)?previous?.[i]??null:i));
     else hints.delete(op.record.key);
@@ -45,6 +46,20 @@ export class ModelInvariantError extends Error {
 
 function applyOperation(state: RepositoryState, operation: RepositoryOperation) {
   switch (operation.kind) {
+    case "record-batch": {
+      const owned = clone(operation);
+      for (const key in owned.contents) {
+        const record = owned.contents[key];
+        if (record && record.key !== key) throw new ModelInvariantError("Bulk content key mismatch");
+        if (record) state.contents[key] = record; else delete state.contents[key];
+      }
+      for (const key in owned.placements) {
+        const record = owned.placements[key];
+        if (record && record.key !== key) throw new ModelInvariantError("Bulk placement key mismatch");
+        if (record) state.placements[key] = record; else delete state.placements[key];
+      }
+      return;
+    }
     case "put-content":
       state.contents[operation.record.key] = clone(operation.record);
       return;
@@ -64,6 +79,12 @@ function applyOperation(state: RepositoryState, operation: RepositoryOperation) 
 
 function inverseFor(state: RepositoryState, operation: RepositoryOperation): RepositoryOperation {
   switch (operation.kind) {
+    case "record-batch": {
+      const inverse: Extract<RepositoryOperation, {kind: "record-batch"}> = { kind: "record-batch", contents: {}, placements: {} };
+      for (const key in operation.contents) inverse.contents[key] = state.contents[key] ?? null;
+      for (const key in operation.placements) inverse.placements[key] = state.placements[key] ?? null;
+      return clone(inverse);
+    }
     case "put-content": {
       const previous = state.contents[operation.record.key];
       return previous
@@ -406,18 +427,19 @@ export class CanonicalRepository {
     this.assertNotCaptureCallback();
     if (!operations.length) return;
     const placementDelta = this.placementIdentity.validateCommit(operations);
-    const inlineOwner = inlineOwnerFor(this.readState(), operations, this.references);
+    const bulk = operations.some(op => op.kind === "record-batch");
+    const inlineOwner = !bulk && inlineOwnerFor(this.readState(), operations, this.references);
     if (inlineOwner) {
       this.commitInline(label, operations, inlineOwner, recordHistory, metadata, undefined, undefined, placementDelta);
       return;
     }
-    const split = splitChangeFor(this.readState(), operations, this.references);
+    const split = bulk ? undefined : splitChangeFor(this.readState(), operations, this.references);
     if (split) {
       this.commitInline(label, operations, undefined, recordHistory, metadata, split, undefined, placementDelta);
       return;
     }
-    const emptyParagraph = emptyParagraphChangeFor(this.readState(), operations, this.references);
-    const childrenOwner = emptyParagraph?.parent ?? documentTabParentFor(this.readState(), operations, this.references);
+    const emptyParagraph = bulk ? undefined : emptyParagraphChangeFor(this.readState(), operations, this.references);
+    const childrenOwner = emptyParagraph?.parent ?? (bulk ? undefined : documentTabParentFor(this.readState(), operations, this.references));
     if (childrenOwner) {
       this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner, placementDelta, emptyParagraph);
       return;
@@ -441,7 +463,7 @@ export class CanonicalRepository {
     const capture = this.prepareCapture(current, operations, metadata, next);
     const commitId = createCommitId();
     const previousContents = new Map<ContentKey, ContentRecord | undefined>();
-    for (const operation of operations) {
+    for (const operation of recordOperations(operations)) {
       if (operation.kind === "put-content" || operation.kind === "remove-content") {
         const key = operation.kind === "put-content" ? operation.record.key : operation.key;
         previousContents.set(key, current.contents[key] ? clone(current.contents[key]) : undefined);
@@ -457,13 +479,13 @@ export class CanonicalRepository {
     const appendedChildrenOwner = parent?.viewType === 'workspace-object-bank-block' && updated &&
       structure(parent) === structure(updated) && updated.children.length > parent.children.length &&
       parent.children.every((key,i) => updated.children[i] === key) &&
-      operations.every(op => op.kind === 'put-content' || op.kind === 'put-placement' && !current.placements[op.record.key])
+      (() => { for (const op of recordOperations(operations)) if (!(op.kind === 'put-content' || op.kind === 'put-placement' && !current.placements[op.record.key])) return false; return true; })()
       ? parent.key : undefined;
     batch(() => {
       // Publish only changed records. Reconciling the entire graph recursively
       // unwraps every existing Cell even when opening a tiny new Document.
       const contents = new Set<string>(), placements = new Set<string>();
-      for (const operation of operations) {
+      for (const operation of recordOperations(operations)) {
         if (operation.kind === 'put-content' || operation.kind === 'remove-content') contents.add(operation.kind === 'put-content' ? operation.record.key : operation.key);
         if (operation.kind === 'put-placement' || operation.kind === 'remove-placement') placements.add(operation.kind === 'put-placement' ? operation.record.key : operation.key);
       }

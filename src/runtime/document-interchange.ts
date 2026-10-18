@@ -172,20 +172,19 @@ export class DocumentInterchange {
  async convertSourceBlock(key:string){return this.task(async signal=>{
   const node=this.editor.node(key),mount=this.editor.mounts.get(key);if(!node||mount?.composing)throw Error('Finish source editing before conversion.');
   const state=this.editor.repository.readState(),content=state.contents[node.contentKey],placement=state.placements[node.placementKey];
-  const format=sourceFormat(content.viewType,content.payload);
+  const article=content.viewType==='mutable/web-article-block';
+  const format=article?'html':sourceFormat(content.viewType,content.payload);
   if(placement.kind!=='owned'||placement.externalReference||placement.resolvedReference||Object.values(state.placements).filter(p=>p.contentKey===content.key).length!==1)throw Error('Shared or referenced source Blocks must be detached before conversion.');
   if(content.children.length||Object.keys(content.ownedRelations).length||Object.keys(content.opaqueRelations).length)throw Error('Move child and related Blocks outside the source Block before conversion.');
   const parent=Object.values(state.contents).find(c=>c.children.includes(placement.key));if(!parent)throw Error('Only a whole source Block in an ordinary child slot can be converted.');
   const t=this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);t.viewId=node.viewId;
   const owner=resourceOwner(state,node.contentKey);if(owner)t.scope.resourceId=resourceSource(owner)?.resourceId;
   this.check(t);const converted=await runInterchange({kind:'convert',source:String(content.payload.text),format},signal);this.check(t);
-  const losses=[diagnostic('source-conversion','The source Block becomes native Ink. Source syntax, source metadata and any Block or inactive annotations are replaced; Undo restores the original Block exactly.'),...converted.diagnostics];
+  if(article){for(const block of converted.fragment.blocks)block.data={...block.data,metadata:{...((block.data.metadata as any)??{}),provenance:(content.payload.metadata as any)?.provenance}};}
+  const losses=[diagnostic('source-conversion',article?'The captured article becomes native Ink with retained source/snapshot provenance. Images and active content remain omitted. Undo restores the captured article exactly.':'The source Block becomes native Ink. Source syntax, source metadata and any Block or inactive annotations are replaced; Undo restores the original Block exactly.'),...converted.diagnostics];
   await this.confirm(losses);this.check(t);const admitted=await this.admit(converted.fragment,[],t,signal);
   const native=await runInterchange({kind:'materialize',fragment:admitted.fragment,scope:t.scope,assets:admitted.admitted},signal);this.check(t);
-  let roots:string[]=[];
-  this.editor.commands.transaction('Convert source Block to Mutable Ink',()=>{
-   roots=this.editor.commands.insertFragment(native,{kind:'before',anchorKey:placement.key});this.editor.commands.remove(placement.key);
-  },{commandId:'interchange.convert-source-block',subjects:[]});
+  const roots=this.editor.commands.replaceSourceWithFragment(native,placement.key);
   this.committed=true;this.status[1]('Converted the whole source Block. Undo restores the original source, identity and metadata.');
   queueMicrotask(()=>{if(!this.alive)return;const next=this.editor.nodeForPlacementInView(roots[0],node.viewId);if(next)this.editor.focus.request(next.key,{reason:'context-menu',caret:'start'});});
  });}

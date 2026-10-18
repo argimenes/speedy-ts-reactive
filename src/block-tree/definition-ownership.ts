@@ -1,3 +1,4 @@
+import { recordOperations } from "./record-batch";
 import { clone } from "./clone";
 import { isAuthoredBlock } from "./identity";
 import type { ContentRecord, Location, RepositoryOperation, RepositoryState } from "./types";
@@ -22,12 +23,12 @@ export function normalizeDefinitionOwnership(state: RepositoryState, owners: Rea
  * the original command, so exact capture and ordinary undo see the same effects.
  * No repository scan is needed for ordinary inline edits. */
 export function ownNewDefinitions(state: RepositoryState, operations: RepositoryOperation[], locationOf: (key: string) => Location | undefined): RepositoryOperation[] {
-  const fresh = operations.filter((op): op is Extract<RepositoryOperation, {kind: "put-content"}> =>
-    op.kind === "put-content" && !state.contents[op.record.key] && isAuthoredBlock(op.record));
+  const fresh: ContentRecord[] = [];
+  for (const op of recordOperations(operations)) if (op.kind === "put-content" && !state.contents[op.record.key] && isAuthoredBlock(op.record)) fresh.push(op.record);
   if (!fresh.length) return operations;
   const contents = new Map<string, ContentRecord>();
   const placements = new Map<string, string>();
-  for (const op of operations) {
+  for (const op of recordOperations(operations)) {
     if (op.kind === "put-content") contents.set(op.record.key, op.record);
     if (op.kind === "put-placement" && !op.record.externalReference) placements.set(op.record.key, op.record.contentKey);
   }
@@ -58,12 +59,18 @@ export function ownNewDefinitions(state: RepositoryState, operations: Repository
     if (candidates.size > 1) throw new Error("Ambiguous ownership of new definition");
     return candidates.values().next().value;
   };
-  const owners = new Map(fresh.map(op => [op.record.key, ownerFor(op.record.key)]));
+  const owners = new Map(fresh.map(record => [record.key, ownerFor(record.key)]));
+  const owned = (record: ContentRecord): ContentRecord => {
+    if (!owners.has(record.key)) return record;
+    const next = { ...record }, owner = owners.get(record.key);
+    if (owner) next.definitionOwnerKey = owner; else delete next.definitionOwnerKey;
+    return next;
+  };
   return operations.map(op => {
-    if (op.kind !== "put-content" || !owners.has(op.record.key)) return op;
-    const record = { ...op.record }, owner = owners.get(record.key);
-    if (owner) record.definitionOwnerKey = owner;
-    else delete record.definitionOwnerKey;
-    return { ...op, record };
+    if (op.kind === "put-content") return { ...op, record: owned(op.record) };
+    if (op.kind !== "record-batch") return op;
+    const contents = { ...op.contents };
+    for (const record of fresh) if (contents[record.key]) contents[record.key] = owned(contents[record.key]!);
+    return { ...op, contents };
   });
 }

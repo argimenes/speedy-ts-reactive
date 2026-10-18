@@ -473,3 +473,14 @@ describe('Academic citation paste',()=>{
   await vi.waitFor(()=>expect(s.editor.clipboard.message()).not.toBe('Resolving DOI…'));expect(s.host.querySelector('.mutable-citation-block')).toBeNull();
  });
 });
+
+describe('Wikipedia resource paste',()=>{
+ const capture=()=>({snapshot:{version:1,kind:'article',entityId:crypto.randomUUID(),subjectId:crypto.randomUUID(),snapshotId:crypto.randomUUID(),resourceId:crypto.randomUUID(),identityId:crypto.randomUUID(),revision:123,site:'en.wikipedia.org',title:'Captured article',qid:'Q42',assets:[{kind:'managed',cavernId:'cavern',assetId:'sha256:'+'a'.repeat(64)}]},projection:{title:'Captured article',html:'<p>Readable text.</p>',links:[],diagnostics:[],permalink:'https://en.wikipedia.org/w/index.php?oldid=123'}});
+ it('inserts one independent native article with provenance and exact Undo/Redo',async()=>{
+  const value=capture(),request=vi.fn(async()=>new Response(JSON.stringify({Success:true,Data:value}),{headers:{'Content-Type':'application/json'}}));vi.stubGlobal('fetch',request);const s=setup(),target=s.select('b',3),before=s.editor.encodeDocument();target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',metaKey:true,shiftKey:true,bubbles:true}));s.dispatch('paste',target.firstElementChild??target,{'text/plain':'https://en.wikipedia.org/wiki/A?history=1'});await vi.waitFor(()=>expect(s.host.querySelector('.mutable-web-article')).toBeTruthy());const b=s.editor.encodeDocument().children!.find(b=>b.type==='mutable/web-article-block')!;expect(b.sourceUrl).toBe('https://en.wikipedia.org/wiki/A?history=1');expect(b.blockProperties).toHaveLength(2);s.editor.repository.undo();expect(s.editor.encodeDocument()).toEqual(before);s.editor.repository.redo();expect(request).toHaveBeenCalledTimes(1);
+ });
+ it.each(['cancel','typing'])('prevents late article insertion after %s',async action=>{
+  let resolve!:(r:Response)=>void;vi.stubGlobal('fetch',vi.fn(()=>new Promise(r=>resolve=r)));const s=setup(),target=s.select('b',0);target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',ctrlKey:true,shiftKey:true,bubbles:true}));s.dispatch('paste',target,{'text/plain':'https://en.wikipedia.org/wiki/A'});await tick();if(action==='cancel')s.editor.clipboard.cancel();else s.editor.commands.replaceInlineRange(s.node('b').key,0,0,'!');resolve(new Response(JSON.stringify({Success:true,Data:capture()}),{headers:{'Content-Type':'application/json'}}));await vi.waitFor(()=>expect(s.editor.clipboard.message()).not.toBe('Capturing Wikipedia revision…'));expect(s.host.querySelector('.mutable-web-article')).toBeNull();
+ });
+ it('keeps plain Wikipedia URL paste network-free',()=>{const request=vi.fn();vi.stubGlobal('fetch',request);const s=setup();s.dispatch('paste',s.select('b',0),{'text/plain':'https://en.wikipedia.org/wiki/A'});expect(request).not.toHaveBeenCalled();expect(s.host.querySelector('.mutable-web-article')).toBeNull();});
+});

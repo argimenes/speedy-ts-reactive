@@ -1,3 +1,4 @@
+import { diffRecordBatch } from "./record-batch";
 import { conversionSource } from '../interchange/conversion';
 import { mapStandoffPropertiesForReplacement, pointAffinity } from '../interchange/ranges';
 import { planFragmentInsertion } from '../interchange/insertion';
@@ -59,7 +60,13 @@ export class TreeCommands {
       state = result.state; results.push({ placementKey: result.placementKey, caret: result.caret });
     }
     this.pruneUnreachable(state);
-    this.publish(cut ? 'Cut selected text' : operation === 'convert' ? 'Convert source to Mutable Ink' : operation === 'import' ? 'Insert external content' : 'Paste Mutable content', this.diff(before, state), {
+    const changes = cut ? this.diff(before, state) : [diffRecordBatch(before, state)];
+    if (!cut) {
+      const bulk = changes[0] as Extract<RepositoryOperation, {kind: "record-batch"}>;
+      const any = (records: object) => { for (const _ in records) return true; return false; };
+      if (!any(bulk.contents) && !any(bulk.placements)) return results;
+    }
+    this.publish(cut ? 'Cut selected text' : operation === 'convert' ? 'Convert source to Mutable Ink' : operation === 'import' ? 'Insert external content' : 'Paste Mutable content', changes, {
       commandId: cut ? 'selection.cut' : operation === 'convert' ? 'interchange.convert' : operation === 'import' ? 'interchange.insert' : 'selection.paste',
       subjects: results.map(r => this.subject(state, r.placementKey)),
       ...(operation === "paste" ? {clipboard: { token: crypto.randomUUID(), action: cut ? 'cut' as const : 'paste' as const, preservedIds: false }} : {}),
@@ -149,19 +156,31 @@ export class TreeCommands {
 
   private publish(label: string, operations: RepositoryOperation[], descriptor?: CommandDescriptor): void {
     if (!operations.length) return;
+    let draftLocations: ReturnType<typeof deriveLocations> | undefined;
     operations = ownNewDefinitions(this.pending?.draft ?? this.repository.readState(), operations,
-      key => this.pending ? deriveLocations(this.pending.draft).get(key) : this.repository.locationOf(key));
+      key => this.pending ? (draftLocations ??= deriveLocations(this.pending.draft)).get(key) : this.repository.locationOf(key));
     const current = this.pending?.draft ?? this.repository.readState();
-    if (this.repository.hasSemanticPlacements() || operations.some(op => op.kind === "put-placement" && op.record.placementId !== undefined)) {
-      operations = operations.map(op => op.kind === "put-placement" && op.record.kind !== "inline" &&
-        !current.placements[op.record.key] && op.record.placementId === undefined
-        ? { ...op, record: { ...op.record, placementId: createBlockId() } } : op);
+    if (this.repository.hasSemanticPlacements() || operations.some(op => op.kind === "record-batch" || op.kind === "put-placement" && op.record.placementId !== undefined)) {
+      operations = operations.map(op => {
+        if (op.kind === "record-batch") {
+          const placements = { ...op.placements };
+          for (const key in placements) {
+            const p = placements[key];
+            if (p && p.kind !== "inline" && !current.placements[key] && p.placementId === undefined) placements[key] = { ...p, placementId: createBlockId() };
+          }
+          return { ...op, placements };
+        }
+        return op.kind === "put-placement" && op.record.kind !== "inline" && !current.placements[op.record.key] && op.record.placementId === undefined
+          ? { ...op, record: { ...op.record, placementId: createBlockId() } } : op;
+      });
     }
     const description = descriptor ?? { commandId: "tree.command", subjects: [] };
     if (this.pending) {
       const { next } = planOperations(this.pending.draft, operations);
       this.pending.draft = next;
-      this.pending.operations.push(...operations);
+      // Legacy structural commands can still emit many record changes. Never
+      // make transaction assembly depend on the engine's argument-count limit.
+      for (const operation of operations) this.pending.operations.push(operation);
       this.pending.commands.push(clone(description));
       return;
     }
@@ -321,13 +340,33 @@ export class TreeCommands {
   }
 
   insertFragment(fragment: BlockFragment, destination: Destination, descriptor?: CommandDescriptor): PlacementKey[] {
+    return this.insertPreparedFragment(fragment, destination, descriptor);
+  }
+
+  /** Replace an unshared source leaf and insert its native derivative in one
+   * structural commit. Do not insert then clone/scan the expanded document to
+   * remove the old source. Undo retains the exact source and prepared subtree. */
+  replaceSourceWithFragment(fragment: BlockFragment, key: NodeKey | PlacementKey): PlacementKey[] {
+    const state = this.pending?.draft ?? this.repository.readState();
+    const pk = this.placementKey(key, state), p = state.placements[pk], c = state.contents[p.contentKey];
+    if (p.kind !== "owned" || p.externalReference || p.resolvedReference || p.resourceRegistration ||
+      c.children.length || c.inlineContent.length || Object.keys(c.ownedRelations).length || Object.keys(c.opaqueRelations).length ||
+      Object.values(state.placements).filter(edge => edge.contentKey === c.key).length !== 1) {
+      throw new TreeCommandError("Conversion requires an unshared source leaf in an ordinary child slot");
+    }
+    return this.insertPreparedFragment(fragment, {kind: "before", anchorKey: pk}, {
+      commandId: "interchange.convert-source-block", subjects: [this.subject(state, pk)],
+    }, pk);
+  }
+
+  private insertPreparedFragment(fragment: BlockFragment, destination: Destination, descriptor?: CommandDescriptor, replaceKey?: PlacementKey): PlacementKey[] {
     fragment = clone(fragment);
     prepareNewBlockIdentities(Object.values(fragment.state.contents));
-    const state = this.state();
+    const state = this.pending?.draft ?? this.repository.readState();
     const target = this.resolveInsertion(destination, undefined, state);
     if (Object.keys(fragment.state.contents).some(key => state.contents[key]) || Object.keys(fragment.state.placements).some(key => state.placements[key])) throw new TreeCommandError("Clipboard keys collide with existing Blocks");
     const children = [...target.children];
-    children.splice(target.index, 0, ...fragment.roots);
+    children.splice(target.index, replaceKey ? 1 : 0, ...fragment.roots);
     const owner = this.updatedChildren(target.owner, children);
     const extra: RepositoryOperation[] = [];
     if (Object.keys(fragment.linkedAnnotations ?? {}).length) {
@@ -344,12 +383,18 @@ export class TreeCommands {
         extra.push({ kind: "put-content", record: root });
       }
     }
-    this.publish("Paste Blocks", [
-      ...Object.values(fragment.state.contents).map(record => ({ kind: "put-content" as const, record: clone(record) })),
-      ...Object.values(fragment.state.placements).map(record => ({ kind: "put-placement" as const, record: clone(record) })),
-      { kind: "put-content", record: owner },
-      ...extra,
-    ], { commandId: "tree.insertFragment", subjects: fragment.roots.map(key => this.subject(fragment.state, key)),
+    const changes: Extract<RepositoryOperation, {kind: "record-batch"}> = {
+      kind: "record-batch", contents: { ...fragment.state.contents, [owner.key]: owner }, placements: { ...fragment.state.placements },
+    };
+    if (replaceKey) {
+      changes.placements[replaceKey] = null;
+      const removed = state.contents[state.placements[replaceKey].contentKey];
+      // Retained definitions keep their existing lifetime semantics.
+      if (!removed.definitionOwnerKey) changes.contents[removed.key] = null;
+    }
+    for (const op of extra) if (op.kind === "put-content") changes.contents[op.record.key] = op.record;
+    this.publish(replaceKey ? "Convert source Block to Mutable Ink" : "Paste Blocks", [changes], {
+      commandId: "tree.insertFragment", subjects: fragment.roots.map(key => this.subject(fragment.state, key)),
       ...(fragment.copyIdentities?.length ? { relation: { kind: "copy" as const, pairs: fragment.copyIdentities } } : {}), ...descriptor });
     return [...fragment.roots];
   }

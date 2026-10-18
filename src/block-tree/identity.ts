@@ -1,3 +1,4 @@
+import { recordOperations } from "./record-batch";
 import { clone } from "./clone";
 import { createBlockId } from "./ids";
 import type { BlockId, ContentKey, ContentRecord, RepositoryOperation, RepositoryState } from "./types";
@@ -93,7 +94,7 @@ export class BlockIdentityIndex {
 
   validateCommit(operations: readonly RepositoryOperation[]): IdentityIndexDelta {
     const final = new Map<ContentKey, ContentRecord | undefined>();
-    for (const operation of operations) {
+    for (const operation of recordOperations(operations)) {
       if (operation.kind === "put-content") final.set(operation.record.key, operation.record);
       else if (operation.kind === "remove-content") final.set(operation.key, undefined);
     }
@@ -142,7 +143,7 @@ export class PlacementIdentityIndex {
   get enabled(): boolean { return this.byId.size > 0; }
   validateCommit(operations: readonly RepositoryOperation[]): PlacementIdentityDelta {
     const final = new Map<string, RepositoryState["placements"][string] | undefined>();
-    for (const op of operations) {
+    for (const op of recordOperations(operations)) {
       if (op.kind === "put-placement") final.set(op.record.key, op.record);
       if (op.kind === "remove-placement") final.set(op.key, undefined);
     }

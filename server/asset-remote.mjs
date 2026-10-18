@@ -78,3 +78,20 @@ export async function acquireRemoteText(value, format, signal, dependencies = {}
   if(format==='markdown'&&/^\s*(?:<!doctype\s+html|<html\b)/i.test(source))throw Error('The response is HTML, not Markdown.');
   return {source,format,url:result.url,mediaType,byteHash:createHash('sha256').update(result.bytes).digest('hex')};
 }
+
+/** Fixed Wikimedia API operations, not an arbitrary proxy. One resource, no graph traversal. */
+export async function acquireEncyclopedia(source,signal,dependencies={}) {
+ const get=async url=>{const r=await acquire(url,signal,dependencies,{accept:'application/json',bytes:2*1024*1024});if(!/^application\/json(?:;|$)/i.test(String(r.mediaType)))throw Error('Wikimedia response is not JSON');return {bytes:new Uint8Array(r.bytes),endpoint:r.url};};
+ if(typeof source==='string'){
+  if(!/^Q[1-9]\d{0,14}$/.test(source))throw Error('Invalid Wikidata identity');
+  const r=await get(`https://www.wikidata.org/wiki/Special:EntityData/${source}.json`);return {endpoint:r.endpoint,responses:[r.bytes]};
+ }
+ if(!source||!/^[a-z][a-z0-9-]{0,30}\.wikipedia\.org$/.test(source.site)||source.oldid!==undefined&&(!Number.isSafeInteger(source.oldid)||source.oldid<1))throw Error('Invalid Wikipedia source');
+ const api=params=>`https://${source.site}/w/api.php?${new URLSearchParams({format:'json',formatversion:'2',...params})}`;
+ if(!source.oldid&&(typeof source.title!=='string'||!source.title||source.title.length>512))throw Error('Invalid Wikipedia title');
+ const first=await get(api({action:'query',prop:'revisions|pageprops',rvprop:'ids|timestamp',...(source.oldid?{revids:String(source.oldid)}:{titles:source.title,redirects:'1'})}));
+ const page=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(first.bytes)).query?.pages?.[0],revision=page?.revisions?.[0]?.revid;
+ if(page?.ns!==0||page?.missing||!Number.isSafeInteger(revision)||revision<1||source.oldid&&source.oldid!==revision)throw Error('Wikipedia article/revision unavailable');
+ const second=await get(api({action:'parse',oldid:String(revision),prop:'text|wikitext|revid',disableeditsection:'1'}));
+ return {endpoint:second.endpoint,responses:[first.bytes,second.bytes]};
+}

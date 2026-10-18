@@ -19,7 +19,7 @@ export function inlineOwnerFor(
   const placements = new Map<string, RepositoryOperation>();
   let owner: ContentRecord | undefined;
   for (const operation of operations) {
-    if (operation.kind === "set-root") return;
+    if (operation.kind === "set-root" || operation.kind === "record-batch") return;
     const key = "record" in operation ? operation.record.key : operation.key;
     const map = operation.kind.endsWith("content") ? contents : placements;
     if (map.has(key)) return;

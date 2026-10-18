@@ -1,3 +1,4 @@
+import {articleProjection,wikidataProjection} from '../../src/interchange/encyclopedia-projection';
 import {normalizeScholarly} from '../../src/interchange/scholarly';
 import {createHash} from 'node:crypto';
 import {publicRoute} from '../../src/publication/directory';
@@ -12,7 +13,7 @@ import {publicProjection} from '../../src/publication/projection';
 import {zipSync} from 'fflate';
 parentPort!.once('message',async(task:ExecutionTask)=>{
  try {
-  const value=task.kind==='academic-normalize'?{kind:'academic-normalize',metadata:normalizeScholarly(task.provider,task.doi,task.bytes)}:task.kind==='publication-project'?publicProjection(task.native,task.profile,task.cavernId,task.directory,id=>'b-'+createHash('sha256').update((task.directory?.namespace??task.namespace??'')+'\0'+id).digest('hex').slice(0,24),task.research):
+  const value=task.kind==='encyclopedia-normalize'?(typeof task.source==='string'?wikidataProjection(task.source,task.responses[0]):articleProjection(task.source,task.responses[0],task.responses[1])):task.kind==='academic-normalize'?{kind:'academic-normalize',metadata:normalizeScholarly(task.provider,task.doi,task.bytes)}:task.kind==='publication-project'?publicProjection(task.native,task.profile,task.cavernId,task.directory,id=>'b-'+createHash('sha256').update((task.directory?.namespace??task.namespace??'')+'\0'+id).digest('hex').slice(0,24),task.research):
    task.kind==='publication-inspect'?inspectResearch(task.native,task.profile,task.cavernId,task.blockId):
    task.kind==='publication-zip'?{bytes:publicationZip(task.members)}:
    task.kind==='convert'?{kind:'convert',...convertSource(task.source,task.format)}:

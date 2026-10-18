@@ -72,3 +72,14 @@ test('scholarly acquisition fixes provider endpoints and preserves remote securi
  for(const response of [{status:302,headers:{location:'https://private.example/x'}},{headers:{'content-type':'text/html'}},{headers:{'content-type':'application/json','content-length':String(2*1024*1024+1)}}])await assert.rejects(acquireScholarlyJson('crossref','10.1234/a',undefined,{lookup:async()=>answer,request:transport([response])}));
  await assert.rejects(acquireScholarlyJson('crossref','10.1234/a',undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}]}),/not public/);
 });
+
+test('Wikipedia acquisition resolves once and pins the second call to the selected revision',async()=>{
+ const {acquireEncyclopedia}=await import('./asset-remote.mjs');const seen=[];
+ const first=Buffer.from(JSON.stringify({query:{pages:[{ns:0,pageid:42,revisions:[{revid:123}]}]}})),second=Buffer.from('{"parse":{"revid":123}}');
+ const r=await acquireEncyclopedia({site:'en.wikipedia.org',title:'Redirect'},undefined,{lookup:async()=>answer,request:transport([first,second].map(bytes=>({bytes,headers:{'content-type':'application/json'}})),url=>seen.push(url))});
+ assert.equal(seen[0].searchParams.get('redirects'),'1');assert.equal(seen[1].searchParams.get('oldid'),'123');assert.equal(seen[1].searchParams.has('page'),false);assert.deepEqual(Buffer.from(r.responses[1]),second);
+ for(const source of ['Q42/../../evil',{site:'en.wikipedia.org.evil',title:'A'},{site:'localhost',title:'A'}])await assert.rejects(acquireEncyclopedia(source));
+ await assert.rejects(acquireEncyclopedia('Q42',undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}]}),/public/);
+ await assert.rejects(acquireEncyclopedia('Q42',undefined,{lookup:async()=>answer,request:transport([{status:302,headers:{location:'https://evil.test/api'}}])}),/consent/);
+ await assert.rejects(acquireEncyclopedia('Q42',undefined,{lookup:async()=>answer,request:transport([{bytes:Buffer.from('<html>'),headers:{'content-type':'text/html'}}])}),/JSON/);
+});

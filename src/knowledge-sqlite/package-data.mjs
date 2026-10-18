@@ -1,5 +1,5 @@
 /** Read-only archival extraction. Never uses the presentation service's lossy wire projection. */
-export const PACKAGE_TABLES = ['ExternalIdentity','SourceSnapshot','Actor','Entity','EntityAlias','Relationship','Time','Claim','ClaimParticipant','ClaimQualifier','ClaimEvidence','DataSet','DataPoint','DataPointDimension','DataSetMembership'];
+export const PACKAGE_TABLES = ['SourceClaimReview','ExternalIdentity','SourceSnapshot','Actor','Entity','EntityAlias','Relationship','Time','Claim','ClaimParticipant','ClaimQualifier','ClaimEvidence','DataSet','DataPoint','DataPointDimension','DataSetMembership'];
 const quote = name => '"'+name.replaceAll('"','""')+'"';
 export function sqlValue(value) {
   if(value===null)return ['null'];
@@ -48,6 +48,7 @@ export function extractPackageData(db, request, check=()=>{}) {
     for(const r of tables.get('Relationship').values()){entity(r.sourceEntityGuid);entity(r.targetEntityGuid);}
     for(const table of ['ClaimParticipant','ClaimQualifier'])for(const r of tables.get(table).values())entity(r.entityGuid);
     for(const r of tables.get('Entity').values()){select('Time','entityGuid',r.guid);select('EntityAlias','entityGuid',r.guid,options.observedAliases?'':"AND origin IN ('curated','imported')");}
+    if(tables.has('SourceClaimReview'))for(const r of tables.get('Claim').values()){for(const review of select('SourceClaimReview','claimGuid',r.guid)){for(const snapshot of select('SourceSnapshot','guid',review.snapshotGuid)){for(const identity of select('ExternalIdentity','guid',snapshot.identityGuid))entity(identity.entityGuid);}}}
     if(tables.has('ExternalIdentity'))for(const r of tables.get('Entity').values())select('ExternalIdentity','entityGuid',r.guid);
     for(const r of tables.get('ExternalIdentity')?.values()??[])select('SourceSnapshot','identityGuid',r.guid);
     for(const r of tables.get('SourceSnapshot')?.values()??[])unresolved.push({table:'SourceSnapshot',value:r.guid,reason:'Capture metadata and original asset identity retained; scholarly JSON original is not bundled by the image-only package profile.'});

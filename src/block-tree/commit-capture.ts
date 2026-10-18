@@ -1,3 +1,4 @@
+import { recordOperations } from "./record-batch";
 import { clone } from "./clone";
 import type { BlockId, CommitId, ContentKey, ContentRecord, PlacementKey, PlacementRecord, RepositoryOperation, RepositoryState } from "./types";
 
@@ -87,7 +88,7 @@ export function freeze<T>(value: T): DeepReadonly<T> {
 export function prepareCommitCapture(state: RepositoryState, operations: readonly RepositoryOperation[], metadata: CommitMetadata): PreparedCommitCapture {
   const contents = new Map<ContentKey, ContentRecord | null>();
   const placements = new Map<PlacementKey, PlacementRecord | null>();
-  for (const operation of operations) {
+  for (const operation of recordOperations(operations)) {
     if (operation.kind === "put-content" || operation.kind === "remove-content") {
       const key = operation.kind === "put-content" ? operation.record.key : operation.key;
       if (!contents.has(key)) contents.set(key, clone(state.contents[key] ?? null));
