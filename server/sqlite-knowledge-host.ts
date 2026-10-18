@@ -123,7 +123,7 @@ export class SqliteKnowledgeHost {
   /** Canonical Entity authority is separate from saved-index coverage. Source context
    * must still name one currently verified native resource in this vault. */
   async entities(body:any,signal?:AbortSignal){
-    if(typeof body.request?.op==='string'&&(body.request.op.startsWith('scholarly-')||body.request.op.startsWith('iiif-')||body.request.op.startsWith('wiki-')))throw Error('Use the scoped academic application service');
+    if(typeof body.request?.op==='string'&&(body.request.op.startsWith('pdf-')||body.request.op.startsWith('resource-')||body.request.op.startsWith('scholarly-')||body.request.op.startsWith('iiif-')||body.request.op.startsWith('wiki-')))throw Error('Use the scoped academic application service');
     let dispatched=false;
     try {
     if(this.options.entitiesEnabled===false)throw Error('Canonical Entity service is disabled');
@@ -168,7 +168,7 @@ export class SqliteKnowledgeHost {
   /** Host-internal scholarly operations; the authenticated application host binds the Vault. */
   async academic(request:any,signal?:AbortSignal){
     if(this.closed||this.options.entitiesEnabled===false||this.options.readOnly)throw Error('Scholarly storage unavailable');
-    if(!['iiif-snapshot','iiif-associated','iiif-commit','scholarly-lookup','scholarly-commit','scholarly-backlinks','wiki-snapshot','wiki-context','wiki-commit','wiki-review'].includes(request?.op))throw Error('Invalid scholarly operation');
+    if(!['pdf-snapshot','pdf-commit','resource-context','resource-review','iiif-snapshot','iiif-associated','iiif-commit','scholarly-lookup','scholarly-commit','scholarly-backlinks','wiki-snapshot','wiki-context','wiki-commit','wiki-review'].includes(request?.op))throw Error('Invalid scholarly operation');
     await this.store.resolve('.mutable/mutable.db');
     return this.foreground(async()=>{
       const opened=await this.acquireContext('.',normalizePolicy(undefined),true);

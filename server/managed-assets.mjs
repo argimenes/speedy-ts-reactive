@@ -1,5 +1,6 @@
 /** Cavern-wide immutable original binary store. Admission policy belongs to callers;
- * Phase 3's only caller admits PNG/JPEG. No published object is ever collected. */
+ * Image, JSON-capture and PDF admission have separate trusted validators.
+ * No published object is ever collected. */
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
@@ -9,7 +10,7 @@ const fail = message => { throw Error(message); };
 const validId = value => typeof value === 'string' && /^[0-9a-f-]{36}$/.test(value);
 const digestOf = id => typeof id === 'string' && /^sha256:[0-9a-f]{64}$/.test(id) ? id.slice(7) : fail('Invalid asset identity.');
 const missing = e => e.code === 'ENOENT';
-const LIMIT = { bytes: 10*1024*1024, total: 40*1024*1024, count: 20, lease: 600000 };
+const LIMIT = { bytes: 50*1024*1024, total: 60*1024*1024, count: 20, lease: 600000 };
 
 export class ManagedAssetStore {
   constructor({ root, cavernId, session, now = Date.now, fault = async () => {} }) {
@@ -59,7 +60,7 @@ export class ManagedAssetStore {
     const dir=await this.operation(home,lease.id,fd);await this.authority(dir,lease,fd);
     if(await this.read(dir,'intent.json',65536,fd))fail('Import publication already started.');
     const rows=await this.stages(dir,fd), size=rows.reduce((n,r)=>n+r.byteLength,0);
-    if(!bytes.length||bytes.length>LIMIT.bytes||size+bytes.length>LIMIT.total||rows.length>=LIMIT.count)fail('Asset import limit exceeded.');
+    if(!bytes.length||bytes.length>(metadata.mediaType==='application/pdf'?LIMIT.bytes:10*1024*1024)||size+bytes.length>(metadata.mediaType==='application/pdf'?LIMIT.total:40*1024*1024)||rows.length>=LIMIT.count)fail('Asset import limit exceeded.');
     const digest=hash(bytes), item={...metadata,byteLength:bytes.length,assetId:`sha256:${digest}`,cavernId:this.cavernId,slot:rows.length};
     // A failed stage may have left bytes without metadata. Verify instead of overwriting.
     const name=`stage-${rows.length}.bin`, prior=await this.read(dir,name,LIMIT.bytes,fd);

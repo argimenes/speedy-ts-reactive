@@ -16,3 +16,5 @@ data/appdb
 vaults/
 artifacts/
 writer.lock
+# Generated local PDF.js support data (copied from the pinned dependency).
+/public/pdfjs/

@@ -137,13 +137,13 @@ Use PDF.js behind a dedicated managed PDF Block. It supplies browser PDF renderi
 
 Extend managed-asset validation explicitly for PDFs, retaining original bytes and hash. Validate byte/page/resource budgets and parser outcomes; a `%PDF` prefix alone is insufficient. Run inspection with cancellation and limits; handle encrypted or malformed files with an explicit unavailable state. Render visible pages with a small overscan window, cancel offscreen work and cap canvas memory. Keep scripts, embedded actions and attachment execution disabled; external navigation remains deliberate.
 
-Store original URL, final acquisition URL, asset reference, snapshot identity and the associated Work GUID. A DOI full-text candidate is only a link until the user chooses acquisition; neither DOI registration nor a PDF URL establishes access rights. Page regions use a versioned PDF coordinate anchor keyed to the original hash and page index. Text selection is viewer state; importing selected text into native Ink is an explicit history operation with provenance.
+Store original URL, final acquisition URL, asset reference, snapshot identity and resource identity. Associate a Work through an explicitly reviewed Claim; it remains absent until review. A DOI full-text candidate is only a link until the user chooses acquisition; neither DOI registration nor a PDF URL establishes access rights. Page regions use a versioned PDF coordinate anchor keyed to the original hash and page index. Text selection is viewer state; importing selected text into native Ink is an explicit history operation with provenance.
 
 Do not convert the original into images for storage. Future thumbnails and extracted text are versioned derived resources. Existing legacy PDF iframes remain readable; migration into managed originals is explicit.
 
 ## 9. Bounds and typing isolation
 
-The metadata limits below are implemented in A. IIIF, PDF and enrichment limits remain proposals for later milestones.
+The metadata limits below are implemented in A. B/C execution sections record their delivered limits; the PDF row records D's implemented bound rather than a total browser-memory guarantee.
 
 | Work | Initial bound |
 | --- | --- |
@@ -151,7 +151,7 @@ The metadata limits below are implemented in A. IIIF, PDF and enrichment limits 
 | Source bodies | A: streamed 2 MiB JSON cap, JSON content-type validation, UTF-8/identity checks and bounded worker normalization. No separate JSON nesting-count validator. Later article/IIIF admission needs its own structural budgets (proposed 2 MiB articles / 8 MiB manifests). |
 | Record projection | A: 200 creators, 20 license links, 20 full-text candidates, bounded strings and 24 KiB normalized metadata budget before canonical dispatch. Larger canonical projections fail with a diagnostic. Later proposals: 200 aliases, 50 selected Wikidata statements per review page, 1,000 canvases per manifest. |
 | IIIF viewport | Four active tile requests, 128 MiB decoded-image budget, current canvas plus bounded neighboring metadata. No whole-manifest prefetch. |
-| PDF | 50 MiB original, 1,000 pages, 128 MiB viewer rendering budget; visible pages plus one page on either side. Oversized content remains a link with a diagnostic. |
+| PDF | 50 MiB original, 1,000 pages, one mounted page/canvas with at most 16 megapixels, 20,000 text items / 200,000 text characters per page, 500 spatial annotations per occurrence. No measured hard total browser-memory ceiling. Acquisition/inspection failures do not insert a managed Block. |
 | Canonical commits | Stay within existing request/event limits; chunk explicitly with durable receipts. No unrestricted graph traversal or query language. |
 
 Future multi-Vault/viewport implementation must enforce aggregate host budgets. Separate interactive viewport requests from durable imports without allowing either to starve editor work. Use scoped queues and bounded retry for storage backpressure; do not send a burst of tile reads through the current PNG/JPEG asset endpoint.
@@ -166,7 +166,7 @@ Rebuild proof has two distinct parts. First, clear and rebuild derived document 
 
 Extend package extraction only for the new records and explicit closure. Record unresolved references and omitted bodies; never import archived claims automatically into the active canonical graph. Existing unsupported-type preservation remains the fallback for older readers. This is necessary compatibility for the new Blocks, not a Phase 4 interchange redesign. Publishing stays on its existing explicit disclosure model: imported abstracts, claims, URLs and snapshots do not become public merely because they are attached to a published document.
 
-A implements the derived-index rebuild proof and bounded Entity → ExternalIdentity → SourceSnapshot extraction. The current image-only `.inkpkg` binary profile does **not** bundle scholarly JSON originals; both native inventory and canonical extraction report this omission. Citation display data and source asset identities survive in the package, but this is not complete cross-Vault original-byte reconstruction. Original responses remain immutable managed assets in their source Vault. General snapshot-binary package closure and isolated reconstruction remain explicit follow-up work for D.
+A implemented derived-index rebuilding and bounded Entity → ExternalIdentity → SourceSnapshot extraction. D extends the image-only package profile with `mutable-inkpkg-resources-v1`, preserving PDF and scholarly JSON originals, bounded IIIF child snapshots and retained tile originals. The legacy profile remains readable. PackageData retains exact logical canonical rows; importing never installs them into active canonical knowledge. Explicit local restoration reuses retained originals and does not grant network permission. Missing originals and partial IIIF retention are reported; required native assets must be available to export. See the D qualification report for bounds and the independent SQLite reconstruction proof.
 
 ## 11. Milestones and qualification
 
@@ -205,7 +205,7 @@ The brief's five acceptance scenarios map to A (one Work/two backlinks), B (revi
 | OAI-PMH | Separate bulk-harvesting work with durable jobs and reviewable limits. |
 | IIIF Content Search | Provider-backed viewer search, separate from the Vault knowledge index. |
 
-Proceed in A–D order, with qualification attached to each implementation increment. Milestone A and its real DOI import have been accepted. Milestone B is submitted in the [Milestone B qualification report](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_B_QUALIFICATION.md). Stop after B; Milestones C–D require later authorisation.
+Milestones A–C are accepted. Milestone D is authorised and is submitted for review in the [Milestone D qualification report](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_D_QUALIFICATION.md). Stop for user acceptance after D qualification; AI ingestion, Phase 4 and desktop packaging remain outside this work.
 
 ## 13. Approved refinements and Milestone A boundary
 
@@ -247,7 +247,7 @@ WebArticleBlock uses the existing script-free iframe/CSP and bounded CSS sanitiz
 
 Reopening needs only saved display data. A deliberate new URL import or enrichment acquisition requests current provider data; existing Blocks remain pinned. A completed durable job can be replayed offline using retained originals. Wikipedia diff/edit/history views and non-main-namespace pages are outside B's article loader. Oldid captures pin the article revision, while current page-property association and template expansion limitations remain disclosed.
 
-Package extraction follows reviewed Claim → review receipt → snapshot → accepted identity/entity closure. It preserves canonical rows without activating archived assertions. Original JSON binaries remain outside the current image-only package profile and are reported as omitted. B does not claim complete cross-Vault source-original reconstruction or automatic publishing of these new Blocks.
+Package extraction follows reviewed Claim → review receipt → snapshot → accepted identity/entity closure. It preserves canonical rows without activating archived assertions. B shipped with original JSON binaries outside the image-only package profile; D's resource profile now supports this bounded original-byte closure. Neither milestone automatically publishes these Blocks.
 
 
 ### Bulk native conversion correction — 18 October 2026
@@ -260,7 +260,7 @@ See the Douglas Adams regression section of the Milestone B qualification report
 
 ## 15. Milestone C execution and ResourceAnchor decisions
 
-Milestone B, including the bulk insertion correction, is accepted. Milestone C is authorised; Milestone D and AI-assisted ingestion remain unauthorised.
+Milestones A–C are accepted, including the bulk insertion correction and the user’s live Bodleian IIIF test. Milestone D is authorised under `MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_D_IMPLEMENTATION_PLAN.md`. AI-assisted ingestion remains unauthorised.
 
 The existing `feature-api/anchors.ts` describes relationships between positioned Blocks; it is not a resource-coordinate annotation contract. Native text standoff properties and saved `StandoffProperty`/segment rows carry cell ranges. They remain authoritative and are not repurposed for images. Saved `BlockProperty` projection already preserves a scoped authored ID, complete attributes and its owning Block without fabricated text coordinates. C therefore stores independent `mutable/resource-annotation` Block properties containing a versioned `ResourceAnchor` and a plain-text note. Ownership follows the canonical containing Block; the derived knowledge index uses the existing saved BlockProperty path. No parallel annotation database or automatic per-view canonical writes are introduced.
 
@@ -283,6 +283,40 @@ The default-enabled `iiifResourceLoaders` flag gates recognition and the host op
 
 Migration `0005-iiif.sql` adds the `iiif` external-identity namespace and a source-association index while retaining existing identities, snapshots and accepted/rejected Wikidata claim reviews. It creates no spatial annotation table. Spatial notes are manually saved native BlockProperties and are projected into the existing saved index. Rectangle selection currently uses visible-image bounds or accessible numeric controls; freehand/polygon tools are not included. Each overlap owns its own overlay and is independently undoable/removable.
 
-A pinned manifest and image-info JSON do not make the remote pixel server immutable. Retained tile originals are immutable; unretained regions still depend on provider availability and unchanged source pixels. C does not claim a complete archival scan, automatic refresh/migration, or complete IIIF original-asset closure in `.inkpkg`. No OCR service, PDF work, Milestone D or AI ingestion has begun.
+A pinned manifest and image-info JSON do not make the remote pixel server immutable. Retained tile originals are immutable; unretained regions still depend on provider availability and unchanged source pixels. C did not claim a complete archival scan, automatic refresh/migration, or complete IIIF original-asset closure in `.inkpkg`. D adds bounded packaging of retained originals; unretained manuscript imagery remains unavailable offline. OCR and AI ingestion remain outside scope.
 
-See [Milestone C qualification](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_C_QUALIFICATION.md) for reproducible tests, actual Chrome exercises, live-provider results, memory bounds and typing measurements. C is implemented and submitted for acceptance; A/B remain accepted.
+See [Milestone C qualification](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_C_QUALIFICATION.md) for reproducible tests, actual Chrome exercises, live-provider results, memory bounds and typing measurements. C is accepted, including the user's additional live Bodleian manuscript test; its qualification report remains unchanged.
+
+## Milestone D authorisation — 18 October 2026
+
+Milestone C is accepted; its qualification report remains the historical record of measured results and limitations. The authorised D execution plan is [Milestone D implementation plan](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_D_IMPLEMENTATION_PLAN.md). D must be submitted for acceptance after qualification, not described as accepted by the implementer.
+
+## 16. Milestone D implemented contracts — 19 October 2026
+
+The default-enabled `crossResourceLoaders` flag gates managed PDF acquisition, resource-original access, explicit resource relationship review and archival restoration. Existing feature defaults are unchanged. See [Milestone D qualification](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_D_QUALIFICATION.md) for evidence and limitations. D is submitted for acceptance; A–C remain accepted.
+
+### Managed PDF and native derivatives
+
+`pdf.import`, `pdf.resume`, `pdf.inspect` and `pdf.read` are typed, Vault-scoped application-service operations. The Node host uses the existing protected remote acquisition, bounded preparation worker, immutable asset store, durable job journal and canonical transaction ledger. PDF admission requires parser inspection, not just a file signature. At most two service operations run concurrently, with a 60-second workflow deadline, existing 30-second worker deadline and 15-second acquisition deadline. Checkpointed originals survive a lost canonical acknowledgement and resume without another download. Neither import nor viewer activation saves the document automatically.
+
+`pdf-sha256` is the canonical external identity of a retained original. Original bytes, source URL and final acquisition endpoint are preserved. Different URLs serving the same bytes share a resource identity while preserving capture provenance. Changed bytes at the same URL produce a different resource; existing occurrences and annotations remain pinned. No Work identity is inferred from a URL or title. Migration 0006 extends the accepted namespace while retaining earlier identities, snapshots and reviews.
+
+`mutable/pdf-document-block` owns the occurrence. PDF.js 5.4.624 is pinned to the project's Node-compatible release; its worker, fonts, CMaps and WASM are served locally. A lazy, Solid-owned viewer renders one page at a time, with page navigation, zoom, scrolling and selectable text. This intentionally replaces the proposed overscan window with a stricter initial bound. Canvas allocation is bounded to 16 megapixels; that is not a hard total memory bound for PDF.js. No PDF scripts, forms, actions, links or attachments are activated.
+
+The ResourceAnchor union adds `pdf-page`: snapshot, original hash, page index, unrotated view box and rectangle in PDF units. Native `mutable/resource-annotation` BlockProperties own individual notes and overlays. Deleting one annotation preserves overlapping annotations; document Undo restores it. Closing/unmounting cancels rendering and disposes the PDF task and local viewer.
+
+Explicit page/selected-text extraction uses the existing fragment materializer and one native insertion history operation. The PdfTextBlock concept is represented by an ordinary standoff text Block with `metadata.role: 'PdfTextBlock'` and source alignment metadata: immutable extracted text, UTF-16 run offsets, PDF transforms, original asset, snapshot and page. Native annotations can then use ordinary text ranges. Subsequent edits do not automatically realign the immutable extraction or alter the original PDF. Image-only pages retain their original and expose an explicit no-text/OCR boundary; OCR is not implemented.
+
+### Reviewed relationships and reconstruction
+
+`resource.context` and `resource.review` reuse existing canonical Entities, Claims, participants and SourceClaimReview receipts. The explicit review UI supports `representationOf`, `describes`, `heldBy`, `depicts` and evidence-backed `cites` against an existing Entity. A review note is required. Canonical review is deliberately separate from document Undo; structural occurrence references and spatial annotations remain document-owned. No label-based merging, automatic fact replacement or graph acquisition occurs.
+
+Saved index reconstruction projects occurrence/entity references and native annotation facts from saved Ink. It neither invents missing originals nor rebuilds canonical facts from incomplete document metadata. Independent SQLite reconstruction tests verify exact archived ExternalIdentity, SourceSnapshot, accepted Claim and review rows with relational constraints.
+
+### Resource package closure
+
+`mutable-inkpkg-resources-v1` extends the existing archive to validated PDF/JSON originals alongside PNG/JPEG. Limits are 128 originals / 56 MiB original bytes, 64 MiB ZIP and 96 MiB expanded package; existing PackageData and service input budgets still apply. IIIF child snapshot closure is bounded to 128. Retained originals are unchanged, deduplicated by hash and resolved through separate portable asset bindings. Source SQL rows retain their original values.
+
+Imports remain opaque and inactive. **Restore retained resource locally** is a deliberate reinterpretation of a known Block, using isolated PackageData and retained originals. It restores independently validated spatial notes, keeps canonical references inert and prohibits remote acquisition, canonical mutation and online IIIF activation. Fresh occurrence identities and rebased bindings survive subsequent export/import. Legacy image packages remain supported; older readers can reject the new resource profile rather than silently lose its dependencies.
+
+Package review and the passive standalone reader expose missing-original and partial-IIIF boundaries. Original rights and attribution data are retained; export review remains the user's redistribution decision. The standalone reader stays passive and does not embed PDF.js or OpenSeadragon. Interactive offline reconstruction occurs explicitly inside Mutable. No changes to publishing disclosure, Phase 4 activation or desktop packaging are included.

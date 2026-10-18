@@ -1,3 +1,4 @@
+import type {PdfOperations} from './pdf-contracts';
 import type {IIIFOperations} from './iiif-contracts';
 /** Versioned operation data. No HTTP, Node, DOM, editor or platform handles.
  * Binary values use Uint8Array in TypeScript; transports choose their encoding. */
@@ -16,6 +17,7 @@ export interface KnowledgeOptions {relationships?:boolean;claims?:boolean;eviden
 export interface PackageDataRequest extends KnowledgeOptions {entities:string[];claimsById?:string[];documentHash?:string}
 export interface PackageDataResult {data:PackageData;schema:unknown}
 export type Preparation =
+ | {kind:'pdf';source:string}
  | {kind:'iiif';source:string}
  | {kind:'encyclopedia';source:string}
  | {kind:'academic';source:string}
@@ -27,7 +29,7 @@ export type PreparationResult =
 export type JobState='ready'|'running'|'interrupted'|'completed'|'cancelled'|'failed';
 export interface JobSummary {version:1;id:string;cavernId:string;revision:number;state:JobState;kind:Preparation['kind'];created:string;updated:string;error?:string;resultBytes?:number}
 export interface JobPage {jobs:JobSummary[];diagnostics:Array<{id:string;message:string}>;next?:string}
-export interface OperationMap extends PublicationOperations,AcademicOperations,EncyclopediaOperations,IIIFOperations {
+export interface OperationMap extends PdfOperations,PublicationOperations,AcademicOperations,EncyclopediaOperations,IIIFOperations {
  'native.read':{input:NativeRead;output:NativeDocument};
  'assets.original':{input:{assetId:string};output:OriginalAsset};
  'knowledge.packageData':{input:PackageDataRequest;output:PackageDataResult};

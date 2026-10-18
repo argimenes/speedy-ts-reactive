@@ -1,3 +1,7 @@
+import {pdfBlock} from '../pdf/block';
+import type {BlockFragment} from '../block-tree/clipboard';
+import {resourceAssets} from '../interchange/package/resources';
+import {HttpApplicationServices} from './application-services';
 import { inspectUri, urlFragment, videoFragment, type LinkedTextFormat } from '../interchange/uri';
 import { emptyFragment } from '../interchange/fragment';
 import { nativeBytes } from '../persistence/native-resource';
@@ -92,11 +96,15 @@ export class DocumentInterchange {
   if(!t.segments){t.viewId=node.viewId;t.destination=node.viewType==='document-block'?{kind:'at',parentKey:node.placementKey,index:node.children.length}:{kind:'after',anchorKey:node.placementKey};}
   this.check(t);
   const choices=[{label:'Insert URL link (no network)',kind:'url'},...(info.video?[{label:'Insert passive VideoBlock (no network)',kind:'video'}]:[]),
-   ...(info.acquirable?[...[info.format,...(['html','markdown','text'] as const).filter(f=>f!==info.format)].map(format=>({label:`Import ${format} as native Ink at the destination`,kind:'native',format})),
+   ...(info.acquirable?[...(this.editor.features.crossResourceLoaders?[{label:'Import managed PDF original',kind:'pdf'}]:[]),...[info.format,...(['html','markdown','text'] as const).filter(f=>f!==info.format)].map(format=>({label:`Import ${format} as native Ink at the destination`,kind:'native',format})),
    ...(['html','markdown'] as const).flatMap(format=>[{label:`Embed ${format} source copy`,kind:'embed',format},{label:`Link ${format} source snapshot (explicit refresh)`,kind:'link',format}]),{label:'Import PNG/JPEG image',kind:'image'}]:[])];
   const selection=await this.ask({title:'Inspect / Import linked resource',details:[info.url,info.video?`Recognized ${info.video.provider} video. No provider has been contacted.`:'Syntax inspected locally. No resource has been contacted.', 'Choose one operation. Import creates Ink content; embed owns a source copy; link retains an explicit refresh URL. No operation overwrites the external source.',...(info.acquirable?[]:['Acquisition requires HTTPS port 443 without a fragment. This URL can still be inserted as a link.'])],options:choices.map(c=>c.label),single:true});
   if(!selection)throw Error('URI operation cancelled.');const chosen=choices.find(c=>c.label===selection[0]);if(selection.length!==1||!chosen)throw Error('Choose exactly one URI operation.');this.check(t);
   if(chosen.kind==='url'||chosen.kind==='video'){await this.commit(chosen.kind==='url'?urlFragment(info.url):videoFragment(info.video!),[],t,signal,'import');this.status[1]('Inserted without contacting the resource. Save Ink explicitly to retain it.');return;}
+  if(chosen.kind==='pdf'){
+   if(await this.ask({title:'Acquire managed PDF?',details:[info.url,'Download and retain this original (maximum 50 MiB / 1,000 pages). The provider receives this explicit request, without cookies or credentials. Confirm you have access and permission to retain it. Work relationships remain separate reviewed Claims.']})===undefined)throw Error('PDF acquisition cancelled');this.check(t);
+   const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open a Vault');return {cavernId:c.cavernId,session:c.session};}),result=await api.call('pdf.import',{id:crypto.randomUUID(),source:info.url},signal);this.check(t);const p=pdfBlock(result.snapshot,info.url);await this.commit(p.fragment,[],t,signal,'import',p.native);this.status[1]('Retained PDF inserted. Review any Work relationship separately and save the document explicitly.');return;
+  }
   if(chosen.kind==='image'){
    const f=emptyFragment(),text=urlFragment(info.url);f.blocks=text.blocks;f.placements=text.placements;f.roots=text.roots;
    f.blocks[0].inline={atoms:[{kind:'embed',embed:'remote-image'}],properties:[]};
@@ -225,8 +233,8 @@ export class DocumentInterchange {
    const admitted=await this.admit(converted.fragment,[],ticket,signal);await this.commit(admitted.fragment,admitted.admitted,ticket,signal,'convert');this.status[1]('Converted source to Mutable Ink. Undo restores source and annotations.');
   });
  }
- private async commit(fragment:MutableFragment,assets:[string,string][],t:Ticket,signal:AbortSignal,operation:'import'|'convert'){
-  const native=await runInterchange({kind:'materialize',fragment,scope:t.scope,assets},signal);this.check(t);
+ private async commit(fragment:MutableFragment,assets:[string,string][],t:Ticket,signal:AbortSignal,operation:'import'|'convert',prepared?:BlockFragment){
+  const native=prepared??await runInterchange({kind:'materialize',fragment,scope:t.scope,assets},signal);this.check(t);
   if(t.destination)this.editor.commands.insertFragment(native,t.destination,{commandId:'interchange.insert',subjects:[]});
   else {const [result]=this.editor.commands.insertMutableText([{segments:t.segments!,fragment:native,slices:fragment.roots}],false,operation);this.editor.crossText.clear();const node=this.editor.nodeForPlacementInView(result.placementKey,t.viewId!);if(node){this.editor.selections.setPrimary(node.key,node.contentKey,node.viewId,result.caret);queueMicrotask(()=>{if(this.alive){const mount=this.editor.mounts.get(node.key);mount?.focus();mount?.restoreInlineSelection?.({anchor:result.caret,head:result.caret});}});}}
   this.committed=true;
@@ -240,16 +248,16 @@ export class DocumentInterchange {
  });}
  private download(value:BlobPart,name:string,type:string){const url=URL.createObjectURL(new Blob([value],{type})),link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  async exportPortable(id:string,format:'html'|'markdown',standalone:boolean,current:()=>boolean){return this.task(async signal=>{
-  const t=this.base(current),snapshot=captureNative(this.editor.repository.readState(),id),state=resourceToRepository(snapshot),inventory=nativeInventory(snapshot);this.check(t);
+  const t=this.base(current),snapshot=captureNative(this.editor.repository.readState(),id),state=resourceToRepository(snapshot),inventory=nativeInventory(snapshot,false);this.check(t);
   const assets=[];for(const a of inventory.assets){assets.push(await this.editor.assets.original(a,signal));this.check(t);}
   const fragment=serializeSelection(state,[{placementKey:state.rootPlacementKey}],t.scope),title=String((state.contents[state.placements[state.rootPlacementKey].contentKey].payload.metadata as any)?.title??'Document');
   const result=await runInterchange({kind:'portable-export',fragment,assets,format,standalone,title},signal);this.check(t);await this.confirm(result.diagnostics);this.check(t);
   this.download(new Uint8Array(result.bytes),`${safeFilename(title)}.${result.extension}`,result.mediaType);this.status[1]('Portable projection downloaded with verified original images. The Ink document is unchanged.');
  });}
  async exportPackage(id:string,vault:string|undefined,current:()=>boolean){return this.task(async signal=>{
-  const t=this.base(current),snapshot=captureNative(this.editor.repository.readState(),id),native=nativeBytes(snapshot),inventory=nativeInventory(snapshot);
+  const t=this.base(current),snapshot=captureNative(this.editor.repository.readState(),id),native=nativeBytes(snapshot),inventory=nativeInventory(snapshot,this.editor.features.crossResourceLoaders);
   this.check(t);
-  const chosen=await this.ask({title:'Choose package database boundary',details:['The archive retains the exact native document, including authored metadata which may be private, and referenced original images. Referenced Entity, Time, Claim (with participants/qualifiers) and curated/imported alias rows include full authored fields, descriptions, JSON attributes and actor identifiers. Optional related rows may contain private information. Nothing is followed through backlinks.'],options:['Relationships (one hop)','Claims and participants','Claim evidence (requires claims)','Actor records','Observed/recovered aliases']});if(!chosen)throw Error('Export cancelled.');this.check(t);
+  const chosen=await this.ask({title:'Choose package database boundary',details:['Review rights and attribution before redistributing retained originals. Acquisition is not permission to redistribute. IIIF tiles are partial captures, not complete offline manuscripts. The archive retains the exact native document, including authored metadata which may be private, and retained original assets. Referenced Entity, Time, Claim (with participants/qualifiers) and curated/imported alias rows include full authored fields, descriptions, JSON attributes and actor identifiers. Optional related rows may contain private information. Nothing is followed through backlinks.'],options:['Relationships (one hop)','Claims and participants','Claim evidence (requires claims)','Actor records','Observed/recovered aliases']});if(!chosen)throw Error('Export cancelled.');this.check(t);
   let context:{data:PackageData;schema:unknown};
   if(vault){
    const response=await fetch('/api/sqlite/knowledge/package-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vault,request:{entities:inventory.entities,claimsById:inventory.claims,documentHash:await hash(native),relationships:chosen.includes('Relationships (one hop)'),claims:chosen.includes('Claims and participants'),evidence:chosen.includes('Claim evidence (requires claims)'),actors:chosen.includes('Actor records'),observedAliases:chosen.includes('Observed/recovered aliases')}}),signal});
@@ -260,7 +268,11 @@ export class DocumentInterchange {
    if(inventory.entities.length||inventory.claims.length)throw Error('Select the source Vault to archive referenced database records.');
    context={data:{kind:'mutable-package-data',version:1,readOnly:true,encoding:'sqlite-storage-class-v1',tables:[],provenance:{documentHash:await hash(native)},selection:{entitySeeds:[]},unresolved:[],excluded:[{reason:'No source database selected; document has no authored entity-reference seeds.'}]},schema:{kind:'mutable-knowledge-schema',version:1,tables:[]}};
   }
-  this.check(t);const assets=[];for(const a of inventory.assets){assets.push(await this.editor.assets.original(a,signal));this.check(t);}
+  this.check(t);const assets=[];
+  const refs=new Map([...inventory.assets,...(this.editor.features.crossResourceLoaders?resourceAssets(context.data):[])].map(a=>[assetKey(a),a]));
+  const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open the source Vault');return {cavernId:c.cavernId,session:c.session};});
+  let total=0;for(const a of refs.values()){if(a.cavernId!==t.scope.cavernId)throw Error('Original belongs to another Vault');const original=this.editor.features.crossResourceLoaders?{...await api.call('resources.original',{assetId:a.assetId},signal),reference:a}:await this.editor.assets.original(a,signal);total+=original.bytes.length;if(total>PACKAGE_LIMITS.assets||assets.length>=PACKAGE_LIMITS.images)throw Error('Package original budget exceeded; narrow the package');assets.push(original);this.check(t);}
+
   const details=[`${inventory.blocks} Blocks; ${inventory.annotations} annotations (${inventory.points} points). Original native identities are preserved.`,...context.data.tables.map(table=>`${table.name}: ${table.rows.length} rows`),...assets.map(a=>`${a.reference.assetId}: ${a.bytes.length} original bytes`),...inventory.unresolvedAssets.map(v=>`${v.blockId}: ${v.reason}`),...context.data.unresolved.map(v=>'Unresolved: '+JSON.stringify(v)),...context.data.excluded.map(v=>'Excluded: '+JSON.stringify(v))];
   if(await this.ask({title:'Review package export inventory',details:details.length>200?[...details.slice(0,200),`${details.length-200} further inventory entries are retained in the package data. Inclusion is governed by the selected policies.`]:details})===undefined)throw Error('Export cancelled.');this.check(t);
   const result=await runInterchange({kind:'package-create',native,source:{resourceId:id,...t.scope.cavernId?{cavernId:t.scope.cavernId}:{}},...context,assets},signal);this.check(t);
@@ -272,11 +284,23 @@ export class DocumentInterchange {
   if(!this.editor.features.nativeDocumentPersistence)throw Error('Native persistence is required.');
   const t=this.base(host.current);this.check(t);if(file.blob.size>PACKAGE_LIMITS.compressed)throw Error('Package exceeds 64 MiB');
   const prepared=await runInterchange({kind:'package-open',bytes:new Uint8Array(await file.blob.arrayBuffer())},signal);this.check(t);
-  if(await this.ask({title:'Import package as a fresh Ink copy',details:[`${prepared.inventory.blocks} Blocks; ${prepared.inventory.annotations} annotations; ${prepared.assets.length} originals.`,...prepared.data.tables.filter(v=>v.rows.length).map(v=>`${v.name}: ${v.rows.length} frozen contextual rows`),...prepared.inventory.unresolvedAssets.map(v=>`${v.blockId}: ${v.reason}`),'All authored identities are replaced. SQL rows remain inert; no destination entities are matched or created. Active or unsupported content becomes inert. Out-of-package references remain unresolved.',...prepared.data.excluded.map(v=>JSON.stringify(v)),...prepared.data.unresolved.map(v=>JSON.stringify(v))]})===undefined)throw Error('Import cancelled.');this.check(t);
-  const files=prepared.assets.map(a=>({name:a.reference.assetId,blob:new Blob([new Uint8Array(a.bytes)],{type:a.mediaType})}));
-  for(const asset of prepared.fragment.assets){const index=prepared.assets.findIndex(a=>assetKey(a.reference)===`${asset.source.cavernId}/${asset.source.assetId}`);if(index>=0){asset.source={kind:'transfer',index};for(const e of prepared.fragment.embeds)if(e.asset?.kind==='local'&&e.asset.id===asset.localId)delete e.data.asset;}}
+  if(await this.ask({title:'Import package as a fresh Ink copy',details:[`${prepared.inventory.blocks} Blocks; ${prepared.inventory.annotations} annotations; ${prepared.assets.length} originals.`,...prepared.manifest.boundaries,...prepared.data.tables.filter(v=>v.rows.length).map(v=>`${v.name}: ${v.rows.length} frozen contextual rows`),...prepared.inventory.unresolvedAssets.map(v=>`${v.blockId}: ${v.reason}`),'All authored identities are replaced. SQL rows remain inert; no destination entities are matched or created. Active or unsupported content becomes inert. Out-of-package references remain unresolved.',...prepared.data.excluded.map(v=>JSON.stringify(v)),...prepared.data.unresolved.map(v=>JSON.stringify(v))]})===undefined)throw Error('Import cancelled.');this.check(t);
+  const imageAssets=prepared.assets.filter(a=>a.mediaType==='image/png'||a.mediaType==='image/jpeg');
+  const files=imageAssets.map(a=>({name:a.reference.assetId,blob:new Blob([new Uint8Array(a.bytes)],{type:a.mediaType})}));
+  for(const asset of prepared.fragment.assets){const index=imageAssets.findIndex(a=>assetKey(a.reference)===`${asset.source.cavernId}/${asset.source.assetId}`);if(index>=0){asset.source={kind:'transfer',index};for(const e of prepared.fragment.embeds)if(e.asset?.kind==='local'&&e.asset.id===asset.localId)delete e.data.asset;}}
   const admitted=await this.admit(prepared.fragment,files,t,signal);
-  const native=await runInterchange({kind:'package-materialize',fragment:admitted.fragment,cavernId:t.scope.cavernId,assets:admitted.admitted,context:{data:prepared.data,schema:prepared.schema,source:prepared.manifest.source}},signal);this.check(t);
+  const assetBindings:Array<[string,{kind:'managed';cavernId:string;assetId:string}]>=[];
+  for(const a of prepared.assets){this.check(t);if(!t.scope.cavernId)throw Error('Select a destination Vault');
+   if(a.mediaType==='application/json'||a.mediaType==='application/pdf'){
+    if(!this.editor.features.crossResourceLoaders)throw Error('Resource package import is disabled');
+    const lease=await this.editor.assets.begin([],signal);let done=false;try{const m=await this.editor.assets.stageOriginal(lease,new Blob([a.bytes.slice().buffer],{type:a.mediaType}),signal);if(m.assetId!==a.reference.assetId)throw Error('Original hash mismatch');this.check(t);await this.editor.assets.action(lease,'publish',signal);await this.editor.assets.action(lease,'finish',signal);done=true;}finally{if(!done)await this.editor.assets.action(lease,'abort').catch(()=>{});}
+   }else if(!prepared.fragment.assets.some(f=>f.source.kind==='transfer'&&imageAssets[Number(f.source.index)]===a)){
+    // Retained IIIF tiles need original admission even when not inline image cells.
+    const lease=await this.editor.assets.begin([],signal);let done=false;try{await this.editor.assets.stage(lease,new Blob([a.bytes.slice().buffer],{type:a.mediaType}),signal);this.check(t);await this.editor.assets.action(lease,'publish',signal);await this.editor.assets.action(lease,'finish',signal);done=true;}finally{if(!done)await this.editor.assets.action(lease,'abort').catch(()=>{});}
+   }
+   assetBindings.push([assetKey(a.reference),{kind:'managed',cavernId:t.scope.cavernId,assetId:a.reference.assetId}]);
+  }
+  const native=await runInterchange({kind:'package-materialize',fragment:admitted.fragment,cavernId:t.scope.cavernId,assets:admitted.admitted,context:{data:prepared.data,schema:prepared.schema,source:prepared.manifest.source,assetBindings}},signal);this.check(t);
   const state=this.editor.repository.readState(),workspace=state.contents[state.placements[state.rootPlacementKey].contentKey],banks=workspace.children.filter(k=>state.contents[state.placements[k].contentKey].viewType==='workspace-object-bank-block');if(banks.length!==1)throw Error('One workspace object bank is required.');
   const id=String(native.state.contents[native.state.placements[native.roots[0]].contentKey].payload.id);
   this.editor.commands.insertFragment(native,{kind:'at',parentKey:banks[0],index:state.contents[state.placements[banks[0]].contentKey].children.length},{commandId:'interchange.import-package',subjects:[]});this.committed=true;nativeDocumentSession(this.editor).trackCandidate(id);host.open(id);this.status[1]('Imported an unsaved Ink copy with frozen package context. Save explicitly to retain it.');

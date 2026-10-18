@@ -1,0 +1,25 @@
+# Academic Resource Loaders — Milestone D execution plan
+
+Planned 18 October 2026; implementation and qualification completed 19 October 2026. Submitted for acceptance in [Milestone D qualification](MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_D_QUALIFICATION.md); not yet accepted.
+
+Milestone C is accepted, including the user's live Bodleian manuscript test. Its qualification evidence and limitations remain unchanged.
+
+## Scope and decisions
+
+The controlling roadmap is sections 8–11 of `MUTABLE_ACADEMIC_RESOURCE_LOADERS_ARCHITECTURE_AND_IMPLEMENTATION_PLAN.md`, together with the accepted A–C implementation and the current D instruction. No separate PDF design brief could be located in the repository or available attachments; section 8 supplies the concrete design. `PdfTextBlock` will be a native text derivative with source alignment metadata, not a second text editor or annotation database.
+
+1. **Managed PDF boundary.** Add a default-enabled cross-resource feature flag. Explicit resource paste acquires HTTPS PDFs through the existing protected host. A bounded preparation worker validates PDF structure/page count using PDF.js before immutable publication. Preserve supplied/final URLs, original hash, resource identity and snapshot. Durable jobs checkpoint retained originals before canonical commit and resume without reacquiring a checkpointed original. Retain existing image admission limits when increasing the generic binary store's capacity for PDFs.
+2. **PDF occurrence and annotations.** Lazy-load PDF.js only on viewer activation. Render a bounded page window with navigation, zoom, scrolling and selectable text. Disable scripting, actions, attachments and automatic external links. Page-space rectangular annotations are independently owned BlockProperties, pinned to snapshot, original hash and page geometry. Explicit text conversion creates native text Blocks with extracted-item offsets and page transforms; edits do not fabricate revised alignment. Image-only pages report that no text layer exists; OCR remains future work. One-page-at-a-time rendering is an acceptable stricter initial bound than overscan if it preserves navigation and scrolling.
+3. **Relationships.** Reuse canonical ExternalIdentity/SourceSnapshot and saved Block references. Article subject associations already exist. Add explicit reviewed resource-to-entity assertions (including Work/PDF and institutional holdings) through the Claim/review ledger; no matching by labels and no automatic accepted claims. Structural resource/snapshot/occurrence/annotation links remain distinct from scholarly assertions. Preserve source provenance and accepted facts across repeat imports.
+4. **Package closure and reconstruction.** Extend `.inkpkg` compatibly to retain validated PDF and JSON originals in addition to PNG/JPEG, including bounded IIIF child snapshot/tile closure. Keep exact PackageData logical rows. Record missing originals and partial imagery explicitly. Review attribution/rights before export; technical retention does not confer redistribution rights. Imported identities/claims stay in isolated PackageData context. Restore supported retained representations through an explicit local-only action; never grant network or automatically activate imported opaque Blocks. Preserve original identities in archival provenance while allocating fresh occurrence IDs.
+5. **Qualification.** Deterministic PDF fixtures (text, image-only, multiple pages, invalid/encrypted/oversized), job interruption/retry, deduplication, anchor transforms and independent deletion, text provenance, saved-index rebuild, package original-byte closure and isolated reconstruction. Exercise real Chrome PDF selection/rendering and cross-Vault package round trip. Run existing academic/encyclopedia/IIIF, interchange, persistence and service regressions; record matched typing checks and zero forbidden typing work. Distinguish live-provider tests, fixture tests and untested browsers.
+
+## Budgets and boundaries
+
+Target admission: 50 MiB PDF, 1,000 pages, one preparation worker with existing deadline/heap limits. Viewer bounds canvas pixel allocation and renders one page at a time; this is not a claim of a hard total-process memory ceiling. Package limits remain finite and must explicitly accommodate retained PDF originals without unbounded graph closure. Imported annotations keep snapshot coordinates; no automatic refresh/rebasing. Existing manual save, document history, canonical ledger and immutable asset retention semantics remain in force.
+
+No OCR, AI ingestion, recursive citation harvesting, general CSL engine, Phase 4 activation redesign, publishing expansion, or unrelated editor refactor. Existing CSL JSON export remains supported; any additional citation format must have dedicated escaping and loss tests.
+
+## Delivery gate
+
+Implement in independently testable steps, then produce `MUTABLE_ACADEMIC_RESOURCE_LOADERS_MILESTONE_D_QUALIFICATION.md`. Record limitations and deviations honestly. Stop for Milestone D acceptance after qualification.

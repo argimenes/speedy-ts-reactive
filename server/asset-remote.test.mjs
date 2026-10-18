@@ -94,3 +94,13 @@ test('IIIF JSON uses protected acquisition, rejects wrong MIME, origin changes a
 test('IIIF tile decoding is bounded and original PNG bytes are preserved',async()=>{
  const sharp=(await import('sharp')).default,{acquireIIIF}=await import('./asset-remote.mjs');for(const size of [512,513]){const bytes=await sharp({create:{width:size,height:size,channels:3,background:'#abc'}}).png().toBuffer();const result=acquireIIIF('https://example.com/tile','tile',undefined,{lookup:async()=>answer,request:transport([{bytes,headers:{'content-type':'image/png'}}])});if(size===513)await assert.rejects(result,/limit/);else{const r=await result;assert.equal(r.width,512);assert.deepEqual(Buffer.from(r.bytes),bytes);}}
 });
+
+test('PDF acquisition keeps HTTPS public-address/redirect authority and validates content type and original byte cap',async()=>{
+ const {acquirePdf}=await import('./asset-remote.mjs'),bytes=Buffer.from('%PDF-1.7\nretained original');
+ const deps=responses=>({lookup:async()=>answer,request:transport(responses,(_u,options)=>{assert.equal(options.headers.Accept,'application/pdf');assert.equal(options.headers.Cookie,undefined);})});
+ const r=await acquirePdf('https://papers.example/work.pdf?source=clipboard',undefined,deps([{bytes,headers:{'content-type':'application/pdf'}}]));assert.deepEqual(Buffer.from(r.bytes),bytes);assert.equal(r.endpoint,'https://papers.example/work.pdf?source=clipboard');
+ await assert.rejects(acquirePdf('https://papers.example/work.pdf',undefined,deps([{bytes,headers:{'content-type':'text/html'}}])),/not served as PDF/);
+ await assert.rejects(acquirePdf('https://papers.example/work.pdf',undefined,deps([{headers:{'content-type':'application/pdf','content-length':String(50*1024*1024+1)}}])),/rejected/);
+ await assert.rejects(acquirePdf('https://papers.example/work.pdf',undefined,deps([{status:302,headers:{location:'https://private.example/work.pdf'}}])),/new consent/);
+ await assert.rejects(acquirePdf('https://papers.example/work.pdf',undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}]}),/not public/);
+});

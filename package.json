@@ -23,9 +23,10 @@
     "test:sqlite": "node --test --test-concurrency=1 src/knowledge-sqlite/*.test.mjs",
     "pretest:sqlite": "node scripts/build-sqlite-foundation.mjs",
     "build:viewer": "node scripts/build-ink-viewer.mjs",
-    "prebuild:client": "npm run build:viewer",
-    "predev": "npm run build:viewer",
-    "predev:client": "npm run build:viewer"
+    "prebuild:client": "npm run build:viewer && npm run build:pdf-assets",
+    "predev": "npm run build:viewer && npm run build:pdf-assets",
+    "predev:client": "npm run build:viewer && npm run build:pdf-assets",
+    "build:pdf-assets": "node scripts/build-pdf-assets.mjs"
   },
   "license": "MIT",
   "devDependencies": {
@@ -79,6 +80,7 @@
     "openseadragon": "6.1.1",
     "parse5": "7.3.0",
     "path": "^0.12.7",
+    "pdfjs-dist": "5.4.624",
     "sharp": "0.35.5",
     "solid-contextmenu": "^0.0.2",
     "solid-js": "^1.7.6",

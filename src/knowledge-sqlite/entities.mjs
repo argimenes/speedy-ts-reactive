@@ -1,3 +1,4 @@
+import {resources} from './resources.mjs';
 import {iiif} from './iiif.mjs';
 import {encyclopedia} from './encyclopedia.mjs';
 import {scholarly} from './scholarly.mjs';
@@ -9,11 +10,11 @@ const string = (v, max = 1000) => { if (typeof v !== 'string' || !v.trim() || v.
 const guid = v => { string(v, 512); if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)) throw Error('Supply a stable UUID'); return v; };
 const expected = v => { if (!Number.isSafeInteger(v) || v < 0) throw Error('Expected revision required'); return v; };
 const entity = (db, id) => { const row = db.prepare('SELECT guid AS id,name,revision,description,typename,attributes FROM Entity WHERE guid=?').get(string(id,512)); if (!row) return; return {...row,attributes:row.attributes===null?null:JSON.parse(row.attributes), aliases: db.prepare("SELECT guid AS id,alias AS name,origin,revision FROM EntityAlias WHERE entityGuid=? AND origin IN ('curated','imported') ORDER BY aliasKey,guid LIMIT 201").all(id)}; };
-export const entityMutation = op => ['iiif-commit','wiki-commit','wiki-review','scholarly-commit','create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(op);
+export const entityMutation = op => ['pdf-commit','resource-review','iiif-commit','wiki-commit','wiki-review','scholarly-commit','create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(op);
 /** Typed semantic dispatch keeps the existing Entity/Relationship operation names. */
 export function entityCommand(request){
  const {recordType,...input}=request;
- if(input.op?.startsWith('iiif-')||input.op?.startsWith('wiki-')||input.op?.startsWith('scholarly-'))throw Error('Use the scoped academic application service');
+ if(input.op?.startsWith('pdf-')||input.op?.startsWith('resource-')||input.op?.startsWith('iiif-')||input.op?.startsWith('wiki-')||input.op?.startsWith('scholarly-'))throw Error('Use the scoped academic application service');
  const relationship=['relationship-create','relationship-update','relationships'].includes(input.op);
  if(!['Entity','Relationship'].includes(recordType)||relationship!==(recordType==='Relationship'))throw Error('Canonical record type and operation differ');
  return input;
@@ -23,6 +24,7 @@ export function canonicalEntities(db, request, check = () => {}, ledger = canoni
   check();
   if (!request || typeof request !== 'object' || Buffer.byteLength(JSON.stringify(request)) > 32768) throw Error('Entity request budget exceeded');
   const {op}=request;
+  if(op?.startsWith('pdf-')||op?.startsWith('resource-'))return resources(db,request,ledger,check);
   if(op?.startsWith('iiif-'))return iiif(db,request,ledger,check);
   if(op?.startsWith('wiki-'))return encyclopedia(db,request,ledger,check);
   if(op?.startsWith('scholarly-'))return scholarly(db,request,ledger,check);

@@ -71,3 +71,9 @@ test('text consent is exact, format-scoped, Cavern/session-bound, expiring and r
  const expires=await store.begin([],[{url,format:'html'}]);now=1000000;await assert.rejects(store.authorizeAcquisition(expires,url,'html'),/expired/);
  const finished=await store.begin([],[{url,format:'html'}]);const bytes=await png();await store.stage(finished,bytes,await validateImportedImage(bytes));await store.publish(finished);await store.finish(finished);await assert.rejects(store.authorizeAcquisition(finished,url,'html'),/consent/);
 });
+
+test('generic original store admits a 50 MiB PDF without broadening image admission',async()=>{
+ const {store}=await fixture(),lease=await store.begin(),bytes=Buffer.alloc(50*1024*1024,32);bytes.write('%PDF-1.7');
+ const m=await store.stage(lease,bytes,{mediaType:'application/pdf'});await store.publish(lease);await store.finish(lease);const loaded=await store.get(m.assetId,'cavern');assert.equal(loaded.bytes.length,bytes.length);assert.equal(createHash('sha256').update(loaded.bytes).digest('hex'),m.assetId.slice(7));
+ const imageLease=await store.begin();await assert.rejects(store.stage(imageLease,Buffer.alloc(10*1024*1024+1),{mediaType:'image/png'}),/limit/);await store.abort(imageLease);
+});

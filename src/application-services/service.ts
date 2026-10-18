@@ -1,3 +1,5 @@
+import {resourceAssets} from '../interchange/package/resources';
+import {PACKAGE_LIMITS} from '../interchange/package/archive';
 /** Application workflow implementation. All authority and execution are injected;
  * no Express, Node filesystem, browser state or live editor repository. */
 import type {ApplicationServices,Operation,OperationMap,PreparationResult,JobState} from './contracts';
@@ -49,6 +51,7 @@ export class ApplicationService implements ApplicationServices {
    signal.throwIfAborted();r=await this.transition(r,'running');
    try{
     const p=r.preparation;let result:PreparationResult;
+    if(p.kind==='pdf')throw Error('Use pdf.resume for PDF jobs');
     if(p.kind==='iiif')throw Error('Use iiif.resume for IIIF jobs');
     if(p.kind==='encyclopedia')throw Error('Use encyclopedia.resume for encyclopedia jobs');
     if(p.kind==='academic')throw Error('Use academic.resume for scholarly jobs');
@@ -56,11 +59,12 @@ export class ApplicationService implements ApplicationServices {
     else{
      const document=await this.ports.readNative(p.document,signal),native=new TextEncoder().encode(document.native);
      if(native.length>8*1024*1024)throw Error('Native resource exceeds package limit');
-     const inventory=await this.ports.executor.run({kind:'inventory',native},signal) as Inventory;
-     if(inventory.assets.length>20)throw Error('Package asset count exceeded');
+     const inventory=await this.ports.executor.run({kind:'inventory',native,resources:!!this.ports.resourceOriginal},signal) as Inventory;
+     if(inventory.assets.length>PACKAGE_LIMITS.images)throw Error('Package asset count exceeded');
      const context=await this.ports.packageData({...p.knowledge,entities:inventory.entities,claimsById:inventory.claims,documentHash:document.sha256},signal);
      const assets=[];let size=0;
-     for(const ref of inventory.assets){signal.throwIfAborted();if(ref.cavernId!==this.ports.cavernId)throw Error('Package asset belongs to another Cavern');const a=await this.ports.originalAsset(ref.assetId,signal);size+=a.bytes.length;if(size>40*1024*1024||assets.length>=20)throw Error('Package asset budget exceeded');assets.push({reference:ref,bytes:a.bytes,mediaType:a.mediaType});}
+     const refs=new Map([...inventory.assets,...(this.ports.resourceOriginal?resourceAssets(context.data):[])].map(a=>[a.cavernId+'/'+a.assetId,a]));
+     for(const ref of refs.values()){signal.throwIfAborted();if(ref.cavernId!==this.ports.cavernId)throw Error('Package asset belongs to another Cavern');const a=await (this.ports.resourceOriginal??this.ports.originalAsset)(ref.assetId,signal);size+=a.bytes.length;if(size>PACKAGE_LIMITS.assets||assets.length>=PACKAGE_LIMITS.images)throw Error('Package asset budget exceeded');assets.push({reference:ref,bytes:a.bytes,mediaType:a.mediaType});}
      result=await this.ports.executor.run({kind:'package',native,source:{cavernId:this.ports.cavernId,resourceId:document.resourceId},context,assets},signal) as PreparationResult;
      // A reviewed saved document cannot silently change during preparation.
      await this.ports.readNative(p.document,signal);

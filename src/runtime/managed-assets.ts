@@ -24,6 +24,7 @@ export class ManagedAssets {
     const form = new FormData(); form.append('asset', file, 'clipboard-image');
     return this.request(`${lease.id}/images/stage`, form, signal, lease);
   }
+  async stageOriginal(lease:AssetLease,file:Blob,signal?:AbortSignal):Promise<AssetManifest>{const form=new FormData();form.append('asset',file,'retained-original');return this.request(`${lease.id}/originals/stage`,form,signal,lease);}
   remote(lease: AssetLease, url: string, signal?: AbortSignal): Promise<AssetManifest> { return this.request(`${lease.id}/images/remote`, { url }, signal, lease); }
   action(lease: AssetLease, action: string, signal?: AbortSignal) { return this.request(`${lease.id}/${action}`, {}, signal, lease); }
   async original(asset: ManagedAssetReference, signal: AbortSignal): Promise<{reference:ManagedAssetReference;mediaType:'image/png'|'image/jpeg';bytes:Uint8Array}> {

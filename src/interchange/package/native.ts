@@ -1,3 +1,5 @@
+import {RESOURCE_TYPES,resourceSnapshots} from './resources';
+import {assetKey,managedAsset} from '../managed-asset';
 import { encodeAuthoredValue } from '../../history/preplan-spike/wire';
 import type { DeepReadonly } from '../../block-tree/commit-capture';
 import type { ResourceSnapshot } from '../../history/stage-c-gates/resource';
@@ -29,9 +31,19 @@ export function packageFragment(snapshot:DeepReadonly<ResourceSnapshot>,cavernId
  }
  return serializeSelection(state,slices,{...(cavernId?{cavernId}:{}),resourceId:snapshot.resourceId},true,observeBlock);
 }
-export function materializePackage(fragment:MutableFragment,cavernId:string|undefined,assets:[string,string][],context:{data:PackageData;schema:unknown;source:unknown}){
+export function materializePackage(fragment:MutableFragment,cavernId:string|undefined,assets:[string,string][],context:{data:PackageData;schema:unknown;source:unknown;assetBindings?:Array<[string,import('../managed-asset').ManagedAssetReference]>}){
  // A package is always a foreign copy, even if its source claims the active Cavern.
  const isolated=structuredClone(fragment);
+ // Carry a bounded, inert reconstruction envelope with each resource. This also
+ // survives re-export of an inactive imported copy without querying active SQL.
+ const captured=resourceSnapshots(context.data),bindings=new Map(context.assetBindings??[]);
+ for(const block of isolated.blocks){const data=RESOURCE_TYPES.includes(block.type)?block.data:block.type==='mutable/opaque-block'&&RESOURCE_TYPES.includes((block.data.original as any)?.type)?(block.data.original as any).data:undefined;if(!data)continue;
+  const snapshot=data.pdf??data.iiif??data.article??data.citation,prior=data.archive;if(!snapshot?.snapshotId)continue;
+  const snapshots=prior?.version===1?prior.snapshots:captured.filter(s=>s.snapshotId===snapshot.snapshotId||s.parentSnapshotId===snapshot.snapshotId);
+  const mapped=prior?.version===1?prior.bindings.map(([key,value]:any[])=>[key,bindings.get(assetKey(value))]).filter((p:any[])=>!!managedAsset(p[1])):[...bindings.entries()];
+  if(Array.isArray(snapshots)&&snapshots.length<=129)data.archive={version:1,snapshots,bindings:mapped};
+ }
+
  for(const b of isolated.blocks){const fields=Object.fromEntries(['style','css','html'].filter(k=>b.data[k]!==undefined).map(k=>[k,b.data[k]]));if(Object.keys(fields).length)b.data.packageInactivePresentation={version:1,fields,...b.data.packageInactivePresentation!==undefined?{previous:b.data.packageInactivePresentation}:{}};}
  const native=materializeFragment(isolated,{cavernId},new Map(assets),new Map(),new Set((fragment as MutableFragment&{packageRetainedBlocks?:string[]}).packageRetainedBlocks??[]),false);
  const root=native.state.contents[native.state.placements[native.roots[0]].contentKey];

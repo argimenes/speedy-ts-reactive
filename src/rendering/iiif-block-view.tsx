@@ -1,3 +1,5 @@
+import {archivedResourceApi} from '../runtime/archived-resources';
+import {ResourceRelationships} from './resource-relationships';
 import {unwrap} from 'solid-js/store';
 import {createSignal,createEffect,untrack,onMount,onCleanup,Show,For} from 'solid-js';
 import type {BlockViewProps} from '../block-tree/types';
@@ -11,7 +13,8 @@ export function IIIFBlockView(props:BlockViewProps){
  const {editor,projection}=useReactiveView(),node=()=>projection.state.nodes[props.nodeKey],snapshot=()=>node()?.payload.iiif as unknown as Capture;
  const [source,setSource]=createSignal<Projection>(),[selected,setSelected]=createSignal(''),[status,setStatus]=createSignal(''),[busy,setBusy]=createSignal(false),[viewer,setViewer]=createSignal<IIIFViewer>(),[note,setNote]=createSignal(''),[imageNotice,setImageNotice]=createSignal(''),[region,setRegion]=createSignal({x:0,y:0,width:100,height:100});
  let root!:HTMLElement,host!:HTMLDivElement,active:AbortController|undefined,grant:string|undefined,alive=true,epoch=0;
- const api=new HttpApplicationServices(()=>{const c=editor.readAssetContext();if(!c?.cavernId||!c.session)throw Error('Open the source Vault to read this IIIF capture');return {cavernId:c.cavernId,session:c.session};});
+ const archive=(node()?.payload.archive as any),local=archive?archivedResourceApi(editor,archive):undefined;onCleanup(()=>{void local?.close();});
+ const api=local?.api??new HttpApplicationServices(()=>{const c=editor.readAssetContext();if(!c?.cavernId||!c.session)throw Error('Open the source Vault to read this IIIF capture');return {cavernId:c.cavernId,session:c.session};});
  const canvases=()=>{const p=source();return p?p.kind==='manifest'?p.canvases:[canvasAt(p,p.id)]:[];},canvas=()=>canvases().find(c=>c.id===selected());
  const annotations=()=>{const a=node()?.payload.blockProperties;return (Array.isArray(a)?a:[]).map(annotation).filter((a):a is ResourceAnnotation=>!!a);};
  const currentAnnotations=()=>annotations().filter(a=>a.anchor.snapshotId===snapshot()?.snapshotId&&a.anchor.manifestId===source()?.id&&a.anchor.canvasId===selected()&&a.anchor.canvasWidth===canvas()?.width&&a.anchor.canvasHeight===canvas()?.height);
@@ -36,11 +39,11 @@ export function IIIFBlockView(props:BlockViewProps){
   <Show when={!editor.features.iiifResourceLoaders}><p>IIIF viewers are disabled. Saved source references and annotations are preserved.</p></Show>
   <label>Canvas <select aria-label="IIIF canvas" value={selected()} onChange={e=>{close();setSelected(e.currentTarget.value);setStatus('Canvas selected; activate its viewer.');}}><For each={canvases()}>{c=><option value={c.id}>{c.label}</option>}</For></select></label>
   <Show when={canvas()}>{c=><><p>{c().attribution} {c().rights} {imageNotice()}</p><p>{c().width} × {c().height} canvas units. <For each={c().diagnostics}>{d=><span>{d} </span>}</For></p>
-   <Show when={c().service}><p>Online activation sends image-region requests to {new URL(c().service!).origin}. No cookies or credentials are forwarded.</p><button disabled={busy()} onClick={()=>void activate(true)}>Activate online viewer</button>{' '}<button disabled={busy()} onClick={()=>void activate(false)}>Open retained / cached tiles only</button></Show>
+   <Show when={c().service}><p>Online activation sends image-region requests to {new URL(c().service!).origin}. No cookies or credentials are forwarded.</p><Show when={!archive}><button disabled={busy()} onClick={()=>void activate(true)}>Activate online viewer</button></Show>{' '}<button disabled={busy()} onClick={()=>void activate(false)}>Open retained / cached tiles only</button></Show>
   </>}</Show>
   <button onClick={close}>Close / cancel viewer</button><p role="status">{status()}</p>
   <div ref={host} aria-label="IIIF image viewport" style={{width:'100%','max-width':'1200px',height:viewer()||busy()?'500px':'0px',overflow:'hidden',background:'#242424',position:'relative'}}/>
-  <Show when={viewer()}><div><button onClick={()=>viewer()?.zoom(1.5)}>Zoom in</button><button onClick={()=>viewer()?.zoom(1/1.5)}>Zoom out</button><button onClick={()=>viewer()?.home()}>Fit image</button><button disabled={busy()} onClick={()=>void retain()}>Retain cached tiles for offline viewing</button></div></Show>
+  <Show when={viewer()}><div><button onClick={()=>viewer()?.zoom(1.5)}>Zoom in</button><button onClick={()=>viewer()?.zoom(1/1.5)}>Zoom out</button><button onClick={()=>viewer()?.home()}>Fit image</button><Show when={!archive}><button disabled={busy()} onClick={()=>void retain()}>Retain cached tiles for offline viewing</button></Show></div></Show>
   <For each={currentAnnotations().map(a=>a.id)}>{id=><Overlay id={id}/>}</For>
   <Show when={canvas()}><details><summary>Spatial annotations ({currentAnnotations().length})</summary><p>Regions use the captured canvas coordinates. Overlapping notes are independent. Pan/zoom to a region, use the visible region, or enter precise coordinates.</p>
    <button disabled={!viewer()} onClick={()=>{try{setRegion(viewer()!.region());}catch(e){setStatus(String(e));}}}>Use visible region</button>
@@ -48,5 +51,6 @@ export function IIIFBlockView(props:BlockViewProps){
    <label>Note <input aria-label="Spatial note" value={note()} maxlength={4000} onInput={e=>setNote(e.currentTarget.value)}/></label><button disabled={!note().trim()||!editor.features.iiifResourceLoaders} onClick={saveNote}>Add spatial annotation</button>
    <For each={currentAnnotations()}>{a=><p>{a.value} <button aria-label={`Delete annotation ${a.value}`} onClick={()=>remove(a.id)}>Delete</button></p>}</For>
   </details></Show>
+ <Show when={!archive}><ResourceRelationships ownerKey={props.nodeKey} snapshotId={snapshot()?.snapshotId}/></Show>
  </section>;
 }

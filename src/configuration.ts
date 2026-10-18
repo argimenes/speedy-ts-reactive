@@ -34,6 +34,7 @@ export type FeatureFlags = Readonly<{
   /** Primary-Shift-V turns a single HTTP(S) URL into its resource Block. */
   resourceUrlPaste: boolean;
   academicResourceLoaders: boolean;
+  crossResourceLoaders: boolean;
   iiifResourceLoaders: boolean;
   /** Explicit global Cavern setup and startup lifecycle. */
   cavernStartup: boolean;
@@ -129,6 +130,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   automaticClipboardImages: true,
   resourceUrlPaste: true,
   academicResourceLoaders: true,
+  crossResourceLoaders: true,
   iiifResourceLoaders: true,
   cavernStartup: true,
   windowMaximize: true,

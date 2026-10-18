@@ -109,3 +109,10 @@ export async function acquireIIIF(url,format,signal,dependencies={}) {
  const {validateIIIFTile}=await import('./asset-image-validation.mjs'),metadata=await validateIIIFTile(r.bytes,signal);
  return {bytes:new Uint8Array(r.bytes),endpoint:r.url,width:metadata.width,height:metadata.height};
 }
+
+/** Explicit managed PDF acquisition; parser admission is a bounded host task. */
+export async function acquirePdf(url,signal,dependencies={}) {
+ const r=await acquire(url,signal,dependencies,{accept:"application/pdf",bytes:50*1024*1024});
+ if(!/^application\/pdf(?:;|$)/i.test(String(r.mediaType)))throw Error("Resource is not served as PDF");
+ return {bytes:new Uint8Array(r.bytes),endpoint:r.url};
+}

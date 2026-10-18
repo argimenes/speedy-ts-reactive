@@ -51,7 +51,15 @@ export function extractPackageData(db, request, check=()=>{}) {
     if(tables.has('SourceClaimReview'))for(const r of tables.get('Claim').values()){for(const review of select('SourceClaimReview','claimGuid',r.guid)){for(const snapshot of select('SourceSnapshot','guid',review.snapshotGuid)){for(const identity of select('ExternalIdentity','guid',snapshot.identityGuid))entity(identity.entityGuid);}}}
     if(tables.has('ExternalIdentity'))for(const r of tables.get('Entity').values())select('ExternalIdentity','entityGuid',r.guid);
     for(const r of tables.get('ExternalIdentity')?.values()??[])select('SourceSnapshot','identityGuid',r.guid);
-    for(const r of tables.get('SourceSnapshot')?.values()??[])unresolved.push({table:'SourceSnapshot',value:r.guid,reason:'Capture metadata and original asset identity retained; scholarly JSON original is not bundled by the image-only package profile.'});
+    // Two bounded structural levels only: manifest -> canvas information/retained
+    // tiles. Closure entities never become scholarly graph-discovery roots.
+    for(const r of [...tables.get('SourceSnapshot')?.values()??[]]){
+      const children=db.prepare("SELECT guid FROM SourceSnapshot WHERE json_extract(attributes,'$.parentSnapshotId')=? LIMIT 129").all(r.guid);queries++;
+      if(children.length>128)throw Error('Retained resource closure exceeds 128 snapshots; narrow the package');
+      for(const child of children)select('SourceSnapshot','guid',child.guid);
+    }
+    for(const r of tables.get('SourceSnapshot')?.values()??[]){for(const identity of select('ExternalIdentity','guid',r.identityGuid))entity(identity.entityGuid);const s=JSON.parse(r.attributes);if(s.subjectId)entity(s.subjectId);}
+
     const actors=new Set();
     for(const rows of tables.values())for(const r of rows.values())for(const field of ['createdByActorGuid','lastUpdatedByActorGuid'])if(r[field])actors.add(r[field]);
     for(const guid of actors){if(options.actors){if(!select('Actor','guid',guid).length)unresolved.push({table:'Actor',column:'guid',value:guid,reason:'Missing actor'});}else excluded.push({table:'Actor',column:'guid',value:guid,reason:'Actor records require explicit inclusion'});}

@@ -1,3 +1,4 @@
+import {PdfBlockView} from './pdf-block-view';
 import {IIIFBlockView} from './iiif-block-view';
 import {WebArticleBlockView} from './web-article-block-view';
 import {CitationBlockView} from './citation-block-view';
@@ -45,6 +46,7 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
   if (editor.features.documentInterchange) many(editor, ["mutable/video-block"], VideoBlockView, ["media", "opaque-widget", "selectable"]);
   if (editor.features.resourceUrlPaste) many(editor, ["youtube-player-block", "vimeo-player-block"],
     (props: import('../block-tree/types').BlockViewProps) => createComponent(VideoBlockView, { ...props, loadOnMount: true }), ["media", "opaque-widget", "selectable"]);
+  many(editor, ['mutable/pdf-document-block'], PdfBlockView, ['selectable','opaque-widget']);
   many(editor, ['mutable/iiif-manifest-block','mutable/iiif-image-block'], IIIFBlockView, ['selectable','opaque-widget']);
   many(editor, ['mutable/web-article-block'], WebArticleBlockView, ['selectable','opaque-widget']);
   many(editor, ['mutable/citation-block'], CitationBlockView, ['selectable','opaque-widget']);

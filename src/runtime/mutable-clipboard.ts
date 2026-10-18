@@ -1,3 +1,5 @@
+import {pdfInput} from '../pdf/model';
+import {pdfBlock} from '../pdf/block';
 import {iiifInput} from '../iiif/model';
 import {iiifBlock} from '../iiif/block';
 import {wikipediaInput} from '../interchange/encyclopedia';
@@ -243,6 +245,8 @@ export class MutableClipboard {
       const asMarkdown = !!intent && intent.until >= Date.now() && intent.target === event.target && this.valid(intent.bookmark, event, cross);
       this.clearIntent();
       const data = captureClipboard(event.clipboardData);
+      const pdf=plain&&this.editor.features.crossResourceLoaders?pdfInput(data['text/plain']):undefined;
+      if(pdf){this.pastePdf(b,pdf,event,cross);return;}
       const iiif=plain&&this.editor.features.iiifResourceLoaders?iiifInput(data['text/plain']):undefined;
       if(iiif){this.pasteIIIF(b,data['text/plain'].trim(),event,cross);return;}
       const wiki=plain&&this.editor.features.academicResourceLoaders?wikipediaInput(data['text/plain']):undefined;
@@ -269,6 +273,14 @@ export class MutableClipboard {
     if (!b.slices.length || b.kind === 'text' && b.slices.every(s => s.start === s.end)) return;
     if (b.kind === 'text' && b.disjoint) b = { ...b, slices: b.slices.filter(s => s.start !== s.end) };
     this.write(b, event.type === 'cut', event, cross);
+  }
+  private pastePdf(bookmark:Bookmark,source:string,event:ClipboardEvent,cross:boolean){
+    if(bookmark.disjoint)throw Error('Paste a PDF into one selection.');
+    this.notify('Acquiring managed PDF…');this.asyncTask(async()=>{
+      const signal=this.importController!.signal;const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; PDF insertion cancelled. The original may have been retained.');};check();
+      const api=new HttpApplicationServices(()=>{const c=this.context();if(!c?.cavernId||!c.session)throw Error('Open a Vault before importing a PDF');return {cavernId:c.cavernId,session:c.session};});
+      const result=await api.call('pdf.import',{id:crypto.randomUUID(),source},signal);check();const prepared=pdfBlock(result.snapshot,source);this.insert(bookmark,prepared.fragment,false,[prepared.native]);this.notify('Pasted retained PDF. Open its local viewer; save to retain this occurrence.');
+    });
   }
   private pasteIIIF(bookmark:Bookmark,source:string,event:ClipboardEvent,cross:boolean){
     if(bookmark.disjoint)throw Error('Paste an IIIF resource into one selection.');

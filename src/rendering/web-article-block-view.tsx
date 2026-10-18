@@ -1,3 +1,4 @@
+import {ResourceRelationships} from './resource-relationships';
 import {createSignal,createEffect,onMount,onCleanup,Show,For} from 'solid-js';
 import type {BlockViewProps} from '../block-tree/types';
 import {useReactiveView} from '../reactive-editor/context';
@@ -24,7 +25,7 @@ export function WebArticleBlockView(props:BlockViewProps){
   <Show when={/^[a-z][a-z0-9-]{0,30}\.wikipedia\.org$/.test(article()?.site??'')&&Number.isSafeInteger(article()?.revision)}><a href={`https://${article().site}/w/index.php?oldid=${article().revision}`} target="_blank" rel="noopener noreferrer">Open captured revision and attribution history ↗</a></Show>
   <p>Wikipedia contributors · CC BY-SA. <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">License</a></p>
   <button onClick={()=>void editor.interchange.convertSourceBlock(props.nodeKey)}>Convert to editable Ink…</button>{' '}
-  <Show when={editor.features.academicResourceLoaders&&article()?.qid} fallback={<span>No Wikidata enrichment available.</span>}><button disabled={busy()} onClick={()=>void enrich()}>Acquire Wikidata {article()?.qid} for review…</button></Show>
+  <Show when={editor.features.academicResourceLoaders&&!node()?.payload.archive&&article()?.qid} fallback={<span>No Wikidata enrichment available.</span>}><button disabled={busy()} onClick={()=>void enrich()}>Acquire Wikidata {article()?.qid} for review…</button></Show>
   <Show when={busy()}><button onClick={()=>active?.abort()}>Cancel</button></Show>
   <p role="status">{status()}</p>
   <Show when={preview()} fallback={<p>Preparing isolated reading view…</p>}>{p=><iframe title="Captured Wikipedia article" sandbox="" referrerpolicy="no-referrer" srcdoc={p().srcdoc} style={{width:'100%',height:'600px',border:'0'}}/>}</Show>
@@ -39,5 +40,6 @@ export function WebArticleBlockView(props:BlockViewProps){
     <Show when={c().reviews.find(r=>r.statementId===s.id)} fallback={<><button disabled={busy()||!s.supported} onClick={()=>void review(s.id,'accepted')}>Accept as Claim</button><button disabled={busy()} onClick={()=>void review(s.id,'rejected')}>Reject</button></>}>{r=><p>{r().decision}{r().claimGuid?' · '+r().claimGuid:''}</p>}</Show>
    </article>}</For>
   </section>}</Show>
+ <Show when={!node()?.payload.archive}><ResourceRelationships ownerKey={props.nodeKey} snapshotId={article()?.snapshotId}/></Show>
  </section>;
 }

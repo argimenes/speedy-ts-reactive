@@ -1,0 +1,10 @@
+/* Scoped subset of PDF.js's text-layer positioning contract (Apache-2.0). */
+.mutable-pdf-page{position:relative;background:white;isolation:isolate;line-height:1;color-scheme:only light}
+.mutable-pdf-page canvas{display:block}
+.mutable-pdf-page .textLayer{position:absolute;inset:0;overflow:clip;text-align:initial;line-height:1;transform-origin:0 0;text-size-adjust:none;forced-color-adjust:none;--min-font-size:1;--text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size));--min-font-size-inv:calc(1 / var(--min-font-size))}
+.mutable-pdf-page .textLayer :is(span,br){color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0% 0%}
+.mutable-pdf-page .textLayer > :not(.markedContent),.mutable-pdf-page .textLayer .markedContent span:not(.markedContent){z-index:1;--font-height:0;font-size:calc(var(--text-scale-factor) * var(--font-height));--scale-x:1;--rotate:0deg;transform:rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv))}
+.mutable-pdf-page .textLayer .markedContent{display:contents}
+.mutable-pdf-page .textLayer ::selection{background:#487fff70}
+.mutable-pdf-page .textLayer br::selection{background:transparent}
+.mutable-pdf-region{position:absolute;border:2px solid #9a3dcc;background:#9a3dcc22;box-sizing:border-box;pointer-events:none}

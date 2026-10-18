@@ -47,6 +47,10 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    host.style.cssText = 'position:fixed;inset:0;overflow:auto;background:white;z-index:99999';
    const documentUrl = ${JSON.stringify(process.env.BENCHMARK_DOCUMENT_URL ?? "")};
    const dto = documentUrl ? (await (await fetch(documentUrl)).json()).Data.document : {id:'typing-benchmark-document',type:'document-block',children:Array.from({length:250},(_,i)=>({id:'bench-'+i,type:'standoff-editor-block',text:'x'.repeat(100),standoffProperties:[{type:'style/bold',start:40,end:60}]}))};
+   const pdfMode=${JSON.stringify(process.env.BENCHMARK_PDF??'')};let pdfCalls=0,pdfNavigation;
+   if(pdfMode){const {pdfFixture}=await import('/src/pdf/fixtures.ts'),bytes=pdfFixture(),snapshot={version:1,kind:'pdf',snapshotId:crypto.randomUUID(),identityId:crypto.randomUUID(),entityId:crypto.randomUUID(),resourceId:crypto.randomUUID(),sourceUrl:'https://papers.example/benchmark.pdf',endpoint:'https://papers.example/benchmark.pdf',retrievedAt:'2026-10-18T00:00:00Z',asset:{kind:'managed',cavernId:'fixture',assetId:'sha256:'+'a'.repeat(64)},inspection:{kind:'pdf-inspection',pages:2,label:'Typing PDF',version:'fixture'}};
+    dto.children.push({id:'pdf-bench',type:'mutable/pdf-document-block',pdf:snapshot});const original=window.fetch.bind(window);window.fetch=async(input,init)=>{if(String(input).startsWith('/api/services/pdf.')){pdfCalls++;return new Response(bytes,{headers:{'Content-Type':'application/octet-stream','X-Mutable-Cavern-Id':'fixture','X-Mutable-Result':JSON.stringify({snapshot})}});}return original(input,init);};
+   }
    const iiifMode=${JSON.stringify(process.env.BENCHMARK_IIIF??'')};let iiifCalls=0;
    if(iiifMode){
     const {imageFixture,jsonBytes}=await import('/src/iiif/fixtures.ts'),{normalizeIIIF}=await import('/src/iiif/model.ts');
@@ -71,10 +75,15 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
        if(!session.spatial.document.activate('block:bench-window'))throw new Error('Benchmark Document authorization failed');
      }
    } else {
-     editor = new ReactiveEditor(dto,{features:{iiifResourceLoaders:iiifMode!=='off',academicResourceLoaders:${JSON.stringify((process.env.BENCHMARK_ENCYCLOPEDIA??process.env.BENCHMARK_ACADEMIC) !== 'off')}}}); registerApplicationViews(editor);
-     if(iiifMode)editor.clipboard.setContext(()=>({cavernId:'fixture',session:'fixture'}));
+     editor = new ReactiveEditor(dto,{features:{crossResourceLoaders:pdfMode!=='off',iiifResourceLoaders:iiifMode!=='off',academicResourceLoaders:${JSON.stringify((process.env.BENCHMARK_ENCYCLOPEDIA??process.env.BENCHMARK_ACADEMIC) !== 'off')}}}); registerApplicationViews(editor);
+     if(iiifMode||pdfMode)editor.clipboard.setContext(()=>({cavernId:'fixture',session:'fixture'}));
      projection = editor.createView('browser-performance');
      dispose = render(() => createComponent(ReactiveTreeView,{editor,projection}), host);
+   }
+   if(pdfMode==='active'){
+    const block=host.querySelector('.mutable-pdf');block.style.cssText='position:fixed;right:0;top:0;width:500px;z-index:100000;background:white';[...block.querySelectorAll('button')].find(b=>b.textContent==='Open retained PDF').click();
+    for(let i=0;i<300&&!block.querySelector('.textLayer span');i++)await new Promise(r=>setTimeout(r,20));if(!block.querySelector('.textLayer span'))throw Error('PDF did not render');
+    pdfNavigation=()=>{const page=Number(block.querySelector('[aria-label="PDF page"]').value);const button=[...block.querySelectorAll('button')].find(b=>b.textContent===(page===1?'Next PDF page':'Previous PDF page'));if(!button.disabled)button.click();};
    }
    if(iiifMode==='active'){
     for(let i=0;i<200&&!host.querySelector('.mutable-iiif select option');i++)await new Promise(r=>setTimeout(r,20));
@@ -126,10 +135,11 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
      const data=new DataTransfer();data.setData('text/plain',${JSON.stringify(process.env.BENCHMARK_ENCYCLOPEDIA?'https://en.wikipedia.org/wiki/Typing':'10.1234/typing')});flow.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));
      await Promise.resolve();if(academicRequests!==1)throw Error('Academic preparation did not start');
    }
-   const iiifBefore=iiifCalls;const samples=[];let snapshots=0; const snapshot=editor.repository.snapshot.bind(editor.repository);
+   const pdfBefore=pdfCalls;const iiifBefore=iiifCalls;const samples=[];let snapshots=0; const snapshot=editor.repository.snapshot.bind(editor.repository);
    editor.repository.snapshot=()=>{snapshots++;return snapshot();};
    const before=flow.textContent;
    for(let i=0;i<20;i++){
+     if(i%5===0)pdfNavigation?.();
      let start=performance.now();
      flow.dispatchEvent(new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'insertText',data:'a'}));
      samples.push(performance.now()-start);
@@ -143,9 +153,9 @@ const send = (method, params = {}, sessionId) => new Promise((resolve, reject) =
    const restored=flow.textContent===before;
    window.typingBench={editor,projection,host,flow,dispose:()=>{stopBacklinks();dispose();},stopMarkdown,caret,midpoint,before,originalCell,unrelated};
    samples.sort((a,b)=>a-b);
-   return {iiifMode,iiifCallsDuringTyping:iiifCalls-iiifBefore,academicMode,academicRequests,backlinks:${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')},markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
+   return {pdfMode,pdfCallsDuringTyping:pdfCalls-pdfBefore,iiifMode,iiifCallsDuringTyping:iiifCalls-iiifBefore,academicMode,academicRequests,backlinks:${JSON.stringify(process.env.BENCHMARK_BACKLINKS === '1')},markdownExperiment:${JSON.stringify(process.env.BENCHMARK_MARKDOWN === '1')},presentation:presentation||"standalone",sceneFramesDuringTyping:Number(study?.dataset.frames??0)-sceneFramesBefore,characters:[...flows].reduce((n,f)=>n+[...f.textContent].length,0),paragraphCharacters:[...before].length,paragraphs:flows.length,edits:samples.length,meanMs:samples.reduce((a,b)=>a+b)/samples.length,medianMs:samples[20],p95Ms:samples[38],maxMs:samples[39],snapshots,restored,unrelatedCellStable:unrelated.firstChild===originalCell};
  })()`);
- console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);if(result.iiifMode)assert.equal(result.iiifCallsDuringTyping,0);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
+ console.log(JSON.stringify(result,null,2)); assert.equal(result.restored,true);if(result.pdfMode)assert.equal(result.pdfCallsDuringTyping,0);if(result.iiifMode)assert.equal(result.iiifCallsDuringTyping,0);assert.equal(result.snapshots,0);assert.equal(result.unrelatedCellStable,true);
  const before = await evaluate('window.typingBench.before');
  const midpoint = await evaluate('window.typingBench.midpoint');
  const inserted = [...before].slice(0,midpoint).join('')+'Q'+[...before].slice(midpoint).join('');

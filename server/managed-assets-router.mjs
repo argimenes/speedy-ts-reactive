@@ -7,6 +7,7 @@ import { acquireRemoteAsset, acquireRemoteText, textPolicy, remoteAssetUrl } fro
 export function createManagedAssetService(options) {
   const store = new ManagedAssetStore(options), router = Router();
   const upload = multer({ storage:multer.memoryStorage(),limits:{fileSize:IMAGE_LIMITS.bytes,files:1,fields:2,parts:3} }).single('asset');
+  const originalUpload=multer({storage:multer.memoryStorage(),limits:{fileSize:50*1024*1024,files:1,fields:1,parts:2}}).single('asset');
   let recovery = { diagnostics: [] };
   let work = 0; const controllers = new Set();
   const route = (method,name,action) => router[method](name,async(req,res)=>{
@@ -42,6 +43,12 @@ export function createManagedAssetService(options) {
     signal.throwIfAborted();if(!req.file)throw Error('No image supplied.');
     const metadata=await validateImportedImage(req.file.buffer,signal);signal.throwIfAborted();
     return store.stage(lease(req),req.file.buffer,metadata);
+  });
+  route('post','/:operation/originals/stage',async(req,res,signal)=>{
+    if(!options.crossResourceEnabled||!options.inspectOriginal)throw Error('Resource original admission disabled');
+    await store.status(lease(req));await new Promise((resolve,reject)=>originalUpload(req,res,e=>e?reject(e):resolve()));signal.throwIfAborted();if(!req.file)throw Error('No original supplied');
+    const mediaType=req.file.mimetype;if(!['application/pdf','application/json'].includes(mediaType))throw Error('Use image admission for image originals');
+    await options.inspectOriginal(new Uint8Array(req.file.buffer),mediaType,signal);signal.throwIfAborted();return store.stage(lease(req),req.file.buffer,{mediaType});
   });
   route('post','/:operation/images/remote',async(req,_res,signal)=>{
     const url=remoteAssetUrl(req.body.url).href;

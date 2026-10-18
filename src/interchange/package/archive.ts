@@ -1,5 +1,5 @@
 import { Inflate, zipSync } from 'fflate';
-export const PACKAGE_LIMITS={compressed:64*1024*1024,expanded:96*1024*1024,members:256,manifest:256*1024,native:8*1024*1024,data:8*1024*1024,assets:40*1024*1024,images:20};
+export const PACKAGE_LIMITS={compressed:64*1024*1024,expanded:96*1024*1024,members:256,manifest:256*1024,native:8*1024*1024,data:8*1024*1024,assets:56*1024*1024,images:128};
 const utf8=new TextDecoder('utf-8',{fatal:true});
 export const bytes=(text:string)=>new TextEncoder().encode(text);
 export const hash=async(data:Uint8Array)=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(data)))].map(v=>v.toString(16).padStart(2,'0')).join('');
