@@ -18,3 +18,5 @@ artifacts/
 writer.lock
 # Generated local PDF.js support data (copied from the pinned dependency).
 /public/pdfjs/
+
+/public/mutable-mermaid.js

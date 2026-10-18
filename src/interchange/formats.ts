@@ -1,6 +1,8 @@
-export type ImportFormat = 'html' | 'markdown' | 'text' | 'png' | 'jpeg';
+import {structuredExtensions} from '../structured/model';
+export type ImportFormat = 'html' | 'markdown' | 'text' | 'png' | 'jpeg' | 'structured';
 export type ExportFormat = 'html' | 'markdown' | 'text';
 export const formats = [
+  {id:'structured',label:'Read-only code / data / diagram',extensions:structuredExtensions,mediaTypes:['application/json','application/yaml','text/yaml','text/csv','text/tab-separated-values','application/javascript','text/javascript'],operations:['import','insert'],adapter:'structured-resource',profile:'mutable-structured-v1'},
   { id: 'html', label: 'HTML', extensions: ['html', 'htm'], mediaTypes: ['text/html'], operations: ['import', 'insert', 'convert', 'export'], adapter: 'semantic-html', profile: 'mutable-semantic-html-v1' },
   { id: 'markdown', label: 'Markdown', extensions: ['md', 'markdown'], mediaTypes: ['text/markdown', 'text/x-markdown'], operations: ['import', 'insert', 'convert', 'export'], adapter: 'commonmark', profile: 'mutable-commonmark-gfm-table-v1' },
   { id: 'text', label: 'Plain text', extensions: ['txt'], mediaTypes: ['text/plain'], operations: ['import', 'insert', 'export'], adapter: 'plain', profile: 'mutable-plain-v1' },
@@ -19,7 +21,7 @@ export function detectFormat(name: string, mime: string, bytes: Uint8Array, expl
   if (!selected) throw Error('Unsupported extension. Choose a supported file or explicitly select Plain text.');
   if (signed && selected !== signed || !signed && ['png','jpeg'].includes(selected)) throw Error(`File contents do not match ${selected}: ${name}`);
   const declared = formats.find(f => (f.mediaTypes as readonly string[]).includes(mime.toLowerCase()));
-  if (declared && declared.id !== selected && !(mime==='text/plain' && !signed) && !explicit) throw Error(`File type and extension disagree: ${name}. Choose the intended text format explicitly.`);
+  if (declared && declared.id !== selected && selected!=='structured' && !(mime==='text/plain' && !signed) && !explicit) throw Error(`File type and extension disagree: ${name}. Choose the intended text format explicitly.`);
   return selected;
 }
 export const safeFilename = (name: string) => (name.split(/[\\/]/).at(-1) ?? 'Document').replace(/\.(html?|md|markdown|txt|png|jpe?g)$/i,'').replace(/[\u0000-\u001f<>:"/\\|?*]/g,'_').replace(/[. ]+$/,'').slice(0,100) || 'Document';

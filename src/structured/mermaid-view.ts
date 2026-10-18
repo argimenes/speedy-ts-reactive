@@ -1,0 +1,12 @@
+import {mermaidSource} from './model';
+let library:Promise<string>|undefined;
+async function libraryText(){library??=fetch(new URL(import.meta.env.BASE_URL+'mutable-mermaid.js',location.origin)).then(async r=>{if(!r.ok)throw Error('Local Mermaid library unavailable');const text=await r.text();if(text.length>8*1024*1024)throw Error('Mermaid library limit');return text;}).catch(e=>{library=undefined;throw e;});return library;}
+export async function diagramFrame(host:HTMLElement,source:string,signal:AbortSignal,done:(error?:string)=>void){
+ mermaidSource(source);const code=await libraryText();signal.throwIfAborted();const token=crypto.randomUUID(),frame=document.createElement('iframe');frame.title='Read-only Mermaid diagram';frame.sandbox.add('allow-scripts');frame.referrerPolicy='no-referrer';frame.style.cssText='width:100%;height:440px;border:0;background:white';
+ const input=JSON.stringify({source,token}).replace(/</g,'\\u003c');
+ frame.srcdoc=`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${token}'; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'"><style>body{margin:12px;font:14px sans-serif}svg{max-width:100%;height:auto}</style><body><script nonce="${token}">window.structuredInput=${input};window.addEventListener('error',e=>parent.postMessage({token:window.structuredInput.token,error:e.message||'Diagram script failed'},'*'));window.addEventListener('unhandledrejection',e=>parent.postMessage({token:window.structuredInput.token,error:String(e.reason)},'*'))</script><script nonce="${token}">const s=document.createElement('script');s.nonce=${JSON.stringify(token)};s.textContent=${JSON.stringify(code).replace(/</g,'\\u003c')};document.body.append(s)</script>`;
+ const timer=setTimeout(()=>{dispose();done('Diagram render exceeded 8 seconds. Use Source.');},8000);
+ const message=(event:MessageEvent)=>{if(event.source!==frame.contentWindow||event.data?.token!==token)return;clearTimeout(timer);frame.dataset.rendered=event.data.ok?'true':'false';done(event.data.error);};
+ function dispose(){clearTimeout(timer);window.removeEventListener('message',message);signal.removeEventListener('abort',dispose);frame.remove();}
+ window.addEventListener('message',message);signal.addEventListener('abort',dispose,{once:true});host.replaceChildren(frame);return dispose;
+}

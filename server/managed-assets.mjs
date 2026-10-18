@@ -60,7 +60,7 @@ export class ManagedAssetStore {
     const dir=await this.operation(home,lease.id,fd);await this.authority(dir,lease,fd);
     if(await this.read(dir,'intent.json',65536,fd))fail('Import publication already started.');
     const rows=await this.stages(dir,fd), size=rows.reduce((n,r)=>n+r.byteLength,0);
-    if(!bytes.length||bytes.length>(metadata.mediaType==='application/pdf'?LIMIT.bytes:10*1024*1024)||size+bytes.length>(metadata.mediaType==='application/pdf'?LIMIT.total:40*1024*1024)||rows.length>=LIMIT.count)fail('Asset import limit exceeded.');
+    if((!bytes.length&&metadata.mediaType!=='text/plain')||bytes.length>(metadata.mediaType==='application/pdf'?LIMIT.bytes:10*1024*1024)||size+bytes.length>(metadata.mediaType==='application/pdf'?LIMIT.total:40*1024*1024)||rows.length>=LIMIT.count)fail('Asset import limit exceeded.');
     const digest=hash(bytes), item={...metadata,byteLength:bytes.length,assetId:`sha256:${digest}`,cavernId:this.cavernId,slot:rows.length};
     // A failed stage may have left bytes without metadata. Verify instead of overwriting.
     const name=`stage-${rows.length}.bin`, prior=await this.read(dir,name,LIMIT.bytes,fd);

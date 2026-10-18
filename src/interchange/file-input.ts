@@ -25,7 +25,7 @@ export async function readSelectedFile(file: SuppliedFile, explicit?: ImportForm
   if (format==='png'||format==='jpeg') return {format,title,filename:`${title}.ink`,byteHash,diagnostics:[],source:''};
   if (bytes.length>LIMITS.bytes) throw Error('Text files are limited to 8 MiB.');
   const decoded=decodeSource(bytes), diagnostics=[];
-  if (/\r/.test(decoded.source)) diagnostics.push(diagnostic('normalized-newlines','Source line endings become logical newlines in Ink.',false,file.name));
+  if (format!=='structured' && /\r/.test(decoded.source)) diagnostics.push(diagnostic('normalized-newlines','Source line endings become logical newlines in Ink.',false,file.name));
   if (format==='markdown' && /^\s*(?:<!doctype\s+html|<html\b)/i.test(decoded.source) && !explicit) throw Error('This looks like an HTML document. Choose HTML explicitly.');
   return {format,title,filename:`${title}.ink`,byteHash,diagnostics,...decoded};
 }

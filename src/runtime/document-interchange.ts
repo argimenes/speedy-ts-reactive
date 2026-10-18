@@ -1,3 +1,4 @@
+import {STRUCTURED_BLOCK} from '../structured/model';
 import {pdfBlock} from '../pdf/block';
 import type {BlockFragment} from '../block-tree/clipboard';
 import {resourceAssets} from '../interchange/package/resources';
@@ -85,6 +86,13 @@ export class DocumentInterchange {
  }
  private async admit(fragment:MutableFragment,files:SuppliedFile[],t:Ticket,signal:AbortSignal){
   this.check(t);
+  for(const block of fragment.blocks)if(block.type===STRUCTURED_BLOCK&&!block.data.asset){
+   if(!this.editor.features.structuredResources)throw Error('Read-only resources are disabled.');
+   const file=files[Number(block.data.importFileIndex)];if(!file)throw Error('Original resource file is unavailable.');
+   const ref={kind:'managed' as const,cavernId:t.scope.cavernId!,assetId:'sha256:'+(block.data.structured as any).byteHash};
+   const existing=await this.editor.assets.verify(ref,signal).catch(()=>undefined);this.check(t);if(existing){block.data.asset=ref;delete block.data.importFileIndex;continue;}
+   const lease=await this.editor.assets.begin([],signal);let done=false;try{const m=await this.editor.assets.stageOriginal(lease,new Blob([file.blob],{type:'text/plain'}),signal);this.check(t);await this.editor.assets.action(lease,'publish',signal);await this.editor.assets.action(lease,'finish',signal);done=true;block.data.asset={kind:'managed',cavernId:t.scope.cavernId!,assetId:m.assetId};delete block.data.importFileIndex;}finally{if(!done)await this.editor.assets.action(lease,'abort').catch(()=>{});}
+  }
   if(!fragment.embeds.length)return {fragment,admitted:[] as [string,string][]};
   const result=await resolveClipboardImages({fragment,files,assets:this.editor.assets,cavernId:t.scope.cavernId,signal,valid:()=>this.valid(t),lease:value=>{this.lease=value;},choose:urls=>this.ask({title:'External images',details:['Download only explicitly selected remote images, or keep inert placeholders. Relative resources are never read automatically.'],urls})});
   this.check(t);return result;
@@ -271,7 +279,7 @@ export class DocumentInterchange {
   this.check(t);const assets=[];
   const refs=new Map([...inventory.assets,...(this.editor.features.crossResourceLoaders?resourceAssets(context.data):[])].map(a=>[assetKey(a),a]));
   const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open the source Vault');return {cavernId:c.cavernId,session:c.session};});
-  let total=0;for(const a of refs.values()){if(a.cavernId!==t.scope.cavernId)throw Error('Original belongs to another Vault');const original=this.editor.features.crossResourceLoaders?{...await api.call('resources.original',{assetId:a.assetId},signal),reference:a}:await this.editor.assets.original(a,signal);total+=original.bytes.length;if(total>PACKAGE_LIMITS.assets||assets.length>=PACKAGE_LIMITS.images)throw Error('Package original budget exceeded; narrow the package');assets.push(original);this.check(t);}
+  let total=0;for(const a of refs.values()){if(a.cavernId!==t.scope.cavernId)throw Error('Original belongs to another Vault');const original=(this.editor.features.crossResourceLoaders||this.editor.features.structuredResources)?{...await api.call('resources.original',{assetId:a.assetId},signal),reference:a}:await this.editor.assets.original(a,signal);total+=original.bytes.length;if(total>PACKAGE_LIMITS.assets||assets.length>=PACKAGE_LIMITS.images)throw Error('Package original budget exceeded; narrow the package');assets.push(original);this.check(t);}
 
   const details=[`${inventory.blocks} Blocks; ${inventory.annotations} annotations (${inventory.points} points). Original native identities are preserved.`,...context.data.tables.map(table=>`${table.name}: ${table.rows.length} rows`),...assets.map(a=>`${a.reference.assetId}: ${a.bytes.length} original bytes`),...inventory.unresolvedAssets.map(v=>`${v.blockId}: ${v.reason}`),...context.data.unresolved.map(v=>'Unresolved: '+JSON.stringify(v)),...context.data.excluded.map(v=>'Excluded: '+JSON.stringify(v))];
   if(await this.ask({title:'Review package export inventory',details:details.length>200?[...details.slice(0,200),`${details.length-200} further inventory entries are retained in the package data. Inclusion is governed by the selected policies.`]:details})===undefined)throw Error('Export cancelled.');this.check(t);
@@ -291,8 +299,9 @@ export class DocumentInterchange {
   const admitted=await this.admit(prepared.fragment,files,t,signal);
   const assetBindings:Array<[string,{kind:'managed';cavernId:string;assetId:string}]>=[];
   for(const a of prepared.assets){this.check(t);if(!t.scope.cavernId)throw Error('Select a destination Vault');
-   if(a.mediaType==='application/json'||a.mediaType==='application/pdf'){
-    if(!this.editor.features.crossResourceLoaders)throw Error('Resource package import is disabled');
+   if(a.mediaType==='text/plain'){const ref={kind:'managed' as const,cavernId:t.scope.cavernId,assetId:a.reference.assetId};const existing=await this.editor.assets.verify(ref,signal).catch(()=>undefined);this.check(t);if(existing){assetBindings.push([assetKey(a.reference),ref]);continue;}}
+   if(a.mediaType==='application/json'||a.mediaType==='application/pdf'||a.mediaType==='text/plain'){
+    if(a.mediaType==='text/plain'?!this.editor.features.structuredResources:!this.editor.features.crossResourceLoaders)throw Error('Resource package import is disabled');
     const lease=await this.editor.assets.begin([],signal);let done=false;try{const m=await this.editor.assets.stageOriginal(lease,new Blob([a.bytes.slice().buffer],{type:a.mediaType}),signal);if(m.assetId!==a.reference.assetId)throw Error('Original hash mismatch');this.check(t);await this.editor.assets.action(lease,'publish',signal);await this.editor.assets.action(lease,'finish',signal);done=true;}finally{if(!done)await this.editor.assets.action(lease,'abort').catch(()=>{});}
    }else if(!prepared.fragment.assets.some(f=>f.source.kind==='transfer'&&imageAssets[Number(f.source.index)]===a)){
     // Retained IIIF tiles need original admission even when not inline image cells.

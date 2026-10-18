@@ -1,3 +1,4 @@
+import {STRUCTURED_BLOCK} from '../../structured/model';
 import {RESOURCE_TYPES,resourceSnapshots} from './resources';
 import {assetKey,managedAsset} from '../managed-asset';
 import { encodeAuthoredValue } from '../../history/preplan-spike/wire';
@@ -37,6 +38,7 @@ export function materializePackage(fragment:MutableFragment,cavernId:string|unde
  // Carry a bounded, inert reconstruction envelope with each resource. This also
  // survives re-export of an inactive imported copy without querying active SQL.
  const captured=resourceSnapshots(context.data),bindings=new Map(context.assetBindings??[]);
+ for(const b of isolated.blocks)if(b.type===STRUCTURED_BLOCK){const a=managedAsset(b.data.asset);if(a){const mapped=bindings.get(assetKey(a));if(!mapped)throw Error('Read-only resource original is missing');b.data.asset=mapped;}}
  for(const block of isolated.blocks){const data=RESOURCE_TYPES.includes(block.type)?block.data:block.type==='mutable/opaque-block'&&RESOURCE_TYPES.includes((block.data.original as any)?.type)?(block.data.original as any).data:undefined;if(!data)continue;
   const snapshot=data.pdf??data.iiif??data.article??data.citation,prior=data.archive;if(!snapshot?.snapshotId)continue;
   const snapshots=prior?.version===1?prior.snapshots:captured.filter(s=>s.snapshotId===snapshot.snapshotId||s.parentSnapshotId===snapshot.snapshotId);

@@ -1,3 +1,4 @@
+import {validateStructuredOriginal} from './structured-original.mjs';
 import { Router } from 'express';
 import multer from 'multer';
 import { ManagedAssetStore } from './managed-assets.mjs';
@@ -45,9 +46,10 @@ export function createManagedAssetService(options) {
     return store.stage(lease(req),req.file.buffer,metadata);
   });
   route('post','/:operation/originals/stage',async(req,res,signal)=>{
-    if(!options.crossResourceEnabled||!options.inspectOriginal)throw Error('Resource original admission disabled');
+    if(!options.crossResourceEnabled&&!options.structuredEnabled)throw Error('Resource original admission disabled');
     await store.status(lease(req));await new Promise((resolve,reject)=>originalUpload(req,res,e=>e?reject(e):resolve()));signal.throwIfAborted();if(!req.file)throw Error('No original supplied');
-    const mediaType=req.file.mimetype;if(!['application/pdf','application/json'].includes(mediaType))throw Error('Use image admission for image originals');
+    const mediaType=req.file.mimetype;if(mediaType==='text/plain'){if(!options.structuredEnabled)throw Error('Read-only resources disabled');validateStructuredOriginal(req.file.buffer);return store.stage(lease(req),req.file.buffer,{mediaType});}
+    if(!options.crossResourceEnabled||!options.inspectOriginal)throw Error('Resource original admission disabled');if(!['application/pdf','application/json'].includes(mediaType))throw Error('Use image admission for image originals');
     await options.inspectOriginal(new Uint8Array(req.file.buffer),mediaType,signal);signal.throwIfAborted();return store.stage(lease(req),req.file.buffer,{mediaType});
   });
   route('post','/:operation/images/remote',async(req,_res,signal)=>{

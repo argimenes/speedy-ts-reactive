@@ -1,3 +1,5 @@
+import {structuredText} from '../structured/text';
+import {STRUCTURED_BLOCK,presentation} from '../structured/model';
 import { parse } from 'parse5';
 import { parseClipboardHtml, type HtmlNode } from './html-ast';
 import { importSemanticHtml } from './html-import';
@@ -58,10 +60,13 @@ export async function prepareFiles(files:SuppliedFile[],explicit?:ImportFormat) 
   const results=[];
   for(let index=0;index<files.length;index++) {
     const file=files[index],read=await readSelectedFile(file,explicit);
-    const converted=read.format==='png'||read.format==='jpeg'?{fragment:imagesFragment([file]),diagnostics:[],title:undefined}:convertSource(read.source,read.format,true);
+    const converted=read.format==='structured'?{fragment:structuredFragment(file.name,read.source,file.blob.type),diagnostics:[],title:undefined}:read.format==='png'||read.format==='jpeg'?{fragment:imagesFragment([file]),diagnostics:[],title:undefined}:convertSource(read.source,read.format,true);
     converted.fragment.assets.forEach(a=>{if(a.source.kind==='transfer')a.source.index=index;});
+    if(read.format==='structured'){structuredText(new Uint8Array(await file.blob.arrayBuffer()));const b=converted.fragment.blocks[0];b.data.importFileIndex=index;Object.assign(b.data.structured as object,{encoding:read.encoding,bom:read.bom,byteHash:read.byteHash});}
     const title=read.title;
     results.push({fragment:converted.fragment,title,filename:read.filename,diagnostics:[...read.diagnostics,...converted.diagnostics].map(d=>({...d,sourceName:file.name})),provenance:{version:1,filename:file.name.split(/[\\/]/).at(-1)!,format:read.format,byteHash:read.byteHash,...('encoding' in read?{encoding:read.encoding,bom:read.bom}:{})}});
   }
   return results;
 }
+
+function structuredFragment(filename:string,text:string,mime:string){const f=emptyFragment();f.blocks=[{localId:'resource',type:STRUCTURED_BLOCK,data:{text,structured:{version:1,filename:filename.split(/[\\/]/).at(-1)!.slice(0,255),mime,presentation:presentation(filename)}},children:[],relations:{},blockProperties:[]}];f.placements=[{localId:'edge',kind:'owned',target:{kind:'local',object:'block',id:'resource'}}];f.roots=[{placement:'edge',openStart:false,openEnd:false,clippedStart:false,clippedEnd:false}];return validateFragment(f);}

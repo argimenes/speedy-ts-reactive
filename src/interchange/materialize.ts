@@ -1,3 +1,4 @@
+import {STRUCTURED_BLOCK,structuredPayload} from '../structured/model';
 import { passiveVideo } from './uri';
 import { isSourceType, sourceFormat } from './source-block';
 import { managedAsset, assetKey } from './managed-asset';
@@ -63,7 +64,7 @@ export function materializeFragment(input: MutableFragment, scope: InterchangeSc
   const embeds = new Map(f.embeds.map(e => [e.localId, e]));
   for (const b of f.blocks) {
     let source=false;try{if(isSourceType(b.type)){sourceFormat(b.type,b.data);source=!b.inline;}}catch{}
-    const supported = (b.type==='mutable/video-block'&&!b.inline&&!!passiveVideo(b.data.video)) || source || passiveBlocks.has(b.type) || b.type === 'mutable/opaque-block';
+    const supported = (b.type===STRUCTURED_BLOCK&&!b.inline&&structuredPayload(b.data)) || (b.type==='mutable/video-block'&&!b.inline&&!!passiveVideo(b.data.video)) || source || passiveBlocks.has(b.type) || b.type === 'mutable/opaque-block';
     const payload = clone(b.data);
     for (const key of ['id', 'type', 'standoffProperties', 'blockProperties', 'linkedAnnotations', 'children', 'relation', 'externalReference', 'definitionOwnerKey']) delete payload[key];
     // Layout/relationship metadata is authored, but executable styles and raw anchors are not imported.

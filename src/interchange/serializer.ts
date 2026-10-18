@@ -1,3 +1,4 @@
+import {STRUCTURED_BLOCK} from '../structured/model';
 import { isSourceType } from './source-block';
 import { managedAsset } from './managed-asset';
 import { clone } from '../block-tree/clone';
@@ -64,7 +65,7 @@ export function serializeSelection(state: RepositoryState, slices: Slice[], scop
     }
     const b: FragmentBlock = { localId, type: c.viewType, data: omit(c.payload, ['id', 'type', 'text', 'standoffProperties', 'blockProperties', 'linkedAnnotations']), blockProperties: [], children: [], relations: {} };
     if (Object.keys(c.opaqueRelations).length) b.data.opaqueRelations = clone(c.opaqueRelations);
-    if (c.viewType === 'plain-text-block' || isSourceType(c.viewType)) b.data.text = String(c.payload.text ?? '');
+    if (c.viewType === STRUCTURED_BLOCK || c.viewType === 'plain-text-block' || isSourceType(c.viewType)) b.data.text = String(c.payload.text ?? '');
     if(isSourceType(c.viewType) && c.payload.standoffProperties!==undefined)b.data.standoffProperties=clone(c.payload.standoffProperties);
     f.blocks.push(b);
     if(packageDefinitions && c.definitionOwnerKey)(f as MutableFragment&{packageRetainedBlocks:string[]}).packageRetainedBlocks.push(b.localId);

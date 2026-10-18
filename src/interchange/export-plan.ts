@@ -1,3 +1,4 @@
+import {STRUCTURED_BLOCK,structuredPayload} from '../structured/model';
 import { passiveVideo } from './uri';
 import { isSourceType, sourceFormat } from './source-block';
 import { compileSourcePreview } from './source-preview';
@@ -86,6 +87,9 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   let result='';
   if(b.type==='mutable/video-block'&&passiveVideo(b.data.video)){
    const v=passiveVideo(b.data.video)!;result=format==='html'?`<p><a href="${escapeHtml(v.canonicalUrl)}" rel="noopener noreferrer">${escapeHtml(v.title??v.canonicalUrl)}</a></p>`:format==='markdown'?`[${md(v.title??v.canonicalUrl)}](<${v.canonicalUrl}>)`:v.canonicalUrl;
+  }else if(b.type===STRUCTURED_BLOCK&&structuredPayload(b.data)){
+   const text=String(b.data.text);result=format==='html'?`<pre><code>${escapeHtml(text)}</code></pre>`:format==='markdown'?text.split('\n').map(line=>'    '+line).join('\n'):text;
+   warn('read-only-source','Read-only resource exported as inert source; structured presentation and binary original require Ink package.');
   }else if(isSourceType(b.type)){
    const kind=sourceFormat(b.type,b.data),source=String(b.data.text);
    if(format==='html'){const preview=compileSourcePreview(source,kind);result=preview.body;for(const detail of preview.warnings)warn('source-preview-policy',detail);if(preview.links.length)warn('source-links','Source links export as inert text; navigation targets are omitted.');}
