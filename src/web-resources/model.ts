@@ -1,15 +1,19 @@
+import {isLocalSource} from "./everyday";
 import {
   managedAsset,
   type ManagedAssetReference,
 } from "../interchange/managed-asset";
 export const WEB_BLOCK = "mutable/web-resource-block";
-export type Provider = "web" | "google-maps" | "x" | "bluesky";
+export type Provider = "web" | "google-maps" | "x" | "bluesky" | import("./everyday").EverydayProvider;
 export interface WebIdentity {
   source: string;
   url: string;
   provider: Provider;
   id?: string;
   account?: string;
+  resourceType?: string;
+  marketplace?: string;
+  episodeId?: string;
   location?: {
     query: string;
     coordinates?: [number, number];
@@ -40,6 +44,7 @@ export interface WebProjection {
   location?: WebIdentity["location"];
   social?: SocialPost;
   embedId?: string;
+  everyday?: {version:1; origins?:Record<string,string>; identity: {type?:string;id?:string;account?:string;marketplace?:string}; fields: {label:string;value:string;provenance:string}[]; items: {title?:string;fields:{label:string;value:string;provenance:string}[];url?:string;enclosure?:string}[]};
   diagnostics: string[];
   status: "captured" | "link-only" | "unavailable";
 }
@@ -48,7 +53,10 @@ export interface WebOriginal {
   version: 1;
   source: string;
   endpoint?: string;
-  format: "html" | "x-oembed" | "bluesky" | "url";
+  format: "html" | "x-oembed" | "bluesky" | "url" | import("./everyday").EverydayFormat;
+  adapter?: "everyday-v1";
+  intent?: "feed";
+  file?: {name:string};
   body?: string;
   capturedAt: string;
   failure?: string;
@@ -93,11 +101,11 @@ export function webCapture(v: any): v is WebCapture {
       v?.version === 1 &&
       typeof v.snapshotId === "string" &&
       v.snapshotId.length <= 100 &&
-      !!webUrl(v.source) &&
+      (isLocalSource(v.source)||!!webUrl(v.source)) &&
       !!managedAsset(v.asset) &&
       typeof v.capturedAt === "string" &&
       Number.isFinite(Date.parse(v.capturedAt)) &&
-      ["web", "google-maps", "x", "bluesky"].includes(v.projection?.provider) &&
+      ["web", "google-maps", "x", "bluesky", "spotify", "soundcloud", "github", "amazon", "ebay", "calendar", "drive", "podcast"].includes(v.projection?.provider) &&
       ["captured", "link-only", "unavailable"].includes(v.projection.status) &&
       validProjection(v.projection) &&
       JSON.stringify(v.projection).length <= 40000
@@ -124,6 +132,7 @@ function validProjection(p:any):boolean {
  for(const k of ['title','site','description','author','published','type','embedId'])if(!str(p[k],2000))return false;
  if(!url(p.image)||!url(p.canonicalUrl))return false;
  if(p.location){const l=p.location;if(typeof l.query!=='string'||l.query.length>500||!str(l.placeId,250))return false;if(l.coordinates&&(!Array.isArray(l.coordinates)||l.coordinates.length!==2||!l.coordinates.every(Number.isFinite)||Math.abs(l.coordinates[0])>90||Math.abs(l.coordinates[1])>180))return false;}
+ if(p.everyday){const e=p.everyday;const fields=(a:any)=>Array.isArray(a)&&a.length<=16&&a.every((f:any)=>f&&typeof f.label==='string'&&f.label.length<=100&&typeof f.value==='string'&&f.value.length<=1000&&typeof f.provenance==='string'&&f.provenance.length<=200);if(e.origins&&(!e.origins||Array.isArray(e.origins)||typeof e.origins!=='object'||Object.keys(e.origins).length>10||Object.entries(e.origins).some(([k,v])=>k.length>50||typeof v!=='string'||v.length>200)))return false;if(e.version!==1||!e.identity||Object.keys(e.identity).some(k=>!['type','id','account','marketplace'].includes(k))||!Object.values(e.identity).every(v=>typeof v==='string'&&v.length<=300)||!fields(e.fields)||!Array.isArray(e.items)||e.items.length>25||e.items.some((i:any)=>!i||!str(i.title,300)||!url(i.url)||!url(i.enclosure)||!fields(i.fields)))return false;}
  if(p.social){const s=p.social;if(!['x','bluesky'].includes(s.platform)||s.platform!==p.provider||!str(s.text,12000)||!str(s.author,300)||!str(s.handle,300)||!str(s.published,80)||!url(s.avatar)||!Array.isArray(s.attachments)||s.attachments.length>6)return false;for(const a of s.attachments)if(!a||typeof a.type!=='string'||!str(a.type,100)||!str(a.description,1000)||!url(a.url))return false;if(s.quote&&(!str(s.quote.text,2000)||!str(s.quote.author,300)||!url(s.quote.url)))return false;}
  return true;
 }

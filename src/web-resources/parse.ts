@@ -1,3 +1,4 @@
+import {everydayProjection} from "./everyday-parse";
 import { parse } from "parse5";
 import { recognizeWeb, providerEndpoint } from "./registry";
 import { safeWebUrl, type WebOriginal, type WebProjection } from "./model";
@@ -58,7 +59,7 @@ function json(body: string) {
 export function webProjection(o: WebOriginal): WebProjection {
   if (
     o?.version !== 1 ||
-    !["url", "html", "x-oembed", "bluesky"].includes(o.format) ||
+    !["url", "html", "x-oembed", "bluesky", "spotify", "soundcloud", "github", "apple-podcast", "calendar", "feed"].includes(o.format) ||
     typeof o.capturedAt !== "string" ||
     !Number.isFinite(Date.parse(o.capturedAt)) ||
     (o.failure !== undefined &&
@@ -68,6 +69,9 @@ export function webProjection(o: WebOriginal): WebProjection {
         new TextEncoder().encode(o.body).length > 2 * 1024 * 1024))
   )
     throw Error("Invalid web capture");
+  if(o.intent!==undefined&&(o.intent!=="feed"||o.adapter!=="everyday-v1"))throw Error("Unknown web intent");
+  if(o.adapter!==undefined&&o.adapter!=="everyday-v1")throw Error("Unknown web adapter");
+  if(o.adapter==="everyday-v1")return everydayProjection(o);
   const i = recognizeWeb(o.source),
     endpoint = providerEndpoint(i),
     p: WebProjection = {
@@ -261,6 +265,7 @@ export function parseWebBytes(bytes: Uint8Array) {
       source: o.source,
       capturedAt: o.capturedAt,
       format: "url",
+      ...(o.adapter==="everyday-v1"?{adapter:"everyday-v1" as const,...(o.intent==="feed"||o.format==="feed"?{intent:"feed" as const}:{})}:{}),
       failure: String(e).slice(0, 500),
     });
   }

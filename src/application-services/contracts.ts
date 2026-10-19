@@ -19,7 +19,7 @@ export interface KnowledgeOptions {relationships?:boolean;claims?:boolean;eviden
 export interface PackageDataRequest extends KnowledgeOptions {entities:string[];claimsById?:string[];documentHash?:string}
 export interface PackageDataResult {data:PackageData;schema:unknown}
 export type Preparation =
- | {kind:'web-resource';source:string}
+ | {kind:'web-resource';source:string;everyday?:true;file?:import('../web-resources/everyday').WebFile;format?:'feed'}
  | {kind:'deterministic';source:string;format?:'xml'}
  | {kind:'pdf';source:string}
  | {kind:'iiif';source:string}

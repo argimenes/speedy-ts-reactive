@@ -124,3 +124,14 @@ test('web metadata shares SSRF, redirects, MIME and credential boundaries withou
  await assert.rejects(acquireWebMetadata('https://example.org','html',undefined,dep([{status:302,headers:{location:'https://elsewhere.org'}}])),/new consent/);
  for(const response of [{status:403},{status:429},{headers:{'content-type':'image/svg+xml'}},{headers:{'content-type':'text/html','content-length':String(3*1024*1024)}},{headers:{'content-type':'text/html; charset=latin1'}}])await assert.rejects(acquireWebMetadata('https://example.org','html',undefined,dep([response])));
 });
+test('everyday metadata retains UTF-8 originals and preserves protected endpoint, DNS, redirect and MIME bounds',async()=>{
+ const {acquireWebMetadata}=await import('./asset-remote.mjs');const dep=(responses,inspect)=>({lookup:async()=>answer,request:transport(responses,inspect)});
+ const original='\uFEFFBEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n';assert.equal((await acquireWebMetadata('https://example.org/a.ics','calendar',undefined,dep([{bytes:Buffer.from(original),headers:{'content-type':'text/calendar'}}],(_u,o)=>{assert.equal(o.headers.Cookie,undefined);assert.equal(o.headers.Authorization,undefined);}))).body,original);
+ for(const format of ['spotify','soundcloud','github','apple-podcast'])await assert.rejects(acquireWebMetadata('https://evil.example/api',format),/endpoint/);
+ for(const format of ['feed','calendar']){
+  await assert.rejects(acquireWebMetadata('https://example.org/file',format,undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}],request:()=>assert.fail('private')}),/not public/);
+  await assert.rejects(acquireWebMetadata('https://example.org/file',format,undefined,dep([{status:302,headers:{location:'https://other.example/file'}}])),/new consent/);
+  await assert.rejects(acquireWebMetadata('https://example.org/file',format,undefined,dep([{bytes:Buffer.from('<html/>'),headers:{'content-type':'text/html'}}])),/Content-Type/);
+  await assert.rejects(acquireWebMetadata('https://example.org/file',format,undefined,dep([{status:429}])),/429/);
+ }
+});

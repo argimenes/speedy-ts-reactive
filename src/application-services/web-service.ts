@@ -1,3 +1,4 @@
+import {recognizeEveryday,validateWebFile,isLocalSource,type EverydayFormat} from "../web-resources/everyday";
 import {
   recognizeWeb,
   providerEndpoint,
@@ -5,7 +6,7 @@ import {
 } from "../web-resources/registry";
 import type { WebCapture, WebOriginal } from "../web-resources/model";
 import type { Executor, JobStorage, JobRecord } from "./capabilities";
-import { object, jobId } from "./validation";
+import { object, jobId, preparation } from "./validation";
 import type { WebOperations, WebResult } from "./web-contracts";
 interface Ports {
   jobs: JobStorage;
@@ -13,9 +14,10 @@ interface Ports {
   uuid: () => string;
   now: () => string;
   mapsKey?: string;
+  everydayEnabled?: boolean;
   acquire: (
     url: string,
-    format: "html" | "x-oembed" | "bluesky",
+    format: "html" | "x-oembed" | "bluesky" | EverydayFormat,
     signal: AbortSignal,
   ) => Promise<{ body: string; endpoint: string }>;
   retain: (
@@ -43,7 +45,7 @@ export class WebResourceService {
       op === "web.embed"
         ? ["source"]
         : op === "web.import"
-          ? ["id", "source"]
+          ? ["id", "source", "file", "format", "everyday"]
           : ["id"],
     );
     signal?.throwIfAborted();
@@ -76,13 +78,16 @@ export class WebResourceService {
     this.queued++;
     try {
       if (op === "web.import") {
-        if (!webCandidate(v.source))
-          throw Error("Use the specialized resource importer");
-        recognizeWeb(v.source);
-        await this.p.jobs.create(v.id, {
-          kind: "web-resource",
-          source: v.source,
-        });
+        if(v.everyday!==undefined&&typeof v.everyday!=="boolean")throw Error("Invalid everyday preference");
+        const everyday=!!this.p.everydayEnabled&&v.everyday!==false;
+        if((v.file||v.format)&&!everyday)throw Error("Everyday resources disabled");
+        if(v.file)validateWebFile(v.source,v.file);
+        const identity=everyday?recognizeEveryday(v.source,v.format==='feed'):undefined;
+        const request={kind:'web-resource' as const,source:v.source,...(identity?{everyday:true as const}:{}),...(v.file?{file:v.file}:{}),...(v.format?{format:v.format}: {})};
+        if(!v.file&&!v.format&&!webCandidate(v.source))throw Error("Use the specialized resource importer");
+        preparation(request);
+        if(!v.file)recognizeWeb(v.source,everyday,v.format==='feed');
+        await this.p.jobs.create(v.id, request);
       }
       const task = this.tail.then(() => this.run(v.id, signal));
       this.tail = task.catch(() => {});
@@ -103,6 +108,7 @@ export class WebResourceService {
       lease = await this.p.jobs.acquire(id);
       let r = await this.p.jobs.load(id);
       if (r.preparation.kind !== "web-resource") throw Error("Wrong job type");
+      if(r.preparation.everyday&&!this.p.everydayEnabled)throw Error("Everyday resources disabled");
       const checkpoint = async (
         state: JobRecord["summary"]["state"],
         data: unknown,
@@ -135,15 +141,19 @@ export class WebResourceService {
       await checkpoint("running", data);
       try {
         if (!data.asset) {
-          const i = recognizeWeb(r.preparation.source),
+          const prep=r.preparation;
+          const i = recognizeWeb(prep.source,!!prep.everyday,prep.format==='feed'),
             endpoint = providerEndpoint(i);
           let original: WebOriginal = {
             version: 1,
             source: i.source,
             format: "url",
             capturedAt: this.p.now(),
+            ...(prep.everyday?{adapter:"everyday-v1" as const}:{}),
+            ...(prep.format==='feed'?{intent:'feed' as const}:{}),
           };
-          if (endpoint)
+          if(prep.file)original={...original,file:{name:prep.file.name},format:prep.file.format,body:prep.file.body};
+          else if (endpoint)
             try {
               c.signal.throwIfAborted();
               const response = await this.p.acquire(
@@ -157,6 +167,7 @@ export class WebResourceService {
               original.failure = String(e).slice(0, 500);
             }
           c.signal.throwIfAborted();
+          if(new TextEncoder().encode(JSON.stringify(original)).length>3*1024*1024)throw Error("Original envelope exceeds 3 MiB");
           data = {
             asset: await this.p.retain(
               new TextEncoder().encode(JSON.stringify(original)),

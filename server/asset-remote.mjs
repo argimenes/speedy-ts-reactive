@@ -155,11 +155,16 @@ export async function acquireOcrXml(source,signal,dependencies={}){
 
 /** Explicit web metadata only. Same DNS pinning, origin, byte and deadline policy. */
 export async function acquireWebMetadata(url,format,signal,dependencies={}) {
- const u=remoteAssetUrl(url);if(!['html','x-oembed','bluesky'].includes(format))throw Error('Unsupported web metadata format');
+ const u=remoteAssetUrl(url);if(!['html','x-oembed','bluesky','spotify','soundcloud','github','apple-podcast','calendar','feed'].includes(format))throw Error('Unsupported web metadata format');
  if(format==='x-oembed'&&(u.origin!=='https://publish.x.com'||u.pathname!=='/oembed'))throw Error('Invalid X metadata endpoint');
  if(format==='bluesky'&&(u.origin!=='https://public.api.bsky.app'||u.pathname!=='/xrpc/app.bsky.feed.getPostThread'||u.searchParams.get('depth')!=='0'||u.searchParams.get('parentHeight')!=='0'))throw Error('Invalid Bluesky metadata endpoint');
- const r=await acquire(url,signal,dependencies,{accept:format==='html'?'text/html':'application/json',bytes:2*1024*1024});
- if(!(format==='html'?/^text\/html(?:;|$)/i:/^application\/json(?:;|$)/i).test(String(r.mediaType)))throw Error('Web metadata Content-Type mismatch');
+ if(format==='spotify'&&(u.origin!=='https://open.spotify.com'||u.pathname!=='/oembed'))throw Error('Invalid Spotify endpoint');
+ if(format==='soundcloud'&&(u.origin!=='https://soundcloud.com'||u.pathname!=='/oembed'))throw Error('Invalid SoundCloud endpoint');
+ if(format==='github'&&(u.origin!=='https://api.github.com'||!/^\/(?:repos\/|gists\/)/.test(u.pathname)))throw Error('Invalid GitHub endpoint');
+ if(format==='apple-podcast'&&(u.origin!=='https://itunes.apple.com'||u.pathname!=='/lookup'))throw Error('Invalid Apple endpoint');
+ const xml=format==='feed',calendar=format==='calendar';
+ const r=await acquire(url,signal,dependencies,{accept:format==='html'?'text/html':xml?'application/rss+xml, application/atom+xml, application/xml, text/xml':calendar?'text/calendar':'application/json',bytes:2*1024*1024});
+ if(!(format==='html'?/^text\/html(?:;|$)/i:xml?/^(?:application\/(?:rss\+xml|atom\+xml|xml)|text\/xml)(?:;|$)/i:calendar?/^text\/calendar(?:;|$)/i:format==='apple-podcast'?/^(?:application\/json|text\/javascript)(?:;|$)/i:/^application\/json(?:;|$)/i).test(String(r.mediaType)))throw Error('Web metadata Content-Type mismatch');
  const charset=/charset\s*=\s*"?([^;"\s]+)/i.exec(String(r.mediaType));if(charset&&!['utf-8','us-ascii'].includes(charset[1].toLowerCase()))throw Error('Web metadata requires UTF-8');
- return {body:new TextDecoder('utf-8',{fatal:true}).decode(r.bytes),endpoint:r.url};
+ return {body:new TextDecoder('utf-8',{fatal:true,ignoreBOM:!['html','x-oembed','bluesky'].includes(format)}).decode(r.bytes),endpoint:r.url};
 }

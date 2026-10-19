@@ -23,7 +23,7 @@ import {PublicationService} from '../../src/application-services/publication-ser
 import {CavernPublicationStorage,sha} from './publication-storage';
 import {PublicationPreview} from './publication-preview';
 import type {ApplicationServices} from '../../src/application-services/contracts';
-export function createApplicationServiceHost(options:{root:string;cavernId:string;nativeEnabled:boolean;publicationEnabled?:boolean;academicEnabled?:boolean;iiifEnabled?:boolean;crossResourceEnabled?:boolean;structuredEnabled?:boolean;deterministicEnabled?:boolean;webEnabled?:boolean;academic?:(request:any,signal?:AbortSignal)=>Promise<any>;assets:()=>any;knowledge:(request:any,signal?:AbortSignal)=>Promise<any>}){
+export function createApplicationServiceHost(options:{root:string;cavernId:string;nativeEnabled:boolean;publicationEnabled?:boolean;academicEnabled?:boolean;iiifEnabled?:boolean;crossResourceEnabled?:boolean;structuredEnabled?:boolean;deterministicEnabled?:boolean;webEnabled?:boolean;everydayEnabled?:boolean;academic?:(request:any,signal?:AbortSignal)=>Promise<any>;assets:()=>any;knowledge:(request:any,signal?:AbortSignal)=>Promise<any>}){
  const documents=createNativeDocumentStore({root:options.root,readOnly:true});
  const jobs=new CavernJobStorage(options.root,options.cavernId),executor=new NodePreparationExecutor();
  const ports:ServiceCapabilities={cavernId:options.cavernId,jobs,executor,
@@ -74,7 +74,7 @@ export function createApplicationServiceHost(options:{root:string;cavernId:strin
    const lease=await store.begin();let done=false;try{const a=await store.stage(lease,Buffer.from(bytes),{mediaType});signal.throwIfAborted();await store.publish(lease);await store.finish(lease,'deterministic-capture');done=true;return {kind:'managed',cavernId:options.cavernId,assetId:a.assetId};}finally{if(!done)await store.abort(lease);}},
   async read(ref,signal){signal.throwIfAborted();if(ref.cavernId!==options.cavernId)throw Error('Wrong source Vault');return new Uint8Array((await options.assets().get(ref.assetId,ref.cavernId)).bytes);}
  }):undefined;
- const web=options.webEnabled?new WebResourceService({jobs,executor,uuid:randomUUID,now:()=>new Date().toISOString(),mapsKey:process.env.MUTABLE_GOOGLE_MAPS_EMBED_KEY,acquire:acquireWebMetadata,
+ const web=options.webEnabled?new WebResourceService({everydayEnabled:options.everydayEnabled,jobs,executor,uuid:randomUUID,now:()=>new Date().toISOString(),mapsKey:process.env.MUTABLE_GOOGLE_MAPS_EMBED_KEY,acquire:acquireWebMetadata,
   async retain(bytes,signal){signal.throwIfAborted();const store=options.assets();const lease=await store.begin();let done=false;try{const a=await store.stage(lease,Buffer.from(bytes),{mediaType:'application/json'});signal.throwIfAborted();await store.publish(lease);await store.finish(lease,'web-resource-capture');done=true;return {kind:'managed',cavernId:options.cavernId,assetId:a.assetId};}finally{if(!done)await store.abort(lease);}},
   async read(ref,signal){signal.throwIfAborted();if(ref.cavernId!==options.cavernId)throw Error('Wrong source Vault');return new Uint8Array((await options.assets().get(ref.assetId,ref.cavernId)).bytes);}
  }):undefined;

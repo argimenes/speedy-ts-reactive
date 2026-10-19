@@ -1,7 +1,7 @@
 import type { WebCapture, WebProjection } from "../web-resources/model";
 export interface WebOperations {
   "web.import": {
-    input: { id: string; source: string };
+    input: { id: string; source: string; file?:import("../web-resources/everyday").WebFile; format?:"feed"; everyday?:boolean };
     output: { capture: WebCapture; jobId: string };
   };
   "web.resume": {

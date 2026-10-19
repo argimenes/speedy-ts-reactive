@@ -1,3 +1,4 @@
+import {localSource,type WebFile} from '../web-resources/everyday';
 import {webCandidate} from '../web-resources/registry';
 import {webBlock} from '../web-resources/block';
 import {academicIdentifier,academicJob} from '../academic/identifiers';
@@ -122,16 +123,16 @@ export class DocumentInterchange {
   const t=node.viewType==='standoff-editor-block'?this.selection(key):this.base(()=>!!this.editor.node(key));if(!t.segments){t.viewId=node.viewId;t.destination=node.viewType==='document-block'?{kind:'at',parentKey:node.placementKey,index:node.children.length}:{kind:'after',anchorKey:node.placementKey};}
   await this.captureWeb(source,t,signal);
  });}
- private async captureWeb(source:string,t:Ticket,signal:AbortSignal){
+ private async captureWeb(source:string,t:Ticket,signal:AbortSignal,options?:{file?:WebFile;format?:'feed';prepare?:boolean}){
   this.check(t);const resume=/^mutable-web-job:([a-f0-9-]{36})$/i.exec(source.trim());
-  if(!resume&&!webCandidate(source))throw Error('Use the specialized resource importer');
-  if(await this.ask({title:'Capture web preview?',details:[source,'Where supported, acquire one public page or post metadata response through protected HTTPS; the provider receives the request, including URL query values. URL-only cards, including Google Maps locations, make no acquisition request. No cookies, scripts, images or interactive embeds are loaded. Confirm permission to retain the metadata; it remains unreviewed.']})===undefined)throw Error('Capture cancelled');this.check(t);
+  if(!resume&&!options?.file&&!options?.format&&!webCandidate(source))throw Error('Use the specialized resource importer');
+  if(await this.ask({title:'Capture web preview?',details:[options?.file?'Selected local file: '+options.file.name:source,options?.file?'Retain this original UTF-8 event/feed file. No external resources, alarms or media will be loaded.':'Where supported, acquire one public page or post metadata response through protected HTTPS; the provider receives the request, including URL query values. URL-only cards, including Google Maps locations, make no acquisition request. No cookies, scripts, images or interactive embeds are loaded. Confirm permission to retain the metadata; it remains unreviewed.']})===undefined)throw Error('Capture cancelled');this.check(t);
   const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open a Vault');return {cavernId:c.cavernId,session:c.session};});
-  const result=resume?await api.call('web.resume',{id:resume[1]},signal):await api.call('web.import',{id:crypto.randomUUID(),source},signal);this.check(t);const p=result.capture.projection;
-  if(await this.ask({title:'Review web preview',details:[p.title??p.location?.query??p.social?.author??result.capture.source,`Provider: ${p.provider}; ${p.status}`,p.description??p.social?.text??'No description supplied.',...(p.social?.handle?[p.social.handle]:[]),...p.diagnostics,'Insert this captured preview as one undoable Block. Interactive content is optional and off by default. Save manually.']})===undefined)throw Error('Insertion cancelled; capture retained');this.check(t);
+  const result=resume?await api.call('web.resume',{id:resume[1]},signal):await api.call('web.import',{id:crypto.randomUUID(),source,everyday:this.editor.features.everydayWebResources,...(options?.file?{file:options.file}:{}),...(options?.format?{format:options.format}:{})},signal);this.check(t);const p=result.capture.projection;
+  if(await this.ask({title:'Review web preview',details:[p.title??p.location?.query??p.social?.author??result.capture.source,`Provider: ${p.provider}; ${p.status}`,p.description??p.social?.text??'No description supplied.',...(p.social?.handle?[p.social.handle]:[]),...(p.everyday?.fields.map(f=>f.label+': '+f.value)??[]),...(p.everyday?.items.slice(0,3).map(i=>i.title??'Untitled component')??[]),...p.diagnostics,'Insert this captured preview as one undoable Block. Interactive content is optional and off by default. Save manually.']})===undefined)throw Error('Insertion cancelled; capture retained');this.check(t);
   const f=webBlock(result.capture);f.blocks[0].data.webJobId=result.jobId;
-  if(p.image&&this.editor.features.managedAssetClipboard){const choice=await this.ask({title:'Optional preview image',details:[p.image,'Only retain this PNG/JPEG if you have permission. A metadata image URL does not establish archival rights. Keep the text-only preview otherwise.'],options:['Keep text-only preview','Download permitted thumbnail'],single:true});if(!choice)throw Error('Insertion cancelled');this.check(t);if(choice[0]==='Download permitted thumbnail'){const imageUrl=new URL(p.image);imageUrl.hash='';const lease=await this.editor.assets.begin([imageUrl.href],signal);this.lease=lease;const a=await this.editor.assets.remote(lease,imageUrl.href,signal);this.check(t);await this.editor.assets.action(lease,'publish',signal);f.blocks[0].data.webThumbnail={kind:'managed',cavernId:a.cavernId,assetId:a.assetId};}}
-  this.check(t);await this.commit(f,[],t,signal,'import');this.status[1]('Captured web preview inserted. Save explicitly; live content remains unloaded.');
+  if(p.image&&!options?.prepare&&this.editor.features.managedAssetClipboard){const choice=await this.ask({title:'Optional preview image',details:[p.image,'Only retain this PNG/JPEG if you have permission. A metadata image URL does not establish archival rights. Keep the text-only preview otherwise.'],options:['Keep text-only preview','Download permitted thumbnail'],single:true});if(!choice)throw Error('Insertion cancelled');this.check(t);if(choice[0]==='Download permitted thumbnail'){const imageUrl=new URL(p.image);imageUrl.hash='';const lease=await this.editor.assets.begin([imageUrl.href],signal);this.lease=lease;const a=await this.editor.assets.remote(lease,imageUrl.href,signal);this.check(t);await this.editor.assets.action(lease,'publish',signal);f.blocks[0].data.webThumbnail={kind:'managed',cavernId:a.cavernId,assetId:a.assetId};}}
+  this.check(t);if(options?.prepare)return f;await this.commit(f,[],t,signal,'import');this.status[1]('Captured web preview inserted. Save explicitly; live content remains unloaded.');
  }
  async importBibliographyText(key:string,source:string,format:'bibtex'|'ris'){const t=this.selection(key);return this.insertFiles([{name:'Clipboard.'+(format==='bibtex'?'bib':'ris'),blob:new Blob([source],{type:'text/plain'})}],t,'academic');}
  /** Explicit context action. Classification and choosing link/video do not acquire anything. */
@@ -140,13 +141,13 @@ export class DocumentInterchange {
   const t=node.viewType==='standoff-editor-block'?this.selection(key):this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);
   if(!t.segments){t.viewId=node.viewId;t.destination=node.viewType==='document-block'?{kind:'at',parentKey:node.placementKey,index:node.children.length}:{kind:'after',anchorKey:node.placementKey};}
   this.check(t);
-  const choices=[{label:'Insert URL link (no network)',kind:'url'},...(this.editor.features.webResourceViewers&&webCandidate(value)?[{label:'Capture native web preview',kind:'web'}]:[]),...(info.video?[{label:'Insert passive VideoBlock (no network)',kind:'video'}]:[]),
+  const choices=[{label:'Insert URL link (no network)',kind:'url'},...(this.editor.features.webResourceViewers&&webCandidate(value)?[{label:'Capture native web preview',kind:'web'}]:[]),...(this.editor.features.webResourceViewers&&this.editor.features.everydayWebResources&&info.acquirable&&(webCandidate(value)||/\.xml(?:[?#]|$)/i.test(value))?[{label:'Capture podcast feed (RSS / Atom)',kind:'feed'}]:[]),...(info.video?[{label:'Insert passive VideoBlock (no network)',kind:'video'}]:[]),
    ...(info.acquirable?[...(this.editor.features.deterministicAcademicResources?[{label:'Import retained ALTO / PAGE XML',kind:'ocr'}]:[]),...(this.editor.features.crossResourceLoaders?[{label:'Import managed PDF original',kind:'pdf'}]:[]),...[info.format,...(['html','markdown','text'] as const).filter(f=>f!==info.format)].map(format=>({label:`Import ${format} as native Ink at the destination`,kind:'native',format})),
    ...(['html','markdown'] as const).flatMap(format=>[{label:`Embed ${format} source copy`,kind:'embed',format},{label:`Link ${format} source snapshot (explicit refresh)`,kind:'link',format}]),{label:'Import PNG/JPEG image',kind:'image'}]:[])];
   const selection=await this.ask({title:'Inspect / Import linked resource',details:[info.url,info.video?`Recognized ${info.video.provider} video. No provider has been contacted.`:'Syntax inspected locally. No resource has been contacted.', 'Choose one operation. Import creates Ink content; embed owns a source copy; link retains an explicit refresh URL. No operation overwrites the external source.',...(info.acquirable?[]:['Acquisition requires HTTPS port 443 without a fragment. This URL can still be inserted as a link.'])],options:choices.map(c=>c.label),single:true});
   if(!selection)throw Error('URI operation cancelled.');const chosen=choices.find(c=>c.label===selection[0]);if(selection.length!==1||!chosen)throw Error('Choose exactly one URI operation.');this.check(t);
   if(chosen.kind==='url'||chosen.kind==='video'){await this.commit(chosen.kind==='url'?urlFragment(info.url):videoFragment(info.video!),[],t,signal,'import');this.status[1]('Inserted without contacting the resource. Save Ink explicitly to retain it.');return;}
-  if(chosen.kind==='web'){await this.captureWeb(value,t,signal);return;}
+  if(chosen.kind==='web'||chosen.kind==='feed'){await this.captureWeb(value,t,signal,chosen.kind==='feed'?{format:'feed'}:undefined);return;}
   if(chosen.kind==='ocr'){
    if(await this.ask({title:'Acquire OCR XML?',details:[info.url,'Retain one bounded ALTO or PAGE XML original. No XML entities, images or other linked resources will be fetched.']})===undefined)throw Error('Acquisition cancelled');this.check(t);const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open a Vault');return {cavernId:c.cavernId,session:c.session};});const r=await api.call('deterministic.xml',{id:crypto.randomUUID(),source:info.url},signal);this.check(t);if(await this.ask({title:'Review OCR source',details:[r.capture.projection.title,...r.capture.projection.diagnostics]})===undefined)throw Error('Insertion cancelled; original retained');const p=academicBlock(r.capture);await this.commit(p.fragment,[],t,signal,'import');return;
   }
@@ -245,13 +246,20 @@ export class DocumentInterchange {
   this.committed=true;this.status[1]('Converted the whole source Block. Undo restores the original source, identity and metadata.');
   queueMicrotask(()=>{if(!this.alive)return;const next=this.editor.nodeForPlacementInView(roots[0],node.viewId);if(next)this.editor.focus.request(next.key,{reason:'context-menu',caret:'start'});});
  });}
+ readonly everydayFiles=()=>this.editor.features.webResourceViewers&&this.editor.features.everydayWebResources;
+ private isWebFile(file:SuppliedFile,format?:ImportFormat){return this.everydayFiles()&&!format&&/\.(ics|rss|atom)$/i.test(file.name);}
+ private async prepareWebFile(file:SuppliedFile,t:Ticket,signal:AbortSignal){
+  if(file.blob.size>2*1024*1024)throw Error('Event/feed files are limited to 2 MiB');const bytes=new Uint8Array(await file.blob.arrayBuffer());this.check(t);
+  const body=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes),source=localSource(file.name),fragment=(await this.captureWeb(source,t,signal,{file:{name:file.name,body,format:/\.ics$/i.test(file.name)?'calendar':'feed'},prepare:true}))!;
+  const title=safeFilename(file.name.replace(/\.(ics|rss|atom)$/i,''));return {fragment,title,filename:title+'.ink',diagnostics:[] as InterchangeDiagnostic[],provenance:{version:1,filename:file.name,format:'web-resource',byteHash:await hash(bytes)}};
+ }
  async importNew(files:SuppliedFile[],host:ImportHost,format?:ImportFormat){return this.task(async signal=>{
   if(!this.editor.features.nativeDocumentPersistence)throw Error('Native document persistence is required for new Ink imports.');checkFiles(files);
   const ticket=this.base(host.current),outcomes:string[]=[];
   for(const file of files){
    this.check(ticket);this.committed=false;this.lease=undefined;
    try{
-    const [prepared]=await runInterchange({kind:'files',files:[file],format},signal);this.check(ticket);await this.confirm(prepared.diagnostics);this.check(ticket);
+    const prepared=this.isWebFile(file,format)?await this.prepareWebFile(file,ticket,signal):(await runInterchange({kind:'files',files:[file],format},signal))[0];this.check(ticket);await this.confirm(prepared.diagnostics);this.check(ticket);
     const admitted=await this.admit(prepared.fragment,[file],ticket,signal);
     const wrapped=documentFragment(admitted.fragment,prepared.title,prepared.filename);
     const root=wrapped.blocks.at(-1)!; (root.data.metadata as any).interchange.provenance=prepared.provenance;
@@ -267,7 +275,7 @@ export class DocumentInterchange {
   }
  });}
  async insertFiles(files:SuppliedFile[],ticket:Ticket,format?:ImportFormat){return this.task(async signal=>{
-  this.check(ticket);const prepared=await runInterchange({kind:'files',files,format},signal);this.check(ticket);await this.confirm(prepared.flatMap(p=>p.diagnostics));this.check(ticket);
+  this.check(ticket);checkFiles(files);const prepared=files.some(f=>this.isWebFile(f,format))?await (async()=>{const items=[];for(const [index,file] of files.entries()){const prepared=this.isWebFile(file,format)?await this.prepareWebFile(file,ticket,signal):(await runInterchange({kind:'files',files:[file],format},signal))[0];for(const block of prepared.fragment.blocks)if(block.data.importFileIndex!==undefined)block.data.importFileIndex=index;for(const asset of prepared.fragment.assets)if(asset.source.kind==='transfer')asset.source.index=index;items.push(prepared);}return items;})():await runInterchange({kind:'files',files,format},signal);this.check(ticket);await this.confirm(prepared.flatMap(p=>p.diagnostics));this.check(ticket);
   const admitted=await this.admit(joinFragments(prepared.map(p=>p.fragment)),files,ticket,signal);
   await this.commit(admitted.fragment,admitted.admitted,ticket,signal,'import');this.status[1]('Inserted files in supplied order. Undo restores the previous content.');
  });}

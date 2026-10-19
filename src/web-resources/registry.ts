@@ -1,3 +1,4 @@
+import {recognizeEveryday,everydayEndpoint,isLocalSource,type EverydayFormat} from "./everyday";
 import { webUrl, type WebIdentity } from "./model";
 import { resourceUrl } from "../interchange/resource-url";
 import { academicIdentifier } from "../academic/identifiers";
@@ -13,7 +14,8 @@ const mapsHosts = [
   "www.google.com.au",
 ];
 /** No substring providers, URL probes, redirects or fabricated geocoding. */
-export function recognizeWeb(source: string): WebIdentity {
+export function recognizeWeb(source: string, everyday=false, feed=false): WebIdentity {
+  if(everyday){const identity=recognizeEveryday(source,feed);if(identity)return identity;}
   const u = webUrl(source),
     result: WebIdentity = { source, url: u.href, provider: "web" };
   if (u.protocol !== "https:")
@@ -155,8 +157,9 @@ export function webCandidate(value: string): boolean {
 }
 export function providerEndpoint(
   i: WebIdentity,
-): { url: string; format: "html" | "x-oembed" | "bluesky" } | undefined {
+): { url: string; format: "html" | "x-oembed" | "bluesky" | EverydayFormat } | undefined {
   if (i.diagnostic || i.provider === "google-maps") return;
+  if(!["web","x","bluesky"].includes(i.provider))return everydayEndpoint(i);
   if (i.provider === "x")
     return {
       url: `https://publish.x.com/oembed?url=${encodeURIComponent(i.url)}&omit_script=true&dnt=true&hide_thread=true`,

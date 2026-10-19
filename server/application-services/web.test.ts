@@ -174,3 +174,15 @@ it("rejects extra capability fields and specialised URLs", async () => {
     }),
   ).rejects.toThrow("specialized");
 });
+it('retains local ICS original byte-for-byte, resumes without acquisition, and gates H separately from G',async()=>{
+ const f=await fixture();f.ports.everydayEnabled=true;const source='mutable-file:invite.ics',body='\uFEFFBEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:Invitation\r\nDTSTART:20261020T120000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n';
+ const r=await f.service.call('web.import',{id:randomUUID(),source,file:{name:'invite.ics',body,format:'calendar'}});expect(f.fetches()).toBe(0);expect(r.capture.projection.title).toBe('Invitation');expect(JSON.parse(new TextDecoder().decode(await f.ports.read(r.capture.asset))).body).toBe(body);expect((await f.service.call('web.resume',{id:r.jobId})).capture).toEqual(r.capture);
+ f.ports.everydayEnabled=false;await expect(f.service.call('web.resume',{id:r.jobId})).rejects.toThrow('disabled');await expect(f.service.call('web.import',{id:randomUUID(),source,file:{name:'invite.ics',body,format:'calendar'}})).rejects.toThrow('disabled');
+ f.ports.everydayEnabled=true;const legacy=await f.service.call('web.import',{id:randomUUID(),source:'https://open.spotify.com/track/0Lr4kGOYn9l83EjuK6cZFQ',everyday:false});expect(legacy.capture.projection.provider).toBe('web');
+});
+it('uses one public API request, records rate-limit failures, and makes no calls for private Drive/product fallbacks',async()=>{
+ const f=await fixture();f.ports.everydayEnabled=true;let calls=0;f.ports.acquire=async()=>{calls++;throw Error('HTTP 429');};
+ const limited=await f.service.call('web.import',{id:randomUUID(),source:'https://github.com/solidjs/solid'});expect(limited.capture.projection.status).toBe('unavailable');expect(calls).toBe(1);await f.service.call('web.resume',{id:limited.jobId});expect(calls).toBe(1);
+ for(const source of ['https://amazon.com/dp/B012345678','https://drive.google.com/file/d/abcdefghij12345/view'])expect((await f.service.call('web.import',{id:randomUUID(),source})).capture.projection.status).toBe('link-only');expect(calls).toBe(1);
+ await expect(f.service.call('web.import',{id:randomUUID(),source:'https://example.org/a.pdf',format:'feed'})).rejects.toThrow();
+});

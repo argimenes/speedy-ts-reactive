@@ -10,6 +10,7 @@ const escape = (s: string) =>
   );
 /** Locally authored shell only; never inject the provider's returned HTML. */
 export function socialEmbed(c: WebCapture): string | undefined {
+  if(c.projection.provider!=="x")return;
   const i = recognizeWeb(c.source);
   if (c.projection.status !== "captured") return;
   if (i.provider === "x" && c.projection.embedId === i.id) {
@@ -18,6 +19,7 @@ export function socialEmbed(c: WebCapture): string | undefined {
 }
 /** Exact iframe path produced by Bluesky's official embed script. No host-page script needed. */
 export function blueskyFrame(c:WebCapture):string|undefined {
+ if(c.projection.provider!=='bluesky')return;
  const i=recognizeWeb(c.source);
  if(c.projection.status==='captured'&&i.provider==='bluesky'&&typeof c.projection.embedId==='string'&&new RegExp('^at://did:plc:[a-z2-7]{24}/app\\.bsky\\.feed\\.post/'+i.id+'$').test(c.projection.embedId))return 'https://embed.bsky.app/embed/'+c.projection.embedId.slice(5);
 }

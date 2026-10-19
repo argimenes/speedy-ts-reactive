@@ -1,3 +1,4 @@
+import {validateWebFile} from "../web-resources/everyday";
 import {webCandidate} from '../web-resources/registry';
 import {academicIdentifier} from '../academic/identifiers';
 import {httpsUrl} from '../iiif/model';
@@ -25,7 +26,7 @@ export function packageRequest(value:unknown):asserts value is PackageDataReques
  if(documentHash!==undefined&&(typeof documentHash!=='string'||!/^[a-f0-9]{64}$/.test(documentHash)))throw Error('Invalid document hash');
 }
 export function preparation(value:unknown):asserts value is Preparation {
- if((value as Preparation)?.kind==='web-resource'){object(value,['kind','source']);if(!webCandidate(value.source))throw Error('Invalid web resource');}
+ if((value as Preparation)?.kind==='web-resource'){object(value,['kind','source','everyday','file','format']);if(value.everyday!==undefined&&value.everyday!==true)throw Error('Invalid everyday flag');if(value.format!==undefined&&(value.format!=='feed'||!value.everyday))throw Error('Invalid feed request');if(value.file){if(!value.everyday)throw Error('Everyday files disabled');validateWebFile(value.source,value.file);}else if(!(value.format==='feed'?webCandidate(value.source)||/^https:\/\/[^?#]+\.xml(?:[?#]|$)/i.test(value.source):webCandidate(value.source)))throw Error('Invalid web resource');}
  else if((value as Preparation)?.kind==='deterministic'){object(value,['kind','source','format']);if(value.format==='xml')httpsUrl(value.source);else if(value.format!==undefined||!academicIdentifier(value.source))throw Error('Invalid academic identifier');}
  else if((value as Preparation)?.kind==='pdf'||(value as Preparation)?.kind==='iiif'){object(value,['kind','source']);httpsUrl(value.source);}
  else if((value as Preparation)?.kind==='encyclopedia'){object(value,['kind','source']);if(!wikipediaInput(value.source)&&!validQid(value.source))throw Error('Invalid encyclopedia source');}

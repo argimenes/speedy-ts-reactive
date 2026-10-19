@@ -1,3 +1,4 @@
+import {everydayFrame,isLocalSource} from "../web-resources/everyday";
 import {
   createMemo,
   createSignal,
@@ -166,7 +167,7 @@ export function WebResourceView(props: BlockViewProps) {
               throw Error("Invalid map embed");
             setSrc(u.href);
           }
-        } else if(blueskyFrame(c)){setSrc(blueskyFrame(c));} else {
+        } else if(editor.features.everydayWebResources&&everydayFrame(c)){setSrc(everydayFrame(c));} else if(blueskyFrame(c)){setSrc(blueskyFrame(c));} else {
           const html = socialEmbed(c);
           if (!html) throw Error("Official embed unavailable for this capture");
           setSrcdoc(html);
@@ -233,7 +234,7 @@ export function WebResourceView(props: BlockViewProps) {
                       : p()?.provider)}{" "}
                 · Captured preview
               </small>
-              <h3 style={{ margin: "6px 0" }}>
+              <h3 title={p()?.everyday?.origins?.title} style={{ margin: "6px 0" }}>
                 {p()?.title ??
                   p()?.location?.query ??
                   (p()?.social ? "Public post" : "Web link")}
@@ -255,6 +256,11 @@ export function WebResourceView(props: BlockViewProps) {
             >
               {(post) => <SocialPostViewer post={post()} />}
             </Show>
+            <Show when={p()?.everyday}>{e=><section aria-label="Resource details">
+              <p>{e().identity.type}{e().identity.id?' · '+e().identity.id:''}{e().identity.account?' · '+e().identity.account:''}{e().identity.marketplace?' · '+e().identity.marketplace:''}</p>
+              <For each={e().fields}>{f=><p title={'Source: '+f.provenance}><strong>{f.label}: </strong>{f.value}</p>}</For>
+              <For each={e().items}>{item=><details><summary>{item.title??'Untitled source component'}</summary><For each={item.fields}>{f=><p title={'Source: '+f.provenance}><strong>{f.label}: </strong>{f.value}</p>}</For><Show when={item.url}><a href={item.url} target="_blank" rel="noopener noreferrer">Open item</a></Show>{' '}<Show when={item.enclosure}><a href={item.enclosure} target="_blank" rel="noopener noreferrer">Open remote enclosure (networked; not retained)</a></Show></details>}</For>
+            </section>}</Show>
             <Show when={p()?.location?.coordinates}>
               {(xy) => <p>URL coordinates: {xy().join(", ")}</p>}
             </Show>
@@ -275,7 +281,7 @@ export function WebResourceView(props: BlockViewProps) {
             <For each={p()?.diagnostics}>
               {(d) => <p style={{ "font-size": ".9em" }}>{d}</p>}
             </For>
-            <p>
+            <Show when={!isLocalSource(c().source)}><p>
               <a
                 href={safeWebUrl(c().source)}
                 target="_blank"
@@ -283,7 +289,7 @@ export function WebResourceView(props: BlockViewProps) {
               >
                 {p()?.provider === "google-maps"
                   ? "Open in Google Maps"
-                  : "Open original"}
+                  : p()?.provider === "drive" ? "Open in Google Drive" : "Open original"}
               </a>{" "}
               <button
                 onClick={() =>
@@ -295,8 +301,8 @@ export function WebResourceView(props: BlockViewProps) {
               >
                 Copy link
               </button>
-            </p>
-            <Show when={p()?.location || socialEmbed(c()) || blueskyFrame(c())}>
+            </p></Show>
+            <Show when={p()?.location || socialEmbed(c()) || blueskyFrame(c()) || editor.features.everydayWebResources&&everydayFrame(c())}>
               <Show
                 when={!src() && !srcdoc()}
                 fallback={
@@ -306,7 +312,7 @@ export function WebResourceView(props: BlockViewProps) {
                 <button disabled={busy()} onClick={() => setConfirm((v) => !v)}>
                   {p()?.provider === "google-maps"
                     ? "Load map"
-                    : "Load original post"}
+                    : p()?.everyday ? "Load music / podcast player" : "Load original post"}
                 </button>
               </Show>
             </Show>
@@ -318,7 +324,7 @@ export function WebResourceView(props: BlockViewProps) {
                     ? "Google"
                     : p()?.provider === "x"
                       ? "X"
-                      : "Bluesky"}{" "}
+                      : p()?.provider === "bluesky" ? "Bluesky" : p()?.site ?? p()?.provider}{" "}
                   from your browser. The provider may collect network
                   information, use cookies and load media. This live content is
                   not the retained original and may be unavailable offline.
@@ -337,6 +343,7 @@ export function WebResourceView(props: BlockViewProps) {
                 sandbox={
                   src() ? "allow-scripts allow-same-origin" : "allow-scripts"
                 }
+                allow={src()?.startsWith("https://open.spotify.com/embed/")?"encrypted-media":undefined}
                 referrerpolicy={
                   src() ? "strict-origin-when-cross-origin" : "no-referrer"
                 }
@@ -351,7 +358,7 @@ export function WebResourceView(props: BlockViewProps) {
               <summary>Source and capture</summary>
               <p>{c().source}</p>
               <Show when={p()?.canonicalUrl}>
-                <p>Provider-declared canonical URL: {p()?.canonicalUrl}</p>
+                <p>{p()?.everyday?"Resource URL":"Provider-declared canonical URL"}: {p()?.canonicalUrl}</p>
               </Show>
               <p>
                 {c().capturedAt} · {c().snapshotId}
@@ -360,7 +367,7 @@ export function WebResourceView(props: BlockViewProps) {
                 Metadata is an unreviewed source assertion. Interactive state is
                 not saved.
               </p>
-              <button
+              <Show when={!isLocalSource(c().source)}><button
                 onClick={() =>
                   void editor.interchange.importWebResource(
                     props.nodeKey,
@@ -369,7 +376,7 @@ export function WebResourceView(props: BlockViewProps) {
                 }
               >
                 Capture again…
-              </button>
+              </button></Show>
             </details>
           </>
         )}
