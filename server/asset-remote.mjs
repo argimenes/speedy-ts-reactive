@@ -152,3 +152,14 @@ export async function acquireOcrXml(source,signal,dependencies={}){
  const r=await acquire(source,signal,dependencies,{accept:'application/xml, text/xml',bytes:8*1024*1024});
  if(!/^(?:application|text)\/xml(?:;|$)/i.test(String(r.mediaType)))throw Error('OCR response must be XML');return {bytes:new Uint8Array(r.bytes),endpoint:r.url};
 }
+
+/** Explicit web metadata only. Same DNS pinning, origin, byte and deadline policy. */
+export async function acquireWebMetadata(url,format,signal,dependencies={}) {
+ const u=remoteAssetUrl(url);if(!['html','x-oembed','bluesky'].includes(format))throw Error('Unsupported web metadata format');
+ if(format==='x-oembed'&&(u.origin!=='https://publish.x.com'||u.pathname!=='/oembed'))throw Error('Invalid X metadata endpoint');
+ if(format==='bluesky'&&(u.origin!=='https://public.api.bsky.app'||u.pathname!=='/xrpc/app.bsky.feed.getPostThread'||u.searchParams.get('depth')!=='0'||u.searchParams.get('parentHeight')!=='0'))throw Error('Invalid Bluesky metadata endpoint');
+ const r=await acquire(url,signal,dependencies,{accept:format==='html'?'text/html':'application/json',bytes:2*1024*1024});
+ if(!(format==='html'?/^text\/html(?:;|$)/i:/^application\/json(?:;|$)/i).test(String(r.mediaType)))throw Error('Web metadata Content-Type mismatch');
+ const charset=/charset\s*=\s*"?([^;"\s]+)/i.exec(String(r.mediaType));if(charset&&!['utf-8','us-ascii'].includes(charset[1].toLowerCase()))throw Error('Web metadata requires UTF-8');
+ return {body:new TextDecoder('utf-8',{fatal:true}).decode(r.bytes),endpoint:r.url};
+}

@@ -54,6 +54,7 @@ export class ApplicationService implements ApplicationServices {
     if(p.kind==='pdf')throw Error('Use pdf.resume for PDF jobs');
     if(p.kind==='iiif')throw Error('Use iiif.resume for IIIF jobs');
     if(p.kind==='encyclopedia')throw Error('Use encyclopedia.resume for encyclopedia jobs');
+    if(p.kind==='web-resource')throw Error('Use web.resume for web jobs');
     if(p.kind==='deterministic')throw Error('Use deterministic.resume for academic jobs');
     if(p.kind==='academic')throw Error('Use academic.resume for scholarly jobs');
     if(p.kind==='convert')result=await this.ports.executor.run(p,signal) as PreparationResult;

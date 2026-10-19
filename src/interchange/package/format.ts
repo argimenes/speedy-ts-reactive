@@ -1,3 +1,4 @@
+import {WEB_BLOCK,webCapture,stableJson} from '../../web-resources/model';
 import {imageType} from './image-validation';
 export {imageType} from './image-validation';
 import {ACADEMIC_BLOCK,academicCapture,storedProjection} from '../../academic/model';
@@ -14,6 +15,7 @@ export interface PackageManifest {kind:'mutable-ink-package';version:1;profile:'
 export function nativeInventory(snapshot:ReturnType<typeof decodeNative>,resources=true){
  const entities=new Set<string>(),claims=new Set<string>(),assets=new Map<string,ManagedAssetReference>();const unresolvedAssets:Array<{blockId:string;reason:string}>=[];let annotations=0,points=0;
  for(const c of Object.values(snapshot.contents)){
+  if(resources&&c.viewType===WEB_BLOCK&&webCapture(c.payload.web)){assets.set(assetKey(c.payload.web.asset),c.payload.web.asset);const thumbnail=managedAsset(c.payload.webThumbnail);if(thumbnail)assets.set(assetKey(thumbnail),thumbnail);}
   if(resources&&c.viewType===ACADEMIC_BLOCK&&academicCapture(c.payload.academic))for(const a of captureAssets(c.payload.academic))assets.set(assetKey(a),a);
   if(resources&&RESOURCE_TYPES.includes(c.viewType)&&!c.payload.archive)for(const a of captureAssets(c.payload.citation??c.payload.article??c.payload.iiif??c.payload.pdf))assets.set(assetKey(a),a);
   const archive=(c.payload.archive??(c.payload.original as any)?.data?.archive) as any;if(resources&&archive?.version===1&&Array.isArray(archive.bindings))for(const pair of archive.bindings){const a=managedAsset(pair[1]);if(a)assets.set(assetKey(a),a);}
@@ -48,6 +50,7 @@ export async function openPackage(input:Uint8Array){
  if(roles.size!==3)throw Error('Incomplete package roles');
  const native=members.get(m.entry)!,snapshot=decodeNative(native),data=validatePackageData(json(members.get('data/package-data.json')!)),schema=json(members.get('schemas/knowledge-schema.json')!);
  if(snapshot.resourceId!==m.source.resourceId||schema?.kind!=='mutable-knowledge-schema'||schema.version!==1||!Array.isArray(schema.tables)||data.tables.some(t=>!schema.tables.some((s:any)=>s.name===t.name&&Array.isArray(s.columns)&&s.columns.map((c:any)=>c.name).join('\0')===t.columns.join('\0'))))throw Error('Package schema/native mismatch');
+ for(const c of Object.values(snapshot.contents))if(c.viewType===WEB_BLOCK){const w=c.payload.web;if(!webCapture(w))throw Error('Invalid web capture');const original=assets.find(a=>assetKey(a.reference)===assetKey(w.asset));if(!original||original.mediaType!=='application/json')throw Error('Web original missing');const {parseWebBytes}=await import('../../web-resources/parse');const envelope=JSON.parse(new TextDecoder().decode(original.bytes));if(envelope.source!==w.source||envelope.capturedAt!==w.capturedAt||stableJson(parseWebBytes(original.bytes))!==stableJson(w.projection))throw Error('Web projection does not match retained source');}
  for(const c of Object.values(snapshot.contents))if(c.viewType===ACADEMIC_BLOCK){
   const capture=c.payload.academic;if(!academicCapture(capture))throw Error('Invalid academic capture');
   const original=assets.find(a=>assetKey(a.reference)===assetKey(capture.asset));if(!original)throw Error('Academic original missing');

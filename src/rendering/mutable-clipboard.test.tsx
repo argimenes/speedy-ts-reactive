@@ -14,11 +14,11 @@ import { featureFlags } from '../configuration';
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
-function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false, automaticClipboardImages = false, resourceUrlPaste = true, academicResourceLoaders = true) {
+function setup(enabled = true, externalHtml = true, directDomCharacterCells = true, markdownClipboard = true, managedAssetClipboard = false, automaticClipboardImages = false, resourceUrlPaste = true, academicResourceLoaders = true, webResourceViewers = true) {
   const editor = new ReactiveEditor({ type: 'document-block', id: 'doc', children: [
     { type: 'standoff-editor-block', id: 'a', text: 'Rome abc', standoffProperties: [{ id: 'p', type: 'codex/entity-reference', value: 'rome', start: 0, end: 3 }] },
     { type: 'standoff-editor-block', id: 'b', text: 'target' },
-  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard, automaticClipboardImages, resourceUrlPaste, academicResourceLoaders } });
+  ] }, { features: { mutableClipboard: enabled, externalHtmlClipboard: externalHtml, directDomCharacterCells, markdownClipboard, managedAssetClipboard, automaticClipboardImages, resourceUrlPaste, academicResourceLoaders, webResourceViewers } });
   editor.clipboard.setContext(() => ({ cavernId: 'cavern', session: 'session' })); registerCoreViews(editor);
   const projection = editor.createView('clipboard-ui'), host = document.body.appendChild(document.createElement('div'));
   const dispose = render(() => <ReactiveTreeView editor={editor} projection={projection} />, host); editor.installGateway(document);
@@ -45,7 +45,7 @@ describe('Mutable clipboard UI routing and lifecycle', () => {
     ['ctrlKey','https://vimeo.com/76979871?share=copy','vimeo-player-block','player.vimeo.com'],
     ['metaKey','https://example.org/page?q=history','iframe-block','example.org'],
   ])('creates a resource Block with %s, preserves surrounding text and restores exact Undo', async (modifier,url,type,host) => {
-    const s=setup(),target=s.select('b',3),before=nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'));
+    const s=setup(true,true,true,true,false,false,true,true,type!=='iframe-block'),target=s.select('b',3),before=nativeEnvelope(captureNative(s.editor.repository.readState(),'doc'));
     const commit=vi.spyOn(s.editor.repository,'commit'),fetch=vi.spyOn(globalThis,'fetch');
     target.dispatchEvent(new KeyboardEvent('keydown',{key:'v',[modifier]:true,shiftKey:true,bubbles:true,cancelable:true}));
     s.dispatch('paste',target,{'text/plain':url,'text/html':'<b>ignored rich representation</b>'});

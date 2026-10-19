@@ -1,3 +1,5 @@
+import {WebResourceView} from './web-resource-view';
+import {WEB_BLOCK} from '../web-resources/model';
 import {AcademicResourceView} from './academic-resource-view';
 import {ACADEMIC_BLOCK} from '../academic/model';
 import {StructuredResourceView} from './structured-resource-view';
@@ -50,6 +52,7 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
   if (editor.features.documentInterchange) many(editor, ["mutable/video-block"], VideoBlockView, ["media", "opaque-widget", "selectable"]);
   if (editor.features.resourceUrlPaste) many(editor, ["youtube-player-block", "vimeo-player-block"],
     (props: import('../block-tree/types').BlockViewProps) => createComponent(VideoBlockView, { ...props, loadOnMount: true }), ["media", "opaque-widget", "selectable"]);
+  if(editor.features.webResourceViewers)many(editor,[WEB_BLOCK],WebResourceView,['selectable','opaque-widget']);
   if(editor.features.deterministicAcademicResources)many(editor,[ACADEMIC_BLOCK],AcademicResourceView,['selectable','opaque-widget']);
   if(editor.features.structuredResources)many(editor,[STRUCTURED_BLOCK],StructuredResourceView,['selectable','opaque-widget']);
   many(editor, ['mutable/pdf-document-block'], PdfBlockView, ['selectable','opaque-widget']);

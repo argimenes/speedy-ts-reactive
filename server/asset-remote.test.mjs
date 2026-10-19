@@ -115,3 +115,12 @@ test('academic identifiers choose fixed endpoints; remote OCR and PMC PDF retain
  await assert.rejects(acquirePdf('https://example.org/file.pdf',undefined,deps()),/not served as PDF/);
  await assert.rejects(acquirePdf('https://pmc-oa-opendata.s3.amazonaws.com/other.pdf',undefined,deps()),/not served as PDF/);
 });
+
+test('web metadata shares SSRF, redirects, MIME and credential boundaries without discovered endpoint access',async()=>{
+ const {acquireWebMetadata}=await import('./asset-remote.mjs');const dep=(responses,inspect)=>({lookup:async()=>answer,request:transport(responses,inspect)});
+ const r=await acquireWebMetadata('https://example.org/page','html',undefined,dep([{bytes:Buffer.from('<title>Exact</title>'),headers:{'content-type':'text/html; charset=utf-8'}}],(_u,o)=>assert.equal(o.headers.Cookie,undefined)));assert.equal(r.body,'<title>Exact</title>');
+ await assert.rejects(acquireWebMetadata('https://example.org','bluesky'),/endpoint/);
+ await assert.rejects(acquireWebMetadata('https://example.org','html',undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}],request:()=>assert.fail('private network')}),/not public/);
+ await assert.rejects(acquireWebMetadata('https://example.org','html',undefined,dep([{status:302,headers:{location:'https://elsewhere.org'}}])),/new consent/);
+ for(const response of [{status:403},{status:429},{headers:{'content-type':'image/svg+xml'}},{headers:{'content-type':'text/html','content-length':String(3*1024*1024)}},{headers:{'content-type':'text/html; charset=latin1'}}])await assert.rejects(acquireWebMetadata('https://example.org','html',undefined,dep([response])));
+});

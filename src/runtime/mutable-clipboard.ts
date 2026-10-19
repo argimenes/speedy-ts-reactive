@@ -1,3 +1,4 @@
+import {webCandidate} from '../web-resources/registry';
 import {academicIdentifier,academicJob} from '../academic/identifiers';
 import {pdfInput} from '../pdf/model';
 import {pdfBlock} from '../pdf/block';
@@ -255,6 +256,7 @@ export class MutableClipboard {
       if(wiki){this.pasteWikipedia(b,wiki.sourceUrl,event,cross);return;}
       const doi = plain && this.editor.features.academicResourceLoaders ? doiInput(data['text/plain']) : undefined;
       if(doi){this.pasteAcademic(b,doi.sourceUrl,event,cross);return;}
+      if(plain&&b.nodeKey&&this.editor.features.webResourceViewers&&(webCandidate(data['text/plain']??'')||/^mutable-web-job:[a-f0-9-]{36}$/i.test((data['text/plain']??'').trim()))){if(b.disjoint)throw Error('Choose one insertion destination');void this.editor.interchange.importWebResource(b.nodeKey,data['text/plain']);return;}
       const resource = plain && this.editor.features.resourceUrlPaste ? resourceUrl(data['text/plain'] ?? '') : undefined;
       if (resource) { this.pasteResource(b, resource, data['text/plain'].trim(), event, cross); return; }
       const files = this.editor.features.managedAssetClipboard && !plain ? captureFiles(event.clipboardData) : [];

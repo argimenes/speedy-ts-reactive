@@ -1,3 +1,4 @@
+import {WEB_BLOCK,webCapture} from '../../web-resources/model';
 import {ACADEMIC_BLOCK,academicCapture} from '../../academic/model';
 import {STRUCTURED_BLOCK} from '../../structured/model';
 import {RESOURCE_TYPES,resourceSnapshots} from './resources';
@@ -39,6 +40,7 @@ export function materializePackage(fragment:MutableFragment,cavernId:string|unde
  // Carry a bounded, inert reconstruction envelope with each resource. This also
  // survives re-export of an inactive imported copy without querying active SQL.
  const captured=resourceSnapshots(context.data),bindings=new Map(context.assetBindings??[]);
+ for(const b of isolated.blocks)if(b.type===WEB_BLOCK&&webCapture(b.data.web)){b.data.web.asset=bindings.get(assetKey(b.data.web.asset))??(()=>{throw Error('Web original missing');})();const t=managedAsset(b.data.webThumbnail);if(t)b.data.webThumbnail=bindings.get(assetKey(t))??(()=>{throw Error('Web thumbnail missing');})();delete b.data.webJobId;}
  for(const b of isolated.blocks)if(b.type===ACADEMIC_BLOCK&&academicCapture(b.data.academic)){const c=b.data.academic;c.asset=bindings.get(assetKey(c.asset))??(()=>{throw Error('Academic original missing');})();c.assets=(c.assets??[]).map(a=>bindings.get(assetKey(a))??(()=>{throw Error('Academic associated original missing');})());b.data.academicArchive=true;delete b.data.academicJobId;}
  for(const b of isolated.blocks){const d=(b.data.metadata as any)?.academicDerivative;if(managedAsset(d?.sourceAsset))d.sourceAsset=bindings.get(assetKey(d.sourceAsset))??(()=>{throw Error('Derivative original missing');})();for(const a of (Array.isArray(b.data.academicBindings)?b.data.academicBindings:[]) as any[])if(managedAsset(a.asset))a.asset=bindings.get(assetKey(a.asset))??(()=>{throw Error('Bound original missing');})();}
  for(const b of isolated.blocks)if(b.type===STRUCTURED_BLOCK){const a=managedAsset(b.data.asset);if(a){const mapped=bindings.get(assetKey(a));if(!mapped)throw Error('Read-only resource original is missing');b.data.asset=mapped;}}
