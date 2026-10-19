@@ -104,3 +104,14 @@ test('PDF acquisition keeps HTTPS public-address/redirect authority and validate
  await assert.rejects(acquirePdf('https://papers.example/work.pdf',undefined,deps([{status:302,headers:{location:'https://private.example/work.pdf'}}])),/new consent/);
  await assert.rejects(acquirePdf('https://papers.example/work.pdf',undefined,{lookup:async()=>[{address:'127.0.0.1',family:4}]}),/not public/);
 });
+
+test('academic identifiers choose fixed endpoints; remote OCR and PMC PDF retain transport boundaries',async()=>{
+ const {acquireAcademicRecord,acquireOcrXml,acquirePdf}=await import('./asset-remote.mjs');let seen;
+ const r=await acquireAcademicRecord({family:'orcid',key:'0000-0002-1825-0097'},undefined,{lookup:async()=>answer,request:transport([{bytes:Buffer.from('{}'),headers:{'content-type':'application/json'}}],u=>seen=u.href)});assert.equal(seen,'https://pub.orcid.org/v3.0/0000-0002-1825-0097/record');assert.equal(r.bytes.length,2);
+ await assert.rejects(acquireAcademicRecord({family:'orcid',key:'../../etc/passwd'}),/Unsupported/);
+ await assert.rejects(acquireOcrXml('https://example.org/ocr.xml',undefined,{lookup:async()=>answer,request:transport([{bytes:Buffer.from('<script/>'),headers:{'content-type':'text/html'}}])}),/must be XML/);
+ const bytes=Buffer.from('%PDF-1.7 fixture');const deps=()=>({lookup:async()=>answer,request:transport([{bytes,headers:{'content-type':'binary/octet-stream'}}])});
+ assert.deepEqual(Buffer.from((await acquirePdf('https://pmc-oa-opendata.s3.amazonaws.com/PMC123.1/PMC123.1.pdf',undefined,deps())).bytes),bytes);
+ await assert.rejects(acquirePdf('https://example.org/file.pdf',undefined,deps()),/not served as PDF/);
+ await assert.rejects(acquirePdf('https://pmc-oa-opendata.s3.amazonaws.com/other.pdf',undefined,deps()),/not served as PDF/);
+});

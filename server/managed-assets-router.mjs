@@ -46,10 +46,10 @@ export function createManagedAssetService(options) {
     return store.stage(lease(req),req.file.buffer,metadata);
   });
   route('post','/:operation/originals/stage',async(req,res,signal)=>{
-    if(!options.crossResourceEnabled&&!options.structuredEnabled)throw Error('Resource original admission disabled');
+    if(!options.crossResourceEnabled&&!options.structuredEnabled&&!options.deterministicEnabled)throw Error('Resource original admission disabled');
     await store.status(lease(req));await new Promise((resolve,reject)=>originalUpload(req,res,e=>e?reject(e):resolve()));signal.throwIfAborted();if(!req.file)throw Error('No original supplied');
-    const mediaType=req.file.mimetype;if(mediaType==='text/plain'){if(!options.structuredEnabled)throw Error('Read-only resources disabled');validateStructuredOriginal(req.file.buffer);return store.stage(lease(req),req.file.buffer,{mediaType});}
-    if(!options.crossResourceEnabled||!options.inspectOriginal)throw Error('Resource original admission disabled');if(!['application/pdf','application/json'].includes(mediaType))throw Error('Use image admission for image originals');
+    const mediaType=req.file.mimetype;if(['application/xml','application/epub+zip','application/x-bibtex','application/x-research-info-systems'].includes(mediaType)){if(!options.deterministicEnabled||!options.inspectOriginal)throw Error('Academic original admission disabled');await options.inspectOriginal(new Uint8Array(req.file.buffer),mediaType,signal);signal.throwIfAborted();return store.stage(lease(req),req.file.buffer,{mediaType});}if(mediaType==='text/plain'){if(!options.structuredEnabled)throw Error('Read-only resources disabled');validateStructuredOriginal(req.file.buffer);return store.stage(lease(req),req.file.buffer,{mediaType});}
+    if((mediaType==='application/json'?!options.crossResourceEnabled&&!options.deterministicEnabled:!options.crossResourceEnabled)||!options.inspectOriginal)throw Error('Resource original admission disabled');if(!['application/pdf','application/json'].includes(mediaType))throw Error('Use image admission for image originals');
     await options.inspectOriginal(new Uint8Array(req.file.buffer),mediaType,signal);signal.throwIfAborted();return store.stage(lease(req),req.file.buffer,{mediaType});
   });
   route('post','/:operation/images/remote',async(req,_res,signal)=>{

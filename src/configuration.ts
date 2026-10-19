@@ -36,6 +36,7 @@ export type FeatureFlags = Readonly<{
   academicResourceLoaders: boolean;
   crossResourceLoaders: boolean;
   structuredResources: boolean;
+  deterministicAcademicResources: boolean;
   iiifResourceLoaders: boolean;
   /** Explicit global Cavern setup and startup lifecycle. */
   cavernStartup: boolean;
@@ -133,6 +134,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   academicResourceLoaders: true,
   crossResourceLoaders: true,
   structuredResources: true,
+  deterministicAcademicResources: true,
   iiifResourceLoaders: true,
   cavernStartup: true,
   windowMaximize: true,

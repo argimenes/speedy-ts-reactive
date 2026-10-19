@@ -1,3 +1,5 @@
+import {academicBlock} from '../academic/block';
+import type {AcademicFormat} from '../academic/model';
 import {structuredText} from '../structured/text';
 import {STRUCTURED_BLOCK,presentation} from '../structured/model';
 import { parse } from 'parse5';
@@ -60,7 +62,7 @@ export async function prepareFiles(files:SuppliedFile[],explicit?:ImportFormat) 
   const results=[];
   for(let index=0;index<files.length;index++) {
     const file=files[index],read=await readSelectedFile(file,explicit);
-    const converted=read.format==='structured'?{fragment:structuredFragment(file.name,read.source,file.blob.type),diagnostics:[],title:undefined}:read.format==='png'||read.format==='jpeg'?{fragment:imagesFragment([file]),diagnostics:[],title:undefined}:convertSource(read.source,read.format,true);
+    const converted=read.format==='academic'?await academicFile(file,index,read.byteHash):read.format==='structured'?{fragment:structuredFragment(file.name,read.source,file.blob.type),diagnostics:[],title:undefined}:read.format==='png'||read.format==='jpeg'?{fragment:imagesFragment([file]),diagnostics:[],title:undefined}:convertSource(read.source,read.format,true);
     converted.fragment.assets.forEach(a=>{if(a.source.kind==='transfer')a.source.index=index;});
     if(read.format==='structured'){structuredText(new Uint8Array(await file.blob.arrayBuffer()));const b=converted.fragment.blocks[0];b.data.importFileIndex=index;Object.assign(b.data.structured as object,{encoding:read.encoding,bom:read.bom,byteHash:read.byteHash});}
     const title=read.title;
@@ -70,3 +72,10 @@ export async function prepareFiles(files:SuppliedFile[],explicit?:ImportFormat) 
 }
 
 function structuredFragment(filename:string,text:string,mime:string){const f=emptyFragment();f.blocks=[{localId:'resource',type:STRUCTURED_BLOCK,data:{text,structured:{version:1,filename:filename.split(/[\\/]/).at(-1)!.slice(0,255),mime,presentation:presentation(filename)}},children:[],relations:{},blockProperties:[]}];f.placements=[{localId:'edge',kind:'owned',target:{kind:'local',object:'block',id:'resource'}}];f.roots=[{placement:'edge',openStart:false,openEnd:false,clippedStart:false,clippedEnd:false}];return validateFragment(f);}
+
+async function academicFile(file:SuppliedFile,index:number,byteHash:string){
+ const bytes=new Uint8Array(await file.blob.arrayBuffer()),ext=file.name.split('.').at(-1)?.toLowerCase();let format:AcademicFormat|'ocr';
+ if(ext==='epub')format='epub';else if(ext==='bib'||ext==='bibtex')format='bibtex';else if(ext==='ris')format='ris';else format='ocr';
+ const {parseAcademic}=await import('../academic/parse');const projection=parseAcademic(bytes,format);if(projection.images)projection.images=projection.images.map(({bytes,...image})=>image) as any;const asset={kind:'managed' as const,cavernId:'pending',assetId:'sha256:'+byteHash};const capture={version:1 as const,kind:'deterministic' as const,snapshotId:crypto.randomUUID(),resourceId:asset.assetId,source:file.name.split(/[\\/]/).at(-1)!,endpoint:'local-file',retrievedAt:new Date().toISOString(),asset,format:projection.kind,projection};const {fragment}=academicBlock(capture);fragment.blocks[0].data.importFileIndex=index;
+ return {fragment,title:projection.title,diagnostics:projection.diagnostics.map(d=>diagnostic('semantic-loss',d))};
+}

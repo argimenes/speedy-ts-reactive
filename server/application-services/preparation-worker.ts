@@ -1,3 +1,4 @@
+import {xml} from '../../src/academic/xml';
 import {inspectPdf} from './pdf-inspection';
 import {normalizeIIIF} from '../../src/iiif/model';
 import {articleProjection,wikidataProjection} from '../../src/interchange/encyclopedia-projection';
@@ -15,7 +16,7 @@ import {publicProjection} from '../../src/publication/projection';
 import {zipSync} from 'fflate';
 parentPort!.once('message',async(task:ExecutionTask)=>{
  try {
-  const value=task.kind==='json-inspect'?inspectJson(task.bytes):task.kind==='pdf-inspect'?await inspectPdf(task.bytes):task.kind==='iiif-normalize'?normalizeIIIF(task.bytes):task.kind==='encyclopedia-normalize'?(typeof task.source==='string'?wikidataProjection(task.source,task.responses[0]):articleProjection(task.source,task.responses[0],task.responses[1])):task.kind==='academic-normalize'?{kind:'academic-normalize',metadata:normalizeScholarly(task.provider,task.doi,task.bytes)}:task.kind==='publication-project'?publicProjection(task.native,task.profile,task.cavernId,task.directory,id=>'b-'+createHash('sha256').update((task.directory?.namespace??task.namespace??'')+'\0'+id).digest('hex').slice(0,24),task.research):
+  const value=task.kind==='academic-original-inspect'?await inspectAcademic(task.bytes,task.mediaType):task.kind==='deterministic-parse'?{kind:'deterministic-projection',projection:(await import('../../src/academic/parse')).parseAcademic(task.bytes,task.format,task.identity,task.secondary,task.discovery)}:task.kind==='json-inspect'?inspectJson(task.bytes):task.kind==='pdf-inspect'?await inspectPdf(task.bytes):task.kind==='iiif-normalize'?normalizeIIIF(task.bytes):task.kind==='encyclopedia-normalize'?(typeof task.source==='string'?wikidataProjection(task.source,task.responses[0]):articleProjection(task.source,task.responses[0],task.responses[1])):task.kind==='academic-normalize'?{kind:'academic-normalize',metadata:normalizeScholarly(task.provider,task.doi,task.bytes)}:task.kind==='publication-project'?publicProjection(task.native,task.profile,task.cavernId,task.directory,id=>'b-'+createHash('sha256').update((task.directory?.namespace??task.namespace??'')+'\0'+id).digest('hex').slice(0,24),task.research):
    task.kind==='publication-inspect'?inspectResearch(task.native,task.profile,task.cavernId,task.blockId):
    task.kind==='publication-zip'?{bytes:publicationZip(task.members)}:
    task.kind==='convert'?{kind:'convert',...convertSource(task.source,task.format)}:
@@ -34,3 +35,5 @@ function publicationZip(members:Record<string,Uint8Array>){
 }
 
 function inspectJson(bytes:Uint8Array){if(bytes.length>8*1024*1024)throw Error("JSON original limit");JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));return {kind:"json-inspection"};}
+
+async function inspectAcademic(bytes:Uint8Array,media:string){if(media==='application/xml')xml(new TextDecoder('utf-8',{fatal:true}).decode(bytes).replace(/<!DOCTYPE PubmedArticleSet PUBLIC "[^"<>\[\]]*" "https?:\/\/[^"<>\[\]]*">/,''));else (await import('../../src/academic/parse')).parseAcademic(bytes,media==='application/epub+zip'?'epub':media==='application/x-bibtex'?'bibtex':'ris');return {kind:'json-inspection'};}

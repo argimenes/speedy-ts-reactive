@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 // Keep native addons external and SQL adjacent to the worker. No browser imports or auto-start.
 const source = new URL('../src/knowledge-sqlite/', import.meta.url);
 const destination = new URL('../dist/server/knowledge-sqlite/', import.meta.url);
-for (const name of ['client.mjs', 'vault-scope.mjs', 'paths.mjs', 'foundation.mjs', 'schema.mjs', 'reconcile.mjs', 'entities.mjs', 'scholarly.mjs', 'encyclopedia.mjs', 'iiif.mjs', 'resources.mjs', 'semantics.mjs', 'canonical-ledger.mjs',
-  'migrations/mutable/0001-foundation.sql', 'migrations/mutable/0002-semantic-knowledge.sql', 'migrations/mutable/0003-scholarly-identities.sql', 'migrations/mutable/0004-encyclopedia.sql', 'migrations/mutable/0005-iiif.sql', 'migrations/mutable/0006-resources.sql', 'migrations/audit/0001-foundation.sql']) {
+for (const name of ['client.mjs', 'vault-scope.mjs', 'paths.mjs', 'foundation.mjs', 'schema.mjs', 'reconcile.mjs', 'entities.mjs', 'scholarly.mjs', 'encyclopedia.mjs', 'iiif.mjs', 'resources.mjs', 'deterministic.mjs', 'semantics.mjs', 'canonical-ledger.mjs',
+  'migrations/mutable/0001-foundation.sql', 'migrations/mutable/0002-semantic-knowledge.sql', 'migrations/mutable/0003-scholarly-identities.sql', 'migrations/mutable/0004-encyclopedia.sql', 'migrations/mutable/0005-iiif.sql', 'migrations/mutable/0006-resources.sql', 'migrations/mutable/0007-deterministic-academic.sql', 'migrations/audit/0001-foundation.sql']) {
   const target = new URL(name, destination);
   await mkdir(new URL('.', target), { recursive: true });
   await copyFile(new URL(name, source), target);

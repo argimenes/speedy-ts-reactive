@@ -1,3 +1,4 @@
+import {academicIdentifier,academicJob} from '../academic/identifiers';
 import {pdfInput} from '../pdf/model';
 import {pdfBlock} from '../pdf/block';
 import {iiifInput} from '../iiif/model';
@@ -245,6 +246,7 @@ export class MutableClipboard {
       const asMarkdown = !!intent && intent.until >= Date.now() && intent.target === event.target && this.valid(intent.bookmark, event, cross);
       this.clearIntent();
       const data = captureClipboard(event.clipboardData);
+      if(plain&&b.nodeKey&&this.editor.features.deterministicAcademicResources){const source=data['text/plain']??'';if(academicIdentifier(source)||academicJob(source)){void this.editor.interchange.importAcademicSource(b.nodeKey,source);return;}const bibliography=/^\s*@(?:article|book|misc|inproceedings|incollection|string|proceedings|phdthesis|techreport)\s*[{(]/i.test(source)?'bibtex':/^\s*TY  - /m.test(source)?'ris':undefined;if(bibliography){void this.editor.interchange.importBibliographyText(b.nodeKey,source,bibliography);return;}}
       const pdf=plain&&this.editor.features.crossResourceLoaders?pdfInput(data['text/plain']):undefined;
       if(pdf){this.pastePdf(b,pdf,event,cross);return;}
       const iiif=plain&&this.editor.features.iiifResourceLoaders?iiifInput(data['text/plain']):undefined;

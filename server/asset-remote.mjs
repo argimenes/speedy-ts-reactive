@@ -113,6 +113,42 @@ export async function acquireIIIF(url,format,signal,dependencies={}) {
 /** Explicit managed PDF acquisition; parser admission is a bounded host task. */
 export async function acquirePdf(url,signal,dependencies={}) {
  const r=await acquire(url,signal,dependencies,{accept:"application/pdf",bytes:50*1024*1024});
- if(!/^application\/pdf(?:;|$)/i.test(String(r.mediaType)))throw Error("Resource is not served as PDF");
+ const u=new URL(r.url),pmcOriginal=u.hostname==='pmc-oa-opendata.s3.amazonaws.com'&&/^\/PMC[1-9]\d{0,8}\.[1-9]\d{0,3}\/[^/]+\.pdf$/.test(u.pathname);
+ if(!/^application\/pdf(?:;|$)/i.test(String(r.mediaType))&&!(pmcOriginal&&/^(?:application|binary)\/octet-stream(?:;|$)/i.test(String(r.mediaType))))throw Error("Resource is not served as PDF");
  return {bytes:new Uint8Array(r.bytes),endpoint:r.url};
+}
+
+// Deterministic single-record APIs. Global per-process spacing is conservative
+// across Vault hosts; no background retries or provider graph traversal.
+let academicNext=0,academicQueue=Promise.resolve();
+export async function acquireAcademicRecord(identifier,signal,dependencies={}) {
+ const {family,key}=identifier??{};let endpoint;
+ if(family==='orcid'&&/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(key))endpoint=`https://pub.orcid.org/v3.0/${key}/record`;
+ else if(family==='arxiv'&&/^(?:\d{4}\.\d{4,5}|[a-z-]+(?:\.[A-Z]{2})?\/\d{7})(?:v[1-9]\d{0,3})?$/.test(key))endpoint=`https://export.arxiv.org/api/query?id_list=${encodeURIComponent(key)}&max_results=1`;
+ else if(family==='pmid'&&/^[1-9]\d{0,8}$/.test(key))endpoint=`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=${key}&retmode=xml&tool=MutableOS`;
+ else if(family==='pmcid'&&/^PMC[1-9]\d{0,8}$/.test(key))endpoint=`https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=${key}&format=json&tool=MutableOS`;
+ else if(family==='isbn'&&/^97[89]\d{10}$/.test(key))endpoint=`https://openlibrary.org/api/books?bibkeys=ISBN:${key}&jscmd=data&format=json`;
+ else throw Error('Unsupported academic provider identity');
+ const get=async(url,json)=>{
+  const contact=process.env.MUTABLE_RESOURCE_CONTACT;if(contact&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)&&['eutils.ncbi.nlm.nih.gov','pmc.ncbi.nlm.nih.gov'].includes(new URL(url).hostname)){const addressed=new URL(url);addressed.searchParams.set('email',contact);url=addressed.href;}
+  const wait=academicQueue.then(async()=>{signal?.throwIfAborted();const delay=Math.max(0,academicNext-Date.now());if(delay)await new Promise((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(Error('Acquisition cancelled'));},timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},delay);signal?.addEventListener('abort',abort,{once:true});});academicNext=Date.now()+3100;});academicQueue=wait.catch(()=>{});await wait;
+  const r=await acquire(url,signal,dependencies,{accept:json?'application/json':'application/atom+xml, application/xml, text/xml',bytes:2*1024*1024});if(!(json&&url.startsWith('https://pmc-oa-opendata.s3.amazonaws.com/metadata/')&&/^(?:application|binary)\/octet-stream(?:;|$)/i.test(String(r.mediaType)))&&!(json?/^application\/(?:json|vnd\.orcid\+json)(?:;|$)/i:/^(?:application\/(?:atom\+)?xml|text\/xml)(?:;|$)/i).test(String(r.mediaType)))throw Error('Academic provider Content-Type mismatch');return {bytes:new Uint8Array(r.bytes),endpoint:r.url};
+ };
+ const result=await get(endpoint,['orcid','pmcid','isbn'].includes(family));
+ if(family==='pmcid'){const records=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(result.bytes)).records,r=records?.find(r=>r.pmcid===key);if(r?.pmid&&/^[1-9]\d{0,8}$/.test(r.pmid)){const secondary=await get(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=${r.pmid}&retmode=xml&tool=MutableOS`,false);result.secondary=secondary.bytes;}}
+ if(family==='pmcid'){
+  // Only one article prefix, at most three versions. No bucket inventory scan.
+  const listing=await get(`https://pmc-oa-opendata.s3.amazonaws.com/?list-type=2&prefix=${key}.&delimiter=%2F&max-keys=4`,false);
+  const {SaxesParser}=await import('saxes');const prefixes=[];let field='',buffer='',truncated=false;
+  const parser=new SaxesParser();parser.on('doctype',()=>{throw Error('Unexpected provider DTD');});parser.on('opentag',n=>{field=n.name;buffer='';});parser.on('text',v=>buffer+=v);parser.on('closetag',()=>{if(field==='Prefix'&&new RegExp('^'+key+'\\.[1-9]\\d{0,3}/$').test(buffer))prefixes.push(buffer);if(field==='IsTruncated'&&buffer==='true')truncated=true;field='';});parser.write(new TextDecoder().decode(listing.bytes)).close();
+  result.discovery=[];
+  if(!truncated&&prefixes.length<=3)for(const prefix of prefixes){const record=await get(`https://pmc-oa-opendata.s3.amazonaws.com/metadata/${prefix.slice(0,-1)}.json`,true);result.discovery.push(record.bytes);}
+ }
+ return result;
+}
+
+/** Explicit single OCR XML acquisition. Never follows image/stylesheet/entity links. */
+export async function acquireOcrXml(source,signal,dependencies={}){
+ const r=await acquire(source,signal,dependencies,{accept:'application/xml, text/xml',bytes:8*1024*1024});
+ if(!/^(?:application|text)\/xml(?:;|$)/i.test(String(r.mediaType)))throw Error('OCR response must be XML');return {bytes:new Uint8Array(r.bytes),endpoint:r.url};
 }

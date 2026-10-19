@@ -1,3 +1,6 @@
+import {academicIdentifier,academicJob} from '../academic/identifiers';
+import {academicBlock} from '../academic/block';
+import {ACADEMIC_BLOCK,type AcademicCapture} from '../academic/model';
 import {STRUCTURED_BLOCK} from '../structured/model';
 import {pdfBlock} from '../pdf/block';
 import type {BlockFragment} from '../block-tree/clipboard';
@@ -86,6 +89,13 @@ export class DocumentInterchange {
  }
  private async admit(fragment:MutableFragment,files:SuppliedFile[],t:Ticket,signal:AbortSignal){
   this.check(t);
+  for(const block of fragment.blocks)if(block.type===ACADEMIC_BLOCK&&block.data.importFileIndex!==undefined){
+   if(!this.editor.features.deterministicAcademicResources)throw Error('Academic resources are disabled');const capture=block.data.academic as AcademicCapture,file=files[Number(block.data.importFileIndex)];if(!file)throw Error('Missing academic original');
+   const media=capture.format==='epub'?'application/epub+zip':capture.format==='bibtex'?'application/x-bibtex':capture.format==='ris'?'application/x-research-info-systems':'application/xml';
+   const ref={...capture.asset,cavernId:t.scope.cavernId!};const existing=await this.editor.assets.verify(ref,signal).catch(()=>undefined);this.check(t);
+   if(!existing){const lease=await this.editor.assets.begin([],signal);let done=false;try{const m=await this.editor.assets.stageOriginal(lease,new Blob([file.blob],{type:media}),signal);this.check(t);if(m.assetId!==ref.assetId)throw Error('Original hash mismatch');await this.editor.assets.action(lease,'publish',signal);await this.editor.assets.action(lease,'finish',signal);done=true;}finally{if(!done)await this.editor.assets.action(lease,'abort').catch(()=>{});}}
+   capture.asset=ref;delete block.data.importFileIndex;
+  }
   for(const block of fragment.blocks)if(block.type===STRUCTURED_BLOCK&&!block.data.asset){
    if(!this.editor.features.structuredResources)throw Error('Read-only resources are disabled.');
    const file=files[Number(block.data.importFileIndex)];if(!file)throw Error('Original resource file is unavailable.');
@@ -97,18 +107,30 @@ export class DocumentInterchange {
   const result=await resolveClipboardImages({fragment,files,assets:this.editor.assets,cavernId:t.scope.cavernId,signal,valid:()=>this.valid(t),lease:value=>{this.lease=value;},choose:urls=>this.ask({title:'External images',details:['Download only explicitly selected remote images, or keep inert placeholders. Relative resources are never read automatically.'],urls})});
   this.check(t);return result;
  }
+ async importAcademicSource(key:string,source:string){return this.task(async signal=>{
+  if(!this.editor.features.deterministicAcademicResources)throw Error('Academic handlers disabled');const resume=academicJob(source),identity=academicIdentifier(source);if(!identity&&!resume)throw Error('Unrecognised academic identifier');const node=this.editor.node(key);if(!node)throw Error('Destination unavailable');
+  const t=node.viewType==='standoff-editor-block'?this.selection(key):this.base(()=>!!this.editor.node(key));if(!t.segments){t.viewId=node.viewId;t.destination={kind:'after',anchorKey:node.placementKey};}this.check(t);
+  if(await this.ask({title:'Import academic resource',details:[resume?'Resume retained academic job '+resume:`${identity!.family}: ${identity!.key}`,identity?.url??source,'Acquire the public metadata record (for PMC, the converter, associated citation and up to three version metadata records). The provider receives this request. It remains unreviewed source data; no canonical entity, identity merge or full-text download is automatic.']})===undefined)throw Error('Acquisition cancelled');this.check(t);
+  const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open a Vault');return {cavernId:c.cavernId,session:c.session};});const result=resume?await api.call('deterministic.resume',{id:resume},signal):await api.call('deterministic.import',{id:crypto.randomUUID(),source},signal);this.check(t);
+  if(await this.ask({title:'Review imported metadata',details:[result.capture.projection.title,...result.capture.projection.diagnostics,'Insert retained source representation; save the document manually.']})===undefined)throw Error('Insertion cancelled; original retained');this.check(t);
+  const p=academicBlock(result.capture);p.fragment.blocks[0].data.academicJobId=result.jobId;await this.commit(p.fragment,[],t,signal,'import');this.status[1]('Academic source inserted. Canonical assertions remain unreviewed. Save explicitly.');
+ });}
+ async importBibliographyText(key:string,source:string,format:'bibtex'|'ris'){const t=this.selection(key);return this.insertFiles([{name:'Clipboard.'+(format==='bibtex'?'bib':'ris'),blob:new Blob([source],{type:'text/plain'})}],t,'academic');}
  /** Explicit context action. Classification and choosing link/video do not acquire anything. */
- async inspectLinkedResource(key:string,value:string){return this.task(async signal=>{
+ async inspectLinkedResource(key:string,value:string){if(this.editor.features.deterministicAcademicResources&&(academicIdentifier(value)||academicJob(value)))return this.importAcademicSource(key,value);return this.task(async signal=>{
   const info=inspectUri(value),node=this.editor.node(key);if(!node)throw Error('Destination is unavailable.');
   const t=node.viewType==='standoff-editor-block'?this.selection(key):this.base(()=>!!this.editor.node(key)&&!this.editor.mounts.get(key)?.composing);
   if(!t.segments){t.viewId=node.viewId;t.destination=node.viewType==='document-block'?{kind:'at',parentKey:node.placementKey,index:node.children.length}:{kind:'after',anchorKey:node.placementKey};}
   this.check(t);
   const choices=[{label:'Insert URL link (no network)',kind:'url'},...(info.video?[{label:'Insert passive VideoBlock (no network)',kind:'video'}]:[]),
-   ...(info.acquirable?[...(this.editor.features.crossResourceLoaders?[{label:'Import managed PDF original',kind:'pdf'}]:[]),...[info.format,...(['html','markdown','text'] as const).filter(f=>f!==info.format)].map(format=>({label:`Import ${format} as native Ink at the destination`,kind:'native',format})),
+   ...(info.acquirable?[...(this.editor.features.deterministicAcademicResources?[{label:'Import retained ALTO / PAGE XML',kind:'ocr'}]:[]),...(this.editor.features.crossResourceLoaders?[{label:'Import managed PDF original',kind:'pdf'}]:[]),...[info.format,...(['html','markdown','text'] as const).filter(f=>f!==info.format)].map(format=>({label:`Import ${format} as native Ink at the destination`,kind:'native',format})),
    ...(['html','markdown'] as const).flatMap(format=>[{label:`Embed ${format} source copy`,kind:'embed',format},{label:`Link ${format} source snapshot (explicit refresh)`,kind:'link',format}]),{label:'Import PNG/JPEG image',kind:'image'}]:[])];
   const selection=await this.ask({title:'Inspect / Import linked resource',details:[info.url,info.video?`Recognized ${info.video.provider} video. No provider has been contacted.`:'Syntax inspected locally. No resource has been contacted.', 'Choose one operation. Import creates Ink content; embed owns a source copy; link retains an explicit refresh URL. No operation overwrites the external source.',...(info.acquirable?[]:['Acquisition requires HTTPS port 443 without a fragment. This URL can still be inserted as a link.'])],options:choices.map(c=>c.label),single:true});
   if(!selection)throw Error('URI operation cancelled.');const chosen=choices.find(c=>c.label===selection[0]);if(selection.length!==1||!chosen)throw Error('Choose exactly one URI operation.');this.check(t);
   if(chosen.kind==='url'||chosen.kind==='video'){await this.commit(chosen.kind==='url'?urlFragment(info.url):videoFragment(info.video!),[],t,signal,'import');this.status[1]('Inserted without contacting the resource. Save Ink explicitly to retain it.');return;}
+  if(chosen.kind==='ocr'){
+   if(await this.ask({title:'Acquire OCR XML?',details:[info.url,'Retain one bounded ALTO or PAGE XML original. No XML entities, images or other linked resources will be fetched.']})===undefined)throw Error('Acquisition cancelled');this.check(t);const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open a Vault');return {cavernId:c.cavernId,session:c.session};});const r=await api.call('deterministic.xml',{id:crypto.randomUUID(),source:info.url},signal);this.check(t);if(await this.ask({title:'Review OCR source',details:[r.capture.projection.title,...r.capture.projection.diagnostics]})===undefined)throw Error('Insertion cancelled; original retained');const p=academicBlock(r.capture);await this.commit(p.fragment,[],t,signal,'import');return;
+  }
   if(chosen.kind==='pdf'){
    if(await this.ask({title:'Acquire managed PDF?',details:[info.url,'Download and retain this original (maximum 50 MiB / 1,000 pages). The provider receives this explicit request, without cookies or credentials. Confirm you have access and permission to retain it. Work relationships remain separate reviewed Claims.']})===undefined)throw Error('PDF acquisition cancelled');this.check(t);
    const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open a Vault');return {cavernId:c.cavernId,session:c.session};}),result=await api.call('pdf.import',{id:crypto.randomUUID(),source:info.url},signal);this.check(t);const p=pdfBlock(result.snapshot,info.url);await this.commit(p.fragment,[],t,signal,'import',p.native);this.status[1]('Retained PDF inserted. Review any Work relationship separately and save the document explicitly.');return;
@@ -279,7 +301,7 @@ export class DocumentInterchange {
   this.check(t);const assets=[];
   const refs=new Map([...inventory.assets,...(this.editor.features.crossResourceLoaders?resourceAssets(context.data):[])].map(a=>[assetKey(a),a]));
   const api=new HttpApplicationServices(()=>{const c=this.editor.readAssetContext();if(!c.cavernId||!c.session)throw Error('Open the source Vault');return {cavernId:c.cavernId,session:c.session};});
-  let total=0;for(const a of refs.values()){if(a.cavernId!==t.scope.cavernId)throw Error('Original belongs to another Vault');const original=(this.editor.features.crossResourceLoaders||this.editor.features.structuredResources)?{...await api.call('resources.original',{assetId:a.assetId},signal),reference:a}:await this.editor.assets.original(a,signal);total+=original.bytes.length;if(total>PACKAGE_LIMITS.assets||assets.length>=PACKAGE_LIMITS.images)throw Error('Package original budget exceeded; narrow the package');assets.push(original);this.check(t);}
+  let total=0;for(const a of refs.values()){if(a.cavernId!==t.scope.cavernId)throw Error('Original belongs to another Vault');const original=(this.editor.features.crossResourceLoaders||this.editor.features.structuredResources||this.editor.features.deterministicAcademicResources)?{...await api.call('resources.original',{assetId:a.assetId},signal),reference:a}:await this.editor.assets.original(a,signal);total+=original.bytes.length;if(total>PACKAGE_LIMITS.assets||assets.length>=PACKAGE_LIMITS.images)throw Error('Package original budget exceeded; narrow the package');assets.push(original);this.check(t);}
 
   const details=[`${inventory.blocks} Blocks; ${inventory.annotations} annotations (${inventory.points} points). Original native identities are preserved.`,...context.data.tables.map(table=>`${table.name}: ${table.rows.length} rows`),...assets.map(a=>`${a.reference.assetId}: ${a.bytes.length} original bytes`),...inventory.unresolvedAssets.map(v=>`${v.blockId}: ${v.reason}`),...context.data.unresolved.map(v=>'Unresolved: '+JSON.stringify(v)),...context.data.excluded.map(v=>'Excluded: '+JSON.stringify(v))];
   if(await this.ask({title:'Review package export inventory',details:details.length>200?[...details.slice(0,200),`${details.length-200} further inventory entries are retained in the package data. Inclusion is governed by the selected policies.`]:details})===undefined)throw Error('Export cancelled.');this.check(t);
@@ -299,9 +321,10 @@ export class DocumentInterchange {
   const admitted=await this.admit(prepared.fragment,files,t,signal);
   const assetBindings:Array<[string,{kind:'managed';cavernId:string;assetId:string}]>=[];
   for(const a of prepared.assets){this.check(t);if(!t.scope.cavernId)throw Error('Select a destination Vault');
-   if(a.mediaType==='text/plain'){const ref={kind:'managed' as const,cavernId:t.scope.cavernId,assetId:a.reference.assetId};const existing=await this.editor.assets.verify(ref,signal).catch(()=>undefined);this.check(t);if(existing){assetBindings.push([assetKey(a.reference),ref]);continue;}}
-   if(a.mediaType==='application/json'||a.mediaType==='application/pdf'||a.mediaType==='text/plain'){
-    if(a.mediaType==='text/plain'?!this.editor.features.structuredResources:!this.editor.features.crossResourceLoaders)throw Error('Resource package import is disabled');
+   if(['application/xml','application/epub+zip','application/x-bibtex','application/x-research-info-systems'].includes(a.mediaType)&&!this.editor.features.deterministicAcademicResources)throw Error('Academic package admission disabled');
+   if(['text/plain','application/xml','application/epub+zip','application/x-bibtex','application/x-research-info-systems'].includes(a.mediaType)){const ref={kind:'managed' as const,cavernId:t.scope.cavernId,assetId:a.reference.assetId};const existing=await this.editor.assets.verify(ref,signal).catch(()=>undefined);this.check(t);if(existing){assetBindings.push([assetKey(a.reference),ref]);continue;}}
+   if(a.mediaType==='application/json'||a.mediaType==='application/pdf'||['text/plain','application/xml','application/epub+zip','application/x-bibtex','application/x-research-info-systems'].includes(a.mediaType)){
+    if(a.mediaType==='text/plain'?!this.editor.features.structuredResources:a.mediaType==='application/json'?(!this.editor.features.crossResourceLoaders&&!this.editor.features.deterministicAcademicResources):a.mediaType==='application/pdf'?!this.editor.features.crossResourceLoaders:!this.editor.features.deterministicAcademicResources)throw Error('Resource package import is disabled');
     const lease=await this.editor.assets.begin([],signal);let done=false;try{const m=await this.editor.assets.stageOriginal(lease,new Blob([a.bytes.slice().buffer],{type:a.mediaType}),signal);if(m.assetId!==a.reference.assetId)throw Error('Original hash mismatch');this.check(t);await this.editor.assets.action(lease,'publish',signal);await this.editor.assets.action(lease,'finish',signal);done=true;}finally{if(!done)await this.editor.assets.action(lease,'abort').catch(()=>{});}
    }else if(!prepared.fragment.assets.some(f=>f.source.kind==='transfer'&&imageAssets[Number(f.source.index)]===a)){
     // Retained IIIF tiles need original admission even when not inline image cells.

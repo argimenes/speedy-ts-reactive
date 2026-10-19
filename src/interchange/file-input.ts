@@ -3,7 +3,7 @@ import { detectFormat, safeFilename, type ImportFormat } from './formats';
 import { diagnostic } from './diagnostics';
 export interface SuppliedFile { name: string; blob: Blob }
 export function checkFiles(files: readonly SuppliedFile[]) {
-  if (!files.length || files.length > 20 || files.reduce((n,f)=>n+f.blob.size,0)>40*1024*1024 || files.some(f=>f.blob.size>10*1024*1024)) throw Error('Choose 1–20 files, at most 10 MiB each and 40 MiB total.');
+  if (!files.length || files.length > 20 || files.reduce((n,f)=>n+f.blob.size,0)>40*1024*1024 || files.some(f=>f.blob.size>(/\.epub$/i.test(f.name)?32:10)*1024*1024)) throw Error('Choose 1–20 files, at most 10 MiB each and 40 MiB total.');
 }
 export function decodeSource(bytes: Uint8Array) {
   let encoding = 'utf-8', bom = 0;
@@ -22,7 +22,7 @@ export async function readSelectedFile(file: SuppliedFile, explicit?: ImportForm
   const format=detectFormat(file.name,file.blob.type,bytes,explicit), title=safeFilename(file.name);
   const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
   const byteHash=[...digest].map(b=>b.toString(16).padStart(2,'0')).join('');
-  if (format==='png'||format==='jpeg') return {format,title,filename:`${title}.ink`,byteHash,diagnostics:[],source:''};
+  if (format==='academic'||format==='png'||format==='jpeg') return {format,title,filename:`${title}.ink`,byteHash,diagnostics:[],source:''};
   if (bytes.length>LIMITS.bytes) throw Error('Text files are limited to 8 MiB.');
   const decoded=decodeSource(bytes), diagnostics=[];
   if (format!=='structured' && /\r/.test(decoded.source)) diagnostics.push(diagnostic('normalized-newlines','Source line endings become logical newlines in Ink.',false,file.name));

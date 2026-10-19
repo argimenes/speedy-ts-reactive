@@ -1,3 +1,5 @@
+import type {parseAcademic} from '../academic/parse';
+import type {AcademicFormat} from '../academic/model';
 import {parseStructured} from '../structured/parse';
 import type {Presentation} from '../structured/model';
 import {normalizeIIIF} from '../iiif/model';
@@ -17,6 +19,7 @@ import type { SuppliedFile } from './file-input';
 import type { ImportFormat, ExportFormat } from './formats';
 import type { MutableFragment, InterchangeScope } from './fragment';
 export type InterchangeRequest =
+ | {kind:'academic-parse';bytes:Uint8Array;format:AcademicFormat}
  | {kind:'structured-preview';source:string;format:Presentation}
  | {kind:'resource-iiif';bytes:Uint8Array}
  | {kind:'collection';request:CollectionRequest}
@@ -33,6 +36,7 @@ export type InterchangeRequest =
  | {kind:'materialize';fragment:MutableFragment;scope:InterchangeScope;assets:[string,string][]};
 export async function prepareInterchange(request:InterchangeRequest) {
  switch(request.kind){
+  case 'academic-parse':return (await import('../academic/parse')).parseAcademic(request.bytes,request.format);
   case 'structured-preview':return parseStructured(request.source,request.format);
   case 'resource-iiif':return normalizeIIIF(request.bytes);
   case 'collection':return collectionOperation(request.request);
@@ -49,7 +53,7 @@ export async function prepareInterchange(request:InterchangeRequest) {
   case 'materialize':return materializeFragment(request.fragment,request.scope,new Map(request.assets));
  }
 }
-export type Prepared<R extends InterchangeRequest> = R extends {kind:'structured-preview'} ? ReturnType<typeof parseStructured> : R extends {kind:'resource-iiif'} ? ReturnType<typeof normalizeIIIF> : R extends {kind:'collection'} ? Awaited<ReturnType<typeof collectionOperation>> : R extends {kind:'linked-text'} ? Awaited<ReturnType<typeof prepareLinkedText>> : R extends {kind:'portable-export'} ? Awaited<ReturnType<typeof portableProjection>> : R extends {kind:'package-create'} ? Uint8Array : R extends {kind:'package-open'} ? Awaited<ReturnType<typeof openPackage>>&{fragment:MutableFragment} : R extends {kind:'package-materialize'} ? ReturnType<typeof materializePackage> : R extends {kind:'preview'} ? ReturnType<typeof compileSourcePreview> : R extends {kind:'embed'} ? Awaited<ReturnType<typeof prepareSourceFiles>> : R extends {kind:'files'} ? Awaited<ReturnType<typeof prepareFiles>> : R extends {kind:'convert'} ? ReturnType<typeof convertSource> : R extends {kind:'export'} ? ReturnType<typeof exportFragment> : ReturnType<typeof materializeFragment>;
+export type Prepared<R extends InterchangeRequest> = R extends {kind:'academic-parse'} ? ReturnType<typeof parseAcademic> : R extends {kind:'structured-preview'} ? ReturnType<typeof parseStructured> : R extends {kind:'resource-iiif'} ? ReturnType<typeof normalizeIIIF> : R extends {kind:'collection'} ? Awaited<ReturnType<typeof collectionOperation>> : R extends {kind:'linked-text'} ? Awaited<ReturnType<typeof prepareLinkedText>> : R extends {kind:'portable-export'} ? Awaited<ReturnType<typeof portableProjection>> : R extends {kind:'package-create'} ? Uint8Array : R extends {kind:'package-open'} ? Awaited<ReturnType<typeof openPackage>>&{fragment:MutableFragment} : R extends {kind:'package-materialize'} ? ReturnType<typeof materializePackage> : R extends {kind:'preview'} ? ReturnType<typeof compileSourcePreview> : R extends {kind:'embed'} ? Awaited<ReturnType<typeof prepareSourceFiles>> : R extends {kind:'files'} ? Awaited<ReturnType<typeof prepareFiles>> : R extends {kind:'convert'} ? ReturnType<typeof convertSource> : R extends {kind:'export'} ? ReturnType<typeof exportFragment> : ReturnType<typeof materializeFragment>;
 
 async function prepareSourceFiles(files:SuppliedFile[],format?:ImportFormat) {
  checkFiles(files);const fragments=[];

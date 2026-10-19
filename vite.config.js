@@ -7,6 +7,8 @@ export default defineConfig({
   // both the main bundle and the clipboard worker; never parse clipboard via DOM.
   resolve: { alias: { 'decode-named-character-reference': createRequire(import.meta.url).resolve('decode-named-character-reference') } },
   plugins: [solidPlugin()],
+  // Existing browser workers are modules; academic parsers load only for explicit imports.
+  worker: { format: 'es' },
   server: {
     port: 3000,
     proxy: {
