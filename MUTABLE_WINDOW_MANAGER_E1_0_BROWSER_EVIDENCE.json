@@ -1,0 +1,138 @@
+{
+  "milestone": "E1.0 boundary proofs only",
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "checks": [
+    "production Flint opens two actual Document tabs",
+    "trusted browser typing edits the real Flint standoff editor",
+    "Flint tab switch disposes the previous projection exactly once",
+    "Flint tab switch releases the projection repository subscription",
+    "Flint tab switch disposes the Solid owner and unregisters/disconnects the editing DOM",
+    "returning to Flint tab creates a new projection, ViewId and occurrence NodeKey",
+    "returning tab recreates DOM and resets instrumented owner-local state",
+    "canonical unsaved text survives transient tab disposal",
+    "repository undo history survives a Flint tab remount",
+    "proof uses a genuinely scrollable real Document subtree",
+    "hidden retained view keeps canonical subscription and receives edits from the other real view",
+    "visibility transition retains the actual editor owner and local state",
+    "connected-host adoption retains exact projection object and ViewId",
+    "connected-host adoption retains every occurrence NodeKey and mount record",
+    "connected-host adoption retains Document and editing-cell DOM identity",
+    "connected-host adoption neither recreates nor disposes the Solid owner",
+    "all instrumented Document/paragraph owners and every editing cell survive adoption",
+    "connected-host adoption preserves the original projection subscription",
+    "host adoption alone leaves the complete canonical state unchanged",
+    "explicit view interaction restoration recovers selection and scroll without remount",
+    "negative proof: production portal remains owned by source window after editor DOM move",
+    "trusted browser input after move updates the same canonical resource exactly once",
+    "undo after move uses the retained canonical history",
+    "redo after move remains functional",
+    "injected attachment failure can restore the identical retained subtree without content loss",
+    "reverse host adoption retains local state and permits explicit scroll restoration",
+    "closing original Flint leaves independently rooted Document and workspace native-service identity alive",
+    "retained real editor still accepts trusted input after source Flint closes",
+    "sole fixture render disposer releases owner, projection and subscription exactly once",
+    "final disposal unregisters retained occurrences",
+    "view disposal leaves canonical resource and native service intact",
+    "production Ink Document is mounted inside the shared workspace projection",
+    "raw Ink DOM adoption initially retains owner and shared occurrence identity",
+    "negative proof: closing original Ink parent disposes the adopted editor while shared projection survives",
+    "first-mounted fixture-owned Ink island moves with the same shared projection, NodeKeys and editing DOM",
+    "shared-projection retained island accepts trusted editing after move",
+    "island disposer releases only its rendering; it does not dispose shared workspace projection",
+    "real IframeView descendant loads isolated same-origin content",
+    "negative proof: connected-container append reloads iframe state despite identical iframe DOM",
+    "bounded proof issued no Save or publication request",
+    "fixture teardown releases all projections and every instrumented Worker"
+  ],
+  "observations": {
+    "baselineSelection": {
+      "before": {
+        "anchor": 3,
+        "head": 6
+      },
+      "after": {
+        "anchor": 3,
+        "head": 6
+      }
+    },
+    "hiddenWorkerPosts": 1,
+    "rawAdoption": {
+      "focused": false,
+      "selection": null,
+      "scrollTop": 0
+    },
+    "rawReturnScroll": 0,
+    "retained": {
+      "projectionSubscriptions": 1,
+      "rawAdoption": {
+        "focused": false,
+        "selection": null,
+        "scrollTop": 0
+      },
+      "explicitSelection": {
+        "anchor": 4,
+        "head": 9
+      },
+      "scrollTop": 80,
+      "trustedInputs": 3
+    },
+    "inkSourceClose": {
+      "ownerDisposed": 1,
+      "mounted": false,
+      "domConnected": true,
+      "projectionAlive": true
+    },
+    "iframe": {
+      "sameElement": true,
+      "loadsBefore": 1,
+      "loadsAfter": 2,
+      "volatileState": "fresh"
+    },
+    "projectionLifetimes": [
+      {
+        "viewId": "view:53c7c165-0869-4923-90b9-b9cc0b6558fc",
+        "subscriptions": 1,
+        "unsubscriptions": 1,
+        "disposeCalls": 1
+      },
+      {
+        "viewId": "view:5274f543-147c-4d83-824e-f9d1e347ac46",
+        "subscriptions": 1,
+        "unsubscriptions": 1,
+        "disposeCalls": 1
+      },
+      {
+        "viewId": "view:d411fac1-c85a-4b3a-a9f3-6eb1599d2df5",
+        "subscriptions": 1,
+        "unsubscriptions": 1,
+        "disposeCalls": 1
+      },
+      {
+        "viewId": "view:22e60477-612f-4e29-8e7e-c045d16ffe28",
+        "subscriptions": 1,
+        "unsubscriptions": 1,
+        "disposeCalls": 1
+      }
+    ]
+  },
+  "requestsBlockedOrStubbed": [
+    "/api/native/vault/default"
+  ],
+  "cleanup": {
+    "remainingProjections": 0,
+    "workers": [
+      {
+        "url": "http://127.0.0.1:59811/src/runtime/text-count-worker.ts?type=module&worker_file",
+        "posts": 3,
+        "terminated": true
+      }
+    ]
+  },
+  "provenance": {
+    "baseline": "819788a",
+    "date": "2026-10-20",
+    "command": "MWM_TRACE=1 node scripts/e1-boundary/run-browser.mjs",
+    "fixtureSha256": "22c4377f80cda49650aa5be5fc621c2777a481bca3f4b3182aeb761550287f59",
+    "scope": "E1.0 isolated browser experiment; not a production detach implementation"
+  }
+}

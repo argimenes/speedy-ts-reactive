@@ -1,0 +1,4 @@
+{
+  "extends": "../../tsconfig.reactive.json",
+  "include": ["browser-fixture.tsx", "persistence.test.ts"]
+}
