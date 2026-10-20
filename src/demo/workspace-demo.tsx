@@ -474,7 +474,7 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
     <Show when={editor.persistence.workspaceLoadIssues().length}><aside class="workspace-demo__workspace-notice" role="status">{editor.persistence.workspaceLoadIssues().map(issue => issue.message).join(" · ")}</aside></Show>
     <Show when={session.presentation.issue()}>{issue => <aside class="workspace-demo__workspace-notice" role="status">{issue()}</aside>}</Show>
     <Show when={session.notice()}>{notice => <aside class="workspace-demo__workspace-notice" role="status">{notice()}</aside>}</Show>
-    <Show when={session.presentation.enabled} fallback={<ReactiveTreeView editor={editor} projection={projection} />}>
+    <Show when={session.presentation.enabled || session.windowManager} fallback={<ReactiveTreeView editor={editor} projection={projection} />}>
       <WorkspacePresentationView session={session} />
     </Show>
     <opening.Dialogs />

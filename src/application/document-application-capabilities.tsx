@@ -469,11 +469,12 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const banks = rootContent.children.filter(key => state.contents[state.placements[key].contentKey].viewType === "workspace-object-bank-block");
       if (banks.length > 1) throw new Error("Ambiguous workspace object bank.");
       const desktopParent = rootContent.children.find(key => ["image-background-block", "video-background-block", "youtube-video-background-block", "canvas-background-block"].includes(state.contents[state.placements[key].contentKey].viewType)) ?? root;
-      const zIndex = Math.max(0, ...Object.values(state.contents).filter(c => ["window-block", "document-window-block"].includes(c.viewType)).map(c => Number((c.payload.metadata as any)?.zIndex) || 0)) + 1;
+      const zIndex = editor.windowManager?.launchMetadata().zIndex ?? Math.max(0, ...Object.values(state.contents).filter(c => ["window-block", "document-window-block"].includes(c.viewType)).map(c => Number((c.payload.metadata as any)?.zIndex) || 0)) + 1;
       editor.commands.transaction("Open Flint", () => {
         const bank = banks[0] ?? editor.commands.insert({ id: crypto.randomUUID(), type: "workspace-object-bank-block", children: [] }, { kind: "at", parentKey: root, index: editor.commands.childrenOf(root).length });
         for (const document of examples) editor.commands.insert(document, { kind: "at", parentKey: bank, index: editor.commands.childrenOf(bank).length });
-        editor.commands.insert({ id: crypto.randomUUID(), type: "window-block", metadata: { title: "Flint", position: { x: 35 + (zIndex - 1) * 24, y: 35 + (zIndex - 1) * 24 }, size: { w: Math.min(1380, Math.max(840, window.innerWidth - 90)), h: Math.min(900, Math.max(620, window.innerHeight - 120)) }, zIndex }, children: [definition.create(initialTabs.slice(0, 2))] }, { kind: "at", parentKey: desktopParent, index: 0 });
+        const placement = editor.commands.insert({ id: crypto.randomUUID(), type: "window-block", metadata: { title: "Flint", position: { x: 35 + (zIndex - 1) * 24, y: 35 + (zIndex - 1) * 24 }, size: { w: Math.min(1380, Math.max(840, window.innerWidth - 90)), h: Math.min(900, Math.max(620, window.innerHeight - 120)) }, zIndex }, children: [definition.create(initialTabs.slice(0, 2))] }, { kind: "at", parentKey: desktopParent, index: 0 });
+        editor.windowManager?.raisePlacement(placement);
       });
     } }, scope.owner));
   } };

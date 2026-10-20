@@ -1,5 +1,5 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
+import { ApplicationSurfacePortal } from "./window-manager";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { OverlayDescriptor } from "../runtime/overlays";
 import { blockMenuItems, type BlockMenuItem } from "../runtime/block-menu-actions";
@@ -91,5 +91,7 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
 }
 
 export function BlockContextMenuLayer(props: { editor: ReactiveEditor; viewId: string }) {
-  return <Portal><For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType === "context-menu" && props.editor.node(overlay.ownerKey)?.viewId === props.viewId)}>{overlay => <Menu editor={props.editor} overlay={overlay} />}</For></Portal>;
+  return <For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType === "context-menu" && props.editor.node(overlay.ownerKey)?.viewId === props.viewId)}>{overlay =>
+    <ApplicationSurfacePortal editor={props.editor} ownerKey={overlay.ownerKey} sourceViewId={props.viewId} id={overlay.key}><Menu editor={props.editor} overlay={overlay} /></ApplicationSurfacePortal>
+  }</For>;
 }

@@ -1,5 +1,5 @@
 import { Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
+import { ApplicationSurfacePortal } from "./window-manager";
 import type { NodeKey } from "../block-tree/types";
 import type { MinimapMarker } from "../runtime/minimap";
 import { useReactiveView } from "../reactive-editor/context";
@@ -189,7 +189,7 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
     const visible = layout().total - layout().omitted;
     return `${visible} minimap ${visible === 1 ? "marker" : "markers"}${layout().omitted ? `; ${layout().omitted} hidden` : ""}`;
   };
-  return <Portal><Show when={layout().visible}>
+  return <ApplicationSurfacePortal editor={editor} ownerKey={props.pageKey} kind="content"><Show when={layout().visible}>
     <aside class="page-minimap" data-page-minimap={props.pageKey} data-side={editor.minimap.state.options.side} role="complementary" aria-label={`Page minimap: ${summary()}`}
       style={{ left: `${layout().left}px`, top: `${layout().top}px`, width: `${layout().width}px`, height: `${layout().height}px` }}>
       <canvas ref={canvas} aria-hidden="true" style={{ width: `${layout().width}px`, height: `${layout().height}px` }}
@@ -229,5 +229,5 @@ export function PageMinimap(props: { pageKey: NodeKey; page: () => HTMLElement; 
           event.preventDefault(); scrollToThumb(y - layout().viewportHeight / 2);
         }} />
     </aside>
-  </Show></Portal>;
+  </Show></ApplicationSurfacePortal>;
 }

@@ -15,6 +15,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Canonical workspace A0 ordering and owner-scoped surface layers. Session-fixed. */
+  mutableWindowManager: boolean;
   /** Shared native clipboard. Disable to restore all legacy clipboard routes together. */
   mutableClipboard: boolean;
   /** Explicit file import, source conversion and semantic export. */
@@ -126,6 +128,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  mutableWindowManager: true,
   mutableClipboard: true,
   documentInterchange: true,
   applicationServices: true,

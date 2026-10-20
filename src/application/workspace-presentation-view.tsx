@@ -9,6 +9,7 @@ import { CanvasView } from "../features/canvas/view";
 import { createCanvasInteractions } from "../features/canvas/interactions";
 import { canvasActions } from "./canvas-actions";
 import "./workspace-presentation.css";
+import { WindowManagerPlane } from "../rendering/window-manager";
 
 const SpatialView = lazy(() => import("../features/spatial/view"));
 
@@ -54,7 +55,7 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
       camera: actions.camera, arrange: actions.arrange, available: actions.available, ownInteraction: actions.ownInteraction, returnDesktop: actions.returnDesktop,
       document: actions.document, renderDocument: () => <DocumentSlot />, displayedSize: () => spatialResize()?.presentedSize() }} />;
   };
-  return <ReactiveViewProvider editor={editor} projection={projection}
+  return <WindowManagerPlane manager={props.session.windowManager}><ReactiveViewProvider editor={editor} projection={projection}
     coordinates={{ scale: () => presentation.active() === "canvas" ? input.camera().zoom : 1 }}
     windowGeometry={key => presentation.active() === "canvas" ? geometry(key) : presentation.active() === "spatial" ? spatialGeometry(key) : undefined}>
     <Show when={presentation.active() === "canvas"} fallback={<Show when={presentation.active() === "spatial" && props.session.spatial} fallback={<BlockOutlet nodeKey={projection.state.rootKey} />}>
@@ -72,5 +73,5 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
       }} />
     </Show>
     <ReactiveViewLayers editor={editor} projection={projection} />
-  </ReactiveViewProvider>;
+  </ReactiveViewProvider></WindowManagerPlane>;
 }

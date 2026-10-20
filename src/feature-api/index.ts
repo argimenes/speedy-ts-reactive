@@ -8,6 +8,7 @@ export type { ExistingBlockDto, NodeKey, BlockViewProps } from "../block-tree/ty
 export { keyboard, chord } from "../input/bindings";
 // Existing editor-independent widget primitive, not a new layout abstraction.
 export { createFloatingWindowResize, FloatingWindowResizeHandle } from "../rendering/floating-window-resize";
+export { ApplicationSurfacePortal, ApplicationSurfaceBoundary } from "../rendering/window-manager";
 
 export interface BlockSummary {
   readonly key: NodeKey;

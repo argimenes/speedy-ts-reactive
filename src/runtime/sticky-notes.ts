@@ -109,6 +109,7 @@ export class StickyNoteService {
     if (!draft || !this.editor.node(draft.parentKey)) return;
     const parent = this.editor.node(draft.parentKey)!;
     const placement = this.editor.commands.insert(stickyWindowDto(text, { ...draft.position }, { ...draft.size }), { kind: "at", parentKey: parent.key, index: parent.children.length });
+    this.editor.windowManager?.raisePlacement(placement);
     this.discard(id);
     queueMicrotask(() => {
       const window = this.editor.nodeForPlacementInView(placement, draft.viewId);
@@ -140,6 +141,7 @@ export class StickyNoteService {
     const window = this.editor.node(windowKey);
     if (!window || !(window.payload.metadata as Record<string, unknown> | undefined)?.stickyNote) return;
     this.editor.commands.setPayloadField(windowKey, "metadata", { ...unwrap(window.payload.metadata as Record<string, unknown>), state: "normal" }, "Reopen Sticky Note");
+    this.editor.windowManager?.raisePlacement(window.placementKey);
   }
 
   dispose() { this.setState("drafts", []); this.host = undefined; }

@@ -1,0 +1,17 @@
+/* One bounded desktop plane below existing system chrome and workspace dialogs.
+   A group's local tool z values cannot outrank another window group. */
+.mwm-window-plane { position:absolute; inset:0; z-index:101; isolation:isolate; pointer-events:none; }
+.workspace-demo > .mwm-window-plane { pointer-events:none; }
+/* Match the existing canonical desktop content origin (below its 48px padding).
+   Maximize already converts the work area through the frame's offset parent. */
+.workspace-demo--canonical > .mwm-window-plane { top:48px; }
+.mwm-window-group { position:absolute; inset:0; isolation:isolate; pointer-events:none; }
+.mwm-window-group--viewport { position:fixed; }
+.mwm-window-group > div > .reactive-window { top:0; left:0; pointer-events:auto; }
+.mwm-surface { position:absolute; inset:0; pointer-events:none; isolation:isolate; }
+.mwm-surface--content { z-index:1; }
+.mwm-surface--tool { z-index:2; }
+.mwm-surface--overlay { z-index:3; }
+.mwm-surface--dialog { z-index:4; }
+.mwm-surface > div > * { pointer-events:auto; }
+.mwm-surface[hidden] { display:none; }

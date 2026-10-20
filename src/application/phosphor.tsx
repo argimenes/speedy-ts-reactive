@@ -82,7 +82,7 @@ export function openPhosphor(
           title: "Phosphor",
           position: { x: 28, y: 30 },
           size: { ...phosphorWindowPresentation.size },
-          zIndex:
+          zIndex: editor.windowManager?.launchMetadata().zIndex ??
             Math.max(
               0,
               ...Object.values(state.contents).map(
@@ -95,6 +95,7 @@ export function openPhosphor(
       { kind: "at", parentKey: desktop, index: 0 },
     );
     editor.commands.transclude(doc!, { kind: "at", parentKey: win, index: 0 });
+    editor.windowManager?.raisePlacement(win);
   });
   if (resourceId) nativeDocumentSession(editor).trackCandidate(resourceId);
 }

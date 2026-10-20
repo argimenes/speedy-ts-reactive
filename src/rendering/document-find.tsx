@@ -4,6 +4,7 @@ import type { ScopeKind } from "../runtime/text-search";
 import { nodeKeysForPage } from "../runtime/minimap";
 import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "./floating-window-resize";
 import "./document-find.css";
+import { ApplicationSurfacePortal } from "./window-manager";
 
 export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: string }) {
   const find = props.editor.find, state = find.state;
@@ -46,6 +47,7 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
     onCleanup(() => window.removeEventListener("resize", keepReachable));
   });
   return <Show when={state.open && state.scope?.viewId === props.viewId}>
+    <ApplicationSurfacePortal editor={props.editor} ownerKey={state.scope?.rootKey} sourceViewId={props.viewId} kind="tool" legacyInline>
     <section ref={panel} class="document-find" data-document-find role="dialog" aria-label="Find in document" aria-modal="false"
       style={{ left: `${position().x}px`, top: `${position().y}px`, ...(displaySize() ? { width: `${displaySize()!.width}px`, height: `${displaySize()!.height}px` } : {}) }} onKeyDown={event => {
       props.editor.bindings.dispatch(event, ["document-find", "document-find-open"], id => {
@@ -91,5 +93,6 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
       </div>
       <FloatingWindowResizeHandle controller={windowResize} class="document-find__resize" label="Resize Find window" />
     </section>
+    </ApplicationSurfacePortal>
   </Show>;
 }

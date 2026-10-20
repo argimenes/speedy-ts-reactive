@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
+import { ApplicationSurfacePortal } from "./window-manager";
 import { unwrap } from "solid-js/store";
 import type { BlockViewProps } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
@@ -89,5 +89,7 @@ function StickyDraftWindow(props: { editor: ReactiveEditor; id: string }) {
 }
 
 export function StickyDraftLayer(props: { editor: ReactiveEditor; viewId: string }) {
-  return <Portal><For each={props.editor.stickyNotes.state.drafts.filter(draft => draft.viewId === props.viewId).map(draft => draft.id)}>{id => <StickyDraftWindow editor={props.editor} id={id} />}</For></Portal>;
+  return <For each={props.editor.stickyNotes.state.drafts.filter(draft => draft.viewId === props.viewId).map(draft => draft.id)}>{id =>
+    <ApplicationSurfacePortal editor={props.editor} sourceViewId={props.viewId} kind="tool"><StickyDraftWindow editor={props.editor} id={id} /></ApplicationSurfacePortal>
+  }</For>;
 }

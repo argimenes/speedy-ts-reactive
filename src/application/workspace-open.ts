@@ -21,8 +21,8 @@ export function workspaceOpen(session: WorkspaceSession) {
     ["image-background-block", "video-background-block", "youtube-video-background-block", "canvas-background-block"].includes(editor.node(key)?.viewType ?? "")) ?? root;
   const windows = () => Object.values(projection.state.nodes).filter(n => ["document-window-block", "window-block"].includes(n.viewType));
   const geometry = (document: boolean) => ({
-    position: { x: 24 + windows().length % 8 * 28, y: 24 + windows().length % 8 * 28 },
-    size: document ? { w: 840, h: 620 } : { w: 480, h: 320 }, state: "normal", zIndex: Math.max(0, ...windows().map(n => Number((n.payload.metadata as any)?.zIndex) || 0)) + 1,
+    position: { x: 24 + (editor.windowManager?.count() ?? windows().length) % 8 * 28, y: 24 + (editor.windowManager?.count() ?? windows().length) % 8 * 28 },
+    size: document ? { w: 840, h: 620 } : { w: 480, h: 320 }, state: "normal", zIndex: editor.windowManager?.launchMetadata().zIndex ?? Math.max(0, ...windows().map(n => Number((n.payload.metadata as any)?.zIndex) || 0)) + 1,
   });
   const insert = (content: ExistingBlockDto, title: string, presentationDefaults?: { size: { w: number; h: number }; windowType: string }, reference?: PlacementKey): PlacementKey => {
     const id = crypto.randomUUID(), isDocument = ["document-block", "main-list-block", "membrane-block"].includes(content.type!);
@@ -51,6 +51,7 @@ export function workspaceOpen(session: WorkspaceSession) {
       if (next) presentation.updateCanvas(next, objects);
       spatialCommit?.();
     });
+    if (!banked) editor.windowManager?.raisePlacement(placement);
     return placement;
   };
   const documents = () => workspaceDocumentContentKeys(editor.repository.state).map(key => editor.repository.state.contents[key]);
@@ -97,12 +98,13 @@ export function workspaceOpen(session: WorkspaceSession) {
       presentation.updateCanvas(next, value.objects.includes(object) ? value.objects : [...value.objects, object]);
     } else {
       const parent = editor.blockQueries.ancestors(host.key)[1];
-      const metadata = { ...structuredClone(unwrap(host.payload.metadata ?? {}) as object), state: "normal", zIndex: geometry(true).zIndex };
+      const metadata = { ...structuredClone(unwrap(host.payload.metadata ?? {}) as object), state: "normal", ...(editor.windowManager ? {} : { zIndex: geometry(true).zIndex }) };
       editor.commands.transaction("Reveal open Document", () => {
         if (parent?.viewType === "workspace-object-bank-block") editor.commands.move(host.placementKey, { kind: "at", parentKey: desktopParent(), index: 0 });
         editor.commands.setPayloadField(host.placementKey, "metadata", metadata);
       });
     }
+    if (presentation.active() === "desktop") editor.windowManager?.raisePlacement(host.placementKey);
     return host.placementKey;
   };
   const flintInstances = () => Object.values(projection.state.nodes).filter(n => n.viewType === 'flint-application-block' && editor.blockQueries.ancestors(n.key).some(a => a.viewType === 'window-block'));
@@ -129,7 +131,7 @@ export function workspaceOpen(session: WorkspaceSession) {
     if (window) return reveal(contentKey);
     if (tabs.length) {
       const selected = tabs.sort((a, b) => {
-        const z = (app: typeof a.app) => Number((editor.blockQueries.ancestors(app.key).find(n => n.viewType === 'window-block')?.payload.metadata as any)?.zIndex) || 0;
+        const z = (app: typeof a.app) => editor.windowManager ? editor.windowManager.rankForNode(app.key) : Number((editor.blockQueries.ancestors(app.key).find(n => n.viewType === 'window-block')?.payload.metadata as any)?.zIndex) || 0;
         return z(b.app) - z(a.app);
       })[0];
       if (selectApplicationDocument(editor, selected.app.key, id)) return reveal(selected.app.contentKey);

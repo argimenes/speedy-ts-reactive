@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from "solid-js";
-import { Portal } from "solid-js/web";
+import { ApplicationSurfacePortal as Portal } from "./window-manager";
 
 export type Toolset = "Typography" | "Annotations" | "Visual effects" | "Selection";
 export const toolsets: readonly Toolset[] = ["Typography", "Annotations", "Visual effects", "Selection"];

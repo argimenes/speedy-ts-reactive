@@ -1,5 +1,5 @@
 import { Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
+import { ApplicationSurfacePortal as Portal } from "../../feature-api";
 import type { BlockRuntime } from "../../feature-api";
 import { DEFAULT_TIMER_SIZE, MAX_TIMER_SECONDS, MIN_TIMER_SIZE, readTimerPayload, type TimerPayload } from "./model";
 import { createFloatingWindowResize, FloatingWindowResizeHandle } from "../../feature-api";
@@ -130,7 +130,7 @@ export function TimerBlockView(props: { runtime: BlockRuntime }) {
   runtime.own(() => { clearInterval(interval); void audio?.close(); });
 
   const position = () => previewPosition() ?? storedPosition();
-  return <Portal><div ref={root} class="abstract-block reactive-timer" classList={{ "reactive-timer--done": done() }} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Timer"
+  return <Portal kind="tool"><div ref={root} class="abstract-block reactive-timer" classList={{ "reactive-timer--done": done() }} tabIndex={-1} role="dialog" aria-modal="false" aria-label="Timer"
     style={{ width: `${dimensions().width}px`, height: `${dimensions().height}px`, left: `${position().x}px`, top: `${position().y}px` }}
     onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); remove(); } }}
     data-block-id={String(runtime.field("id") ?? "")} data-client-id={runtime.nodeKey} data-runtime-key={runtime.nodeKey} data-block-type="timer-block">

@@ -52,7 +52,15 @@ export async function openThesisSource(editor:ReactiveEditor,source:SourcePassag
  if(!current())throw Error('Thesis navigation canceled');
  editor.mounts.get(node.key)?.root.scrollIntoView?.({block:'center'});editor.focus.request(node.key,{reason:'thesis-source'});
  const verified=exact&&editor.repository.readState().contents[node.contentKey]?.inlineRevision===revision&&[...text].slice(source.start,source.end).join('')===source.text;
- const win=editor.blockQueries.ancestors(node.key).find(n=>n.viewType==='window-block');if(win){const metadata=unwrap((win.payload.metadata??{}) as JsonObject),zIndex=Math.max(0,...Object.values(editor.repository.readState().contents).filter(c=>c.viewType==='window-block').map(c=>Number((c.payload.metadata as any)?.zIndex)||0))+1;editor.commands.setPayloadField(win.key,'metadata',{...metadata,minimized:false,zIndex},'Open Proposition source');}
+ const managedOwner=editor.windowManager?.ownerForNode(node.key);
+ const win=managedOwner ? editor.node(managedOwner) : editor.blockQueries.ancestors(node.key).find(n=>['window-block','document-window-block'].includes(n.viewType));
+ if(win){
+  if(editor.windowManager) editor.windowManager.raisePlacement(win.placementKey);
+  else {
+   const metadata=unwrap((win.payload.metadata??{}) as JsonObject),zIndex=Math.max(0,...Object.values(editor.repository.readState().contents).filter(c=>c.viewType==='window-block').map(c=>Number((c.payload.metadata as any)?.zIndex)||0))+1;
+   editor.commands.setPayloadField(win.key,'metadata',{...metadata,minimized:false,zIndex},'Open Proposition source');
+  }
+ }
  if(verified)editor.mounts.get(node.key)?.restoreInlineSelection?.({anchor:source.start,head:source.end});
  return verified?'Loaded source passage located; current Block text matches the captured text.':'Source Block opened. Its text has changed; the captured range may be stale and was not selected.';
 }
@@ -72,9 +80,10 @@ export function createThesisFeature(editor:ReactiveEditor):CodexFeature {
    if(host.viewType!=='workspace-block')throw Error('Open Thesis from the Mutable workspace.');
    const desktop=host.children.find(k=>['image-background-block','canvas-background-block','video-background-block','youtube-video-background-block'].includes(state.contents[state.placements[k].contentKey].viewType))??root;
    const id=crypto.randomUUID();if(draft)drafts.set(id,draft);
-   // WindowView renders maximized windows at z-index >= 101, even with lower stored metadata.
-   const zIndex=Math.max(101,...Object.values(state.contents).map(c=>Number((c.payload.metadata as any)?.zIndex)||0))+1;
-   editor.commands.insert({id:crypto.randomUUID(),type:'window-block',metadata:{title:'Thesis',position:{x:55,y:50},size:{w:draft?740:1040,h:680},zIndex},children:[{id,type:'thesis-application-block'}]},{kind:'at',parentKey:desktop,index:0});
+   // Legacy hosts retain their renderer floor; managed hosts use session ordering.
+   const zIndex=editor.windowManager?.launchMetadata().zIndex ?? Math.max(101,...Object.values(state.contents).map(c=>Number((c.payload.metadata as any)?.zIndex)||0))+1;
+   const placement=editor.commands.insert({id:crypto.randomUUID(),type:'window-block',metadata:{title:'Thesis',position:{x:55,y:50},size:{w:draft?740:1040,h:680},zIndex},children:[{id,type:'thesis-application-block'}]},{kind:'at',parentKey:desktop,index:0});
+   editor.windowManager?.raisePlacement(placement);
   };
   const available=({targetKey}:{targetKey:string})=>!!editor.node(targetKey)&&editor.repository.state.contents[editor.repository.state.placements[editor.repository.state.rootPlacementKey].contentKey].viewType==='workspace-block';
   scope.own(editor.commandRegistry.register({id:'thesis.open',label:'Open Thesis',canExecute:available,execute:({targetKey})=>open(targetKey)},scope.owner));

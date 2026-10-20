@@ -28,6 +28,7 @@ import { SelectionGestures } from "../input/selection-gestures";
 import { selectionInputTarget } from "../input/selection-target";
 import { unwrap } from "solid-js/store";
 import { FeatureHost, FeatureActions } from "../runtime/features";
+import type { WorkspaceWindowManager } from "../application/window-manager";
 import { decodeBlockTree, encodeDocument, encodeWorkspace } from "../block-tree/codecs";
 import { TreeCommands } from "../block-tree/commands";
 import { createViewId } from "../block-tree/ids";
@@ -85,6 +86,8 @@ export class ReactiveEditor {
   };
   readonly annotationEvents = new AnnotationRangeEvents();
   readonly features: FeatureFlags;
+  /** Injected/owned by WorkspaceSession only; absent in isolated/legacy hosts. */
+  windowManager?: WorkspaceWindowManager;
   readonly decorations = new SessionDecorations();
   readonly minimap = new MinimapService();
   readonly find: DocumentFind;

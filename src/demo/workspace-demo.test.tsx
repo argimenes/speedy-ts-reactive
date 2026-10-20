@@ -236,6 +236,10 @@ describe("WorkspaceDemo", () => {
     click(document.querySelector<HTMLButtonElement>('[role="option"]')!); click(button("Open Workspace", document.querySelector('[role="dialog"]')!));
     await vi.waitFor(() => expect(host.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Loaded Workspace document"));
     expect(host.textContent).toContain("Desk.json · revision 0");
+    // The ordinary canonical Desktop needs MWM even with Canvas disabled.
+    expect(host.querySelector(".mwm-window-plane")).not.toBeNull();
+    expect(host.querySelectorAll(".mwm-window-group")).toHaveLength(1);
+    expect(savedBody).toBeUndefined();
 
     click(button("Save Workspace", host));
     await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Desk.json"));
@@ -243,6 +247,8 @@ describe("WorkspaceDemo", () => {
     await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Replace Workspace"));
     click(button("Replace Workspace"));
     await vi.waitFor(() => expect(savedBody).toBeTruthy());
+    expect(savedBody.workspace).toMatchObject({ kind: "speedy-workspace", schemaVersion: 1 });
+    expect(JSON.stringify(savedBody)).not.toContain("ownerAppInstanceId");
     expect(savedBody.workspace.root.children[0].type).toBe("image-background-block");
     expect(savedBody.workspace.root.children[0].children[0].children[0].type).toBe("document-reference-block");
     expect(JSON.stringify(savedBody.workspace)).not.toContain("Loaded Workspace document");

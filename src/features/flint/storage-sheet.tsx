@@ -1,5 +1,6 @@
 import { For, Show, createSignal, onMount, onCleanup } from 'solid-js';
 import type { DocumentApplicationInstance } from '../../feature-api/document-application';
+import { ApplicationSurfaceBoundary } from '../../feature-api';
 
 /** Local presentation of the existing file capability; no binding or save authority. */
 export function StorageSheet(props: {application: DocumentApplicationInstance; close: () => void; destination: {folder:string;filename:string}; setDestination: (value:{folder:string;filename:string}) => void}) {
@@ -13,7 +14,7 @@ export function StorageSheet(props: {application: DocumentApplicationInstance; c
   onCleanup(()=>{live=false;});
   onMount(()=>dialog.querySelector<HTMLButtonElement>('button')?.focus());
   const run=async(action:()=>Promise<unknown>)=>{if(busy())return;setBusy(true);setError('');try{await action();}catch(e){if(live)setError(String(e));}finally{if(live)setBusy(false);}};
-  return <div class="flint-sheet-backdrop"><div ref={dialog} class="flint-files flint-sheet" role="dialog" aria-modal="true" aria-label="Storage and recovery" onKeyDown={e=>{
+  return <ApplicationSurfaceBoundary><div class="flint-sheet-backdrop"><div ref={dialog} class="flint-files flint-sheet" role="dialog" aria-modal="true" aria-label="Storage and recovery" onKeyDown={e=>{
     if(e.key==='Escape'){e.preventDefault();e.stopPropagation();props.close();}
     if(e.key==='Tab'){const controls=[...dialog.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)')];const first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}
   }}>
@@ -30,5 +31,5 @@ export function StorageSheet(props: {application: DocumentApplicationInstance; c
           <p>Documents save as Mutable JSON using their opened filename. Saving is manual (Command-S or Control-S). Workspace saving remains unavailable when native resource semantics cannot be preserved. Changing the fields selects a file to open or a first-save destination; it does not relocate an already bound Document.</p>
       <button disabled={busy()||app.vault?.state()?.readOnly||app.vault?.state()?.busy||!app.properties()} onClick={()=>void run(()=>app.files!.save(location()))}>Save to selected destination</button>
     </Show>
-  </div></div>;
+  </div></div></ApplicationSurfaceBoundary>;
 }

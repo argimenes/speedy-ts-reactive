@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
-import { Dynamic, Portal } from "solid-js/web";
+import { Dynamic } from "solid-js/web";
+import { ApplicationSurfacePortal } from "./window-manager";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { MountHandle } from "../runtime/mounts";
 import type { BlockSelectionMode } from "../runtime/block-selection";
@@ -144,7 +145,8 @@ export function BlockSelectionInspector(props: { editor: ReactiveEditor; viewId:
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
     event.preventDefault(); event.stopPropagation(); clipboard.run(`selection.${event.type}`, event);
   };
-  return <Portal><Show when={(selection.state.viewId === props.viewId && selection.state.items.length) || (!selection.state.items.length && clipboard.viewId() === props.viewId)}>
+  return <Show when={(selection.state.viewId === props.viewId && selection.state.items.length) || (!selection.state.items.length && clipboard.viewId() === props.viewId)}>
+    <ApplicationSurfacePortal editor={props.editor} ownerKey={selection.state.leadKey} sourceViewId={props.viewId} kind="tool">
     <section class="block-selection-inspector" data-block-selection-inspector={clipboard.owner} tabIndex={-1} role="region" aria-label="Selected Blocks" onCopy={nativeClipboard} onCut={nativeClipboard} onPaste={nativeClipboard} onKeyDown={event => {
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); const key = selection.state.leadKey; clear(); if (key) props.editor.focus.request(key, { reason: "clear-block-selection" }); return; }
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
@@ -161,5 +163,6 @@ export function BlockSelectionInspector(props: { editor: ReactiveEditor; viewId:
         <For each={selection.state.items}>{item => <label>{item.type}<input readOnly aria-label="Selected Block ID" value={item.blockId ?? item.placementKey} /></label>}</For>
       </details>
     </section>
-  </Show></Portal>;
+    </ApplicationSurfacePortal>
+  </Show>;
 }

@@ -1,7 +1,7 @@
 import { Dynamic } from "solid-js/web";
 import { immutable } from "../runtime/effect-contributions";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
+import { ApplicationSurfacePortal } from "./window-manager";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { OverlayDescriptor } from "../runtime/overlays";
 import type { AnnotationAction, AnnotationPatch } from "../block-tree/annotation-commands";
@@ -207,5 +207,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
 }
 
 export function AnnotationMonitorLayer(props: { editor: ReactiveEditor; viewId: string }) {
-  return <Portal><For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType === "annotation-panel" && props.editor.node(overlay.ownerKey)?.viewId === props.viewId)}>{overlay => <Monitor editor={props.editor} overlay={overlay} />}</For></Portal>;
+  return <For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType === "annotation-panel" && props.editor.node(overlay.ownerKey)?.viewId === props.viewId)}>{overlay =>
+    <ApplicationSurfacePortal editor={props.editor} ownerKey={overlay.ownerKey} sourceViewId={props.viewId} id={overlay.key} kind="tool"><Monitor editor={props.editor} overlay={overlay} /></ApplicationSurfacePortal>
+  }</For>;
 }

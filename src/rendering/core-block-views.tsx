@@ -1,4 +1,5 @@
 import { createWindowMaximize } from "./window-maximize";
+import { ManagedWindowFrame } from "./window-manager";
 import { managedAsset } from '../interchange/managed-asset';
 import { inspectUri } from '../interchange/uri';
 import { createWindowPresentation } from "./window-presentation";
@@ -482,6 +483,8 @@ export function StableBackgroundView(props: BlockViewProps) {
 export function WindowView(props: BlockViewProps) {
   const { editor, projection, coordinates, windowGeometry } = useReactiveView();
   const geometry = windowGeometry?.(props.nodeKey);
+  // Canvas/Spatial geometry and isolated demos are not desktop registrations.
+  const manager = !geometry && editor.windowManager?.plane ? editor.windowManager : undefined;
   const scale = coordinates?.scale;
   const node = () => projection.state.nodes[props.nodeKey];
   const metadata = () => (node()?.payload.metadata as Record<string, any> | undefined) ?? {};
@@ -684,6 +687,7 @@ export function WindowView(props: BlockViewProps) {
   const restoreWindow = () => {
     if (suppressIconClick) { suppressIconClick = false; return; }
     commitMetadata({ state: beforeMinimize }, "Restore Window");
+    if (manager) manager.raisePlacement(node()!.placementKey);
     const saved = returnFocus; returnFocus = undefined;
     queueMicrotask(() => {
       const focused = editor.focus.state.focusedKey, mounted = focused && editor.mounts.get(focused);
@@ -700,7 +704,7 @@ export function WindowView(props: BlockViewProps) {
   const frame = () => (
     <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--maximized": maximized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
       hidden={closedSticky()}
-      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": maximized() ? Math.max(101, Number(metadata().zIndex ?? 1)) : Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
+      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": manager ? (manager.registry.windows[props.nodeKey]?.ownerModalCount ? 4 : 0) : maximized() ? Math.max(101, Number(metadata().zIndex ?? 1)) : Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
       <Show when={minimized()} fallback={<>
         <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
           <span>{title()}</span>
@@ -731,5 +735,6 @@ export function WindowView(props: BlockViewProps) {
       </Show>
     </div>
   );
-  return isSticky() ? <Portal>{frame()}</Portal> : frame();
+  return manager ? <ManagedWindowFrame manager={manager} nodeKey={props.nodeKey} viewport={isSticky()} mounted={!minimized()} visible={!minimized() && !closedSticky()}>{frame()}</ManagedWindowFrame>
+    : isSticky() ? <Portal>{frame()}</Portal> : frame();
 }
