@@ -6,8 +6,10 @@ export const canonicalTables = ['SourceClaimReview','ExternalIdentity','SourceSn
 const identity=t=>t==='Time'?'entityGuid':'guid';
 const fingerprint=s=>createHash('sha256').update(s).digest('hex');
 function state(db,table,id){
- if(!canonicalTables.includes(table))throw Error('Unsupported canonical table');
+ const aggregate = table === 'Block' || table === 'StandoffProperty';
+ if(!aggregate && !canonicalTables.includes(table))throw Error('Unsupported canonical table');
  const row=db.prepare(`SELECT * FROM ${table} WHERE ${identity(table)}=?`).get(id);if(!row)return null;
+ if(aggregate && row.resourceGuid !== null) throw Error('File-derived rows are not canonical');
  delete row.id;for(const f of ['attributes','valueJson'])if(row[f]!==undefined&&row[f]!==null)row[f]=JSON.parse(row[f]);return row;
 }
 const legacyEventId=id=>{const bytes=createHash('sha256').update('mutable-legacy-receipt:'+id).digest().subarray(0,16);bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=bytes.toString('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;};

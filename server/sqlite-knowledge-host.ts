@@ -22,7 +22,7 @@ export class SqliteKnowledgeHost {
   readonly metrics={sweeps:0,cancellations:0,foregroundWaitMs:0,maxForegroundWaitMs:0};
   private semanticLeases=new Set<string>();
   private readers=new Map<string,{opening:Promise<any>;identity:string;active:number;timer?:ReturnType<typeof setTimeout>}>();
-  constructor(private options:{root:string;readOnly?:boolean;entitiesEnabled?:boolean;semanticServicesEnabled?:boolean;store?:any;open?:typeof openSqliteFoundation;indexer?:typeof createSavedIndexer;debounceMs?:number;leaseMs?:number}) {
+  constructor(private options:{root:string;readOnly?:boolean;entitiesEnabled?:boolean;semanticServicesEnabled?:boolean;thesisEnabled?:boolean;store?:any;open?:typeof openSqliteFoundation;indexer?:typeof createSavedIndexer;debounceMs?:number;leaseMs?:number}) {
     this.store=options.store??new NativeVaultStore({root:options.root,readOnly:!!options.readOnly});
   }
   private serialize<T>(action:()=>Promise<T>):Promise<T> {
@@ -46,7 +46,7 @@ export class SqliteKnowledgeHost {
         if(this.entries.size>=8)throw Error('SQLite vault budget exceeded');
         e={root,vault,policy:normalized,policyKey:key,users:0,epoch:0,coverage:unknown('Current saved scope has not been verified'),pending:false,full:false};
         // Failed/missing/corrupt/read-only databases remain unavailable, never repaired by replacement.
-        try{e.client=await (this.options.open??openSqliteFoundation)({vault:root,initialize:!this.options.readOnly,readOnly:!!this.options.readOnly,semanticServicesEnabled:this.options.semanticServicesEnabled!==false});
+        try{e.client=await (this.options.open??openSqliteFoundation)({vault:root,initialize:!this.options.readOnly,readOnly:!!this.options.readOnly,semanticServicesEnabled:this.options.semanticServicesEnabled!==false,thesisEnabled:this.options.thesisEnabled!==false});
           e.vaultGuid=(await e.client.inspect()).mutable.vaultGuid;
           e.index=(this.options.indexer??createSavedIndexer)(e.client,{root:this.options.root,vault,store:this.store,policy:normalized,protect:this.protect});
         }catch(error){await e.client?.close().catch(()=>{});e.client=undefined;throw error;}
@@ -165,6 +165,21 @@ export class SqliteKnowledgeHost {
       throw error;
     }
   }
+  async propositions(body:any,signal?:AbortSignal){
+    if(this.closed||this.options.thesisEnabled===false)throw Error('Thesis is unavailable');
+    if(typeof body.vault!=='string')throw Error('Select a Vault');
+    if(body.request?.op==='entities'&&this.options.entitiesEnabled===false)throw Error('Canonical Entity service is unavailable');
+    if(body.request?.source&&body.request.source.vault!==body.vault)throw Error('Proposition source Vault differs from the selected Vault');
+    const mutation=['create','update','archive','restore'].includes(body.request?.op);
+    if(mutation&&this.options.readOnly)throw Error('Thesis is read-only');
+    // Selecting Thesis does not establish another Vault implicitly.
+    await this.store.resolve(path.posix.join(body.vault,'.mutable/mutable.db'));
+    return this.foreground(async()=>{
+      const opened=await this.acquireContext(body.vault,normalizePolicy(body.policy),true);
+      try{signal?.throwIfAborted();const e=this.entry(opened.lease);if(!e.client)throw Error('Thesis storage unavailable');return await e.client.propositions(body.request,signal);}
+      finally{await this.release(opened.lease);}
+    });
+  }
   /** Host-internal scholarly operations; the authenticated application host binds the Vault. */
   async academic(request:any,signal?:AbortSignal){
     if(this.closed||this.options.entitiesEnabled===false||this.options.readOnly)throw Error('Scholarly storage unavailable');
@@ -281,6 +296,7 @@ export class SqliteKnowledgeHost {
     this.savedScopes??=new SqliteSavedScopes(this);router.use('/facts',this.savedScopes.router());
     for(const [name,action]of Object.entries({
       'semantic-open':(b:any,_s?:AbortSignal)=>this.openSemantics(b.vault,b.policy),
+      propositions:(b:any,s?:AbortSignal)=>this.propositions(b,s),
       semantics:(b:any,s?:AbortSignal)=>this.semantics(b,s),
       'semantic-audit':(b:any,s?:AbortSignal)=>this.semanticAudit(b,s)
     }))router.post('/'+name,async(req,res)=>{

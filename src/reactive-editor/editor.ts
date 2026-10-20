@@ -265,10 +265,13 @@ export class ReactiveEditor {
     this.projections.delete(projection.viewId);
   }
 
+  readonly viewCloseGuards = new Map<NodeKey, () => boolean>();
+
   /** Close a presentation without deleting authored content or adding an Undo step. */
   closeView(key: NodeKey): void {
     const node = this.node(key);
     if (!node || !['window-block', 'document-window-block', 'tab-block'].includes(node.viewType)) return;
+    if (this.viewCloseGuards.get(key)?.() === false) return;
     const inside = (candidate: string | undefined) => !!candidate && (candidate === key || this.blockQueries.ancestors(candidate).some(n => n.key === key));
     this.selectionGestures.cancelGesture();
     const operation = this.currentTextOperation.active();
@@ -470,6 +473,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.viewCloseGuards.clear();
     this.interchange.dispose(); this.disposeInterchangeStatus?.();
     this.clipboard.dispose(); this.assets.dispose(); this.disposeClipboardStatus?.();
     this.pointerSpotlight.dispose();

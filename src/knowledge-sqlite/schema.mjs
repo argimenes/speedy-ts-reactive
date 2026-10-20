@@ -7,7 +7,7 @@ import path from 'node:path';
 export const APPLICATION_IDS = Object.freeze({ mutable: 0x4d55544b, audit: 0x4d555441 });
 export const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 export const migrations = Object.freeze(Object.fromEntries(Object.keys(APPLICATION_IDS).map(kind => {
-  const files = kind === 'mutable' ? ['0001-foundation.sql','0002-semantic-knowledge.sql','0003-scholarly-identities.sql','0004-encyclopedia.sql','0005-iiif.sql','0006-resources.sql','0007-deterministic-academic.sql'] : ['0001-foundation.sql'];
+  const files = kind === 'mutable' ? ['0001-foundation.sql','0002-semantic-knowledge.sql','0003-scholarly-identities.sql','0004-encyclopedia.sql','0005-iiif.sql','0006-resources.sql','0007-deterministic-academic.sql','0008-propositions.sql'] : ['0001-foundation.sql'];
   return [kind, Object.freeze(files.map((file,index) => {
     const sql = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations', kind, file), 'utf8');
     return Object.freeze({version:index+1,sql,checksum:hash(sql)});
@@ -45,7 +45,10 @@ export function migrate(db, kind, { vaultGuid, fresh = false, steps = migrations
   const identity = prior?.vaultGuid ?? vaultGuid ?? randomUUID();
   const start = prior?.version ?? 0;
   if (start === steps.length) return prior;
-  db.transaction(() => {
+  const rebuild = kind === 'mutable' && start < 8 && steps.length >= 8;
+  if (db.inTransaction) throw Error('Migration requires an independent transaction');
+  if (rebuild) db.pragma('foreign_keys = OFF');
+  try { db.transaction(() => {
     for (const step of steps.slice(start)) {
       db.exec(step.sql);
       const set = db.prepare('INSERT INTO SchemaInfo(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
@@ -54,7 +57,8 @@ export function migrate(db, kind, { vaultGuid, fresh = false, steps = migrations
       db.pragma(`user_version = ${step.version}`);
     }
     validateSchema(db, kind, identity, steps);
-  }).immediate();
+    if (db.pragma('foreign_key_check').length) throw Error('Migration foreign key check failed');
+  }).immediate(); } finally { db.pragma('foreign_keys = ON'); }
   return validateSchema(db, kind, identity, steps);
 }
 

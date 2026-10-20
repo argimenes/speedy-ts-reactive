@@ -43,7 +43,7 @@ export function canonicalEntities(db, request, check = () => {}, ledger = canoni
         else {
           // Saved annotation segments, not logical mentions or graph edges.
           // The existing (targetEntityGuid,typename) index bounds this lookup.
-          const counts = new Map(db.prepare(`SELECT targetEntityGuid AS id,COUNT(*) AS mentions FROM StandoffProperty WHERE targetEntityGuid IN (${placeholders}) AND typename='codex/entity-reference' AND isDeleted=0 GROUP BY targetEntityGuid`).all(...ids).map(row=>[row.id,row.mentions]));
+          const counts = new Map(db.prepare(`SELECT targetEntityGuid AS id,COUNT(*) AS mentions FROM StandoffProperty WHERE targetEntityGuid IN (${placeholders}) AND resourceGuid IS NOT NULL AND typename='codex/entity-reference' AND isDeleted=0 GROUP BY targetEntityGuid`).all(...ids).map(row=>[row.id,row.mentions]));
           for(const row of db.prepare(`SELECT value AS id,COUNT(*) AS mentions FROM BlockProperty WHERE value IN (${placeholders}) AND typename='codex/entity-reference' AND isDeleted=0 GROUP BY value`).all(...ids))counts.set(row.id,(counts.get(row.id)??0)+row.mentions);
           result = {rows:ids.map(id=>({id,mentions:counts.get(id)??0}))};
         }

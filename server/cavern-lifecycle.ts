@@ -72,7 +72,7 @@ export function createCavernLifecycle(options: { stateFile?: string } = {}) {
     }
   };
   function stores(root: string) {
-    const sql = new SqliteKnowledgeHost({ root, entitiesEnabled: featureFlags.sqliteEntities, semanticServicesEnabled: featureFlags.sqliteSemanticServices });
+    const sql = new SqliteKnowledgeHost({ root, entitiesEnabled: featureFlags.sqliteEntities, semanticServicesEnabled: featureFlags.sqliteSemanticServices, thesisEnabled: featureFlags.thesis });
     const history = createHistoryService({ root });
     const coordinate = <T>(action: () => Promise<T>) => sql.foreground(action);
     const api = Router();

@@ -84,6 +84,8 @@ export type FeatureFlags = Readonly<{
   sqliteEntities: boolean;
   /** Typed canonical temporal, assertion and observation services. */
   sqliteSemanticServices: boolean;
+  /** Native Proposition authoring with vault-scoped canonical SQLite persistence. */
+  thesis: boolean;
   /** Source-preserving Codex migration into explicitly selected disposable vaults. */
   legacyCodexImport: boolean;
   /** Initial Document format arrangements and creation menu. */
@@ -162,6 +164,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   sqliteKnowledge: true,
   sqliteEntities: true,
   sqliteSemanticServices: true,
+  thesis: true,
   legacyCodexImport: true,
   documentFormats: true,
   threeDObjects: true,

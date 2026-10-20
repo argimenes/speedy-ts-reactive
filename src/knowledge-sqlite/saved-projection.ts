@@ -78,7 +78,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
     const attrs={payload:p,opaqueRelations:c.opaqueRelations,wireChildren:c.wireChildren,wireRelation:c.wireRelation,
       ...(c.inlineKind==='standoff'?{inlineObjects:units.flatMap((c,index)=>c.viewType==='image-cell'?[{index,payload:c.payload}]:[])}:{}),
       ...(manifest&&c===root?{workspaceDocuments:manifest.documents}: {})};
-    const row={guid:blockId,resourceGuid:resourceId,typename:c.viewType,authoredType:String(p.type??c.viewType),text,coordinate,cellCount:c.inlineKind==='standoff'?units.length:null,
+    const row={guid:blockId,resourceGuid:resourceId,entityGuid:null,typename:c.viewType,authoredType:String(p.type??c.viewType),text,coordinate,cellCount:c.inlineKind==='standoff'?units.length:null,
       explicitlyRetained:c.definitionOwnerKey===undefined?0:1,attributes:json(attrs),...attribution(p)};
     // Exact source units are transient proof data, not canonical or derived SQL rows.
     const out={block:row,sourceUnits:coordinate==='cell'?units.map(c=>c.viewType==='text-cell'?String(c.payload.text):'\ufffc'):coordinate==='utf16'?text!.split(''):[],properties:[] as any[],relations:[] as any[],definitions:[] as any[],segments:[] as any[],runs:[] as any[]};

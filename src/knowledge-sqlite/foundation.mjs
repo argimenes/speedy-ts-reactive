@@ -6,6 +6,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { migrate, validateSchema, inspectDatabase, verifyDatabase, rebuildFts, clearDerived, hash } from './schema.mjs';
 import { regularFile, directory, prepareHome, writerLock } from './paths.mjs';
+import { canonicalPropositions, propositionMutation } from './propositions.mjs';
 import { canonicalEntities, entityMutation } from './entities.mjs';
 import { canonicalLedger } from './canonical-ledger.mjs';
 import { canonicalSemantics, semanticMutation } from './semantics.mjs';
@@ -32,7 +33,7 @@ export function openFoundation(options = {}, context = {}) {
  if(!isMainThread){if(!context.scopeValidated)throw Error('Vault scope was not verified by the host');return openValidatedFoundation(options,context);}
  const release=lockVaultEstablishment();try{inspectVaultScope(options.vault);return openValidatedFoundation(options,context);}finally{release();}
 }
-function openValidatedFoundation({ vault, readOnly = false, initialize: create = false, semanticServicesEnabled = true, entityReader = false } = {}, { hostLeaseHeld = false } = {}) {
+function openValidatedFoundation({ vault, readOnly = false, initialize: create = false, semanticServicesEnabled = true, thesisEnabled = true, entityReader = false } = {}, { hostLeaseHeld = false } = {}) {
   const { root, home } = prepareHome({ vault, readOnly, initialize: create }); checkFiles(home);
   let unlock, mutable, audit, closed = false, auditError;
   try {
@@ -69,6 +70,7 @@ function openValidatedFoundation({ vault, readOnly = false, initialize: create =
     return {
       vaultGuid: identity.vaultGuid,
       entities(request, check) { active(); if(entityMutation(request.op))writable(); return canonicalEntities(mutable,request,check,ledger); },
+      propositions(request, check) { active(); if(!thesisEnabled)throw Error('Thesis is disabled'); if(propositionMutation(request.op))writable(); return canonicalPropositions(mutable,ledger,request,check); },
       semantics(request, check) { semanticActive(); if(semanticMutation(request))writable(); return canonicalSemantics(mutable,ledger,request,check); },
       auditStatus() { active(); return ledger.status(); },
       operationOutcome(id) { active(); return ledger.outcome(id); },

@@ -96,6 +96,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   }
 
   const items: BlockMenuItem[] = [...(editor.mounts.get(key)?.contextActions?.() ?? []), historyEntry];
+  if (editor.features.thesis) items.push(command("thesis.createProposition", "Create Proposition…"));
   if (node.viewType === 'standoff-editor-block' && editor.features.mutableClipboard && editor.features.markdownClipboard) {
     items.push({ label: 'Paste as Markdown', run: () => editor.clipboard.pasteMarkdown(key) });
   }

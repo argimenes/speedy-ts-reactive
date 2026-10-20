@@ -6,6 +6,9 @@ import {nativeDocumentSession} from '../persistence/native-session';
 import {WorkSlice} from '../knowledge/scheduler';
 import {encodeAuthoredValue,decodeAuthoredValue} from '../history/preplan-spike/wire';
 type Context={accepts(key:string):boolean;vault():DocumentVaultLease;facts?:FactsQueryProvider;prepare?():Promise<void>;listingVault?():Promise<string>};
+const overrides=new WeakMap<ReactiveEditor,(owner:string)=>EntityService>();
+/** Explicit host capability for resource-independent native annotation editors. */
+export function registerStandaloneEntityService(editor:ReactiveEditor,create:(owner:string)=>EntityService){overrides.set(editor,create);return()=>overrides.delete(editor);}
 const contexts=new WeakMap<ReactiveEditor,Set<Context>>();
 export function registerEntityContext(editor:ReactiveEditor,context:Context){let set=contexts.get(editor);if(!set)contexts.set(editor,set=new Set());set.add(context);return()=>set!.delete(context);}
 async function request(action:string,body:unknown,signal?:AbortSignal){
@@ -17,6 +20,7 @@ async function request(action:string,body:unknown,signal?:AbortSignal){
 }
 /** A resolver belongs to the invoking occurrence. Vault selection is never global focus. */
 export function entityService(editor:ReactiveEditor,owner:string):EntityService {
+ const override=overrides.get(editor);if(override)return override(owner);
  let alive=true,lease:string|undefined,opening:Promise<void>|undefined;
  const native=nativeDocumentSession(editor),policy=()=>({version:1 as const,opaqueTypes:editor.registry.typesWithCapability('opaque-widget')});
  const matches=[...(contexts.get(editor)??[])].filter(c=>c.accepts(owner));

@@ -121,9 +121,9 @@ function source(editor: ReactiveEditor, key: string, release: () => void) {
 // All listings of a source share one document event subscription. Nothing is
 // polled, persisted, or subscribed once the last listing closes.
 const sources = new WeakMap<ReactiveEditor, Map<string, ReturnType<typeof source>>>();
-export function watchDocumentEntities(editor: ReactiveEditor, origin: string, listener: Listener) {
-  const scope = resolveSearchScope(editor, origin, 'document');
-  const key = editor.node(scope.rootKey)!.contentKey;
+export function watchDocumentEntities(editor: ReactiveEditor, origin: string, listener: Listener, standaloneRoot?: string) {
+  const rootKey = standaloneRoot ?? resolveSearchScope(editor, origin, 'document').rootKey;
+  const key = editor.node(rootKey)!.contentKey;
   let documents = sources.get(editor);
   if (!documents) sources.set(editor, documents = new Map());
   let entry = documents.get(key);

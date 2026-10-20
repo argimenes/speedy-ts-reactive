@@ -10,7 +10,14 @@ import { entityService } from './entity-service';
 import { graphemeBoundaries } from '../input/graphemes';
 import { watchDocumentEntities } from './document-entity-changes';
 
-export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureScope): AnnotationCapabilities {
+export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureScope, standaloneRoot?: string): AnnotationCapabilities {
+  // Explicit native standalone surface: no synthetic Document/Resource owner.
+  const locate: typeof resolveSearchScope = (host, key, kind = 'page') => {
+    if (!standaloneRoot) return resolveSearchScope(host, key, kind);
+    const node = host.node(standaloneRoot);
+    if (!node || key !== standaloneRoot) throw Error('Select text in this Proposition.');
+    return {kind, viewId:node.viewId, rootKey:node.key, placementKey:node.placementKey, region:'subtree', label:'Proposition'};
+  };
   const check = () => { if (!scope.active()) throw new Error(`Feature ${scope.owner} is disposed`); };
   const panelTypes = new Set<string>();
   scope.own(() => { for (const overlay of [...editor.overlays.overlays]) if (panelTypes.has(overlay.viewType)) editor.overlays.close(overlay.key, false); });
@@ -53,23 +60,23 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
       const focused=editor.focus.state.focusedKey;
       const key=focused&&!editor.overlays.isOverlayKey(focused)?focused:editor.focus.state.lastFocusedKey??owner,node=editor.node(key),origin=editor.node(owner);
       if(!node||!origin||node.viewId!==origin.viewId)throw Error('Select text in this Document occurrence');
-      const a=resolveSearchScope(editor,key,'document'),b=resolveSearchScope(editor,owner,'document');if(a.rootKey!==b.rootKey)throw Error('Select text in the same Document');
-      const cross=editor.crossText.range();if(cross){const ranges=editor.crossText.resolve(cross.anchor,cross.head);if(ranges.some(r=>editor.node(r.nodeKey)?.viewId!==origin.viewId||resolveSearchScope(editor,r.nodeKey,'document').rootKey!==b.rootKey))throw Error('Select text in the same Document occurrence');return ranges;}
+      const a=locate(editor,key,'document'),b=locate(editor,owner,'document');if(a.rootKey!==b.rootKey)throw Error('Select text in the same Document');
+      const cross=editor.crossText.range();if(cross){const ranges=editor.crossText.resolve(cross.anchor,cross.head);if(ranges.some(r=>editor.node(r.nodeKey)?.viewId!==origin.viewId||locate(editor,r.nodeKey,'document').rootKey!==b.rootKey))throw Error('Select text in the same Document occurrence');return ranges;}
       const r=editor.mounts.get(key)?.captureInlineSelection?.();return r?[{nodeKey:key,start:Math.min(r.anchor,r.head),end:Math.max(r.anchor,r.head)}]:[];
     },
     revision: () => editor.repository.state.revision, text,
     path: key => ancestorPath(editor, key).map(node => ({ key: node.key, label: nodeLabel(node) })),
-    scope: (key, kind) => resolveSearchScope(editor, key, kind),
+    scope: (key, kind) => locate(editor, key, kind),
     documentTexts(key) {
       const node = editor.node(key);
       const origin = node?.viewType === "document-window-block" ? node.children.find(child => editor.node(child)?.viewType === "document-block") ?? key : key;
-      const scope = resolveSearchScope(editor, origin, "document");
+      const scope = locate(editor, origin, "document");
       return { scope, texts: scopeNodes(editor, scope).found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => text(node.key)!) };
     },
     documentAnnotations(key) {
       const node = editor.node(key);
       const origin = node?.viewType === "document-window-block" ? node.children.find(child => editor.node(child)?.viewType === "document-block") ?? key : key;
-      const scope = resolveSearchScope(editor, origin, "document");
+      const scope = locate(editor, origin, "document");
       const found=scopeNodes(editor,scope,['mutable/citation-block','mutable/web-article-block']).found;
       const blockReferences=found.filter(({node})=>['mutable/citation-block','mutable/web-article-block'].includes(node.viewType)).map(({node})=>({contentKey:node.contentKey,properties:immutable(Array.isArray(node.payload.blockProperties)?node.payload.blockProperties:[])}));
       return { scope, blockReferences, texts: found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => immutable({
@@ -83,7 +90,7 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     },
     watchDocumentEntities(key, listener) {
       check();
-      const watch = watchDocumentEntities(editor, key, listener);
+      const watch = watchDocumentEntities(editor, key, listener, standaloneRoot);
       const dispose = scope.own(watch.dispose);
       return {key:watch.key, get signature() { return watch.signature; }, dispose};
     },
@@ -95,7 +102,18 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     beforeChange: listener => scope.own(editor.repository.subscribeBeforeChanges(listener)),
     afterChange: listener => scope.own(editor.repository.subscribeChanges(listener)),
     search(runner) { check(); const search = new TextSearch(editor, runner); const dispose = scope.own(() => search.dispose()); return { searchText: request => search.searchText(request), dispose }; },
-    annotate(...args) { check(); return editor.linkedAnnotations.createBatch(...args); },
+    annotate(...args) {
+      check(); if (!standaloneRoot) return editor.linkedAnnotations.createBatch(...args);
+      const [groups,type,value,metadata,revision,label] = args;
+      if (editor.repository.state.revision !== revision) throw Error('The Proposition changed. Select the text again.');
+      if (!groups.length || groups.some(g=>g.length!==1 || g[0].nodeKey!==standaloneRoot)) throw Error('Propositions support direct annotations in one Block.');
+      editor.textRanges.validate(groups.flat(), 'cell');
+      const node=editor.node(standaloneRoot)!,old=(editor.repository.readState().contents[node.contentKey].payload.standoffProperties??[]) as Record<string,unknown>[];
+      const ids=groups.map(()=>crypto.randomUUID());
+      const properties=[...old,...groups.map(([range],index)=>({id:ids[index],type,value,metadata:structuredClone(metadata),start:range.start,end:range.end-1}))];
+      editor.commands.setPayloadField(node.key,'standoffProperties',properties,label,properties.map((_,i)=>i<old.length?i:null));
+      return ids;
+    },
     openPanel(type, owner, data, selection = []) {
       check(); if (!panelTypes.has(type) || !editor.node(owner)) throw new Error("Open the panel from a document first.");
       for (const overlay of [...editor.overlays.overlays]) if (overlay.viewType === type) editor.overlays.close(overlay.key, false);

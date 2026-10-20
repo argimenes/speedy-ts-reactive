@@ -85,7 +85,7 @@ test('source consistency, unresolved targets, linked segments and half-open rang
   segment(db,'s1',0,5,{targetEntityGuid:'missing'});
   segment(db,'s2',5,8,{resolution:'unresolved',definitionResourceGuid:'missing',definitionBlockGuid:'def-owner',definitionAnnotationId:'def'});
   assert.equal(db.prepare('SELECT count(*) n FROM Entity').get().n,0);
-  assert.throws(() => segment(db,'wrong',0,1,{resourceGuid:'other'}), /FOREIGN KEY/);
+  assert.throws(() => segment(db,'wrong',0,1,{resourceGuid:'other'}), /ownership/);
   assert.throws(() => segment(db,'negative',-1,1), /CHECK/);
   assert.throws(() => segment(db,'inverted',5,2), /CHECK/);
   assert.deepEqual(db.prepare('SELECT guid FROM StandoffProperty WHERE sourceBlockGuid=? AND startIndex < ? AND endIndex > ?').all('b',8,5),[{guid:'s2'}]);
