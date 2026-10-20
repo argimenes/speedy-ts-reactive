@@ -7,7 +7,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const milestone=process.argv.includes('--a1')?'a1':'a0';
+const milestone=process.argv.includes('--b')?'b':process.argv.includes('--a1')?'a1':'a0';
 const profile = await mkdtemp(path.join(tmpdir(), `mutable-${milestone}-`));
 let server, chrome, socket;
 try {
@@ -45,9 +45,11 @@ try {
   const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false }, sessionId);
+  await send('Runtime.enable',{},sessionId);
+  socket.addEventListener('message',event=>{const m=JSON.parse(event.data);if(process.env.MWM_TRACE&&m.method==='Runtime.consoleAPICalled')console.error(m.params.args.map(a=>a.value??a.description).join(' '));});
   await send('Page.navigate', { url: `http://127.0.0.1:${port}/__mwm_a0` }, sessionId);
   await new Promise(resolve => setTimeout(resolve, 250));
-  if(milestone==='a1') {
+  if(milestone!=='a0') {
     await send('Runtime.addBinding',{name:'mwmInput'},sessionId);
     socket.addEventListener('message',async event=>{
       const message=JSON.parse(event.data);if(message.method!=='Runtime.bindingCalled'||message.params.name!=='mwmInput')return;
@@ -58,14 +60,31 @@ try {
           await send('Input.dispatchMouseEvent',{type:'mousePressed',x:action.x,y:action.y,button:'left',clickCount:1},sessionId);
           await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:action.x,y:action.y,button:'left',clickCount:1},sessionId);
         }
-        if(action.type==='key')for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:action.key,code:action.key,windowsVirtualKeyCode:action.key==='Tab'?9:27},sessionId);
+        if(action.type==='viewport')await send('Emulation.setDeviceMetricsOverride',{width:action.width,height:action.height,deviceScaleFactor:action.deviceScaleFactor??1,mobile:false},sessionId);
+        if(action.type==='browserZoom') {
+          const tab=await send('Target.createTarget',{url:'chrome://settings/appearance'});
+          const attached=await send('Target.attachToTarget',{targetId:tab.targetId,flatten:true});
+          await new Promise(resolve=>setTimeout(resolve,300));
+          const zoom=await send('Runtime.evaluate',{expression:`new Promise((resolve,reject)=>chrome.settingsPrivate.setDefaultZoom(${action.scale},()=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve(true)))`,awaitPromise:true,returnByValue:true},attached.sessionId);
+          await send('Target.closeTarget',{targetId:tab.targetId});
+          if(zoom.exceptionDetails)throw Error(JSON.stringify(zoom.exceptionDetails));
+        }
+        if(action.type==='zoom')await send('Emulation.setPageScaleFactor',{pageScaleFactor:action.scale},sessionId);
+        if(action.type==='pointer')await send('Input.dispatchMouseEvent',{type:action.event,x:action.x,y:action.y,button:'left',buttons:action.event==='mouseReleased'?0:1,clickCount:1},sessionId);
+        if(action.type==='blur') {
+          const tab=await send('Target.createTarget',{url:'about:blank'});const attached=await send('Target.attachToTarget',{targetId:tab.targetId,flatten:true});
+          await send('Page.bringToFront',{},attached.sessionId);await new Promise(resolve=>setTimeout(resolve,100));
+          await send('Page.bringToFront',{},sessionId);await send('Target.closeTarget',{targetId:tab.targetId});
+        }
+        if(action.type==='touch')await send('Input.dispatchTouchEvent',{type:action.event,touchPoints:action.event==='touchEnd'||action.event==='touchCancel'?[]:[{x:action.x,y:action.y}]},sessionId);
+        if(action.type==='key')for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:action.key,code:action.key,modifiers:action.modifiers??0,windowsVirtualKeyCode:({Tab:9,Escape:27,Enter:13,ArrowLeft:37,ArrowUp:38,ArrowRight:39,ArrowDown:40})[action.key]??0},sessionId);
         if(action.type==='accessibility')result=(await send('Accessibility.getFullAXTree',{},sessionId)).nodes.filter(n=>!n.ignored).map(n=>({role:n.role?.value,name:n.name?.value,properties:n.properties}));
         await send('Runtime.evaluate',{expression:`globalThis.__mwmResume(${JSON.stringify({result})})`},sessionId);
       } catch(error) { await send('Runtime.evaluate',{expression:`globalThis.__mwmResume(${JSON.stringify({error:String(error)})})`},sessionId); }
     });
   }
   const result = await send('Runtime.evaluate', {
-    expression: `(async()=>{const m=await import('/src/application/window-manager${milestone==='a1'?'-a1':''}.browser-fixture.tsx');return m.qualifyWindowManager();})()`,
+    expression: `(async()=>{const m=await import('/src/application/window-manager${milestone==='a0'?'':'-'+milestone}.browser-fixture.tsx');return m.qualifyWindowManager();})()`,
     awaitPromise: true, returnByValue: true,
   }, sessionId);
   if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails));
@@ -79,5 +98,5 @@ try {
     await exited; clearTimeout(force);
   }
   await server?.close();
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries:5, retryDelay:200 });
 }

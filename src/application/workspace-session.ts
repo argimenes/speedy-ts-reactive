@@ -182,6 +182,10 @@ export class WorkspaceSession {
             .map(n => ({ key: n.key, score: editor.blockQueries.ancestors(n.key).filter(a => focusAncestors.has(a.placementKey)).length }))
             .sort((a, b) => b.score - a.score) : [];
         const target = matches.length && (matches.length === 1 || matches[0].score > matches[1].score) ? matches[0].key : key;
+        const owner=this.windowManager?.ownerForNode(target);
+        if(owner&&!this.windowManager!.registry.windows[owner]?.visible) {
+          editor.focus.request(owner,{reason:"presentation-switch-retained-hidden-target"});return;
+        }
         if (!editor.mounts.get(target)) {
           const visible = editor.blockQueries.ancestors(target).find(node => editor.mounts.get(node.key));
           if (visible) editor.focus.request(visible.key, { reason: "presentation-switch-hidden-target" });

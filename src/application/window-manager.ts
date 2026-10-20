@@ -1,3 +1,5 @@
+import { unwrap } from "solid-js/store";
+import { WindowGeometry } from "./window-geometry";
 import { WindowLifecycle } from "./window-lifecycle";
 import { untrack } from "solid-js";
 import type { ReactiveEditor } from "../reactive-editor/editor";
@@ -8,6 +10,7 @@ import { WindowRegistry } from "../runtime/window-manager";
  */
 export class WorkspaceWindowManager {
   readonly registry = new WindowRegistry();
+  readonly geometry = new WindowGeometry();
   readonly lifecycle: WindowLifecycle;
   plane?: HTMLElement;
   readonly groups = new Map<string, HTMLElement>();
@@ -28,6 +31,9 @@ export class WorkspaceWindowManager {
     this.serial = windows.length;
   }
   nextSurfaceId() { return `surface:${++this.surfaceSerial}`; }
+  title(id:string) { return String((this.editor.node(id)?.payload.metadata as any)?.title??"Untitled"); }
+  close(id:string) { return this.editor.closeView(id); }
+  maximize(id:string) { const node=this.editor.node(id);if(!node||!this.lifecycle.canMinimize(id)||!this.editor.features.windowMaximize)return;const metadata=node.payload.metadata as any;this.editor.commands.setPayloadField(id,"metadata",{...unwrap(metadata),state:metadata?.state==="maximized"?"normal":"maximized"},"Maximize / Restore Window"); }
   count() { return Object.keys(this.registry.windows).length; }
   /** A0 uses existing metadata fields; no serializer or file-format changes. */
   launchMetadata() { return { zIndex: this.count() + 1 }; }
@@ -81,5 +87,5 @@ export class WorkspaceWindowManager {
       } };
     });
   }
-  dispose() { this.lifecycle.dispose(); this.groups.clear(); this.requested.clear(); this.initialOrder.clear(); this.registry.dispose(); this.plane = undefined; }
+  dispose() { this.geometry.dispose(); this.lifecycle.dispose(); this.groups.clear(); this.requested.clear(); this.initialOrder.clear(); this.registry.dispose(); this.plane = undefined; }
 }

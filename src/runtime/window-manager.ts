@@ -4,7 +4,7 @@ import { createStore } from "solid-js/store";
 export type WindowId = string;
 export type SurfaceKind = "content" | "tool" | "overlay" | "dialog";
 export interface ViewActivity {
-  /** Editing view exists. A minimized icon is not a mounted editing view. */
+  /** Editing session exists, including a retained minimized desktop body. */
   mounted: boolean;
   /** Editing view is exposed in the current presentation. */
   visible: boolean;

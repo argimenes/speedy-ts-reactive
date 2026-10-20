@@ -89,7 +89,8 @@ describe("canonical presentation switching", () => {
     const layout = session.presentation.read()!.presentations.canvas;
     for (let i = 0; i < 3; i++) {
       expect(session.selectPresentation("desktop")).toBe(true); await tick();
-      expect(host.querySelectorAll("textarea")).toHaveLength(1);
+      expect(host.querySelectorAll("textarea")).toHaveLength(2);
+      expect(host.querySelectorAll(".mwm-retained-body[hidden] textarea")).toHaveLength(1);
       expect(host.querySelector('[data-window-icon]')).not.toBeNull();
       expect(session.selectPresentation("canvas")).toBe(true); await tick();
     }

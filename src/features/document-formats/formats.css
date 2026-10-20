@@ -1,6 +1,7 @@
 /* Format identity lives on the Document; only its containing surface is adapted.
    Page and untagged Documents deliberately retain the existing layout. */
-.reactive-window > .reactive-window__content:has(> .reactive-window__document-body > .document-format) {
+.reactive-window > .reactive-window__content:has(> .reactive-window__document-body > .document-format),
+.reactive-window > .mwm-retained-body > .reactive-window__content:has(> .reactive-window__document-body > .document-format) {
   padding: 0;
   background: #faf9f5;
 }

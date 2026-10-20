@@ -160,7 +160,7 @@ export function createFloatingWindowResize(options: FloatingWindowResizeOptions)
   return { dimensions, active, preview, clamp, cancel, commit, beginPointer, movePointer, endPointer, cancelPointer, keyDown, lostPointerCapture: options.aspectRatio ? cancelPointer : endPointer };
 }
 
-export type FloatingWindowResizeController = ReturnType<typeof createFloatingWindowResize>;
+export type FloatingWindowResizeController = ReturnType<typeof createFloatingWindowResize> & {blur?:()=>void};
 
 export function FloatingWindowResizeHandle(props: { controller: FloatingWindowResizeController; label: string; class?: string }) {
   return <div
@@ -176,6 +176,6 @@ export function FloatingWindowResizeHandle(props: { controller: FloatingWindowRe
     onLostPointerCapture={props.controller.lostPointerCapture}
     onPointerCancel={props.controller.cancelPointer}
     onKeyDown={props.controller.keyDown}
-    onBlur={props.controller.commit}
+    onBlur={()=>props.controller.blur ? props.controller.blur() : props.controller.commit()}
   />;
 }

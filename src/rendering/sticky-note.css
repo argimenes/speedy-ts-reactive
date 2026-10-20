@@ -8,8 +8,8 @@
    not the portal's static position after the Workspace. */
 .reactive-window.reactive-window--sticky { position:fixed; top:0; left:0; border-color:#c9a83c; border-radius:6px; background:#fff2a8; box-shadow:0 10px 26px #4e421f55; }
 .reactive-window--sticky[hidden] { display:none!important; }
-.reactive-window--sticky > .reactive-window__header { min-height:28px; box-sizing:border-box; padding:2px 5px 2px 9px; color:#40351a; background:#efd46b; }
-.reactive-window--sticky > .reactive-window__content { padding:0; overflow:hidden; }
+.reactive-window--sticky > .reactive-window__header, .reactive-window--sticky > .mwm-retained-body > .reactive-window__header { min-height:28px; box-sizing:border-box; padding:2px 5px 2px 9px; color:#40351a; background:#efd46b; }
+.reactive-window--sticky > .reactive-window__content, .reactive-window--sticky > .mwm-retained-body > .reactive-window__content { padding:0; overflow:hidden; }
 .reactive-window--sticky .reactive-window__controls button { width:23px; height:23px; color:#4a3918; background:#fff4b8; }
 .reactive-window--sticky .reactive-window__document-body { height:100%; }
 .reactive-sticky-draft { position:fixed; z-index:10420; box-sizing:border-box; display:flex; flex-direction:column; overflow:hidden; border:1px solid #c9a83c; border-radius:6px; color:#332e1f; background:#fff2a8; box-shadow:0 10px 26px #4e421f55; }

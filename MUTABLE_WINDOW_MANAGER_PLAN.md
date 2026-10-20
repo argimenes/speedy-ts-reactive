@@ -1,6 +1,8 @@
 # Mutable Window Manager: architecture and implementation plan
 
-**Status: A0 accepted; approved A1 implemented and qualified. Milestone B and later milestones remain unapproved.**
+**Status: A0 and A1 accepted; approved Milestone B implemented and qualified, awaiting acceptance. D0, C and later milestones remain unapproved.**
+
+Executed B changes and evidence are recorded in [Milestone B qualification](MUTABLE_WINDOW_MANAGER_B_QUALIFICATION.md). The longer-term contracts below remain proposals beyond that qualified scope.
 
 See the [A1 qualification report](MUTABLE_WINDOW_MANAGER_A1_QUALIFICATION.md) for activation, lifecycle, Entity continuity and current limitations. The historical planning audit below remains the design reference. See the [A0 qualification report](MUTABLE_WINDOW_MANAGER_A0_QUALIFICATION.md) for implementation details, executed checks, baseline failures and scope limits.
 
@@ -784,4 +786,4 @@ The nine addendum scenarios and their phase gates are specified in the companion
 
 A0 must remain behind a default-enabled feature flag with exclusive fallback, retain existing data formats and manual Save semantics, and avoid tiling, rehosting, crash persistence, new visual themes, or domain changes. A0 was reviewed and accepted; A1 was then explicitly approved and implemented.
 
-**Approval boundary:** the user accepted A0 and explicitly approved A1, including activation, focus, lifecycle and Entity continuity. Both are implemented under the existing flag. Milestone B and all later milestones still require separate approval. Existing JSON persistence is unchanged; retained hosts, tool promotion, docking and D0/D1 format proposals are not authorised.
+**Approval boundary:** the user accepted A0 and A1 and explicitly approved B: floating interactions and retained desktop hosts. B is implemented under the same default-enabled flag and documented in its qualification report. Existing JSON persistence and manual Save semantics remain unchanged. D0, C and later milestones still require separate approval; tool promotion, docking, tiling, shell tab groups, cross-host transfers and new persistence formats are not implemented.

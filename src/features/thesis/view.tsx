@@ -1,5 +1,5 @@
 import { useManagedWindowOwner } from "../../rendering/window-manager";
-import {For,Show,createSignal,onCleanup,onMount} from 'solid-js';
+import {For,Show,createEffect,createSignal,onCleanup,onMount} from 'solid-js';
 import {unwrap} from 'solid-js/store';
 import {ReactiveEditor} from '../../reactive-editor/editor';
 import {ReactiveTreeView} from '../../rendering/reactive-tree-view';
@@ -34,6 +34,7 @@ export function NativePropositionEditor(props:{draft:Draft;vault:string;features
   editor.overlays.focusLease=()=>owner.manager.lifecycle.ticket();
   editor.commandRegistry.permit=()=>owner.manager.lifecycle.canCommand(owner.windowId);
  }
+ createEffect(()=>{if(owner&&!owner.manager.registry.windows[owner.windowId]?.visible&&activeDraftInputs.get(document)?.owner===editor)activeDraftInputs.get(document)?.release();});
  const readyFocus=props.focusValid ?? (owner ? owner.manager.lifecycle.readyTicket(owner.windowId) : undefined);
  const focus=()=>editor.focus.request(key,{reason:'thesis-draft',caret:'end'});
  const selection=()=>editor.mounts.get(key)?.captureInlineSelection?.()??editor.mounts.inlineSelection(key);

@@ -28,17 +28,22 @@ export class WindowLifecycle {
   private deferred?: () => void;
   private cleanup?: () => void;
   constructor(private manager: WorkspaceWindowManager, private editor: ReactiveEditor) {
-    for (const action of ['next','previous','minimize','restore','close']) this.commands.push(editor.commandRegistry.register({id:`window.${action}`,label:`${action[0].toUpperCase()+action.slice(1)} window`,canExecute:({targetKey})=>{
+    for (const action of ['next','previous','minimize','restore','close','move','resize','maximize']) this.commands.push(editor.commandRegistry.register({id:`window.${action}`,label:`${action[0].toUpperCase()+action.slice(1)} window`,canExecute:({targetKey})=>{
       const id=action==='restore' ? manager.ownerForNode(targetKey) ?? manager.registry.activeWindowId : manager.registry.activeWindowId;
       return !!id && (action==='next'||action==='previous' ? !this.workspaceBlocked : !this.blocked(id));
     },execute:({targetKey})=>{
       const id=(action==='restore' ? manager.ownerForNode(targetKey) ?? manager.registry.activeWindowId : manager.registry.activeWindowId)!;
       if(action==='close')return editor.closeView(id);
+      if(action==='maximize'){manager.maximize(id);return;}
+      if(action==='move'||action==='resize'){manager.geometry.controllers.get(id)?.keyboard(action);return;}
       if(action==='minimize'||action==='restore'){this.actions.get(id)?.[action]();return;}
       const ids=Object.values(manager.registry.windows).filter(w=>w.visible).sort((a,b)=>a.generation-b.generation).map(w=>w.id),index=ids.indexOf(id);
       this.activate(ids[(index+(action==='next'?1:ids.length-1))%ids.length]);
     }},'window-manager'));
   }
+  reveal(id:string) { if(this.workspaceBlocked)return; if(!this.manager.registry.windows[id]?.visible)this.actions.get(id)?.restore();else this.activate(id); }
+  minimize(id:string) { if(this.manager.registry.windows[id]?.visible&&this.canMinimize(id))this.actions.get(id)?.minimize(); }
+  cycle(direction=1) { if(this.workspaceBlocked)return; const ids=Object.values(this.manager.registry.windows).filter(w=>w.visible).sort((a,b)=>a.generation-b.generation).map(w=>w.id);if(ids.length)this.activate(ids[(ids.indexOf(this.manager.registry.activeWindowId??this.manager.registry.mru[0])+direction+ids.length)%ids.length]); }
   bindActions(id:string, actions:{minimize:()=>void;restore:()=>void}) { this.actions.set(id,actions); return ()=>this.actions.delete(id); }
   readyTicket(id:string) { const version=this.readiness.get(id)??0,generation=this.manager.registry.windows[id]?.generation; return ()=>!!generation && this.manager.registry.windows[id]?.generation===generation && (this.readiness.get(id)??0)===version; }
   private cancelReadiness(except?:string) { for(const id of Object.keys(this.manager.registry.windows))if(id!==except)this.readiness.set(id,(this.readiness.get(id)??0)+1); }
@@ -95,7 +100,7 @@ export class WindowLifecycle {
       this.remember(); this.invalidate(); this.cancelReadiness();
       if (owner) {
         this.manager.raiseWindow(owner);
-        if(owner!==this.manager.registry.activeWindowId && !target?.closest('input,textarea,select,button,a[href],[contenteditable="true"],iframe,[tabindex="0"]'))this.activate(owner);
+        if(owner!==this.manager.registry.activeWindowId && !target?.closest('input,textarea,select,button,a[href],[contenteditable="true"],iframe,[tabindex="0"]:not(.reactive-window__header):not([data-window-move])'))this.activate(owner);
       }
     };
     const focus = (event: FocusEvent) => {
@@ -141,7 +146,7 @@ export class WindowLifecycle {
   private invalidate() { this.epoch++; this.editor.focus.cancelPending(); this.deferred = undefined; }
   remember(element: Element | null = document.activeElement) {
     if (!(element instanceof HTMLElement)) return;
-    const id = this.owner(element); if (!id) return;
+    const id = this.owner(element); if (!id || !this.manager.registry.windows[id]?.visible) return;
     const resolved = this.editor.mounts.resolveElement(element), handle = resolved?.handle;
     // Chrome buttons must not replace the last editor/tool bookmark.
     if (element.closest('.reactive-window__header')) return;
@@ -223,9 +228,7 @@ export class WindowLifecycle {
     return run(0);
   }
   canMinimize(id: string) {
-    // A1 has no retained hosts. Never silently discard a guarded app or tool.
-    return !this.manager.groups.get(id)?.querySelector('iframe') && !this.composing && !this.blocked(id) && !this.pending.has(id) && !this.editor.viewCloseGuards.has(id) && !this.guards.has(id)
-      && !Object.values(this.manager.registry.surfaces).some(s => s.ownerWindowId === id && (s.kind === 'tool' || s.kind === 'dialog'));
+    return !!this.manager.registry.windows[id]?.mounted && !this.composing && !this.blocked(id) && !this.pending.has(id);
   }
   successor(exclude: string) { const next = this.manager.registry.successor(exclude); if (next) this.activate(next); else { this.invalidate(); this.manager.registry.observeFocus(); (document.activeElement as HTMLElement)?.blur?.(); } }
   release(id: string) { this.cancel(id); this.bookmarks.delete(id); this.guards.delete(id); this.readiness.delete(id); this.actions.delete(id); this.modals = this.modals.filter(m => m.owner !== id); this.refreshInert(); }

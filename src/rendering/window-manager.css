@@ -15,3 +15,11 @@
 .mwm-surface--dialog { z-index:4; }
 .mwm-surface > div > * { pointer-events:auto; }
 .mwm-surface[hidden] { display:none; }
+
+.mwm-retained-body { display:contents; }
+.mwm-retained-body[hidden] { display:none; }
+.mwm-window-group .reactive-window__header { touch-action:none; }
+
+.mwm-window-group .reactive-window__header > span:first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mwm-window-group .reactive-window__controls { flex-shrink:0; }
+.mwm-surface .reactive-entity-search__header { touch-action:none; }

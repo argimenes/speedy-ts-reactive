@@ -265,7 +265,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
         <a href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
         <span>revision {editor.repository.state.revision}</span>
       </nav>}>
-        <CodexSystemBar>
+        <CodexSystemBar manager={editor.windowManager}>
           <button type="button" role="menuitem" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
           <a role="menuitem" href={`${import.meta.env.BASE_URL}superposition`}>Text superposition demo</a>
           <hr role="separator" />
@@ -439,7 +439,7 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
       <a href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
       <span>{props.filename} · revision {editor.repository.state.revision}{session.dirty() ? " · Unsaved changes" : ""}</span>
     </nav>}>
-      <CodexSystemBar>
+      <CodexSystemBar manager={editor.windowManager}>
         <Show when={session.presentation.enabled}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
         <opening.Buttons menu />
         <Show when={editor.features.flint}><button type="button" role="menuitem" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>

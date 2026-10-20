@@ -136,16 +136,17 @@ it("defers activation until composition ends and cancels a stale readiness lease
   expect(f.manager!.registry.activeWindowId).toBe(b);expect(valid()).toBe(false);
 });
 
-it("minimizes to the MRU successor, restores its caret, and blocks destructive guarded minimization", async()=>{
+it("retains the mounted editing session and caret while minimizing to its MRU successor", async()=>{
   const f=mount(),a=f.node('ink').key,b=f.node('other').key;
   const input=f.editor.mounts.get(f.node('text').key)!.focusElement as HTMLTextAreaElement;
   f.manager!.lifecycle.activate(b);input.focus();input.setSelectionRange(3,6);
   const group=f.manager!.groups.get(a)!;
   group.querySelector<HTMLButtonElement>('[aria-label="Minimize window"]')!.click();await tick();
-  expect(f.manager!.registry.activeWindowId).toBe(b);expect(f.manager!.registry.windows[a].mounted).toBe(false);
+  expect(f.manager!.registry.activeWindowId).toBe(b);expect(f.manager!.registry.windows[a]).toMatchObject({mounted:true,visible:false,active:false});
+  expect(input.isConnected).toBe(true);
   group.querySelector<HTMLButtonElement>('[data-window-icon]')!.click();await tick();
   const restored=f.editor.mounts.get(f.node('text').key)!.focusElement as HTMLTextAreaElement;
-  expect(document.activeElement).toBe(restored);expect([restored.selectionStart,restored.selectionEnd]).toEqual([3,6]);
+  expect(restored).toBe(input);expect(document.activeElement).toBe(restored);expect([restored.selectionStart,restored.selectionEnd]).toEqual([3,6]);
   f.editor.viewCloseGuards.set(a,()=>true);group.querySelector<HTMLButtonElement>('[aria-label="Minimize window"]')!.click();
   expect(f.manager!.registry.windows[a].mounted).toBe(true);
 });
@@ -252,4 +253,46 @@ it("does not let a cancelled guard response cancel a newer close request",async(
   const old=f.editor.closeView(key);f.manager!.lifecycle.cancel(key);const current=f.editor.closeView(key);
   responses[0](false);await old;expect(signals[1].aborted).toBe(false);expect(f.manager!.registry.windows[key]).toBeDefined();
   responses[1](true);await current;expect(f.manager!.registry.windows[key]).toBeUndefined();
+});
+
+it('retains owned tool DOM, input values and close guards while its application is hidden',async()=>{
+  const f=mount(),id=f.node('ink').key;
+  cleanups.push(f.editor.panels.register({type:'retained-tool',view:()=> <input aria-label="Retained query" />}));
+  const overlay=f.editor.overlays.open({ownerKey:f.node('text').key,viewType:'retained-tool',anchor:{x:4,y:4}});await tick();
+  const input=document.querySelector<HTMLInputElement>('[aria-label="Retained query"]')!;input.value='unsent query';input.focus();input.setSelectionRange(2,6);
+  const guard=vi.fn(()=>false);cleanups.push(f.manager!.lifecycle.guard(id,guard));
+  f.manager!.lifecycle.minimize(id);await tick();
+  expect(input.isConnected).toBe(true);expect(input.closest<HTMLElement>('.mwm-surface')!.hidden).toBe(true);expect(guard).not.toHaveBeenCalled();
+  f.manager!.lifecycle.reveal(id);await tick();
+  expect(document.activeElement).toBe(input);expect(input.value).toBe('unsent query');expect([input.selectionStart,input.selectionEnd]).toEqual([2,6]);
+  await f.editor.closeView(id);expect(guard).toHaveBeenCalledOnce();expect(f.manager!.registry.surfaces[overlay]).toBeDefined();
+});
+
+it('preserves a cross-Block bookmark over minimized visibility without replacing mounts',async()=>{
+  const f=mount(true,false,true),id=f.node('ink').key,a=f.node('text'),b=f.node('second-text');
+  const handle=f.editor.mounts.get(a.key)!;handle.focus();f.editor.crossText.enable(true);
+  f.editor.crossText.set(f.editor.crossText.position(a.key,1),f.editor.crossText.position(b.key,3));
+  const expected=f.editor.crossText.range();f.manager!.lifecycle.minimize(id);await tick();f.manager!.lifecycle.reveal(id);await tick();
+  expect(f.editor.mounts.get(a.key)).toBe(handle);expect(f.editor.crossText.range()).toEqual(expected);
+});
+
+it('keeps unrelated text edits bounded during a window movement and bridges one geometry commit to undo',async()=>{
+  const f=mount(),id=f.node('other').key;await tick();
+  const geometry=f.manager!.geometry.controllers.get(id)!;
+  geometry.keyboard('move');geometry.keyDown(new KeyboardEvent('keydown',{key:'ArrowRight'}));
+  const snapshot=vi.spyOn(f.editor.repository,'snapshot'),ownership=vi.spyOn(f.manager!,'ownerForNode'),register=vi.spyOn(f.manager!.registry,'registerWindow');
+  f.editor.commands.setPayloadField(f.node('text').key,'text','Typed during another window move');await tick();
+  expect(snapshot).not.toHaveBeenCalled();expect(ownership).not.toHaveBeenCalled();expect(register).not.toHaveBeenCalled();
+  const revision=f.editor.repository.state.revision,before=structuredClone(f.editor.encodeWorkspace());geometry.commit();
+  expect(f.editor.repository.state.revision).toBe(revision+1);f.editor.repository.undo();
+  expect(f.editor.encodeWorkspace()).toEqual(before);
+});
+
+it('cancels desktop geometry on undo/import and keeps the same retained body',async()=>{
+  const f=mount(),id=f.node('other').key,body=f.manager!.groups.get(id)!.querySelector('.mwm-retained-body');
+  const geometry=f.manager!.geometry.controllers.get(id)!;
+  geometry.keyboard('move');geometry.keyDown(new KeyboardEvent('keydown',{key:'ArrowRight'}));
+  f.editor.commands.setPayloadField(id,'metadata',{position:{x:60,y:70},size:{w:300,h:200}});await tick();
+  expect(geometry.mode()).toBeUndefined();expect(geometry.rectangle()).toMatchObject({x:60,y:70});
+  expect(f.manager!.groups.get(id)!.querySelector('.mwm-retained-body')).toBe(body);
 });

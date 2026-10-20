@@ -1,5 +1,5 @@
 import { createWindowMaximize } from "./window-maximize";
-import { ManagedWindowFrame } from "./window-manager";
+import { ManagedWindowFrame, RetainedWindowBody } from "./window-manager";
 import { managedAsset } from '../interchange/managed-asset';
 import { inspectUri } from '../interchange/uri';
 import { createWindowPresentation } from "./window-presentation";
@@ -498,7 +498,7 @@ export function WindowView(props: BlockViewProps) {
   const state = () => geometry?.static ? "normal" : resolvedWindowState(metadata().state);
   const minimized = () => state() === "minimized";
   const maximized = () => !geometry && editor.features.windowMaximize && state() === "maximized";
-  const workArea = createWindowMaximize(()=>root, maximized);
+  const workArea = manager ? () => manager.geometry.bounds(isSticky()) : createWindowMaximize(()=>root, maximized);
   let beforeMinimize: "normal"|"maximized" = "normal";
   const isDocument = () => node()?.viewType === "document-window-block";
   const marginsCollapsed = () => narrowMarginsCollapsed() || presentation.requested();
@@ -520,6 +520,9 @@ export function WindowView(props: BlockViewProps) {
       inputPolicy: "container",
       contextActions: manager ? () => [
         {label:"Activate window",run:()=>{manager.lifecycle.activate(props.nodeKey);}},
+        {label:"Move window",disabled:maximized()||minimized(),run:()=>managedGeometry?.keyboard("move")},
+        {label:"Resize window",disabled:maximized()||minimized(),run:()=>managedGeometry?.keyboard("resize")},
+        {label:"Maximize / restore window",disabled:minimized(),run:()=>manager.maximize(props.nodeKey)},
         {label:"Minimize window",disabled:!manager.lifecycle.canMinimize(props.nodeKey),run:minimizeWindow},
         {label:"Restore window",disabled:!minimized(),run:restoreWindow},
         {label:"Close window",run:()=>editor.closeView(props.nodeKey)},
@@ -539,7 +542,7 @@ export function WindowView(props: BlockViewProps) {
     dispose?.(); marginObserver?.disconnect();
     if (suppressTimer) clearTimeout(suppressTimer);
   });
-  const position = () => maximized() ? {x:workArea().x,y:workArea().y} : preview() ?? geometry?.position() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
+  const position = () => managedGeometry ? managedGeometry.rectangle() : maximized() ? {x:workArea().x,y:workArea().y} : preview() ?? geometry?.position() ?? { x: Number(metadata().position?.x ?? 20), y: Number(metadata().position?.y ?? 20) };
   const storedSize = () => {
     if (geometry) { const size = geometry.expandedSize(); return { w: size.width, h: size.height }; }
     const w = Number(metadata().size?.w), h = Number(metadata().size?.h);
@@ -555,7 +558,13 @@ export function WindowView(props: BlockViewProps) {
     closeDrawer: () => setMarginDrawerOpen(false),
   });
   const commitMetadata = (patch: Record<string, unknown>, label: string) => editor.commands.setPayloadField(props.nodeKey, "metadata", { ...unwrap(metadata()), ...patch }, label);
-  const windowResize = createFloatingWindowResize({
+  const managedGeometry = manager?.geometry.create(props.nodeKey, {
+    element:()=>root, viewport:untrack(isSticky), position:()=>({x:Number(metadata().position?.x??20),y:Number(metadata().position?.y??20)}),
+    size:presentation.presentedSize, minimum:()=>({width:minimumSize().w,height:minimumSize().h}),mode:()=>maximized()?"maximized":state(),
+    allowed:()=>manager.lifecycle.canMinimize(props.nodeKey),
+    commit:patch=>commitMetadata(patch.size?{size:(()=>{const size=presentation.expandedFromPresented(patch.size);return {w:size.width,h:size.height};})()}:{position:patch.position},patch.size?"Resize Window":"Move Window"),
+  });
+  const windowResize = managedGeometry?.resize ?? createFloatingWindowResize({
     element: () => root,
     size: presentation.presentedSize,
     minimum: () => ({ width: minimumSize().w, height: minimumSize().h }),
@@ -572,7 +581,7 @@ export function WindowView(props: BlockViewProps) {
       minimum: () => ({ width: minimumSize().w, height: minimumSize().h }), toExpanded: presentation.expandedFromPresented });
     if (release) onCleanup(release);
   });
-  const dimensions = () => maximized() ? {w:workArea().width,h:workArea().height} : ({ w: windowResize.dimensions().width, h: windowResize.dimensions().height });
+  const dimensions = () => managedGeometry ? {w:managedGeometry.rectangle().width,h:managedGeometry.rectangle().height} : maximized() ? {w:workArea().width,h:workArea().height} : ({ w: windowResize.dimensions().width, h: windowResize.dimensions().height });
   const registerMargin = (entry: DocumentMarginEntry) => {
     setMarginEntries(current => current.some(candidate => candidate.ownerKey === entry.ownerKey && candidate.relationKey === entry.relationKey && candidate.name === entry.name) ? current : [...current, entry]);
     return () => setMarginEntries(current => current.filter(candidate => candidate.ownerKey !== entry.ownerKey || candidate.relationKey !== entry.relationKey || candidate.name !== entry.name));
@@ -635,16 +644,19 @@ export function WindowView(props: BlockViewProps) {
     };
   };
   const beginDrag = (event: PointerEvent & { currentTarget: HTMLElement }) => {
+    if (managedGeometry) {managedGeometry.beginMove(event);return;}
     if (geometry?.static || maximized() || event.ctrlKey || event.button !== 0) return;
     drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: position().x, originY: position().y, moved: false };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
   const moveDrag = (event: PointerEvent) => {
+    if (managedGeometry) {managedGeometry.movePointer(event);return;}
     if (!drag || drag.pointerId !== event.pointerId) return;
     drag.moved ||= Math.abs(event.clientX - drag.x) > 2 || Math.abs(event.clientY - drag.y) > 2;
     setPreview(clampIconPosition({ x: drag.originX + (event.clientX - drag.x) / (scale?.() ?? 1), y: drag.originY + (event.clientY - drag.y) / (scale?.() ?? 1) }));
   };
   const finishDrag = (event: PointerEvent, cancelled = false) => {
+    if (managedGeometry) {if(cancelled)managedGeometry.cancelPointer(event);else managedGeometry.endPointer(event);return;}
     if (!drag || drag.pointerId !== event.pointerId) return;
     const final = position(), moved = drag.moved, wasMinimized = minimized(); drag = undefined; setPreview(undefined);
     if (cancelled) return;
@@ -682,20 +694,21 @@ export function WindowView(props: BlockViewProps) {
     returnFocus = { key, native: mount?.captureSelection?.(), inline: mount?.captureInlineSelection?.() };
   };
   const minimizeWindow = () => {
-    if (manager && !manager.lifecycle.canMinimize(props.nodeKey)) { setToolbarNotice("Minimize is unavailable while this window has an active editing session or tool."); return; }
+    if (manager && !manager.lifecycle.canMinimize(props.nodeKey)) { setToolbarNotice("Finish the current composition, dialog or close request before minimizing."); return; }
     manager?.lifecycle.remember();
     const focusWasInside = contains(editor.focus.state.focusedKey);
     if (focusWasInside) { rememberReturnFocus(); editor.focus.adopt(props.nodeKey); }
-    if (editor.find.state.open && contains(editor.find.state.scope?.rootKey)) editor.find.close(false);
-    for (const overlay of [...editor.overlays.overlays]) if (contains(overlay.ownerKey)) editor.overlays.close(overlay.key, false);
-    beforeMinimize=maximized()?"maximized":"normal";
+    if (!manager && editor.find.state.open && contains(editor.find.state.scope?.rootKey)) editor.find.close(false);
+    if (!manager) for (const overlay of [...editor.overlays.overlays]) if (contains(overlay.ownerKey)) editor.overlays.close(overlay.key, false);
+    if(managedGeometry)managedGeometry.rememberMode();else beforeMinimize=maximized()?"maximized":"normal";
     editor.crossText.clear(); commitMetadata({ state: "minimized" }, "Minimize Window");
     if (manager) { manager.lifecycle.successor(props.nodeKey); manager.lifecycle.notify("minimized",props.nodeKey); }
     else if (focusWasInside) queueMicrotask(() => root.querySelector<HTMLButtonElement>("[data-window-icon]")?.focus({ preventScroll: true }));
   };
   const restoreWindow = () => {
+    if (managedGeometry?.consumeClick()) return;
     if (suppressIconClick) { suppressIconClick = false; return; }
-    commitMetadata({ state: beforeMinimize }, "Restore Window");
+    commitMetadata({ state: managedGeometry?.restoreMode()??beforeMinimize }, "Restore Window");
     if (manager) manager.raisePlacement(node()!.placementKey);
     if (manager) { manager.lifecycle.activate(props.nodeKey); manager.lifecycle.notify("restored",props.nodeKey); return; }
     const saved = returnFocus; returnFocus = undefined;
@@ -715,9 +728,9 @@ export function WindowView(props: BlockViewProps) {
   const frame = () => (
     <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--maximized": maximized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
       hidden={closedSticky()}
-      style={{ ...appearance().style, transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": manager ? (manager.registry.windows[props.nodeKey]?.ownerModalCount ? 4 : 0) : maximized() ? Math.max(101, Number(metadata().zIndex ?? 1)) : Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
-      <Show when={minimized()} fallback={<>
-        <header class="reactive-window__header" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
+      style={{ ...appearance().style, ...(manager ? {"box-sizing":"border-box", "min-width":"0", "min-height":"0"} as const : {}), transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": manager ? (manager.registry.windows[props.nodeKey]?.ownerModalCount ? 4 : 0) : maximized() ? Math.max(101, Number(metadata().zIndex ?? 1)) : Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
+      <Show when={manager || !minimized()}><RetainedWindowBody enabled={!!manager} hidden={minimized()}>
+        <header class="reactive-window__header" tabIndex={manager ? 0 : undefined} aria-label={manager ? `${title()} window — arrow keys move; Enter commits; Escape cancels` : undefined} onKeyDown={event=>{if(managedGeometry && event.target===event.currentTarget){if(!managedGeometry.mode()&&event.key.startsWith("Arrow"))managedGeometry.keyboard("move");managedGeometry.keyDown(event);}}} onBlur={()=>managedGeometry?.cancel()} onLostPointerCapture={event=>managedGeometry?.cancelPointer(event)} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)}>
           <span>{title()}</span>
           <span class="reactive-window__controls">
             <Show when={isDocument() && editor.commandRegistry.canExecute('document.save', { targetKey: props.nodeKey, args: undefined })}>
@@ -725,7 +738,7 @@ export function WindowView(props: BlockViewProps) {
             </Show>
             <Dynamic component={presentation.control()} />
             <Show when={!geometry?.static}>
-            <Show when={!geometry && editor.features.windowMaximize}><button type="button" aria-label={maximized()?"Restore window":"Maximize window"} onPointerDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>commitMetadata({state:maximized()?"normal":"maximized"},maximized()?"Restore Window":"Maximize Window")}>{maximized()?"❐":"□"}</button></Show>
+            <Show when={!geometry && editor.features.windowMaximize}><button type="button" aria-label={maximized()?"Restore window":"Maximize window"} onPointerDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>manager?manager.maximize(props.nodeKey):commitMetadata({state:maximized()?"normal":"maximized"},maximized()?"Restore Window":"Maximize Window")}>{maximized()?"❐":"□"}</button></Show>
             <button type="button" aria-label="Minimize window" onPointerDown={(e) => { rememberReturnFocus(); e.stopPropagation(); }} onClick={minimizeWindow}>−</button>
             <button type="button" aria-label={isSticky() ? "Close sticky note" : "Close window"} onPointerDown={(e) => e.stopPropagation()} onClick={() => isSticky() ? editor.stickyNotes.closeWindow(props.nodeKey) : editor.closeView(props.nodeKey)}>×</button>
             </Show>
@@ -741,12 +754,13 @@ export function WindowView(props: BlockViewProps) {
           </Show>
         </DocumentMarginContext.Provider>
         <Show when={!geometry?.static && state() === "normal"}><FloatingWindowResizeHandle controller={windowResize} class="reactive-window__resize" label={`Resize ${title()} window`} /></Show>
-      </>}>
+      </RetainedWindowBody></Show>
+      <Show when={minimized()}>
         <WindowIcon title={title()} kind={resolvedWindowIcon(node()?.viewType ?? "window-block", metadata().icon)} onRestore={restoreWindow}
-          onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)} />
+          onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={event => finishDrag(event, true)} onLostPointerCapture={event=>managedGeometry?.cancelPointer(event)} />
       </Show>
     </div>
   );
-  return manager ? <ManagedWindowFrame manager={manager} nodeKey={props.nodeKey} viewport={isSticky()} mounted={!minimized()} visible={!minimized() && !closedSticky()}>{frame()}</ManagedWindowFrame>
+  return manager ? <ManagedWindowFrame manager={manager} nodeKey={props.nodeKey} viewport={isSticky()} mounted={true} visible={!minimized() && !closedSticky()}>{frame()}</ManagedWindowFrame>
     : isSticky() ? <Portal>{frame()}</Portal> : frame();
 }

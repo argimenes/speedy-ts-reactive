@@ -1,3 +1,5 @@
+import {createManagedFloatingTool} from "../../rendering/managed-floating-tool";
+import {useManagedViewActivity} from "../../rendering/window-manager";
 import {For,Show,createEffect,createSignal,untrack,onCleanup,onMount} from 'solid-js';
 import type {AnnotationCapabilities,PanelSession,SearchRange} from '../../feature-api';
 import {graphemeBoundaries,createFloatingWindowResize,FloatingWindowResizeHandle,type FloatingWindowSize} from '../../feature-api';
@@ -10,6 +12,7 @@ import './entity-search.css';
 /** Target, query, and resolved identity are deliberately independent session state. */
 export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSession}) {
  const {api,panel}=props;
+ const activity=useManagedViewActivity();
  const [target,setTarget]=createSignal<EntitySearchData>({...panel.data as EntitySearchData});
  const [query,setQuery]=createSignal(target().entityQuery),[stream,setStream]=createSignal<EntityResolutionQuery['stream']>('all');
  const [match,setMatch]=createSignal<EntityResolutionQuery['match']>('partial'),[searchScope,setScope]=createSignal<EntityResolutionQuery['scope']>('vault');
@@ -25,13 +28,14 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
  const newCandidates=()=>new EntityCandidates(api,{...panel,data:target()});
  const [candidates,setCandidates]=createSignal(newCandidates());
  const preview=api.decorations(`entity-selection:${panel.key}`);
- createEffect(()=>{const ranges=valid()?target().entityRanges:undefined;untrack(()=>{if(ranges)preview.ranges(ranges,{type:'editor/panel-selection',fill:'#f2c767'});else preview.clear();});});
+ createEffect(()=>{const ranges=activity()?.visible&&valid()?target().entityRanges:undefined;untrack(()=>{if(ranges)preview.ranges(ranges,{type:'editor/panel-selection',fill:'#f2c767'});else preview.clear();});});
  onCleanup(()=>{alive=false;service?.dispose();preview.dispose();candidates().dispose();});
  let root!:HTMLDivElement,input!:HTMLInputElement;
  const width=Math.min(1100,Math.max(1,window.innerWidth-24));
  const [position,setPosition]=createSignal({x:Math.max(8,(window.innerWidth-width)/2),y:Math.max(8,window.innerHeight*.06)});
  const [size,setSize]=createSignal<FloatingWindowSize>();
- const resize=createFloatingWindowResize({element:()=>root,size:()=>size()??{width:root?.offsetWidth||width,height:root?.offsetHeight||window.innerHeight*.76},minimum:{width:480,height:320},onCommit:setSize});
+ const floating=createManagedFloatingTool({element:()=>root,initial:{...position(),width,height:window.innerHeight*.76},minimum:{width:480,height:320}});
+ const resize=floating?.resize??createFloatingWindowResize({element:()=>root,size:()=>size()??{width:root?.offsetWidth||width,height:root?.offsetHeight||window.innerHeight*.76},minimum:{width:480,height:320},onCommit:setSize});
  let drag:{id:number;x:number;y:number;left:number;top:number}|undefined;
  const close=()=>panel.close();
  const run=async(action:()=>Promise<void>)=>{if(working())return;setWorking(true);setError('');try{await action();}catch(e){if(alive)setError(String(e));}finally{if(alive)setWorking(false);}};
@@ -82,6 +86,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
  };
  let refreshed=0;
  createEffect(()=>{
+  if(!activity()?.visible)return;
   const refresh=retry()!==refreshed;refreshed=retry();
   const options={query:query(),stream:stream(),match:match(),scope:searchScope(),...(refresh?{refresh:true}:{})};
   const controller=new AbortController();let active=true;setBusy(true);setResult(undefined);setCurrent(0);setPage(0);
@@ -133,8 +138,8 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   else if(!field&&/^[0-9]$/.test(e.key)){e.preventDefault();const row=pageRows()[Number(e.key)];if(row)select(row.id);}
  };
  return <div ref={root} class="reactive-entity-search" classList={{'reactive-entity-search--candidates':candidates().state.enabled}} role="dialog" aria-modal={api.watchTarget?false:!candidates().state.enabled&&!created()} aria-label="Link Entity Reference" data-native-context-menu onKeyDown={keys}
-  style={{left:`${position().x}px`,top:`${position().y}px`,width:`${(resize.preview()??size())?.width??width}px`,...((resize.preview()??size())?{height:`${(resize.preview()??size())!.height}px`}:{})}}>
-  <header class="reactive-entity-search__header" onPointerDown={e=>{if(e.button!==0||(e.target as Element).closest('button'))return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:position().x,top:position().y};e.currentTarget.setPointerCapture?.(e.pointerId);e.preventDefault();}} onPointerMove={e=>{if(drag?.id===e.pointerId)setPosition({x:Math.max(8,Math.min(window.innerWidth-80,drag.left+e.clientX-drag.x)),y:Math.max(8,Math.min(window.innerHeight-60,drag.top+e.clientY-drag.y))});}} onPointerUp={()=>drag=undefined} onPointerCancel={()=>drag=undefined}>
+  style={{left:`${(floating?.rectangle()??position()).x}px`,top:`${(floating?.rectangle()??position()).y}px`,width:`${floating?.rectangle().width??(resize.preview()??size())?.width??width}px`,...(floating?{height:`${floating.rectangle().height}px`}:{}),...(!floating&&(resize.preview()??size())?{height:`${(resize.preview()??size())!.height}px`}:{})}}>
+  <header class="reactive-entity-search__header" data-window-move tabIndex={floating?0:undefined} onKeyDown={e=>{if(floating&&e.target===e.currentTarget){if(!floating.mode()&&e.key.startsWith("Arrow"))floating.keyboard("move");floating.keyDown(e);}}} onBlur={()=>floating?.cancel()} onLostPointerCapture={e=>floating?.cancelPointer(e)} onPointerDown={e=>{if(e.button!==0||(e.target as Element).closest('button'))return;if(floating){floating.beginMove(e);return;}drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:position().x,top:position().y};e.currentTarget.setPointerCapture?.(e.pointerId);e.preventDefault();}} onPointerMove={e=>{if(floating){floating.movePointer(e);return;}if(drag?.id===e.pointerId)setPosition({x:Math.max(8,Math.min(window.innerWidth-80,drag.left+e.clientX-drag.x)),y:Math.max(8,Math.min(window.innerHeight-60,drag.top+e.clientY-drag.y))});}} onPointerUp={e=>floating?floating.endPointer(e):drag=undefined} onPointerCancel={e=>floating?floating.cancelPointer(e):drag=undefined}>
    <strong>Link Entity Reference</strong><button onClick={close}>Cancel</button>
   </header>
   <div class="entity-search-columns"><section class="entity-search-lookup" aria-label="Entity lookup">

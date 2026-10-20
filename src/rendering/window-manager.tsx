@@ -9,6 +9,11 @@ import "./window-manager.css";
 interface OwnerContext { manager: WorkspaceWindowManager; windowId: string; surfaceId?: string; modal?: boolean }
 const WindowOwner = createContext<OwnerContext>();
 export const useManagedWindowOwner = () => useContext(WindowOwner);
+/** Reactive per-owner activity; consumers may suspend optional work without unmounting. */
+export const useManagedViewActivity = () => {
+  const owner=useContext(WindowOwner);
+  return () => owner ? owner.manager.registry.windows[owner.windowId] : {mounted:true,visible:true,active:true};
+};
 
 /** Own an existing inline app dialog without moving its DOM or changing its
  * content/dismissal contract. The lifecycle coordinator contains focus and input. */
@@ -32,7 +37,8 @@ export function WindowManagerPlane(props: { manager?: WorkspaceWindowManager; ch
   plane.className = "mwm-window-plane";
   props.manager.plane = plane;
   props.manager.lifecycle.install(document);
-  onCleanup(() => { if (props.manager?.plane === plane) { props.manager.lifecycle.uninstall(); props.manager.plane = undefined; } });
+  onMount(()=>props.manager!.geometry.install(plane));
+  onCleanup(() => { if (props.manager?.plane === plane) { props.manager.geometry.dispose(); props.manager.lifecycle.uninstall(); props.manager.plane = undefined; } });
   return <>{plane}{props.children}</>;
 }
 
@@ -95,4 +101,12 @@ export function WorkspaceModalBoundary(props:{children:JSX.Element}) {
   let root!:HTMLDivElement;
   onMount(()=>onCleanup(manager.lifecycle.modal(root)));
   return <div ref={root} style={{display:"contents"}}>{props.children}</div>;
+}
+
+/** Hide the stable body only in the managed path; legacy DOM remains unchanged. */
+export function RetainedWindowBody(props:{enabled:boolean;hidden:boolean;children:JSX.Element}) {
+  if(!props.enabled)return props.children;
+  let body!:HTMLDivElement;
+  createEffect(()=>{body.inert=props.hidden;});
+  return <div ref={body} class="mwm-retained-body" hidden={props.hidden}>{props.children}</div>;
 }

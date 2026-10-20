@@ -1,3 +1,5 @@
+import type { WorkspaceWindowManager } from "../application/window-manager";
+import { WindowList } from "../rendering/window-list";
 import { Show, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import codexLogo from "../assets/codex-system-logo.png";
 import "./codex-system-bar.css";
@@ -45,7 +47,7 @@ export function formatSystemDateTime(date: Date, locales?: Intl.LocalesArgument)
   }).format(date);
 }
 
-export function CodexSystemBar(props: { children: JSX.Element }) {
+export function CodexSystemBar(props: { children: JSX.Element; manager?: WorkspaceWindowManager }) {
   const [open, setOpen] = createSignal<MenuName>();
   const [now, setNow] = createSignal(new Date());
   const [battery, setBattery] = createSignal<{ level: number; charging: boolean }>();
@@ -140,7 +142,7 @@ export function CodexSystemBar(props: { children: JSX.Element }) {
       </div>
     </Show>
     <Show when={open() === "workspace"}>
-      <div class="codex-system-menu codex-system-menu--workspace" data-system-menu="workspace" role="menu" aria-label="Workspace" onKeyDown={menuKeyDown} onClick={menuClick}>{props.children}</div>
+      <div class="codex-system-menu codex-system-menu--workspace" data-system-menu="workspace" role="menu" aria-label="Workspace" onKeyDown={menuKeyDown} onClick={menuClick}>{props.children}<Show when={props.manager}>{manager=><WindowList manager={manager()} />}</Show></div>
     </Show>
   </nav>;
 }
