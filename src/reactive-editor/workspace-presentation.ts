@@ -1,3 +1,4 @@
+import { validateManagedDesktop, type ManagedDesktop } from "../persistence/managed-desktop";
 import { createSignal } from "solid-js";
 import type { ExistingBlockDto } from "../block-tree/types";
 
@@ -25,7 +26,7 @@ export interface WorkspacePresentation {
   active: string;
   objects: WorkspaceObject[];
   presentations: {
-    desktop?: { version: 1; kind: "legacy-tree"; [key: string]: unknown };
+    desktop?: { version: 1; kind: "legacy-tree"; [key: string]: unknown } | ManagedDesktop;
     canvas?: CanvasLayout;
     [key: string]: unknown;
   };
@@ -73,7 +74,8 @@ export function validateWorkspacePresentation(value: unknown): WorkspacePresenta
   const presentations = record(root.presentations);
   if (presentations.desktop !== undefined) {
     const desktop = record(presentations.desktop);
-    if (desktop.version !== 1 || desktop.kind !== "legacy-tree") throw new Error("Unsupported Desktop layout.");
+    if (desktop.kind === "managed-windows") validateManagedDesktop(desktop);
+    else if (desktop.version !== 1 || desktop.kind !== "legacy-tree") throw new Error("Unsupported Desktop layout.");
   }
   if (presentations.canvas !== undefined) {
     const canvas = record(presentations.canvas);

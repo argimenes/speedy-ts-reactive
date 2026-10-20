@@ -395,7 +395,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
   );
 }
 
-function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
+function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; onUpgradeServer: () => void; onUpgradeLocal: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
   const cavern = useCurrentCavern();
   const session = new WorkspaceSession(props.loaded, props.configuration);
   const { editor, projection } = session;
@@ -453,12 +453,14 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
             <legend>Server</legend>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button>
+            <Show when={editor.features.mutableWindowManager}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onUpgradeServer}>Upgrade Workspace and Save as…</button></Show>
           </fieldset>
           <fieldset class="codex-system-menu__group" aria-label="Local files">
             <legend>Local</legend>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button>
-            <Show when={session.presentation.enabled}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
+            <Show when={session.presentation.enabled || editor.features.mutableWindowManager}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
+            <Show when={editor.features.mutableWindowManager}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onUpgradeLocal}>Upgrade Workspace and Save as…</button></Show>
           </fieldset>
         </>}
         <hr role="separator" />
@@ -492,6 +494,8 @@ export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: Re
   const [workspaceBusy, setWorkspaceBusy] = createSignal(false);
   const [workspaceError, setWorkspaceError] = createSignal("");
   const [workspaceConflict, setWorkspaceConflict] = createSignal(false);
+  let localWorkspaceValue: unknown;
+  const [upgradeWorkspace, setUpgradeWorkspace] = createSignal(false);
   const [localWorkspaceFile, setLocalWorkspaceFile] = createSignal<LocalWorkspaceFile>();
   const background = new BackgroundEditor({ id: "workspace-background", type: "image-background-block", metadata: { url: backgroundImages[0].url }, children: [] }, configuration);
   registerApplicationViews(background);
@@ -513,7 +517,7 @@ export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: Re
     if (!background.overlays.overlays.some(overlay => overlay.viewType === "context-menu")) background.overlays.open({ viewType: "context-menu", ownerKey: backgroundView.state.rootKey, anchor: { x: rect.left, y: rect.bottom + 4 } });
   };
   const openWorkspace = () => { if (!workspaceBusy()) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("open"); } };
-  const saveWorkspace = () => { if (!workspaceBusy()) { setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("save"); } };
+  const saveWorkspace = () => { if (!workspaceBusy()) { setUpgradeWorkspace(false); setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("save"); } };
   const splitWorkspaceDocument = (requireServerLocation: boolean): ExistingBlockDto => {
     if (!activeDemo) throw new Error("The current Workspace is not ready.");
     if (requireServerLocation && activeDemo.editor.blockHistory.state.storage === "persistent") {
@@ -559,15 +563,16 @@ export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: Re
     try {
       if (workspaceBrowser() === "open") {
         const loaded = await PersistenceService.loadWorkspace(filename);
+        if (loaded.manifest?.schemaVersion === 2 && !resolveFeatureFlags(configuration).mutableWindowManager) throw new Error("Enable the Mutable Window Manager to open this Workspace.");
         setLoadedWorkspace(loaded); setWorkspaceFilename(filename); setLocalWorkspaceFile(undefined); setWorkspaceBrowser(undefined);
         return true;
       }
       const result = activeWorkspaceEditor
-        ? { success: await activeWorkspaceEditor.persistence.saveWorkspace(filename, { createOnly: !overwrite }), error: activeWorkspaceEditor.persistence.state.error, status: activeWorkspaceEditor.persistence.state.status }
+        ? { success: await activeWorkspaceEditor.persistence.saveWorkspace(filename, { createOnly: upgradeWorkspace() || !overwrite, upgrade: upgradeWorkspace() }), error: activeWorkspaceEditor.persistence.state.error, status: activeWorkspaceEditor.persistence.state.status }
         : await saveSplitWorkspace(filename, !overwrite);
       if (!result.success) {
         setWorkspaceError(result.error || "The Workspace could not be saved.");
-        setWorkspaceConflict(result.status === 409);
+        setWorkspaceConflict(!upgradeWorkspace() && result.status === 409);
         return false;
       }
       setWorkspaceFilename(filename); setWorkspaceBrowser(undefined); return true;
@@ -581,23 +586,27 @@ export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: Re
     try {
       const selected = await openJsonFile();
       if (!selected) return;
-      setLoadedWorkspace(materializeLocalWorkspace(selected.value));
+      const loaded = materializeLocalWorkspace(selected.value);
+      if (loaded.localContainer && !resolveFeatureFlags(configuration).mutableWindowManager) throw new Error("Enable the Mutable Window Manager to open this Workspace.");
+      setLoadedWorkspace(loaded);
+      localWorkspaceValue = selected.value;
       setWorkspaceFilename(selected.filename);
       setLocalWorkspaceFile({ filename: selected.filename, handle: selected.handle });
       setWorkspaceBrowser(undefined);
     } catch (error) { setWorkspaceError(error instanceof Error ? error.message : String(error)); }
     finally { setWorkspaceBusy(false); }
   };
-  const saveLocalWorkspace = async (saveAs = false) => {
+  const saveLocalWorkspace = async (saveAs = false, upgrade = false) => {
     if (workspaceBusy()) return;
     setWorkspaceBusy(true); setWorkspaceError("");
     try {
       const owner = activeWorkspaceEditor;
-      const captured = owner?.persistence.captureWorkspace();
-      const workspace = captured?.document ?? splitWorkspaceDocument(false);
+      const captured = owner?.persistence.captureWorkspace({ upgrade });
+      const workspace = captured?.localValue ?? captured?.document ?? splitWorkspaceDocument(false);
       const current = localWorkspaceFile();
-      const saved = await saveJsonFile(workspace, { suggestedName: current?.filename ?? workspaceFilename() ?? "Workspace.json", handle: current?.handle, saveAs });
+      const saved = await saveJsonFile(workspace, { suggestedName: upgrade ? "Workspace-managed.json" : current?.filename ?? workspaceFilename() ?? "Workspace.json", handle: current?.handle, saveAs: saveAs || upgrade, workspace: { expected: localWorkspaceValue, createOnly: upgrade } });
       if (!saved) return;
+      localWorkspaceValue = structuredClone(workspace);
       setLocalWorkspaceFile(saved); setWorkspaceFilename(saved.filename);
       if (captured) owner!.persistence.acknowledgeWorkspaceSave(captured);
       if (activeDemo) activeDemo.editor.persistence.markCurrentRevisionSaved(activeDemo.editor.encodeDocument());
@@ -620,10 +629,10 @@ export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: Re
             {(initial) => <DemoSession {...initial} configuration={configuration} stickyHost={background} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onEditor={bridge => { activeDemo = bridge; activeEditor = bridge.editor; return () => { if (activeDemo === bridge) activeDemo = undefined; if (activeEditor === bridge.editor) activeEditor = undefined; }; }} onBackground={openBackground} onReset={() => setSession({})} onClose={(document, location, localFile) => setSession({ document, location, localFile, closed: true })} onOpen={(document, location) => setSession({ document, location })} onOpenLocal={(document, localFile) => setSession({ document, localFile })} />}
           </For>
         </>}>
-          {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession launchFlint={props.launchFlint} configuration={configuration} loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onLocalWorkspaceSaveAs={() => void saveLocalWorkspace(true)} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}
+          {loaded => <For each={[loaded()]}>{workspace => <CanonicalWorkspaceSession launchFlint={props.launchFlint} configuration={configuration} loaded={workspace} filename={workspaceFilename() ?? "Workspace"} workspaceBusy={workspaceBusy()} onWorkspaceOpen={openWorkspace} onWorkspaceSave={saveWorkspace} onLocalWorkspaceOpen={() => void openLocalWorkspace()} onLocalWorkspaceSave={() => void saveLocalWorkspace()} onLocalWorkspaceSaveAs={() => void saveLocalWorkspace(true)} onUpgradeLocal={() => void saveLocalWorkspace(true, true)} onUpgradeServer={() => { if (!workspaceBusy()) { setUpgradeWorkspace(true); setWorkspaceError(""); setWorkspaceConflict(false); setWorkspaceBrowser("save"); } }} onEditor={editor => { activeWorkspaceEditor = editor; return () => { if (activeWorkspaceEditor === editor) activeWorkspaceEditor = undefined; }; }} />}</For>}
         </Show>
         <Show when={workspaceError() && !workspaceBrowser()}><aside class="workspace-demo__workspace-notice" role="alert">{workspaceError()}</aside></Show>
-        <Show when={workspaceBrowser()}>{mode => <WorkspaceBrowser mode={mode()} initialFilename={workspaceFilename()} busy={workspaceBusy()} error={workspaceError()} conflict={workspaceConflict()} onChoose={chooseWorkspace} onClose={() => { if (!workspaceBusy()) { setWorkspaceBrowser(undefined); setWorkspaceError(""); } }} />}</Show>
+        <Show when={workspaceBrowser()}>{mode => <WorkspaceBrowser mode={mode()} initialFilename={upgradeWorkspace() ? "Workspace-managed.json" : workspaceFilename()} createOnly={upgradeWorkspace()} busy={workspaceBusy()} error={workspaceError()} conflict={workspaceConflict()} onChoose={chooseWorkspace} onClose={() => { if (!workspaceBusy()) { setWorkspaceBrowser(undefined); setWorkspaceError(""); } }} />}</Show>
       </div>
     </ErrorBoundary>
   );

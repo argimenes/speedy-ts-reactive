@@ -6,6 +6,7 @@ import "./document-browser.css";
 export function WorkspaceBrowser(props: {
   mode: "open" | "save";
   initialFilename?: string;
+  createOnly?: boolean;
   busy?: boolean;
   error?: string;
   conflict?: boolean;
@@ -28,12 +29,13 @@ export function WorkspaceBrowser(props: {
     finally { if (!lifetime.signal.aborted) setLoading(false); }
   };
   onMount(() => void load());
-  createEffect(() => { if (props.conflict && filename().trim()) setReplacement(filename().trim().endsWith(".json") ? filename().trim() : `${filename().trim()}.json`); });
+  createEffect(() => { if (!props.createOnly && props.conflict && filename().trim()) setReplacement(filename().trim().endsWith(".json") ? filename().trim() : `${filename().trim()}.json`); });
   const visible = createMemo(() => files().filter(item => item.toLocaleLowerCase().includes(filter().toLocaleLowerCase())));
   const choose = async (name = props.mode === "save" ? filename().trim() : selected()) => {
     if (!name || props.busy || loading()) return;
     if (!/\.json$/i.test(name)) name += ".json";
     if (/[\\/\0]/.test(name) || name.startsWith(".")) { setError("Enter a Workspace filename without path separators."); return; }
+    if (props.mode === "save" && props.createOnly && files().includes(name)) { setError("Upgrade requires a new Workspace filename."); return; }
     if (props.mode === "save" && files().includes(name) && replacement() !== name) { setReplacement(name); return; }
     await props.onChoose(name, replacement() === name);
   };

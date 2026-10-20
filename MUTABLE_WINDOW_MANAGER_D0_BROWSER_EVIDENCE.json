@@ -1,0 +1,30 @@
+{
+  "milestone": "D0",
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "checks": [
+    "real retained Desktop windows are mounted",
+    "trusted browser typing changes the open Ink Document",
+    "local capture includes current unsaved Document content",
+    "preparing upgrade does not change the session format",
+    "cancelled browser picker makes no write",
+    "picker cancellation leaves format and dirty state unacknowledged",
+    "successful local write acknowledges captured layout",
+    "local Save/Open retains durable view identities across new runtime sessions",
+    "minimized intent is captured in the managed descriptor",
+    "reopened minimized managed view has its restore icon",
+    "real icon click restores the reopened window",
+    "future-version local file is protected before opening a write stream",
+    "managed server Save succeeds through the real persistence client",
+    "server layout Save sends no Document writes",
+    "server layout Save retains the unsaved external Document indication",
+    "server manifest contains references rather than unsaved Document content",
+    "server manifest load resolves the separately saved Document",
+    "cancelled server save dispatches no request",
+    "rejected future load leaves the mounted editing session intact",
+    "durable capture contains no modal, focus-lease or pending-receipt state"
+  ],
+  "limitations": [
+    "Native picker interaction is simulated with real File objects and in-memory file handles.",
+    "Server client responses are in memory; separate HTTP integration tests exercise the real server and temporary files."
+  ]
+}

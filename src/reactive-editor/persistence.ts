@@ -1,8 +1,9 @@
+import { desktopOf, importLegacyDesktop, validateManagedContainer, type ManagedDesktop } from "../persistence/managed-desktop";
 import { assertLegacySaveAllowed, disposeNativeSession } from "../persistence/native-bindings";
 import { isDocumentName } from "../persistence/document-file-names.mjs";
 import { createStore } from "solid-js/store";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
-import { decodeDocument, decodeWorkspace } from "../block-tree/codecs";
+import { decodeDocument, decodeWorkspace, encodeWorkspace, encodeDocument } from "../block-tree/codecs";
 import type { ExistingBlockDto, RepositoryState } from "../block-tree/types";
 import { withWorkspacePresentation, type PresentationSnapshot, type WorkspacePresentationState } from "./workspace-presentation";
 import type { ReactiveEditor } from "./editor";
@@ -29,6 +30,7 @@ interface SaveState {
   lastSavedRevision?: number;
   error?: string;
   warning?: string;
+  unsavedWorkspaceContent?: boolean;
   status?: number;
   requestToken: number;
 }
@@ -54,13 +56,21 @@ export interface WorkspaceSaveSnapshot {
   document: ExistingBlockDto;
   presentation?: PresentationSnapshot;
   visibilityRevision?: number;
+  localValue?: Record<string, any>;
+  documentFingerprints?: Map<string, string>;
 }
 
 export class PersistenceService {
   readonly state: SaveState;
   savedDocument?: ExistingBlockDto;
   private readonly setState: (...args: any[]) => void;
+  private savedServerDocuments = new Map<string, string>();
   private workspaceId?: string;
+  private managedTemplate?: Record<string, any>;
+  private managedDesktop?: ManagedDesktop;
+  private sourceFilename?: string;
+  private sourceHash?: string;
+  private restoreKeys = new Map<string, { anchor: string; view: string; window: string }>();
   private workspaceManifest?: WorkspaceManifest;
   private workspaceReferences: WorkspaceDocumentRegistration[] = [];
   private loadIssues: WorkspaceLoadIssue[] = [];
@@ -75,6 +85,11 @@ export class PersistenceService {
   }
 
   attachWorkspace(workspace: LoadedWorkspace): void {
+    if ((workspace.localContainer || workspace.manifest?.schemaVersion === 2) && !this.editor.features.mutableWindowManager) throw new Error("Enable the Mutable Window Manager to open a managed Workspace.");
+    this.managedTemplate = workspace.localContainer ?? (workspace.manifest?.schemaVersion === 2 ? workspace.manifest : undefined);
+    this.managedDesktop = this.managedTemplate && desktopOf(this.managedTemplate.root);
+    this.sourceFilename = workspace.sourceFilename; this.sourceHash = workspace.sourceHash;
+    this.savedServerDocuments = workspace.manifest ? this.documentFingerprints(workspace.state) : new Map();
     this.workspaceId = workspace.workspaceId;
     this.workspaceManifest = workspace.manifest;
     this.workspaceReferences = workspace.references.map(reference => structuredClone(reference));
@@ -86,28 +101,68 @@ export class PersistenceService {
     this.workspacePresentation = presentation;
   }
 
+  // Only called on load or explicit Save. Never subscribed to typing changes.
+  private documentFingerprints(state: RepositoryState): Map<string, string> {
+    return new Map(workspaceDocumentContentKeys(state).map(key => {
+      const placement = Object.values(state.placements).find(p => p.contentKey === key)!;
+      return [key, JSON.stringify(encodeDocument(state, placement.key))];
+    }));
+  }
+
   /** The same synchronous capture is used by local writes and server bundles.
    * Focus bookmarks belong to the DTO, not the repository/layout dirty clocks. */
-  captureWorkspace(): WorkspaceSaveSnapshot {
+  captureWorkspace(options: { upgrade?: boolean } = {}): WorkspaceSaveSnapshot {
     if (this.disposed) throw new Error("Workspace persistence is disposed.");
     const repository = this.editor.repository.snapshot();
     if (repository.contents[repository.placements[repository.rootPlacementKey].contentKey].viewType !== "workspace-block") throw new Error("Save Workspace requires a workspace-block root.");
     const presentation = this.workspacePresentation?.capture();
     this.editor.viewVisibility.captureInto(repository);
-    const snapshot = { repository, presentation, visibilityRevision: this.editor.viewVisibility.revision(), document: withWorkspacePresentation(this.editor.encodeWorkspace(repository), presentation) };
+    const managed = !!this.managedTemplate || options.upgrade === true;
+    if (managed && !this.editor.features.mutableWindowManager) throw new Error("Enable the Mutable Window Manager before upgrading this Workspace.");
+    assertLegacySaveAllowed(this.editor.repository);
+    const snapshot: WorkspaceSaveSnapshot = { repository, presentation, visibilityRevision: this.editor.viewVisibility.revision(), document: withWorkspacePresentation(managed ? encodeWorkspace(repository) : this.editor.encodeWorkspace(repository), presentation) };
+    if (managed) {
+      snapshot.documentFingerprints = this.documentFingerprints(repository);
+      // Allocation occurs only during explicit Save, on a detached capture. Runtime
+      // placements index the session cache but never enter the file.
+      const placements: string[] = [];
+      const walk = (key: string) => {
+        const c = repository.contents[repository.placements[key].contentKey];
+        if (["document-block", "main-list-block", "membrane-block", "document-reference-block"].includes(c.viewType)) return;
+        if (["window-block", "document-window-block"].includes(c.viewType)) { placements.push(key); return; }
+        c.children.forEach(walk); Object.values(c.ownedRelations).forEach(walk);
+      };
+      walk(repository.rootPlacementKey);
+      snapshot.document = importLegacyDesktop(snapshot.document, (block, index) => {
+        const placement = placements[index];
+        let keys = this.restoreKeys.get(placement);
+        if (!keys) {
+          keys = { anchor: block.id ?? globalThis.crypto.randomUUID(), view: `view-${globalThis.crypto.randomUUID()}`, window: `window-${globalThis.crypto.randomUUID()}` };
+          this.restoreKeys.set(placement, keys);
+        }
+        const record = Object.values(this.editor.windowManager?.registry.windows ?? {}).find(w => w.placementKey === placement);
+        if (record) block.metadata = { ...block.metadata, zIndex: record.rank, pinned: record.pinned };
+        if (this.editor.viewVisibility.isClosed(placement)) block.metadata = { ...block.metadata, state: "closed" };
+        return keys;
+      }, this.managedDesktop);
+      snapshot.localValue = validateManagedContainer({ ...(this.managedTemplate?.kind === "speedy-local-workspace" ? this.managedTemplate : {}), kind: "speedy-local-workspace", schemaVersion: 2, workspaceId: this.workspaceId ??= globalThis.crypto.randomUUID(), root: snapshot.document });
+    }
     this.captures.add(snapshot);
     return snapshot;
   }
 
-  acknowledgeWorkspaceSave(snapshot: WorkspaceSaveSnapshot): void {
+  acknowledgeWorkspaceSave(snapshot: WorkspaceSaveSnapshot, layoutOnly = false): void {
     if (this.disposed || !this.captures.delete(snapshot)) return;
     if (this.editor.repository.state.revision === snapshot.repository.revision) this.setState("lastSavedRevision", snapshot.repository.revision);
+    this.setState("unsavedWorkspaceContent", layoutOnly && [...(snapshot.documentFingerprints ?? [])].some(([key, value]) => this.savedServerDocuments.get(key) !== value));
+    if (snapshot.localValue) { this.managedTemplate = snapshot.localValue; this.managedDesktop = desktopOf(snapshot.document); }
     if (snapshot.presentation) this.workspacePresentation?.markSaved(snapshot.presentation);
     if (snapshot.visibilityRevision !== undefined) this.editor.viewVisibility.markSaved(snapshot.visibilityRevision);
   }
 
   dispose(): void {
     disposeNativeSession(this.editor.repository);
+    this.savedServerDocuments.clear(); this.restoreKeys.clear();
     this.disposed = true; this.captures = new WeakSet(); this.workspacePresentation = undefined;
     this.setState({ requestToken: this.state.requestToken + 1, saving: false });
   }
@@ -122,13 +177,16 @@ export class PersistenceService {
   }
 
   registerWorkspaceDocument(contentKey: string, documentId: string, folder: string, filename: string, title?: string, contentHash?: string): void {
+    const previous = this.workspaceReferences.find(reference => reference.documentId === documentId);
     const next: WorkspaceDocumentRegistration = {
+      ...previous,
       documentId,
       contentKey,
-      source: { kind: "document-store", folder, filename },
+      source: { ...previous?.source, kind: "document-store", folder, filename },
       ...(title ? { title } : {}),
       ...(contentHash ? { contentHash } : {}),
     };
+    if (!contentHash) delete next.contentHash;
     this.workspaceReferences = this.workspaceReferences.filter(reference => reference.contentKey !== contentKey && reference.documentId !== documentId);
     this.workspaceReferences.push(next);
   }
@@ -243,7 +301,7 @@ export class PersistenceService {
     }
   }
 
-  async saveWorkspace(filename: string, options: { createOnly?: boolean } = {}): Promise<boolean> {
+  async saveWorkspace(filename: string, options: { createOnly?: boolean; upgrade?: boolean; signal?: AbortSignal } = {}): Promise<boolean> {
     if (this.state.saving || this.disposed) return false;
     let snapshot = this.editor.repository.snapshot();
     const root = snapshot.contents[snapshot.placements[snapshot.rootPlacementKey]?.contentKey];
@@ -251,7 +309,7 @@ export class PersistenceService {
       this.setState({ error: "Save Workspace requires a workspace-block root.", status: undefined });
       return false;
     }
-    const identityOperations = workspaceDocumentContentKeys(snapshot).flatMap(contentKey => {
+    const identityOperations = (options.upgrade || this.managedTemplate ? [] : workspaceDocumentContentKeys(snapshot)).flatMap(contentKey => {
       const content = snapshot.contents[contentKey];
       const metadata = content.payload.metadata && typeof content.payload.metadata === "object" && !Array.isArray(content.payload.metadata)
         ? content.payload.metadata as Record<string, unknown> : {};
@@ -262,13 +320,19 @@ export class PersistenceService {
       this.editor.repository.commit("Assign Document identities", identityOperations);
       snapshot = this.editor.repository.snapshot();
     }
-    const captured = this.captureWorkspace();
+    let captured: WorkspaceSaveSnapshot;
+    try {
+      if (options.upgrade && !options.createOnly) throw new Error("Upgrade requires Save As to a new Workspace filename.");
+      options.signal?.throwIfAborted();
+      captured = this.captureWorkspace(options);
+    } catch (error) { this.setState({ error: String(error), status: undefined }); return false; }
     const revision = captured.repository.revision;
     const token = this.state.requestToken + 1;
     this.setState({ saving: true, error: undefined, warning: undefined, status: undefined, requestToken: token });
     try {
-      const bundle = await createWorkspaceSaveBundle(captured.repository, this.workspaceReferences, this.workspaceId, captured.presentation);
+      const bundle = await createWorkspaceSaveBundle(captured.repository, this.workspaceReferences, this.workspaceId, captured.presentation, captured.localValue ? { root: captured.document, previous: this.workspaceManifest } : undefined);
       if (token !== this.state.requestToken) return false;
+      options.signal?.throwIfAborted();
       const json = await responseJson(
         await fetch("/api/saveWorkspaceBundle", {
           method: "POST",
@@ -276,13 +340,17 @@ export class PersistenceService {
             "Content-Type": "application/json",
             "X-Speedy-Revision": String(revision),
             ...(options.createOnly ? { "If-None-Match": "*" } : {}),
+            ...(captured.localValue && !options.createOnly && filename === this.sourceFilename && this.sourceHash ? { "If-Match": this.sourceHash } : {}),
           },
           body: JSON.stringify({ filename, workspace: bundle.manifest, documents: bundle.documents }),
+          signal: options.signal,
         }),
       );
       if (token !== this.state.requestToken) return false;
+      options.signal?.throwIfAborted();
       this.workspaceId = bundle.manifest.workspaceId;
       this.workspaceManifest = bundle.manifest;
+      this.sourceFilename = filename; this.sourceHash = json.Data?.contentHash;
       this.workspaceReferences = Object.values(bundle.manifest.documents).map(resource => {
         const previous = this.workspaceReferences.find(reference => reference.documentId === resource.documentId);
         const contentKey = previous?.contentKey ?? workspaceDocumentContentKeys(snapshot).find(key => {
@@ -293,7 +361,8 @@ export class PersistenceService {
         return { ...structuredClone(resource), contentKey };
       });
       this.loadIssues = [];
-      this.acknowledgeWorkspaceSave(captured);
+      this.acknowledgeWorkspaceSave(captured, !!captured.localValue);
+      if (!captured.localValue) this.savedServerDocuments = this.documentFingerprints(captured.repository);
       this.setState("saving", false);
       this.setState("warning", json.Warning);
       return true;
@@ -364,9 +433,11 @@ export class PersistenceService {
   static async loadWorkspace(filename: string, signal?: AbortSignal): Promise<LoadedWorkspace> {
     const params = new URLSearchParams({ filename });
     const json = await responseJson(await fetch(`/api/loadWorkspaceJson?${params}`, { signal }));
+    signal?.throwIfAborted();
     const value = json.Data.workspace as unknown;
     if (!isWorkspaceManifest(value)) {
       const dto = value as ExistingBlockDto;
+      if ((dto as any)?.kind || (dto as any)?.schemaVersion !== undefined) throw new Error("Unsupported Server Workspace container.");
       decodeWorkspace(dto);
       const legacy = extractLegacyWorkspaceReferences(dto);
       if (!Object.keys(legacy.resources).length) {
@@ -378,7 +449,10 @@ export class PersistenceService {
       const manifest = { kind: "speedy-workspace" as const, schemaVersion: 1 as const, workspaceId, documents: legacy.resources, root: legacy.root };
       return this.resolveWorkspaceManifest(manifest, signal, true);
     }
-    return this.resolveWorkspaceManifest(parseWorkspaceManifest(value), signal, false);
+    const loaded = await this.resolveWorkspaceManifest(parseWorkspaceManifest(value), signal, false);
+    signal?.throwIfAborted();
+    loaded.sourceFilename = filename; loaded.sourceHash = json.Data.contentHash;
+    return loaded;
   }
 
   private static async resolveWorkspaceManifest(manifest: WorkspaceManifest, signal?: AbortSignal, legacy = false): Promise<LoadedWorkspace> {
@@ -398,7 +472,7 @@ export class PersistenceService {
           return;
         }
         const actualId = documentIdentity(document);
-        if (actualId && actualId !== resource.documentId) {
+        if ((actualId || manifest.schemaVersion === 2) && actualId !== resource.documentId) {
           issues.push({ documentId: resource.documentId, kind: "identity-mismatch", message: `${resource.source.filename} contains Document ${actualId}, not ${resource.documentId}.` });
           return;
         }
@@ -412,6 +486,7 @@ export class PersistenceService {
         }
         loaded.set(resource.documentId, document);
       } catch (error) {
+        signal?.throwIfAborted();
         issues.push({
           documentId: resource.documentId,
           kind: error instanceof StoreRequestError && error.status === 404 ? "missing" : "invalid",
@@ -421,6 +496,8 @@ export class PersistenceService {
       await resolveNext();
     };
     await Promise.all(Array.from({ length: Math.min(4, resources.length) }, () => resolveNext()));
+    signal?.throwIfAborted();
+    if (manifest.schemaVersion === 2 && issues.some(issue => issue.kind !== "changed")) throw new Error(`The managed Workspace was not opened: ${issues.filter(issue => issue.kind !== "changed").map(issue => issue.message).join(" ")}`);
     const result = materializeWorkspace(sessionManifest, loaded, issues);
     result.legacy = legacy;
     return result;

@@ -1,3 +1,4 @@
+import { validateManagedContainer } from "../persistence/managed-desktop";
 export interface BrowserFileHandle {
   readonly name: string;
   getFile(): Promise<File>;
@@ -85,19 +86,38 @@ function download(contents: string, suggestedName: string): void {
 
 export async function saveJsonFile(
   value: unknown,
-  options: { suggestedName: string; handle?: BrowserFileHandle; saveAs?: boolean },
+  options: { suggestedName: string; handle?: BrowserFileHandle; saveAs?: boolean; workspace?: { expected?: unknown; createOnly?: boolean } },
 ): Promise<{ filename: string; handle?: BrowserFileHandle } | undefined> {
   const suggestedName = filename(options.suggestedName, "Document.json");
   const contents = `${JSON.stringify(value, null, 2)}\n`;
+  const write = async (handle: BrowserFileHandle) => {
+    if (options.workspace) {
+      const file = await handle.getFile();
+      const contents = await file.text();
+      if (contents.trim()) {
+        if (options.workspace.createOnly) throw new Error("Upgrade requires a new Workspace file. Choose a new filename.");
+        let previous: any;
+        try { previous = JSON.parse(contents); } catch { throw new Error("The existing Workspace is malformed; choose a new filename."); }
+        if ((previous.kind || previous.schemaVersion !== undefined) && !(previous.kind === 'speedy-workspace' && [1,2].includes(previous.schemaVersion) || previous.kind === 'speedy-local-workspace' && previous.schemaVersion === 2)) throw new Error("Unsupported existing Workspace version; choose a new filename.");
+        if (previous.schemaVersion === 2) {
+          validateManagedContainer(previous);
+          const next = value as any;
+          if (next.kind !== previous.kind || next.schemaVersion !== 2 || next.workspaceId !== previous.workspaceId) throw new Error("Managed Workspace identity/format cannot be overwritten.");
+          if (JSON.stringify(previous) !== JSON.stringify(options.workspace.expected)) throw new Error("The Workspace changed outside this session. Reopen it or choose a new filename.");
+        } else if ((value as any)?.schemaVersion === 2) throw new Error("Upgrade requires Save As to a new Workspace filename.");
+      } else if (options.workspace.expected && !options.saveAs) throw new Error("The Workspace was emptied outside this session. Choose a new filename.");
+    }
+    await writeHandle(handle, contents);
+  };
   if (options.handle && !options.saveAs) {
-    await writeHandle(options.handle, contents);
+    await write(options.handle);
     return { filename: filename(options.handle.name, suggestedName), handle: options.handle };
   }
   const picker = window as FilePickerWindow;
   if (picker.showSaveFilePicker) {
     try {
       const handle = await picker.showSaveFilePicker({ suggestedName, types: jsonTypes, excludeAcceptAllOption: false });
-      await writeHandle(handle, contents);
+      await write(handle);
       return { filename: filename(handle.name, suggestedName), handle };
     } catch (error) {
       if (cancelled(error)) return undefined;

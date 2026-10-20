@@ -7,7 +7,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const milestone=process.argv.includes('--b')?'b':process.argv.includes('--a1')?'a1':'a0';
+const milestone=process.argv.includes('--d0')?'d0':process.argv.includes('--b')?'b':process.argv.includes('--a1')?'a1':'a0';
 const profile = await mkdtemp(path.join(tmpdir(), `mutable-${milestone}-`));
 let server, chrome, socket;
 try {

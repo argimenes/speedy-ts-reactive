@@ -1,8 +1,8 @@
 # Mutable Window Manager: architecture and implementation plan
 
-**Status: A0 and A1 accepted; approved Milestone B implemented and qualified, awaiting acceptance. D0, C and later milestones remain unapproved.**
+**Status: A0, A1 and B accepted. Approved Milestone D0 is implemented and qualified, awaiting acceptance. C, D1 and later milestones remain unapproved.**
 
-Executed B changes and evidence are recorded in [Milestone B qualification](MUTABLE_WINDOW_MANAGER_B_QUALIFICATION.md). The longer-term contracts below remain proposals beyond that qualified scope.
+Executed D0 changes, the two-container format decision, anchor descriptor boundary and limitations are recorded in [Milestone D0 qualification](MUTABLE_WINDOW_MANAGER_D0_QUALIFICATION.md). See [Milestone B qualification](MUTABLE_WINDOW_MANAGER_B_QUALIFICATION.md) for accepted floating interactions and retained hosts. The longer-term contracts below remain proposals beyond that qualified scope.
 
 See the [A1 qualification report](MUTABLE_WINDOW_MANAGER_A1_QUALIFICATION.md) for activation, lifecycle, Entity continuity and current limitations. The historical planning audit below remains the design reference. See the [A0 qualification report](MUTABLE_WINDOW_MANAGER_A0_QUALIFICATION.md) for implementation details, executed checks, baseline failures and scope limits.
 

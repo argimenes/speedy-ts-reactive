@@ -1,3 +1,4 @@
+import { assertJson, validateManagedContainer, desktopOf } from "../src/persistence/managed-desktop.js";
 import { createHash, randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -62,7 +63,8 @@ async function confinedExistingFile(rootInput: string, directory: string, filena
 
 async function stagedJson(target: string, value: unknown): Promise<string> {
   const temporary = path.join(path.dirname(target), `.speedy-workspace-${randomUUID()}.tmp`);
-  await fs.writeFile(temporary, JSON.stringify(value), { encoding: "utf8", flag: "wx" });
+  try { await fs.writeFile(temporary, JSON.stringify(value), { encoding: "utf8", flag: "wx" }); }
+  catch (error) { await fs.unlink(temporary).catch(() => undefined); throw error; }
   return temporary;
 }
 
@@ -83,10 +85,13 @@ function source(resource: Record<string, any>) {
 }
 
 function validateManifest(value: unknown): Record<string, any> {
+  assertJson(value);
   const manifest = record(value, "The Workspace must be a JSON object.");
-  if (manifest.kind !== "speedy-workspace" || manifest.schemaVersion !== 1) {
-    throw new WorkspaceStoreError(400, "The coordinated save requires a Speedy Workspace version 1 manifest.", "invalid-workspace-version");
+  if (manifest.kind !== "speedy-workspace" || (manifest.schemaVersion !== 1 && manifest.schemaVersion !== 2)) {
+    throw new WorkspaceStoreError(400, "The coordinated save requires a Speedy Workspace version 1 or 2 manifest.", "invalid-workspace-version");
   }
+  if (manifest.schemaVersion === 2) validateManagedContainer(manifest);
+  else if (desktopOf(manifest.root)) throw new WorkspaceStoreError(400, "Managed Desktop requires a version 2 container.");
   if (typeof manifest.workspaceId !== "string" || !manifest.workspaceId) throw new WorkspaceStoreError(400, "The Workspace needs a workspaceId.", "invalid-workspace-id");
   const root = record(manifest.root, "The Workspace needs a root Block.");
   if (root.type !== "workspace-block") throw new WorkspaceStoreError(400, "The Workspace root must be a workspace-block.", "invalid-workspace-root");
@@ -106,13 +111,36 @@ function validateManifest(value: unknown): Record<string, any> {
     }
     if (block.type === "document-reference-block") {
       const documentId = block.metadata?.documentId;
-      if (typeof documentId !== "string" || !documents[documentId]) throw new WorkspaceStoreError(400, `Unknown Document reference ${String(documentId)}.`, "unknown-document-reference");
+      if (typeof documentId !== "string" || !Object.hasOwn(documents, documentId)) throw new WorkspaceStoreError(400, `Unknown Document reference ${String(documentId)}.`, "unknown-document-reference");
     }
     if (Array.isArray(block.children)) block.children.forEach(child => walk(record(child, "A Workspace child Block is invalid.")));
     for (const name of ["leftMargin", "rightMargin"]) if (block.relation?.[name]) walk(record(block.relation[name], "A Workspace relation Block is invalid."));
   };
   walk(root);
   return manifest;
+}
+
+/** Refuse format downgrades and stale writes before staging any file. */
+async function guardWorkspaceTarget(target: string, next: any, expected?: string, createOnly = false) {
+  let previous: any;
+  try {
+    if ((await fs.lstat(target)).isSymbolicLink()) throw new WorkspaceStoreError(409, "Workspace destinations cannot be symbolic links.");
+    previous = JSON.parse(await fs.readFile(target, "utf8"));
+  } catch (error: any) {
+    if (error?.code === "ENOENT") {
+      if (expected) throw new WorkspaceStoreError(409, "The Workspace was removed outside this session.");
+      return;
+    }
+    if (error instanceof SyntaxError) throw new WorkspaceStoreError(409, "The existing Workspace is malformed; choose a new filename.");
+    throw error;
+  }
+  if (createOnly) throw new WorkspaceStoreError(409, "A Workspace with this name already exists.", "workspace-exists");
+  if ((previous.kind || previous.schemaVersion !== undefined) && !(previous.kind === 'speedy-workspace' && [1,2].includes(previous.schemaVersion) || previous.kind === 'speedy-local-workspace' && previous.schemaVersion === 2)) throw new WorkspaceStoreError(409, "Unsupported existing Workspace version; choose a new filename.");
+  if (previous.schemaVersion === 2) {
+    validateManagedContainer(previous);
+    if (next.schemaVersion !== 2 || previous.kind !== next.kind || previous.workspaceId !== next.workspaceId) throw new WorkspaceStoreError(409, "Managed Workspace identity/format cannot be overwritten; choose a new filename.");
+    if (!expected || expected !== contentHash(previous)) throw new WorkspaceStoreError(409, "The Workspace changed outside this session. Reopen it or Save As to a new filename.");
+  } else if (next.schemaVersion === 2) throw new WorkspaceStoreError(409, "Upgrade requires Save As to a new filename.");
 }
 
 export function createWorkspaceStoreRouter(options: {
@@ -123,10 +151,13 @@ export function createWorkspaceStoreRouter(options: {
   indexDocument?: (document: any, filepath: string) => Promise<void>;
 }) {
   const router = Router();
-  const coordinate = options.coordinate ?? (async action => action());
+  let queue: Promise<unknown> = Promise.resolve();
+  const coordinate = options.coordinate ?? (<T>(action: () => Promise<T>): Promise<T> => {
+    const result = queue.then(action); queue = result.catch(() => undefined); return result;
+  });
   const respondError = (res: any, error: any) => {
-    const status = error instanceof WorkspaceStoreError ? error.status : error?.code === "ENOENT" ? 404 : 500;
-    const message = error instanceof WorkspaceStoreError ? error.message : status === 404 ? "The Workspace or Document could not be found." : "The Workspace store could not complete the request.";
+    const status = error?.name === "ManagedWorkspaceError" ? 400 : error instanceof WorkspaceStoreError ? error.status : error?.code === "ENOENT" ? 404 : 500;
+    const message = error instanceof WorkspaceStoreError || error?.name === "ManagedWorkspaceError" ? error.message : status === 404 ? "The Workspace or Document could not be found." : "The Workspace store could not complete the request.";
     res.status(status).json({ Success: false, Error: message, Code: error instanceof WorkspaceStoreError ? error.code : status === 404 ? "not-found" : "workspace-store-error" });
   };
 
@@ -146,7 +177,7 @@ export function createWorkspaceStoreRouter(options: {
       const filename = safeFilename(req.query.filename, "Workspace");
       const filepath = await confinedExistingFile(options.workspaceRoot, directory, filename);
       const value = JSON.parse(await fs.readFile(filepath, "utf8"));
-      res.json({ Success: true, Data: { workspace: value } });
+      res.json({ Success: true, Data: { workspace: value, contentHash: contentHash(value) } });
     } catch (error) {
       if (error instanceof SyntaxError) respondError(res, new WorkspaceStoreError(422, "The Workspace contains invalid JSON.", "invalid-json"));
       else respondError(res, error);
@@ -161,7 +192,9 @@ export function createWorkspaceStoreRouter(options: {
       if (options.readOnly) throw new WorkspaceStoreError(403, "Server Workspaces are read-only in the public hosted version. Save to a Local JSON file instead.", "read-only");
       const directory = await confinedDirectory(options.workspaceRoot);
       const target = path.join(directory, safeFilename(req.body?.filename, "Workspace"));
-      record(req.body?.workspace, "The Workspace must be a JSON object.");
+      const legacy = record(req.body?.workspace, "The Workspace must be a JSON object.");
+      if (legacy.type !== "workspace-block" || legacy.kind || desktopOf(legacy)) throw new WorkspaceStoreError(400, "The legacy route requires a legacy Workspace tree.");
+      await guardWorkspaceTarget(target, legacy);
       temporary = await stagedJson(target, req.body.workspace);
       await fs.rename(temporary, target); temporary = undefined;
       res.json({ Success: true });
@@ -177,6 +210,20 @@ export function createWorkspaceStoreRouter(options: {
       if (options.readOnly) throw new WorkspaceStoreError(403, "Server Workspaces are read-only in the public hosted version. Save to a Local JSON file instead.", "read-only");
       const manifest = validateManifest(req.body?.workspace);
       const writes = Array.isArray(req.body?.documents) ? req.body.documents : [];
+      const workspaceDirectory = await confinedDirectory(options.workspaceRoot);
+      const workspaceTarget = path.join(workspaceDirectory, safeFilename(req.body?.filename, "Workspace"));
+      await guardWorkspaceTarget(workspaceTarget, manifest, req.header("If-Match"), req.header("If-None-Match") === "*");
+      if (manifest.schemaVersion === 2) {
+        if (writes.length) throw new WorkspaceStoreError(400, "Managed Workspace Save cannot write Document content.");
+        for (const resource of Object.values(manifest.documents) as any[]) {
+          const location = source(resource);
+          const directory = await confinedDirectory(options.documentRoot, location.folder);
+          const file = await confinedExistingFile(options.documentRoot, directory, location.filename);
+          const document = JSON.parse(await fs.readFile(file, "utf8"));
+          validateDocument(document);
+          if (!["document-block", "main-list-block", "membrane-block"].includes(document.type) || (document.metadata?.documentId ?? document.id) !== resource.documentId) throw new WorkspaceStoreError(409, "A referenced Document has an invalid or different identity.");
+        }
+      }
       const seen = new Set<string>();
       for (const raw of writes) {
         const write = record(raw, "A Workspace Document write is invalid.");
@@ -209,17 +256,6 @@ export function createWorkspaceStoreRouter(options: {
         }
         staged.push({ target, temporary: await stagedJson(target, write.document), document: write.document });
       }
-      const workspaceDirectory = await confinedDirectory(options.workspaceRoot);
-      const workspaceTarget = path.join(workspaceDirectory, safeFilename(req.body?.filename, "Workspace"));
-      if (req.header("If-None-Match") === "*") {
-        try {
-          await fs.access(workspaceTarget);
-          throw new WorkspaceStoreError(409, "A Workspace with this name already exists.", "workspace-exists");
-        } catch (error: any) {
-          if (error instanceof WorkspaceStoreError) throw error;
-          if (error?.code !== "ENOENT") throw error;
-        }
-      }
       staged.push({ target: workspaceTarget, temporary: await stagedJson(workspaceTarget, manifest) });
 
       for (const item of staged) {
@@ -237,9 +273,11 @@ export function createWorkspaceStoreRouter(options: {
         }
       }
       res.setHeader("X-Speedy-Revision", req.header("X-Speedy-Revision") ?? "");
-      res.json({ Success: true, ...(warnings.length ? { Warning: `${warnings.length} Document${warnings.length === 1 ? "" : "s"} saved, but could not be added to the search index.` } : {}) });
+      res.json({ Success: true, Data: { contentHash: contentHash(manifest) }, ...(warnings.length ? { Warning: `${warnings.length} Document${warnings.length === 1 ? "" : "s"} saved, but could not be added to the search index.` } : {}) });
     } catch (error) {
-      for (const item of committed.reverse()) await restore(item.target, item.previous).catch(() => undefined);
+      const failed: string[] = [];
+      for (const item of committed.reverse()) await restore(item.target, item.previous).catch(() => { failed.push(path.basename(item.target)); });
+      if (failed.length) { respondError(res, new WorkspaceStoreError(500, `Save failed and rollback could not restore: ${failed.join(", ")}. Inspect these files before retrying.`, "partial-save")); return; }
       respondError(res, error);
     } finally {
       for (const item of staged) await fs.unlink(item.temporary).catch(() => undefined);

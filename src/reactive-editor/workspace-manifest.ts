@@ -1,3 +1,4 @@
+import { assertJson, validateManagedContainer, desktopOf, applyManagedDesktop } from "../persistence/managed-desktop";
 import { isDocumentName } from "../persistence/document-file-names.mjs";
 import { clone } from "../block-tree/clone";
 import { decodeBlockTree, encodeDocument, encodeWorkspace } from "../block-tree/codecs";
@@ -21,7 +22,7 @@ export interface WorkspaceDocumentResource {
 
 export interface WorkspaceManifest {
   kind: "speedy-workspace";
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   workspaceId: string;
   documents: Record<string, WorkspaceDocumentResource>;
   root: ExistingBlockDto;
@@ -58,6 +59,9 @@ export interface LoadedWorkspace {
   references: WorkspaceDocumentRegistration[];
   issues: WorkspaceLoadIssue[];
   legacy: boolean;
+  localContainer?: Record<string, any>;
+  sourceFilename?: string;
+  sourceHash?: string;
 }
 
 export class WorkspaceManifestError extends Error {
@@ -93,7 +97,7 @@ export function validateDocumentSource(value: unknown): WorkspaceDocumentSource 
   if (/[\\/\0]/.test(filename) || filename.startsWith(".") || !isDocumentName(filename)) {
     throw new WorkspaceManifestError("A Workspace Document filename must end in .json or .ink without path separators.");
   }
-  return { kind: "document-store", folder, filename };
+  return { ...clone(source), kind: "document-store", folder, filename };
 }
 
 function visitDto(dto: ExistingBlockDto, visit: (dto: ExistingBlockDto) => void): void {
@@ -108,14 +112,17 @@ function visitDto(dto: ExistingBlockDto, visit: (dto: ExistingBlockDto) => void)
 }
 
 export function parseWorkspaceManifest(value: unknown): WorkspaceManifest {
+  assertJson(value);
   const input = object(value, "The Workspace file must contain a JSON object.");
   if (input.kind !== "speedy-workspace") throw new WorkspaceManifestError("The file is not a versioned Speedy Workspace manifest.");
-  if (input.schemaVersion !== 1) throw new WorkspaceManifestError(`Unsupported Workspace schema version: ${String(input.schemaVersion)}.`);
+  if (input.schemaVersion !== 1 && input.schemaVersion !== 2) throw new WorkspaceManifestError(`Unsupported Workspace schema version: ${String(input.schemaVersion)}.`);
+  if (input.schemaVersion === 2) validateManagedContainer(input);
+  else if (desktopOf(input.root)) throw new WorkspaceManifestError("Managed Desktop requires a version 2 container.");
   const workspaceId = text(input.workspaceId, "The Workspace needs a stable workspaceId.");
   const root = object(input.root, "The Workspace manifest needs a root Block.") as ExistingBlockDto;
   if (root.type !== "workspace-block") throw new WorkspaceManifestError("The Workspace root must be a workspace-block.");
   const rawDocuments = object(input.documents, "The Workspace manifest needs a Document resource table.");
-  const documents: Record<string, WorkspaceDocumentResource> = {};
+  const documents: Record<string, WorkspaceDocumentResource> = Object.create(null);
   const destinations = new Set<string>();
   for (const [key, raw] of Object.entries(rawDocuments)) {
     const resource = object(raw, `Workspace Document ${key} must be an object.`);
@@ -133,10 +140,10 @@ export function parseWorkspaceManifest(value: unknown): WorkspaceManifest {
     }
     if (block.type !== "document-reference-block") return;
     const documentId = text(metadata(block).documentId, "A Document reference needs a documentId.");
-    if (!documents[documentId]) throw new WorkspaceManifestError(`Document reference ${documentId} has no resource entry.`);
+    if (!Object.hasOwn(documents, documentId)) throw new WorkspaceManifestError(`Document reference ${documentId} has no resource entry.`);
     if (Array.isArray(block.children) && block.children.length) throw new WorkspaceManifestError(`Document reference ${documentId} cannot own children.`);
   });
-  return { ...clone(input), kind: "speedy-workspace", schemaVersion: 1, workspaceId, documents, root: clone(root) } as WorkspaceManifest;
+  return { ...clone(input), kind: "speedy-workspace", schemaVersion: input.schemaVersion, workspaceId, documents, root: clone(root) } as WorkspaceManifest;
 }
 
 export function isWorkspaceManifest(value: unknown): value is WorkspaceManifest {
@@ -192,12 +199,13 @@ export async function createWorkspaceSaveBundle(
   registrations: WorkspaceDocumentRegistration[] = [],
   workspaceId: string = globalThis.crypto.randomUUID(),
   presentation?: PresentationSnapshot,
+  managed?: { root: ExistingBlockDto; previous?: WorkspaceManifest },
 ): Promise<WorkspaceSaveBundle> {
   const rootContent = state.contents[state.placements[state.rootPlacementKey]?.contentKey];
   if (rootContent?.viewType !== "workspace-block") throw new WorkspaceManifestError("Save Workspace requires a workspace-block root.");
-  const encoded = withWorkspacePresentation(encodeWorkspace(state), presentation);
+  const encoded = managed?.root ?? withWorkspacePresentation(encodeWorkspace(state), presentation);
   const documents: WorkspaceDocumentWrite[] = [];
-  const resources: Record<string, WorkspaceDocumentResource> = {};
+  const resources: Record<string, WorkspaceDocumentResource> = Object.create(null);
   const identityOwners = new Map<string, ContentKey>();
 
   const externalize = async (placementKey: PlacementKey, dto: ExistingBlockDto): Promise<ExistingBlockDto> => {
@@ -226,6 +234,13 @@ export async function createWorkspaceSaveBundle(
         throw new WorkspaceManifestError(`Different live Documents claim the same documentId ${documentId}.`);
       }
       identityOwners.set(documentId, content.key);
+      if (managed) {
+        const registered = registrations.find(item => item.documentId === documentId);
+        if (!registered) throw new WorkspaceManifestError(`Save Document ${documentId} to the server before saving this managed Workspace.`);
+        resources[documentId] = { ...clone(registered), source };
+        delete resources[documentId].contentKey;
+        return { type: "document-reference-block", metadata: { documentId } };
+      }
       if (!resources[documentId]) {
         const document = encodeDocument(state, placementKey);
         const documentMetadata = metadata(document as Record<string, unknown>);
@@ -271,7 +286,7 @@ export async function createWorkspaceSaveBundle(
   };
 
   const root = await externalize(state.rootPlacementKey, encoded);
-  const manifest = parseWorkspaceManifest({ kind: "speedy-workspace", schemaVersion: 1, workspaceId, documents: resources, root });
+  const manifest = parseWorkspaceManifest({ ...managed?.previous, kind: "speedy-workspace", schemaVersion: managed ? 2 : 1, workspaceId, documents: resources, root });
   return { manifest, documents };
 }
 
@@ -289,6 +304,11 @@ export function materializeWorkspace(
   loaded: Map<string, ExistingBlockDto>,
   issues: WorkspaceLoadIssue[] = [],
 ): LoadedWorkspace {
+  manifest = parseWorkspaceManifest(manifest);
+  if (manifest.schemaVersion === 2) for (const resource of Object.values(manifest.documents)) {
+    const document = loaded.get(resource.documentId);
+    if (!document || documentIdentity(document) !== resource.documentId) throw new WorkspaceManifestError(`Missing or mismatched Document ${resource.documentId}; the managed Workspace was not opened.`);
+  }
   const references: WorkspaceDocumentRegistration[] = [];
   const expand = (dto: ExistingBlockDto): ExistingBlockDto => {
     if (dto.type === "document-reference-block") {
@@ -310,7 +330,9 @@ export function materializeWorkspace(
     }
     return copy;
   };
-  const { state, identities } = materializeDocumentIdentities(expand(manifest.root));
+  const expanded = expand(manifest.root);
+  if (manifest.schemaVersion === 2) validateManagedContainer({ kind: "speedy-local-workspace", schemaVersion: 2, workspaceId: manifest.workspaceId, root: expanded });
+  const { state, identities } = materializeDocumentIdentities(manifest.schemaVersion === 2 ? applyManagedDesktop(expanded) : expanded);
   for (const [documentId, contentKey] of identities) {
     const resource = manifest.documents[documentId];
     if (resource) references.push({ ...clone(resource), contentKey });
@@ -380,6 +402,13 @@ function materializeDocumentIdentities(dto: ExistingBlockDto) {
 
 /** Existing self-contained local format; no resource fetching or format change. */
 export function materializeLocalWorkspace(value: unknown): LoadedWorkspace {
+  assertJson(value);
+  if ((value as any)?.kind === "speedy-local-workspace") {
+    const container = validateManagedContainer(value);
+    return { state: materializeDocumentIdentities(applyManagedDesktop(container.root)).state, workspaceId: container.workspaceId, localContainer: container, references: [], issues: [], legacy: false };
+  }
+  if (((value as any)?.kind || (value as any)?.schemaVersion !== undefined) && !isWorkspaceManifest(value)) throw new WorkspaceManifestError("Unsupported Workspace container.");
+  if (desktopOf(value)) throw new WorkspaceManifestError("Managed Desktop requires a version 2 container.");
   if (isWorkspaceManifest(value)) {
     throw new WorkspaceManifestError("This Server Workspace manifest refers to separate Document files. Open it from Server, or choose a self-contained Local Workspace JSON file.");
   }
@@ -395,7 +424,7 @@ export interface LegacyWorkspaceReferences {
 }
 
 export function extractLegacyWorkspaceReferences(dto: ExistingBlockDto): LegacyWorkspaceReferences {
-  const resources: Record<string, WorkspaceDocumentResource> = {};
+  const resources: Record<string, WorkspaceDocumentResource> = Object.create(null);
   const convert = (block: ExistingBlockDto): ExistingBlockDto => {
     const meta = metadata(block as Record<string, unknown>);
     if (["document-block", "main-list-block", "membrane-block"].includes(String(block.type)) && meta.loadFromExternal === true) {
