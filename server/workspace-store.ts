@@ -139,6 +139,7 @@ async function guardWorkspaceTarget(target: string, next: any, expected?: string
   if (previous.schemaVersion === 2) {
     validateManagedContainer(previous);
     if (next.schemaVersion !== 2 || previous.kind !== next.kind || previous.workspaceId !== next.workspaceId) throw new WorkspaceStoreError(409, "Managed Workspace identity/format cannot be overwritten; choose a new filename.");
+    if (desktopOf(previous.root)!.version < 4 && desktopOf(next.root)?.version === 4) throw new WorkspaceStoreError(409, "D1 upgrade requires Save As to a new filename.");
     if ((desktopOf(next.root)?.version ?? 0) < desktopOf(previous.root)!.version) throw new WorkspaceStoreError(409, "A shell layout cannot be overwritten by an older Desktop format. Choose a new filename.");
     if (!expected || expected !== contentHash(previous)) throw new WorkspaceStoreError(409, "The Workspace changed outside this session. Reopen it or Save As to a new filename.");
   } else if (next.schemaVersion === 2) throw new WorkspaceStoreError(409, "Upgrade requires Save As to a new filename.");
@@ -218,6 +219,9 @@ export function createWorkspaceStoreRouter(options: {
         if (writes.length) throw new WorkspaceStoreError(400, "Managed Workspace Save cannot write Document content.");
         for (const resource of Object.values(manifest.documents) as any[]) {
           const location = source(resource);
+          // D1 preserves explicitly unavailable references without writing or
+          // resolving their content. Retry/Relink still require exact identity.
+          if (desktopOf(manifest.root)?.version === 4 && resource.unavailable === true) continue;
           const directory = await confinedDirectory(options.documentRoot, location.folder);
           const file = await confinedExistingFile(options.documentRoot, directory, location.filename);
           const document = JSON.parse(await fs.readFile(file, "utf8"));

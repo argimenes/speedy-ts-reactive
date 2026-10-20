@@ -1,4 +1,4 @@
-import { assertJson, validateManagedContainer, desktopOf, applyManagedDesktop } from "../persistence/managed-desktop";
+import { assertJson, validateManagedContainer, desktopOf, applyManagedDesktop, shellWindows } from "../persistence/managed-desktop";
 import { isDocumentName } from "../persistence/document-file-names.mjs";
 import { clone } from "../block-tree/clone";
 import { decodeBlockTree, encodeDocument, encodeWorkspace } from "../block-tree/codecs";
@@ -219,6 +219,7 @@ export async function createWorkspaceSaveBundle(
       resources[documentId] = {
         ...clone(registered),
         contentKey: undefined,
+        ...(managed && desktopOf(managed.root)?.version===4 ? {unavailable:true} : {}),
         documentId,
         source: validateDocumentSource(registered.source),
       };
@@ -286,6 +287,11 @@ export async function createWorkspaceSaveBundle(
   };
 
   const root = await externalize(state.rootPlacementKey, encoded);
+  if(managed && desktopOf(root)?.version===4)for(const view of desktopOf(root)!.views)for(const ref of view.resources){
+    if(ref.kind!=='document'||resources[String(ref.documentId)])continue;
+    const registered=registrations.find(r=>r.documentId===ref.documentId);
+    if(registered){resources[registered.documentId]={...clone(registered),source:validateDocumentSource(registered.source)};delete resources[registered.documentId].contentKey;}
+  }
   const manifest = parseWorkspaceManifest({ ...managed?.previous, kind: "speedy-workspace", schemaVersion: managed ? 2 : 1, workspaceId, documents: resources, root });
   return { manifest, documents };
 }
@@ -305,7 +311,7 @@ export function materializeWorkspace(
   issues: WorkspaceLoadIssue[] = [],
 ): LoadedWorkspace {
   manifest = parseWorkspaceManifest(manifest);
-  if (manifest.schemaVersion === 2) for (const resource of Object.values(manifest.documents)) {
+  if (manifest.schemaVersion === 2 && desktopOf(manifest.root)?.version !== 4) for (const resource of Object.values(manifest.documents)) {
     const document = loaded.get(resource.documentId);
     if (!document || documentIdentity(document) !== resource.documentId) throw new WorkspaceManifestError(`Missing or mismatched Document ${resource.documentId}; the managed Workspace was not opened.`);
   }
@@ -315,7 +321,7 @@ export function materializeWorkspace(
       const documentId = String(metadata(dto as Record<string, unknown>).documentId ?? "");
       const resource = manifest.documents[documentId];
       const document = loaded.get(documentId);
-      if (!resource || !document) return clone(dto);
+      if (!resource || !document || manifest.schemaVersion===2 && documentIdentity(document)!==documentId) return clone(dto);
       const copy = clone(document);
       copy.metadata = { ...metadata(copy as Record<string, unknown>), documentId };
       return copy;
@@ -330,15 +336,25 @@ export function materializeWorkspace(
     }
     return copy;
   };
-  const expanded = expand(manifest.root);
-  if (manifest.schemaVersion === 2) validateManagedContainer({ kind: "speedy-local-workspace", schemaVersion: 2, workspaceId: manifest.workspaceId, root: expanded });
+  const restoreRoot=clone(manifest.root),desktop=desktopOf(restoreRoot);
+  if(desktop?.version===4){
+    // A known Ink descriptor may outlive its embedded reference. Reconstitute only
+    // the presentation reference to the exact resource-table identity, never content.
+    const anchors=new Map(shellWindows(restoreRoot).map(b=>[b.id,b]));
+    for(const view of desktop.views){
+      const anchor=anchors.get(view.anchorBlockId),refs=view.resources.filter(r=>r.kind==='document');
+      if(view.appId==='ink'&&view.descriptorVersion===1&&anchor?.type==='document-window-block'&&!anchor.children?.length&&refs.length===1&&manifest.documents[String(refs[0].documentId)])anchor.children=[{type:'document-reference-block',metadata:{documentId:refs[0].documentId}}];
+    }
+  }
+  const expanded = expand(restoreRoot);
+  if (manifest.schemaVersion === 2 && desktopOf(manifest.root)?.version !== 4) validateManagedContainer({ kind: "speedy-local-workspace", schemaVersion: 2, workspaceId: manifest.workspaceId, root: expanded });
   const { state, identities } = materializeDocumentIdentities(manifest.schemaVersion === 2 ? applyManagedDesktop(expanded) : expanded);
   for (const [documentId, contentKey] of identities) {
     const resource = manifest.documents[documentId];
-    if (resource) references.push({ ...clone(resource), contentKey });
+    if (resource) {const reference:WorkspaceDocumentRegistration={ ...clone(resource), contentKey };delete reference.unavailable;references.push(reference);}
   }
   for (const resource of Object.values(manifest.documents)) {
-    if (!references.some(reference => reference.documentId === resource.documentId)) references.push(clone(resource));
+    if (!references.some(reference => reference.documentId === resource.documentId)) references.push({...clone(resource),...(manifest.schemaVersion===2&&desktopOf(manifest.root)?.version===4?{unavailable:true}:{})});
   }
   validateRepository(state);
   return { state, manifest: clone(manifest), workspaceId: manifest.workspaceId, references, issues: clone(issues), legacy: false };

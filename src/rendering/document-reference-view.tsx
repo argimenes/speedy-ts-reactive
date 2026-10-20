@@ -8,7 +8,8 @@ export function DocumentReferenceView(props: BlockViewProps) {
   const documentId = () => String((node()?.payload.metadata as Record<string, unknown> | undefined)?.documentId ?? "");
   const reference = createMemo(() => editor.persistence.workspaceReference(documentId()));
   const issue = createMemo(() => editor.persistence.workspaceLoadIssues().find(item => item.documentId === documentId()));
-  const [busy, setBusy] = createSignal(false);
+  const [busy, setBusy] = createSignal(false),[error,setError]=createSignal('');
+  let alive=true;onCleanup(()=>{alive=false;});
   let root!: HTMLDivElement;
   let disposeMount: (() => void) | undefined;
   onMount(() => {
@@ -18,8 +19,8 @@ export function DocumentReferenceView(props: BlockViewProps) {
   const resolve = async (replacement?: { kind: "document-store"; folder: string; filename: string }) => {
     if (busy()) return;
     setBusy(true);
-    await editor.persistence.resolveWorkspaceDocument(documentId(), replacement);
-    setBusy(false);
+    setError('');const ok=await editor.persistence.resolveWorkspaceDocument(documentId(), replacement);
+    if(alive){setBusy(false);if(!ok)setError(editor.persistence.state.error??'Recovery canceled.');}
   };
   const relink = () => {
     const current = reference()?.source;
@@ -31,14 +32,16 @@ export function DocumentReferenceView(props: BlockViewProps) {
   };
   const removeWindow = () => {
     const parent = Object.values(projection.state.nodes).find(candidate => candidate.children.includes(props.nodeKey));
+    if(editor.windowManager&&parent){editor.windowManager.named.remove(parent.key);return;}
     editor.commands.remove(parent?.viewType === "document-window-block" ? parent.key : props.nodeKey);
   };
   return (
     <div ref={root} class="abstract-block workspace-document-reference" role="alert" tabIndex={-1} data-block-type="document-reference-block" data-client-id={props.nodeKey}>
       <strong>Document unavailable</strong>
       <span>{reference()?.title ?? reference()?.source.filename ?? documentId()}</span>
-      <small>{issue()?.message ?? "The referenced Document has not been loaded."}</small>
+      <small>{error() || issue()?.message || "The referenced Document has not been loaded."}</small>
       <div class="workspace-document-reference__actions">
+        <button type="button" hidden={!busy()} onClick={()=>{editor.persistence.cancelWorkspaceDocument(documentId());setBusy(false);setError("Recovery canceled.");}}>Cancel recovery</button>
         <button type="button" disabled={busy() || !reference()} onClick={() => void resolve()}>{busy() ? "Loading…" : "Retry"}</button>
         <button type="button" disabled={busy()} onClick={relink}>Relink…</button>
         <button type="button" disabled={busy()} onClick={removeWindow}>Remove window</button>

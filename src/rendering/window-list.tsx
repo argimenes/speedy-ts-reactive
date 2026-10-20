@@ -1,3 +1,4 @@
+import { NamedLayoutMenu } from "./named-layouts";
 import { WindowLayoutActions } from "./window-layout";
 import { For, Show } from 'solid-js';
 import type { WorkspaceWindowManager } from '../application/window-manager';
@@ -8,6 +9,7 @@ export function WindowList(props:{manager:WorkspaceWindowManager}) {
   const manager=props.manager;
   return <SystemSubmenu label="Windows">
     <Show when={manager.layout.active()}>
+      <NamedLayoutMenu manager={manager}/>
       <button role="menuitem" disabled={!manager.layout.canUndo()} onClick={()=>manager.layout.undo()}>Undo window layout</button>
       <button role="menuitem" disabled={!manager.layout.canRedo()} onClick={()=>manager.layout.redo()}>Redo window layout</button>
     </Show>

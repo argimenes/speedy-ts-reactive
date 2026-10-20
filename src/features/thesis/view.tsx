@@ -73,10 +73,13 @@ export function NativePropositionEditor(props:{draft:Draft;vault:string;features
  </div>;
 }
 export function ThesisView(props:{host:ReactiveEditor;initial?:Draft;windowKey?:string;close:()=>void}) {
+ const restored=props.windowKey?props.host.windowManager?.named.descriptor(props.windowKey)?.resources.find(r=>r.kind==='proposition'):undefined;
+ const [restoreError,setRestoreError]=createSignal(''),[restoring,setRestoring]=createSignal(!!restored);
+ let restoreRequest:AbortController|undefined,restoreGeneration=0,vaultIdentity='',restorationSucceeded=false;
  const launchFocus=props.windowKey ? props.host.windowManager?.lifecycle.readyTicket(props.windowKey) : undefined;
  const [vault,setVault]=createSignal(''),[ready,setReady]=createSignal(false),[error,setError]=createSignal(''),[notice,setNotice]=createSignal(''),[busy,setBusy]=createSignal(false),[saving,setSaving]=createSignal(false);
  const [query,setQuery]=createSignal(''),[archived,setArchived]=createSignal(false),[rows,setRows]=createSignal<any[]>([]),[next,setNext]=createSignal<string|null>(null),[page,setPage]=createSignal('');
- const [draft,setDraft]=createSignal<Draft>(),[record,setRecord]=createSignal<Proposition>(),[name,setName]=createSignal(''),[dirty,setDirty]=createSignal(false),[editorOnly,setEditorOnly]=createSignal(!!props.initial);
+ const [draft,setDraft]=createSignal<Draft>(),[record,setRecord]=createSignal<Proposition>(),[name,setName]=createSignal(''),[dirty,setDirty]=createSignal(false),[editorOnly,setEditorOnly]=createSignal(!!props.initial||!!restored);
  let port:DraftPort|undefined,alive=true,listing=0,editVersion=0,pendingVersion=0,controller:AbortController|undefined,pending:Record<string,unknown>|undefined;
  const loading=new AbortController();
  const current=()=>alive;
@@ -105,20 +108,40 @@ export function ThesisView(props:{host:ReactiveEditor;initial?:Draft;windowKey?:
   finally{if(alive){setBusy(false);setSaving(false);}}
  };
  const archive=async()=>{const r=record();if(!r||!discard())return;setBusy(true);setError('');try{pending??={op:r.attributes.thesis.archived?'restore':'archive',id:r.id,expectedRevision:r.revision,operationId:crypto.randomUUID()};const result=await call(pending);if(alive){load(result.proposition);await refresh();}}catch(e){if(alive)setError(String(e));}finally{if(alive)setBusy(false);}};
+ const restore=async(location?:string)=>{
+  if(!restored||!alive)return;
+  const generation=++restoreGeneration;restoreRequest?.abort();restoreRequest=new AbortController();setRestoring(true);setRestoreError('');
+  try{
+   if((restored.cavernId??undefined)!==props.host.readAssetContext().cavernId)throw Error('The saved Proposition belongs to a different Cavern. Open this workspace in its original Cavern.');
+   const target=location??(typeof restored.vault==='string'?restored.vault:vault());
+   const resolve=async(signal:AbortSignal)=>{
+    const context=await thesisRequest(target,{op:'context'},signal);
+    if(context.vaultGuid!==restored.vaultGuid)throw Error('The selected Vault has a different identity. No Proposition was opened.');
+    const result=await thesisRequest(target,{op:'get',id:restored.entityGuid},signal);return {context,result};
+   };
+   const {context,result}=await (props.host.windowManager?.restoration.run(resolve,restoreRequest.signal)??resolve(restoreRequest.signal));
+   if(!alive||generation!==restoreGeneration||restoreRequest.signal.aborted)return;
+   if(!result.proposition||result.proposition.id!==restored.entityGuid)throw Error('The saved Proposition is missing or its identity does not match.');
+   restorationSucceeded=true;setVault(target);vaultIdentity=context.vaultGuid;setReady(true);load(result.proposition);
+  }catch(e){if(alive&&generation===restoreGeneration&&!restoreRequest.signal.aborted)setRestoreError(String(e));}
+  finally{if(alive&&generation===restoreGeneration)setRestoring(false);}
+ };
  onMount(()=>{
   if(props.windowKey){props.host.viewCloseGuards.set(props.windowKey,()=>discard());
-    const release=props.host.windowManager?.layout.persistable(props.windowKey,()=>!draft());if(release)onCleanup(release);
+    const release=props.host.windowManager?.layout.persistable(props.windowKey,()=>!draft()||!!record());if(release)onCleanup(release);
+    const descriptor=props.host.windowManager?.named.registerDescriptor(props.windowKey,()=>{const r=record(),cavernId=props.host.readAssetContext().cavernId;return r&&vaultIdentity?{resources:[{kind:"proposition",scope:"vault",vaultGuid:vaultIdentity,entityGuid:r.id,vault:vault(),...(cavernId?{cavernId}:{})}]}:restored&&!restorationSucceeded?{resources:[restored]}:{resources:[]};});if(descriptor)onCleanup(descriptor);
   }
   const warn=(event:BeforeUnloadEvent)=>{if(dirty()||busy()||pending){event.preventDefault();event.returnValue='';}};window.addEventListener('beforeunload',warn);
   onCleanup(()=>{window.removeEventListener('beforeunload',warn);if(props.windowKey)props.host.viewCloseGuards.delete(props.windowKey);});
-  void(async()=>{try{const v=await nativeDocumentSession(props.host).defaultVault(loading.signal);if(!alive)return;if(!v)throw Error('Open a Mutable Vault before using Thesis.');setVault(v);const context=await call({op:'context'},loading.signal);if(!alive)return;setReady(true);
+  void(async()=>{try{if(restored){await restore();return;}const v=await nativeDocumentSession(props.host).defaultVault(loading.signal);if(!alive)return;if(!v)throw Error('Open a Mutable Vault before using Thesis.');setVault(v);const context=await call({op:'context'},loading.signal);if(!alive)return;vaultIdentity=context.vaultGuid;setReady(true);
    if(props.initial){const d=props.initial;if(d.source){const {blockText,...source}=d.source;d.source={...source,blockHash:await passageHash(blockText??''),vault:v,vaultGuid:context.vaultGuid};if(!alive)return;}setDraft(d);setDirty(!!d.text||!!d.properties.length);}
    await refresh();
   }catch(e){if(alive)setError(String(e));}})();
  });
- onCleanup(()=>{alive=false;loading.abort();listing++;controller?.abort();});
+ onCleanup(()=>{alive=false;loading.abort();restoreGeneration++;restoreRequest?.abort();listing++;controller?.abort();});
  const source=()=>draft()?.source;
  return <section class="thesis" aria-label="Thesis" onKeyDown={event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='s'&&!event.isComposing){event.preventDefault();event.stopPropagation();void save();}}}>
+  <Show when={restored&&(restoring()||restoreError())}><section role="alert" aria-label="Unavailable Proposition"><strong>{restoring()?'Restoring Proposition…':'Proposition unavailable'}</strong><p>{restoreError()}</p><small>{String(restored?.vaultGuid)} / {String(restored?.entityGuid)}</small><button disabled={restoring()} onClick={()=>void restore()}>Retry</button><button disabled={restoring()} onClick={()=>{const location=window.prompt('Locate the original Vault. Its stable identity must match.',vault());if(location)void restore(location);}}>Locate / Relink…</button><Show when={restoring()}><button onClick={()=>{restoreGeneration++;restoreRequest?.abort();setRestoring(false);setRestoreError('Restoration canceled. Retry when ready.');}}>Cancel restoration</button></Show><button onClick={()=>{if(props.windowKey)props.host.windowManager?.named.remove(props.windowKey);}}>Remove unavailable window</button></section></Show>
   <header><strong>Thesis</strong><Show when={ready()}><form onSubmit={e=>{e.preventDefault();setEditorOnly(false);void refresh();}}><input aria-label="Search propositions" placeholder="Search labels and statements…" value={query()} onInput={e=>setQuery(e.currentTarget.value)}/><button type="submit">Search</button></form><button type="button" onClick={create} disabled={busy()}>New</button><label><input type="checkbox" checked={archived()} onChange={e=>{setArchived(e.currentTarget.checked);setEditorOnly(false);void refresh();}}/> Archived</label><Show when={editorOnly()}><button type="button" onClick={()=>setEditorOnly(false)}>Browse</button></Show></Show></header>
   <Show when={error()}><p role="alert">{error()}</p></Show><Show when={notice()}><p role="status">{notice()}</p></Show>
   <div class="thesis-body" classList={{'thesis-editor-only':editorOnly()}}>
@@ -126,7 +149,7 @@ export function ThesisView(props:{host:ReactiveEditor;initial?:Draft;windowKey?:
    <main><Show when={draft()} keyed fallback={<p>Select a proposition or choose New.</p>}>{d=><>
     <label>Name <input aria-label="Proposition name" maxLength={240} value={name()} disabled={busy()&&!saving()} onInput={e=>{setName(e.currentTarget.value);changed();}}/></label><span role="status">{dirty()?'Unsaved changes':''}</span>
     <Show when={d.warnings.length}><details open><summary>Selection transfer notes</summary><ul><For each={d.warnings}>{w=><li>{w}</li>}</For></ul></details></Show>
-    <fieldset disabled={busy()&&!saving()} class="thesis-editor-field" inert={busy()&&!saving()?true:undefined}><legend>Proposition</legend><NativePropositionEditor focusValid={d===props.initial?launchFocus:undefined} draft={d} vault={vault()} features={props.host.features} changed={changed} ready={p=>port=p} notice={setNotice}/></fieldset>
+    <fieldset disabled={busy()&&!saving()} class="thesis-editor-field" inert={busy()&&!saving()?true:undefined}><legend>Proposition</legend><NativePropositionEditor focusValid={restored?()=>false:d===props.initial?launchFocus:undefined} draft={d} vault={vault()} features={props.host.features} changed={changed} ready={p=>port=p} notice={setNotice}/></fieldset>
     <Show when={source()}>{s=><section class="thesis-source" aria-label="Source"><strong>Source passage</strong><blockquote>{s().text}</blockquote><small>Captured {s().capturedUtc.slice(0,10)} · {s().location?.filename??'Ink passage'}</small><button type="button" onClick={()=>{void openThesisSource(props.host,s(),current).then(setNotice,e=>{if(alive)setError(String(e));});}}>Open source</button></section>}</Show>
     <footer><button type="button" disabled={busy()} onClick={()=>void save()}>Save</button><button type="button" disabled={busy()} onClick={()=>{if(discard()){pending=undefined;setDirty(false);setDraft(undefined);setRecord(undefined);if(editorOnly())props.close();}}}>Cancel / Close</button><Show when={record()}>{r=><><button type="button" disabled={busy()||!!pending} onClick={()=>void archive()}>{r().attributes.thesis.archived?'Restore':'Archive'}</button><button type="button" disabled={busy()} onClick={()=>void edit(r().id)}>Reload</button></>}</Show></footer>
    </>}</Show></main>

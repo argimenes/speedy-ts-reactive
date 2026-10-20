@@ -1,3 +1,4 @@
+import { WindowRestorationBoundary } from "./window-restoration";
 import { createWindowMaximize } from "./window-maximize";
 import { ManagedWindowFrame, RetainedWindowBody, useManagedWindowOwner } from "./window-manager";
 import { managedAsset } from '../interchange/managed-asset';
@@ -754,7 +755,7 @@ export function WindowView(props: BlockViewProps) {
         <Show when={manager && toolbarNotice() && !isDocument()}><p role="status">{toolbarNotice()}</p></Show>
         <DocumentMarginContext.Provider value={marginPresentation}>
           <Show when={isDocument()}><DocumentStyleBar toolset={toolset()} onToolset={setToolset} onNotice={setToolbarNotice} editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
-          <div class="reactive-window__content" ref={host => onMount(() => { if (isDocument()) onCleanup(editor.pointerSpotlight.mount(host, scale)); })}><div class="reactive-window__document-body"><ChildBlocks parentKey={props.nodeKey} /></div></div>
+          <div class="reactive-window__content" ref={host => onMount(() => { if (isDocument()) onCleanup(editor.pointerSpotlight.mount(host, scale)); })}><div class="reactive-window__document-body"><WindowRestorationBoundary nodeKey={props.nodeKey}><ChildBlocks parentKey={props.nodeKey} /></WindowRestorationBoundary></div></div>
           <Show when={isDocument() && editor.features.compactEditorChrome}><DocumentStatusBar editor={editor} scopeKey={props.nodeKey} notice={toolbarNotice()} /></Show>
           <Show when={isDocument() && marginsCollapsed() && marginDrawerOpen()}>
             <DocumentMarginDrawer id={marginDrawerId} entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />

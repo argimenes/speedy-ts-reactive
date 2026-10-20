@@ -568,7 +568,7 @@ export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: Re
         return true;
       }
       const result = activeWorkspaceEditor
-        ? { success: await activeWorkspaceEditor.persistence.saveWorkspace(filename, { createOnly: upgradeWorkspace() || !overwrite, upgrade: upgradeWorkspace() }), error: activeWorkspaceEditor.persistence.state.error, status: activeWorkspaceEditor.persistence.state.status }
+        ? { success: await activeWorkspaceEditor.persistence.saveWorkspace(filename, { createOnly: upgradeWorkspace() || !overwrite, upgrade: upgradeWorkspace(), ...(upgradeWorkspace()?{managedVersion:4 as const}:{}) }), error: activeWorkspaceEditor.persistence.state.error, status: activeWorkspaceEditor.persistence.state.status }
         : await saveSplitWorkspace(filename, !overwrite);
       if (!result.success) {
         setWorkspaceError(result.error || "The Workspace could not be saved.");
@@ -601,7 +601,7 @@ export function WorkspaceDemo(props: { launchFlint?: boolean; configuration?: Re
     setWorkspaceBusy(true); setWorkspaceError("");
     try {
       const owner = activeWorkspaceEditor;
-      const captured = owner?.persistence.captureWorkspace({ upgrade });
+      const captured = owner?.persistence.captureWorkspace({ upgrade, ...(upgrade?{managedVersion:4 as const}:{}) });
       const workspace = captured?.localValue ?? captured?.document ?? splitWorkspaceDocument(false);
       const current = localWorkspaceFile();
       const saved = await saveJsonFile(workspace, { suggestedName: upgrade ? "Workspace-managed.json" : current?.filename ?? workspaceFilename() ?? "Workspace.json", handle: current?.handle, saveAs: saveAs || upgrade, workspace: { expected: localWorkspaceValue, createOnly: upgrade } });

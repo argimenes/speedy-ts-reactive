@@ -38,7 +38,7 @@ export function WindowManagerPlane(props: { manager?: WorkspaceWindowManager; ch
   plane.className = "mwm-window-plane";
   props.manager.plane = plane;
   props.manager.lifecycle.install(document);
-  onMount(()=>props.manager!.geometry.install(plane));
+  onMount(()=>{props.manager!.geometry.install(plane);props.manager!.named.finishRestoration();});
   onCleanup(() => { if (props.manager?.plane === plane) { props.manager.geometry.dispose(); props.manager.lifecycle.uninstall(); props.manager.plane = undefined; } });
   return <>{plane}<Portal mount={plane}><WindowLayoutChrome manager={props.manager}/></Portal>{props.children}</>;
 }

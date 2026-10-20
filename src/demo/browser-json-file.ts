@@ -103,6 +103,7 @@ export async function saveJsonFile(
           validateManagedContainer(previous);
           const next = value as any;
           if (next.kind !== previous.kind || next.schemaVersion !== 2 || next.workspaceId !== previous.workspaceId) throw new Error("Managed Workspace identity/format cannot be overwritten.");
+          if (desktopOf(previous.root)!.version < 4 && desktopOf(next.root)?.version === 4) throw new Error("D1 upgrade requires Save As to a new filename.");
           if ((desktopOf(next.root)?.version ?? 0) < desktopOf(previous.root)!.version) throw new Error("A shell layout cannot be overwritten by an older Desktop format. Choose a new filename.");
           if (JSON.stringify(previous) !== JSON.stringify(options.workspace.expected)) throw new Error("The Workspace changed outside this session. Reopen it or choose a new filename.");
         } else if ((value as any)?.schemaVersion === 2) throw new Error("Upgrade requires Save As to a new Workspace filename.");

@@ -1,3 +1,5 @@
+import { RestorationQueue } from "./workspace-restoration";
+import { NamedLayouts } from "./named-layouts";
 import { WindowLayout } from "./window-layout";
 import { unwrap } from "solid-js/store";
 import { WindowGeometry } from "./window-geometry";
@@ -10,10 +12,12 @@ import { WindowRegistry } from "../runtime/window-manager";
  * not new resources. Non-desktop hosts and isolated demos keep their own geometry.
  */
 export class WorkspaceWindowManager {
+  readonly restoration = new RestorationQueue();
   readonly registry = new WindowRegistry();
   readonly geometry = new WindowGeometry();
   readonly lifecycle: WindowLifecycle;
   readonly layout: WindowLayout;
+  readonly named: NamedLayouts;
   plane?: HTMLElement;
   readonly groups = new Map<string, HTMLElement>();
   private readonly initialOrder = new Map<string, number>();
@@ -26,6 +30,7 @@ export class WorkspaceWindowManager {
   constructor(private readonly editor: ReactiveEditor) {
     this.lifecycle = new WindowLifecycle(this, editor);
     this.layout = new WindowLayout(this, editor);
+    this.named = new NamedLayouts(this, editor);
     // Once at session creation. Historical z values seed order, never CSS layers.
     const windows = Object.values(editor.repository.readState().contents)
       .filter(c => ["window-block", "document-window-block"].includes(c.viewType))
@@ -98,5 +103,5 @@ export class WorkspaceWindowManager {
       } };
     });
   }
-  dispose() { this.layout.dispose(); this.geometry.dispose(); this.lifecycle.dispose(); this.groups.clear(); this.requested.clear(); this.initialOrder.clear(); this.registry.dispose(); this.plane = undefined; }
+  dispose() { this.restoration.dispose(); this.named.dispose(); this.layout.dispose(); this.geometry.dispose(); this.lifecycle.dispose(); this.groups.clear(); this.requested.clear(); this.initialOrder.clear(); this.registry.dispose(); this.plane = undefined; }
 }

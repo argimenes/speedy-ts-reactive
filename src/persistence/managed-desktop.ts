@@ -23,9 +23,18 @@ export interface RestoreWindow {
     };
     [key: string]: unknown;
 }
+export interface NamedArrangement {
+    id: string; name: string; revision: number;
+    windows: RestoreWindow[]; layout: ManagedDesktop["layout"];
+    lastActive?: string;
+    [key: string]: unknown;
+}
 export interface ManagedDesktop {
-    version: 2 | 3;
+    version: 2 | 3 | 4;
     kind: 'managed-windows';
+    layouts?: NamedArrangement[];
+    activeLayout?: string;
+    lastActive?: string;
     views: RestoreView[];
     windows: RestoreWindow[];
     layout: {
@@ -79,9 +88,9 @@ export function assertJson(value: unknown, rejectRuntime = false) {
 export function validateManagedDesktop(value: unknown): ManagedDesktop {
     assertJson(value, true);
     const d = object(value);
-    if (![2,3].includes(d.version) || d.kind !== 'managed-windows')
+    if (![2,3,4].includes(d.version) || d.kind !== 'managed-windows')
         fail('Unsupported managed Desktop version.');
-    for (const field of ['layouts', 'activeLayout', 'tree', 'tabs', 'docks'])
+    for (const field of [...(d.version < 4 ? ['layouts', 'activeLayout'] : []), 'tree', 'tabs', 'docks'])
         if (field in d)
             fail('This Desktop layout requires a later milestone.');
     const views = new Map<string, any>(), anchors = new Set<string>(), windows = new Map<string, any>();
@@ -102,12 +111,14 @@ export function validateManagedDesktop(value: unknown): ManagedDesktop {
                 identity(r.documentId);
             }
             else if (r.kind === 'proposition') {
-                identity(r.cavernId);
+                if(d.version < 4 || r.cavernId !== undefined) identity(r.cavernId);
+                else if(r.scope!=='vault')fail('Proposition reference needs explicit vault scope.');
                 identity(r.vaultGuid);
                 identity(r.entityGuid);
             }
-            else
+            else if (d.version < 4)
                 fail('Unsupported resource reference.');
+            else identity(r.kind);
         }
         views.set(key, v);
         anchors.add(anchor);
@@ -133,7 +144,7 @@ export function validateManagedDesktop(value: unknown): ManagedDesktop {
         fail('Orphan view descriptor.');
     const layout = object(d.layout);
     if (d.version === 2 && (layout.kind !== 'floating' || 'tree' in layout || 'tabs' in layout)) fail('Only the D0 floating layout is supported.');
-    if (d.version === 3) {
+    if (d.version >= 3) {
         if (layout.kind !== 'split-tree' || layout.version !== 1) fail('Unsupported shell layout version.');
         let tiled = new Set<string>();
         try { tiled = validateLayout(layout.tree, new Set(windows.keys())); }
@@ -152,6 +163,20 @@ export function validateManagedDesktop(value: unknown): ManagedDesktop {
         }
     if (ordered.size !== windows.size)
         fail('Every window must have exactly one floating membership.');
+    if (d.lastActive !== undefined) identity(d.lastActive); // A stale focus hint falls back to the last eligible window.
+    if (d.version === 4) {
+        const names = new Set<string>(), ids = new Set<string>();
+        for (const raw of list(d.layouts)) {
+            const a = object(raw), id = identity(a.id), name = identity(a.name);
+            if (!id.startsWith('arrangement-') || ids.has(id) || names.has(name.trim().toLocaleLowerCase()) || !Number.isSafeInteger(a.revision) || a.revision < 1) fail('Invalid or duplicate named arrangement.');
+            ids.add(id); names.add(name.trim().toLocaleLowerCase());
+            const members = list(a.windows);
+            for (const w of members) if (!windows.has(w.restoreKey) || windows.get(w.restoreKey).view !== w.view) fail('Arrangement refers to an unknown window/view.');
+            // Reuse the complete geometry/tree/order validator for each snapshot.
+            validateManagedDesktop({version: 3, kind: 'managed-windows', views: d.views.filter((v:any)=>members.some(w=>w.view===v.restoreKey)).map((v:any)=>({...v,resources:[]})), windows: members, layout:a.layout, ...(a.lastActive ? {lastActive:a.lastActive} : {})});
+        }
+        if (d.activeLayout !== undefined && !ids.has(d.activeLayout)) fail('Unknown selected arrangement.');
+    }
     return structuredClone(d) as ManagedDesktop;
 }
 /** Traverse owned shell anchors only. Document contents remain a separate identity domain. */
@@ -229,14 +254,14 @@ export function validateManagedContainer(value: unknown): Record<string, any> {
         const anchor = anchors.get(v.anchorBlockId);
         if (!anchor || blockIds.get(v.anchorBlockId) !== 1)
             fail('Missing Desktop anchor.');
-        if (v.descriptorVersion !== 1 || v.appId !== appForAnchor(anchor))
+        if (d.version < 4 && (v.descriptorVersion !== 1 || v.appId !== appForAnchor(anchor)))
             fail('Unsupported or mismatched application descriptor.');
         for (const r of v.resources) {
-            if (r.kind === 'proposition')
+            if (r.kind === 'proposition' && d.version < 4)
                 fail('Proposition reopening descriptors are not supported by D0.');
-            if (r.kind === 'document' && (container.kind === 'speedy-workspace' ? !Object.hasOwn(object(container.documents), String(r.documentId)) : !documents.has(String(r.documentId))))
+            if (d.version < 4 && r.kind === 'document' && (container.kind === 'speedy-workspace' ? !Object.hasOwn(object(container.documents), String(r.documentId)) : !documents.has(String(r.documentId))))
                 fail('Missing Document resource entry.');
-            if (r.documentId === v.restoreKey || d.windows.some(w => w.restoreKey === r.documentId))
+            if ([r.documentId,r.entityGuid,r.vaultGuid].some(id=>id!==undefined && (d.views.some(v=>v.restoreKey===id)||d.windows.some(w=>w.restoreKey===id))))
                 fail('Restore identities must be distinct from resource identities.');
         }
     }
@@ -250,13 +275,13 @@ export function applyManagedDesktop(root: any): any {
     const anchors = new Map(shellWindows(result).map(b => [b.id, b]));
     const closed: string[] = [], order = [...d.layout.normalOrder, ...d.layout.pinnedOrder];
     for (const v of d.views) {
-        if (v.descriptorVersion !== 1 || !['ink', 'flint', 'thesis', 'phosphor', 'viewer'].includes(v.appId))
+        if (d.version < 4 && (v.descriptorVersion !== 1 || !['ink', 'flint', 'thesis', 'phosphor', 'viewer'].includes(v.appId)))
             fail('Unsupported application descriptor; the Workspace was not opened.');
         const b = anchors.get(v.anchorBlockId), w = d.windows.find(w => w.view === v.restoreKey)!;
         if (!b)
             fail('Missing Desktop anchor.');
         const expected = appForAnchor(b);
-        if (v.appId !== expected)
+        if (d.version < 4 && v.appId !== expected)
             fail('Application descriptor does not match its anchor.');
         b.metadata = { ...b.metadata, position: { x: w.bounds.x, y: w.bounds.y }, size: { w: w.bounds.width, h: w.bounds.height }, pinned: w.layer === 'pinned', state: w.state === 'closed' ? 'normal' : w.state, zIndex: order.indexOf(w.restoreKey) + 1 };
         if (w.state === 'closed')
@@ -288,14 +313,15 @@ export function importLegacyDesktop(root: any, allocate: (block: any, index: num
         const view = { ...oldView, restoreKey: oldView?.restoreKey ?? keys.view, anchorBlockId: keys.anchor, appId: oldView?.appId ?? appForAnchor(b), descriptorVersion: oldView?.descriptorVersion ?? 1, persistence: 'anchor' as const, resources: oldView?.resources ?? [] };
         const document = b.children?.find((child: any) => ['document-block', 'document-reference-block'].includes(child.type));
         const documentId = document?.metadata?.documentId ?? document?.id;
-        if (documentId)
+        if (documentId && (!oldView || oldView.descriptorVersion === 1 && oldView.appId === appForAnchor(b) && oldView.resources.every(r=>r.kind==='document')))
             view.resources = [{ ...view.resources.find(r => r.kind === 'document' && r.documentId === documentId), kind: 'document', scope: 'workspace', documentId }];
         views.push(view);
         windows.push({ ...oldWindow, restoreKey: oldWindow?.restoreKey ?? keys.window, view: view.restoreKey, layer: m.pinned === true ? 'pinned' : 'normal', state: ['minimized', 'maximized', 'closed'].includes(m.state) ? m.state : 'normal', bounds: { ...oldWindow?.bounds, x: m.position?.x ?? 20, y: m.position?.y ?? 20, width: m.size?.w ?? 840, height: m.size?.h ?? 620 } });
     });
     const ordered = windows.map((w, i) => ({ w, z: Number(blocks[i].metadata?.zIndex) || 0, i })).sort((a, b) => a.z - b.z || a.i - b.i);
     const baseLayout = { ...previous?.layout }; delete baseLayout.tree; delete baseLayout.floating; delete baseLayout.version;
-    const desktop = validateManagedDesktop({ ...previous, version: 2, kind: 'managed-windows', views, windows, layout: { ...baseLayout, kind: 'floating', normalOrder: ordered.filter(x => x.w.layer === 'normal').map(x => x.w.restoreKey), pinnedOrder: ordered.filter(x => x.w.layer === 'pinned').map(x => x.w.restoreKey) } });
+    const base = { ...previous }; delete base.layouts; delete base.activeLayout; delete base.lastActive;
+    const desktop = validateManagedDesktop({ ...base, version: previous?.version === 4 ? 4 : 2, kind: 'managed-windows', views, windows, ...(previous?.version === 4 ? {layouts: []} : {}), layout: { ...baseLayout, kind: previous?.version === 4 ? 'split-tree' : 'floating', ...(previous?.version === 4 ? {version:1, floating:windows.map(w=>w.restoreKey)} : {}), normalOrder: ordered.filter(x => x.w.layer === 'normal').map(x => x.w.restoreKey), pinnedOrder: ordered.filter(x => x.w.layer === 'pinned').map(x => x.w.restoreKey) } });
     const p = result.metadata?.workspacePresentation;
     if (p !== undefined && (p.version !== 1 || p.presentations?.desktop && p.presentations.desktop.kind !== 'legacy-tree' && p.presentations.desktop.kind !== 'managed-windows'))
         fail('Cannot upgrade an unsupported presentation.');

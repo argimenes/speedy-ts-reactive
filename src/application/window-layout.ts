@@ -42,13 +42,15 @@ export class WindowLayout {
     });
     const state=editor.repository.readState(),root=state.contents[state.placements[state.rootPlacementKey].contentKey];
     const desktop=desktopOf(root.payload) as any;
-    if(desktop?.version===3){
+    if(desktop?.version>=3){
       const anchors=new Map(Object.values(state.placements).map(p=>[state.contents[p.contentKey].payload.id,p.key]));
       const views=new Map(desktop.views.map((v:any)=>[v.restoreKey,v.anchorBlockId]));
       const keys=new Map(desktop.windows.map((w:any)=>[w.restoreKey,anchors.get(views.get(w.view))]));
       this.value[1](mapEntries(desktop.layout.tree,(key:string)=>keys.get(key) as string|undefined));this.adopted=true;
     }
   }
+  restore(tree:LayoutNode|undefined){this.cancel();this.returnSlots.clear();this.value[1](tree);this.adopted=true;this.past=[];this.future=[];this.selection[1](new Map());this.historyChanged[1](n=>n+1);this.change[1](n=>n+1);}
+  canPersist(id:string){return this.persistent.get(id)?.()!==false;}
   private id=()=>`layout-${crypto.randomUUID()}`;
   dividerActive(){return !!this.pendingDivider;}
   minimized(id:string){this.capabilities[0]();return this.ports.get(this.key(id)!)?.mode==='minimized';}
@@ -74,6 +76,7 @@ export class WindowLayout {
   hidden(id:string){
     this.capabilities[0]();
     const key=this.key(id),port=key?this.ports.get(key):undefined;
+    if(this.active()&&key&&this.manager.named?.hidden(key))return true;
     return this.active()&&!!key&&port?.mode!=='minimized'&&port?.mode!=='maximized'&&entries(this.value[0]()).includes(key)&&!this.solution().rectangles[key];
   }
   private input(){
@@ -172,6 +175,7 @@ export class WindowLayout {
   private activate(id:string){this.selectWindow(id);this.manager.lifecycle.activate(id);}
   selectWindow(id:string){
     const key=this.key(id);if(!key||!this.active())return;
+    if(!this.manager.lifecycle.workspaceBlocked&&this.manager.lifecycle.canMinimize(id))this.manager.named?.reveal(key);
     const hidden=this.hidden(id);if(!hidden||!this.allowed(this.participants()))return;
     const temporary=this.solution().tabs.find(g=>g.temporary&&g.entries.includes(key));
     if(temporary){this.manager.lifecycle.remember();this.selection[1](old=>new Map(old).set(temporary.id,key));return;}
