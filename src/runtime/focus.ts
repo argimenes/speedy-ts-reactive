@@ -7,6 +7,8 @@ export interface FocusRequest {
   reveal?: boolean;
   raiseWindow?: boolean;
   reason?: string;
+  /** Runtime readiness/activation lease. Rechecked when a late mount arrives. */
+  valid?: () => boolean;
 }
 
 interface FocusState {
@@ -17,6 +19,8 @@ interface FocusState {
 
 export class FocusService {
   readonly state: FocusState;
+  permit?: (nodeKey: NodeKey) => boolean;
+  cancelPending(): void { this.pending = undefined; }
   private readonly setState: (...args: any[]) => void;
   private pending?: { nodeKey: NodeKey; request: FocusRequest; token: number };
   private readonly unsubscribe: () => void;
@@ -31,6 +35,7 @@ export class FocusService {
   }
 
   request(nodeKey: NodeKey, request: FocusRequest = {}): void {
+    if (request.valid?.() === false || this.permit?.(nodeKey) === false) return;
     const token = this.state.requestToken + 1;
     this.setState({
       lastFocusedKey: this.state.focusedKey,
@@ -62,6 +67,7 @@ export class FocusService {
     if (!pending || pending.token !== this.state.requestToken) return;
     const handle = this.mounts.get(pending.nodeKey);
     if (!handle) return;
+    if (pending.request.valid?.() === false || this.permit?.(pending.nodeKey) === false) { this.pending = undefined; return; }
     handle.focus();
     const caret = pending.request.caret;
     if (handle.restoreSelection && caret) {

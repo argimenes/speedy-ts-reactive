@@ -258,6 +258,7 @@ export class BlockHistorySession {
     } catch (error) { this.failed(error, generation); }
   }
   close(restore = true): void {
+    const valid=this.editor.windowManager?.lifecycle.ticket();
     const wasOpen = this.state.open;
     this.cancelRestore(); this.target = undefined;
     this.request?.abort(); this.generation++; this.session?.dispose?.(); this.session = undefined;
@@ -267,7 +268,7 @@ export class BlockHistorySession {
     if (restore && wasOpen && this.origin) {
       const origin = this.origin, inline = this.inlineSelection, native = this.nativeSelection;
       queueMicrotask(() => {
-        if (!this.editor.mounts.get(origin) || this.state.open) return;
+        if (valid?.()===false || !this.editor.mounts.get(origin) || this.state.open) return;
         this.editor.focus.request(origin, { reason: "closed-history", caret: native });
         if (inline) this.editor.mounts.get(origin)?.restoreInlineSelection?.(inline);
       });

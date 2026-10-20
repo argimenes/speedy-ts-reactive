@@ -4,6 +4,7 @@ export interface PanelSession {
   readonly key: string;
   readonly ownerKey: string;
   readonly data: unknown;
+  guardClose?(guard: () => boolean): Disposer;
   close(restore?: boolean): void;
   allowDocumentInput(allow: boolean): void;
   mountWidget(root: HTMLElement, focus: () => void): Disposer;

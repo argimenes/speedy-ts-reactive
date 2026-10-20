@@ -30,6 +30,8 @@ export function captureThesisDraft(editor:ReactiveEditor,targetKey:string):Draft
 }
 /** Resolve identity explicitly on navigation. The stored path is only a fallback hint. */
 export async function openThesisSource(editor:ReactiveEditor,source:SourcePassage,current:()=>boolean):Promise<string> {
+ const focusValid=editor.windowManager?.lifecycle.ticket();
+ const alive=current; current=()=>alive()&&focusValid?.()!==false;
  const native=nativeDocumentSession(editor),find=()=>{const matches=Object.values(editor.repository.readState().contents).filter(c=>c.viewType==='document-block'&&String((c.payload.metadata as any)?.documentId??c.payload.id)===source.resourceGuid);if(matches.length>1)throw Error('Source Resource identity is ambiguous.');return matches[0];};
  let owner=find();
  if(!owner){
@@ -42,7 +44,7 @@ export async function openThesisSource(editor:ReactiveEditor,source:SourcePassag
  if(!owner)throw Error('Source Document unavailable.');
  const applications=[...editor.projections.values()].flatMap(v=>Object.values(v.state.nodes)).filter(n=>n.viewType==='flint-application-block');
  const mountedSource=[...editor.projections.values()].some(v=>Object.values(v.state.nodes).some(n=>n.payload.id===source.blockGuid&&editor.mounts.get(n.key)));
- if(!applications.length&&!mountedSource){const root=[...editor.projections.values()][0]?.state.rootKey;if(root)await editor.commandRegistry.execute('flint.open',{targetKey:root,args:undefined});await new Promise(r=>setTimeout(r,0));}
+ if(!applications.length&&!mountedSource){const root=[...editor.projections.values()][0]?.state.rootKey;if(root){const open=()=>editor.commandRegistry.execute('flint.open',{targetKey:root,args:undefined});await (editor.windowManager ? editor.windowManager.withoutActivation(open) : open());}await new Promise(r=>setTimeout(r,0));}
  if(!current())throw Error('Thesis navigation canceled');
  for(const view of editor.projections.values())for(const n of Object.values(view.state.nodes))if(n.viewType==='flint-application-block'&&selectApplicationDocument(editor,n.key,source.resourceGuid)){const win=editor.blockQueries.ancestors(n.key).find(a=>a.viewType==='window-block');if(win)editor.viewVisibility.set(win.placementKey,false);break;}
  await new Promise(r=>setTimeout(r,0));if(!current())throw Error('Thesis navigation canceled');
@@ -83,7 +85,7 @@ export function createThesisFeature(editor:ReactiveEditor):CodexFeature {
    // Legacy hosts retain their renderer floor; managed hosts use session ordering.
    const zIndex=editor.windowManager?.launchMetadata().zIndex ?? Math.max(101,...Object.values(state.contents).map(c=>Number((c.payload.metadata as any)?.zIndex)||0))+1;
    const placement=editor.commands.insert({id:crypto.randomUUID(),type:'window-block',metadata:{title:'Thesis',position:{x:55,y:50},size:{w:draft?740:1040,h:680},zIndex},children:[{id,type:'thesis-application-block'}]},{kind:'at',parentKey:desktop,index:0});
-   editor.windowManager?.raisePlacement(placement);
+   editor.windowManager?.activatePlacement(placement);
   };
   const available=({targetKey}:{targetKey:string})=>!!editor.node(targetKey)&&editor.repository.state.contents[editor.repository.state.placements[editor.repository.state.rootPlacementKey].contentKey].viewType==='workspace-block';
   scope.own(editor.commandRegistry.register({id:'thesis.open',label:'Open Thesis',canExecute:available,execute:({targetKey})=>open(targetKey)},scope.owner));

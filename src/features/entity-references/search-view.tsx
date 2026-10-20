@@ -91,7 +91,17 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
  });
  onMount(()=>{
   const mount=panel.mountWidget(root,()=>{input.focus();input.select();});input.focus();input.select();
-  const stop=api.beforeChange(()=>{if(editing)return;if(creating()||created()){setValid(false);candidates().disable();panel.allowDocumentInput(true);}else close();});
+  const invalidate=()=>{if(editing)return;if(api.watchTarget||creating()||created()){setValid(false);candidates().disable();panel.allowDocumentInput(true);setError('The original target changed. Select a new target before linking.');}else close();};
+  let stop:()=>void;
+  if(api.watchTarget) stop=api.watchTarget(panel.ownerKey,target().entityRanges,change=>{
+   if(editing)return;
+   // Preserve source ranges and identity. This does not retarget or repaint.
+   if(change.valid&&valid()) target().entityRevision=change.revision;
+   else invalidate();
+  });
+  else stop=api.beforeChange(invalidate);
+  const guard=panel.guardClose?.(()=>editing||!creating()&&!working()&&(!attempt()||!!created()||window.confirm('Entity creation outcome is unconfirmed. Close this tool and discard its retry receipt?')));
+  onCleanup(()=>guard?.());
   onCleanup(()=>{mount();stop();});
  });
  const pageRows=()=>result()?.candidates.slice(page()*10,page()*10+10)??[];
@@ -122,7 +132,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   else if(!field&&e.key==='End'){e.preventDefault();setCurrent(Math.max(0,pageRows().length-1));}
   else if(!field&&/^[0-9]$/.test(e.key)){e.preventDefault();const row=pageRows()[Number(e.key)];if(row)select(row.id);}
  };
- return <div ref={root} class="reactive-entity-search" classList={{'reactive-entity-search--candidates':candidates().state.enabled}} role="dialog" aria-modal={!candidates().state.enabled&&!created()} aria-label="Link Entity Reference" data-native-context-menu onKeyDown={keys}
+ return <div ref={root} class="reactive-entity-search" classList={{'reactive-entity-search--candidates':candidates().state.enabled}} role="dialog" aria-modal={api.watchTarget?false:!candidates().state.enabled&&!created()} aria-label="Link Entity Reference" data-native-context-menu onKeyDown={keys}
   style={{left:`${position().x}px`,top:`${position().y}px`,width:`${(resize.preview()??size())?.width??width}px`,...((resize.preview()??size())?{height:`${(resize.preview()??size())!.height}px`}:{})}}>
   <header class="reactive-entity-search__header" onPointerDown={e=>{if(e.button!==0||(e.target as Element).closest('button'))return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:position().x,top:position().y};e.currentTarget.setPointerCapture?.(e.pointerId);e.preventDefault();}} onPointerMove={e=>{if(drag?.id===e.pointerId)setPosition({x:Math.max(8,Math.min(window.innerWidth-80,drag.left+e.clientX-drag.x)),y:Math.max(8,Math.min(window.innerHeight-60,drag.top+e.clientY-drag.y))});}} onPointerUp={()=>drag=undefined} onPointerCancel={()=>drag=undefined}>
    <strong>Link Entity Reference</strong><button onClick={close}>Cancel</button>

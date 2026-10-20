@@ -109,9 +109,12 @@ export class StickyNoteService {
     if (!draft || !this.editor.node(draft.parentKey)) return;
     const parent = this.editor.node(draft.parentKey)!;
     const placement = this.editor.commands.insert(stickyWindowDto(text, { ...draft.position }, { ...draft.size }), { kind: "at", parentKey: parent.key, index: parent.children.length });
-    this.editor.windowManager?.raisePlacement(placement);
+    this.editor.windowManager?.activatePlacement(placement);
     this.discard(id);
+    const key=this.editor.nodeForPlacementInView(placement,draft.viewId)?.key;
+    const valid=key && this.editor.windowManager?.registry.windows[key] ? this.editor.windowManager.lifecycle.readyTicket(key) : undefined;
     queueMicrotask(() => {
+      if(valid?.()===false)return;
       const window = this.editor.nodeForPlacementInView(placement, draft.viewId);
       const textNode = window && this.editor.node(this.editor.node(window.children[0])?.children[0] ?? "");
       if (textNode) this.editor.focus.request(textNode.key, { reason: "create-sticky-note", caret: "end" });
@@ -119,13 +122,18 @@ export class StickyNoteService {
     return this.editor.nodeForPlacementInView(placement, draft.viewId)?.key;
   }
 
-  closeWindow(windowKey: NodeKey) {
+  closeWindow(windowKey: NodeKey):void|Promise<void> {
+    const manager=this.editor.windowManager;
+    if(manager?.registry.windows[windowKey])return manager.lifecycle.close(windowKey,()=>this.commitCloseWindow(windowKey));
+    this.commitCloseWindow(windowKey);
+  }
+  private commitCloseWindow(windowKey: NodeKey) {
     const window = this.editor.node(windowKey);
     if (!window || window.viewType !== "window-block" || !(window.payload.metadata as Record<string, unknown> | undefined)?.stickyNote) return;
     const focusWasInside = this.editor.mounts.get(windowKey)?.root.contains(document.activeElement);
     const parent = [...this.editor.projections.values()].flatMap(projection => Object.values(projection.state.nodes))
       .find(candidate => candidate.children.includes(windowKey));
-    const restoreFocus = () => { if (focusWasInside && parent) queueMicrotask(() => this.editor.focus.request(parent.key, { reason: "close-sticky-note" })); };
+    const restoreFocus = () => { if (!this.editor.windowManager && focusWasInside && parent) queueMicrotask(() => this.editor.focus.request(parent.key, { reason: "close-sticky-note" })); };
     const note = window.children.map(key => this.editor.node(key)).find(node => node?.viewType === "sticky-note-block");
     if (!note || stickyNoteIsEmpty(this.editor, note.key)) {
       this.editor.focus.clearRemoved(windowKey);
@@ -141,7 +149,7 @@ export class StickyNoteService {
     const window = this.editor.node(windowKey);
     if (!window || !(window.payload.metadata as Record<string, unknown> | undefined)?.stickyNote) return;
     this.editor.commands.setPayloadField(windowKey, "metadata", { ...unwrap(window.payload.metadata as Record<string, unknown>), state: "normal" }, "Reopen Sticky Note");
-    this.editor.windowManager?.raisePlacement(window.placementKey);
+    this.editor.windowManager?.activatePlacement(window.placementKey);
   }
 
   dispose() { this.setState("drafts", []); this.host = undefined; }

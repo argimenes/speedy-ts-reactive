@@ -17,7 +17,7 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
   const [url, setUrl] = createSignal("");
   const lifetime = new AbortController();
   onCleanup(() => lifetime.abort());
-  const enabled = () => available() && !busy() && !dialog() && !document.querySelector('[role="dialog"]');
+  const enabled = () => available() && !busy() && !dialog() && !(session.windowManager ? session.windowManager.lifecycle.workspaceBlocked : document.querySelector('[role="dialog"]'));
   const open = (kind: "document" | "image") => { if (enabled()) { setError(""); setUrl(""); setDialog(kind); } };
   const finish = (placement: PlacementKey) => {
     setDialog(undefined); setError("");

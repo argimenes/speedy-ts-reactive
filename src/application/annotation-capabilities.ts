@@ -99,6 +99,20 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
       const range = editor.mounts.get(key)?.captureInlineSelection?.();
       return range ? [{ nodeKey: key, start: Math.min(range.anchor, range.head), end: Math.max(range.anchor, range.head) }] : [];
     },
+    ...(editor.windowManager ? { watchTarget(owner: string, ranges: readonly import("../runtime/text-search").SearchRange[], listener: (change: {valid:boolean;revision:number}) => void) {
+      const keys = [owner, ...ranges.map(r => r.nodeKey)];
+      const sources = keys.map(key => { const node = editor.node(key)!; return {key, contentKey:node.contentKey, placementKey:node.placementKey}; });
+      const contents = new Set(sources.map(s => s.contentKey));
+      // Capture structural dependencies once, never traverse the Document on typing.
+      const ancestors = new Set(keys.flatMap(key => editor.blockQueries.ancestors(key).map(n => n.contentKey)));
+      return scope.own(editor.repository.subscribeChanges(change => {
+        const touched = [...change.previousContents.keys()];
+        const sourceChanged = (change.inlineOwner && contents.has(change.inlineOwner)) || touched.some(key => contents.has(key));
+        const structureChanged = !change.inlineOwner && !change.appendedChildrenOwner && touched.some(key => ancestors.has(key));
+        const valid = !sourceChanged && !structureChanged && sources.every(s => { const node=editor.node(s.key); return node?.contentKey===s.contentKey && node.placementKey===s.placementKey; });
+        listener({valid:!!valid,revision:editor.repository.state.revision});
+      }));
+    } } : {}),
     beforeChange: listener => scope.own(editor.repository.subscribeBeforeChanges(listener)),
     afterChange: listener => scope.own(editor.repository.subscribeChanges(listener)),
     search(runner) { check(); const search = new TextSearch(editor, runner); const dispose = scope.own(() => search.dispose()); return { searchText: request => search.searchText(request), dispose }; },
@@ -116,12 +130,16 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     },
     openPanel(type, owner, data, selection = []) {
       check(); if (!panelTypes.has(type) || !editor.node(owner)) throw new Error("Open the panel from a document first.");
-      for (const overlay of [...editor.overlays.overlays]) if (overlay.viewType === type) editor.overlays.close(overlay.key, false);
+      if (editor.windowManager && type === "entity-search") {
+        const source = locate(editor, owner, "document");
+        const existing = editor.overlays.overlays.find(overlay => overlay.viewType === type && editor.node(overlay.ownerKey)?.viewId === source.viewId && locate(editor,overlay.ownerKey,"document").rootKey === source.rootKey);
+        if (existing) { const session = panelSession(editor,existing); session.focus(); return session; }
+      } else for (const overlay of [...editor.overlays.overlays]) if (overlay.viewType === type) editor.overlays.close(overlay.key, false);
       const mount = editor.mounts.get(owner), rect = mount?.root.getBoundingClientRect();
       editor.crossText.clear();
       const first = selection.find(range => range.end > range.start);
       if (first) { mount?.focus(); mount?.restoreInlineSelection?.({ anchor: first.start, head: first.end }); }
-      const key = editor.overlays.open({ ownerKey: owner, viewType: type, anchor: { x: rect?.left ?? 20, y: (rect?.bottom ?? 20) + 8 }, data });
+      const key = editor.overlays.open({ ownerKey: owner, viewType: type, explicitDismissal: !!editor.windowManager && type === "entity-search", anchor: { x: rect?.left ?? 20, y: (rect?.bottom ?? 20) + 8 }, data });
       return panelSession(editor, editor.overlays.overlays.find(overlay => overlay.key === key)!);
     },
     decorations(owner) {

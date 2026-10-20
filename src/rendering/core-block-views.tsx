@@ -518,6 +518,12 @@ export function WindowView(props: BlockViewProps) {
       root,
       focusElement: root,
       inputPolicy: "container",
+      contextActions: manager ? () => [
+        {label:"Activate window",run:()=>{manager.lifecycle.activate(props.nodeKey);}},
+        {label:"Minimize window",disabled:!manager.lifecycle.canMinimize(props.nodeKey),run:minimizeWindow},
+        {label:"Restore window",disabled:!minimized(),run:restoreWindow},
+        {label:"Close window",run:()=>editor.closeView(props.nodeKey)},
+      ] : undefined,
       focus: () => (root.querySelector<HTMLButtonElement>("[data-window-icon]") ?? root).focus({ preventScroll: true }),
     });
     if (typeof ResizeObserver !== "undefined") {
@@ -676,18 +682,22 @@ export function WindowView(props: BlockViewProps) {
     returnFocus = { key, native: mount?.captureSelection?.(), inline: mount?.captureInlineSelection?.() };
   };
   const minimizeWindow = () => {
+    if (manager && !manager.lifecycle.canMinimize(props.nodeKey)) { setToolbarNotice("Minimize is unavailable while this window has an active editing session or tool."); return; }
+    manager?.lifecycle.remember();
     const focusWasInside = contains(editor.focus.state.focusedKey);
     if (focusWasInside) { rememberReturnFocus(); editor.focus.adopt(props.nodeKey); }
     if (editor.find.state.open && contains(editor.find.state.scope?.rootKey)) editor.find.close(false);
     for (const overlay of [...editor.overlays.overlays]) if (contains(overlay.ownerKey)) editor.overlays.close(overlay.key, false);
     beforeMinimize=maximized()?"maximized":"normal";
     editor.crossText.clear(); commitMetadata({ state: "minimized" }, "Minimize Window");
-    if (focusWasInside) queueMicrotask(() => root.querySelector<HTMLButtonElement>("[data-window-icon]")?.focus({ preventScroll: true }));
+    if (manager) { manager.lifecycle.successor(props.nodeKey); manager.lifecycle.notify("minimized",props.nodeKey); }
+    else if (focusWasInside) queueMicrotask(() => root.querySelector<HTMLButtonElement>("[data-window-icon]")?.focus({ preventScroll: true }));
   };
   const restoreWindow = () => {
     if (suppressIconClick) { suppressIconClick = false; return; }
     commitMetadata({ state: beforeMinimize }, "Restore Window");
     if (manager) manager.raisePlacement(node()!.placementKey);
+    if (manager) { manager.lifecycle.activate(props.nodeKey); manager.lifecycle.notify("restored",props.nodeKey); return; }
     const saved = returnFocus; returnFocus = undefined;
     queueMicrotask(() => {
       const focused = editor.focus.state.focusedKey, mounted = focused && editor.mounts.get(focused);
@@ -701,6 +711,7 @@ export function WindowView(props: BlockViewProps) {
       if (candidate) editor.focus.request(candidate.key, { reason: "restore-window" }); else root.focus({ preventScroll: true });
     });
   };
+  onMount(() => { if (manager) onCleanup(manager.lifecycle.bindActions(props.nodeKey,{minimize:minimizeWindow,restore:restoreWindow})); });
   const frame = () => (
     <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--maximized": maximized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
       hidden={closedSticky()}
@@ -720,6 +731,7 @@ export function WindowView(props: BlockViewProps) {
             </Show>
           </span>
         </header>
+        <Show when={manager && toolbarNotice() && !isDocument()}><p role="status">{toolbarNotice()}</p></Show>
         <DocumentMarginContext.Provider value={marginPresentation}>
           <Show when={isDocument()}><DocumentStyleBar toolset={toolset()} onToolset={setToolset} onNotice={setToolbarNotice} editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
           <div class="reactive-window__content" ref={host => onMount(() => { if (isDocument()) onCleanup(editor.pointerSpotlight.mount(host, scale)); })}><div class="reactive-window__document-body"><ChildBlocks parentKey={props.nodeKey} /></div></div>

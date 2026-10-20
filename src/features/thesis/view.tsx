@@ -1,3 +1,4 @@
+import { useManagedWindowOwner } from "../../rendering/window-manager";
 import {For,Show,createSignal,onCleanup,onMount} from 'solid-js';
 import {unwrap} from 'solid-js/store';
 import {ReactiveEditor} from '../../reactive-editor/editor';
@@ -18,13 +19,22 @@ const activeDraftInputs=new WeakMap<Document,{owner:ReactiveEditor;release:()=>v
 export interface DraftPort {read():{text:string;annotations:ReturnType<typeof serializeAnnotations>};focus():void}
 /** Constant work subscriber: no text serialization, vault access, or list refresh on typing. */
 export function watchDraftDirty(editor:ReactiveEditor,dirty:()=>void){return editor.repository.subscribeChanges(()=>dirty());}
-export function NativePropositionEditor(props:{draft:Draft;vault:string;features?:ReactiveEditor["features"];changed:()=>void;ready:(port:DraftPort)=>void;notice:(message:string)=>void}) {
+export function NativePropositionEditor(props:{draft:Draft;vault:string;features?:ReactiveEditor["features"];changed:()=>void;ready:(port:DraftPort)=>void;notice:(message:string)=>void; focusValid?:()=>boolean}) {
  const editor=new ReactiveEditor({id:crypto.randomUUID(),type:'standoff-editor-block',text:props.draft.text,standoffProperties:props.draft.properties},{features:{...props.features,thesis:false,nativeDocumentPersistence:false,documentInterchange:false,mutableClipboard:false,blockHistory:false,flint:false,phosphor:false}});
  registerCoreViews(editor);
  onCleanup(registerStandaloneEntityService(editor,()=>thesisEntityService(props.vault,()=>new Set(((editor.node(key)?.payload.standoffProperties??[]) as JsonObject[]).filter(p=>p.type==='codex/entity-reference'&&!p.isDeleted&&typeof p.value==='string').map(p=>String(p.value))))));
  const view=editor.createView(),key=view.state.rootKey;
+ onCleanup(editor.mounts.subscribe((mounted,handle)=>{if(mounted===key)handle.focusElement.setAttribute('aria-label','Proposition text');}));
  if(editor.features.entityReferences)editor.featureHost.activate(createEntityReferencesFeature(scope=>annotationCapabilities(editor,scope,key)));
  let root!:HTMLDivElement,activateInput=()=>{};
+ const owner=useManagedWindowOwner();
+ if(owner) {
+  editor.windowManager=owner.manager;
+  editor.focus.permit=key=>{const mount=editor.mounts.get(key);return !mount || owner.manager.lifecycle.permits(mount.focusElement)&&!!owner.manager.registry.windows[owner.windowId]?.visible;};
+  editor.overlays.focusLease=()=>owner.manager.lifecycle.ticket();
+  editor.commandRegistry.permit=()=>owner.manager.lifecycle.canCommand(owner.windowId);
+ }
+ const readyFocus=props.focusValid ?? (owner ? owner.manager.lifecycle.readyTicket(owner.windowId) : undefined);
  const focus=()=>editor.focus.request(key,{reason:'thesis-draft',caret:'end'});
  const selection=()=>editor.mounts.get(key)?.captureInlineSelection?.()??editor.mounts.inlineSelection(key);
  const annotate=(type:string)=>{try{const r=selection();if(!r||r.anchor===r.head)throw Error('Select some proposition text first.');editor.rangeAnnotations.apply([editor.textRanges.snapshot(key,Math.min(r.anchor,r.head),Math.max(r.anchor,r.head))],type);editor.mounts.get(key)?.restoreInlineSelection?.(r);}catch(e){props.notice(String(e));}};
@@ -46,13 +56,13 @@ export function NativePropositionEditor(props:{draft:Draft;vault:string;features
    const release=()=>{if(!active)return;active=false;gateway();document.removeEventListener('keydown',newline,true);document.removeEventListener('beforeinput',newline,true);if(activeDraftInputs.get(document)?.owner===editor)activeDraftInputs.delete(document);};
    activeDraftInputs.set(document,{owner:editor,release});
   };
-  activateInput();const dirty=watchDraftDirty(editor,props.changed);
+  const dirty=watchDraftDirty(editor,props.changed);
   onCleanup(()=>{dirty();if(activeDraftInputs.get(document)?.owner===editor)activeDraftInputs.get(document)?.release();});
   props.ready({focus,read(){const node=editor.node(key)!;const cells=node.inlineContent.map(k=>editor.node(k)!);if(cells.some(c=>c.viewType!=='text-cell'))throw Error('Embedded objects are not supported in a Proposition.');const text=cells.map(c=>String(c.payload.text)).join('');return {text,annotations:serializeAnnotations(text,unwrap((node.payload.standoffProperties??[]) as JsonObject[]))};}});
-  focus();
+  queueMicrotask(()=>{if(root.isConnected&&readyFocus?.()!==false)focus();});
  });
  onCleanup(()=>editor.dispose());
- return <div class="thesis-native" ref={root} onFocusIn={()=>activateInput()}>
+ return <div class="thesis-native" ref={root} onFocusIn={()=>activateInput()} onFocusOut={()=>{if(owner)queueMicrotask(()=>{if(!root.contains(document.activeElement)&&activeDraftInputs.get(document)?.owner===editor)activeDraftInputs.get(document)?.release();});}}>
   <div class="thesis-tools" role="toolbar" aria-label="Proposition annotations" onMouseDown={e=>e.preventDefault()}>
    <button type="button" onClick={()=>annotate('style/bold')}>Bold</button><button type="button" onClick={()=>annotate('style/italics')}>Italic</button><button type="button" onClick={()=>annotate('style/highlight')}>Highlight</button>
    <Show when={editor.features.entityReferences&&editor.features.sqliteEntities}><button type="button" onClick={()=>{try{void editor.commandRegistry.execute('entity.open',{targetKey:key,args:undefined});}catch(e){props.notice(String(e));}}}>Entity reference</button></Show>
@@ -62,10 +72,12 @@ export function NativePropositionEditor(props:{draft:Draft;vault:string;features
  </div>;
 }
 export function ThesisView(props:{host:ReactiveEditor;initial?:Draft;windowKey?:string;close:()=>void}) {
+ const launchFocus=props.windowKey ? props.host.windowManager?.lifecycle.readyTicket(props.windowKey) : undefined;
  const [vault,setVault]=createSignal(''),[ready,setReady]=createSignal(false),[error,setError]=createSignal(''),[notice,setNotice]=createSignal(''),[busy,setBusy]=createSignal(false),[saving,setSaving]=createSignal(false);
  const [query,setQuery]=createSignal(''),[archived,setArchived]=createSignal(false),[rows,setRows]=createSignal<any[]>([]),[next,setNext]=createSignal<string|null>(null),[page,setPage]=createSignal('');
  const [draft,setDraft]=createSignal<Draft>(),[record,setRecord]=createSignal<Proposition>(),[name,setName]=createSignal(''),[dirty,setDirty]=createSignal(false),[editorOnly,setEditorOnly]=createSignal(!!props.initial);
  let port:DraftPort|undefined,alive=true,listing=0,editVersion=0,pendingVersion=0,controller:AbortController|undefined,pending:Record<string,unknown>|undefined;
+ const loading=new AbortController();
  const current=()=>alive;
  const discard=()=>!busy()&&(!pending&&!dirty()||window.confirm(pending?'The previous operation has an unconfirmed or rejected outcome. Retry Save to resolve it, or discard this draft?':'Discard unsaved Proposition changes?'));
  const call=(request:unknown,signal?:AbortSignal)=>thesisRequest(vault(),request,signal);
@@ -93,15 +105,15 @@ export function ThesisView(props:{host:ReactiveEditor;initial?:Draft;windowKey?:
  };
  const archive=async()=>{const r=record();if(!r||!discard())return;setBusy(true);setError('');try{pending??={op:r.attributes.thesis.archived?'restore':'archive',id:r.id,expectedRevision:r.revision,operationId:crypto.randomUUID()};const result=await call(pending);if(alive){load(result.proposition);await refresh();}}catch(e){if(alive)setError(String(e));}finally{if(alive)setBusy(false);}};
  onMount(()=>{
-  if(props.windowKey)props.host.viewCloseGuards.set(props.windowKey,()=>{if(!discard())return false;setDirty(false);return true;});
+  if(props.windowKey)props.host.viewCloseGuards.set(props.windowKey,()=>discard());
   const warn=(event:BeforeUnloadEvent)=>{if(dirty()||busy()||pending){event.preventDefault();event.returnValue='';}};window.addEventListener('beforeunload',warn);
   onCleanup(()=>{window.removeEventListener('beforeunload',warn);if(props.windowKey)props.host.viewCloseGuards.delete(props.windowKey);});
-  void(async()=>{try{const v=await nativeDocumentSession(props.host).defaultVault();if(!alive)return;if(!v)throw Error('Open a Mutable Vault before using Thesis.');setVault(v);const context=await call({op:'context'});if(!alive)return;setReady(true);
+  void(async()=>{try{const v=await nativeDocumentSession(props.host).defaultVault(loading.signal);if(!alive)return;if(!v)throw Error('Open a Mutable Vault before using Thesis.');setVault(v);const context=await call({op:'context'},loading.signal);if(!alive)return;setReady(true);
    if(props.initial){const d=props.initial;if(d.source){const {blockText,...source}=d.source;d.source={...source,blockHash:await passageHash(blockText??''),vault:v,vaultGuid:context.vaultGuid};if(!alive)return;}setDraft(d);setDirty(!!d.text||!!d.properties.length);}
    await refresh();
   }catch(e){if(alive)setError(String(e));}})();
  });
- onCleanup(()=>{alive=false;listing++;controller?.abort();});
+ onCleanup(()=>{alive=false;loading.abort();listing++;controller?.abort();});
  const source=()=>draft()?.source;
  return <section class="thesis" aria-label="Thesis" onKeyDown={event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='s'&&!event.isComposing){event.preventDefault();event.stopPropagation();void save();}}}>
   <header><strong>Thesis</strong><Show when={ready()}><form onSubmit={e=>{e.preventDefault();setEditorOnly(false);void refresh();}}><input aria-label="Search propositions" placeholder="Search labels and statements…" value={query()} onInput={e=>setQuery(e.currentTarget.value)}/><button type="submit">Search</button></form><button type="button" onClick={create} disabled={busy()}>New</button><label><input type="checkbox" checked={archived()} onChange={e=>{setArchived(e.currentTarget.checked);setEditorOnly(false);void refresh();}}/> Archived</label><Show when={editorOnly()}><button type="button" onClick={()=>setEditorOnly(false)}>Browse</button></Show></Show></header>
@@ -111,7 +123,7 @@ export function ThesisView(props:{host:ReactiveEditor;initial?:Draft;windowKey?:
    <main><Show when={draft()} keyed fallback={<p>Select a proposition or choose New.</p>}>{d=><>
     <label>Name <input aria-label="Proposition name" maxLength={240} value={name()} disabled={busy()&&!saving()} onInput={e=>{setName(e.currentTarget.value);changed();}}/></label><span role="status">{dirty()?'Unsaved changes':''}</span>
     <Show when={d.warnings.length}><details open><summary>Selection transfer notes</summary><ul><For each={d.warnings}>{w=><li>{w}</li>}</For></ul></details></Show>
-    <fieldset disabled={busy()&&!saving()} class="thesis-editor-field" inert={busy()&&!saving()?true:undefined}><legend>Proposition</legend><NativePropositionEditor draft={d} vault={vault()} features={props.host.features} changed={changed} ready={p=>port=p} notice={setNotice}/></fieldset>
+    <fieldset disabled={busy()&&!saving()} class="thesis-editor-field" inert={busy()&&!saving()?true:undefined}><legend>Proposition</legend><NativePropositionEditor focusValid={d===props.initial?launchFocus:undefined} draft={d} vault={vault()} features={props.host.features} changed={changed} ready={p=>port=p} notice={setNotice}/></fieldset>
     <Show when={source()}>{s=><section class="thesis-source" aria-label="Source"><strong>Source passage</strong><blockquote>{s().text}</blockquote><small>Captured {s().capturedUtc.slice(0,10)} · {s().location?.filename??'Ink passage'}</small><button type="button" onClick={()=>{void openThesisSource(props.host,s(),current).then(setNotice,e=>{if(alive)setError(String(e));});}}>Open source</button></section>}</Show>
     <footer><button type="button" disabled={busy()} onClick={()=>void save()}>Save</button><button type="button" disabled={busy()} onClick={()=>{if(discard()){pending=undefined;setDirty(false);setDraft(undefined);setRecord(undefined);if(editorOnly())props.close();}}}>Cancel / Close</button><Show when={record()}>{r=><><button type="button" disabled={busy()||!!pending} onClick={()=>void archive()}>{r().attributes.thesis.archived?'Restore':'Archive'}</button><button type="button" disabled={busy()} onClick={()=>void edit(r().id)}>Reload</button></>}</Show></footer>
    </>}</Show></main>

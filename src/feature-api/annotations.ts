@@ -38,6 +38,8 @@ export interface AnnotationCapabilities {
     readonly key: string; readonly signature: string; dispose(): void;
   };
   selection(key: string): AnnotationTarget[];
+  /** Target-local validation; unrelated commits advance only the revision fence. */
+  watchTarget?(owner: string, ranges: readonly SearchRange[], listener: (change: {valid: boolean; revision: number}) => void): Disposer;
   beforeChange(listener: () => void): Disposer;
   afterChange(listener: () => void): Disposer;
   search(runner?: SearchRunner): Pick<TextSearch, "searchText" | "dispose">;

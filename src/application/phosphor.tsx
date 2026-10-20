@@ -95,7 +95,7 @@ export function openPhosphor(
       { kind: "at", parentKey: desktop, index: 0 },
     );
     editor.commands.transclude(doc!, { kind: "at", parentKey: win, index: 0 });
-    editor.windowManager?.raisePlacement(win);
+    editor.windowManager?.activatePlacement(win);
   });
   if (resourceId) nativeDocumentSession(editor).trackCandidate(resourceId);
 }

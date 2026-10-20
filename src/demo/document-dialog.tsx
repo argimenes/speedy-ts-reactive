@@ -1,4 +1,5 @@
 import { createSignal, createUniqueId, onCleanup, onMount, type JSX } from "solid-js";
+import { windowManagerForDocument } from "../application/window-lifecycle";
 import { Portal } from "solid-js/web";
 import { createFloatingWindowResize, FloatingWindowResizeHandle, type FloatingWindowSize } from "../rendering/floating-window-resize";
 
@@ -8,6 +9,7 @@ export interface DocumentDialogResizePolicy {
 }
 
 export function DocumentDialog(props: { title: string; onClose: () => void; busy?: boolean; children: JSX.Element; compact?: boolean; resizable?: DocumentDialogResizePolicy }) {
+  const manager = windowManagerForDocument(document);
   const titleId = createUniqueId();
   let dialog!: HTMLElement;
   let drag: { id: number; x: number; y: number; left: number; top: number } | undefined;
@@ -29,8 +31,9 @@ export function DocumentDialog(props: { title: string; onClose: () => void; busy
     enabled: () => !!props.resizable && !props.busy,
     onCommit: next => { setSize(next); queueMicrotask(() => setPosition(current => clampPosition(current.x, current.y))); },
   });
+  onMount(() => { if (manager) onCleanup(manager.lifecycle.modal(dialog)); });
   onMount(() => queueMicrotask(() => {
-    if (dialog.isConnected) (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog.querySelector<HTMLElement>("input, button:not([disabled])") ?? dialog).focus();
+    if (dialog.isConnected && (!manager || manager.lifecycle.permits(dialog))) (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog.querySelector<HTMLElement>("input, button:not([disabled])") ?? dialog).focus();
   }));
   onMount(() => {
     if (!props.resizable) return;
@@ -38,7 +41,7 @@ export function DocumentDialog(props: { title: string; onClose: () => void; busy
     window.addEventListener("resize", keepReachable);
     onCleanup(() => window.removeEventListener("resize", keepReachable));
   });
-  onCleanup(() => { if (previous?.isConnected) previous.focus({ preventScroll: true }); });
+  onCleanup(() => { if (!manager && previous?.isConnected) previous.focus({ preventScroll: true }); });
   const keyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault(); event.stopPropagation();

@@ -1,10 +1,10 @@
 # Mutable Window Manager: architecture and implementation plan
 
-**Status: A0 implemented; A1 and later milestones remain unapproved.**
+**Status: A0 accepted; approved A1 implemented and qualified. Milestone B and later milestones remain unapproved.**
 
-See the [A0 qualification report](MUTABLE_WINDOW_MANAGER_A0_QUALIFICATION.md) for implementation details, executed checks, baseline failures and scope limits.
+See the [A1 qualification report](MUTABLE_WINDOW_MANAGER_A1_QUALIFICATION.md) for activation, lifecycle, Entity continuity and current limitations. The historical planning audit below remains the design reference. See the [A0 qualification report](MUTABLE_WINDOW_MANAGER_A0_QUALIFICATION.md) for implementation details, executed checks, baseline failures and scope limits.
 
-Approval clarifications: retain a future common tool-chrome/positioning/docking capability boundary without adding those features in A0; distinguish mounted, visible and active views; Acetate is a distinct future application; preserve all existing JSON persistence formats and manual Save semantics. The implementation and qualification report supersede planning estimates for A0 only.
+Approval clarifications: retain a future common tool-chrome/positioning/docking capability boundary without adding those features in A0; distinguish mounted, visible and active views; Acetate is a distinct future application; preserve all existing JSON persistence formats and manual Save semantics. The A0 and A1 qualification reports supersede their planning estimates. The original planning-only audit below predates both implementations.
 
 Prepared 20 October 2026 against repository commit `d0faa4c` and the current working tree. Revised to address both `MUTABLE_WINDOW_MANAGER_PLANNING_BRIEF.md` and `MUTABLE_WINDOW_MANAGER_PLANNING_ADDENDUM.md`. The companion [application-surface design](MUTABLE_WINDOW_MANAGER_APPLICATION_SURFACES.md) is part of this plan: it supplies the source inventory, scope contracts, Entity case study and qualification scenarios. Evidence comes from source inspection, existing test-source inspection, and the browser/platform references linked below. No application code, tests, schemas, dependencies, or generated artifacts were changed during this investigation. No tests, builds, benchmarks, load tests, migrations, or application sessions were run. Proposed tests and TypeScript below are specifications, not executed or installed code.
 
@@ -780,8 +780,8 @@ The nine addendum scenarios and their phase gates are specified in the companion
 
 ## 13. A0 approval and later-milestone boundary
 
-**Approved implementation scope: revised Milestone A0 only.** Establish the session-owned ordering/adoption model and minimal application-surface ownership/layers, connect the shared window renderer and existing panel hosts, migrate current desktop launch/reveal rank decisions, and qualify maximised-Flint → Thesis plus owner-relative Entity tool stacking with modal/pinned precedence. A1 follows with the Entity focus/lifecycle proof. No app docking, promotion or full generic panel registry is included in A0.
+**Original A0 approval (completed and accepted): revised Milestone A0 only.** Establish the session-owned ordering/adoption model and minimal application-surface ownership/layers, connect the shared window renderer and existing panel hosts, migrate current desktop launch/reveal rank decisions, and qualify maximised-Flint → Thesis plus owner-relative Entity tool stacking with modal/pinned precedence. The subsequently approved A1 Entity focus/lifecycle proof is documented in its qualification report. No app docking, promotion or full generic panel registry is included in A0.
 
-A0 must remain behind a default-enabled feature flag with exclusive fallback, retain existing data formats and manual Save semantics, and avoid tiling, rehosting, crash persistence, new visual themes, or domain changes. A1 focus/lifecycle work follows only after A0 is reviewed.
+A0 must remain behind a default-enabled feature flag with exclusive fallback, retain existing data formats and manual Save semantics, and avoid tiling, rehosting, crash persistence, new visual themes, or domain changes. A0 was reviewed and accepted; A1 was then explicitly approved and implemented.
 
-**Approval boundary:** the user has explicitly approved revised A0 with the clarifications recorded at the top of this document. That approval supersedes the earlier planning hold for A0 only. A1 and later milestones still require explicit approval. Existing JSON workspace persistence is unchanged in A0; D0/D1 format proposals are not authorised.
+**Approval boundary:** the user accepted A0 and explicitly approved A1, including activation, focus, lifecycle and Entity continuity. Both are implemented under the existing flag. Milestone B and all later milestones still require separate approval. Existing JSON persistence is unchanged; retained hosts, tool promotion, docking and D0/D1 format proposals are not authorised.

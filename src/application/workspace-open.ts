@@ -51,7 +51,7 @@ export function workspaceOpen(session: WorkspaceSession) {
       if (next) presentation.updateCanvas(next, objects);
       spatialCommit?.();
     });
-    if (!banked) editor.windowManager?.raisePlacement(placement);
+    if (!banked) editor.windowManager?.activatePlacement(placement);
     return placement;
   };
   const documents = () => workspaceDocumentContentKeys(editor.repository.state).map(key => editor.repository.state.contents[key]);
@@ -104,7 +104,7 @@ export function workspaceOpen(session: WorkspaceSession) {
         editor.commands.setPayloadField(host.placementKey, "metadata", metadata);
       });
     }
-    if (presentation.active() === "desktop") editor.windowManager?.raisePlacement(host.placementKey);
+    if (presentation.active() === "desktop") editor.windowManager?.activatePlacement(host.placementKey);
     return host.placementKey;
   };
   const flintInstances = () => Object.values(projection.state.nodes).filter(n => n.viewType === 'flint-application-block' && editor.blockQueries.ancestors(n.key).some(a => a.viewType === 'window-block'));

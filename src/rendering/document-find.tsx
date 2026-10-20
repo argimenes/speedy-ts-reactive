@@ -17,7 +17,7 @@ export function DocumentFindLayer(props: { editor: ReactiveEditor; viewId: strin
   const [mountRevision, setMountRevision] = createSignal(0);
   const unsubscribe = props.editor.mounts.subscribe(() => { if (state.open) setMountRevision(n => n + 1); });
   onCleanup(unsubscribe);
-  createEffect(() => { state.focusRequest; if (state.open && state.scope?.viewId === props.viewId) queueMicrotask(() => { input?.focus(); input?.select(); }); });
+  createEffect(() => { state.focusRequest; if (state.open && state.scope?.viewId === props.viewId) { const valid=props.editor.windowManager?.lifecycle.ticket(); queueMicrotask(() => { if(valid?.()===false || !state.open || !input?.isConnected)return; input.focus(); input.select(); }); } });
   const hidden = createMemo(() => {
     mountRevision(); state.active;
     const pageNodes = state.pageKey ? nodeKeysForPage(props.editor, state.pageKey) : undefined;

@@ -1,5 +1,6 @@
-import { createContext, createEffect, onCleanup, useContext, type JSX, untrack } from "solid-js";
+import { createContext, createEffect, onCleanup, onMount, useContext, type JSX, untrack } from "solid-js";
 import { Portal } from "solid-js/web";
+import { windowManagerForDocument } from "../application/window-lifecycle";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { WorkspaceWindowManager } from "../application/window-manager";
 import type { SurfaceKind } from "../runtime/window-manager";
@@ -10,16 +11,19 @@ const WindowOwner = createContext<OwnerContext>();
 export const useManagedWindowOwner = () => useContext(WindowOwner);
 
 /** Own an existing inline app dialog without moving its DOM or changing its
- * focus/dismissal contract. Central focus containment remains A1 work. */
+ * content/dismissal contract. The lifecycle coordinator contains focus and input. */
 export function ApplicationSurfaceBoundary(props: { children: JSX.Element }) {
   const owner = useContext(WindowOwner);
   if (!owner) return props.children;
-  const id = owner.manager.nextSurfaceId();
-  const release = owner.manager.registry.registerSurface({ id, ownerWindowId: owner.windowId,
-    sourceViewId: owner.manager.registry.windows[owner.windowId].sourceViewId,
-    parentSurfaceId: owner.surfaceId, kind: "dialog", modality: "window" });
+  const id=owner.manager.nextSurfaceId();
+  const release=owner.manager.registry.registerSurface({id,ownerWindowId:owner.windowId,sourceViewId:owner.manager.registry.windows[owner.windowId].sourceViewId,parentSurfaceId:owner.surfaceId,kind:"dialog",modality:"window"});
   onCleanup(release);
-  return <WindowOwner.Provider value={{ ...owner, surfaceId: id, modal: true }}>{props.children}</WindowOwner.Provider>;
+  let root!: HTMLDivElement;
+  onMount(() => {
+    root.querySelector('[role="dialog"]')?.setAttribute('aria-modal','false');
+    onCleanup(owner.manager.lifecycle.modal(root, owner.windowId, owner.surfaceId,id));
+  });
+  return <WindowOwner.Provider value={{ ...owner, surfaceId:id, modal: true }}><div ref={root} style={{display:"contents"}}>{props.children}</div></WindowOwner.Provider>;
 }
 
 export function WindowManagerPlane(props: { manager?: WorkspaceWindowManager; children: JSX.Element }) {
@@ -27,7 +31,8 @@ export function WindowManagerPlane(props: { manager?: WorkspaceWindowManager; ch
   const plane = document.createElement("div");
   plane.className = "mwm-window-plane";
   props.manager.plane = plane;
-  onCleanup(() => { if (props.manager?.plane === plane) props.manager.plane = undefined; });
+  props.manager.lifecycle.install(document);
+  onCleanup(() => { if (props.manager?.plane === plane) { props.manager.lifecycle.uninstall(); props.manager.plane = undefined; } });
   return <>{plane}{props.children}</>;
 }
 
@@ -41,21 +46,13 @@ export function ManagedWindowFrame(props: {
   const manager = props.manager, group = document.createElement("div");
   group.className = `mwm-window-group${props.viewport ? " mwm-window-group--viewport" : ""}`; group.dataset.mwmWindow = props.nodeKey;
   const lease = manager.register(props.nodeKey, group);
-  const raise = () => manager.raiseWindow(props.nodeKey);
-  const focus = () => { raise(); manager.registry.observeFocus(props.nodeKey); };
-  const blur = () => queueMicrotask(() => {
-    if (!group.contains(document.activeElement) && manager.registry.windows[props.nodeKey]?.active) manager.registry.observeFocus();
-  });
-  group.addEventListener("pointerdown", raise, true);
-  group.addEventListener("focusin", focus, true);
-  group.addEventListener("focusout", blur, true);
   createEffect(() => { group.style.zIndex = String(manager.registry.windows[props.nodeKey]?.rank ?? 0); });
   createEffect(() => lease.activity(props.mounted, props.visible));
   onCleanup(() => {
-    group.removeEventListener("pointerdown", raise, true); group.removeEventListener("focusin", focus, true); group.removeEventListener("focusout", blur, true);
     lease.release(); group.remove();
   });
   manager.plane!.append(group);
+  onMount(()=>manager.lifecycle.refreshInert());
   return <WindowOwner.Provider value={{ manager, windowId: props.nodeKey }}><Portal mount={group}>{props.children}</Portal></WindowOwner.Provider>;
 }
 
@@ -74,12 +71,13 @@ export function ApplicationSurfacePortal(props: {
   const id = props.id ?? manager.nextSurfaceId(), kind = props.kind ?? "overlay";
   const host = document.createElement("div");
   host.className = `mwm-surface mwm-surface--${kind}`;
-  if (inherited?.modal) host.style.zIndex = "5";
+  if (inherited?.modal) { host.style.zIndex = "5"; host.dataset.mwmModal = inherited.surfaceId; }
   host.dataset.mwmSurface = id;
   const release = manager.registry.registerSurface({ id, ownerWindowId: windowId,
     sourceViewId: props.sourceViewId ?? (windowId ? manager.registry.windows[windowId].sourceViewId : "workspace-shell"),
     parentSurfaceId: inherited?.windowId === windowId ? inherited?.surfaceId : undefined, kind, modality: "none" });
   group.append(host);
+  onMount(()=>manager.lifecycle.refreshInert());
   createEffect(() => {
     const visible = windowId ? manager.registry.windows[windowId]?.visible ?? false : true;
     if (!windowId) { manager.registry.revision(); host.style.zIndex = String(manager.count() + 1); }
@@ -89,4 +87,12 @@ export function ApplicationSurfacePortal(props: {
   onCleanup(() => { release(); host.remove(); });
   return windowId ? <WindowOwner.Provider value={{ manager, windowId, surfaceId: id, modal: inherited?.modal }}><Portal mount={host}>{props.children}</Portal></WindowOwner.Provider>
     : <Portal mount={host}>{props.children}</Portal>;
+}
+
+/** Existing shell prompts keep their DOM and global scope; register only while open. */
+export function WorkspaceModalBoundary(props:{children:JSX.Element}) {
+  const manager=windowManagerForDocument(document);if(!manager)return props.children;
+  let root!:HTMLDivElement;
+  onMount(()=>onCleanup(manager.lifecycle.modal(root)));
+  return <div ref={root} style={{display:"contents"}}>{props.children}</div>;
 }

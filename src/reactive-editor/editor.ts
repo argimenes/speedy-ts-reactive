@@ -268,14 +268,21 @@ export class ReactiveEditor {
     this.projections.delete(projection.viewId);
   }
 
-  readonly viewCloseGuards = new Map<NodeKey, () => boolean>();
+  readonly viewCloseGuards = new Map<NodeKey, (signal?: AbortSignal) => boolean | Promise<boolean>>();
 
   /** Close a presentation without deleting authored content or adding an Undo step. */
-  closeView(key: NodeKey): void {
+  closeView(key: NodeKey): void | Promise<void> {
+    if (this.windowManager?.registry.windows[key] && (this.node(key)?.payload.metadata as any)?.stickyNote) return this.stickyNotes.closeWindow(key);
+    if (this.windowManager?.registry.windows[key]) return this.windowManager.lifecycle.close(key, () => this.commitCloseView(key));
+    const guard = this.viewCloseGuards.get(key)?.();
+    if (guard instanceof Promise) return guard.then(ok => { if (ok) this.commitCloseView(key); });
+    if (guard !== false) this.commitCloseView(key);
+  }
+
+  private commitCloseView(key: NodeKey): void {
     const node = this.node(key);
     if (!node || !['window-block', 'document-window-block', 'tab-block'].includes(node.viewType)) return;
-    if (this.viewCloseGuards.get(key)?.() === false) return;
-    const inside = (candidate: string | undefined) => !!candidate && (candidate === key || this.blockQueries.ancestors(candidate).some(n => n.key === key));
+    const inside = (candidate: string | undefined) => !!candidate && (candidate === key || this.windowManager?.ownerForNode(candidate) === key || this.blockQueries.ancestors(candidate).some(n => n.key === key));
     this.selectionGestures.cancelGesture();
     const operation = this.currentTextOperation.active();
     if (operation) {
@@ -286,7 +293,7 @@ export class ReactiveEditor {
     if (inside(this.find.state.scope?.rootKey)) this.find.close(false);
     const cross = this.crossText.range();
     if (cross && (inside(cross.anchor.occurrenceKey) || inside(cross.head.occurrenceKey))) this.crossText.clear();
-    for (const overlay of [...this.overlays.overlays]) if (inside(overlay.ownerKey)) this.overlays.close(overlay.key, false);
+    for (const overlay of [...this.overlays.overlays]) if (inside(overlay.ownerKey)) this.overlays.close(overlay.key, false, true);
     const focused = this.focus.state.focusedKey;
     if (inside(focused)) this.focus.clearRemoved(focused!);
     this.viewVisibility.set(node.placementKey, true);

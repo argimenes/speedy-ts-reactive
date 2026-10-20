@@ -44,6 +44,7 @@ export class BlockRegistry {
 }
 
 export class CommandRegistry {
+  permit?: (targetKey:string,commandId:string)=>boolean;
   private commands = new Map<string, CommandDefinition<any>>();
   private owners = new Map<string, string>();
 
@@ -58,13 +59,13 @@ export class CommandRegistry {
   owner(id: string): string | undefined { return this.owners.get(id); }
 
   canExecute<TArgs>(id: string, context: CommandContext<TArgs>): boolean {
-    return this.commands.get(id)?.canExecute(context) ?? false;
+    return this.permit?.(context.targetKey,id) !== false && (this.commands.get(id)?.canExecute(context) ?? false);
   }
 
   execute<TArgs>(id: string, context: CommandContext<TArgs>): void | Promise<void> {
     const command = this.commands.get(id);
     if (!command) throw new Error(`Unknown command ${id}`);
-    if (!command.canExecute(context)) throw new Error(`Command ${id} is not available for this target`);
+    if (!this.canExecute(id, context)) throw new Error(`Command ${id} is not available for this target`);
     return command.execute(context);
   }
 

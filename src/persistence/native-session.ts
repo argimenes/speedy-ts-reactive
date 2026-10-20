@@ -103,7 +103,7 @@ export class NativeDocumentSession {
     return [...known].filter(([resourceId]) => resourceId !== id).map(([resourceId,location]) => ({ resourceId, location }));
   }
   async list(folder: string) { return (await request(`list?${new URLSearchParams({folder})}`)).files as string[]; }
-  async defaultVault(){return (await request('vault/default')).vault as string|undefined;}
+  async defaultVault(signal?:AbortSignal){return (await request('vault/default',undefined,signal)).vault as string|undefined;}
   async establishVault(vault:string,signal?:AbortSignal){return request('vault/establish',{vault},signal);}
   async discoverVault(vault: string, signal?: AbortSignal) { return request('vault/discover', {vault}, signal); }
   async browseVault(vault: string, mode: 'cached'|'reconcile'|'verify', signal?: AbortSignal) {

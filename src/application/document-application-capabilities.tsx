@@ -306,6 +306,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         vault: lease, guard,
         active: () => { const key = activeTab(), documentId = activeId(), projection = key && liveViews.get(key); return documentId && projection ? {documentId, projection} : undefined; },
         async activateSaved(target,passage,evidence,current,query) {
+          const focusCurrent=editor.windowManager?.lifecycle.ticket(),sourceCurrent=current;
+          current=()=>sourceCurrent()&&focusCurrent?.()!==false;
           const ticket=await activation!.prepare(evidence,current);
           const live=await observeLive(editor.repository,target.documentId,{version:1,opaqueTypes:editor.registry.typesWithCapability('opaque-widget')},{check:()=>{if(!ticket.current())throw Error('Selected activation expired');}});
           if(live.facts.id!==target.documentId||live.facts.rootBlockId!==evidence.rootBlockId||target.blockId!==evidence.rootBlockId)throw Error('Selected root identity changed');
@@ -317,6 +319,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           await knowledgeHost.navigate(target,passage,ticket.current,ticket.verify);
         },
         async navigate(target, passage, current, verify) {
+          const focusCurrent=editor.windowManager?.lifecycle.ticket(),sourceCurrent=current;
+          current=()=>sourceCurrent()&&focusCurrent?.()!==false;
           guard(); if(!current()) throw new Error('Navigation is stale');
           // Resolve only this application instance's occurrence, never a global first match.
           openDocument(target.documentId, true);
@@ -474,7 +478,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         const bank = banks[0] ?? editor.commands.insert({ id: crypto.randomUUID(), type: "workspace-object-bank-block", children: [] }, { kind: "at", parentKey: root, index: editor.commands.childrenOf(root).length });
         for (const document of examples) editor.commands.insert(document, { kind: "at", parentKey: bank, index: editor.commands.childrenOf(bank).length });
         const placement = editor.commands.insert({ id: crypto.randomUUID(), type: "window-block", metadata: { title: "Flint", position: { x: 35 + (zIndex - 1) * 24, y: 35 + (zIndex - 1) * 24 }, size: { w: Math.min(1380, Math.max(840, window.innerWidth - 90)), h: Math.min(900, Math.max(620, window.innerHeight - 120)) }, zIndex }, children: [definition.create(initialTabs.slice(0, 2))] }, { kind: "at", parentKey: desktopParent, index: 0 });
-        editor.windowManager?.raisePlacement(placement);
+        editor.windowManager?.activatePlacement(placement);
       });
     } }, scope.owner));
   } };

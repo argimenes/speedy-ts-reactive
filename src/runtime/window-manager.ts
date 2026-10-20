@@ -45,6 +45,10 @@ export class WindowRegistry {
   private pinned: string[] = [];
   private generation = 0;
   private focused?: string;
+  private recent: string[] = [];
+  get activeWindowId() { return this.focused; }
+  get mru(): readonly string[] { return this.recent; }
+  successor(exclude?: string) { return [...this.recent, ...this.normal.slice().reverse(), ...this.pinned.slice().reverse()].find(id => id !== exclude && this.windows[id]?.visible); }
   private readonly changed = createSignal(0);
   readonly revision = this.changed[0];
 
@@ -77,6 +81,7 @@ export class WindowRegistry {
         batch(() => {
           this.clearFocus(input.id);
           for (const surface of Object.values(this.surfaces)) if (surface.ownerWindowId === input.id) this.setSurfaces(surface.id, undefined!);
+          this.recent = this.recent.filter(id => id !== input.id);
           this.normal = this.normal.filter(id => id !== input.id);
           this.pinned = this.pinned.filter(id => id !== input.id);
           this.setWindows(input.id, undefined!);
@@ -117,14 +122,14 @@ export class WindowRegistry {
     this.reindex();
   }
 
-  /** Observe focus only. A1 will arbitrate requested focus, MRU and modality. */
+  /** Native focus observation also updates MRU; raising alone does not activate. */
   observeFocus(id?: string) {
     if (id === this.focused) return;
     if (id && !this.windows[id]?.visible) return;
     batch(() => {
       if (this.focused && this.windows[this.focused]) this.setWindows(this.focused, "active", false);
       this.focused = id;
-      if (id) this.setWindows(id, "active", true);
+      if (id) { this.setWindows(id, "active", true); this.recent = [id, ...this.recent.filter(key => key !== id)]; }
     });
   }
 
@@ -139,7 +144,7 @@ export class WindowRegistry {
     batch(() => {
       for (const id of Object.keys(this.surfaces)) this.setSurfaces(id, undefined!);
       for (const id of Object.keys(this.windows)) this.setWindows(id, undefined!);
-      this.normal = []; this.pinned = []; this.focused = undefined;
+      this.normal = []; this.pinned = []; this.recent = []; this.focused = undefined;
       this.changed[1](n => n + 1);
     });
   }

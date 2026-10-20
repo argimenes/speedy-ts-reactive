@@ -1,3 +1,4 @@
+import { WorkspaceModalBoundary } from "./window-manager";
 import { CompactPreviewView } from "./history-preview";
 import { For, Show, createMemo, onCleanup, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -89,5 +90,5 @@ function HistoryPanel(props: { editor: ReactiveEditor }) {
 }
 
 export function BlockHistoryLayer(props: { editor: ReactiveEditor; viewId: string }) {
-  return <Show when={props.editor.features.blockHistory && props.editor.blockHistory.state.open && props.editor.blockHistory.state.viewId === props.viewId}><Portal><HistoryPanel editor={props.editor} /></Portal></Show>;
+  return <Show when={props.editor.features.blockHistory && props.editor.blockHistory.state.open && props.editor.blockHistory.state.viewId === props.viewId}><Portal><WorkspaceModalBoundary><HistoryPanel editor={props.editor} /></WorkspaceModalBoundary></Portal></Show>;
 }

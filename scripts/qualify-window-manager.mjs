@@ -7,7 +7,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const profile = await mkdtemp(path.join(tmpdir(), 'mutable-a0-'));
+const milestone=process.argv.includes('--a1')?'a1':'a0';
+const profile = await mkdtemp(path.join(tmpdir(), `mutable-${milestone}-`));
 let server, chrome, socket;
 try {
   server = await createServer({ configFile: false, plugins: [solidPlugin(), {
@@ -46,8 +47,25 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false }, sessionId);
   await send('Page.navigate', { url: `http://127.0.0.1:${port}/__mwm_a0` }, sessionId);
   await new Promise(resolve => setTimeout(resolve, 250));
+  if(milestone==='a1') {
+    await send('Runtime.addBinding',{name:'mwmInput'},sessionId);
+    socket.addEventListener('message',async event=>{
+      const message=JSON.parse(event.data);if(message.method!=='Runtime.bindingCalled'||message.params.name!=='mwmInput')return;
+      const action=JSON.parse(message.params.payload);let result;
+      try {
+        if(action.type==='text')await send('Input.insertText',{text:action.text},sessionId);
+        if(action.type==='click') {
+          await send('Input.dispatchMouseEvent',{type:'mousePressed',x:action.x,y:action.y,button:'left',clickCount:1},sessionId);
+          await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:action.x,y:action.y,button:'left',clickCount:1},sessionId);
+        }
+        if(action.type==='key')for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:action.key,code:action.key,windowsVirtualKeyCode:action.key==='Tab'?9:27},sessionId);
+        if(action.type==='accessibility')result=(await send('Accessibility.getFullAXTree',{},sessionId)).nodes.filter(n=>!n.ignored).map(n=>({role:n.role?.value,name:n.name?.value,properties:n.properties}));
+        await send('Runtime.evaluate',{expression:`globalThis.__mwmResume(${JSON.stringify({result})})`},sessionId);
+      } catch(error) { await send('Runtime.evaluate',{expression:`globalThis.__mwmResume(${JSON.stringify({error:String(error)})})`},sessionId); }
+    });
+  }
   const result = await send('Runtime.evaluate', {
-    expression: `(async()=>{const m=await import('/src/application/window-manager.browser-fixture.tsx');return m.qualifyWindowManager();})()`,
+    expression: `(async()=>{const m=await import('/src/application/window-manager${milestone==='a1'?'-a1':''}.browser-fixture.tsx');return m.qualifyWindowManager();})()`,
     awaitPromise: true, returnByValue: true,
   }, sessionId);
   if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails));

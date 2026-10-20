@@ -1,5 +1,6 @@
 import { For, onCleanup, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
+import { ApplicationSurfacePortal } from "./window-manager";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { OverlayDescriptor } from "../runtime/overlays";
 
@@ -35,13 +36,12 @@ function OverlayView(props: { editor: ReactiveEditor; overlay: OverlayDescriptor
 }
 
 export function OverlayLayer(props: { editor: ReactiveEditor }) {
+  if (!props.editor.windowManager) return <Portal mount={document.body}><div class="reactive-overlay-layer"><For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType !== "context-menu" && !props.editor.panels.get(overlay.viewType))}>{overlay=><OverlayView editor={props.editor} overlay={overlay}/>}</For></div></Portal>;
   return (
-    <Portal mount={document.body}>
-      <div class="reactive-overlay-layer">
+    <div class="reactive-overlay-layer">
         <For each={props.editor.overlays.overlays.filter(overlay => overlay.viewType !== "context-menu" && !props.editor.panels.get(overlay.viewType))}>
-          {(overlay) => <OverlayView editor={props.editor} overlay={overlay} />}
+          {(overlay) => <ApplicationSurfacePortal editor={props.editor} ownerKey={overlay.ownerKey} id={overlay.key} kind="tool"><OverlayView editor={props.editor} overlay={overlay} /></ApplicationSurfacePortal>}
         </For>
-      </div>
-    </Portal>
+    </div>
   );
 }

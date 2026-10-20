@@ -9,6 +9,7 @@ export interface OverlayDescriptor {
   viewType: string;
   data?: unknown;
   allowDocumentInput?: boolean;
+  explicitDismissal?: boolean;
   anchor: { x: number; y: number };
   title?: string;
   returnFocusKey?: NodeKey;
@@ -24,6 +25,9 @@ let overlayCounter = 0;
 
 export class OverlayService {
   readonly overlays: OverlayDescriptor[];
+  focusLease?: () => () => boolean;
+  private closeGuards = new Map<string, () => boolean>();
+  guardClose(key: string, guard: () => boolean) { this.closeGuards.set(key,guard); return () => { if(this.closeGuards.get(key)===guard)this.closeGuards.delete(key); }; }
   private readonly setOverlays: (...args: any[]) => void;
 
   constructor(
@@ -51,21 +55,25 @@ export class OverlayService {
       returnElement: external,
       returnDomRange: external && selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : undefined,
     });
-    queueMicrotask(() => { if (this.isOverlayKey(key)) this.focus.request(key, { reason: "opened-panel" }); });
+    const valid = this.focusLease?.();
+    queueMicrotask(() => { if (valid?.() !== false && this.isOverlayKey(key)) this.focus.request(key, { reason: "opened-panel" }); });
     return key;
   }
 
-  close(key: NodeKey, restoreFocus = true): void {
+  close(key: NodeKey, restoreFocus = true, force = false): void {
+    if (!force && this.closeGuards.get(key)?.() === false) return;
     const index = this.overlays.findIndex((overlay) => overlay.key === key);
     if (index < 0) return;
+    this.closeGuards.delete(key);
     const overlay = this.overlays[index];
+    const valid = this.focusLease?.();
     this.setOverlays((items: OverlayDescriptor[]) =>
       items.filter((item: OverlayDescriptor) => item.key !== key),
     );
     this.focus.clearRemoved(key);
     if (restoreFocus && overlay.returnElement?.isConnected) {
       queueMicrotask(() => {
-        if (!overlay.returnElement?.isConnected) return;
+        if (valid?.() === false || !overlay.returnElement?.isConnected) return;
         overlay.returnElement.focus({ preventScroll: true });
         if (overlay.returnDomRange?.startContainer.isConnected && overlay.returnDomRange.endContainer.isConnected) {
           const selection = document.getSelection(); selection?.removeAllRanges(); selection?.addRange(overlay.returnDomRange);
@@ -74,7 +82,7 @@ export class OverlayService {
     } else if (restoreFocus && overlay.returnFocusKey && this.mounts.get(overlay.returnFocusKey)) {
       queueMicrotask(() => {
         // Its transient host may have closed after this return was queued.
-        if (!this.mounts.get(overlay.returnFocusKey!)) return;
+        if (valid?.() === false || !this.mounts.get(overlay.returnFocusKey!)) return;
         this.focus.request(overlay.returnFocusKey!, { reason: "closed-panel", caret: overlay.returnSelection });
         if (overlay.returnInlineSelection) this.mounts.get(overlay.returnFocusKey!)?.restoreInlineSelection?.(overlay.returnInlineSelection);
       });
@@ -92,7 +100,7 @@ export class OverlayService {
 
   dismissTopWithoutRestoring(): void {
     const top = this.overlays.at(-1);
-    if (top) this.close(top.key, false);
+    if (top && !top.explicitDismissal) this.close(top.key, false);
   }
 
   isOverlayKey(key: NodeKey): boolean {
