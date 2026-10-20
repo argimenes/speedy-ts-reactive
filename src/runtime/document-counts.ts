@@ -15,6 +15,7 @@ export class DocumentCounts {
   private generation = 0;
   private disposed = false;
   private running = false;
+  private suspended = false;
   private unsubscribe: () => void;
   constructor(private repository: CanonicalRepository, private root: string, private count: (text: string) => Promise<TextCounts>) {
     [this.state, this.setState] = createStore<{ blocks: Record<string, TextCounts>; totals: Record<string, TextCounts>; pages: Record<string, string>; pending: boolean; error: string }>({ blocks: {}, totals: {}, pages: {}, pending: true, error: "" });
@@ -35,7 +36,15 @@ export class DocumentCounts {
   private textBlock(content: ContentRecord) { return content.inlineKind === "standoff" || ["text-block", "plain-text-block"].includes(content.viewType); }
   private schedule() {
     clearTimeout(this.timer); this.setState("pending", true);
+    if (this.disposed || this.suspended) return;
     this.timer = setTimeout(() => { void this.flush(); }, 300);
+  }
+  /** Retain invalidation and cached totals without dispatching hidden UI work. */
+  setSuspended(suspended: boolean) {
+    if (this.disposed || suspended === this.suspended) return;
+    this.suspended = suspended; this.generation++;
+    clearTimeout(this.timer);
+    if (!suspended && (this.dirty.size || this.structure)) this.schedule();
   }
   private rebuild() {
     const state = this.repository.readState(), memberships = new Map<string, string[]>(), pages: Record<string,string> = {};
@@ -62,7 +71,7 @@ export class DocumentCounts {
     this.setState("totals", reconcile(totals)); this.setState("pages", reconcile(pages)); this.structure = false;
   }
   async flush() {
-    clearTimeout(this.timer); if (this.disposed || this.running) return;
+    clearTimeout(this.timer); if (this.disposed || this.running || this.suspended) return;
     this.running = true;
     const generation = this.generation;
     if (this.structure) this.rebuild();

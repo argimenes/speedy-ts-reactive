@@ -10,6 +10,7 @@ import { deriveDesktop } from "./desktop-derivation";
 import { deriveCanvas } from "./canvas-derivation";
 import { registerWorkspaceEntities } from "./workspace-entities";
 import { WorkspaceWindowManager } from "./window-manager";
+import { DocumentSessionStore } from "./document-sessions";
 
 export interface WorkspaceObjectResolution {
   object: WorkspaceObject;
@@ -25,6 +26,7 @@ export class WorkspaceSession {
   readonly projection;
   readonly presentation: WorkspacePresentationState;
   readonly windowManager?: WorkspaceWindowManager;
+  readonly documentSessions?: DocumentSessionStore;
   readonly spatial?: ReturnType<typeof createSpatialActions>;
   private readonly pins = new Map<string, ContentKey>();
   private disposed = false;
@@ -48,6 +50,8 @@ export class WorkspaceSession {
     if (root.viewType !== "workspace-block") throw new Error("A workspace session requires a workspace-block root.");
     this.editor = new ReactiveEditor(loaded, configuration);
     if (this.editor.features.mutableWindowManager) this.editor.windowManager = this.windowManager = new WorkspaceWindowManager(this.editor);
+    if (this.windowManager && this.editor.features.retainedDocumentSessions)
+      this.editor.documentSessions = this.documentSessions = new DocumentSessionStore(this.editor);
     this.presentation = new WorkspacePresentationState(root.payload, { canvas: this.editor.features.canvasWorkspace, spatial: this.editor.features.spatialWorkspace ? { supports: supportsSpatial } : undefined });
     this.editor.persistence.attachWorkspacePresentation({ capture: () => { this.interaction?.finish(); return this.presentation.capture(); }, markSaved: snapshot => this.presentation.markSaved(snapshot) });
     registerApplicationViews(this.editor);
@@ -288,6 +292,7 @@ export class WorkspaceSession {
     this.interaction?.cancel(); this.interaction = undefined;
     this.pending = undefined; this.pendingHostedCompletion = undefined;
     this.cleanup.splice(0).reverse().forEach(stop => stop());
+    this.documentSessions?.dispose(); this.editor.documentSessions = undefined;
     this.windowManager?.dispose(); this.editor.windowManager = undefined;
     this.presentation.dispose(); this.pins.clear(); this.editor.dispose();
   }

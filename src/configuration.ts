@@ -17,6 +17,8 @@
 export type FeatureFlags = Readonly<{
   /** Canonical workspace A0 ordering and owner-scoped surface layers. Session-fixed. */
   mutableWindowManager: boolean;
+  /** Workspace-owned retained Document render sessions. Session-fixed; no transfer UI. */
+  retainedDocumentSessions: boolean;
   /** Shared native clipboard. Disable to restore all legacy clipboard routes together. */
   mutableClipboard: boolean;
   /** Explicit file import, source conversion and semantic export. */
@@ -129,6 +131,7 @@ export type FeatureFlags = Readonly<{
 
 export const featureFlags: FeatureFlags = Object.freeze({
   mutableWindowManager: true,
+  retainedDocumentSessions: true,
   mutableClipboard: true,
   documentInterchange: true,
   applicationServices: true,

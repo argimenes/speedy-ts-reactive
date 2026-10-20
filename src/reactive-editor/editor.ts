@@ -68,6 +68,8 @@ import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguratio
 import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
+  /** WorkspaceSession owns this runtime-only store; absent in legacy/isolated editors. */
+  documentSessions?: import("../application/document-sessions").DocumentSessionStore;
   readonly blockPresentation = new BlockPresentation();
   readonly windowPresentation = new WindowPresentation();
   readonly panels = new PanelContributions();
@@ -272,12 +274,13 @@ export class ReactiveEditor {
   readonly viewCloseGuards = new Map<NodeKey, (signal?: AbortSignal) => boolean | Promise<boolean>>();
 
   /** Close a presentation without deleting authored content or adding an Undo step. */
-  closeView(key: NodeKey): void | Promise<void> {
+  closeView(key: NodeKey, signal?: AbortSignal): void | Promise<void> {
+    if (signal?.aborted) return;
     if (this.windowManager?.registry.windows[key] && (this.node(key)?.payload.metadata as any)?.stickyNote) return this.stickyNotes.closeWindow(key);
     if (this.windowManager?.registry.windows[key]) return this.windowManager.lifecycle.close(key, () => this.commitCloseView(key));
-    const guard = this.viewCloseGuards.get(key)?.();
-    if (guard instanceof Promise) return guard.then(ok => { if (ok) this.commitCloseView(key); });
-    if (guard !== false) this.commitCloseView(key);
+    const guard = this.viewCloseGuards.get(key)?.(signal);
+    if (guard instanceof Promise) return guard.then(ok => { if (ok && !signal?.aborted) this.commitCloseView(key); });
+    if (guard !== false && !signal?.aborted) this.commitCloseView(key);
   }
 
   private commitCloseView(key: NodeKey): void {

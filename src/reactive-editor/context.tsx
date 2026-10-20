@@ -10,12 +10,13 @@ interface ReactiveViewContextValue {
   projection: BlockTreeProjection;
   coordinates?: LocalCoordinates;
   windowGeometry?: (key: NodeKey) => WindowGeometryHost | undefined;
+  activity?: () => import("../application/document-sessions").DocumentActivity;
 }
 
 const ReactiveViewContext = createContext<ReactiveViewContextValue>();
 
 export const ReactiveViewProvider: ParentComponent<ReactiveViewContextValue> = (props) => (
-  <ReactiveViewContext.Provider value={{ editor: props.editor, projection: props.projection, coordinates: props.coordinates ?? identityCoordinates, windowGeometry: props.windowGeometry }}>
+  <ReactiveViewContext.Provider value={{ editor: props.editor, projection: props.projection, coordinates: props.coordinates ?? identityCoordinates, windowGeometry: props.windowGeometry, activity: props.activity }}>
     {props.children}
   </ReactiveViewContext.Provider>
 );

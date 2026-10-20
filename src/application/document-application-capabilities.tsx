@@ -32,6 +32,8 @@ import type { DocumentApplicationCapabilities } from "../feature-api/document-ap
 import type { ExistingBlockDto } from "../block-tree/types";
 import { tabDocumentTarget } from "../rendering/document-tab-context";
 import { TransientDocumentView, type DocumentViewBookmark } from "../rendering/transient-document-view";
+import { useManagedWindowOwner } from "../rendering/window-manager";
+import { RetainedDocumentHost } from "../rendering/retained-document-view";
 
 /** Private host adapter. No repository/editor access crosses into the application. */
 export function documentApplicationCapabilities(editor: ReactiveEditor, scope: FeatureScope): DocumentApplicationCapabilities {
@@ -73,6 +75,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
     const entityAnnotations = annotationCapabilities(editor, scope);
     const Instance = (props: { nodeKey: string }) => {
       const cavern = useCurrentCavern();
+      const retainedSessions = useManagedWindowOwner() ? editor.documentSessions : undefined;
       // Stage A hosts a Window application, never an application recursively inside a Document.
       if (editor.blockQueries.ancestors(props.nodeKey).some(n => n.viewType === "document-block")) return <p role="status">This application requires a Window outside a Document.</p>;
       const [revision, setRevision] = createSignal(0);
@@ -114,30 +117,72 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const Target = (target: { documentId: string; tabKey: string }) => {
         const placement = () => resolve(target.documentId)?.placement;
         return <Show when={placement()} keyed fallback={<p role="status">Document unavailable: {target.documentId}. Its canonical source is missing or ambiguous.</p>}>{source =>
-          <TransientDocumentView editor={editor} placement={source} onProjection={view => { liveViews.set(target.tabKey, view); setViewRevision(n => n + 1); return () => { if(liveViews.get(target.tabKey)===view) { liveViews.delete(target.tabKey); setViewRevision(n => n + 1); } }; }} bookmark={() => bookmarks.get(target.tabKey)} remember={value => bookmarks.set(target.tabKey, value)} />
+          (() => {
+            const contents = () => <TransientDocumentView editor={editor} placement={source} selected={activeTab() === target.tabKey}
+              onProjection={view => { liveViews.set(target.tabKey, view); setViewRevision(n => n + 1); return () => { if(liveViews.get(target.tabKey)===view) { liveViews.delete(target.tabKey); setViewRevision(n => n + 1); } }; }}
+              bookmark={() => bookmarks.get(target.tabKey)} remember={value => bookmarks.set(target.tabKey, value)} />;
+            return retainedSessions ? <RetainedDocumentHost ownerKey={props.nodeKey} slotKey={target.tabKey}
+              placement={source} selected={activeTab() === target.tabKey} render={contents} /> : contents();
+          })()
         }</Show>;
       };
       const tabId = (key: string) => navigation.tabs.get(key) ?? tabDocumentTarget(editor.node(key)?.payload.metadata);
-      const chooseTab = (key: string) => { navigation.active = navigation.tabs.has(key) ? key : undefined; setNavigationRevision(n => n+1); const r = row(); if(r && !navigation.active) editor.setViewChild(r.key,key); };
+      const canChangeTab = () => {
+        if (!retainedSessions) return true;
+        const owner = editor.windowManager?.ownerForNode(props.nodeKey);
+        return !owner || editor.windowManager!.lifecycle.canMinimize(owner);
+      };
+      let tabSelectionGeneration = 0;
+      const chooseTab = (key: string) => { if (key !== activeTab() && !canChangeTab()) return; tabSelectionGeneration++; navigation.active = navigation.tabs.has(key) ? key : undefined; setNavigationRevision(n => n+1); const r = row(); if(r && !navigation.active) editor.setViewChild(r.key,key); };
       const tabKeys = createMemo(() => { navigationRevision(); return [...visibleTabs(),...navigation.tabs.keys()]; });
       const tabButtons = new Map<string, HTMLButtonElement>();
-      const closeTab = (key: string) => {
-        guard(); const keys = tabKeys(); if (!keys.includes(key)) return;
-        const active = activeTab(), index = keys.indexOf(key), next = keys[index + 1] ?? keys[index - 1];
+      const pendingTabCloses = new Map<string, AbortController>();
+      const [tabCloseError, setTabCloseError] = createSignal("");
+      const cancelTabCloses = () => { for (const controller of pendingTabCloses.values()) controller.abort(); pendingTabCloses.clear(); };
+      const sessionLifetime = retainedSessions?.signal;
+      sessionLifetime?.addEventListener("abort", cancelTabCloses, { once: true });
+      onCleanup(() => { cancelTabCloses(); sessionLifetime?.removeEventListener("abort", cancelTabCloses); });
+      const closeTab = (key: string, closed = false, previousKeys?: string[], wasActive?: boolean, mayFocus = true) => {
+        if (!mounted) return;
+        if (!closed && !canChangeTab()) return;
+        if (retainedSessions && !closed && !navigation.tabs.has(key)) {
+          if (pendingTabCloses.has(key) || !tabKeys().includes(key)) return;
+          const controller = new AbortController(), keys = tabKeys(), active = activeTab() === key;
+          const generation = tabSelectionGeneration, focusCurrent = editor.windowManager?.lifecycle.ticket();
+          pendingTabCloses.set(key, controller); setTabCloseError("");
+          // Ordinary close is still synchronous; guarded closes are cancellable.
+          const finish = () => {
+            if (!mounted || controller.signal.aborted || pendingTabCloses.get(key) !== controller) return;
+            const node = editor.node(key);
+            if (node && editor.viewVisibility.isClosed(node.placementKey)) closeTab(key, true, keys, active && generation === tabSelectionGeneration, focusCurrent?.() !== false);
+          };
+          try {
+            const result = editor.closeView(key, controller.signal);
+            if (result instanceof Promise) void result.then(finish).catch(error => {
+              if (mounted && !controller.signal.aborted) setTabCloseError(String(error));
+            }).finally(() => { if (pendingTabCloses.get(key) === controller) pendingTabCloses.delete(key); });
+            else { finish(); pendingTabCloses.delete(key); }
+          } catch (error) { pendingTabCloses.delete(key); setTabCloseError(String(error)); }
+          return;
+        }
+        guard(); const keys = previousKeys ?? tabKeys(); if (!keys.includes(key)) return;
+        const active = wasActive ? key : activeTab(), index = keys.indexOf(key), next = keys[index + 1] ?? keys[index - 1];
         // Only the view's tab is removed; the canonical Document (including edits)
         // remains in the object bank and can be reopened from the Library.
         for (const overlay of [...editor.overlays.overlays]) if (overlay.ownerKey === props.nodeKey) editor.overlays.close(overlay.key, false);
         batch(() => {
           if (navigation.tabs.has(key)) { navigation.tabs.delete(key); if (navigation.active === key) navigation.active = undefined; setNavigationRevision(n => n + 1); }
-          else editor.closeView(key);
+          else if (!closed) editor.closeView(key);
           if (active === key) {
             if (next) chooseTab(next);
             else { const r = row(); if (r) editor.setViewChild(r.key, undefined); }
           }
         });
         bookmarks.delete(key);
-        editor.focus.request(props.nodeKey, { reason: "close-document-tab" });
-        tabButtons.get(activeTab() ?? "")?.focus({ preventScroll: true });
+        if (mayFocus && (active === key || !retainedSessions)) {
+          editor.focus.request(props.nodeKey, { reason: "close-document-tab" });
+          tabButtons.get(activeTab() ?? "")?.focus({ preventScroll: true });
+        }
       };
       const openTabMenu = (key: string, event: MouseEvent | KeyboardEvent) => {
         event.preventDefault(); event.stopPropagation();
@@ -146,7 +191,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         editor.overlays.open({ ownerKey: props.nodeKey, viewType: "context-menu", data: { documentTab: key },
           anchor: event instanceof MouseEvent ? { x: event.clientX, y: event.clientY } : { x: rect.left, y: rect.bottom } });
       };
-      const tabs = () => <div class="reactive-tabs"><div class="reactive-tabs__labels" role="tablist"><For each={tabKeys()}>{key => {
+      const tabs = () => <div class="reactive-tabs"><Show when={tabCloseError()}><p role="alert">{tabCloseError()}</p></Show><div class="reactive-tabs__labels" role="tablist" data-cross-text-controls={retainedSessions ? "" : undefined}><For each={tabKeys()}>{key => {
         const title = () => resolve(tabId(key) ?? '')?.title ?? String((editor.node(key)?.payload.metadata as any)?.name ?? 'Unavailable Document');
         onCleanup(() => tabButtons.delete(key));
         return <div class="flint-document-tab" role="presentation" data-active={activeTab() === key} data-native-context-menu
@@ -155,7 +200,16 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           <button ref={button => tabButtons.set(key, button)} type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{title()}<Show when={native?.isDirty(tabId(key) ?? '')}><span class="flint-document-tab__dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" /></Show></button>
           <button type="button" class="flint-document-tab__close" aria-label={`Close Document: ${title()}`} title={`Close ${title()}`} onClick={event => { event.stopPropagation(); closeTab(key); }}>×</button>
         </div>;
-      }}</For></div><For each={tabKeys()}>{key=><Show when={activeTab()===key}><div class="reactive-tabs__panel" role="tabpanel"><Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show></div></Show>}</For></div>;
+      }}</For></div><For each={tabKeys()}>{key=>{
+        const [visited, setVisited] = createSignal(false);
+        createEffect(() => { if (activeTab() === key) setVisited(true); });
+        return <Show when={retainedSessions ? visited() : activeTab() === key}>
+          <div class="reactive-tabs__panel" role="tabpanel" hidden={activeTab() !== key}
+            ref={element => createEffect(() => { element.inert = activeTab() !== key; })}>
+            <Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show>
+          </div>
+        </Show>;
+      }}</For></div>;
       const activeId = () => { const key = activeTab(); return key && tabId(key); };
       const recentVaultId = () => cavern?.current()?.cavernGuid ?? editor.readAssetContext().cavernId;
       if (recents) {

@@ -320,7 +320,7 @@ function ProjectedAlternative(props: { nodeKey: NodeKey; sourceIndex: number; so
 }
 
 export function StandoffEditorView(props: BlockViewProps) {
-  const { editor, projection, coordinates } = useReactiveView();
+  const { editor, projection, coordinates, activity } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const annotations = createMemo(
     () => ((node()?.payload.standoffProperties as StandoffAnnotation[] | undefined) ?? []).map(property => editor.linkedAnnotations.resolve(property, node()?.contentKey) as StandoffAnnotation),
@@ -443,7 +443,7 @@ export function StandoffEditorView(props: BlockViewProps) {
 
   const measure = () => {
     frame = 0;
-    if(disposed || !editor.visualEffects.alive())return;
+    if(disposed || !editor.visualEffects.alive() || activity && !activity().visible)return;
     const scale = coordinates?.scale() ?? 1;
     const foreground: DecorationShape[] = [];
     const occupied: UnderlineLane[] = [];
@@ -560,6 +560,7 @@ export function StandoffEditorView(props: BlockViewProps) {
       if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
       else clearTimeout(frame);
     }
+    if (activity && !activity().visible) { frame = 0; return; }
     frame = typeof requestAnimationFrame === "function"
       ? requestAnimationFrame(measure)
       : (setTimeout(measure, 0) as unknown as number);
@@ -604,17 +605,24 @@ export function StandoffEditorView(props: BlockViewProps) {
     });
     if (editor.features.caretModes) {
       caretSurface = editor.caretModes.mount(props.nodeKey, flow, root.closest('[data-block-type="document-block"], [data-block-type="main-list-block"], [data-block-type="membrane-block"]') ?? root.parentElement ?? root, () => coordinates?.scale() ?? 1);
-      caretSurface.visible(typeof IntersectionObserver === "undefined");
+      caretSurface.visible((!activity || activity().visible) && typeof IntersectionObserver === "undefined");
     }
     if (typeof ResizeObserver !== "undefined") {
       observer = new ResizeObserver(scheduleMeasure);
       observer.observe(surface);
     }
     if (typeof IntersectionObserver !== "undefined") {
-      visibilityObserver = new IntersectionObserver(entries => { const visible = entries[0]?.isIntersecting ?? false; caretSurface?.visible(visible); if (visible !== searchVisible) { searchVisible = visible; scheduleMeasure(); } });
+      visibilityObserver = new IntersectionObserver(entries => { const visible = entries[0]?.isIntersecting ?? false; caretSurface?.visible(visible && (!activity || activity().visible)); if (visible !== searchVisible) { searchVisible = visible; scheduleMeasure(); } });
       visibilityObserver.observe(surface);
     }
     scheduleMeasure();
+    if (activity) createEffect(() => {
+      const visible = activity().visible;
+      untrack(() => {
+        caretSurface?.visible(visible && searchVisible);
+        scheduleMeasure();
+      });
+    });
   });
 
   createEffect(() => {

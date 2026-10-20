@@ -23,6 +23,7 @@ import { DocumentMarginIndicators } from "./document-margin-indicators";
 import { createFloatingWindowResize, FloatingWindowResizeHandle } from "./floating-window-resize";
 import { PageMinimap } from "./page-minimap";
 import { WindowIcon, resolvedWindowIcon, resolvedWindowState } from "./window-icon";
+import { RetainedInkDocument } from "./retained-document-view";
 
 function useContainerMount(nodeKey: NodeKey, root: () => HTMLElement) {
   const { editor } = useReactiveView();
@@ -755,7 +756,11 @@ export function WindowView(props: BlockViewProps) {
         <Show when={manager && toolbarNotice() && !isDocument()}><p role="status">{toolbarNotice()}</p></Show>
         <DocumentMarginContext.Provider value={marginPresentation}>
           <Show when={isDocument()}><DocumentStyleBar toolset={toolset()} onToolset={setToolset} onNotice={setToolbarNotice} editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
-          <div class="reactive-window__content" ref={host => onMount(() => { if (isDocument()) onCleanup(editor.pointerSpotlight.mount(host, scale)); })}><div class="reactive-window__document-body"><WindowRestorationBoundary nodeKey={props.nodeKey}><ChildBlocks parentKey={props.nodeKey} /></WindowRestorationBoundary></div></div>
+          <div class="reactive-window__content" ref={host => onMount(() => { if (isDocument()) onCleanup(editor.pointerSpotlight.mount(host, scale)); })}><div class="reactive-window__document-body"><WindowRestorationBoundary nodeKey={props.nodeKey}>
+            <For each={node()?.children ?? []}>{key => editor.documentSessions && manager && isDocument() && projection.node(key)?.viewType === "document-block"
+              ? <RetainedInkDocument nodeKey={key} windowKey={props.nodeKey} />
+              : <BlockOutlet nodeKey={key} />}</For>
+          </WindowRestorationBoundary></div></div>
           <Show when={isDocument() && editor.features.compactEditorChrome}><DocumentStatusBar editor={editor} scopeKey={props.nodeKey} notice={toolbarNotice()} /></Show>
           <Show when={isDocument() && marginsCollapsed() && marginDrawerOpen()}>
             <DocumentMarginDrawer id={marginDrawerId} entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />

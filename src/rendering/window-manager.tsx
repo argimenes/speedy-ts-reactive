@@ -5,6 +5,7 @@ import { windowManagerForDocument } from "../application/window-lifecycle";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { WorkspaceWindowManager } from "../application/window-manager";
 import type { SurfaceKind } from "../runtime/window-manager";
+import { useDocumentSession } from "./document-session-context";
 import "./window-manager.css";
 
 interface OwnerContext { manager: WorkspaceWindowManager; windowId: string; surfaceId?: string; modal?: boolean }
@@ -12,8 +13,8 @@ const WindowOwner = createContext<OwnerContext>();
 export const useManagedWindowOwner = () => useContext(WindowOwner);
 /** Reactive per-owner activity; consumers may suspend optional work without unmounting. */
 export const useManagedViewActivity = () => {
-  const owner=useContext(WindowOwner);
-  return () => owner ? owner.manager.registry.windows[owner.windowId] : {mounted:true,visible:true,active:true};
+  const owner=useContext(WindowOwner), session=useDocumentSession();
+  return () => session ? session.host.activity() : owner ? owner.manager.registry.windows[owner.windowId] : {mounted:true,visible:true,active:true};
 };
 
 /** Own an existing inline app dialog without moving its DOM or changing its
@@ -70,7 +71,7 @@ export function ApplicationSurfacePortal(props: {
   editor?: ReactiveEditor; ownerKey?: string; sourceViewId?: string;
   id?: string; kind?: SurfaceKind; legacyInline?: boolean; children: JSX.Element;
 }) {
-  const inherited = useContext(WindowOwner);
+  const inherited = useContext(WindowOwner), documentSession = useDocumentSession();
   const manager = props.editor?.windowManager ?? inherited?.manager;
   const windowId = untrack(() => props.ownerKey ? manager?.ownerForNode(props.ownerKey) ?? inherited?.windowId : inherited?.windowId);
   const group = windowId ? manager?.groups.get(windowId) : manager?.plane;
@@ -86,7 +87,8 @@ export function ApplicationSurfacePortal(props: {
   group.append(host);
   onMount(()=>manager.lifecycle.refreshInert());
   createEffect(() => {
-    const visible = windowId ? manager.registry.windows[windowId]?.visible ?? false : true;
+    const visible = (windowId ? manager.registry.windows[windowId]?.visible ?? false : true)
+      && (!documentSession || documentSession.host.activity().visible);
     if (!windowId) { manager.registry.revision(); host.style.zIndex = String(manager.count() * 2 + 2); }
     host.hidden = !visible;
     host.inert = !visible;

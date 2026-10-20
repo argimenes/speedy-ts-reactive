@@ -1,9 +1,11 @@
-import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import { DocumentCounts } from "../runtime/document-counts";
 import type { TextCounts } from "../runtime/text-counts";
+import { useManagedViewActivity } from "./window-manager";
 
 export function DocumentCountBar(props: { editor: ReactiveEditor; scopeKey?: string }) {
+  const activity = useManagedViewActivity();
   const [service, setService] = createSignal<DocumentCounts>();
   const [unavailable, setUnavailable] = createSignal(false);
   onMount(() => {
@@ -18,6 +20,7 @@ export function DocumentCountBar(props: { editor: ReactiveEditor; scopeKey?: str
     const counts = new DocumentCounts(props.editor.repository, props.editor.node(props.scopeKey ?? "")?.placementKey ?? props.editor.repository.readState().rootPlacementKey,
       text => new Promise((resolve, reject) => { const key = ++id; requests.set(key, { resolve, reject }); worker.postMessage({ id: key, text }); }));
     setService(counts);
+    if (props.editor.documentSessions) createEffect(() => counts.setSuspended(!activity()?.visible));
     onCleanup(() => { counts.dispose(); worker.terminate(); for (const request of requests.values()) request.reject(); requests.clear(); });
   });
   const focused = () => {

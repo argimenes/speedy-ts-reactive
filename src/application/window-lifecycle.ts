@@ -90,7 +90,7 @@ export class WindowLifecycle {
     if(!handle)return true;
     const owner=this.owner(handle.root);
     const icon=owner===key && !!handle.root.querySelector('[data-window-icon]');
-    return this.permits(handle.focusElement) && (!owner || !!this.manager.registry.windows[owner]?.visible || icon);
+    return !handle.focusElement.closest("[hidden], [inert]") && this.permits(handle.focusElement) && (!owner || !!this.manager.registry.windows[owner]?.visible || icon);
   }
   uninstall() { this.cleanup?.(); this.cleanup=undefined; }
   install(document: Document) {
@@ -175,7 +175,7 @@ export class WindowLifecycle {
     const bookmark = this.bookmarks.get(id);
     const mount=bookmark?.key ? this.editor.mounts.get(bookmark.key) : undefined;
     const element=bookmark?.element.isConnected ? bookmark.element : mount?.focusElement;
-    if (bookmark && element?.isConnected && this.groupsContains(id,element)) {
+    if (bookmark && element?.isConnected && !element.closest("[hidden], [inert]") && this.groupsContains(id,element)) {
       element.focus({preventScroll:true});
       const current=bookmark.contentKey ? this.editor.repository.state.contents[bookmark.contentKey]?.revision===bookmark.revision : bookmark.element===element;
       if (current) {

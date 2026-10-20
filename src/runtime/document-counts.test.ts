@@ -56,4 +56,23 @@ describe("cached text counts", () => {
     finish(countText("Old Hello world")); await pending; await counts.flush();
     expect(counts.state.totals[root].words).toBe(8);
   });
+  it("retains hidden invalidation without counting and resumes only changed text", async () => {
+    const { editor, counts, count, node, root } = setup(); await counts.flush(); count.mockClear();
+    counts.setSuspended(true);
+    editor.commands.replaceInlineRange(node("p0").key, 0, 0, "Hidden ");
+    await counts.flush(); expect(count).not.toHaveBeenCalled();
+    counts.setSuspended(false); await counts.flush();
+    expect(count).toHaveBeenCalledTimes(1); expect(counts.state.totals[root].words).toBe(7);
+  });
+  it("rejects in-flight optional results on suspension and recounts on resume", async () => {
+    const { editor, counts, count, node, root } = setup(); await counts.flush();
+    let finish!: (value: ReturnType<typeof countText>) => void;
+    count.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    editor.commands.replaceInlineRange(node("p0").key, 0, 0, "Hidden ");
+    const pending = counts.flush(); counts.setSuspended(true);
+    finish(countText("Hidden Hello world")); await pending;
+    expect(counts.state.totals[root].words).toBe(6);
+    counts.setSuspended(false); await counts.flush();
+    expect(counts.state.totals[root].words).toBe(7);
+  });
 });
