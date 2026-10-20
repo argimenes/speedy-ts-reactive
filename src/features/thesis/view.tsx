@@ -106,7 +106,9 @@ export function ThesisView(props:{host:ReactiveEditor;initial?:Draft;windowKey?:
  };
  const archive=async()=>{const r=record();if(!r||!discard())return;setBusy(true);setError('');try{pending??={op:r.attributes.thesis.archived?'restore':'archive',id:r.id,expectedRevision:r.revision,operationId:crypto.randomUUID()};const result=await call(pending);if(alive){load(result.proposition);await refresh();}}catch(e){if(alive)setError(String(e));}finally{if(alive)setBusy(false);}};
  onMount(()=>{
-  if(props.windowKey)props.host.viewCloseGuards.set(props.windowKey,()=>discard());
+  if(props.windowKey){props.host.viewCloseGuards.set(props.windowKey,()=>discard());
+    const release=props.host.windowManager?.layout.persistable(props.windowKey,()=>!draft());if(release)onCleanup(release);
+  }
   const warn=(event:BeforeUnloadEvent)=>{if(dirty()||busy()||pending){event.preventDefault();event.returnValue='';}};window.addEventListener('beforeunload',warn);
   onCleanup(()=>{window.removeEventListener('beforeunload',warn);if(props.windowKey)props.host.viewCloseGuards.delete(props.windowKey);});
   void(async()=>{try{const v=await nativeDocumentSession(props.host).defaultVault(loading.signal);if(!alive)return;if(!v)throw Error('Open a Mutable Vault before using Thesis.');setVault(v);const context=await call({op:'context'},loading.signal);if(!alive)return;setReady(true);

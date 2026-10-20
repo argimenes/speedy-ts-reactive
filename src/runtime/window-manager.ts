@@ -113,6 +113,18 @@ export class WindowRegistry {
     };
   }
 
+  setPinned(id: string, pinned: boolean) {
+    const item = this.windows[id];
+    if (!item || item.pinned === pinned) return;
+    batch(() => {
+      this.normal = this.normal.filter(key => key !== id);
+      this.pinned = this.pinned.filter(key => key !== id);
+      (pinned ? this.pinned : this.normal).push(id);
+      this.setWindows(id, "pinned", pinned);
+      this.reindex();
+    });
+  }
+
   raise(id: string) {
     const item = this.windows[id];
     if (!item) return;

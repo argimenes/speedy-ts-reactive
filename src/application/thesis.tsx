@@ -52,17 +52,19 @@ export async function openThesisSource(editor:ReactiveEditor,source:SourcePassag
  if(!matches.length)return 'Source Document opened, but the original Block is missing or not mounted. The captured range may be stale.';
  const node=matches[0],revision=state.contents[node.contentKey].inlineRevision,text=node.inlineContent.map(k=>editor.node(k)?.viewType==='text-cell'?editor.node(k)!.payload.text:'\ufffc').join(''),exact=source.blockHash?await passageHash(text)===source.blockHash:text===source.blockText;
  if(!current())throw Error('Thesis navigation canceled');
- editor.mounts.get(node.key)?.root.scrollIntoView?.({block:'center'});editor.focus.request(node.key,{reason:'thesis-source'});
  const verified=exact&&editor.repository.readState().contents[node.contentKey]?.inlineRevision===revision&&[...text].slice(source.start,source.end).join('')===source.text;
  const managedOwner=editor.windowManager?.ownerForNode(node.key);
  const win=managedOwner ? editor.node(managedOwner) : editor.blockQueries.ancestors(node.key).find(n=>['window-block','document-window-block'].includes(n.viewType));
  if(win){
-  if(editor.windowManager) editor.windowManager.raisePlacement(win.placementKey);
+  if(editor.windowManager) editor.windowManager.lifecycle.reveal(win.key);
   else {
    const metadata=unwrap((win.payload.metadata??{}) as JsonObject),zIndex=Math.max(0,...Object.values(editor.repository.readState().contents).filter(c=>c.viewType==='window-block').map(c=>Number((c.payload.metadata as any)?.zIndex)||0))+1;
    editor.commands.setPayloadField(win.key,'metadata',{...metadata,minimized:false,zIndex},'Open Proposition source');
   }
  }
+ // A retained shell tab is mounted even while hidden. Reveal its owning frame
+ // before requesting focus or restoring the verified source range.
+ editor.mounts.get(node.key)?.root.scrollIntoView?.({block:'center'});editor.focus.request(node.key,{reason:'thesis-source'});
  if(verified)editor.mounts.get(node.key)?.restoreInlineSelection?.({anchor:source.start,head:source.end});
  return verified?'Loaded source passage located; current Block text matches the captured text.':'Source Block opened. Its text has changed; the captured range may be stale and was not selected.';
 }

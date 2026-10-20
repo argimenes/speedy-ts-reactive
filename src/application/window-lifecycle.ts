@@ -41,7 +41,14 @@ export class WindowLifecycle {
       this.activate(ids[(index+(action==='next'?1:ids.length-1))%ids.length]);
     }},'window-manager'));
   }
-  reveal(id:string) { if(this.workspaceBlocked)return; if(!this.manager.registry.windows[id]?.visible)this.actions.get(id)?.restore();else this.activate(id); }
+  reveal(id:string) {
+    if(this.workspaceBlocked)return;
+    this.manager.layout.selectWindow(id);
+    // A tab switch rejected by a modal/composition/close guard is not a
+    // minimized-window restore and must not write a new window mode.
+    if(this.manager.layout.hidden(id))return;
+    if(!this.manager.registry.windows[id]?.visible)this.actions.get(id)?.restore();else this.activate(id);
+  }
   minimize(id:string) { if(this.manager.registry.windows[id]?.visible&&this.canMinimize(id))this.actions.get(id)?.minimize(); }
   cycle(direction=1) { if(this.workspaceBlocked)return; const ids=Object.values(this.manager.registry.windows).filter(w=>w.visible).sort((a,b)=>a.generation-b.generation).map(w=>w.id);if(ids.length)this.activate(ids[(ids.indexOf(this.manager.registry.activeWindowId??this.manager.registry.mru[0])+direction+ids.length)%ids.length]); }
   bindActions(id:string, actions:{minimize:()=>void;restore:()=>void}) { this.actions.set(id,actions); return ()=>this.actions.delete(id); }
@@ -157,6 +164,7 @@ export class WindowLifecycle {
       range: selection?.rangeCount && element.contains(selection.anchorNode) ? selection.getRangeAt(0).cloneRange() : undefined });
   }
   activate(id: string, restore = true) {
+    if (!this.composing && !this.blocked(id)) this.manager.layout.selectWindow(id);
     const record = this.manager.registry.windows[id]; if (!record?.visible) return false;
     const modal = this.blocked(id);
     if (modal && !modal.owner) { this.focusModal(modal); return false; }
@@ -215,7 +223,8 @@ export class WindowLifecycle {
     const finish = () => { if (!current()) return; this.remember(); const active = this.manager.registry.activeWindowId === id; this.pending.delete(id);
       this.editor.focus.cancelPending();
       for(const overlay of [...this.editor.overlays.overlays])if(this.manager.ownerForNode(overlay.ownerKey)===id)this.editor.overlays.close(overlay.key,false,true);
-      commit(); this.notify('closed',id); if (active) this.successor(id); };
+      const placement=this.manager.registry.windows[id]?.placementKey;
+      commit(); this.manager.layout.close(id,placement); this.notify('closed',id); if (active) this.successor(id); };
     const run = (index: number): void | Promise<void> => {
       if (!current()) return;
       if (index === guards.length) { finish(); return; }

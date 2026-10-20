@@ -1,5 +1,5 @@
 import { createWindowMaximize } from "./window-maximize";
-import { ManagedWindowFrame, RetainedWindowBody } from "./window-manager";
+import { ManagedWindowFrame, RetainedWindowBody, useManagedWindowOwner } from "./window-manager";
 import { managedAsset } from '../interchange/managed-asset';
 import { inspectUri } from '../interchange/uri';
 import { createWindowPresentation } from "./window-presentation";
@@ -69,17 +69,22 @@ export function GenericContainerView(props: BlockViewProps) {
 
 export function PageView(props: BlockViewProps) {
   const { editor, projection } = useReactiveView();
+  const windowOwner=useManagedWindowOwner();
+  const showMinimap=createMemo(()=>editor.minimap.hasVisibleMarkers(props.nodeKey));
+  // A rail changes the window minimum, whereas changing its markers does not.
+  // Notify only this owner and coalesce its capability read after DOM classes update.
+  createEffect(()=>{showMinimap();untrack(()=>windowOwner?.manager.layout.invalidateMinimum(windowOwner.windowId));});
   const node = () => projection.state.nodes[props.nodeKey];
   const appearance = createMemo(() => blockAppearance(node()));
   let root!: HTMLElement;
   let main!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
   return (
-    <article ref={root} class={`abstract-block reactive-page ${appearance().classes.join(" ")}`} classList={{ [`reactive-page--minimap-${editor.minimap.state.options.side}`]: editor.minimap.hasVisibleMarkers(props.nodeKey) }} style={appearance().style} tabIndex={-1} {...data(props.nodeKey, node)}>
+    <article ref={root} class={`abstract-block reactive-page ${appearance().classes.join(" ")}`} classList={{ [`reactive-page--minimap-${editor.minimap.state.options.side}`]: showMinimap() }} style={appearance().style} tabIndex={-1} {...data(props.nodeKey, node)}>
       <RelationBlocks parentKey={props.nodeKey} />
       <div ref={main} class="reactive-page__main"><ChildBlocks parentKey={props.nodeKey} /></div>
       <DocumentMarginIndicators page={() => root} main={() => main} />
-      <Show when={editor.minimap.hasVisibleMarkers(props.nodeKey)}><PageMinimap pageKey={props.nodeKey} page={() => root} main={() => main} /></Show>
+      <Show when={showMinimap()}><PageMinimap pageKey={props.nodeKey} page={() => root} main={() => main} /></Show>
     </article>
   );
 }
@@ -561,9 +566,11 @@ export function WindowView(props: BlockViewProps) {
   const managedGeometry = manager?.geometry.create(props.nodeKey, {
     element:()=>root, viewport:untrack(isSticky), position:()=>({x:Number(metadata().position?.x??20),y:Number(metadata().position?.y??20)}),
     size:presentation.presentedSize, minimum:()=>({width:minimumSize().w,height:minimumSize().h}),mode:()=>maximized()?"maximized":state(),
-    allowed:()=>manager.lifecycle.canMinimize(props.nodeKey),
+    allowed:()=>manager.lifecycle.canMinimize(props.nodeKey)&&(!manager.layout.isTiled(props.nodeKey)||minimized()),
+    layout:()=>manager.layout.rectangle(props.nodeKey), cancelled:()=>manager.layout.cancelSnap(),
     commit:patch=>commitMetadata(patch.size?{size:(()=>{const size=presentation.expandedFromPresented(patch.size);return {w:size.width,h:size.height};})()}:{position:patch.position},patch.size?"Resize Window":"Move Window"),
   });
+  onMount(()=>{if(manager){onCleanup(manager.layout.register(props.nodeKey,{minimum:()=>({width:minimumSize().w,height:minimumSize().h}),mode:state,pinned:()=>metadata().pinned===true,viewport:untrack(isSticky)}));createEffect(()=>{state();metadata().pinned;manager.layout.update(props.nodeKey);});}});
   const windowResize = managedGeometry?.resize ?? createFloatingWindowResize({
     element: () => root,
     size: presentation.presentedSize,
@@ -650,13 +657,13 @@ export function WindowView(props: BlockViewProps) {
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
   const moveDrag = (event: PointerEvent) => {
-    if (managedGeometry) {managedGeometry.movePointer(event);return;}
+    if (managedGeometry) {managedGeometry.movePointer(event);if(managedGeometry.mode()==="move"&&!minimized())manager?.layout.previewSnap(props.nodeKey,event.clientX,event.clientY);return;}
     if (!drag || drag.pointerId !== event.pointerId) return;
     drag.moved ||= Math.abs(event.clientX - drag.x) > 2 || Math.abs(event.clientY - drag.y) > 2;
     setPreview(clampIconPosition({ x: drag.originX + (event.clientX - drag.x) / (scale?.() ?? 1), y: drag.originY + (event.clientY - drag.y) / (scale?.() ?? 1) }));
   };
   const finishDrag = (event: PointerEvent, cancelled = false) => {
-    if (managedGeometry) {if(cancelled)managedGeometry.cancelPointer(event);else managedGeometry.endPointer(event);return;}
+    if (managedGeometry) {if(cancelled)managedGeometry.cancelPointer(event);else if(manager?.layout.snapPreview()&&manager.layout.finishSnap(props.nodeKey))managedGeometry.cancel();else managedGeometry.endPointer(event);return;}
     if (!drag || drag.pointerId !== event.pointerId) return;
     const final = position(), moved = drag.moved, wasMinimized = minimized(); drag = undefined; setPreview(undefined);
     if (cancelled) return;
@@ -753,7 +760,7 @@ export function WindowView(props: BlockViewProps) {
             <DocumentMarginDrawer id={marginDrawerId} entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />
           </Show>
         </DocumentMarginContext.Provider>
-        <Show when={!geometry?.static && state() === "normal"}><FloatingWindowResizeHandle controller={windowResize} class="reactive-window__resize" label={`Resize ${title()} window`} /></Show>
+        <Show when={!geometry?.static && state() === "normal" && !manager?.layout.isTiled(props.nodeKey)}><FloatingWindowResizeHandle controller={windowResize} class="reactive-window__resize" label={`Resize ${title()} window`} /></Show>
       </RetainedWindowBody></Show>
       <Show when={minimized()}>
         <WindowIcon title={title()} kind={resolvedWindowIcon(node()?.viewType ?? "window-block", metadata().icon)} onRestore={restoreWindow}

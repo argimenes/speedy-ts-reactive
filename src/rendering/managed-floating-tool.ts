@@ -5,10 +5,11 @@ import type { WindowRect } from '../application/window-geometry';
 /** An anchor declares validity explicitly. Clients invalidate after source layout
  * changes; scroll/resize are coalesced here. No document polling or cell sweep. */
 export function createToolAnchor(element:()=>Element|undefined, visible:()=>boolean) {
+  const owner=useManagedWindowOwner();
   const [rect,setRect]=createSignal<WindowRect>();let frame=0,observer:ResizeObserver|undefined;
   const measure=()=>{frame=0;const node=element();if(!visible()||!node?.isConnected){setRect(undefined);return;}const r=node.getBoundingClientRect();setRect({x:r.left,y:r.top,width:r.width,height:r.height});};
   const invalidate=()=>{setRect(undefined);if(!frame)frame=requestAnimationFrame(measure);};
-  createEffect(()=>{const node=element();visible();observer?.disconnect();if(node)observer?.observe(node);invalidate();});
+  createEffect(()=>{const node=element();visible();if(owner)owner.manager.geometry.controllers.get(owner.windowId)?.rectangle();observer?.disconnect();if(node)observer?.observe(node);invalidate();});
   onMount(()=>{observer=typeof ResizeObserver==='undefined'?undefined:new ResizeObserver(invalidate);const node=element();if(node)observer?.observe(node);window.addEventListener('scroll',invalidate,true);window.addEventListener('resize',invalidate);window.visualViewport?.addEventListener('resize',invalidate);window.visualViewport?.addEventListener('scroll',invalidate);});
   onCleanup(()=>{if(frame)cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener('scroll',invalidate,true);window.removeEventListener('resize',invalidate);window.visualViewport?.removeEventListener('resize',invalidate);window.visualViewport?.removeEventListener('scroll',invalidate);});
   return {rect,invalidate};

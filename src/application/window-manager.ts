@@ -1,3 +1,4 @@
+import { WindowLayout } from "./window-layout";
 import { unwrap } from "solid-js/store";
 import { WindowGeometry } from "./window-geometry";
 import { WindowLifecycle } from "./window-lifecycle";
@@ -12,6 +13,7 @@ export class WorkspaceWindowManager {
   readonly registry = new WindowRegistry();
   readonly geometry = new WindowGeometry();
   readonly lifecycle: WindowLifecycle;
+  readonly layout: WindowLayout;
   plane?: HTMLElement;
   readonly groups = new Map<string, HTMLElement>();
   private readonly initialOrder = new Map<string, number>();
@@ -23,6 +25,7 @@ export class WorkspaceWindowManager {
 
   constructor(private readonly editor: ReactiveEditor) {
     this.lifecycle = new WindowLifecycle(this, editor);
+    this.layout = new WindowLayout(this, editor);
     // Once at session creation. Historical z values seed order, never CSS layers.
     const windows = Object.values(editor.repository.readState().contents)
       .filter(c => ["window-block", "document-window-block"].includes(c.viewType))
@@ -35,6 +38,14 @@ export class WorkspaceWindowManager {
   close(id:string) { return this.editor.closeView(id); }
   maximize(id:string) { const node=this.editor.node(id);if(!node||!this.lifecycle.canMinimize(id)||!this.editor.features.windowMaximize)return;const metadata=node.payload.metadata as any;this.editor.commands.setPayloadField(id,"metadata",{...unwrap(metadata),state:metadata?.state==="maximized"?"normal":"maximized"},"Maximize / Restore Window"); }
   count() { return Object.keys(this.registry.windows).length; }
+  groupRank(id:string) {
+    const record=this.registry.windows[id];if(!record)return 0;
+    // Minimized icons need an accessible strip above normal frames that can now
+    // fill the entire work area. Pinned application groups still remain above.
+    return !record.pinned&&this.layout.minimized(id)
+      ? Math.max(0,...Object.values(this.registry.windows).filter(w=>!w.pinned).map(w=>w.rank))*2+1
+      : record.rank*2;
+  }
   /** A0 uses existing metadata fields; no serializer or file-format changes. */
   launchMetadata() { return { zIndex: this.count() + 1 }; }
   activatePlacement(placement: string) {
@@ -87,5 +98,5 @@ export class WorkspaceWindowManager {
       } };
     });
   }
-  dispose() { this.geometry.dispose(); this.lifecycle.dispose(); this.groups.clear(); this.requested.clear(); this.initialOrder.clear(); this.registry.dispose(); this.plane = undefined; }
+  dispose() { this.layout.dispose(); this.geometry.dispose(); this.lifecycle.dispose(); this.groups.clear(); this.requested.clear(); this.initialOrder.clear(); this.registry.dispose(); this.plane = undefined; }
 }

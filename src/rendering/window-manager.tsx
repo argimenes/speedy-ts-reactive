@@ -1,3 +1,4 @@
+import { WindowLayoutChrome } from "./window-layout";
 import { createContext, createEffect, onCleanup, onMount, useContext, type JSX, untrack } from "solid-js";
 import { Portal } from "solid-js/web";
 import { windowManagerForDocument } from "../application/window-lifecycle";
@@ -39,7 +40,7 @@ export function WindowManagerPlane(props: { manager?: WorkspaceWindowManager; ch
   props.manager.lifecycle.install(document);
   onMount(()=>props.manager!.geometry.install(plane));
   onCleanup(() => { if (props.manager?.plane === plane) { props.manager.geometry.dispose(); props.manager.lifecycle.uninstall(); props.manager.plane = undefined; } });
-  return <>{plane}{props.children}</>;
+  return <>{plane}<Portal mount={plane}><WindowLayoutChrome manager={props.manager}/></Portal>{props.children}</>;
 }
 
 /** Stable parent for a frame and all its portalled children. No transform here:
@@ -50,10 +51,10 @@ export function ManagedWindowFrame(props: {
   mounted: boolean; visible: boolean; viewport?: boolean; children: JSX.Element;
 }) {
   const manager = props.manager, group = document.createElement("div");
-  group.className = `mwm-window-group${props.viewport ? " mwm-window-group--viewport" : ""}`; group.dataset.mwmWindow = props.nodeKey;
+  group.className = `mwm-window-group${props.viewport ? " mwm-window-group--viewport" : ""}`; group.dataset.mwmWindow = props.nodeKey; group.id=`mwm-panel-${props.nodeKey}`;
   const lease = manager.register(props.nodeKey, group);
-  createEffect(() => { group.style.zIndex = String(manager.registry.windows[props.nodeKey]?.rank ?? 0); });
-  createEffect(() => lease.activity(props.mounted, props.visible));
+  createEffect(() => { group.style.zIndex = String(manager.groupRank(props.nodeKey)); });
+  createEffect(() => {const hidden=manager.layout.hidden(props.nodeKey);group.hidden=!!hidden;group.inert=!!hidden;lease.activity(props.mounted, props.visible&&!hidden);});
   onCleanup(() => {
     lease.release(); group.remove();
   });
@@ -86,7 +87,7 @@ export function ApplicationSurfacePortal(props: {
   onMount(()=>manager.lifecycle.refreshInert());
   createEffect(() => {
     const visible = windowId ? manager.registry.windows[windowId]?.visible ?? false : true;
-    if (!windowId) { manager.registry.revision(); host.style.zIndex = String(manager.count() + 1); }
+    if (!windowId) { manager.registry.revision(); host.style.zIndex = String(manager.count() * 2 + 2); }
     host.hidden = !visible;
     host.inert = !visible;
   });

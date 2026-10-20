@@ -239,7 +239,7 @@ export class WorkspaceSession {
   }
 
   dirty() {
-    return !!this.editor.persistence.state.unsavedWorkspaceContent || this.editor.viewVisibility.dirty() || this.presentation.dirty() || this.editor.repository.state.revision !== (this.editor.persistence.state.lastSavedRevision ?? 0);
+    return !!this.windowManager?.layout.dirty() || !!this.editor.persistence.state.unsavedWorkspaceContent || this.editor.viewVisibility.dirty() || this.presentation.dirty() || this.editor.repository.state.revision !== (this.editor.persistence.state.lastSavedRevision ?? 0);
   }
 
   /** Resolve on demand, not on every keystroke. Runtime keys never enter the

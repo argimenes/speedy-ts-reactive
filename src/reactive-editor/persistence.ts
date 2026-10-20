@@ -1,3 +1,4 @@
+import { entries } from "../runtime/window-layout";
 import { desktopOf, importLegacyDesktop, validateManagedContainer, type ManagedDesktop } from "../persistence/managed-desktop";
 import { assertLegacySaveAllowed, disposeNativeSession } from "../persistence/native-bindings";
 import { isDocumentName } from "../persistence/document-file-names.mjs";
@@ -58,6 +59,7 @@ export interface WorkspaceSaveSnapshot {
   visibilityRevision?: number;
   localValue?: Record<string, any>;
   documentFingerprints?: Map<string, string>;
+  layoutRevision?: number;
 }
 
 export class PersistenceService {
@@ -119,6 +121,8 @@ export class PersistenceService {
     this.editor.viewVisibility.captureInto(repository);
     const managed = !!this.managedTemplate || options.upgrade === true;
     if (managed && !this.editor.features.mutableWindowManager) throw new Error("Enable the Mutable Window Manager before upgrading this Workspace.");
+    if (this.editor.windowManager?.layout.hasLayout() && !managed) throw new Error("Use Upgrade Workspace and Save as… to preserve the shell layout in a managed Workspace.");
+    if (this.managedDesktop?.version === 3 && !this.editor.windowManager) throw new Error("Open this layout in a managed Workspace session before saving.");
     assertLegacySaveAllowed(this.editor.repository);
     const snapshot: WorkspaceSaveSnapshot = { repository, presentation, visibilityRevision: this.editor.viewVisibility.revision(), document: withWorkspacePresentation(managed ? encodeWorkspace(repository) : this.editor.encodeWorkspace(repository), presentation) };
     if (managed) {
@@ -145,6 +149,15 @@ export class PersistenceService {
         if (this.editor.viewVisibility.isClosed(placement)) block.metadata = { ...block.metadata, state: "closed" };
         return keys;
       }, this.managedDesktop);
+      const desktop = desktopOf(snapshot.document)!;
+      const layout = this.editor.windowManager?.layout;
+      if (layout?.hasLayout()) {
+        const mapping = new Map(placements.map((key,index)=>[key,desktop.windows[index].restoreKey]));
+        const capture = layout.capture(mapping), tiled = new Set(entries(capture.tree));
+        snapshot.layoutRevision = capture.revision;
+        const next = { ...desktop, version: 3, layout: { ...desktop.layout, version: 1, kind: "split-tree", ...(capture.tree ? {tree:capture.tree} : {}), floating:desktop.windows.filter(w=>!tiled.has(w.restoreKey)).map(w=>w.restoreKey) } };
+        (snapshot.document.metadata as any).workspacePresentation.presentations.desktop = next;
+      }
       snapshot.localValue = validateManagedContainer({ ...(this.managedTemplate?.kind === "speedy-local-workspace" ? this.managedTemplate : {}), kind: "speedy-local-workspace", schemaVersion: 2, workspaceId: this.workspaceId ??= globalThis.crypto.randomUUID(), root: snapshot.document });
     }
     this.captures.add(snapshot);
@@ -156,6 +169,7 @@ export class PersistenceService {
     if (this.editor.repository.state.revision === snapshot.repository.revision) this.setState("lastSavedRevision", snapshot.repository.revision);
     this.setState("unsavedWorkspaceContent", layoutOnly && [...(snapshot.documentFingerprints ?? [])].some(([key, value]) => this.savedServerDocuments.get(key) !== value));
     if (snapshot.localValue) { this.managedTemplate = snapshot.localValue; this.managedDesktop = desktopOf(snapshot.document); }
+    if (snapshot.layoutRevision !== undefined) this.editor.windowManager?.layout.markSaved(snapshot.layoutRevision);
     if (snapshot.presentation) this.workspacePresentation?.markSaved(snapshot.presentation);
     if (snapshot.visibilityRevision !== undefined) this.editor.viewVisibility.markSaved(snapshot.visibilityRevision);
   }

@@ -95,4 +95,39 @@ describe('D0 server persistence boundaries',()=>{
     expect(await fs.readdir(workspaces)).toEqual([]);
   });
 
+  it('round trips a C layout with D0 identities, rejects downgrade and malformed C saves before replacing files',async()=>{
+    const d0=workspace(),value=structuredClone(d0),desktop=value.root.metadata.workspacePresentation.presentations.desktop;
+    desktop.version=3;
+    desktop.layout={...desktop.layout,kind:'split-tree',version:1,floating:[],tree:{id:'leaf',kind:'tabs',entries:[desktop.windows[0].restoreKey],active:desktop.windows[0].restoreKey}};
+    const before=await fs.readFile(path.join(docs,'Notes.json'),'utf8');
+    const initial=await post({filename:'C.json',workspace:d0,documents:[]},{'If-None-Match':'*'});
+    expect(initial.status).toBe(200);const initialHash=(await initial.json()).Data.contentHash;
+    const beforeUpgrade=await (await fetch(`${base}/loadWorkspaceJson?filename=C.json`)).json();expect(beforeUpgrade.Data.workspace).toEqual(d0);
+    const response=await post({filename:'C.json',workspace:value,documents:[]},{'If-Match':initialHash});
+    expect(response.status).toBe(200);const hash=(await response.json()).Data.contentHash;
+    const loaded=await (await fetch(`${base}/loadWorkspaceJson?filename=C.json`)).json();expect(loaded.Data.workspace).toEqual(value);
+    expect((await post({filename:'C.json',workspace:d0,documents:[]},{'If-Match':hash})).status).toBe(409);
+    for(const mutate of [(d:any)=>d.layout.version=2,(d:any)=>d.layout.tree.active='missing',(d:any)=>d.layout.floating=[d.windows[0].restoreKey]]){
+      const bad=structuredClone(value);mutate(bad.root.metadata.workspacePresentation.presentations.desktop);
+      expect((await post({filename:'C.json',workspace:bad,documents:[]},{'If-Match':hash})).status).toBe(400);
+    }
+    expect(JSON.parse(await fs.readFile(path.join(workspaces,'C.json'),'utf8'))).toEqual(value);
+    expect(await fs.readFile(path.join(docs,'Notes.json'),'utf8')).toBe(before);
+  });
+
+  it('leaves a saved C layout intact after an injected partial staging failure',async()=>{
+    const value=workspace(),desktop=value.root.metadata.workspacePresentation.presentations.desktop;
+    desktop.version=3;desktop.layout={...desktop.layout,kind:'split-tree',version:1,floating:desktop.windows.map((w:any)=>w.restoreKey)};
+    const response=await post({filename:'C.json',workspace:value,documents:[]},{'If-None-Match':'*'});
+    expect(response.status).toBe(200);const hash=(await response.json()).Data.contentHash;
+    const target=path.join(workspaces,'C.json'),before=await fs.readFile(target,'utf8');
+    const write=fs.writeFile.bind(fs);vi.spyOn(fs,'writeFile').mockImplementation(async(file,data,options:any)=>{
+      if(path.basename(String(file)).startsWith('.speedy-workspace-')){await write(file,'partial',options);throw Error('C staging failure');}
+      return write(file,data,options);
+    });
+    value.extra.preserve=2;
+    expect((await post({filename:'C.json',workspace:value,documents:[]},{'If-Match':hash})).status).toBe(500);
+    expect(await fs.readFile(target,'utf8')).toBe(before);expect(await fs.readdir(workspaces)).toEqual(['C.json']);
+  });
+
 });

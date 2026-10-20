@@ -7,7 +7,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const milestone=process.argv.includes('--d0')?'d0':process.argv.includes('--b')?'b':process.argv.includes('--a1')?'a1':'a0';
+const milestone=process.argv.includes('--c-persistence')?'c-persistence':process.argv.includes('--c')?'c':process.argv.includes('--d0')?'d0':process.argv.includes('--b')?'b':process.argv.includes('--a1')?'a1':'a0';
 const profile = await mkdtemp(path.join(tmpdir(), `mutable-${milestone}-`));
 let server, chrome, socket;
 try {
@@ -77,7 +77,7 @@ try {
           await send('Page.bringToFront',{},sessionId);await send('Target.closeTarget',{targetId:tab.targetId});
         }
         if(action.type==='touch')await send('Input.dispatchTouchEvent',{type:action.event,touchPoints:action.event==='touchEnd'||action.event==='touchCancel'?[]:[{x:action.x,y:action.y}]},sessionId);
-        if(action.type==='key')for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:action.key,code:action.key,modifiers:action.modifiers??0,windowsVirtualKeyCode:({Tab:9,Escape:27,Enter:13,ArrowLeft:37,ArrowUp:38,ArrowRight:39,ArrowDown:40})[action.key]??0},sessionId);
+        if(action.type==='key')for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key:action.key,code:action.key,...(type==='keyDown'&&action.key==='Enter'?{text:'\r'}:{}),modifiers:action.modifiers??0,windowsVirtualKeyCode:({Tab:9,Escape:27,Enter:13,ArrowLeft:37,ArrowUp:38,ArrowRight:39,ArrowDown:40})[action.key]??0},sessionId);
         if(action.type==='accessibility')result=(await send('Accessibility.getFullAXTree',{},sessionId)).nodes.filter(n=>!n.ignored).map(n=>({role:n.role?.value,name:n.name?.value,properties:n.properties}));
         await send('Runtime.evaluate',{expression:`globalThis.__mwmResume(${JSON.stringify({result})})`},sessionId);
       } catch(error) { await send('Runtime.evaluate',{expression:`globalThis.__mwmResume(${JSON.stringify({error:String(error)})})`},sessionId); }

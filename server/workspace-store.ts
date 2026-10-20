@@ -139,6 +139,7 @@ async function guardWorkspaceTarget(target: string, next: any, expected?: string
   if (previous.schemaVersion === 2) {
     validateManagedContainer(previous);
     if (next.schemaVersion !== 2 || previous.kind !== next.kind || previous.workspaceId !== next.workspaceId) throw new WorkspaceStoreError(409, "Managed Workspace identity/format cannot be overwritten; choose a new filename.");
+    if ((desktopOf(next.root)?.version ?? 0) < desktopOf(previous.root)!.version) throw new WorkspaceStoreError(409, "A shell layout cannot be overwritten by an older Desktop format. Choose a new filename.");
     if (!expected || expected !== contentHash(previous)) throw new WorkspaceStoreError(409, "The Workspace changed outside this session. Reopen it or Save As to a new filename.");
   } else if (next.schemaVersion === 2) throw new WorkspaceStoreError(409, "Upgrade requires Save As to a new filename.");
 }

@@ -1,4 +1,4 @@
-import { ErrorBoundary, Suspense, lazy, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { ErrorBoundary, Suspense, lazy, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { ReactiveViewProvider } from "../reactive-editor/context";
 import { BlockOutlet } from "../rendering/block-outlet";
 import { ReactiveViewLayers } from "../rendering/reactive-tree-view";
@@ -16,6 +16,7 @@ const SpatialView = lazy(() => import("../features/spatial/view"));
 /** One provider and one overlay set survive switches; only active roots mount. */
 export function WorkspacePresentationView(props: { session: WorkspaceSession }) {
   const { editor, projection, presentation } = props.session;
+  createEffect(()=>props.session.windowManager?.layout.setEnabled(presentation.active()==="desktop"));
   const canvas = createMemo(() => presentation.read()?.presentations.canvas);
   const roots = createMemo(() => presentation.active() === "canvas" ? props.session.canvasRoots() : []);
   const input = createCanvasInteractions({ layout: canvas, available: () => props.session.inputAvailable(), camera: value => presentation.setCamera(value), bounds: (id, value) => presentation.setBounds(id, value) });

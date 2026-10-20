@@ -10,18 +10,21 @@ export interface GeometryPort {
   mode(): string;
   viewport?: boolean;
   allowed(): boolean;
+  layout?(): WindowRect | undefined;
+  cancelled?(): void;
   commit(patch: {position?:{x:number;y:number};size?:FloatingWindowSize}): void;
 }
 /** CSS-pixel geometry shared by desktop frames and owner-local tool adapters.
  * One viewport observer/listener set per session. No repository subscription.
  * Only the explicit end of a gesture crosses the legacy metadata/history bridge. */
 export class WindowGeometry {
-  private area = createSignal<WindowRect>({x:0,y:0,width:800,height:600});
-  private origin = createSignal({x:0,y:0});
+  private area = createSignal<WindowRect>({x:0,y:0,width:800,height:600},{equals:(a,b)=>a.x===b.x&&a.y===b.y&&a.width===b.width&&a.height===b.height});
+  private origin = createSignal({x:0,y:0},{equals:(a,b)=>a.x===b.x&&a.y===b.y});
   private cancelGesture?:()=>void;
   private cleanup?:()=>void;
   readonly controllers = new Map<string, ReturnType<WindowGeometry['create']>>();
   bounds = (viewport=false):WindowRect => { const a=this.area[0](),o=viewport?{x:0,y:0}:this.origin[0]();return {...a,x:a.x-o.x,y:a.y-o.y}; };
+  cancel(){this.cancelGesture?.();}
   install(plane:HTMLElement) {
     this.cleanup?.();let frame=0;
     const measure=()=>{
@@ -60,9 +63,10 @@ export class WindowGeometry {
     const rectangle=createMemo(()=> {
       if(port.mode()==='maximized')return this.bounds(port.viewport);
       if(port.mode()==='minimized') {const a=this.bounds(port.viewport),p=preview()??port.position();return {x:Math.max(a.x,Math.min(a.x+a.width-96,p.x)),y:Math.max(a.y,Math.min(a.y+a.height-92,p.y)),width:96,height:92};}
+      const layout=port.layout?.();if(layout)return layout;
       return fit(preview()??{...port.position(),...port.size()});
-    });
-    const cancel=()=>{const p=pointer;pointer=undefined;setPreview(undefined);setMode(undefined);if(this.cancelGesture===cancel)this.cancelGesture=undefined;if(p?.capture.hasPointerCapture?.(p.id))p.capture.releasePointerCapture(p.id);};
+    },undefined,{equals:(a,b)=>a.x===b.x&&a.y===b.y&&a.width===b.width&&a.height===b.height});
+    const cancel=()=>{port.cancelled?.();const p=pointer;pointer=undefined;setPreview(undefined);setMode(undefined);if(this.cancelGesture===cancel)this.cancelGesture=undefined;if(p?.capture.hasPointerCapture?.(p.id))p.capture.releasePointerCapture(p.id);};
     createEffect(()=>{port.position();port.size();port.mode();untrack(cancel);});
     const commit=()=>{const value=preview(),kind=mode();if(value&&port.allowed()) {suppress=!!pointer&&port.mode()==='minimized';if(suppress){clearTimeout(suppressTimer);suppressTimer=setTimeout(()=>suppress=false,0);}if(kind==='move')port.commit({position:{x:Math.round(value.x),y:Math.round(value.y)}});else port.commit({size:{width:Math.round(value.width),height:Math.round(value.height)}});}cancel();};
     const begin=(kind:'move'|'resize')=>{if(!port.allowed()||port.mode()==='maximized'||kind==='resize'&&port.mode()==='minimized')return false;this.cancelGesture?.();this.cancelGesture=cancel;setMode(kind);return true;};

@@ -10,7 +10,7 @@ import '../index.css';
 import '../demo/workspace-demo.css';
 const settle=()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
 const trusted=(action:Record<string,unknown>)=>new Promise<any>((resolve,reject)=>{(globalThis as any).__mwmResume=(v:any)=>v.error?reject(Error(v.error)):resolve(v.result);(globalThis as any).mwmInput(JSON.stringify(action));});
-export async function qualifyWindowManager(){
+export async function qualifyWindowManager(shellLayout=false){
   const checks:string[]=[];
   const check=(value:unknown,label:string)=>{if(!value)throw Error(label);checks.push(label);console.log(`D0 ${checks.length}: ${label}`);};
   let session:WorkspaceSession|undefined,unmount:(()=>void)|undefined,stopInput:(()=>void)|undefined;
@@ -45,12 +45,18 @@ export async function qualifyWindowManager(){
     s.editor.mounts.get(node.key)!.focus();s.editor.mounts.get(node.key)!.restoreInlineSelection?.({anchor:0,head:0});await settle();
     await trusted({type:'text',text:'Browser edit '});await settle();
     check(s.editor.repository.state.revision>0,'trusted browser typing changes the open Ink Document');
+    if(shellLayout){
+      const other=Object.values(s.projection.state.nodes).find(n=>n.payload.id==='other')!;
+      check(s.windowManager!.layout.tile(owner,other.key,'tab'),'C creates current shell tabs before explicit Save');
+      await settle();
+    }
+    const unacknowledged=()=>{try{return !s.editor.persistence.captureWorkspace().localValue;}catch(error){return shellLayout&&String(error).includes('Upgrade');}};
     const snapshot=s.editor.persistence.captureWorkspace({upgrade:true});
     check(snapshot.localValue?.schemaVersion===2&&JSON.stringify(snapshot.localValue).includes('Browser edit'),'local capture includes current unsaved Document content');
-    check(!s.editor.persistence.captureWorkspace().localValue,'preparing upgrade does not change the session format');
+    check(unacknowledged(),'preparing upgrade does not change the session format');
     w.showSaveFilePicker=async()=>{throw new DOMException('cancel','AbortError');};
     check(await saveJsonFile(snapshot.localValue,{suggestedName:'Workspace-managed.json',saveAs:true,workspace:{createOnly:true}})===undefined,'cancelled browser picker makes no write');
-    check(writeCount===0&&!s.editor.persistence.captureWorkspace().localValue,'picker cancellation leaves format and dirty state unacknowledged');
+    check(writeCount===0&&unacknowledged(),'picker cancellation leaves format and dirty state unacknowledged');
     w.showSaveFilePicker=async()=>handle;
     await saveJsonFile(snapshot.localValue,{suggestedName:'Workspace-managed.json',saveAs:true,workspace:{createOnly:true}});
     s.editor.persistence.acknowledgeWorkspaceSave(snapshot);
@@ -59,6 +65,7 @@ export async function qualifyWindowManager(){
     w.showOpenFilePicker=async()=>[handle];const opened=await openJsonFile();
     const reopened=mount(opened!.value);await settle();
     check(JSON.stringify(desktopOf(reopened.editor.persistence.captureWorkspace().document)!.views.map(v=>v.restoreKey))===savedKeys,'local Save/Open retains durable view identities across new runtime sessions');
+    if(shellLayout)check(JSON.stringify(desktopOf(reopened.editor.persistence.captureWorkspace().document)!.layout)===JSON.stringify(desktopOf(snapshot.document)!.layout)&&reopened.windowManager!.layout.solution().tabs.length===1,'C local Save/Open restores the current tree using durable D0 identities');
     const ink=Object.values(reopened.projection.state.nodes).find(n=>n.payload.id==='text')!,inkOwner=reopened.windowManager!.ownerForNode(ink.key)!;
     reopened.windowManager!.lifecycle.minimize(inkOwner);await settle();
     const minimized=reopened.editor.persistence.captureWorkspace();
@@ -80,11 +87,12 @@ export async function qualifyWindowManager(){
     check(!JSON.stringify(stored).includes('Browser edit'),'server manifest contains references rather than unsaved Document content');
     const serverLoaded=await PersistenceService.loadWorkspace('Managed.json');
     check(serverLoaded.manifest?.schemaVersion===2&&serverLoaded.references.length===1,'server manifest load resolves the separately saved Document');
+    if(shellLayout)check(desktopOf(serverLoaded.manifest!.root)!.version===3,'C server Save/load preserves Desktop v3 within the existing v2 manifest');
     const controller=new AbortController();controller.abort();
     check(!await again.editor.persistence.saveWorkspace('Cancelled.json',{createOnly:true,signal:controller.signal})&&savedRequests.length===1,'cancelled server save dispatches no request');
     const future=structuredClone(current.localValue!);future.schemaVersion=99;let refused=false;try{materializeLocalWorkspace(future);}catch{refused=true;}
     check(refused&&!!host.querySelector('[data-mwm-window]'),'rejected future load leaves the mounted editing session intact');
     check(!/focusLease|modalStack|pendingReceipt|runtimeWindowId/.test(JSON.stringify(current.localValue)),'durable capture contains no modal, focus-lease or pending-receipt state');
-    return {milestone:'D0',browser:navigator.userAgent,checks,limitations:['Native picker interaction is simulated with real File objects and in-memory file handles.','Server client responses are in memory; separate HTTP integration tests exercise the real server and temporary files.']};
+    return {milestone:shellLayout?'C persistence':'D0',browser:navigator.userAgent,checks,limitations:['Native picker interaction is simulated with real File objects and in-memory file handles.','Server client responses are in memory; separate HTTP integration tests exercise the real server and temporary files.']};
   }finally{stopInput?.();unmount?.();session?.dispose();host.remove();window.fetch=originalFetch;delete w.showSaveFilePicker;delete w.showOpenFilePicker;}
 }

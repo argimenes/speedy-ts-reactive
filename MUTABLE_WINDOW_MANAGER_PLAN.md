@@ -1,6 +1,8 @@
 # Mutable Window Manager: architecture and implementation plan
 
-**Status: A0, A1 and B accepted. Approved Milestone D0 is implemented and qualified, awaiting acceptance. C, D1 and later milestones remain unapproved.**
+**Status: A0, A1, B and D0 accepted. Approved Milestone C is implemented and qualified, awaiting acceptance. D1 and later milestones remain unapproved.**
+
+C split/tab layouts, retained-session behavior, the Desktop v3 contract extension and qualification evidence are recorded in [Milestone C qualification](MUTABLE_WINDOW_MANAGER_C_QUALIFICATION.md). The implementation uses one current layout; named layouts and later restoration services remain outside scope.
 
 Executed D0 changes, the two-container format decision, anchor descriptor boundary and limitations are recorded in [Milestone D0 qualification](MUTABLE_WINDOW_MANAGER_D0_QUALIFICATION.md). See [Milestone B qualification](MUTABLE_WINDOW_MANAGER_B_QUALIFICATION.md) for accepted floating interactions and retained hosts. The longer-term contracts below remain proposals beyond that qualified scope.
 

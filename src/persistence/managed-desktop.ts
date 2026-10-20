@@ -1,3 +1,4 @@
+import { validateLayout, type LayoutNode } from "../runtime/window-layout.js";
 /** Shared client/server D0 wire contract. No editor, DOM, runtime identities or I/O. */
 export interface RestoreView {
     restoreKey: string;
@@ -23,12 +24,15 @@ export interface RestoreWindow {
     [key: string]: unknown;
 }
 export interface ManagedDesktop {
-    version: 2;
+    version: 2 | 3;
     kind: 'managed-windows';
     views: RestoreView[];
     windows: RestoreWindow[];
     layout: {
-        kind: 'floating';
+        kind: 'floating' | 'split-tree';
+        version?: 1;
+        tree?: LayoutNode;
+        floating?: string[];
         normalOrder: string[];
         pinnedOrder: string[];
         [key: string]: unknown;
@@ -75,7 +79,7 @@ export function assertJson(value: unknown, rejectRuntime = false) {
 export function validateManagedDesktop(value: unknown): ManagedDesktop {
     assertJson(value, true);
     const d = object(value);
-    if (d.version !== 2 || d.kind !== 'managed-windows')
+    if (![2,3].includes(d.version) || d.kind !== 'managed-windows')
         fail('Unsupported managed Desktop version.');
     for (const field of ['layouts', 'activeLayout', 'tree', 'tabs', 'docks'])
         if (field in d)
@@ -128,8 +132,17 @@ export function validateManagedDesktop(value: unknown): ManagedDesktop {
     if (usedViews.size !== views.size)
         fail('Orphan view descriptor.');
     const layout = object(d.layout);
-    if (layout.kind !== 'floating' || 'tree' in layout || 'tabs' in layout)
-        fail('Only the D0 floating layout is supported.');
+    if (d.version === 2 && (layout.kind !== 'floating' || 'tree' in layout || 'tabs' in layout)) fail('Only the D0 floating layout is supported.');
+    if (d.version === 3) {
+        if (layout.kind !== 'split-tree' || layout.version !== 1) fail('Unsupported shell layout version.');
+        let tiled = new Set<string>();
+        try { tiled = validateLayout(layout.tree, new Set(windows.keys())); }
+        catch (error) { fail(error instanceof Error ? error.message : 'Invalid shell layout.'); }
+        const placed = new Set(tiled);
+        for (const key of tiled) if (windows.get(key).layer !== 'normal' || windows.get(key).state === 'closed') fail('Pinned or closed windows cannot occupy a tile slot.');
+        for (const key of list(layout.floating)) { if (!windows.has(key) || placed.has(key)) fail('Invalid floating/tiled membership.'); placed.add(key); }
+        if (placed.size !== windows.size) fail('Every window needs one floating or tiled membership.');
+    }
     const ordered = new Set<string>();
     for (const layer of ['normal', 'pinned'])
         for (const key of list(layout[layer + 'Order'])) {
@@ -281,7 +294,8 @@ export function importLegacyDesktop(root: any, allocate: (block: any, index: num
         windows.push({ ...oldWindow, restoreKey: oldWindow?.restoreKey ?? keys.window, view: view.restoreKey, layer: m.pinned === true ? 'pinned' : 'normal', state: ['minimized', 'maximized', 'closed'].includes(m.state) ? m.state : 'normal', bounds: { ...oldWindow?.bounds, x: m.position?.x ?? 20, y: m.position?.y ?? 20, width: m.size?.w ?? 840, height: m.size?.h ?? 620 } });
     });
     const ordered = windows.map((w, i) => ({ w, z: Number(blocks[i].metadata?.zIndex) || 0, i })).sort((a, b) => a.z - b.z || a.i - b.i);
-    const desktop = validateManagedDesktop({ ...previous, version: 2, kind: 'managed-windows', views, windows, layout: { ...previous?.layout, kind: 'floating', normalOrder: ordered.filter(x => x.w.layer === 'normal').map(x => x.w.restoreKey), pinnedOrder: ordered.filter(x => x.w.layer === 'pinned').map(x => x.w.restoreKey) } });
+    const baseLayout = { ...previous?.layout }; delete baseLayout.tree; delete baseLayout.floating; delete baseLayout.version;
+    const desktop = validateManagedDesktop({ ...previous, version: 2, kind: 'managed-windows', views, windows, layout: { ...baseLayout, kind: 'floating', normalOrder: ordered.filter(x => x.w.layer === 'normal').map(x => x.w.restoreKey), pinnedOrder: ordered.filter(x => x.w.layer === 'pinned').map(x => x.w.restoreKey) } });
     const p = result.metadata?.workspacePresentation;
     if (p !== undefined && (p.version !== 1 || p.presentations?.desktop && p.presentations.desktop.kind !== 'legacy-tree' && p.presentations.desktop.kind !== 'managed-windows'))
         fail('Cannot upgrade an unsupported presentation.');
