@@ -286,11 +286,17 @@ export class ReactiveEditor {
   private commitCloseView(key: NodeKey): void {
     const node = this.node(key);
     if (!node || !['window-block', 'document-window-block', 'tab-block'].includes(node.viewType)) return;
-    const inside = (candidate: string | undefined) => !!candidate && (candidate === key || this.windowManager?.ownerForNode(candidate) === key || this.blockQueries.ancestors(candidate).some(n => n.key === key));
+    const inside = (candidate: string | undefined) => {
+      if (!candidate) return false;
+      const session = this.documentSessions?.forNode(candidate);
+      if (session) return session.host.windowId === key;
+      return candidate === key || this.windowManager?.ownerForNode(candidate) === key || this.blockQueries.ancestors(candidate).some(n => n.key === key);
+    };
     this.selectionGestures.cancelGesture();
     const operation = this.currentTextOperation.active();
     if (operation) {
-      const owns = (key: string): boolean => { const node = this.node(key); return operation.owns(key) || !!node && [...node.children,...Object.values(node.ownedRelations)].some(owns); };
+      const closingWindow = key;
+      const owns = (key: string): boolean => { const session = this.documentSessions?.forNode(key); if (session && session.host.windowId !== closingWindow) return false; const node = this.node(key); return operation.owns(key) || !!node && [...node.children,...Object.values(node.ownedRelations)].some(owns); };
       if (owns(key)) operation.cancel();
     }
     if (this.blockSelection.state.items.some(item => inside(item.nodeKey))) this.blockSelection.clear();

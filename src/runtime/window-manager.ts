@@ -23,6 +23,8 @@ export interface ManagedWindow extends ViewActivity {
 }
 export interface ManagedSurface {
   id: string;
+  /** Runtime occurrence target, never a durable resource identity. */
+  sourceNodeKey?: string;
   ownerWindowId?: WindowId;
   ownerAppInstanceId: string;
   sourceViewId: string;
@@ -111,6 +113,18 @@ export class WindowRegistry {
       };
       releaseChildren(input.id);
     };
+  }
+
+  /** Move qualified nonmodal leases together, preserving IDs and release authority. */
+  rehostSurfaces(ids: readonly string[], windowId: string) {
+    const owner = this.windows[windowId], members = new Set(ids);
+    if (!owner) throw Error("Surface destination is unavailable");
+    for (const id of ids) {
+      const surface = this.surfaces[id];
+      if (!surface || surface.modality !== "none" || surface.parentSurfaceId && !members.has(surface.parentSurfaceId))
+        throw Error("Surface cannot be rehosted independently");
+    }
+    batch(() => { for (const id of ids) this.setSurfaces(id, { ownerWindowId: windowId, ownerAppInstanceId: owner.ownerAppInstanceId }); });
   }
 
   setPinned(id: string, pinned: boolean) {

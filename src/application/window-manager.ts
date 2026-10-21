@@ -76,6 +76,8 @@ export class WorkspaceWindowManager {
     return owner ? this.registry.windows[owner]?.rank ?? 0 : 0;
   }
   ownerForNode(key: string): string | undefined {
+    const session = this.editor.documentSessions?.forNode(key);
+    if (session) return session.host.windowId;
     if (this.registry.windows[key]) return key;
     const physical = this.editor.mounts.get(key)?.root.closest<HTMLElement>("[data-mwm-window]");
     if (physical && this.registry.windows[physical.dataset.mwmWindow!]) return physical.dataset.mwmWindow;
@@ -97,6 +99,7 @@ export class WorkspaceWindowManager {
       return { ...lease, release: () => {
         if (this.registry.windows[key]?.generation !== lease.generation) return;
         const active=this.registry.activeWindowId===key;
+        this.editor.documentSessions?.transfers.releaseWindow(key);
         this.lifecycle.release(key); this.groups.delete(key); lease.release();
         const valid=this.lifecycle.ticket();
         if(active)queueMicrotask(()=>{if(valid())this.lifecycle.successor(key);});

@@ -36,6 +36,7 @@ export function TransientDocumentView(props: {
     const key = editor.focus.state.focusedKey, node = key && projection.node(key);
     if (node && (editor.registry.hasCapability(node.viewType, "inline-editor") || editor.registry.hasCapability(node.viewType, "native-text"))) lastTextKey = node.key;
   });
+  const originalSlot = session?.host.slotKey;
   let activation = 0;
   const activate = () => {
     const generation = ++activation, current = editor.windowManager?.lifecycle.ticket();
@@ -99,6 +100,7 @@ export function TransientDocumentView(props: {
     if (!session) { activate(); return; }
     let selected = false;
     createEffect(() => {
+      if (session.host.slotKey !== originalSlot) { ++activation; return; }
       const next = props.selected !== false;
       untrack(() => {
         if (next && !selected) activate();

@@ -12,6 +12,7 @@ import { recognizeCompatibleDocument } from './compatible-document';
 type Baseline = { nativeHash: string | null; markdownHash: string | null; generation: string | null; locationRevision?: string };
 type Binding = { location: DocumentLocation; baseline: Baseline; pair: ResourcePair; pending?: PairGeneration; message: string; comparedHash?: string; busy: boolean; relocation?: string; relocationWork?: Promise<unknown>; members: Set<string> };
 const sessions = new WeakMap<ReactiveEditor, NativeDocumentSession>();
+export const existingNativeDocumentSession = (editor: ReactiveEditor) => sessions.get(editor);
 export function nativeDocumentSession(editor: ReactiveEditor) {
   let service = sessions.get(editor); if (!service) sessions.set(editor, service = new NativeDocumentSession(editor)); return service;
 }

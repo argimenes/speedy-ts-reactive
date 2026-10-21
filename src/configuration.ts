@@ -19,6 +19,8 @@ export type FeatureFlags = Readonly<{
   mutableWindowManager: boolean;
   /** Workspace-owned retained Document render sessions. Session-fixed; no transfer UI. */
   retainedDocumentSessions: boolean;
+  /** Internal E1.2 host transfer coordinator; product Detach UI remains a later milestone. */
+  documentSessionHostTransfer: boolean;
   /** Shared native clipboard. Disable to restore all legacy clipboard routes together. */
   mutableClipboard: boolean;
   /** Explicit file import, source conversion and semantic export. */
@@ -132,6 +134,7 @@ export type FeatureFlags = Readonly<{
 export const featureFlags: FeatureFlags = Object.freeze({
   mutableWindowManager: true,
   retainedDocumentSessions: true,
+  documentSessionHostTransfer: true,
   mutableClipboard: true,
   documentInterchange: true,
   applicationServices: true,

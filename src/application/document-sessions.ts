@@ -1,17 +1,33 @@
 import { createRoot, createSignal, getOwner, type Owner } from "solid-js";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { BlockTreeProjection } from "../block-tree/projection";
+import { DocumentHostTransfers, type DocumentHostPort } from "./document-host-transfers";
+import { existingNativeDocumentSession } from "../persistence/native-session";
 import type { LocalCoordinates } from "../runtime/local-coordinates";
 
 export interface DocumentActivity { mounted: boolean; visible: boolean; active: boolean }
 
-/** Stable, runtime-only binding. E1.1 deliberately has no rebind/transfer operation. */
+/** Stable runtime context port. Only the coordinator publishes a new host. */
 export class DocumentHostBinding {
   private state = createSignal<DocumentActivity>({ mounted: true, visible: false, active: false });
   readonly activity = this.state[0];
   private generation = 0;
-  constructor(readonly ownerKey: string, readonly slotKey: string, readonly windowId: string,
-    readonly coordinates: LocalCoordinates) {}
+  private route = createSignal<DocumentHostPort>();
+  private suspension = createSignal(false);
+  readonly suspended = this.suspension[0];
+  suspend(value: boolean) { this.suspension[1](value); }
+  get port() { return this.route[0](); }
+  get ownerKey() { return this.port?.ownerKey ?? this.initial.ownerKey; }
+  get slotKey() { return this.port?.slotKey ?? this.initial.slotKey; }
+  get windowId() { return this.port?.windowId ?? this.initial.windowId; }
+  readonly coordinates: LocalCoordinates;
+  private initial: { ownerKey: string; slotKey: string; windowId: string };
+  constructor(ownerKey: string, slotKey: string, windowId: string, coordinates: LocalCoordinates) {
+    this.initial = { ownerKey, slotKey, windowId };
+    this.coordinates = { scale: () => (this.port?.coordinates ?? coordinates).scale() };
+  }
+  bind(port: DocumentHostPort) { this.generation++; this.route[1](port); this.state[1]({ ...this.activity() }); }
+
   update(visible: boolean, active: boolean) {
     const previous = this.activity();
     if (!previous.mounted || previous.visible === visible && previous.active === (visible && active)) return;
@@ -32,6 +48,7 @@ export interface RetainedDocumentSession {
   readonly signal: AbortSignal;
   /** Checks session lifetime only. Visibility is a separate host ticket. */
   current(): boolean;
+  ownSurface(surface: { id: string; element: HTMLElement; transferable?: boolean }): () => void;
 }
 
 /** Sole final disposal authority, created and destroyed by WorkspaceSession.
@@ -43,7 +60,32 @@ export class DocumentSessionStore {
   private alive = true;
   private lifetime = new AbortController();
   readonly signal = this.lifetime.signal;
-  constructor(private editor: ReactiveEditor) {}
+  readonly transfers: DocumentHostTransfers;
+  private privateViews = new Map<string, RetainedDocumentSession>();
+  readonly saveError = createSignal<string>();
+  private saveShortcut = (event: KeyboardEvent) => {
+    if (!event.ctrlKey && !event.metaKey || event.altKey || event.shiftKey || event.key.toLowerCase() !== 's' || event.isComposing) return;
+    const session = event.target instanceof Element ? this.forElement(event.target) : undefined;
+    if (!session || this.transfers.atOrigin(session)) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    void this.save(session).catch(error => this.saveError[1](String(error)));
+  };
+  constructor(private editor: ReactiveEditor) {
+    this.transfers = new DocumentHostTransfers(this, editor);
+    if (editor.features.documentSessionHostTransfer && typeof document !== 'undefined') document.addEventListener('keydown', this.saveShortcut, true);
+  }
+  forElement(element: Element) { const id = element.closest<HTMLElement>('[data-document-session]')?.dataset.documentSession; return id ? this.records.get(id)?.session : undefined; }
+  forNode(key: string) {
+    const node = this.editor.node(key); if (!node) return;
+    return this.privateViews.get(node.viewId) ?? (this.editor.mounts.get(key)?.root ? this.forElement(this.editor.mounts.get(key)!.root) : undefined);
+  }
+  async save(session: RetainedDocumentSession) {
+    if (!session.current()) throw Error('Document session is disposed');
+    const root = session.projection.node(session.rootKey), id = (root?.payload.metadata as any)?.documentId ?? root?.payload.id;
+    const native = existingNativeDocumentSession(this.editor), location = id && native?.location(id);
+    if (!native || !id || !location) throw Error('Choose a native Document destination in its original host before experimental transfer');
+    this.saveError[1](undefined); return native.save(id, location);
+  }
   get size() { return this.records.size; }
   sessions() { return [...this.records.values()].map(record => record.session); }
 
@@ -62,8 +104,11 @@ export class DocumentSessionStore {
       id: `document-session:${crypto.randomUUID()}`, projection,
       rootKey: options.shared?.rootKey ?? projection.state.rootKey, ownsProjection: !options.shared,
       host: new DocumentHostBinding(options.ownerKey, options.slotKey, options.windowId, options.coordinates),
+      ownSurface: surface => this.transfers.surface(session, surface),
       element, signal: controller.signal, current: () => this.alive && !controller.signal.aborted,
     };
+    element.dataset.documentSession = session.id;
+    if (session.ownsProjection) this.privateViews.set(projection.viewId, session);
     let disposeRoot = () => {};
     const record = { session, dispose: () => {
       if (controller.signal.aborted) return;
@@ -84,6 +129,7 @@ export class DocumentSessionStore {
     const record = this.records.get(session.id);
     if (!record || record.session !== session) return;
     this.records.delete(session.id);
+    this.transfers.releaseSession(session); this.privateViews.delete(session.projection.viewId);
     record.dispose();
   }
   releaseOwner(ownerKey: string) {
@@ -92,6 +138,8 @@ export class DocumentSessionStore {
   dispose() {
     if (!this.alive) return;
     this.alive = false; this.lifetime.abort();
+    if (typeof document !== "undefined") document.removeEventListener("keydown", this.saveShortcut, true);
+    this.transfers.dispose();
     for (const { session } of [...this.records.values()]) this.release(session);
   }
 }

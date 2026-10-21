@@ -118,6 +118,7 @@ export class PersistenceService {
    * Focus bookmarks belong to the DTO, not the repository/layout dirty clocks. */
   captureWorkspace(options: { upgrade?: boolean; managedVersion?: 4; server?: boolean } = {}): WorkspaceSaveSnapshot {
     if (this.disposed) throw new Error("Workspace persistence is disposed.");
+    this.editor.documentSessions?.transfers.assertPersistable();
     const repository = this.editor.repository.snapshot();
     if (repository.contents[repository.placements[repository.rootPlacementKey].contentKey].viewType !== "workspace-block") throw new Error("Save Workspace requires a workspace-block root.");
     const presentation = this.workspacePresentation?.capture();

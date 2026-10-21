@@ -1,0 +1,492 @@
+{
+  "milestone": "E1.2 \u2014 Document Session Host Transfer / Transaction Coordinator",
+  "date": "2026-10-21",
+  "baselineCommit": "885701266782d298102ac8e2817e7484addac19a",
+  "scope": "Internal coordinator only. No product Detach/Return commands, new host types, Desktop 5, automatic saves, or load testing.",
+  "featureFlag": {
+    "name": "documentSessionHostTransfer",
+    "default": true
+  },
+  "targeted": {
+    "passed": 85,
+    "failed": 0,
+    "files": 6,
+    "workers": 1,
+    "suites": {
+      "src/application/document-host-transfers.test.tsx": 26,
+      "src/application/document-sessions.test.tsx": 16,
+      "src/runtime/document-counts.test.ts": 7,
+      "src/application/flint-transient-proof.test.ts": 5,
+      "src/rendering/cross-block-selection.test.tsx": 16,
+      "src/rendering/range-rendering.test.tsx": 15
+    }
+  },
+  "typecheck": {
+    "client": "passed",
+    "server": "passed"
+  },
+  "diffCheck": "passed",
+  "regression": {
+    "files": [
+      "src/runtime/window-manager.test.ts",
+      "src/application/window-manager.test.tsx",
+      "src/rendering/window-icon.test.tsx",
+      "src/application/workspace-presentation-view.test.tsx",
+      "src/application/workspace-open.test.tsx",
+      "src/application/phosphor-integration.test.tsx",
+      "src/application/flint-lifecycle.test.tsx",
+      "src/features/thesis/view.test.tsx",
+      "src/features/compact-document/window.test.tsx",
+      "src/rendering/annotation-monitor.test.tsx",
+      "src/rendering/compact-toolbar.test.tsx",
+      "src/features/entity-references/search-view.test.tsx",
+      "src/features/entity-references/lifecycle.test.tsx",
+      "src/rendering/page-minimap.test.tsx",
+      "src/features/anchor-relationships/anchors.test.tsx",
+      "src/features/timer/timer.test.tsx",
+      "src/rendering/document-find.test.tsx",
+      "src/rendering/sticky-note.test.tsx",
+      "src/rendering/block-selection.test.tsx",
+      "src/demo/workspace-demo.test.tsx",
+      "src/demo/workspace-background.test.tsx",
+      "src/demo/public-hosted-version.test.tsx",
+      "src/demo/application-startup.test.tsx",
+      "src/application/workspace-session.test.ts",
+      "src/reactive-editor/workspace-manifest.test.ts",
+      "src/reactive-editor/local-workspace.test.ts",
+      "src/reactive-editor/workspace-presentation.test.ts",
+      "src/rendering/block-history.test.tsx",
+      "src/rendering/document-interchange.test.tsx",
+      "src/rendering/mutable-clipboard.test.tsx",
+      "src/runtime/window-layout.test.ts",
+      "src/application/window-layout.test.tsx",
+      "src/application/window-geometry.test.ts",
+      "src/persistence/managed-desktop.test.ts",
+      "server/workspace-store.test.ts",
+      "server/workspace-store-d0.test.ts",
+      "src/reactive-editor/view-visibility.test.ts",
+      "src/demo/workspace-d0.test.tsx",
+      "src/application/named-layouts.test.tsx",
+      "src/application/workspace-restoration.test.ts",
+      "server/workspace-store-d1.test.ts"
+    ],
+    "passed": 433,
+    "failed": 13,
+    "total": 446,
+    "failures": [
+      {
+        "file": "src/demo/application-startup.test.tsx",
+        "test": "main application workspace keeps the original sample behind the explicit demo link"
+      },
+      {
+        "file": "src/demo/application-startup.test.tsx",
+        "test": "main application workspace opens server Documents directly in an empty canvas and preserves live edits on reopen"
+      },
+      {
+        "file": "src/demo/application-startup.test.tsx",
+        "test": "main application workspace opens server Documents directly in an empty desktop and preserves live edits on reopen"
+      },
+      {
+        "file": "src/demo/application-startup.test.tsx",
+        "test": "main application workspace retains an explicit application opt-out"
+      },
+      {
+        "file": "src/demo/application-startup.test.tsx",
+        "test": "main application workspace saves and reopens the initial workspace with its Document identity and Canvas layout"
+      },
+      {
+        "file": "src/demo/application-startup.test.tsx",
+        "test": "main application workspace starts with an empty Desktop and exposes Canvas without a development opt-in"
+      },
+      {
+        "file": "src/demo/workspace-demo.test.tsx",
+        "test": "WorkspaceDemo exposes distinct Workspace controls and opens them with browser-safe chords"
+      },
+      {
+        "file": "src/demo/workspace-demo.test.tsx",
+        "test": "WorkspaceDemo keeps inactive document tabs unmounted and flips card faces in one surface"
+      },
+      {
+        "file": "src/demo/workspace-demo.test.tsx",
+        "test": "WorkspaceDemo records editing and recreates pristine state on reset"
+      },
+      {
+        "file": "src/features/timer/timer.test.tsx",
+        "test": "Timer feature activation and disposal keeps authored data intact with the module enabled and disabled"
+      },
+      {
+        "file": "src/features/timer/timer.test.tsx",
+        "test": "Timer feature activation and disposal owns all registrations and releases mounted resources on repeated editor teardown"
+      },
+      {
+        "file": "src/features/timer/timer.test.tsx",
+        "test": "Timer feature activation and disposal runs three independent Block applications and releases only the unmounted instance"
+      },
+      {
+        "file": "src/rendering/block-selection.test.tsx",
+        "test": "Block selection and reordering handles drag/drop events and rejects cross-parent list moves"
+      }
+    ],
+    "knownUnhandledError": "TypeError from synthetic drag/drop dataTransfer.files in block-selection.test.tsx",
+    "allCaseOutcomesMatch": true,
+    "casesComparedIncludingDuplicateNames": 446,
+    "sortedCaseOutcomesSha256": "027afb391b8d3260bd01b2b9913e0a13138e9a7a7b78e2f499d792594443e652",
+    "comparison": "Exact failure identities compared with committed E1.1 evidence; all 446 file/name/status outcomes compared with the retained accepted E1.1 runner artifact. Baseline was not rerun in this milestone.",
+    "exitCode": 1
+  },
+  "browser": {
+    "e12": {
+      "milestone": "E1.2",
+      "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "checks": [
+        "production Flint lazily mounts only the initially selected Document",
+        "identity instrumentation observes actual editing cells",
+        "trusted browser input reaches the actual editor once",
+        "tab switching retains the same projection and ViewId",
+        "hidden tab remains mounted but invisible, inactive and inert",
+        "hidden editor retains occurrence key, Solid owner and connected DOM",
+        "each private projection has exactly one live canonical subscription",
+        "backward native standoff selection survives trusted tab clicks",
+        "owner-local state and mount identity survive returning to the tab",
+        "Document scroll position survives hidden and visible transitions",
+        "unchanged editing cell DOM survives repeated tab switching",
+        "switching visited tabs does not accumulate repository subscriptions",
+        "hidden Document releases global cross-Block input ownership",
+        "returning tab restores its valid cross-Block selection bookmark",
+        "a second Flint view has independent view identity around the same canonical resource",
+        "editing through a visible peer performs no geometry reads in the hidden retained editor",
+        "canonical edit delivery updates the retained hidden editor",
+        "selection rebases through an edit received while hidden",
+        "canonical undo and native-resource service authority remain unchanged",
+        "manual native Save binds the canonical resource without allocating another session",
+        "Control-S captures exactly one Save for the active Document",
+        "pending Save survives tab switching and its receipt does not acknowledge newer edits",
+        "Save retains the opened filename and canonical identity and emits no Markdown sidecar",
+        "browser attachment/surface failure rolls back to the original usable host",
+        "rollback restores backward selection and source scroll",
+        "rollback releases reservations while preserving tool-local state",
+        "transfer allocates no editing session, projection or canonical subscription",
+        "transfer preserves actual editing DOM and Solid owner/local identity",
+        "reactive context and ownership queries follow the committed destination",
+        "Document-owned portal keeps its lease and DOM under the destination stacking group",
+        "committed transfer restores selection and destination scroll",
+        "host transfer creates no canonical edit or content-history entry",
+        "trusted input continues in the transferred editor",
+        "transferred editor keeps canonical undo authority",
+        "transferred editor keeps canonical redo authority",
+        "destination minimization retains editor and hides its owned tool",
+        "destination restore preserves hidden canonical delivery",
+        "transferred session survives viewport change and real browser zoom",
+        "Control-S in the destination routes once to the same canonical Save binding",
+        "pending Save rejects Return without cancelling or reissuing the resource operation",
+        "Return uses a fresh transaction and restores the same session to its original slot",
+        "Return restores portal ownership without recreating its state",
+        "trusted Shift-Right establishes real cross-Block input ownership",
+        "cross-Block selection and the same workspace input textarea follow the transferred host",
+        "Return preserves cross-Block input identity and restores its owner",
+        "closing source Flint leaves its transferred editor and owned portal alive",
+        "Flint editing and native Save continue after the original application closes",
+        "current destination lease closes the session exactly once after multiple transfers",
+        "real Ink transfer preserves its shared projection, occurrence route and editing DOM",
+        "Ink transfer adds no session or canonical subscription",
+        "closing the original Ink window cannot dispose the transferred session",
+        "trusted Ink input remains live after original-host closure",
+        "Ink Save retains its canonical binding after original-host closure",
+        "destination close disposes the Ink island once and preserves the workspace projection",
+        "all private projections and canonical subscriptions have exact final disposal counts"
+      ],
+      "observations": {
+        "selection": {
+          "before": {
+            "anchor": 7,
+            "head": 3
+          },
+          "after": {
+            "anchor": 7,
+            "head": 3
+          }
+        },
+        "visitedTabSubscriptions": {
+          "before": 4,
+          "after": 4,
+          "newCalls": 2
+        },
+        "hiddenEditorLayoutReads": 0,
+        "rebasedSelection": {
+          "anchor": 14,
+          "head": 10
+        },
+        "transfer": {
+          "sessions": 0,
+          "hosts": 0,
+          "pending": 0,
+          "reservations": 0,
+          "recovery": 0,
+          "completed": 6
+        }
+      },
+      "requestsBlockedOrStubbed": [
+        "/api/native/vault/default",
+        "/api/native/vault/default",
+        "/api/native/save",
+        "/api/native/save",
+        "/api/native/save",
+        "/api/native/save",
+        "/api/native/save",
+        "/api/native/save"
+      ]
+    },
+    "e11Compatibility": {
+      "milestone": "E1.1",
+      "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "checks": [
+        "production Flint lazily mounts only the initially selected Document",
+        "identity instrumentation observes actual editing cells",
+        "trusted browser input reaches the actual editor once",
+        "tab switching retains the same projection and ViewId",
+        "hidden tab remains mounted but invisible, inactive and inert",
+        "hidden editor retains occurrence key, Solid owner and connected DOM",
+        "each private projection has exactly one live canonical subscription",
+        "backward native standoff selection survives trusted tab clicks",
+        "owner-local state and mount identity survive returning to the tab",
+        "Document scroll position survives hidden and visible transitions",
+        "unchanged editing cell DOM survives repeated tab switching",
+        "switching visited tabs does not accumulate repository subscriptions",
+        "hidden Document releases global cross-Block input ownership",
+        "returning tab restores its valid cross-Block selection bookmark",
+        "a second Flint view has independent view identity around the same canonical resource",
+        "editing through a visible peer performs no geometry reads in the hidden retained editor",
+        "canonical edit delivery updates the retained hidden editor",
+        "selection rebases through an edit received while hidden",
+        "canonical undo and native-resource service authority remain unchanged",
+        "manual native Save binds the canonical resource without allocating another session",
+        "Control-S captures exactly one Save for the active Document",
+        "pending Save survives tab switching and its receipt does not acknowledge newer edits",
+        "Save retains the opened filename and canonical identity and emits no Markdown sidecar",
+        "minimizing Flint retains its editing session",
+        "restoring Flint reveals the exact retained session",
+        "viewport resize and real Chrome zoom preserve editor identity",
+        "synthetic composition boundary blocks internal tab switching",
+        "eligible new Ink island retains original shared projection and occurrence ancestry",
+        "trusted input works in the retained production Ink editor",
+        "hidden Ink retains canonical edit delivery",
+        "Ink restoration preserves DOM, occurrence and owner",
+        "Ink close disposes the island once without disposing the shared workspace projection",
+        "cancelled guarded tab close preserves the exact session",
+        "application close aborts pending tab close and releases retained sessions",
+        "each private projection and canonical subscription is disposed exactly once",
+        "every instrumented actual editor owner is disposed exactly once",
+        "workspace disposal is idempotent and invalidates pending session work"
+      ],
+      "observations": {
+        "selection": {
+          "before": {
+            "anchor": 7,
+            "head": 3
+          },
+          "after": {
+            "anchor": 7,
+            "head": 3
+          }
+        },
+        "visitedTabSubscriptions": {
+          "before": 4,
+          "after": 4,
+          "newCalls": 2
+        },
+        "hiddenEditorLayoutReads": 0,
+        "rebasedSelection": {
+          "anchor": 14,
+          "head": 10
+        },
+        "projectionLifetimes": [
+          {
+            "viewId": "view:ba4f0ce8-1185-45a9-a413-e7fdb2bff006",
+            "subscriptions": 1,
+            "unsubscriptions": 1,
+            "disposals": 1
+          },
+          {
+            "viewId": "view:60145831-99b0-4417-a745-83153cec6518",
+            "subscriptions": 1,
+            "unsubscriptions": 1,
+            "disposals": 1
+          },
+          {
+            "viewId": "view:07bfa104-de94-4e9a-b8e1-67cbd269990d",
+            "subscriptions": 1,
+            "unsubscriptions": 1,
+            "disposals": 1
+          }
+        ],
+        "saveTransport": "Real native client and shell Save; in-memory HTTP responses, no filesystem writes"
+      },
+      "requestsBlockedOrStubbed": [
+        "/api/native/vault/default",
+        "/api/native/vault/default",
+        "/api/native/save",
+        "/api/native/save"
+      ]
+    },
+    "d1Compatibility": {
+      "checks": [
+        "Flint is maximized",
+        "one real Flint beforeinput edit commits",
+        "Flint typing does no window registry, snapshot or owner-lookup work",
+        "reusable tool anchor measures its visible source",
+        "Entity portal belongs to Flint's window group",
+        "ordinary Entity lookup survives unrelated Thesis launch with valid target",
+        "Entity query survives activation",
+        "stacking proof retains the Entity tool",
+        "native Thesis draft is ready",
+        "new Thesis owns native focus",
+        "activation restores Thesis inline selection",
+        "Chrome native input delivered a trusted beforeinput event",
+        "trusted pointer click places a caret without restoring the old selection",
+        "active draft input edits Thesis once and leaves source unchanged",
+        "unsaved Thesis minimizes with the same mounted draft",
+        "minimized view remains mounted, hidden and inactive",
+        "retained draft is inert and absent from layout",
+        "restore returns focus to the identical draft DOM",
+        "registry window menu exposes named arrangement operations",
+        "keyboard Save arrangement with canceled naming prompt makes no change",
+        "create shell tabs for a second named arrangement",
+        "save and rename two distinct arrangements",
+        "select floating named arrangement",
+        "floating selection retains exact Thesis and Flint sessions",
+        "select tabbed named arrangement",
+        "shell-tab arrangement retains Entity tool query and ownership",
+        "real Thesis undo history survives named layout selection",
+        "real Thesis redo survives named layout selection",
+        "source backlink and source-selection bookmark survive named layout switches",
+        "workspace modal cancels named layout selection",
+        "explicit Thesis Save dispatches one pending operation",
+        "switch arrangement while domain Save is pending",
+        "pending Save retry keeps the exact operation identity across arrangements",
+        "pending Save completion preserves newer draft edits and unsaved protections",
+        "deleting a named arrangement does not dispose application or tool sessions",
+        "named selection remains valid at a constrained viewport",
+        "browser zoom preserves retained named-layout sessions",
+        "arrangement selection never saves domain content",
+        "restored application remains in the browser accessibility tree"
+      ],
+      "blockedBackendRequests": 0,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    },
+    "cCompatibility": {
+      "checks": [
+        "Flint is maximized",
+        "one real Flint beforeinput edit commits",
+        "Flint typing does no window registry, snapshot or owner-lookup work",
+        "reusable tool anchor measures its visible source",
+        "Entity portal belongs to Flint's window group",
+        "ordinary Entity lookup survives unrelated Thesis launch with valid target",
+        "Entity query survives activation",
+        "stacking proof retains the Entity tool",
+        "native Thesis draft is ready",
+        "new Thesis owns native focus",
+        "activation restores Thesis inline selection",
+        "Chrome native input delivered a trusted beforeinput event",
+        "trusted pointer click places a caret without restoring the old selection",
+        "active draft input edits Thesis once and leaves source unchanged",
+        "unsaved Thesis minimizes with the same mounted draft",
+        "minimized view remains mounted, hidden and inactive",
+        "retained draft is inert and absent from layout",
+        "restore returns focus to the identical draft DOM",
+        "draft undo history survives minimization",
+        "draft redo history survives minimization",
+        "Thesis close veto preserves unsaved draft",
+        "Thesis retains the source backlink",
+        "source backlink activates the original Flint occurrence and restores its verified range",
+        "tile actual Thesis beside Flint",
+        "arranging maximized Flint restores it into its tile",
+        "split bounds are disjoint and inside work area",
+        "split retains exact Thesis and Flint mounts",
+        "owned Entity tool survives split with query",
+        "trusted divider pointer preview is detached from committed layout",
+        "Escape cancels divider preview without a commit",
+        "keyboard divider Enter commits once",
+        "layout undo restores the exact preceding split",
+        "trusted touch divider commits once",
+        "touch cancellation leaves the split unchanged",
+        "group real applications in shell tabs",
+        "inactive shell tab stays mounted, hidden and inactive",
+        "shell tab chrome is outside Flint internal Document UI",
+        "trusted shell tab click restores the exact draft selection",
+        "Entity tool hides with its inactive owner without disposal",
+        "shell tab arrow key activates adjacent app",
+        "Thesis undo survives float-to-split-to-tab transitions",
+        "Thesis redo survives shell tabs",
+        "source backlink reveals hidden Flint shell tab with source selection",
+        "Thesis close veto preserves tab membership and draft",
+        "real Flint dialog owns the tiled application surface",
+        "owner modal prevents a shell layout transaction",
+        "workspace modal prevents a shell layout transaction",
+        "manual Thesis Save dispatches once",
+        "Save retry after shell hide and float reuses operation receipt identity",
+        "Save completion while hidden retains newer edits and unsaved protection",
+        "layout transitions never trigger Document or Thesis Save",
+        "small viewport falls back to temporary shell tabs",
+        "viewport fallback preserves layout and application sessions",
+        "temporary tab can reveal its retained app",
+        "viewport expansion restores the saved split",
+        "viewport resize cancels pending divider transaction",
+        "actual browser zoom preserves mounted draft",
+        "zoomed solve stays within CSS work area",
+        "minimize reserves tiled slot and retains draft",
+        "maximized tiled app covers work area without moving its mount",
+        "restore from maximize returns to the same split",
+        "edge drag shows a constrained snap preview",
+        "edge drop commits half snap",
+        "quarter snap accepted",
+        "quarter uses bounded quarter work area",
+        "snap preserves draft and Entity tool sessions",
+        "split divider exposed in Chrome accessibility tree",
+        "return to floating accepted",
+        "return to floating restores native draft focus",
+        "keyboard navigation reaches the same snap presets",
+        "trusted keyboard menu action commits snap without replacing the draft",
+        "explicit Entity creation is pending in memory",
+        "pending Entity owner participates in a retained tab transition",
+        "pending Entity operation continues to guard owner close while tabbed",
+        "Entity creation completion in hidden tab retains its uncertain linking receipt",
+        "Entity query and creation receipt survive return to floating"
+      ],
+      "blockedBackendRequests": 0,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+    }
+  },
+  "negativeControls": {
+    "sourceContainerLoss": "Normal rollback deliberately fails under injected external source removal. Same session survives connected inert containment and explicit source recovery; no product recovery UI.",
+    "unsupported": "Unqualified tools, outside-owner overlays, iframe/media/canvas/native editors, nested applications, affected native and workspace interchange operations reject transfer."
+  },
+  "limitations": [
+    "No product source-tab reconciliation or session-aware Flint navigation integration.",
+    "Existing native destination required for transferred Save; no transferred first Save As UI.",
+    "No general tool promotion; only explicitly qualified portal adapters can follow.",
+    "No Desktop 5 persistence; capture and non-desktop switching reject live experimental topology.",
+    "Composition events synthetic; no operating-system IME, Safari or Firefox qualification.",
+    "Native Save responses stubbed in memory; no production filesystem writes.",
+    "Headless browser evidence is functional interaction evidence, not user-visible latency measurement."
+  ],
+  "environmentalAttempts": "Earlier concurrent attempts encountered ENOSPC during collection. Final targeted and regression unit runs used one worker and completed.",
+  "testedSourceSha256": {
+    "scripts/qualify-window-manager.mjs": "d109a8ef769d79894dde06859aeb5eb5b83cd45cadd47e5a127975ddc243484b",
+    "src/application/document-host-transfers.test.tsx": "41fbb8716e3ae8f4b6f64573de568fd7f16b2f0ad6f70a104267fd62f6a5fc39",
+    "src/application/document-host-transfers.ts": "fae1cd1f637cdb7befa9837fdf780e1c812b81ee95d607000b37d064d12be56d",
+    "src/application/document-sessions.ts": "15b3745801ffc7ccc2be123d91c36f0967f4c77953b8ef9334beb01715d8b9fd",
+    "src/application/window-lifecycle.ts": "16245b4354fa4db2182df04d118f96b18309c539e3a2bb9f9b3d650058adb7ca",
+    "src/application/window-manager-e12.browser-fixture.tsx": "e510976674f8087330f8f5a331c3d19dc31505bb5ade11723bd908a5a998d7a4",
+    "src/application/window-manager.ts": "af61d860d29773f286142defc06de88d65a7ec9a4f4d5df600db0befddedf5fc",
+    "src/application/workspace-session.ts": "306340984e83e99d08a150e6f0f7047a47d8bb7feae893903217f1c1b61b98b3",
+    "src/configuration.ts": "fa8ab3736292bba04e8019adeb531fad214e5d2e06f6d198b55b25827b1649ed",
+    "src/input/cross-block-input.ts": "8b1c84796029384b9005cc2e0368a4ab63cc5ecefb5c1475e8a1dfb4702016f2",
+    "src/persistence/native-session.ts": "1bd65162f81562b0d442153ad074862f2051ae76142f1225e7f81f786e47b9b2",
+    "src/reactive-editor/editor.ts": "84529d0258b7e4cfb7e1cdfd6c0cbb231332f67dae5b0d465a94d649f9a8d354",
+    "src/reactive-editor/persistence.ts": "79c359a37f833cb31029d24860e9f7f1cfbd4064c409274b7264dc1107aeb3cc",
+    "src/rendering/retained-document-view.tsx": "2d0f0b05df1805dcbda8e93ae4806eb71400f45366f723ca442a63b4a6167696",
+    "src/rendering/transient-document-view.tsx": "bef559f472c6f780fd852a8c5026d0a1feb45847ad9d7e38e4c5dd5aa6b01992",
+    "src/rendering/window-manager.tsx": "ae894eeb4a0d51cbdd8040048e70bf21f356781552b7b80160ab7429f2a997bb",
+    "src/runtime/window-manager.ts": "c658d543f539f2aa5ae223f3acbe4c9743bfb4352795bfb82fdfb7eff7f9b44a"
+  }
+}

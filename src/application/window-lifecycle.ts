@@ -25,6 +25,15 @@ export class WindowLifecycle {
   private pending = new Map<string, AbortController>();
   private guards = new Map<string, Set<CloseGuard>>();
   private composing = false;
+  private compositionSettling = false;
+  private pointerActive = false;
+  private transfers = new Map<symbol, { windows: readonly string[]; cancel: () => void }>();
+  holdTransfer(windows: readonly string[], cancel: () => void) {
+    const id = Symbol('document-transfer'); this.transfers.set(id, { windows, cancel });
+    return () => { this.transfers.delete(id); };
+  }
+  canTransfer(id: string) { return !!this.manager.registry.windows[id]?.mounted && !this.composing && !this.compositionSettling && !this.pointerActive && !this.blocked(id) && !this.pending.has(id); }
+
   private deferred?: () => void;
   private cleanup?: () => void;
   constructor(private manager: WorkspaceWindowManager, private editor: ReactiveEditor) {
@@ -100,6 +109,7 @@ export class WindowLifecycle {
     this.editor.focus.permit = key => this.focusAllowed(key);
     this.editor.overlays.focusLease = () => this.ticket();
     const pointer = (event: Event) => {
+      this.pointerActive = true;
       const target = event.target instanceof Element ? event.target : null;
       const owner = this.owner(target), modal = this.blocked(owner, target);
       if (modal) { event.preventDefault(); event.stopImmediatePropagation(); this.focusModal(modal); return; }
@@ -123,6 +133,11 @@ export class WindowLifecycle {
     const blur = (event: FocusEvent) => this.remember(event.target instanceof HTMLElement ? event.target : undefined);
     const key = (event: Event) => {
       if(event.type==='beforeinput' && this.pending.size && event.target instanceof Element) {const owner=this.owner(event.target);if(owner)this.cancel(owner);}
+      if (event instanceof KeyboardEvent && event.key === 'Escape' && !event.defaultPrevented && !this.composing && !this.modals.length) {
+        const owner = this.owner(event.target instanceof Element ? event.target : null) ?? this.manager.registry.activeWindowId;
+        const transfers = [...this.transfers.values()].filter(t => owner && t.windows.includes(owner));
+        if (transfers.length) { event.preventDefault(); event.stopImmediatePropagation(); for (const transfer of transfers) transfer.cancel(); return; }
+      }
       if (!this.modals.length) return;
       const target = event.target instanceof Element ? event.target : null;
       const modal = this.blocked(this.owner(target), target);
@@ -136,20 +151,24 @@ export class WindowLifecycle {
     };
     const frameFocus=()=>queueMicrotask(()=>{const element=document.activeElement;if(element instanceof HTMLIFrameElement){const owner=this.owner(element);if(owner&&this.permits(element)){this.cancelReadiness(owner);this.manager.registry.observeFocus(owner);}}});
     window.addEventListener('blur',frameFocus);
-    const start = () => { this.composing = true; };
-    const end = () => { this.composing = false; const next = this.deferred; this.deferred = undefined; queueMicrotask(() => next?.()); };
+    const start = () => { this.composing = true; this.compositionSettling = false; };
+    const end = () => { this.composing = false; this.compositionSettling = true; queueMicrotask(() => { this.compositionSettling = false; }); const next = this.deferred; this.deferred = undefined; queueMicrotask(() => next?.()); };
+    const pointerEnd = () => { this.pointerActive = false; };
+    document.addEventListener('pointerup', pointerEnd, true); document.addEventListener('pointercancel', pointerEnd, true);
     document.addEventListener('pointerdown', pointer, true);
     document.addEventListener('focusin', focus, true); document.addEventListener('focusout', blur, true);
     document.addEventListener('keydown', key, true); document.addEventListener('beforeinput', key, true);
     document.addEventListener('compositionstart', start, true); document.addEventListener('compositionend', end, true);
     this.cleanup = () => {
       window.removeEventListener('blur',frameFocus);
+      document.removeEventListener('pointerup', pointerEnd, true); document.removeEventListener('pointercancel', pointerEnd, true); this.pointerActive = false;
       document.removeEventListener('pointerdown', pointer, true); document.removeEventListener('focusin', focus, true); document.removeEventListener('focusout', blur, true);
       document.removeEventListener('keydown', key, true); document.removeEventListener('beforeinput', key, true); document.removeEventListener('compositionstart', start, true); document.removeEventListener('compositionend', end, true);
       if (sessions.get(document) === this.manager) sessions.delete(document);
       this.editor.commandRegistry.permit = undefined; this.editor.focus.permit = undefined; this.editor.overlays.focusLease = undefined;
     };
   }
+  invalidateHostFocus() { this.invalidate(); this.cancelReadiness(); }
   private invalidate() { this.epoch++; this.editor.focus.cancelPending(); this.deferred = undefined; }
   remember(element: Element | null = document.activeElement) {
     if (!(element instanceof HTMLElement)) return;
@@ -213,6 +232,7 @@ export class WindowLifecycle {
   }
   cancel(id: string) { const pending=this.pending.get(id);if(!pending)return;pending.abort();this.pending.delete(id);this.notify('closeCancelled',id); }
   close(id: string, commit: () => void): void | Promise<void> {
+    for (const transfer of this.transfers.values()) if (transfer.windows.includes(id)) transfer.cancel();
     if (this.pending.has(id) || this.blocked(id) || this.composing) return;
     const generation = this.manager.registry.windows[id]?.generation; if (!generation) return;
     const controller = new AbortController(); this.pending.set(id,controller);this.notify('closeRequested',id);
@@ -237,9 +257,9 @@ export class WindowLifecycle {
     return run(0);
   }
   canMinimize(id: string) {
-    return !!this.manager.registry.windows[id]?.mounted && !this.composing && !this.blocked(id) && !this.pending.has(id);
+    return !!this.manager.registry.windows[id]?.mounted && !this.composing && !this.blocked(id) && !this.pending.has(id) && ![...this.transfers.values()].some(t => t.windows.includes(id));
   }
   successor(exclude: string) { const next = this.manager.registry.successor(exclude); if (next) this.activate(next); else { this.invalidate(); this.manager.registry.observeFocus(); (document.activeElement as HTMLElement)?.blur?.(); } }
   release(id: string) { this.cancel(id); this.bookmarks.delete(id); this.guards.delete(id); this.readiness.delete(id); this.actions.delete(id); this.modals = this.modals.filter(m => m.owner !== id); this.refreshInert(); }
-  dispose() { this.commands.splice(0).forEach(stop=>stop()); this.uninstall(); this.invalidate(); for (const id of this.pending.keys()) this.cancel(id); this.bookmarks.clear(); this.modals = []; this.refreshInert(); this.guards.clear(); this.listeners.clear(); }
+  dispose() { for (const transfer of this.transfers.values()) transfer.cancel(); this.transfers.clear(); this.commands.splice(0).forEach(stop=>stop()); this.uninstall(); this.invalidate(); for (const id of this.pending.keys()) this.cancel(id); this.bookmarks.clear(); this.modals = []; this.refreshInert(); this.guards.clear(); this.listeners.clear(); }
 }

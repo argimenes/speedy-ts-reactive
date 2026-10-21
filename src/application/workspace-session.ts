@@ -120,6 +120,9 @@ export class WorkspaceSession {
 
   private changePresentation(name: PresentationName, createDesktop: boolean): boolean {
     if (!this.presentation.editable() || !this.presentation.available(name)) return false;
+    if (name !== "desktop" && this.documentSessions?.transfers.hasExperimentalHosts()) {
+      this.noticeSignal[1]("Return experimental Document sessions to their original hosts before switching workspace presentations."); return false;
+    }
     if (createDesktop && !this.canCreateDesktop()) return false;
     if (name === "desktop" && this.canCreateDesktop() && !createDesktop) {
       this.noticeSignal[1]("Desktop has not been created. Choose Create Desktop from Canvas in Presentations."); return false;
@@ -243,7 +246,7 @@ export class WorkspaceSession {
   }
 
   dirty() {
-    return !!this.windowManager?.named.dirty() || !!this.windowManager?.layout.dirty() || !!this.editor.persistence.state.unsavedWorkspaceContent || this.editor.viewVisibility.dirty() || this.presentation.dirty() || this.editor.repository.state.revision !== (this.editor.persistence.state.lastSavedRevision ?? 0);
+    return !!this.documentSessions?.transfers.hasTransferredSessions() || !!this.windowManager?.named.dirty() || !!this.windowManager?.layout.dirty() || !!this.editor.persistence.state.unsavedWorkspaceContent || this.editor.viewVisibility.dirty() || this.presentation.dirty() || this.editor.repository.state.revision !== (this.editor.persistence.state.lastSavedRevision ?? 0);
   }
 
   /** Resolve on demand, not on every keystroke. Runtime keys never enter the

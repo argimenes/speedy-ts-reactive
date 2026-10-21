@@ -31,13 +31,25 @@ export class CrossBlockInput {
     this.observer = new MutationObserver(() => { if (editor.crossText.range()) editor.crossText.validate(); });
     this.observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "aria-hidden"] });
     this.disposeEffect = createRoot(dispose => {
-      createEffect(() => { if (!editor.crossText.range()) this.removeInput(); });
+      createEffect(() => {
+        const range = editor.crossText.range();
+        if (!range) this.removeInput();
+        else this.bindInputOwner();
+      });
       return dispose;
     });
   }
   releasePointer(): void { this.up(); }
   ownsInput(target: Element): boolean { return target === this.input; }
   private removeInput() { this.input?.remove(); this.input = undefined; this.composing = false; }
+  private bindInputOwner() {
+    const range = this.editor.crossText.range(), session = range && this.editor.documentSessions?.forNode(range.anchor.occurrenceKey);
+    const windowId = session?.host.windowId; // Subscribe to host publication, not text edits.
+    if (!this.input) return;
+    if (session && this.editor.features.documentSessionHostTransfer) {
+      this.input.dataset.documentSession = session.id; this.input.dataset.mwmWindow = windowId!;
+    } else { delete this.input.dataset.documentSession; delete this.input.dataset.mwmWindow; }
+  }
   private prepareInput() {
     if (!this.editor.crossText.range()) return;
     if (!this.input) {
@@ -47,6 +59,7 @@ export class CrossBlockInput {
       this.input.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;";
       this.document.body.appendChild(this.input);
     }
+    this.bindInputOwner();
     this.input.value = this.editor.crossText.selectedText();
     this.input.focus({ preventScroll: true }); this.input.setSelectionRange(0, this.input.value.length);
   }

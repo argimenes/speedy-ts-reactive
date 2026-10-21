@@ -10,6 +10,12 @@ import "./window-manager.css";
 
 interface OwnerContext { manager: WorkspaceWindowManager; windowId: string; surfaceId?: string; modal?: boolean }
 const WindowOwner = createContext<OwnerContext>();
+/** Stable context object: consumers read the committed host through getters. */
+export function DocumentSessionWindowOwner(props: { session: import("../application/document-sessions").RetainedDocumentSession; manager?: WorkspaceWindowManager; children: JSX.Element }) {
+  if (!props.manager) return props.children;
+  const owner: OwnerContext = { manager: props.manager, get windowId() { return props.session.host.windowId; } };
+  return <WindowOwner.Provider value={owner}>{props.children}</WindowOwner.Provider>;
+}
 export const useManagedWindowOwner = () => useContext(WindowOwner);
 /** Reactive per-owner activity; consumers may suspend optional work without unmounting. */
 export const useManagedViewActivity = () => {
@@ -68,33 +74,37 @@ export function ManagedWindowFrame(props: {
  * responsible for content, placement, focus, dismissal and request cancellation.
  */
 export function ApplicationSurfacePortal(props: {
+  /** Opt in only after qualifying local state, anchoring and request lifetimes. */
+  documentTransfer?: "retained";
   editor?: ReactiveEditor; ownerKey?: string; sourceViewId?: string;
   id?: string; kind?: SurfaceKind; legacyInline?: boolean; children: JSX.Element;
 }) {
   const inherited = useContext(WindowOwner), documentSession = useDocumentSession();
   const manager = props.editor?.windowManager ?? inherited?.manager;
-  const windowId = untrack(() => props.ownerKey ? manager?.ownerForNode(props.ownerKey) ?? inherited?.windowId : inherited?.windowId);
-  const group = windowId ? manager?.groups.get(windowId) : manager?.plane;
+  const initialWindowId = untrack(() => props.ownerKey ? manager?.ownerForNode(props.ownerKey) ?? inherited?.windowId : inherited?.windowId);
+  const windowId = () => documentSession ? documentSession.host.windowId : initialWindowId;
+  const group = windowId() ? manager?.groups.get(windowId()!) : manager?.plane;
   if (!manager || !group) return props.legacyInline ? props.children : <Portal>{props.children}</Portal>;
   const id = props.id ?? manager.nextSurfaceId(), kind = props.kind ?? "overlay";
   const host = document.createElement("div");
   host.className = `mwm-surface mwm-surface--${kind}`;
   if (inherited?.modal) { host.style.zIndex = "5"; host.dataset.mwmModal = inherited.surfaceId; }
   host.dataset.mwmSurface = id;
-  const release = manager.registry.registerSurface({ id, ownerWindowId: windowId,
-    sourceViewId: props.sourceViewId ?? (windowId ? manager.registry.windows[windowId].sourceViewId : "workspace-shell"),
-    parentSurfaceId: inherited?.windowId === windowId ? inherited?.surfaceId : undefined, kind, modality: "none" });
+  const release = manager.registry.registerSurface({ id, ownerWindowId: windowId(), sourceNodeKey: props.ownerKey,
+    sourceViewId: props.sourceViewId ?? (windowId() ? manager.registry.windows[windowId()!].sourceViewId : "workspace-shell"),
+    parentSurfaceId: inherited?.windowId === windowId() ? inherited?.surfaceId : undefined, kind, modality: "none" });
   group.append(host);
+  if (documentSession) { host.dataset.documentSession = documentSession.id; onCleanup(documentSession.ownSurface({ id, element: host, transferable: props.documentTransfer === "retained" })); }
   onMount(()=>manager.lifecycle.refreshInert());
   createEffect(() => {
-    const visible = (windowId ? manager.registry.windows[windowId]?.visible ?? false : true)
+    const visible = (windowId() ? manager.registry.windows[windowId()!]?.visible ?? false : true)
       && (!documentSession || documentSession.host.activity().visible);
-    if (!windowId) { manager.registry.revision(); host.style.zIndex = String(manager.count() * 2 + 2); }
+    if (!windowId()) { manager.registry.revision(); host.style.zIndex = String(manager.count() * 2 + 2); }
     host.hidden = !visible;
     host.inert = !visible;
   });
   onCleanup(() => { release(); host.remove(); });
-  return windowId ? <WindowOwner.Provider value={{ manager, windowId, surfaceId: id, modal: inherited?.modal }}><Portal mount={host}>{props.children}</Portal></WindowOwner.Provider>
+  return windowId() ? <WindowOwner.Provider value={{ manager, get windowId() { return windowId()!; }, surfaceId: id, modal: inherited?.modal }}><Portal mount={host}>{props.children}</Portal></WindowOwner.Provider>
     : <Portal mount={host}>{props.children}</Portal>;
 }
 
