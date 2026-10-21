@@ -487,13 +487,13 @@ export function StableBackgroundView(props: BlockViewProps) {
   );
 }
 
-export function WindowView(props: BlockViewProps) {
+export function WindowView(props: BlockViewProps & { content?: () => import("solid-js").JSX.Element }) {
   const { editor, projection, coordinates, windowGeometry } = useReactiveView();
   const geometry = windowGeometry?.(props.nodeKey);
   // Canvas/Spatial geometry and isolated demos are not desktop registrations.
   const manager = !geometry && editor.windowManager?.plane ? editor.windowManager : undefined;
   const scale = coordinates?.scale;
-  const node = () => projection.state.nodes[props.nodeKey];
+  const node = () => manager?.runtime.get(props.nodeKey)?.node() ?? projection.state.nodes[props.nodeKey];
   const metadata = () => (node()?.payload.metadata as Record<string, any> | undefined) ?? {};
   const appearance = createMemo(() => blockAppearance(node()));
   const [preview, setPreview] = createSignal<{ x: number; y: number }>();
@@ -564,7 +564,7 @@ export function WindowView(props: BlockViewProps) {
     collapseWithFocus: activate => collapseMargins(activate),
     closeDrawer: () => setMarginDrawerOpen(false),
   });
-  const commitMetadata = (patch: Record<string, unknown>, label: string) => editor.commands.setPayloadField(props.nodeKey, "metadata", { ...unwrap(metadata()), ...patch }, label);
+  const commitMetadata = (patch: Record<string, unknown>, label: string) => { const runtime = manager?.runtime.get(props.nodeKey); if(runtime) runtime.patch(patch); else editor.commands.setPayloadField(props.nodeKey, "metadata", { ...unwrap(metadata()), ...patch }, label); };
   const managedGeometry = manager?.geometry.create(props.nodeKey, {
     element:()=>root, viewport:untrack(isSticky), position:()=>({x:Number(metadata().position?.x??20),y:Number(metadata().position?.y??20)}),
     size:presentation.presentedSize, minimum:()=>({width:minimumSize().w,height:minimumSize().h}),mode:()=>maximized()?"maximized":state(),
@@ -735,7 +735,7 @@ export function WindowView(props: BlockViewProps) {
   };
   onMount(() => { if (manager) onCleanup(manager.lifecycle.bindActions(props.nodeKey,{minimize:minimizeWindow,restore:restoreWindow})); });
   const frame = () => (
-    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--maximized": maximized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
+    <div ref={root} class={`abstract-block reactive-window ${appearance().classes.join(" ")}`} data-document-session={manager?.runtime.get(props.nodeKey)?.sessionId} classList={{ ...presentation.classes(), "reactive-window--minimized": minimized(), "reactive-window--maximized": maximized(), "reactive-window--document": isDocument(), "reactive-window--sticky": isSticky(), "reactive-window--margins-collapsed": isDocument() && marginsCollapsed() }} tabIndex={-1}
       hidden={closedSticky()}
       style={{ ...appearance().style, ...(manager ? {"box-sizing":"border-box", "min-width":"0", "min-height":"0"} as const : {}), transform: `translate(${position().x}px, ${position().y}px)`, width: minimized() ? "96px" : `${dimensions().w}px`, height: minimized() ? "auto" : `${dimensions().h}px`, "z-index": manager ? (manager.registry.windows[props.nodeKey]?.ownerModalCount ? 4 : 0) : maximized() ? Math.max(101, Number(metadata().zIndex ?? 1)) : Number(metadata().zIndex ?? 1), ...(minimized() ? { border: "0", background: "transparent", "box-shadow": "none" } : {}) }} {...data(props.nodeKey, node)}>
       <Show when={manager || !minimized()}><RetainedWindowBody enabled={!!manager} hidden={minimized()}>
@@ -755,13 +755,13 @@ export function WindowView(props: BlockViewProps) {
         </header>
         <Show when={manager && toolbarNotice() && !isDocument()}><p role="status">{toolbarNotice()}</p></Show>
         <DocumentMarginContext.Provider value={marginPresentation}>
-          <Show when={isDocument()}><DocumentStyleBar toolset={toolset()} onToolset={setToolset} onNotice={setToolbarNotice} editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
+          <Show when={isDocument() && !props.content}><DocumentStyleBar toolset={toolset()} onToolset={setToolset} onNotice={setToolbarNotice} editor={editor} scopeKey={props.nodeKey} margins={{ collapsed: marginsCollapsed(), count: marginEntries().length, open: marginDrawerOpen(), controls: marginDrawerId, toggle: toggleMargins }} /></Show>
           <div class="reactive-window__content" ref={host => onMount(() => { if (isDocument()) onCleanup(editor.pointerSpotlight.mount(host, scale)); })}><div class="reactive-window__document-body"><WindowRestorationBoundary nodeKey={props.nodeKey}>
-            <For each={node()?.children ?? []}>{key => editor.documentSessions && manager && isDocument() && projection.node(key)?.viewType === "document-block"
+            <Show when={props.content} fallback={<For each={node()?.children ?? []}>{key => editor.documentSessions && manager && isDocument() && projection.node(key)?.viewType === "document-block"
               ? <RetainedInkDocument nodeKey={key} windowKey={props.nodeKey} />
-              : <BlockOutlet nodeKey={key} />}</For>
+              : <BlockOutlet nodeKey={key} />}</For>}>{render => render()()}</Show>
           </WindowRestorationBoundary></div></div>
-          <Show when={isDocument() && editor.features.compactEditorChrome}><DocumentStatusBar editor={editor} scopeKey={props.nodeKey} notice={toolbarNotice()} /></Show>
+          <Show when={isDocument() && !props.content && editor.features.compactEditorChrome}><DocumentStatusBar editor={editor} scopeKey={props.nodeKey} notice={toolbarNotice()} /></Show>
           <Show when={isDocument() && marginsCollapsed() && marginDrawerOpen()}>
             <DocumentMarginDrawer id={marginDrawerId} entries={marginEntries()} onClose={toggleMargins} onSource={key => editor.focus.request(key, { reason: "margin-source" })} />
           </Show>

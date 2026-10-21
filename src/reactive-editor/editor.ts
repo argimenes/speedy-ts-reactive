@@ -276,6 +276,8 @@ export class ReactiveEditor {
   /** Close a presentation without deleting authored content or adding an Undo step. */
   closeView(key: NodeKey, signal?: AbortSignal): void | Promise<void> {
     if (signal?.aborted) return;
+    const runtime = this.windowManager?.runtime.get(key);
+    if (runtime) return this.windowManager!.lifecycle.close(key, () => runtime.close());
     if (this.windowManager?.registry.windows[key] && (this.node(key)?.payload.metadata as any)?.stickyNote) return this.stickyNotes.closeWindow(key);
     if (this.windowManager?.registry.windows[key]) return this.windowManager.lifecycle.close(key, () => this.commitCloseView(key));
     const guard = this.viewCloseGuards.get(key)?.(signal);

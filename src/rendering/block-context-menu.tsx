@@ -76,7 +76,7 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
     event.stopPropagation();
     props.editor.bindings.dispatch(event, ["menu"], id => runBinding(id, event.target));
   };
-  return <div ref={root} class="reactive-block-menu" role={form() ? "dialog" : "menu"} aria-label="Block menu" tabIndex={-1}
+  return <div ref={root} class="reactive-block-menu" data-cross-text-controls={(props.overlay.data as {documentTab?:string}|undefined)?.documentTab ? "" : undefined} role={form() ? "dialog" : "menu"} aria-label="Block menu" tabIndex={-1}
     data-session-overlay={props.overlay.key} data-native-context-menu style={{ left: `${position().x}px`, top: `${position().y}px` }} onKeyDown={keys} onClick={keys} onDblClick={keys} onContextMenu={keys}>
     <header><span>{form()?.label ?? path().at(-1)?.label ?? "Block menu"}</span><button type="button" aria-label="Close block menu" onClick={() => props.editor.overlays.close(props.overlay.key)}>×</button></header>
     <Show when={path().length || form()}><button role="menuitem" type="button" onClick={back}>‹ Back</button></Show>

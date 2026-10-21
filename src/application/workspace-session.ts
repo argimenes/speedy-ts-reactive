@@ -10,6 +10,7 @@ import { deriveDesktop } from "./desktop-derivation";
 import { deriveCanvas } from "./canvas-derivation";
 import { registerWorkspaceEntities } from "./workspace-entities";
 import { WorkspaceWindowManager } from "./window-manager";
+import { DocumentDetachment } from "./document-detachment";
 import { DocumentSessionStore } from "./document-sessions";
 
 export interface WorkspaceObjectResolution {
@@ -52,6 +53,7 @@ export class WorkspaceSession {
     if (this.editor.features.mutableWindowManager) this.editor.windowManager = this.windowManager = new WorkspaceWindowManager(this.editor);
     if (this.windowManager && this.editor.features.retainedDocumentSessions)
       this.editor.documentSessions = this.documentSessions = new DocumentSessionStore(this.editor);
+    if(this.documentSessions && this.editor.features.documentSessionHostTransfer && this.editor.features.documentDetachment) this.documentSessions.detachment=new DocumentDetachment(this.documentSessions,this.editor);
     this.presentation = new WorkspacePresentationState(root.payload, { canvas: this.editor.features.canvasWorkspace, spatial: this.editor.features.spatialWorkspace ? { supports: supportsSpatial } : undefined });
     this.editor.persistence.attachWorkspacePresentation({ capture: () => { this.interaction?.finish(); return this.presentation.capture(); }, markSaved: snapshot => this.presentation.markSaved(snapshot) });
     registerApplicationViews(this.editor);

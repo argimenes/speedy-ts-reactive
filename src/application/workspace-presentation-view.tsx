@@ -9,6 +9,7 @@ import { CanvasView } from "../features/canvas/view";
 import { createCanvasInteractions } from "../features/canvas/interactions";
 import { canvasActions } from "./canvas-actions";
 import "./workspace-presentation.css";
+import { DetachedDocumentWindows } from "./document-detachment";
 import { WindowManagerPlane } from "../rendering/window-manager";
 
 const SpatialView = lazy(() => import("../features/spatial/view"));
@@ -73,6 +74,7 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
         background: () => <Show when={canvas()?.background}>{background => <BackgroundMedia type={background().type} metadata={background().metadata} />}</Show>,
       }} />
     </Show>
+    <Show when={props.session.documentSessions?.detachment}>{controller=><DetachedDocumentWindows controller={controller()}/>}</Show>
     <ReactiveViewLayers editor={editor} projection={projection} />
   </ReactiveViewProvider></WindowManagerPlane>;
 }

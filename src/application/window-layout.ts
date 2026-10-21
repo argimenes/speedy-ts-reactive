@@ -165,8 +165,8 @@ export class WindowLayout {
     }catch(error){this.cancel();this.message[1](error instanceof Error?error.message:String(error));return false;}
   }
   private setMode(id:string,state:string){
-    const node=this.editor.node(id),metadata=node?.payload.metadata as any;
-    if(node&&(metadata?.state??'normal')!==state)this.editor.commands.setPayloadField(id,'metadata',{...unwrap(metadata??{}),state},'Arrange Window');
+    const node=this.manager.windowNode(id),metadata=node?.payload.metadata as any;
+    if(node&&(metadata?.state??'normal')!==state)this.manager.setMode(id,state);
   }
   snap(id:string,zone:SnapZone){if(!this.allowed([id]))return false;const key=this.key(id)!;const ok=this.transact(()=>snapTree(this.tree(),key,zone,this.id),[id]);if(ok)this.activate(id);return ok;}
   tile(id:string,target:string,edge:TileEdge){if(!this.allowed([id,target]))return false;const ok=this.transact(()=>insertEntry(this.tree(),this.key(id)!,this.key(target)!,edge,this.id),[id,target]);if(ok)this.activate(id);return ok;}

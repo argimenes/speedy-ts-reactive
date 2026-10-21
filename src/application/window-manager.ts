@@ -12,6 +12,10 @@ import { WindowRegistry } from "../runtime/window-manager";
  * not new resources. Non-desktop hosts and isolated demos keep their own geometry.
  */
 export class WorkspaceWindowManager {
+  /** Runtime Document shells have no canonical Block or persistence descriptor. */
+  readonly runtime = new Map<string, { sessionId?: string; node(): NonNullable<ReturnType<ReactiveEditor['node']>>; patch(value: Record<string, unknown>): void; close(): void }>();
+  windowNode(id: string) { return this.runtime.get(id)?.node() ?? this.editor.node(id); }
+  setMode(id: string, state: string, label = 'Arrange Window') { const host = this.runtime.get(id); if (host) host.patch({ state }); else { const node=this.editor.node(id); if(node)this.editor.commands.setPayloadField(id,'metadata',{...unwrap(node.payload.metadata??{}),state},label); } }
   readonly restoration = new RestorationQueue();
   readonly registry = new WindowRegistry();
   readonly geometry = new WindowGeometry();
@@ -39,9 +43,9 @@ export class WorkspaceWindowManager {
     this.serial = windows.length;
   }
   nextSurfaceId() { return `surface:${++this.surfaceSerial}`; }
-  title(id:string) { return String((this.editor.node(id)?.payload.metadata as any)?.title??"Untitled"); }
+  title(id:string) { return String((this.windowNode(id)?.payload.metadata as any)?.title??"Untitled"); }
   close(id:string) { return this.editor.closeView(id); }
-  maximize(id:string) { const node=this.editor.node(id);if(!node||!this.lifecycle.canMinimize(id)||!this.editor.features.windowMaximize)return;const metadata=node.payload.metadata as any;this.editor.commands.setPayloadField(id,"metadata",{...unwrap(metadata),state:metadata?.state==="maximized"?"normal":"maximized"},"Maximize / Restore Window"); }
+  maximize(id:string) { const node=this.windowNode(id);if(!node||!this.lifecycle.canMinimize(id)||!this.editor.features.windowMaximize)return;const metadata=node.payload.metadata as any;this.setMode(id,metadata?.state==="maximized"?"normal":"maximized","Maximize / Restore Window"); }
   count() { return Object.keys(this.registry.windows).length; }
   groupRank(id:string) {
     const record=this.registry.windows[id];if(!record)return 0;
@@ -85,7 +89,7 @@ export class WorkspaceWindowManager {
   }
   register(key: string, group: HTMLElement) {
     return untrack(() => {
-      const node = this.editor.node(key);
+      const node = this.windowNode(key);
       if (!node) throw new Error("Cannot register a missing Window.");
       const seed = this.requested.get(node.placementKey) ?? this.initialOrder.get(node.contentKey) ?? ++this.serial;
       this.requested.set(node.placementKey, seed);

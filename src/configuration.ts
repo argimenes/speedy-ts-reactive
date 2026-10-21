@@ -21,6 +21,8 @@ export type FeatureFlags = Readonly<{
   retainedDocumentSessions: boolean;
   /** Internal E1.2 host transfer coordinator; product Detach UI remains a later milestone. */
   documentSessionHostTransfer: boolean;
+  /** Experimental product Detach/Return; runtime topology is not persisted. */
+  documentDetachment: boolean;
   /** Shared native clipboard. Disable to restore all legacy clipboard routes together. */
   mutableClipboard: boolean;
   /** Explicit file import, source conversion and semantic export. */
@@ -135,6 +137,7 @@ export const featureFlags: FeatureFlags = Object.freeze({
   mutableWindowManager: true,
   retainedDocumentSessions: true,
   documentSessionHostTransfer: true,
+  documentDetachment: true,
   mutableClipboard: true,
   documentInterchange: true,
   applicationServices: true,

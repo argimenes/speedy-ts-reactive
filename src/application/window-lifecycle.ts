@@ -212,7 +212,7 @@ export class WindowLifecycle {
     } else this.editor.focus.request(id, {reason:'activate-window'});
     return true;
   }
-  private groupsContains(id: string, element: Element) { return this.manager.groups.get(id)?.contains(element); }
+  private groupsContains(id: string, element: Element) { return this.manager.groups.get(id)?.contains(element) || element.matches('[data-cross-text-input]') && this.editor.documentSessions?.forElement(element)?.host.windowId === id; }
   private focusModal(modal: Modal) { (modal.root.querySelector<HTMLElement>('input:not(:disabled),button:not(:disabled),[tabindex="0"]') ?? modal.root).focus({preventScroll:true}); }
   modal(root: HTMLElement, owner?: string, parentSurfaceId?: string, existingId?: string) {
     const id = existingId ?? this.manager.nextSurfaceId(), previous = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;

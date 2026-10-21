@@ -48,6 +48,7 @@ export class NamedLayouts {
     delete result.tree;if(tree)result.tree=tree;return result;
   }
   private capture():Omit<NamedArrangement,'id'|'name'|'revision'> & {windows:RestoreWindow[];layout:ManagedDesktop['layout'];lastActive?:string} {
+    this.editor.documentSessions?.transfers.assertPersistable();
     if(this.manager.layout.dividerActive())throw Error('Finish or cancel the divider before saving an arrangement.');
     const windows=Object.values(this.manager.registry.windows).filter(w=>!this.hidden(w.placementKey)).sort((a,b)=>a.rank-b.rank).map(w=>{
       const m=unwrap(this.editor.node(w.id)?.payload.metadata??{}) as any;
@@ -67,6 +68,7 @@ export class NamedLayouts {
   rename(id:string,name:string){name=name.trim();if(!name||name.length>512||this.arrangements().some(a=>a.id!==id&&a.name.toLocaleLowerCase()===name.toLocaleLowerCase()))throw Error('Enter a unique arrangement name.');if(!this.arrangements().some(a=>a.id===id))return;this.list[1](all=>all.map(a=>a.id===id?{...a,name,revision:a.revision+1}:a));this.touch();}
   delete(id:string){if(!this.arrangements().some(a=>a.id===id))return;batch(()=>{this.list[1](all=>all.filter(a=>a.id!==id));if(this.active()===id)this.selected[1](undefined);this.touch();});}
   select(id:string){
+    if(this.manager.runtime.size){this.noticeSignal[1]('Return or close detached Documents before selecting a named arrangement.');return false;}
     const a=this.arrangements().find(a=>a.id===id);if(!a)return false;
     const records=Object.values(this.manager.registry.windows);
     if(!this.manager.layout.active()||this.manager.lifecycle.workspaceBlocked||records.some(w=>!this.manager.lifecycle.canMinimize(w.id))){this.noticeSignal[1]('Finish composition, dialogs or pending close requests before switching arrangements.');return false;}

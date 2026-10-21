@@ -26,6 +26,8 @@ type Entry = { session: RetainedDocumentSession; origin: Host; host: Host };
 type Surface = { id: string; element: HTMLElement; transferable?: boolean };
 export type TransferStage = 'prepared' | 'attached' | 'surfaces' | 'commit';
 export interface TransferOptions {
+  /** Product Return can reveal the destination in a shared shell-tab group. */
+  sourceMayBeHidden?: boolean;
   signal?: AbortSignal;
   /** Preparation may await; publication never does. Must honor cancellation. */
   prepare?(signal: AbortSignal): Promise<void>;
@@ -50,6 +52,12 @@ export class DocumentHostTransfers {
   private recovery = new Map<string, { entry: Entry; reason: string }>();
   private recoveryContainer?: HTMLDivElement;
   constructor(private store: DocumentSessionStore, private editor: ReactiveEditor) {}
+  observe() { this.revision[0](); }
+  recoveryReason(session: RetainedDocumentSession) { this.observe(); return this.recovery.get(session.id)?.reason; }
+  eligibility(session: RetainedDocumentSession): string | undefined {
+    try { const entry=this.entries.get(session.id); if(!entry)throw Error('Select a retained Document first'); this.validate(entry,entry.host,entry.host,undefined,false,false,true); }
+    catch(error) { return error instanceof Error ? error.message : String(error); }
+  }
   diagnostics() { return { sessions: this.entries.size, hosts: this.hosts.size, pending: this.pending.size,
     reservations: [...this.hosts.values()].filter(h => h.reservation).length, recovery: this.recovery.size, completed: this.completed }; }
   register(port: DocumentHostPort): DocumentHostLease {
@@ -61,7 +69,7 @@ export class DocumentHostTransfers {
       release: () => {
         if (!host.current()) return;
         for (const p of this.pending.values()) if (p.source === host || p.destination === host) p.controller.abort();
-        this.hosts.delete(key);
+        this.hosts.delete(key); this.revision[1](n=>n+1);
         // Old source cleanup has no authority over the new host's occupant.
         if (host.occupant) this.store.release(host.occupant);
       } };
@@ -108,7 +116,7 @@ export class DocumentHostTransfers {
     container.append(entry.session.element);
     for (const surface of this.surfaces.get(entry.session.id) ?? []) container.append(surface.element);
     entry.session.host.suspend(true);
-    this.recovery.set(entry.session.id, { entry, reason: String(error) });
+    this.recovery.set(entry.session.id, { entry, reason: String(error) }); this.revision[1](n=>n+1);
   }
   /** Explicit exceptional recovery, never a silent replacement or new host type. */
   restoreSource(session: RetainedDocumentSession) {
@@ -118,24 +126,24 @@ export class DocumentHostTransfers {
     host.port.container.append(session.element);
     for (const surface of this.surfaces.get(session.id) ?? []) this.editor.windowManager!.groups.get(host.port.windowId)!.append(surface.element);
     session.host.bind(host.port); session.host.suspend(false);
-    this.recovery.delete(session.id);
+    this.recovery.delete(session.id); this.revision[1](n=>n+1);
     if (!this.recovery.size) { this.recoveryContainer?.remove(); this.recoveryContainer = undefined; }
   }
-  private validate(entry: Entry, source: Host, destination: Host, token?: symbol, attached = false, movedSurfaces = false) {
+  private validate(entry: Entry, source: Host, destination: Host, token?: symbol, attached = false, movedSurfaces = false, probe = false, sourceMayBeHidden = false) {
     const { session } = entry, manager = this.editor.windowManager;
     if (this.recovery.has(session.id)) throw Error('Restore the lost source host explicitly before another transfer');
     if (!this.editor.features.documentSessionHostTransfer) throw Error('Document host transfer is disabled');
     if (!session.current() || this.entries.get(session.id) !== entry || entry.host !== source || source.occupant !== session)
       throw Error('Stale Document session ownership');
     this.host(source); this.host(destination);
-    if (source === destination || destination.occupant || destination.reservation && destination.reservation !== token)
+    if (!probe && (source === destination || destination.occupant || destination.reservation && destination.reservation !== token))
       throw Error('Destination is occupied or reserved');
     if (!manager?.layout.active()) throw Error('Document transfer requires the managed Desktop');
     for (const host of [source, destination]) {
       const p = host.port, group = manager.groups.get(p.windowId);
       if (!p.container.isConnected || p.container.ownerDocument !== session.element.ownerDocument || !group?.contains(p.container))
         throw Error('Document host is disconnected, foreign or outside its managed window');
-      if (!manager.registry.windows[p.windowId]?.visible || !p.selected()) throw Error("Select and reveal the Document hosts before transferring");
+      if ((!manager.registry.windows[p.windowId]?.visible && !(sourceMayBeHidden && host === source)) || !p.selected()) throw Error("Select and reveal the Document hosts before transferring");
       if (!manager.lifecycle.canTransfer(p.windowId) || manager.geometry.controllers.get(p.windowId)?.mode() || manager.layout.dividerActive())
         throw Error('Finish composition, gestures, dialogs or pending close before transferring');
     }
@@ -161,7 +169,7 @@ export class DocumentHostTransfers {
       throw Error('Document contains an unqualified embedded surface');
     for (const element of session.element.querySelectorAll<HTMLElement>('[data-client-id]')) {
       const n = this.editor.node(element.dataset.clientId!);
-      if (n && (this.editor.registry.hasCapability(n.viewType, 'opaque-widget') || this.editor.registry.hasCapability(n.viewType, 'native-text') || /application-block$/.test(n.viewType) ||
+      if (n && (this.editor.registry.hasCapability(n.viewType, 'opaque-widget') || this.editor.registry.hasCapability(n.viewType, 'native-text') || this.editor.registry.hasCapability(n.viewType, 'canvas-preview') || /application-block$/.test(n.viewType) ||
           this.editor.registry.hasCapability(n.viewType, 'inline-editor') && n.viewType !== 'standoff-editor-block'))
         throw Error('Document contains an unqualified editor or application');
     }
@@ -186,7 +194,7 @@ export class DocumentHostTransfers {
     const entry = this.entries.get(session.id);
     if (!entry || this.pending.has(session.id)) throw Error('Session is unhosted or already transferring');
     const source = entry.host, destination = this.host(lease), manager = this.editor.windowManager!;
-    const resource = this.validate(entry, source, destination);
+    const resource = this.validate(entry, source, destination, undefined, false, false, false, options.sourceMayBeHidden);
     if (options.signal?.aborted) throw abortError();
     const controller = new AbortController(), token = Symbol('transfer');
     destination.reservation = token; this.pending.set(session.id, { controller, source, destination });
@@ -196,7 +204,7 @@ export class DocumentHostTransfers {
     const sourceGeneration = manager.registry.windows[source.port.windowId].generation, destinationGeneration = manager.registry.windows[destination.port.windowId].generation;
     const current = (attached = false, movedSurfaces = false) => {
       if (controller.signal.aborted || manager.registry.windows[source.port.windowId]?.generation !== sourceGeneration || manager.registry.windows[destination.port.windowId]?.generation !== destinationGeneration) throw abortError();
-      if (this.validate(entry, source, destination, token, attached, movedSurfaces) !== resource) throw Error("Document resource authority changed during preparation");
+      if (this.validate(entry, source, destination, token, attached, movedSurfaces, false, options.sourceMayBeHidden) !== resource) throw Error("Document resource authority changed during preparation");
     };
     const checkpoint = (stage: TransferStage) => {
       const result: unknown = options.checkpoint?.(stage);

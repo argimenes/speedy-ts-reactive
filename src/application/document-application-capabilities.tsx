@@ -97,6 +97,9 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const navigation = navigationTabs.get(props.nodeKey) ?? {tabs: new Map<string, string>()};
       navigationTabs.set(props.nodeKey, navigation);
       const [navigationRevision, setNavigationRevision] = createSignal(0);
+      const detachment = retainedSessions?.detachment;
+      const tabSession = (key: string) => detachment?.forSlot(props.nodeKey,key);
+      const detachedTab = (key: string) => detachment?.detached(tabSession(key)) ?? false;
       const liveViews = new Map<string, BlockTreeProjection>();
       const [viewRevision, setViewRevision] = createSignal(0);
       const visibleTabs = () => (row()?.children ?? []).filter(key => !editor.viewVisibility.isClosed(editor.node(key)!.placementKey));
@@ -108,7 +111,9 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           contextActions: () => {
             const menu = editor.overlays.overlays.find(item => item.ownerKey === props.nodeKey && item.viewType === "context-menu");
             const key = (menu?.data as { documentTab?: string } | undefined)?.documentTab ?? activeTab();
-            return [{ label: "Close Document", disabled: !key || !tabKeys().includes(key), run: () => { if (key) closeTab(key); } }];
+            const session=key&&tabSession(key), detached=key&&detachedTab(key);
+            const reason=detachment && !detached ? detachment.reason(session||undefined) : undefined;
+            return [...(detachment ? [{label: detached ? "Return to Flint" : "Detach Document", disabled: !session || !!reason || !!detached && !detachment.canReturn(detachment.forSession(session)!), run:()=>{if(key)void transferTab(key);}}, ...(reason?[{label:reason,disabled:true,run:()=>{}}]:[])] : []), { label: "Close Document", disabled: !key || !tabKeys().includes(key), run: () => { if (key) closeTab(key); } }];
           },
         });
         onCleanup(release);
@@ -133,7 +138,26 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         return !owner || editor.windowManager!.lifecycle.canMinimize(owner);
       };
       let tabSelectionGeneration = 0;
-      const chooseTab = (key: string) => { if (key !== activeTab() && !canChangeTab()) return; tabSelectionGeneration++; navigation.active = navigation.tabs.has(key) ? key : undefined; setNavigationRevision(n => n+1); const r = row(); if(r && !navigation.active) editor.setViewChild(r.key,key); };
+      const selectHostedTab = (key: string) => { if (key !== activeTab() && !canChangeTab()) return; tabSelectionGeneration++; navigation.active = navigation.tabs.has(key) ? key : undefined; setNavigationRevision(n => n+1); const r = row(); if(r && !navigation.active) editor.setViewChild(r.key,key); };
+      const chooseTab = (key: string) => { selectHostedTab(key); const session=tabSession(key); if(session&&detachment?.detached(session))detachment.reveal(session); };
+      const transferTab = async (key: string) => {
+        const session=tabSession(key);if(!detachment||!session)return;
+        try {
+          const existing=detachment.forSession(session);
+          if(existing){for(const menu of [...editor.overlays.overlays])if(menu.ownerKey===props.nodeKey&&menu.viewType==='context-menu')editor.overlays.close(menu.key,false);detachment.reveal(session);await detachment.returnToFlint(existing);return;}
+          selectHostedTab(key);
+          // Invocation-only tab menus retain the exact editor interaction.
+          const menu=editor.overlays.overlays.find(o=>o.ownerKey===props.nodeKey&&(o.data as any)?.documentTab===key);
+          if(menu){
+            const mount=menu.returnFocusKey&&editor.mounts.get(menu.returnFocusKey);
+            editor.overlays.close(menu.key,false);
+            if(menu.returnElement?.isConnected)menu.returnElement.focus({preventScroll:true});
+            else if(mount){mount.focus();if(menu.returnInlineSelection)mount.restoreInlineSelection?.(menu.returnInlineSelection);if(menu.returnSelection)mount.restoreSelection?.(menu.returnSelection);}
+          } else editor.windowManager?.lifecycle.activate(session.host.windowId);
+          await detachment.detach(session,{alive:()=>mounted&&tabKeys().includes(key), select:()=>selectHostedTab(key),
+            departed:()=>{const next=tabKeys().find(k=>k!==key&&!detachedTab(k));if(next)selectHostedTab(next);},closed:()=>closeTab(key)});
+        } catch(error){setTabCloseError(String(error));}
+      };
       const tabKeys = createMemo(() => { navigationRevision(); return [...visibleTabs(),...navigation.tabs.keys()]; });
       const tabButtons = new Map<string, HTMLButtonElement>();
       const pendingTabCloses = new Map<string, AbortController>();
@@ -144,6 +168,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       onCleanup(() => { cancelTabCloses(); sessionLifetime?.removeEventListener("abort", cancelTabCloses); });
       const closeTab = (key: string, closed = false, previousKeys?: string[], wasActive?: boolean, mayFocus = true) => {
         if (!mounted) return;
+        const detached=tabSession(key); if(!closed&&detached&&detachment?.detached(detached)){void detachment.close(detached);return;}
         if (!closed && !canChangeTab()) return;
         if (retainedSessions && !closed && !navigation.tabs.has(key)) {
           if (pendingTabCloses.has(key) || !tabKeys().includes(key)) return;
@@ -197,7 +222,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         return <div class="flint-document-tab" role="presentation" data-active={activeTab() === key} data-native-context-menu
           onContextMenu={event => openTabMenu(key, event)}
           onKeyDown={event => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) openTabMenu(key, event); }}>
-          <button ref={button => tabButtons.set(key, button)} type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{title()}<Show when={native?.isDirty(tabId(key) ?? '')}><span class="flint-document-tab__dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" /></Show></button>
+          <button ref={button => tabButtons.set(key, button)} type="button" role="tab" aria-selected={activeTab()===key} onClick={()=>chooseTab(key)}>{title()}<Show when={detachedTab(key)}><span class="flint-document-tab__detached" aria-label="Detached window" title="Select to activate its standalone window">↗</span></Show><Show when={native?.isDirty(tabId(key) ?? '')}><span class="flint-document-tab__dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" /></Show></button>
+          <Show when={detachment}><button type="button" aria-label={`Document actions: ${title()}`} onPointerDown={e=>e.preventDefault()} onClick={event=>openTabMenu(key,event)}>⋯</button></Show>
           <button type="button" class="flint-document-tab__close" aria-label={`Close Document: ${title()}`} title={`Close ${title()}`} onClick={event => { event.stopPropagation(); closeTab(key); }}>×</button>
         </div>;
       }}</For></div><For each={tabKeys()}>{key=>{
@@ -206,6 +232,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         return <Show when={retainedSessions ? visited() : activeTab() === key}>
           <div class="reactive-tabs__panel" role="tabpanel" hidden={activeTab() !== key}
             ref={element => createEffect(() => { element.inert = activeTab() !== key; })}>
+            <Show when={detachedTab(key)}><div class="flint-detached-reference">This Document is open in its own window. <button onClick={()=>detachment!.reveal(tabSession(key)!)}>Activate Document window</button></div></Show>
             <Show when={tabId(key)} keyed>{id=><Target documentId={id} tabKey={key}/>}</Show>
           </div>
         </Show>;
@@ -373,11 +400,12 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           await knowledgeHost.navigate(target,passage,ticket.current,ticket.verify);
         },
         async navigate(target, passage, current, verify) {
-          const focusCurrent=editor.windowManager?.lifecycle.ticket(),sourceCurrent=current;
+          let focusCurrent=editor.windowManager?.lifecycle.ticket();const sourceCurrent=current;
           current=()=>sourceCurrent()&&focusCurrent?.()!==false;
           guard(); if(!current()) throw new Error('Navigation is stale');
           // Resolve only this application instance's occurrence, never a global first match.
           openDocument(target.documentId, true);
+          focusCurrent=editor.windowManager?.lifecycle.ticket();
           await new Promise(resolve=>setTimeout(resolve,0));
           await verify?.();
           guard(); if(!current()||activeId()!==target.documentId) throw new Error('Navigation was superseded');

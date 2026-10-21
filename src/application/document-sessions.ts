@@ -61,6 +61,8 @@ export class DocumentSessionStore {
   private lifetime = new AbortController();
   readonly signal = this.lifetime.signal;
   readonly transfers: DocumentHostTransfers;
+  detachment?: import("./document-detachment").DocumentDetachment;
+  readonly saveHandlers = new Map<string, () => Promise<unknown>>();
   private privateViews = new Map<string, RetainedDocumentSession>();
   readonly saveError = createSignal<string>();
   private saveShortcut = (event: KeyboardEvent) => {
@@ -68,7 +70,7 @@ export class DocumentSessionStore {
     const session = event.target instanceof Element ? this.forElement(event.target) : undefined;
     if (!session || this.transfers.atOrigin(session)) return;
     event.preventDefault(); event.stopImmediatePropagation();
-    void this.save(session).catch(error => this.saveError[1](String(error)));
+    void (this.saveHandlers.get(session.id)?.() ?? this.save(session)).catch(error => this.saveError[1](String(error)));
   };
   constructor(private editor: ReactiveEditor) {
     this.transfers = new DocumentHostTransfers(this, editor);
@@ -139,6 +141,7 @@ export class DocumentSessionStore {
     if (!this.alive) return;
     this.alive = false; this.lifetime.abort();
     if (typeof document !== "undefined") document.removeEventListener("keydown", this.saveShortcut, true);
+    this.detachment?.dispose(); this.saveHandlers.clear();
     this.transfers.dispose();
     for (const { session } of [...this.records.values()]) this.release(session);
   }
