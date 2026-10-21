@@ -155,7 +155,7 @@ export function DetachedDocumentWindows(props:{controller:DocumentDetachment}) {
       <div ref={slot} data-detached-document={w.session.id}/>
       <p role="status">{c.native.status(c.resource(w.session))}</p>
       <Show when={w.state.saveAs}><Modal><h2>Save Document As</h2><label>Folder<input aria-label="Document folder" value={w.state.folder} onInput={e=>w.set('folder',e.currentTarget.value)}/></label><label>Filename<input aria-label="Document filename" value={w.state.filename} onInput={e=>w.set('filename',e.currentTarget.value)}/></label><button disabled={w.state.saving} onClick={()=>void c.save(w,{folder:w.state.folder,filename:w.state.filename})}>Save to destination</button><button disabled={w.state.saving} onClick={()=>w.set('saveAs',false)}>Cancel Save As</button></Modal></Show>
-      <Show when={w.state.closePrompt}><Modal><h2>Close unsaved Document?</h2><p>Closing ends this editing session. It does not save or delete the canonical Document. Unsaved changes remain in this workspace until it is closed.</p><button onClick={()=>w.decide?.(false)}>Keep editing</button><button onClick={()=>w.decide?.(true)}>Close without saving</button></Modal></Show></>;
+      <Show when={w.state.closePrompt}><Modal><h2>Close unsaved Document?</h2><p>Closing ends this editing session. It does not save or delete the canonical Document. Unsaved changes remain in this workspace until it is closed.</p><button onClick={()=>w.decide?.(false)}>Keep editing</button><button onClick={()=>w.decide?.(true)}>Close window</button></Modal></Show></>;
     };
     return <WindowView nodeKey={w.id} content={content}/>;
   }}</For></>;

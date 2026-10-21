@@ -253,7 +253,7 @@ export async function qualifyWindowManager() {
     focus(node.key,0);await trusted({type:'text',text:'Unsaved '});await settle();
     const close=editor.closeView(w.id);await settle();await click(findButton('Keep editing'));await close;
     check(a.current()&&editor.mounts.get(node.key)===mount,'cancelled unsaved-window close preserves exact editing state');
-    const finalClose=editor.closeView(w.id);await settle();await click(findButton('Close without saving'));await finalClose;await settle();
+    const finalClose=editor.closeView(w.id);await settle();await click(findButton('Close window'));await finalClose;await settle();
     check(a.signal.aborted&&owner.disposed===1&&product.windows().length===0,'explicit close disposes the detached editing session exactly once');
     session.dispose();stop();
     check(lifetimes.every(r=>r.disposals===1&&r.subscriptions===1&&r.unsubscriptions===1),'all private projections and canonical subscriptions finish with exact disposal counts');

@@ -82,7 +82,7 @@ describe('E1.3 product Document detachment',()=>{
     expect(save).toHaveBeenCalledOnce();expect(save).toHaveBeenCalledWith('resource-a',{folder:'.',filename:'a.mutable.json'});
     const closing=f.editor.closeView(w.id);await tick();expect(button('Keep editing')).toBeTruthy();button('Keep editing').click();await closing;
     expect(a.current()).toBe(true);
-    const again=f.editor.closeView(w.id);await tick();button('Close without saving').click();await again;await tick();
+    const again=f.editor.closeView(w.id);await tick();button('Close window').click();await again;await tick();
     expect(a.signal.aborted).toBe(true);expect(f.records.find(r=>r.key===(mount.root as HTMLElement).dataset.clientId)?.disposed??f.records[0].disposed).toBe(1);
   });
   it('Save As cancellation writes nothing and first-save uses the canonical native service',async()=>{
