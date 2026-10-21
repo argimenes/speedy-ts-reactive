@@ -1,7 +1,7 @@
 import { Dynamic } from "solid-js/web";
 import { immutable } from "../runtime/effect-contributions";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { ApplicationSurfacePortal } from "./window-manager";
+import { ApplicationSurfacePortal, useManagedWindowOwner, useManagedViewActivity } from "./window-manager";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { OverlayDescriptor } from "../runtime/overlays";
 import type { AnnotationAction, AnnotationPatch } from "../block-tree/annotation-commands";
@@ -10,6 +10,7 @@ import "./annotation-monitor.css";
 
 function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
   const { editor, overlay } = props;
+  const owner = useManagedWindowOwner(), activity = useManagedViewActivity();
   const node = () => editor.node(overlay.ownerKey);
   const source = node()?.payload.standoffProperties as Array<Record<string, unknown>> | undefined;
   const [items, setItems] = createSignal((overlay.annotationIndexes ?? []).filter(index => source?.[index]).map(index => ({ index, property: JSON.parse(JSON.stringify(source![index])) as Record<string, unknown> })));
@@ -39,7 +40,7 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
   let gesture: { id: number; x: number; y: number; left: number; top: number } | undefined;
   const close = () => editor.overlays.close(overlay.key);
   const clamp = () => {
-    if (!root?.isConnected) return;
+    if (!root?.isConnected || !activity()?.visible) return;
     const rect = root.getBoundingClientRect();
     const start = Number(selected()?.property.start);
     const flow = editor.mounts.get(overlay.ownerKey)?.root.querySelector(".reactive-standoff-flow");
@@ -50,6 +51,14 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
     const anchor = manualPosition ? position() : fragment ? { x: fragment.left - 100, y: fragment.bottom + 21 } : overlay.anchor;
     setPosition({ x: Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8)), y: Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8)) });
   };
+  let anchorFrame = 0;
+  const scheduleAnchor = () => { if (!anchorFrame) anchorFrame = requestAnimationFrame(() => { anchorFrame = 0; clamp(); }); };
+  createEffect(() => {
+    activity()?.visible;
+    if (owner) owner.manager.geometry.controllers.get(owner.windowId)?.rectangle();
+    scheduleAnchor();
+  });
+  onCleanup(() => { if (anchorFrame) cancelAnimationFrame(anchorFrame); });
   const monitorResize = createFloatingWindowResize({
     element: () => root,
     size: () => sessionSize() ?? { width: root ? root.getBoundingClientRect().width : 960, height: root ? root.getBoundingClientRect().height : 600 },
@@ -72,11 +81,19 @@ function Monitor(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) 
   };
   const endGesture = () => { gesture = undefined; };
   onMount(() => {
+    // Modeless: app switching does not discard pending inspector fields.
+    if (owner) editor.overlays.setDocumentInput(overlay.key, true);
     const custom = (event: Event) => { if (!(event instanceof CustomEvent)) return; if (editor.bindings.dispatchCustom(event.detail?.name, inputScopes(event.target as Element), id => runInput(id, event.target as Element), event.detail?.payload)) { event.preventDefault(); event.stopPropagation(); } };
     root.addEventListener("speedy-input", custom);
     onCleanup(() => root.removeEventListener("speedy-input", custom));
     const disposeMount = editor.mounts.register(overlay.key, { root, focusElement: root, inputPolicy: "opaque-widget", focus: () => root.focus({ preventScroll: true }) });
-    const disposeChanges = editor.repository.subscribeBeforeChanges(() => { if (!editing) close(); });
+    // Window launches/geometry are not edits to the inspected annotation.
+    // Keep the form alive; source edits still invalidate its captured ranges.
+    const sourceKey = node()?.contentKey;
+    const disposeChanges = owner ? editor.repository.subscribeChanges(change => {
+      if (!editing && (!node() || sourceKey && (change.inlineOwner === sourceKey || change.previousContents.has(sourceKey))))
+        editor.overlays.close(overlay.key, false);
+    }) : editor.repository.subscribeBeforeChanges(() => { if (!editing) close(); });
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(clamp) : undefined;
     observer?.observe(root); clamp(); window.addEventListener("resize", clamp);
     const scroll = (event: Event) => { if (!(event.target instanceof Node) || !root.contains(event.target)) clamp(); };

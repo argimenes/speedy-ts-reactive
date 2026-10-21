@@ -7,7 +7,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const milestone=process.argv.includes('--reconstruction-proof')?'reconstruction-proof':process.argv.includes('--e13')?'e13':process.argv.includes('--e12')?'e12':process.argv.includes('--e11')?'e11':process.argv.includes('--d1-persistence')?'d1-persistence':process.argv.includes('--d1')?'d1':process.argv.includes('--c-persistence')?'c-persistence':process.argv.includes('--c')?'c':process.argv.includes('--d0')?'d0':process.argv.includes('--b')?'b':process.argv.includes('--a1')?'a1':'a0';
+const milestone=process.argv.includes('--e')?'e':process.argv.includes('--reconstruction-proof')?'reconstruction-proof':process.argv.includes('--e13')?'e13':process.argv.includes('--e12')?'e12':process.argv.includes('--e11')?'e11':process.argv.includes('--d1-persistence')?'d1-persistence':process.argv.includes('--d1')?'d1':process.argv.includes('--c-persistence')?'c-persistence':process.argv.includes('--c')?'c':process.argv.includes('--d0')?'d0':process.argv.includes('--b')?'b':process.argv.includes('--a1')?'a1':'a0';
 const profile = await mkdtemp(path.join(tmpdir(), `mutable-${milestone}-`));
 let server, chrome, socket;
 const interactions = new Set();

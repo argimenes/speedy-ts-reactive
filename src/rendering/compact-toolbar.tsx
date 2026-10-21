@@ -1,5 +1,5 @@
-import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from "solid-js";
-import { ApplicationSurfacePortal as Portal } from "./window-manager";
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack, type JSX } from "solid-js";
+import { ApplicationSurfacePortal as Portal, useManagedWindowOwner, useManagedViewActivity } from "./window-manager";
 
 export type Toolset = "Typography" | "Annotations" | "Visual effects" | "Selection";
 export const toolsets: readonly Toolset[] = ["Typography", "Annotations", "Visual effects", "Selection"];
@@ -45,6 +45,15 @@ export function CompactToolbar(props: {
     setPanel(undefined);
     if (returnFocus) (opener?.isConnected ? opener : moreButton).focus({ preventScroll: true });
   };
+  const owner = useManagedWindowOwner(), activity = useManagedViewActivity();
+  const ownerVisible = createMemo(() => activity()?.visible);
+  createEffect(() => {
+    ownerVisible();
+    if (owner) owner.manager.geometry.controllers.get(owner.windowId)?.rectangle();
+    // Ephemeral anchor: dismiss without moving focus when its host changes.
+    // Stateful inspectors use their own retained placement policy instead.
+    untrack(() => close());
+  });
   const locate = () => {
     const rect = root.getBoundingClientRect();
     const top = Math.min(rect.bottom + 4, window.innerHeight - 100);
