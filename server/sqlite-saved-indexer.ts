@@ -49,17 +49,19 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
             candidates.push({file,stamp,...inspection,native:n});
           }catch(e:any){issues.push({path:file,message:e.message});}
         }
-        const resources=new Map<string,string>(),blocks=new Map<string,string>();
+        const resources=new Map<string,string>(),blocks=new Map<string,string>(),blocked=new Set<string>();
         for(const c of candidates){
-          if(resources.has(c.resourceId))issues.push({path:c.file,message:`Duplicate Resource identity also at ${resources.get(c.resourceId)}`});
+          const resource=resources.get(c.resourceId);
+          if(resource){blocked.add(resource);blocked.add(c.file);issues.push({path:c.file,message:`Duplicate Resource identity also at ${resource}`});issues.push({path:resource,message:`Duplicate Resource identity also at ${c.file}`});}
           resources.set(c.resourceId,c.file);
-          for(const id of c.blockIds){if(blocks.has(id))issues.push({path:c.file,message:`Duplicate Block identity also at ${blocks.get(id)}`});blocks.set(id,c.file);}
+          for(const id of c.blockIds){const prior=blocks.get(id);if(prior&&prior!==c.file){blocked.add(prior);blocked.add(c.file);issues.push({path:c.file,message:`Duplicate Block identity also at ${prior}`});issues.push({path:prior,message:`Duplicate Block identity also at ${c.file}`});}blocks.set(id,c.file);}
         }
-        if(await store.readScopeFence(vault,signal)!==initialFence)issues.push({path:vault,message:'Vault changed during discovery'});
+        if(await store.readScopeFence(vault,signal)!==initialFence){const message='Vault changed during discovery';await client.indexIssue(vault,message);return {complete:false,issues:[...issues,{path:vault,message}],reconciled:[],removed:[]};}
         await checkpoint('discovered',{candidates});signal?.throwIfAborted();
         const old=await client.inventory();
-        // An unreadable/unknown candidate could claim an existing identity. Fail closed globally.
-        if(issues.length){for(const issue of issues)await client.indexIssue(issue.path??vault,issue.message);return {complete:false,issues,reconciled:[],removed:[]};}
+        // Per-file failures do not block independent valid resources. Keep
+        // incomplete coverage explicit and never use a partial scan to delete.
+        for(const issue of issues)await client.indexIssue(issue.path??vault,issue.message);
         const reconciled:any[]=[],removed:string[]=[];
         const revalidate=async(c:any,fence:string)=>{
           signal?.throwIfAborted();
@@ -69,9 +71,11 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
           signal?.throwIfAborted();
         };
         for(const c of candidates){
+          if(blocked.has(c.file))continue;
           let staged:any;
           try {
             const previous=old.find((r:any)=>r.guid===c.resourceId);
+            if(previous&&previous.path!==c.file&&issues.length)throw Error('Cannot relocate an indexed identity while saved coverage is incomplete');
             if(previous&&previous.path!==c.file&&c.native&&!c.native.baseline.locationRevision)throw Error('External native move needs explicit storage binding reconciliation');
             // A prior SQL write changes only reserved .mutable data, excluded from source fencing.
             const bytes=await locked('capture',async()=>{await revalidate(c,initialFence);return store.read(c.file);});
@@ -88,8 +92,16 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
               await revalidate(c,initialFence);
               reconciled.push({...result,extractionTimings:staged.timings});
             });
-          }catch(e:any){if(staged){const t=performance.now();try{await client.discardSaved(staged.token);}finally{timings.discardMs+=performance.now()-t;}}if(signal?.aborted)throw e;await client.indexIssue(c.file,e.message);return {complete:false,issues:[{path:c.file,message:e.message}],reconciled,removed};}
+          }catch(e:any){
+            if(staged){const t=performance.now();try{await client.discardSaved(staged.token);}finally{timings.discardMs+=performance.now()-t;}}
+            if(signal?.aborted)throw e;
+            issues.push({path:c.file,message:e.message});await client.indexIssue(c.file,e.message);
+            // Storage changes invalidate all captured candidates; a bad projection
+            // or identity conflict only invalidates its own file.
+            if(await store.readScopeFence(vault,signal)!==initialFence)return {complete:false,issues,reconciled,removed};
+          }
         }
+        if(issues.length)return {complete:false,issues,reconciled,removed};
         for(const prior of old)if(!resources.has(prior.guid)){
           try {
             signal?.throwIfAborted();const expected=await client.deletionBaseline(prior.guid);

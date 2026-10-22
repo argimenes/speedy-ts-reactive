@@ -51,6 +51,31 @@ for(const fault of ['malformed','duplicate','duplicate-block','symlink','inspect
  const result=await f.index().refresh();assert.equal(result.complete,false);assert.deepEqual(result.removed,[]);assert.ok(await f.client.resourceProjection('r'));
 });
 
+for(const fault of ['malformed','duplicate','duplicate-block','stage-failure'])test(`${fault} does not block independent Documents or authorize deletion`,async t=>{
+ const f=await fixture(t);await f.write('removed.json',document('retained'));await f.index().refresh();await fs.unlink(path.join(f.root,'removed.json'));
+ await f.write('z-valid.json',document('valid'));
+ if(fault==='malformed')await f.write('a-bad.json','{broken');
+ if(fault==='duplicate'){await f.write('a-bad.json',document('bad'));await f.write('b-bad.json',document('bad'));}
+ if(fault==='duplicate-block'){await f.write('a-bad.json',document('bad'));const other=document('other');other.children[0].id='bad-text';await f.write('b-bad.json',other);}
+ if(fault==='stage-failure'){await f.write('a-bad.json',document('bad'));const stage=f.client.stageSaved.bind(f.client);f.client.stageSaved=(input,...args)=>{if(input.evidence.path==='a-bad.json')throw Error('Injected stage failure');return stage(input,...args);};}
+ const result=await f.index().refresh();assert.equal(result.complete,false);assert.ok(result.issues.length);assert.deepEqual(result.removed,[]);
+ assert.ok(await f.client.resourceProjection('valid'));assert.ok(await f.client.resourceProjection('retained'));assert.equal(await f.client.resourceProjection('bad'),null);assert.equal(await f.client.resourceProjection('other'),null);
+ assert.ok((await f.client.inspect()).mutable.counts.IndexIssue);
+});
+
+test('missing Block GUID recovery remains stable across refresh and leaves saved files untouched',async t=>{
+ const f=await fixture(t),d=document();delete d.children[0].id;await f.write('a.json',d);
+ const before=await fs.readFile(path.join(f.root,'a.json'));assert.equal((await f.index().refresh()).complete,true);
+ const first=await f.client.resourceProjection('r');assert.equal((await f.index().refresh()).reconciled[0].changedBlocks,0);
+ assert.deepEqual(body(await f.client.resourceProjection('r')),body(first));assert.deepEqual(await fs.readFile(path.join(f.root,'a.json')),before);
+});
+
+test('incomplete coverage cannot relocate an already indexed Resource identity',async t=>{
+ const f=await fixture(t);await f.write('a.json',document());await f.index().refresh();
+ await fs.rename(path.join(f.root,'a.json'),path.join(f.root,'moved.json'));await f.write('bad.json','{broken');await f.write('valid.json',document('valid'));
+ const result=await f.index().refresh();assert.equal(result.complete,false);assert.equal((await f.client.resourceProjection('r')).resource.path,'a.json');assert.ok(await f.client.resourceProjection('valid'));
+});
+
 for(const change of ['edit','new-duplicate','cancel'])test(`${change} between staging and commit cannot publish stale or partial rows`,async t=>{
  const f=await fixture(t);await f.write('a.json',document());await f.index().refresh();const before=await f.client.resourceProjection('r');await f.write('a.json',document('r','Next saved text'));
  const controller=new AbortController();const index=f.index({checkpoint:async phase=>{if(phase!=='staged')return;if(change==='edit')await f.write('a.json',document('r','A later edit'));if(change==='new-duplicate')await f.write('duplicate.json',document());if(change==='cancel')controller.abort();}});

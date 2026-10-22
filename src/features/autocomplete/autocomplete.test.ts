@@ -109,6 +109,44 @@ it('all boundary controls are session-only, with no snapshots, commits, graph sc
  }finally{release();editor.dispose();root.remove();}
 });
 
+it.each(['((', '[['])('Scry %s crosses overlapping Entity references without editing and links unchanged prose additively',async trigger=>{
+ const {ReactiveEditor}=await import('../../reactive-editor/editor');const {createAutocompleteFeature}=await import('./index');
+ const old=[
+  {id:'left',type:'codex/entity-reference',value:'old-left',start:0,end:5},
+  {id:'inside',type:'codex/entity-reference',value:'old-inside',start:8,end:12},
+  {id:'right',type:'codex/entity-reference',value:'old-right',start:12,end:17},
+ ];
+ const editor=new ReactiveEditor({type:'document-block',children:[{id:'target',type:'standoff-editor-block',text:'one two three four',standoffProperties:old}]});
+ const view=editor.createView(),node=Object.values(view.state.nodes).find(n=>n.payload.id==='target')!;
+ const root=document.body.appendChild(document.createElement('div'));
+ const release=editor.mounts.register(node.key,{root,focusElement:root,inputPolicy:'standoff',focus:()=>{},restoreInlineSelection:()=>{}});editor.featureHost.activate(createAutocompleteFeature(editor));
+ try{
+  editor.completionInput!.intercept!(node.key,4,7,trigger,'insertText');
+  const data=editor.overlays.overlays.find(o=>o.viewType==='autocomplete')!.data as any,revision=editor.repository.state.revision,cells=[...node.inlineContent];
+  const snapshot=vi.spyOn(editor.repository,'snapshot'),commit=vi.spyOn(editor.repository,'commit');
+  data.adjust('end',1,true);expect(data.session.source).toMatchObject({start:4,end:13});
+  data.adjust('end',1,false);expect(data.session.source.end).toBe(14);
+  data.adjust('start',-1,false);expect(data.session.source.start).toBe(3);
+  data.adjust('start',-1,true);expect(data.session.source).toMatchObject({start:0,end:14});
+  expect(data.session.state.error).toBeFalsy();expect(snapshot).not.toHaveBeenCalled();expect(commit).not.toHaveBeenCalled();
+  expect(editor.repository.state.revision).toBe(revision);expect(editor.repository.canUndo()).toBe(false);
+  expect(node.payload.standoffProperties).toEqual(old);
+  const s=data.session.source;data.session.host.commit(s,{...entity,name:s.literal},s.literal);
+  expect(node.inlineContent).toEqual(cells);expect(node.payload.standoffProperties).toEqual([...old,expect.objectContaining({type:'codex/entity-reference',value:entity.id,start:0,end:13})]);
+  expect(commit).toHaveBeenCalledTimes(1);
+  editor.completionInput!.cancel();editor.repository.undo();expect(node.payload.standoffProperties).toEqual(old);expect(node.inlineContent).toEqual(cells);
+  editor.repository.redo();expect(node.payload.standoffProperties).toHaveLength(4);expect(node.inlineContent).toEqual(cells);
+ }finally{release();editor.dispose();root.remove();}
+});
+
+it.each(['code','style/code','text/literal'])('Scry still leaves %s annotations literal',async type=>{
+ const {ReactiveEditor}=await import('../../reactive-editor/editor');const {createAutocompleteFeature}=await import('./index');
+ const editor=new ReactiveEditor({type:'document-block',children:[{id:'target',type:'standoff-editor-block',text:'literal',standoffProperties:[{type,start:0,end:6}]}]});
+ const view=editor.createView(),node=Object.values(view.state.nodes).find(n=>n.payload.id==='target')!;
+ editor.featureHost.activate(createAutocompleteFeature(editor));
+ try{expect(editor.completionInput!.intercept!(node.key,0,7,'((','insertText')).toBe(false);expect(editor.overlays.overlays).toHaveLength(0);expect(editor.repository.canUndo()).toBe(false);}finally{editor.dispose();}
+});
+
 it('source highlighting resolves only two endpoints without changing cells, text, selection or layout',()=>{
  const highlights=new Map<string,Set<Range>>();
  vi.stubGlobal('CSS',{highlights});vi.stubGlobal('Highlight',Set);

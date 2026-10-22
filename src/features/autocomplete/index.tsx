@@ -70,7 +70,15 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
      {id:'date',name:'date',reason:'Insert today’s local ISO date'},
     ].filter(r=>['entity','link','date'].includes(r.id)||editor.commandRegistry.canExecute(r.id,{targetKey:source.nodeKey,args:undefined})),
     valid,
-    commit:(s,e,label)=>{if(!valid(s))throw Error('Stale source');if(api.text(s.nodeKey)?.properties.some(p=>!p.isDeleted&&p.type==='codex/entity-reference'&&Number(p.start)<s.end&&Number(p.end)>=s.start))throw Error('This phrase overlaps an existing Entity reference. Use reviewed occurrences to inspect the conflict.');const range=editor.textRanges.snapshot(s.nodeKey,s.start,s.end);api.replaceAndAnnotate!(range,label,'codex/entity-reference',e.id,{entityId:e.id,entityName:e.name},api.revision());restore(s,s.start+[...label].length);},
+    commit:(s,e,label)=>{
+     if(!valid(s))throw Error('Stale source');
+     const range=editor.textRanges.snapshot(s.nodeKey,s.start,s.end),metadata={entityId:e.id,entityName:e.name};
+     // Linking unchanged prose adds a standoff annotation. Replacing identical
+     // text would delete/rebase existing overlapping annotations and Cell IDs.
+     if(label===s.literal)api.annotate([[range]],'codex/entity-reference',e.id,metadata,api.revision(),'Link Scry mention');
+     else api.replaceAndAnnotate!(range,label,'codex/entity-reference',e.id,metadata,api.revision());
+     restore(s,s.start+[...label].length);
+    },
     reference:async(s,c,label)=>{const k=completionDocuments(editor,s.nodeKey),token=k.selection(editor.textRanges.snapshot(s.nodeKey,s.start,s.end));await k.createReference(token,c.data as DocumentTarget,label,()=>session.alive&&valid(s));restore(s,s.start+[...label].length);},
     command:(s,id)=>{
      if(id==='entity'||id==='link') {queueMicrotask(()=>open(s,id==='entity'?'entity':'document',''));return;}
@@ -109,7 +117,6 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     if(edge==='start')start=Math.min(next,end);else end=Math.max(next,start);
     if(start===s.start&&end===s.end)return;
     if(text(s.nodeKey,start,end).length>1000)throw Error('Scry phrases are limited to 1000 characters.');
-    if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&p.type==='codex/entity-reference'&&p.start<end&&p.end>=start))throw Error('Boundary movement would cross an existing Entity reference.');
     const updated=bracketSnapshot(s.nodeKey,start,end,s.brackets);
     session.update(updated,updated.literal);restore(updated,edge==='start'?start:end);
    }catch(e){session.fail(e);}
@@ -136,7 +143,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    }
    if(type!=='insertText'||!['[','(','[[','(('].includes(value)){selectedOpen=undefined;firstOpen=undefined;return false;}
    const n=editor.node(key);if(!n||editor.mounts.get(key)?.composing||editor.selections.sets[key]?.items.length>1)return false;
-   if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/code|literal/.test(p.type??'')&&p.start<=end&&p.end>=start))return false;
+   if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type??'')&&p.start<=end&&p.end>=start))return false;
    const char=value[0],prior=start>0?text(key,start-1,start):'',selected=selectedOpen;
    const ownsFirst=firstOpen?.key===key&&firstOpen.char===char&&n.inlineContent[start-1]===firstOpen.cell;
    if(value.length===1&&!ownsFirst){
@@ -173,7 +180,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    intercept(s.nodeKey,start,end,event.type==='paste'?event.clipboardData?.getData('text/plain')??'':'',event.type==='paste'?'insertFromPaste':'deleteByCut');event.preventDefault();event.stopPropagation();return true;
   },before(key,start,end,text,type){
    if(type!=='insertText'||text!==':'||end<=start||end-start>1000)return false;
-   const n=editor.node(key);if((n?.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/code|literal/.test(p.type??'')&&p.start<end&&p.end>=start))return false;
+   const n=editor.node(key);if((n?.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type??'')&&p.start<end&&p.end>=start))return false;
    try{const s=snapshot(key,start,end,false);open(s,'entity',s.literal+' : ');return true;}catch{return false;}
   },edited(key,caret,type){
    if(current?.source.brackets)return;
@@ -186,7 +193,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    if(!token){cancel();return;}
    if(!['@','/'].includes(text(key,token.start,token.start+1)))return;
    // Code/literal annotations are excluded; only this affected Block's metadata is read.
-   if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/code|literal/.test(p.type??'')&&p.start<caret&&p.end>=token.start)){cancel();return;}
+   if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type??'')&&p.start<caret&&p.end>=token.start)){cancel();return;}
    const source=snapshot(key,token.start,token.end,true);
    if(current?.source.nodeKey===key&&current.source.start===token.start&&current.state.kind===token.kind&&!current.state.expanded)current.update(source,token.input);
    else open(source,token.kind,token.input);

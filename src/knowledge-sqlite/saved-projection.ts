@@ -14,7 +14,7 @@ import { normalizePolicy, opaqueType, nativeTextTypes, sourceTextTypes, type Ext
 import type { RepositoryState, ContentRecord } from '../block-tree/types';
 
 const namespace='38e2b9ce-d3e7-5a14-b67d-b265437bcad8';
-export const PROFILE='mutable-saved-sql-v2';
+export const PROFILE='mutable-saved-sql-v3';
 // Extraction changes invalidate evidence, not the stable identity of authored SQL objects.
 const identityProfile='mutable-saved-sql-v1';
 const digest=(v:string|Uint8Array)=>createHash('sha256').update(v).digest('hex');
@@ -59,8 +59,21 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
   const root=state.contents[state.placements[state.rootPlacementKey].contentKey];
   const blocks=Object.values(state.contents).filter(c=>!cell(c)),ids=new Set<string>();
   requireValue(blocks.length<=100000,'Block budget exceeded');
-  for(const c of blocks){requireValue(id(c.payload.id)&&!ids.has(c.payload.id),'missing/duplicate persistent Block identity');ids.add(c.payload.id);}
+  // Missing legacy Block IDs are recoverable. Use a stable resource-local GUID,
+  // never a random per-refresh identity or a rewrite of the source file. Keep
+  // provenance in the SQL attributes so these cannot masquerade as authored IDs.
   const key=(...parts:unknown[])=>uuid(JSON.stringify([identityProfile,vaultGuid,resourceId,...parts]),namespace);
+  const generated=new Set<string>(),visited=new Set<string>();
+  for(const c of blocks)if(id(c.payload.id)){requireValue(!ids.has(c.payload.id),'duplicate persistent Block identity');ids.add(c.payload.id);}
+  const identify=(ck:string,route:unknown[])=>{
+    if(visited.has(ck))return;visited.add(ck);const c=state.contents[ck];if(!c||cell(c))return;
+    if(!id(c.payload.id)){const guid=key('missing-block',route);requireValue(!ids.has(guid),'generated Block identity collision');c.payload.id=guid;ids.add(guid);generated.add(guid);}
+    const child=(pk:string,slot:string,ordinal:number)=>{const p=state.placements[pk];if(!p.externalReference&&!p.resolvedReference)identify(p.contentKey,[c.payload.id,slot,p.placementId??ordinal]);};
+    c.children.forEach((pk,i)=>child(pk,'children',i));Object.keys(c.ownedRelations).sort().forEach(slot=>child(c.ownedRelations[slot],slot,0));
+  };
+  identify(root.key,['root']);
+  // Retained native definitions have stable wire content keys, even unplaced.
+  for(const c of blocks)identify(c.key,['retained',c.key]);
   const diagnostics:string[]=[],warn=(s:string)=>{if(!diagnostics.includes(s))diagnostics.push(s);};
   const suppressed=new Set<string>();
   const suppress=(ck:string)=>{if(suppressed.has(ck))return;suppressed.add(ck);const c=state.contents[ck];for(const pk of [...c.children,...Object.values(c.ownedRelations)]){const p=state.placements[pk];if(p.kind==='owned'&&!p.externalReference&&!p.resolvedReference)suppress(p.contentKey);}};
@@ -75,7 +88,7 @@ export async function projectSaved(bytes:Uint8Array,vaultGuid:string,policy?:Ext
     const coordinate=c.inlineKind==='standoff'?'cell':nativeTextTypes.includes(c.viewType)?'utf16':null;
     const units=c.inlineContent.map(pk=>state.contents[state.placements[pk].contentKey]);
     const text=coordinate==='cell'?units.map(c=>c.viewType==='text-cell'?c.payload.text:'\ufffc').join(''):coordinate==='utf16'?String(p.text??''):null;
-    const attrs={payload:p,opaqueRelations:c.opaqueRelations,wireChildren:c.wireChildren,wireRelation:c.wireRelation,
+    const attrs={payload:p,...(generated.has(blockId)?{indexIdentity:{origin:'generated-missing-block',resourceId}}:{}),opaqueRelations:c.opaqueRelations,wireChildren:c.wireChildren,wireRelation:c.wireRelation,
       ...(c.inlineKind==='standoff'?{inlineObjects:units.flatMap((c,index)=>c.viewType==='image-cell'?[{index,payload:c.payload}]:[])}:{}),
       ...(manifest&&c===root?{workspaceDocuments:manifest.documents}: {})};
     const row={guid:blockId,resourceGuid:resourceId,entityGuid:null,typename:c.viewType,authoredType:String(p.type??c.viewType),text,coordinate,cellCount:c.inlineKind==='standoff'?units.length:null,

@@ -112,7 +112,27 @@ it('opaque application internals retain saved structural rows without entering t
   const p=await projectSaved(bytes(dto),vault);expect(p.blocks.find(b=>b.block.guid==='private')!.block.text).toBe('secret');expect(p.blocks.find(b=>b.block.guid==='private')!.runs).toEqual([]);expect(p.blocks.find(b=>b.block.guid==='plain')!.runs[0]).toMatchObject({text:'Visible 😀',boundaries:null});
 });
 
-it('missing/duplicate IDs, malformed ranges and unsupported formats do not become partial authoritative projections',async()=>{
+it('missing legacy Block IDs get repeatable resource-local GUIDs without rewriting source bytes or existing IDs',async()=>{
+  const dto:any=doc();delete dto.children[0].id;dto.children.push({type:'container-block',children:[{type:'text-block',text:'Missing nested identity'}]});
+  const saved=bytes(dto),original=saved.slice(),a=await projectSaved(saved,vault),b=await projectSaved(saved,vault);
+  expect(a).toEqual(b);expect(saved).toEqual(original);expect(dto.children[0].id).toBeUndefined();
+  expect(a.blocks.map(b=>b.block.guid)).toContain('doc');expect(a.blocks.map(b=>b.block.guid)).toContain('doc-other');
+  const generated=a.blocks.filter(b=>decodeAuthoredValue(JSON.parse(b.block.attributes)).indexIdentity);
+  expect(generated).toHaveLength(3);expect(new Set(generated.map(b=>b.block.guid)).size).toBe(3);
+  for(const b of generated){expect(b.block.guid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);expect(decodeAuthoredValue(JSON.parse(b.block.attributes)).indexIdentity).toEqual({origin:'generated-missing-block',resourceId:a.resourceId});}
+  dto.children[0].text='Changed text';const edited=await projectSaved(bytes(dto),vault);expect(edited.blocks.map(b=>b.block.guid)).toEqual(a.blocks.map(b=>b.block.guid));
+  dto.metadata.documentId='other-resource';const other=await projectSaved(bytes(dto),vault);expect(other.blocks[1].block.guid).not.toBe(a.blocks[1].block.guid);
+  const db=database();reconcile(db,a,evidence(a),null);reconcile(db,b,evidence(b),baseline(db,b.resourceId));expect(readProjection(db,a.resourceId).blocks).toHaveLength(a.blocks.length);
+});
+
+it('an ID-less workspace reference is indexed without loading or inventing its target Document',async()=>{
+  const manifest={kind:'speedy-workspace',schemaVersion:1,workspaceId:'workspace',documents:{'resource-doc':{documentId:'resource-doc',source:{kind:'document-store',folder:'.',filename:'doc.json'}}},root:{id:'workspace-root',type:'workspace-block',children:[{type:'document-reference-block',metadata:{documentId:'resource-doc'}}]}};
+  const a=await projectSaved(bytes(manifest),vault),b=await projectSaved(bytes(manifest),vault);
+  expect(a).toEqual(b);expect(a.blocks).toHaveLength(2);expect(a.rootBlockId).toBe('workspace-root');
+  const ref=a.blocks.find(b=>b.block.typename==='document-reference-block')!;expect(ref).toBeDefined();expect(ref.block.guid).not.toBe('resource-doc');
+});
+
+it('missing Resource identity, duplicate Block IDs, malformed ranges and unsupported formats fail validation',async()=>{
   for(const value of [{type:'document-block'},doc('doc',[{id:'doc-text',type:'text-block'}]),{...doc(),format:'future'},doc('doc',[{id:'bad',type:'standoff-editor-block',text:'x',standoffProperties:[{type:'future',start:0,end:4}]}])])await expect(projectSaved(bytes(value),vault)).rejects.toThrow();
 });
 

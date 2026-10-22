@@ -1,0 +1,19 @@
+{
+  "complete": true,
+  "resources": 2,
+  "hofmannMentions": 10,
+  "dbCounts": [
+    {
+      "id": "71df4b7c-9d90-4b9d-a1a2-77f99586bdf0",
+      "mentions": 10
+    }
+  ],
+  "partialIssues": [
+    {
+      "path": "broken.json",
+      "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    }
+  ],
+  "partialReconciled": 2,
+  "originalFilesUnchanged": true
+}
