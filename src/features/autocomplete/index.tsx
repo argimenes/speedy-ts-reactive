@@ -4,7 +4,7 @@ import { keyboard, chord } from '../../feature-api';
 import { annotationCapabilities } from '../../application/annotation-capabilities';
 import { completionDocuments } from '../../application/completion-documents';
 import {graphemeBoundaries} from '../../input/graphemes';
-import {moveBoundary,nextWordLength} from './brackets';
+import {moveBoundary,nextWordLength,boundaryNavigator} from './brackets';
 import { invocation } from './model';
 import { CompletionSession, type CompletionSource } from './session';
 import { CompletionPopup } from './view';
@@ -29,47 +29,34 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    const n=editor.node(s.nodeKey),handle=editor.mounts.get(s.nodeKey);
    return !!n&&!!handle?.root.isConnected&&!handle.root.closest('[hidden],[inert]')&&!handle.composing&&n.viewId===s.viewId&&n.contentKey===s.contentKey&&n.placementKey===s.placementKey&&(editor.repository.state.contents[n.contentKey]?.inlineRevision??0)===s.version;
   };
-  const removeDelimiters=(s:CompletionSource)=>{
-   if(!s.brackets||!s.delimiters)return;
-   const n=editor.node(s.nodeKey);if(!n||n.contentKey!==s.contentKey||n.viewId!==s.viewId||n.placementKey!==s.placementKey)return;
-   const positions=s.delimiters.map(key=>n.inlineContent.indexOf(key));
-   // Identity, not matching text: never adopt or remove someone else's brackets.
-   if(positions.some(i=>i<0)||positions[1]!==positions[0]+1||positions[3]!==positions[2]+1)return;
-   editor.commands.transaction('Cancel Scry brackets',()=>{
-    editor.commands.replaceInlineRange(s.nodeKey,positions[2],positions[2]+2,'');
-    editor.commands.replaceInlineRange(s.nodeKey,positions[0],positions[0]+2,'');
-   });
-   return {start:positions[0],end:positions[2]-2};
-  };
   const cancel=(keepLiteral=false)=>{
    if(current?.alive&&entityControls&&!entityControls.canClose())return;
-   const old=current,s=old?.source,h=s?editor.mounts.get(s.nodeKey):undefined,selection=h?.captureInlineSelection?.();
-   const focused=document.activeElement===h?.focusElement,fromPopup=!!document.activeElement?.closest('.autocomplete-workstation');
-   current=undefined;entityControls=undefined;selectedOpen=undefined;firstOpen=undefined;
-   releaseBindings.splice(0).forEach(release=>release());old?.dispose();
-   const removed=old&&!keepLiteral?removeDelimiters(old.source):undefined;
-   stopInventory?.();stopInventory=undefined;const key=overlay;overlay=undefined;if(key)editor.overlays.close(key,false,true);
-   if(s&&removed&&h?.root.isConnected&&!h.root.closest('[hidden],[inert]')){
-    const caret=Math.max(removed.start,Math.min(removed.end,(selection?.head??s.end-2)-2));
-    if(focused){h.restoreInlineSelection?.({anchor:caret,head:caret});editor.selections.setPrimary(s.nodeKey,s.contentKey,s.viewId,caret);}
-    else if(fromPopup)restore(s,removed.end);
+   const old=current,s=old?.source;
+   // Only an explicit Keep literal action authors punctuation. Dismissal and
+   // boundary movement are interaction state, never Document edits.
+   if(keepLiteral&&s?.brackets&&valid(s)){
+    const opening=s.brackets==='mention'?'((':'[[',closing=s.brackets==='mention'?'))':']]';
+    editor.commands.replaceInlineRange(s.nodeKey,s.start,s.end,opening+s.literal+closing,'Keep literal Scry brackets');
    }
+   current=undefined;entityControls=undefined;selectedOpen=undefined;firstOpen=undefined;boundaryCache=undefined;
+   releaseBindings.splice(0).forEach(release=>release());old?.dispose();
+   stopInventory?.();stopInventory=undefined;const key=overlay;overlay=undefined;if(key)editor.overlays.close(key,false,true);
   };
   const restore=(s:CompletionSource,end:number)=>{queueMicrotask(()=>{const n=editor.node(s.nodeKey),h=editor.mounts.get(s.nodeKey);if(!h?.root.isConnected||h.root.closest('[hidden],[inert]')||n?.contentKey!==s.contentKey)return;editor.focus.request(s.nodeKey,{reason:'autocomplete-commit'});h.restoreInlineSelection?.({anchor:end,head:end});editor.selections.setPrimary(s.nodeKey,s.contentKey,s.viewId,end);});};
   const entityData=(session:CompletionSession,review=false,authority=false):EntitySearchData=>{
     session.assertSource(); const s=session.source, parsed=session.parsed;
     // Review annotations on the authored phrase; opening the tool never deletes syntax.
     let start=s.start,end=s.end;
-    if(s.brackets){start+=2;end-=2;}else if(s.inline){start++;end=start+[...parsed.mention].length;}
+    if(!s.brackets&&s.inline){start++;end=start+[...parsed.mention].length;}
     const ranges=end>start?[{...editor.textRanges.snapshot(s.nodeKey,start,end),coordinate:'cell' as const}]:[];
-    return {entityRanges:ranges,entityRevision:api.revision(),entityQuery:parsed.mention,workstation:{query:parsed.createName??parsed.query,review,entityId:session.state.selected,createName:parsed.createName,authority,...(s.brackets?{scry:{mode:s.brackets,valid:()=>session.alive&&valid(session.source),commit:(entity)=>{session.assertSource();const label=s.brackets==='autocomplete'?entity.name:session.state.sourceText;if(!label)throw Error('Type mention text before linking.');session.host.commit(session.source,entity,label);session.complete();},batch:(commit)=>{session.assertSource();editor.commands.transaction('Scry reviewed Entity references',()=>{commit();removeDelimiters(session.source);});restore(session.source,session.source.end-4);session.complete();},cancel:()=>session.close(),keepLiteral:()=>{if(!entityControls||entityControls.canClose())session.close(true);}}}:{}),...(s.inline?{invocation:editor.textRanges.snapshot(s.nodeKey,s.start,s.end)}:{})}};
+    return {entityRanges:ranges,entityRevision:api.revision(),entityQuery:parsed.mention,workstation:{query:parsed.createName??parsed.query,review,entityId:session.state.selected,createName:parsed.createName,authority,...(s.brackets?{scry:{mode:s.brackets,valid:()=>session.alive&&valid(session.source),commit:(entity)=>{session.assertSource();const label=s.brackets==='autocomplete'?entity.name:session.state.sourceText;if(!label)throw Error('Type mention text before linking.');session.host.commit(session.source,entity,label);session.complete();},batch:(commit)=>{session.assertSource();commit();restore(session.source,session.source.end);session.complete();},cancel:()=>session.close(),keepLiteral:()=>{if(!entityControls||entityControls.canClose())session.close(true);}}}:{}),...(s.inline&&!s.brackets?{invocation:editor.textRanges.snapshot(s.nodeKey,s.start,s.end)}:{})}};
   };
   const open=(source:CompletionSource,kind:CompletionSession['state']['kind'],input:string)=>{
    cancel();if(current)return;
    if(kind==='entity'){
     const documentScope=api.scope(source.nodeKey,'document');
     const existing=editor.overlays.overlays.find(o=>(o.viewType==='entity-search'||o.viewType==='autocomplete'&&(o.data as any)?.entitySearch)&&editor.node(o.ownerKey)?.viewId===source.viewId&&api.scope(o.ownerKey,'document').rootKey===documentScope.rootKey);
-    if(existing){editor.overlays.close(existing.key,false);if(editor.overlays.overlays.some(o=>o.key===existing.key)){removeDelimiters(source);editor.focus.request(existing.key,{reason:'entity-tool-pending'});return;}}
+    if(existing){editor.overlays.close(existing.key,false);if(editor.overlays.overlays.some(o=>o.key===existing.key)){editor.focus.request(existing.key,{reason:'entity-tool-pending'});return;}}
    }
    let service:import("../../feature-api/entities").EntityService|undefined;try{if(kind!=='entity')service=api.entities?.(source.nodeKey);}catch{/* Non-Entity commands remain usable. */}
    const session=new CompletionSession({service,historyScope:()=>service?.historyScope?.()??Promise.resolve(`session:${source.viewId}`),
@@ -109,35 +96,32 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    binding('next','ArrowDown');binding('previous','ArrowUp');binding('choose','Enter');binding('close','Escape');binding('review','a',['Ctrl']);
    for(const edge of ['start','end'])for(const unit of ['word','character'])for(const direction of [-1,1])binding(`${edge}.${unit}.${direction}`,direction<0?'ArrowLeft':'ArrowRight',['Ctrl',...(edge==='start'?['Alt' as const]:[]),...(unit==='character'?['Shift' as const]:[])]);
   };
-  const bracketSnapshot=(key:string,start:number,end:number,mode:NonNullable<CompletionSource['brackets']>)=>{
-   const s=snapshot(key,start,end,true),n=editor.node(key)!;return {...s,brackets:mode,delimiters:[...n.inlineContent.slice(start,start+2),...n.inlineContent.slice(end-2,end)]};
-  };
+  const bracketSnapshot=(key:string,start:number,end:number,mode:NonNullable<CompletionSource['brackets']>)=>({...snapshot(key,start,end,true),brackets:mode});
+  let boundaryCache:{key:string;version:number;move:(position:number,direction:-1|1,word:boolean)=>number}|undefined;
   const changeBoundary=(session:CompletionSession,edge:'start'|'end',direction:-1|1,word:boolean)=>{
    try{
     session.assertSource();const s=session.source;if(!s.brackets||entityControls?.busy())return;
-    const n=editor.node(s.nodeKey)!,raw=text(s.nodeKey,0,n.inlineContent.length),cells=[...raw];
-    const plain=[...cells.slice(0,s.start),...cells.slice(s.start+2,s.end-2),...cells.slice(s.end)].join('');
-    let start=s.start,end=s.end-4;const next=moveBoundary(plain,edge==='start'?start:end,direction,word);
+    const n=editor.node(s.nodeKey)!;
+    if(boundaryCache?.key!==s.nodeKey||boundaryCache.version!==s.version){
+     boundaryCache={key:s.nodeKey,version:s.version,move:boundaryNavigator(text(s.nodeKey,0,n.inlineContent.length))};
+    }
+    let {start,end}=s;const next=boundaryCache.move(edge==='start'?start:end,direction,word);
     if(edge==='start')start=Math.min(next,end);else end=Math.max(next,start);
-    if(start===s.start&&end===s.end-4)return;
-    if([...plain].slice(start,end).join('').length>1000)throw Error('Scry phrases are limited to 1000 characters.');
-    // Do not extend across inline objects or existing Entity references.
-    if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&p.type==='codex/entity-reference'&&p.start<Math.max(s.end,end+4)&&p.end>=Math.min(s.start,start)))throw Error('Boundary movement would cross an existing Entity reference.');
-    const opening=s.brackets==='mention'?'((':'[[',closing=s.brackets==='mention'?'))':']]';
-    editor.commands.transaction('Move Scry boundary',()=>{
-     removeDelimiters(s);editor.commands.replaceInlineRange(s.nodeKey,end,end,closing);editor.commands.replaceInlineRange(s.nodeKey,start,start,opening);
-    });
-    const updated=bracketSnapshot(s.nodeKey,start,end+4,s.brackets);session.update(updated,updated.literal.slice(2,-2));restore(updated,edge==='start'?start+2:end+2);
+    if(start===s.start&&end===s.end)return;
+    if(text(s.nodeKey,start,end).length>1000)throw Error('Scry phrases are limited to 1000 characters.');
+    if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&p.type==='codex/entity-reference'&&p.start<end&&p.end>=start))throw Error('Boundary movement would cross an existing Entity reference.');
+    const updated=bracketSnapshot(s.nodeKey,start,end,s.brackets);
+    session.update(updated,updated.literal);restore(updated,edge==='start'?start:end);
    }catch(e){session.fail(e);}
   };
-  const run=(id:string)=>{const s=current;if(!s)return false;if(entityControls&&['autocomplete.next','autocomplete.previous','autocomplete.choose','autocomplete.review','autocomplete.close'].includes(id))return entityControls.run(id.slice(13));if(id==='autocomplete.next')s.move(1);else if(id==='autocomplete.previous')s.move(-1);else if(id==='autocomplete.choose')void s.choose();else if(id==='autocomplete.close'){const source=s.source;cancel();restore(source,source.brackets?source.end-4:source.end);}else if(id==='autocomplete.review'){return false;}else if(/^autocomplete\.(start|end)\.(word|character)\.-?1$/.test(id)){const [,edge,unit,dir]=id.split('.');changeBoundary(s,edge as 'start'|'end',Number(dir) as -1|1,unit==='word');}else return false;return true;};
+  const run=(id:string)=>{const s=current;if(!s)return false;if(entityControls&&['autocomplete.next','autocomplete.previous','autocomplete.choose','autocomplete.review','autocomplete.close'].includes(id))return entityControls.run(id.slice(13));if(id==='autocomplete.next')s.move(1);else if(id==='autocomplete.previous')s.move(-1);else if(id==='autocomplete.choose')void s.choose();else if(id==='autocomplete.close'){const source=s.source;cancel();restore(source,source.end);}else if(id==='autocomplete.review'){return false;}else if(/^autocomplete\.(start|end)\.(word|character)\.-?1$/.test(id)){const [,edge,unit,dir]=id.split('.');changeBoundary(s,edge as 'start'|'end',Number(dir) as -1|1,unit==='word');}else return false;return true;};
   const intercept=(key:string,start:number,end:number,value:string,type:string):boolean=>{
    const session=current,s=session?.source;
    if(s?.brackets){
     if(key!==s.nodeKey){cancel();return false;}
     if(!valid(s)){cancel();return true;}
     if(session!.state.pending||entityControls?.busy())return true;
-    const lo=s.start+2,hi=s.end-2;
+    const lo=s.start,hi=s.end;
     if(start<lo||end>hi){restore(s,Math.max(lo,Math.min(hi,start)));return true;}
     if(type==='insertText'&&value===':'&&start!==end){session!.input('');session!.expand();queueMicrotask(()=>document.querySelector<HTMLInputElement>('.autocomplete-workstation input')?.focus());return true;}
     if(!['insertText','insertFromPaste','deleteByCut','deleteContentBackward','deleteContentForward','deleteWordBackward','deleteWordForward'].includes(type))return true;
@@ -148,7 +132,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     if(start===end&&!value)return true;
     editor.commands.replaceInlineRange(key,start,end,value);
     const updated=bracketSnapshot(key,s.start,s.end+[...value].length-(end-start),s.brackets);
-    session!.update(updated,updated.literal.slice(2,-2));restore(updated,start+[...value].length);return true;
+    session!.update(updated,updated.literal);restore(updated,start+[...value].length);return true;
    }
    if(type!=='insertText'||!['[','(','[[','(('].includes(value)){selectedOpen=undefined;firstOpen=undefined;return false;}
    const n=editor.node(key);if(!n||editor.mounts.get(key)?.composing||editor.selections.sets[key]?.items.length>1)return false;
@@ -167,25 +151,25 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    let finish=selectedEnd??end;
    if(finish===start){let suffix='';for(let i=start;i<Math.min(n.inlineContent.length,start+1000);i++){const c=editor.node(n.inlineContent[i]);if(c?.viewType!=='text-cell')break;suffix+=String(c.payload.text??'');if(/\s/u.test(String(c.payload.text??'')))break;}finish=start+nextWordLength(suffix);}
    try{text(key,start,finish);}catch{return false;}
-   cancel();const closing=char==='('?'))':']]';
-   editor.commands.transaction('Start Scry brackets',()=>{
-    editor.commands.replaceInlineRange(key,finish,finish,closing);editor.commands.replaceInlineRange(key,start,start,value.length===2?value:char);
-   });
-   const source=bracketSnapshot(key,begin,finish+value.length+2,char==='('?'mention':'autocomplete');
-   open(source,'entity',source.literal.slice(2,-2));restore(source,source.end-2);return true;
+   cancel();
+   // The first typed opener is owned input; consume it once on recognition.
+   // The second opener and both displayed brackets are interaction chrome.
+   if(value.length===1){editor.commands.replaceInlineRange(key,begin,begin+1,'','Start Scry');finish--;}
+   const source=bracketSnapshot(key,begin,finish,char==='('?'mention':'autocomplete');
+   open(source,'entity',source.literal);restore(source,source.end);return true;
   };
   editor.completionInput={cancel,intercept,pointer(event){
    const s=current?.source;if(!s?.brackets)return false;
    const target=event.target as Element;
    if(target.closest?.('.autocomplete-workstation,.reactive-entity-search'))return false;
    const resolved=editor.mounts.resolveEvent(event),point=resolved?.handle.inlinePointAt?.(event.clientX,event.clientY);
-   if(resolved?.nodeKey!==s.nodeKey||point===undefined||point<s.start+2||point>s.end-2){cancel();return false;}
+   if(resolved?.nodeKey!==s.nodeKey||point===undefined||point<s.start||point>s.end){cancel();return false;}
    editor.selectionGestures.cancelGesture();return true;
   },clipboard(event){
    const s=current?.source,resolved=editor.mounts.resolveEvent(event);if(!s?.brackets||resolved?.nodeKey!==s.nodeKey)return false;
    const range=resolved.handle.captureInlineSelection?.();if(!range)return false;
    const start=Math.min(range.anchor,range.head),end=Math.max(range.anchor,range.head);
-   if(event.type==='cut'&&event.clipboardData)event.clipboardData.setData('text/plain',text(s.nodeKey,Math.max(s.start+2,start),Math.min(s.end-2,end)));
+   if(event.type==='cut'&&event.clipboardData)event.clipboardData.setData('text/plain',text(s.nodeKey,Math.max(s.start,start),Math.min(s.end,end)));
    intercept(s.nodeKey,start,end,event.type==='paste'?event.clipboardData?.getData('text/plain')??'':'',event.type==='paste'?'insertFromPaste':'deleteByCut');event.preventDefault();event.stopPropagation();return true;
   },before(key,start,end,text,type){
    if(type!=='insertText'||text!==':'||end<=start||end-start>1000)return false;
@@ -215,16 +199,16 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    const resolved=editor.mounts.resolveEvent(event);
    if(!inside&&resolved?.nodeKey!==s.source.nodeKey){cancel();return false;}
    // Native field editing, Save, history, copying and Tab are never completion shortcuts.
-   if((event.metaKey||event.ctrlKey)&&['s','z','y'].includes(event.key.toLowerCase())){if(!inside)cancel(event.key.toLowerCase()!=='s');return false;}
+   if((event.metaKey||event.ctrlKey)&&['s','z','y'].includes(event.key.toLowerCase())){if(!inside)cancel();return false;}
    if(event.key==='Tab'){if(!inside)cancel();return false;}
    if(inside&&target.closest('button,select')&&['Enter','ArrowUp','ArrowDown'].includes(event.key))return false;
    if(!inside&&s.source.brackets&&event.metaKey&&event.key.toLowerCase()==='a'){
-    event.preventDefault();event.stopPropagation();resolved?.handle.restoreInlineSelection?.({anchor:s.source.start+2,head:s.source.end-2});return true;
+    event.preventDefault();event.stopPropagation();resolved?.handle.restoreInlineSelection?.({anchor:s.source.start,head:s.source.end});return true;
    }
    if(!inside&&event.ctrlKey&&event.key.toLowerCase()==='a'&&!s.source.brackets)return false;
    if(inside&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return false;
    if(!inside&&s.source.brackets&&(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)&&(!event.ctrlKey||['Home','End'].includes(event.key))||['ArrowUp','ArrowDown'].includes(event.key)&&(event.shiftKey||event.metaKey||event.altKey||event.ctrlKey))){
-    const r=resolved?.handle.captureInlineSelection?.(),lo=s.source.start+2,hi=s.source.end-2;if(!r)return false;
+    const r=resolved?.handle.captureInlineSelection?.(),lo=s.source.start,hi=s.source.end;if(!r)return false;
     const forward=['ArrowRight','ArrowDown','End'].includes(event.key),position=event.key==='Home'?lo:event.key==='End'?hi:moveBoundary(s.state.sourceText,r.head-lo,forward?1:-1,false)+lo;
     event.preventDefault();event.stopPropagation();resolved?.handle.restoreInlineSelection?.({anchor:event.shiftKey?r.anchor:position,head:position});return true;
    }

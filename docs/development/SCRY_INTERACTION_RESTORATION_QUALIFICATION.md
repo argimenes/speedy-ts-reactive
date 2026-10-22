@@ -1,5 +1,7 @@
 # Scry interaction restoration — qualification addendum
 
+**Superseded boundary implementation:** see [Scry boundary investigation and correction](SCRY_BOUNDARY_MOVEMENT_INVESTIGATION.md). Brackets are now transient markers; movement and cancellation do not rewrite Document content. Earlier descriptions of persisted delimiter cleanup below describe the previous implementation.
+
 22 October 2026. Corrective pass against `SCRY_INTERACTION_RESTORATION_FEATURE_BRIEF.md`; starting revision `8a83b23`. This supersedes the bracket-trigger and cancellation behaviour described in the earlier [autocomplete qualification](AUTOCOMPLETE_WORKSTATION_QUALIFICATION.md).
 
 ## Delivered behaviour

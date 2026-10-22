@@ -78,7 +78,13 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
       const origin = node?.viewType === "document-window-block" ? node.children.find(child => editor.node(child)?.viewType === "document-block") ?? key : key;
       const scope = locate(editor, origin, "document");
       const found=scopeNodes(editor,scope,['mutable/citation-block','mutable/web-article-block']).found;
-      const blockReferences=found.filter(({node})=>['mutable/citation-block','mutable/web-article-block'].includes(node.viewType)).map(({node})=>({contentKey:node.contentKey,properties:immutable(Array.isArray(node.payload.blockProperties)?node.payload.blockProperties:[])}));
+      const blockReferences=found.filter(({node})=>['mutable/citation-block','mutable/web-article-block'].includes(node.viewType)).map(({node})=>({
+        contentKey:node.contentKey,
+        // Detach only this Block's annotation metadata before freezing. Freezing
+        // a Solid store proxy violates its nested-property get invariants and
+        // crashes consumers (including Scry's Entity inventory).
+        properties:immutable(JSON.parse(JSON.stringify(Array.isArray(node.payload.blockProperties)?node.payload.blockProperties:[])) as Record<string,unknown>[]),
+      }));
       return { scope, blockReferences, texts: found.filter(({ node }) => node.viewType === "standoff-editor-block").map(({ node }) => immutable({
         key: node.key, contentKey: node.contentKey, placementKey: node.placementKey,
         version: editor.repository.state.contents[node.contentKey]?.inlineRevision ?? 0,

@@ -2,7 +2,7 @@ import { createStore, type SetStoreFunction } from 'solid-js/store';
 import type { CanonicalEntity, EntityService } from '../../feature-api/entities';
 import { parseInput, rank, type CompletionCandidate, type CompletionKind, type CompletionScope } from './model';
 import { usage, recordUsage, clearUsage } from './history';
-export interface CompletionSource { nodeKey: string; contentKey: string; placementKey: string; viewId: string; version: number; start: number; end: number; literal: string; inline: boolean; brackets?: 'mention'|'autocomplete'; delimiters?: string[] }
+export interface CompletionSource { nodeKey: string; contentKey: string; placementKey: string; viewId: string; version: number; start: number; end: number; literal: string; inline: boolean; brackets?: 'mention'|'autocomplete' }
 export interface CompletionHost {
   service?: EntityService;
   historyScope(): Promise<string>;
@@ -30,13 +30,13 @@ export class CompletionSession {
   private documentPool?: Promise<CompletionCandidate[]>;
   constructor(readonly host: CompletionHost, source: CompletionSource, kind: CompletionKind, input: string) {
     this.source = source;
-    [this.state,this.set] = createStore<State>({ phase:'active', sourceText:source.brackets?source.literal.slice(2,-2):source.inline?parseInput(input).mention:source.literal, searchQuery:parseInput(input).query, queryMode:input.includes(' : ')?'independent':'following-source', kind, input, scope:'blend' as CompletionScope, rows:[] as CompletionCandidate[], selected:'', busy:false, pending:false, error:'', expanded:!source.inline, revision:0 });
+    [this.state,this.set] = createStore<State>({ phase:'active', sourceText:source.brackets?source.literal:source.inline?parseInput(input).mention:source.literal, searchQuery:parseInput(input).query, queryMode:input.includes(' : ')?'independent':'following-source', kind, input, scope:'blend' as CompletionScope, rows:[] as CompletionCandidate[], selected:'', busy:false, pending:false, error:'', expanded:!source.inline, revision:0 });
     this.local = kind === 'entity' ? host.documentEntities() : [];
     this.refresh();
   }
   get alive() { return !this.disposed; }
   get parsed() { const parsed=parseInput(this.state.input); return {...parsed,query:this.state.searchQuery,mention:this.state.sourceText}; }
-  update(source: CompletionSource, input: string) { if(this.state.pending)return; this.source=source; const sourceText=source.brackets?source.literal.slice(2,-2):parseInput(input).mention; this.set({sourceText,...(this.state.queryMode==='following-source'?{input,searchQuery:parseInput(input).query}:{}),revision:this.state.revision+1}); this.refresh(); }
+  update(source: CompletionSource, input: string) { if(this.state.pending)return; this.source=source; const sourceText=source.brackets?source.literal:parseInput(input).mention; this.set({sourceText,...(this.state.queryMode==='following-source'?{input,searchQuery:parseInput(input).query}:{}),revision:this.state.revision+1}); this.refresh(); }
   input(input: string) { input=input.slice(0,1000);this.set({input,searchQuery:parseInput(input).query,queryMode:'independent'}); this.refresh(); }
   follow() { this.set({queryMode:'following-source',input:this.state.sourceText,searchQuery:this.state.sourceText});this.refresh(); }
   scope(scope: CompletionScope) { this.set('scope',scope); this.refresh(); }

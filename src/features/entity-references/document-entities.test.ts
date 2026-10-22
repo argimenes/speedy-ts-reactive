@@ -7,6 +7,26 @@ const cleanup: Array<() => void> = [];
 afterEach(() => cleanup.splice(0).reverse().forEach(dispose => dispose()));
 
 describe("document entity inventory", () => {
+  it.each(['mutable/citation-block','mutable/web-article-block'])('does not freeze live %s properties when opening the Entity inventory', type => {
+    const editor = new ReactiveEditor({type:'document-block',children:[
+      {id:'text',type:'standoff-editor-block',text:'Mention'},
+      {id:'resource',type,blockProperties:[{id:'ref',type:'codex/entity-reference',value:'entity',metadata:{entityName:'Entity'}}]},
+    ]});
+    const view=editor.createView('block-property-inventory');cleanup.push(()=>editor.dispose());
+    const node=Object.values(view.state.nodes).find(n=>n.payload.id==='resource')!;
+    const api=entityTestApi(editor), snapshot=vi.spyOn(editor.repository,'snapshot'),revision=editor.repository.state.revision;
+    const inventory=collectDocumentEntities(api,view.state.rootKey);
+    expect(inventory.rows).toEqual([expect.objectContaining({id:'entity',fallbackName:'Entity',documentMentions:1})]);
+    const properties=node.payload.blockProperties as any[];
+    expect(properties[0].metadata.entityName).toBe('Entity');
+    expect(Object.isFrozen(properties)).toBe(false);expect(Object.isFrozen(properties[0])).toBe(false);
+    const detached=api.documentAnnotations(view.state.rootKey).blockReferences![0].properties;
+    expect(Object.isFrozen(detached)).toBe(true);expect(Object.isFrozen(detached[0])).toBe(true);
+    expect(detached).not.toBe(properties);expect(detached[0]).not.toBe(properties[0]);
+    expect(snapshot).not.toHaveBeenCalled();expect(editor.repository.state.revision).toBe(revision);
+    editor.commands.setPayloadField(node.key,'blockProperties',[{id:'ref',type:'codex/entity-reference',value:'updated'}]);
+    expect(collectDocumentEntities(api,view.state.rootKey).rows[0].id).toBe('updated');
+  });
   it("reads annotation metadata without visiting character cells or making text snapshots", () => {
     const editor = new ReactiveEditor({ type: 'document-block', children: [{ id: 'letter', type: 'standoff-editor-block', text: 'Michelangelo '.repeat(500),
       standoffProperties: [{ id: 'artist', type: 'codex/entity-reference', value: 'artist', start: 0, end: 11 }] }] });

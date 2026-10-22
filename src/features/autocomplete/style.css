@@ -16,3 +16,5 @@
 .autocomplete-workstation footer { flex-shrink:0; padding-right:18px; font-size:11px; border-top:1px solid #d7d2c6; padding-top:6px; }
 .autocomplete-workstation [role=alert] { color:#9b2525; }
 .autocomplete-authority { border-top:1px solid #aaa; margin-top:8px; padding-top:6px; }
+/* Scry source range is presentation only; native selection/caret remain independent. */
+::highlight(mutable-scry-source) { background-color:#e5d2f5; }

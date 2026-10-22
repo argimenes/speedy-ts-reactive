@@ -296,7 +296,7 @@ export class InputGateway {
     this.bindings.cancelChord();
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
-      this.completion?.()?.cancel(true);
+      this.completion?.()?.cancel();
       resolved.handle.composing = true;
       this.caretEvents?.setComposing?.(true);
     }

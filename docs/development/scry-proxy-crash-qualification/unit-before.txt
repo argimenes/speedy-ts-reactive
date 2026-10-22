@@ -1,0 +1,29 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ❯ src/features/entity-references/document-entities.test.ts (5 tests | 2 failed) 329ms
+   × document entity inventory > does not freeze live mutable/citation-block properties when opening the Entity inventory 39ms
+     → 'get' on proxy: property '0' is a read-only and non-configurable data property on the proxy target but the proxy did not return its actual value (expected '#<Object>' but got '#<Object>')
+   × document entity inventory > does not freeze live mutable/web-article-block properties when opening the Entity inventory 11ms
+     → 'get' on proxy: property '0' is a read-only and non-configurable data property on the proxy target but the proxy did not return its actual value (expected '#<Object>' but got '#<Object>')
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/entity-references/document-entities.test.ts > document entity inventory > does not freeze live mutable/citation-block properties when opening the Entity inventory
+ FAIL  src/features/entity-references/document-entities.test.ts > document entity inventory > does not freeze live mutable/web-article-block properties when opening the Entity inventory
+TypeError: 'get' on proxy: property '0' is a read-only and non-configurable data property on the proxy target but the proxy did not return its actual value (expected '#<Object>' but got '#<Object>')
+ ❯ src/features/entity-references/document-entities.test.ts:24:73
+     22|     expect(Object.isFrozen(properties)).toBe(false);expect(Object.isFr…
+     23|     const detached=api.documentAnnotations(view.state.rootKey).blockRe…
+     24|     expect(Object.isFrozen(detached)).toBe(true);expect(Object.isFroze…
+       |                                                                         ^
+     25|     expect(detached).not.toBe(properties);expect(detached[0]).not.toBe…
+     26|     expect(snapshot).not.toHaveBeenCalled();expect(editor.repository.s…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 3 passed (5)
+   Start at  21:49:28
+   Duration  5.55s (transform 3.43s, setup 0ms, collect 4.22s, tests 329ms, environment 583ms, prepare 55ms)
+

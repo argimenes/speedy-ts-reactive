@@ -1,0 +1,598 @@
+{
+  "fixturePath": "vaults/imported/documents/edgar-allan-poe/masque-of-the-red-death-[1c48f303].ink",
+  "stats": {
+    "sourceCells": 926,
+    "sourceAt": 0,
+    "contents": 15802,
+    "placements": 15802
+  },
+  "measurements": [
+    {
+      "name": "end-word-right",
+      "records": [
+        {
+          "phase": "end-word-right",
+          "name": "snapshot",
+          "ms": 74.40000009536743
+        },
+        {
+          "phase": "end-word-right",
+          "name": "pruneUnreachable",
+          "ms": 20.5
+        },
+        {
+          "phase": "end-word-right",
+          "name": "diff",
+          "ms": 58
+        },
+        {
+          "phase": "end-word-right",
+          "name": "publish",
+          "ms": 128.90000009536743
+        },
+        {
+          "phase": "end-word-right",
+          "name": "replaceInlineRange",
+          "ms": 269.7000000476837
+        },
+        {
+          "phase": "end-word-right",
+          "name": "pruneUnreachable",
+          "ms": 19.5
+        },
+        {
+          "phase": "end-word-right",
+          "name": "diff",
+          "ms": 45.299999952316284
+        },
+        {
+          "phase": "end-word-right",
+          "name": "publish",
+          "ms": 129.20000004768372
+        },
+        {
+          "phase": "end-word-right",
+          "name": "replaceInlineRange",
+          "ms": 259.39999997615814
+        },
+        {
+          "phase": "end-word-right",
+          "name": "transaction",
+          "ms": 529.1000000238419
+        },
+        {
+          "phase": "end-word-right",
+          "name": "pruneUnreachable",
+          "ms": 22.09999990463257
+        },
+        {
+          "phase": "end-word-right",
+          "name": "diff",
+          "ms": 41.700000047683716
+        },
+        {
+          "phase": "end-word-right",
+          "name": "publish",
+          "ms": 125.69999992847443
+        },
+        {
+          "phase": "end-word-right",
+          "name": "replaceInlineRange",
+          "ms": 254.69999992847443
+        },
+        {
+          "phase": "end-word-right",
+          "name": "pruneUnreachable",
+          "ms": 18.800000071525574
+        },
+        {
+          "phase": "end-word-right",
+          "name": "diff",
+          "ms": 41.5
+        },
+        {
+          "phase": "end-word-right",
+          "name": "publish",
+          "ms": 127.30000007152557
+        },
+        {
+          "phase": "end-word-right",
+          "name": "replaceInlineRange",
+          "ms": 261.3000000715256
+        },
+        {
+          "phase": "end-word-right",
+          "name": "commit",
+          "ms": 318.10000002384186
+        },
+        {
+          "phase": "end-word-right",
+          "name": "transaction",
+          "ms": 1437.9000000953674
+        },
+        {
+          "phase": "end-word-right",
+          "name": "completion.key",
+          "ms": 1441.3999999761581
+        },
+        {
+          "phase": "end-word-right",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 10290.399999976158,
+          "ms": 1452
+        }
+      ],
+      "requests": 1,
+      "timerLag": 0,
+      "active": true,
+      "range": {
+        "start": 0,
+        "end": 23
+      },
+      "twoFramesMs": 1719.2999999523163
+    },
+    {
+      "name": "end-word-left",
+      "records": [
+        {
+          "phase": "end-word-left",
+          "name": "snapshot",
+          "ms": 68.69999992847443
+        },
+        {
+          "phase": "end-word-left",
+          "name": "pruneUnreachable",
+          "ms": 18.100000023841858
+        },
+        {
+          "phase": "end-word-left",
+          "name": "diff",
+          "ms": 50
+        },
+        {
+          "phase": "end-word-left",
+          "name": "publish",
+          "ms": 141
+        },
+        {
+          "phase": "end-word-left",
+          "name": "replaceInlineRange",
+          "ms": 269.89999997615814
+        },
+        {
+          "phase": "end-word-left",
+          "name": "pruneUnreachable",
+          "ms": 18
+        },
+        {
+          "phase": "end-word-left",
+          "name": "diff",
+          "ms": 38.90000009536743
+        },
+        {
+          "phase": "end-word-left",
+          "name": "publish",
+          "ms": 125.80000007152557
+        },
+        {
+          "phase": "end-word-left",
+          "name": "replaceInlineRange",
+          "ms": 249.20000004768372
+        },
+        {
+          "phase": "end-word-left",
+          "name": "transaction",
+          "ms": 519.1000000238419
+        },
+        {
+          "phase": "end-word-left",
+          "name": "pruneUnreachable",
+          "ms": 17.90000009536743
+        },
+        {
+          "phase": "end-word-left",
+          "name": "diff",
+          "ms": 42.799999952316284
+        },
+        {
+          "phase": "end-word-left",
+          "name": "publish",
+          "ms": 128.29999995231628
+        },
+        {
+          "phase": "end-word-left",
+          "name": "replaceInlineRange",
+          "ms": 253.79999995231628
+        },
+        {
+          "phase": "end-word-left",
+          "name": "pruneUnreachable",
+          "ms": 18.100000023841858
+        },
+        {
+          "phase": "end-word-left",
+          "name": "diff",
+          "ms": 45.5
+        },
+        {
+          "phase": "end-word-left",
+          "name": "publish",
+          "ms": 145.29999995231628
+        },
+        {
+          "phase": "end-word-left",
+          "name": "replaceInlineRange",
+          "ms": 271.89999997615814
+        },
+        {
+          "phase": "end-word-left",
+          "name": "commit",
+          "ms": 300.40000009536743
+        },
+        {
+          "phase": "end-word-left",
+          "name": "transaction",
+          "ms": 1414.1000000238419
+        },
+        {
+          "phase": "end-word-left",
+          "name": "completion.key",
+          "ms": 1416.8999999761581
+        },
+        {
+          "phase": "end-word-left",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 12079.799999952316,
+          "ms": 1425
+        }
+      ],
+      "requests": 1,
+      "timerLag": 0.19999992847442627,
+      "active": true,
+      "range": {
+        "start": 0,
+        "end": 13
+      },
+      "twoFramesMs": 1436
+    },
+    {
+      "name": "end-character-right",
+      "records": [
+        {
+          "phase": "end-character-right",
+          "name": "snapshot",
+          "ms": 62.799999952316284
+        },
+        {
+          "phase": "end-character-right",
+          "name": "pruneUnreachable",
+          "ms": 18.399999976158142
+        },
+        {
+          "phase": "end-character-right",
+          "name": "diff",
+          "ms": 49.5
+        },
+        {
+          "phase": "end-character-right",
+          "name": "publish",
+          "ms": 161
+        },
+        {
+          "phase": "end-character-right",
+          "name": "replaceInlineRange",
+          "ms": 289.89999997615814
+        },
+        {
+          "phase": "end-character-right",
+          "name": "pruneUnreachable",
+          "ms": 19.299999952316284
+        },
+        {
+          "phase": "end-character-right",
+          "name": "diff",
+          "ms": 41.60000002384186
+        },
+        {
+          "phase": "end-character-right",
+          "name": "publish",
+          "ms": 128
+        },
+        {
+          "phase": "end-character-right",
+          "name": "replaceInlineRange",
+          "ms": 253.20000004768372
+        },
+        {
+          "phase": "end-character-right",
+          "name": "transaction",
+          "ms": 543.1000000238419
+        },
+        {
+          "phase": "end-character-right",
+          "name": "pruneUnreachable",
+          "ms": 18.600000023841858
+        },
+        {
+          "phase": "end-character-right",
+          "name": "diff",
+          "ms": 40.200000047683716
+        },
+        {
+          "phase": "end-character-right",
+          "name": "publish",
+          "ms": 141.29999995231628
+        },
+        {
+          "phase": "end-character-right",
+          "name": "replaceInlineRange",
+          "ms": 266.5
+        },
+        {
+          "phase": "end-character-right",
+          "name": "pruneUnreachable",
+          "ms": 18.300000071525574
+        },
+        {
+          "phase": "end-character-right",
+          "name": "diff",
+          "ms": 42.89999997615814
+        },
+        {
+          "phase": "end-character-right",
+          "name": "publish",
+          "ms": 122.29999995231628
+        },
+        {
+          "phase": "end-character-right",
+          "name": "replaceInlineRange",
+          "ms": 249.39999997615814
+        },
+        {
+          "phase": "end-character-right",
+          "name": "commit",
+          "ms": 311.39999997615814
+        },
+        {
+          "phase": "end-character-right",
+          "name": "transaction",
+          "ms": 1433.3999999761581
+        },
+        {
+          "phase": "end-character-right",
+          "name": "completion.key",
+          "ms": 1436
+        },
+        {
+          "phase": "end-character-right",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 13821,
+          "ms": 1447
+        }
+      ],
+      "requests": 1,
+      "timerLag": 0.10000002384185791,
+      "active": true,
+      "range": {
+        "start": 0,
+        "end": 14
+      },
+      "twoFramesMs": 1477.2999999523163
+    },
+    {
+      "name": "end-character-left",
+      "records": [
+        {
+          "phase": "end-character-left",
+          "name": "snapshot",
+          "ms": 79.80000007152557
+        },
+        {
+          "phase": "end-character-left",
+          "name": "pruneUnreachable",
+          "ms": 18.700000047683716
+        },
+        {
+          "phase": "end-character-left",
+          "name": "diff",
+          "ms": 45.89999997615814
+        },
+        {
+          "phase": "end-character-left",
+          "name": "publish",
+          "ms": 125.89999997615814
+        },
+        {
+          "phase": "end-character-left",
+          "name": "replaceInlineRange",
+          "ms": 251.69999992847443
+        },
+        {
+          "phase": "end-character-left",
+          "name": "pruneUnreachable",
+          "ms": 18.5
+        },
+        {
+          "phase": "end-character-left",
+          "name": "diff",
+          "ms": 38.10000002384186
+        },
+        {
+          "phase": "end-character-left",
+          "name": "publish",
+          "ms": 124.39999997615814
+        },
+        {
+          "phase": "end-character-left",
+          "name": "replaceInlineRange",
+          "ms": 247
+        },
+        {
+          "phase": "end-character-left",
+          "name": "transaction",
+          "ms": 498.6999999284744
+        },
+        {
+          "phase": "end-character-left",
+          "name": "pruneUnreachable",
+          "ms": 17.700000047683716
+        },
+        {
+          "phase": "end-character-left",
+          "name": "diff",
+          "ms": 37.700000047683716
+        },
+        {
+          "phase": "end-character-left",
+          "name": "publish",
+          "ms": 124.39999997615814
+        },
+        {
+          "phase": "end-character-left",
+          "name": "replaceInlineRange",
+          "ms": 245.20000004768372
+        },
+        {
+          "phase": "end-character-left",
+          "name": "pruneUnreachable",
+          "ms": 17.90000009536743
+        },
+        {
+          "phase": "end-character-left",
+          "name": "diff",
+          "ms": 43.299999952316284
+        },
+        {
+          "phase": "end-character-left",
+          "name": "publish",
+          "ms": 121.39999997615814
+        },
+        {
+          "phase": "end-character-left",
+          "name": "replaceInlineRange",
+          "ms": 248.29999995231628
+        },
+        {
+          "phase": "end-character-left",
+          "name": "commit",
+          "ms": 299.3000000715256
+        },
+        {
+          "phase": "end-character-left",
+          "name": "transaction",
+          "ms": 1371.4000000953674
+        },
+        {
+          "phase": "end-character-left",
+          "name": "completion.key",
+          "ms": 1374.7999999523163
+        },
+        {
+          "phase": "end-character-left",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 15607.299999952316,
+          "ms": 1382
+        }
+      ],
+      "requests": 1,
+      "timerLag": 0.20000004768371582,
+      "active": true,
+      "range": {
+        "start": 0,
+        "end": 13
+      },
+      "twoFramesMs": 1407.5
+    },
+    {
+      "name": "source-type",
+      "records": [
+        {
+          "phase": "source-type",
+          "name": "commit",
+          "ms": 6.899999976158142
+        },
+        {
+          "phase": "source-type",
+          "name": "publish",
+          "ms": 6.899999976158142
+        },
+        {
+          "phase": "source-type",
+          "name": "replaceInlineRange",
+          "ms": 7.299999952316284
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0,
+      "active": true,
+      "range": {
+        "start": 0,
+        "end": 14
+      },
+      "twoFramesMs": 27.90000009536743
+    },
+    {
+      "name": "source-backspace",
+      "records": [
+        {
+          "phase": "source-backspace",
+          "name": "completion.key",
+          "ms": 0.10000002384185791
+        },
+        {
+          "phase": "source-backspace",
+          "name": "completion.key",
+          "ms": 0
+        },
+        {
+          "phase": "source-backspace",
+          "name": "commit",
+          "ms": 7.100000023841858
+        },
+        {
+          "phase": "source-backspace",
+          "name": "publish",
+          "ms": 7.100000023841858
+        },
+        {
+          "phase": "source-backspace",
+          "name": "replaceInlineRange",
+          "ms": 7.300000071525574
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0.10000002384185791,
+      "active": true,
+      "range": {
+        "start": 0,
+        "end": 13
+      },
+      "twoFramesMs": 45.89999997615814
+    }
+  ],
+  "errors": [],
+  "isolatedResolver": true,
+  "realFlintComponents": true
+}

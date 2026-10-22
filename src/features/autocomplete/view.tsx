@@ -1,3 +1,4 @@
+import {retainSourceHighlight} from './source-highlight';
 import {EntitySearch} from '../entity-references/search-view';
 import type {EntitySearchData} from '../entity-references/entity-search';
 import type {AnnotationCapabilities} from '../../feature-api';
@@ -18,6 +19,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
  const geometry=owner?.manager.geometry??new WindowGeometry();
  const floating=geometry.create(`scry:${props.panel.key}`,{element:()=>root,viewport:true,position,size,minimum:()=>({width:Math.min(320,size().width),height:Math.min(140,size().height)}),mode:()=> 'normal',allowed:()=>s.alive&&eligible(),commit:patch=>{manual=true;if(patch.position){preferred=size();setPosition(patch.position);}if(patch.size){preferred=patch.size;setSize(patch.size);}}});
  const close=()=>s.state.kind==='entity'?props.panel.close():s.close();
+ retainSourceHighlight(props.editor,s);
  const id=`autocomplete-options-${props.panel.key.replaceAll(':','-')}`;
  const anchor=()=>{
   frame=0;if(!s.alive||floating.mode())return;
@@ -53,7 +55,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
   const h=props.editor.mounts.get(s.source.nodeKey),range=h?.captureInlineSelection?.();
   if(document.activeElement!==h?.focusElement)return;
   if(s.source.brackets){
-   const lo=s.source.start+2,hi=s.source.end-2;
+   const lo=s.source.start,hi=s.source.end;
    if(!range||range.anchor<lo||range.anchor>hi||range.head<lo||range.head>hi){
     if(pointerSelection){close();return;}
     if(range)h?.restoreInlineSelection?.({anchor:Math.max(lo,Math.min(hi,range.anchor)),head:Math.max(lo,Math.min(hi,range.head))});

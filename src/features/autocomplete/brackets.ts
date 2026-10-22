@@ -17,3 +17,14 @@ export function nextWordLength(text:string):number {
  const first=new Intl.Segmenter(undefined,{granularity:'word'}).segment(text)[Symbol.iterator]().next().value;
  return first?.isWordLike?[...first.segment].length:0;
 }
+
+/** Cached per occurrence inline revision: selection moves reuse segmentation. */
+export function boundaryNavigator(text:string) {
+ const graphemes=graphemeBoundaries(text),back=wordEdges(text,-1),forward=wordEdges(text,1);
+ return (position:number,direction:-1|1,word:boolean)=>{
+  const values=word?(direction<0?back:forward):graphemes;
+  let lo=0,hi=values.length;
+  while(lo<hi){const mid=(lo+hi)>>>1;if(values[mid]<position||(direction>0&&values[mid]===position))lo=mid+1;else hi=mid;}
+  return direction<0?values[Math.max(0,lo-1)]:values[Math.min(values.length-1,lo)];
+ };
+}

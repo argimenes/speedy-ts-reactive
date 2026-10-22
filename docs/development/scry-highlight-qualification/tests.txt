@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 46ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (29 tests) 9529ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 8747ms
+   ✓ active bracket edits do bounded affected-range work, retain transient boundaries and release bindings on cancel 319ms
+
+ Test Files  2 passed (2)
+      Tests  32 passed (32)
+   Start at  21:12:08
+   Duration  15.49s (transform 6.84s, setup 0ms, collect 1.14s, tests 9.57s, environment 7.14s, prepare 428ms)
+

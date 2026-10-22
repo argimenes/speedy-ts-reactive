@@ -1,0 +1,2 @@
+npx tsc --noEmit --project tsconfig.reactive.json
+Exit 0; no diagnostics.

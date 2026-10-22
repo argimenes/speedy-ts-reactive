@@ -1,0 +1,57 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/cross-block-selection.test.tsx (16 tests) 1339ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (15 tests) 3247ms
+   ✓ document entity listing > loads summaries, sorts every column and previews property ranges without document changes 365ms
+   ✓ fast Entity listing > times out optional totals without losing names and ignores late results 1044ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (29 tests) 1217ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 887ms
+ ❯ src/features/entity-references/entity-candidates.test.ts (11 tests | 2 failed) 738ms
+   × entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips 41ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+   × entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 452ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+ ✓ src/features/entity-references/search-view.test.tsx (18 tests) 1069ms
+ ✓ src/input/selection-gestures.test.ts (29 tests) 42ms
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 746ms
+ ✓ src/application/document-entity-changes.test.ts (7 tests) 124ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 479ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 443ms
+ ✓ src/features/entity-references/document-entities.test.ts (3 tests) 481ms
+   ✓ document entity inventory > reads annotation metadata without visiting character cells or making text snapshots 442ms
+ ✓ src/input/bindings.test.ts (4 tests) 19ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 140ms
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 12ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:42:54
+     40|     const snapshot = vi.spyOn(editor.repository,"snapshot"), commit = …
+     41|     // Repository before/after copies, independent of how many matches…
+     42|     expect(session.bind()).toBe(5); expect(snapshot).toHaveBeenCalledT…
+       |                                                      ^
+     43|     const properties = ["a","b","margin","hidden"].flatMap(id => node(…
+     44|     expect(new Set(properties.map(p => p.id)).size).toBe(5); expect(pr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:122:148
+    120|     session.enable(); await session.flush(true); session.nominate(enti…
+    121|     const snapshot = vi.spyOn(editor.repository,"snapshot"),commit = v…
+    122|     expect(session.bind()).toBe(300); expect(commit).toHaveBeenCalledT…
+       |                                                                                                                                                    ^
+    123|     editor.repository.undo(); expect(editor.repository.canUndo()).toBe…
+    124|     expect(editor.encodeDocument().children![0].children!.every(d => !…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed | 12 passed (13)
+      Tests  2 failed | 146 passed (148)
+   Start at  18:49:09
+   Duration  21.72s (transform 8.35s, setup 0ms, collect 16.91s, tests 9.65s, environment 10.20s, prepare 1.23s)
+

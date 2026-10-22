@@ -1,0 +1,657 @@
+[
+  {
+    "exceptionId": 1,
+    "text": "Uncaught",
+    "lineNumber": 1169,
+    "columnNumber": 4,
+    "scriptId": "9",
+    "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+    "stackTrace": {
+      "callFrames": [
+        {
+          "functionName": "collectDocumentEntities",
+          "scriptId": "407",
+          "url": "http://127.0.0.1:61690/src/features/entity-references/document-entities.ts",
+          "lineNumber": 13,
+          "columnNumber": 24
+        },
+        {
+          "functionName": "refresh",
+          "scriptId": "312",
+          "url": "http://127.0.0.1:61690/src/features/entity-references/search-view.tsx",
+          "lineNumber": 81,
+          "columnNumber": 39
+        },
+        {
+          "functionName": "EntitySearch2",
+          "scriptId": "312",
+          "url": "http://127.0.0.1:61690/src/features/entity-references/search-view.tsx",
+          "lineNumber": 82,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "",
+          "scriptId": "15",
+          "url": "http://127.0.0.1:61690/@solid-refresh",
+          "lineNumber": 24,
+          "columnNumber": 41
+        },
+        {
+          "functionName": "untrack",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 515,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "HMRComp.createMemo.name",
+          "scriptId": "15",
+          "url": "http://127.0.0.1:61690/@solid-refresh",
+          "lineNumber": 24,
+          "columnNumber": 27
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createMemo",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 284,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "[solid-refresh]EntitySearch",
+          "scriptId": "15",
+          "url": "http://127.0.0.1:61690/@solid-refresh",
+          "lineNumber": 21,
+          "columnNumber": 19
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 634,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "untrack",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 515,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 630,
+          "columnNumber": 36
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "devComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 641,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1456,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "get children",
+          "scriptId": "315",
+          "url": "http://127.0.0.1:61690/src/features/autocomplete/view.tsx",
+          "lineNumber": 366,
+          "columnNumber": 15
+        },
+        {
+          "functionName": "Show.createMemo.name",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1712,
+          "columnNumber": 26
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createMemo",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 284,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "Show",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1709,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 634,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "untrack",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 515,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 630,
+          "columnNumber": 36
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "devComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 641,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1456,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "",
+          "scriptId": "315",
+          "url": "http://127.0.0.1:61690/src/features/autocomplete/view.tsx",
+          "lineNumber": 239,
+          "columnNumber": 19
+        },
+        {
+          "functionName": "CompletionPopup2",
+          "scriptId": "315",
+          "url": "http://127.0.0.1:61690/src/features/autocomplete/view.tsx",
+          "lineNumber": 417,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "",
+          "scriptId": "15",
+          "url": "http://127.0.0.1:61690/@solid-refresh",
+          "lineNumber": 24,
+          "columnNumber": 41
+        },
+        {
+          "functionName": "untrack",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 515,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "HMRComp.createMemo.name",
+          "scriptId": "15",
+          "url": "http://127.0.0.1:61690/@solid-refresh",
+          "lineNumber": 24,
+          "columnNumber": 27
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createMemo",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 284,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "[solid-refresh]CompletionPopup",
+          "scriptId": "15",
+          "url": "http://127.0.0.1:61690/@solid-refresh",
+          "lineNumber": 21,
+          "columnNumber": 19
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 634,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "untrack",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 515,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 630,
+          "columnNumber": 36
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "devComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 641,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1456,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "view",
+          "scriptId": "130",
+          "url": "http://127.0.0.1:61690/src/features/autocomplete/index.tsx",
+          "lineNumber": 274,
+          "columnNumber": 25
+        },
+        {
+          "functionName": "",
+          "scriptId": "10",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-KD5OVYBR.js?v=3b3ce6ed",
+          "lineNumber": 1273,
+          "columnNumber": 29
+        },
+        {
+          "functionName": "untrack",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 515,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "",
+          "scriptId": "10",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-KD5OVYBR.js?v=3b3ce6ed",
+          "lineNumber": 1273,
+          "columnNumber": 15
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createMemo",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 284,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "createDynamic",
+          "scriptId": "10",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-KD5OVYBR.js?v=3b3ce6ed",
+          "lineNumber": 1266,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "Dynamic",
+          "scriptId": "10",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-KD5OVYBR.js?v=3b3ce6ed",
+          "lineNumber": 1284,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 634,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "untrack",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 515,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 630,
+          "columnNumber": 36
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "devComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 641,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createComponent",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1456,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "get children",
+          "scriptId": "50",
+          "url": "http://127.0.0.1:61690/src/rendering/contributed-panels.tsx",
+          "lineNumber": 31,
+          "columnNumber": 17
+        },
+        {
+          "functionName": "get children",
+          "scriptId": "26",
+          "url": "http://127.0.0.1:61690/src/rendering/window-manager.tsx",
+          "lineNumber": 219,
+          "columnNumber": 23
+        },
+        {
+          "functionName": "",
+          "scriptId": "10",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-KD5OVYBR.js?v=3b3ce6ed",
+          "lineNumber": 1237,
+          "columnNumber": 75
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "createMemo",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 284,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "",
+          "scriptId": "10",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-KD5OVYBR.js?v=3b3ce6ed",
+          "lineNumber": 1237,
+          "columnNumber": 52
+        },
+        {
+          "functionName": "runUpdates",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 945,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "runWithOwner",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 582,
+          "columnNumber": 11
+        },
+        {
+          "functionName": "Portal.createEffect.render",
+          "scriptId": "10",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-KD5OVYBR.js?v=3b3ce6ed",
+          "lineNumber": 1237,
+          "columnNumber": 26
+        },
+        {
+          "functionName": "runComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 811,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "updateComputation",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 794,
+          "columnNumber": 2
+        },
+        {
+          "functionName": "runTop",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 934,
+          "columnNumber": 6
+        },
+        {
+          "functionName": "runUserEffects",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1047,
+          "columnNumber": 6
+        },
+        {
+          "functionName": "",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1015,
+          "columnNumber": 21
+        },
+        {
+          "functionName": "runUpdates",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 955,
+          "columnNumber": 16
+        },
+        {
+          "functionName": "completeUpdates",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 1015,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "runUpdates",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 956,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "batch",
+          "scriptId": "9",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed",
+          "lineNumber": 505,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "setStore",
+          "scriptId": "60",
+          "url": "http://127.0.0.1:61690/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed",
+          "lineNumber": 277,
+          "columnNumber": 4
+        },
+        {
+          "functionName": "open",
+          "scriptId": "108",
+          "url": "http://127.0.0.1:61690/src/runtime/overlays.ts",
+          "lineNumber": 28,
+          "columnNumber": 9
+        },
+        {
+          "functionName": "open",
+          "scriptId": "130",
+          "url": "http://127.0.0.1:61690/src/features/autocomplete/index.tsx",
+          "lineNumber": 252,
+          "columnNumber": 34
+        },
+        {
+          "functionName": "intercept",
+          "scriptId": "130",
+          "url": "http://127.0.0.1:61690/src/features/autocomplete/index.tsx",
+          "lineNumber": 499,
+          "columnNumber": 8
+        },
+        {
+          "functionName": "onBeforeInput",
+          "scriptId": "102",
+          "url": "http://127.0.0.1:61690/src/input/gateway.ts",
+          "lineNumber": 137,
+          "columnNumber": 40
+        }
+      ]
+    },
+    "exception": {
+      "type": "object",
+      "subtype": "error",
+      "className": "TypeError",
+      "description": "TypeError: 'get' on proxy: property '0' is a read-only and non-configurable data property on the proxy target but the proxy did not return its actual value (expected '#<Object>' but got '#<Object>')\n    at Array Iterator.next (<anonymous>)\n    at collectDocumentEntities (http://127.0.0.1:61690/src/features/entity-references/document-entities.ts:14:25)\n    at refresh (http://127.0.0.1:61690/src/features/entity-references/search-view.tsx:82:40)\n    at EntitySearch2 (http://127.0.0.1:61690/src/features/entity-references/search-view.tsx:83:5)\n    at http://127.0.0.1:61690/@solid-refresh:25:42\n    at untrack (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:516:12)\n    at HMRComp.createMemo.name [as fn] (http://127.0.0.1:61690/@solid-refresh:25:28)\n    at runComputation (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:812:22)\n    at updateComputation (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:795:3)\n    at createMemo (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:285:5)",
+      "objectId": "-4135327424382671369.2.1",
+      "preview": {
+        "type": "object",
+        "subtype": "error",
+        "description": "TypeError: 'get' on proxy: property '0' is a read-only and non-configurable data property on the proxy target but the proxy did not return its actual value (expected '#<Object>' but got '#<Object>')\n    at Array Iterator.next (<anonymous>)\n    at collectDocumentEntities (http://127.0.0.1:61690/src/features/entity-references/document-entities.ts:14:25)\n    at refresh (http://127.0.0.1:61690/src/features/entity-references/search-view.tsx:82:40)\n    at EntitySearch2 (http://127.0.0.1:61690/src/features/entity-references/search-view.tsx:83:5)\n    at http://127.0.0.1:61690/@solid-refresh:25:42\n    at untrack (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:516:12)\n    at HMRComp.createMemo.name [as fn] (http://127.0.0.1:61690/@solid-refresh:25:28)\n    at runComputation (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:812:22)\n    at updateComputation (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:795:3)\n    at createMemo (http://127.0.0.1:61690/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:285:5)",
+        "overflow": false,
+        "properties": [
+          {
+            "name": "stack",
+            "type": "string",
+            "value": "TypeError: 'get' on proxy: property '0' is a read-…es/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:285:5)"
+          },
+          {
+            "name": "message",
+            "type": "string",
+            "value": "'get' on proxy: property '0' is a read-only and no… value (expected '#<Object>' but got '#<Object>')"
+          }
+        ]
+      }
+    },
+    "executionContextId": 2
+  }
+]
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Square trigger works immediately after prose without a space
+    at check (file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/qualify-scry-browser.mjs:76:91)
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/scripts/qualify-scry-browser.mjs:97:2 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '=='
+}
+
+Node.js v22.12.0

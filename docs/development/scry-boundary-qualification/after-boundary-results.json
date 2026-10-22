@@ -1,0 +1,190 @@
+{
+  "fixturePath": "vaults/imported/documents/edgar-allan-poe/masque-of-the-red-death-[1c48f303].ink",
+  "stats": {
+    "sourceCells": 926,
+    "sourceAt": 0,
+    "contents": 15802,
+    "placements": 15802
+  },
+  "measurements": [
+    {
+      "name": "end-word-right",
+      "records": [
+        {
+          "phase": "end-word-right",
+          "name": "completion.key",
+          "ms": 6.699999928474426
+        },
+        {
+          "phase": "end-word-right",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0.10000002384185791,
+      "active": true,
+      "revisionChanged": false,
+      "cellsChanged": false,
+      "range": {
+        "start": 0,
+        "end": 19
+      },
+      "twoFramesMs": 708.8000000715256
+    },
+    {
+      "name": "end-word-left",
+      "records": [
+        {
+          "phase": "end-word-left",
+          "name": "completion.key",
+          "ms": 1.399999976158142
+        },
+        {
+          "phase": "end-word-left",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0.10000002384185791,
+      "active": true,
+      "revisionChanged": false,
+      "cellsChanged": false,
+      "range": {
+        "start": 0,
+        "end": 9
+      },
+      "twoFramesMs": 32.5
+    },
+    {
+      "name": "end-character-right",
+      "records": [
+        {
+          "phase": "end-character-right",
+          "name": "completion.key",
+          "ms": 1.1999999284744263
+        },
+        {
+          "phase": "end-character-right",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0.19999992847442627,
+      "active": true,
+      "revisionChanged": false,
+      "cellsChanged": false,
+      "range": {
+        "start": 0,
+        "end": 10
+      },
+      "twoFramesMs": 26.09999990463257
+    },
+    {
+      "name": "end-character-left",
+      "records": [
+        {
+          "phase": "end-character-left",
+          "name": "completion.key",
+          "ms": 1.3000000715255737
+        },
+        {
+          "phase": "end-character-left",
+          "name": "completion.key",
+          "ms": 0
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0,
+      "active": true,
+      "revisionChanged": false,
+      "cellsChanged": false,
+      "range": {
+        "start": 0,
+        "end": 9
+      },
+      "twoFramesMs": 44.89999997615814
+    },
+    {
+      "name": "source-type",
+      "records": [
+        {
+          "phase": "source-type",
+          "name": "commit",
+          "ms": 27
+        },
+        {
+          "phase": "source-type",
+          "name": "publish",
+          "ms": 27.299999952316284
+        },
+        {
+          "phase": "source-type",
+          "name": "replaceInlineRange",
+          "ms": 28
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0.09999990463256836,
+      "active": true,
+      "revisionChanged": true,
+      "cellsChanged": true,
+      "range": {
+        "start": 0,
+        "end": 10
+      },
+      "twoFramesMs": 58.799999952316284
+    },
+    {
+      "name": "source-backspace",
+      "records": [
+        {
+          "phase": "source-backspace",
+          "name": "completion.key",
+          "ms": 0
+        },
+        {
+          "phase": "source-backspace",
+          "name": "completion.key",
+          "ms": 0
+        },
+        {
+          "phase": "source-backspace",
+          "name": "commit",
+          "ms": 10.399999976158142
+        },
+        {
+          "phase": "source-backspace",
+          "name": "publish",
+          "ms": 10.399999976158142
+        },
+        {
+          "phase": "source-backspace",
+          "name": "replaceInlineRange",
+          "ms": 10.700000047683716
+        }
+      ],
+      "longTasks": [],
+      "requests": 1,
+      "timerLag": 0.20000004768371582,
+      "active": true,
+      "revisionChanged": true,
+      "cellsChanged": true,
+      "range": {
+        "start": 0,
+        "end": 9
+      },
+      "twoFramesMs": 41
+    }
+  ],
+  "errors": [],
+  "isolatedResolver": true,
+  "realFlintComponents": true
+}

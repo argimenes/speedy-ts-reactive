@@ -1,0 +1,59 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/autocomplete.test.ts (29 tests) 11579ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 11018ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (15 tests) 4223ms
+   ✓ document entity listing > loads summaries, sorts every column and previews property ranges without document changes 535ms
+   ✓ document entity listing > caches summaries across ordinary edits, repeated opening and closing 450ms
+   ✓ fast Entity listing > times out optional totals without losing names and ignores late results 1081ms
+ ✓ src/features/entity-references/search-view.test.tsx (18 tests) 3368ms
+   ✓ keeps target Leonardo independent of resolver query Leonardo 985ms
+   ✓ retries unconfirmed creation with the same supplied identity and request 380ms
+ ❯ src/features/entity-references/entity-candidates.test.ts (11 tests | 2 failed) 1286ms
+   × entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips 56ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+   × entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 904ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 1543ms
+   ✓ entity candidate review > binds a manually checked match and closes despite incomplete document coverage 693ms
+ ✓ src/application/document-entity-changes.test.ts (7 tests) 221ms
+ ✓ src/features/entity-references/document-entities.test.ts (5 tests) 1119ms
+   ✓ document entity inventory > reads annotation metadata without visiting character cells or making text snapshots 886ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 601ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 547ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 375ms
+   ✓ entity property details contribution > groups the horizontal columns, exposes a readonly annotation ID and displays populated entity details 321ms
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 45ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:42:54
+     40|     const snapshot = vi.spyOn(editor.repository,"snapshot"), commit = …
+     41|     // Repository before/after copies, independent of how many matches…
+     42|     expect(session.bind()).toBe(5); expect(snapshot).toHaveBeenCalledT…
+       |                                                      ^
+     43|     const properties = ["a","b","margin","hidden"].flatMap(id => node(…
+     44|     expect(new Set(properties.map(p => p.id)).size).toBe(5); expect(pr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:122:148
+    120|     session.enable(); await session.flush(true); session.nominate(enti…
+    121|     const snapshot = vi.spyOn(editor.repository,"snapshot"),commit = v…
+    122|     expect(session.bind()).toBe(300); expect(commit).toHaveBeenCalledT…
+       |                                                                                                                                                    ^
+    123|     editor.repository.undo(); expect(editor.repository.canUndo()).toBe…
+    124|     expect(editor.encodeDocument().children![0].children!.every(d => !…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed | 9 passed (10)
+      Tests  2 failed | 99 passed (101)
+   Start at  21:51:25
+   Duration  36.25s (transform 17.65s, setup 0ms, collect 24.42s, tests 24.36s, environment 12.53s, prepare 1.93s)
+
