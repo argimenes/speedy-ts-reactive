@@ -60,3 +60,12 @@
 .reactive-entity-search--embedded .entity-search-source p { margin:4px 0; }
 .reactive-entity-search--embedded .entity-search-results table { margin-top:0; }
 .reactive-entity-search--embedded .entity-search-results td small { max-width:140px; }
+
+/* Give matched names most of the wider Scry window; keep source controls usable. */
+.reactive-entity-search--embedded:not(.reactive-entity-search--candidates) .entity-search-lookup { grid-template-columns:minmax(280px,.65fr) minmax(0,1.35fr); }
+.reactive-entity-search--embedded .entity-search-results th:first-child { width:42%; }
+@container (max-width:600px) {
+  .reactive-entity-search--embedded:not(.reactive-entity-search--candidates) .entity-search-lookup { display:block; overflow:auto; }
+  .reactive-entity-search--embedded:not(.reactive-entity-search--candidates) .entity-search-source,
+  .reactive-entity-search--embedded:not(.reactive-entity-search--candidates) .entity-search-results { overflow:visible; }
+}

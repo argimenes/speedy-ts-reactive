@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/placement.test.ts (9 tests) 33ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (29 tests) 9112ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 8376ms
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 121ms
+
+ Test Files  3 passed (3)
+      Tests  41 passed (41)
+   Start at  22:27:23
+   Duration  15.51s (transform 6.50s, setup 0ms, collect 949ms, tests 9.27s, environment 4.96s, prepare 500ms)
+
