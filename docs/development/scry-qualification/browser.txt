@@ -1,0 +1,141 @@
+PASS Selected full phrase wrapped without loss
+PASS Independent query leaves authored source unchanged
+PASS Round confirmation preserves phrase and canonical GUID
+PASS One Undo restores authored bracketed phrase
+PASS Next word only captured
+PASS Ctrl Right extends closing boundary by word
+PASS Extended mention preserves phrase
+PASS Square invocation encloses next word
+PASS Square confirmation uses canonical name
+PASS Whitespace creates empty pair
+PASS Free typing and spaces stay inside visible delimiters
+PASS Backspace at opening boundary cannot delete delimiter
+PASS Delete at closing boundary cannot delete delimiter
+PASS Caret movement cannot escape bracket interior
+PASS Escape removes owned delimiters and preserves edits
+PASS Scoped binding leases released
+PASS Ctrl C does not cancel query context
+PASS Independent query survives source edit
+PASS Resume following source is explicit
+PASS Keep literal brackets preserves owned syntax intentionally
+PASS Pre-existing opener is never silently adopted
+PASS Popup X retains edits and removes only owned delimiters
+PASS Existing Entity tool receives source bookmark without deleting brackets
+PASS Entity tool cancellation consumes owned delimiters only
+PASS closing word back
+PASS closing word back preserves outside text
+PASS closing word forward
+PASS closing word forward preserves outside text
+PASS closing character back
+PASS closing character back preserves outside text
+PASS closing character forward
+PASS closing character forward preserves outside text
+PASS opening word back
+PASS opening word back preserves outside text
+PASS opening word forward
+PASS opening word forward preserves outside text
+PASS opening character back
+PASS opening character back preserves outside text
+PASS opening character forward
+PASS opening character forward preserves outside text
+PASS Character boundary crosses whole emoji family grapheme
+PASS Character boundary returns across whole emoji grapheme
+PASS Empty round mention is rejected without destroying the interaction
+PASS Pointer outside source range cancels and preserves edited text
+PASS Reviewed Ctrl A uses existing Entity candidate workflow
+PASS Batch removes delimiters and links all reviewed occurrences
+PASS Single Undo restores bracketed source and removes entire batch
+PASS Expanded Entity tool commits to original occurrence with round preservation policy
+PASS Late resolver results cannot resurrect cancelled Scry
+PASS IME exits optional mode without rewriting composition DOM
+PASS Real keyboard-created selection is wrapped through cross-Block input routing
+PASS Existing creation UI creates once and links original round mention by returned GUID
+PASS Mention preservation does not automatically write an alias
+PASS Explicit alias workflow retains original source identity and wording
+PASS Query word-selection keys do not move source boundaries
+PASS Query selection and replacement leave source untouched
+PASS Ctrl Home remains confined to source interior
+PASS Shift Up cannot create an outside cross-Block selection
+PASS Document Select All is confined to bracket interior
+PASS Source paste passes through constrained native transaction
+PASS Source Copy carries selected text without cancelling
+PASS Typing does not move anchor along with caret
+PASS Popup clamps after viewport resize
+PASS Popup remains visible at browser page scale 1.25
+PASS Actual Flint tab switch cancels source context without disposing source DOM
+PASS Owner minimization cancels context and retains authored phrase
+PASS Second Flint window cancels original occurrence without losing text
+PASS No browser exceptions
+{
+  "checks": [
+    "Selected full phrase wrapped without loss",
+    "Independent query leaves authored source unchanged",
+    "Round confirmation preserves phrase and canonical GUID",
+    "One Undo restores authored bracketed phrase",
+    "Next word only captured",
+    "Ctrl Right extends closing boundary by word",
+    "Extended mention preserves phrase",
+    "Square invocation encloses next word",
+    "Square confirmation uses canonical name",
+    "Whitespace creates empty pair",
+    "Free typing and spaces stay inside visible delimiters",
+    "Backspace at opening boundary cannot delete delimiter",
+    "Delete at closing boundary cannot delete delimiter",
+    "Caret movement cannot escape bracket interior",
+    "Escape removes owned delimiters and preserves edits",
+    "Scoped binding leases released",
+    "Ctrl C does not cancel query context",
+    "Independent query survives source edit",
+    "Resume following source is explicit",
+    "Keep literal brackets preserves owned syntax intentionally",
+    "Pre-existing opener is never silently adopted",
+    "Popup X retains edits and removes only owned delimiters",
+    "Existing Entity tool receives source bookmark without deleting brackets",
+    "Entity tool cancellation consumes owned delimiters only",
+    "closing word back",
+    "closing word back preserves outside text",
+    "closing word forward",
+    "closing word forward preserves outside text",
+    "closing character back",
+    "closing character back preserves outside text",
+    "closing character forward",
+    "closing character forward preserves outside text",
+    "opening word back",
+    "opening word back preserves outside text",
+    "opening word forward",
+    "opening word forward preserves outside text",
+    "opening character back",
+    "opening character back preserves outside text",
+    "opening character forward",
+    "opening character forward preserves outside text",
+    "Character boundary crosses whole emoji family grapheme",
+    "Character boundary returns across whole emoji grapheme",
+    "Empty round mention is rejected without destroying the interaction",
+    "Pointer outside source range cancels and preserves edited text",
+    "Reviewed Ctrl A uses existing Entity candidate workflow",
+    "Batch removes delimiters and links all reviewed occurrences",
+    "Single Undo restores bracketed source and removes entire batch",
+    "Expanded Entity tool commits to original occurrence with round preservation policy",
+    "Late resolver results cannot resurrect cancelled Scry",
+    "IME exits optional mode without rewriting composition DOM",
+    "Real keyboard-created selection is wrapped through cross-Block input routing",
+    "Existing creation UI creates once and links original round mention by returned GUID",
+    "Mention preservation does not automatically write an alias",
+    "Explicit alias workflow retains original source identity and wording",
+    "Query word-selection keys do not move source boundaries",
+    "Query selection and replacement leave source untouched",
+    "Ctrl Home remains confined to source interior",
+    "Shift Up cannot create an outside cross-Block selection",
+    "Document Select All is confined to bracket interior",
+    "Source paste passes through constrained native transaction",
+    "Source Copy carries selected text without cancelling",
+    "Typing does not move anchor along with caret",
+    "Popup clamps after viewport resize",
+    "Popup remains visible at browser page scale 1.25",
+    "Actual Flint tab switch cancels source context without disposing source DOM",
+    "Owner minimization cancels context and retains authored phrase",
+    "Second Flint window cancels original occurrence without losing text",
+    "No browser exceptions"
+  ],
+  "errors": []
+}

@@ -13,7 +13,7 @@ export function invocation(caret: number, cell: (index: number) => string | unde
   const start = base + [...text.slice(0, match.index + match[0].indexOf(match[1]))].length;
   // A token beginning at the truncated suffix boundary is not known to be a boundary.
   if (start === from && from > 0 && !/\s/u.test(cell(from - 1) ?? 'x')) return;
-  return { kind: ({ '@':'entity', '[[':'document', '((':'block', '/':'command' } as const)[match[1] as "@"|"[["|"(("|"/"], start, end: caret, input: match[2] };
+  return { kind: ({ '@':'entity', '[[':'entity', '((':'entity', '/':'command' } as const)[match[1] as "@"|"[["|"(("|"/"], start, end: caret, input: match[2] };
 }
 export function parseInput(input: string) {
   // Require spaced punctuation; times, URLs and ordinary colons remain literal.

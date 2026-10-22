@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/application/window-geometry.test.ts (8 tests) 22ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (27 tests) 1559ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 1387ms
+ ✓ src/rendering/floating-window-resize.test.tsx (3 tests) 19ms
+
+ Test Files  3 passed (3)
+      Tests  38 passed (38)
+   Start at  17:38:50
+   Duration  3.15s (transform 1.24s, setup 0ms, collect 613ms, tests 1.60s, environment 1.68s, prepare 115ms)
+

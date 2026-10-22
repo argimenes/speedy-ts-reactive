@@ -1,5 +1,7 @@
 # Autocomplete workstation — implementation and qualification
 
+> Bracket triggers, cancellation and interaction boundaries are superseded by the [Scry interaction restoration addendum](SCRY_INTERACTION_RESTORATION_QUALIFICATION.md). The results below remain the historical qualification record.
+
 22 October 2026. Implements the scoped core of `MUTABLE_AUTOCOMPLETE_WORKSTATION_FEATURE_BRIEF.md`. The earlier [legacy analysis](AUTOCOMPLETE_ANALYSIS.md) remains a historical comparison, not a specification of current behaviour.
 
 ## Delivered behaviour

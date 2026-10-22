@@ -1,0 +1,175 @@
+Caret presentation: {"mode":"normal","scoped":0,"opacities":["1"],"focus":false,"otherFlows":[]}
+{
+  "result": {
+    "webViews": 0,
+    "workerStarts": 0,
+    "academicViews": 0,
+    "serviceRequests": 0,
+    "pointerSpotlight": false,
+    "caretMode": "normal",
+    "characters": 499,
+    "paragraphs": 8,
+    "sync": {
+      "median": 10.200000047683716,
+      "p95": 17.5,
+      "max": 26.799999952316284
+    },
+    "settled": {
+      "median": 14.100000023841858,
+      "p95": 22,
+      "max": 35.299999952316284
+    },
+    "frame": {
+      "median": 47.700000047683716,
+      "p95": 293.60000002384186,
+      "max": 326.40000009536743
+    },
+    "snapshots": 0,
+    "statusReads": 0,
+    "vaultRows": 0,
+    "restored": true
+  },
+  "hottest": [
+    [
+      "(idle) :-1",
+      2074.6879999999983
+    ],
+    [
+      "(program) :-1",
+      524.3709999999996
+    ],
+    [
+      "addRange :-1",
+      152.87800000000013
+    ],
+    [
+      "(garbage collector) :-1",
+      59.474000000000004
+    ],
+    [
+      "clone 127.0.0.1:52986/src/block-tree/clone.ts:0",
+      43.325
+    ],
+    [
+      "readSignal 127.0.0.1:52986/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:709",
+      36.405
+    ],
+    [
+      "unwrap 127.0.0.1:52986/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:52",
+      32.53600000000001
+    ],
+    [
+      "runTop 127.0.0.1:52986/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:909",
+      22.368000000000002
+    ],
+    [
+      "localFragment 127.0.0.1:52986/src/runtime/local-coordinates.ts:6",
+      19.798999999999996
+    ],
+    [
+      "update 127.0.0.1:52986/src/rendering/direct-character-cells.ts:10",
+      18.949000000000005
+    ],
+    [
+      "get 127.0.0.1:52986/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:120",
+      18.162000000000006
+    ],
+    [
+      "applyState 127.0.0.1:52986/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:394",
+      17.328
+    ],
+    [
+      "nodeKey 127.0.0.1:52986/src/block-tree/projection.ts:50",
+      16.935999999999996
+    ],
+    [
+      "getClientRects :-1",
+      15.695000000000006
+    ],
+    [
+      " 127.0.0.1:52986/src/rendering/standoff-editor-view.tsx:1194",
+      15.184
+    ],
+    [
+      "graphemeBoundaries 127.0.0.1:52986/src/input/graphemes.ts:0",
+      11.662999999999998
+    ],
+    [
+      "proxyDescriptor$1 127.0.0.1:52986/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:103",
+      10.201
+    ],
+    [
+      "setAttribute :-1",
+      9.655999999999999
+    ],
+    [
+      "updateInline 127.0.0.1:52986/src/block-tree/projection.ts:166",
+      9.311000000000002
+    ],
+    [
+      "rangeFragments 127.0.0.1:52986/src/rendering/standoff-editor-view.tsx:376",
+      8.54
+    ],
+    [
+      "plainTree 127.0.0.1:52986/src/block-tree/undo-storage.ts:4",
+      8.188
+    ],
+    [
+      "getNode 127.0.0.1:52986/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:93",
+      8.121
+    ],
+    [
+      "captureText 127.0.0.1:52986/src/rendering/standoff-editor-view.tsx:924",
+      7.715
+    ],
+    [
+      " 127.0.0.1:52986/src/block-tree/repository.ts:563",
+      7.434
+    ],
+    [
+      " 127.0.0.1:52986/src/rendering/standoff-editor-view.tsx:1175",
+      6.672999999999999
+    ],
+    [
+      " 127.0.0.1:52986/src/rendering/standoff-editor-view.tsx:958",
+      6.602000000000001
+    ],
+    [
+      " 127.0.0.1:52986/src/rendering/standoff-editor-view.tsx:561",
+      5.995000000000001
+    ],
+    [
+      "cleanNode 127.0.0.1:52986/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:1102",
+      5.764
+    ],
+    [
+      " 127.0.0.1:52986/src/block-tree/projection.ts:177",
+      5.067
+    ],
+    [
+      "setProperty 127.0.0.1:52986/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:158",
+      4.949
+    ],
+    [
+      "node 127.0.0.1:52986/src/reactive-editor/editor.ts:430",
+      4.717
+    ],
+    [
+      "inlineOwnerFor 127.0.0.1:52986/src/block-tree/inline-plan.ts:3",
+      4.302
+    ],
+    [
+      " 127.0.0.1:52986/src/input/gateway.ts:179",
+      4.1160000000000005
+    ],
+    [
+      " 127.0.0.1:52986/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:477",
+      4.105
+    ],
+    [
+      "equal 127.0.0.1:52986/src/rendering/range-rendering.tsx:23",
+      4.025
+    ]
+  ]
+}
+Real Chrome character input and undo: passed

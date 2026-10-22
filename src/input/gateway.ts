@@ -27,10 +27,13 @@ export interface CaretNotifications {
 }
 
 export interface CompletionInput {
+  pointer?(event:PointerEvent):boolean;
+  clipboard?(event:ClipboardEvent):boolean;
+  intercept?(key:string,start:number,end:number,text:string,inputType:string):boolean;
   before?(key:string,start:number,end:number,text:string,inputType:string):boolean;
   edited(key: string, caret: number, inputType: string): void;
   key(event: KeyboardEvent): boolean;
-  cancel(): void;
+  cancel(keepLiteral?:boolean): void;
 }
 
 export class InputGateway {
@@ -150,6 +153,9 @@ export class InputGateway {
     let start = Math.min(selection.anchor, selection.head);
     let end = Math.max(selection.anchor, selection.head);
     let text: string | undefined;
+    if(this.completion?.()?.intercept?.(resolved.nodeKey,start,end,event.data??"",event.inputType)){
+      if(event.cancelable)event.preventDefault();event.stopPropagation();return;
+    }
 
     const selectionSet = this.selections.sets[resolved.nodeKey];
     if (
@@ -290,7 +296,7 @@ export class InputGateway {
     this.bindings.cancelChord();
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
-      this.completion?.()?.cancel();
+      this.completion?.()?.cancel(true);
       resolved.handle.composing = true;
       this.caretEvents?.setComposing?.(true);
     }
@@ -426,6 +432,7 @@ export class InputGateway {
   };
 
   private onCut = (event: ClipboardEvent) => {
+    if(this.completion?.()?.clipboard?.(event))return;
     if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     if (!this.writeStandoffClipboard(event)) return;
     const context = this.standoffClipboardContext(event);
@@ -440,6 +447,7 @@ export class InputGateway {
   };
 
   private onPaste = (event: ClipboardEvent) => {
+    if(this.completion?.()?.clipboard?.(event))return;
     if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     const context = this.standoffClipboardContext(event);
     if (!context || !event.clipboardData) return;

@@ -187,6 +187,15 @@ export class TreeCommands {
     this.repository.commit(label, operations, true, { commands: [description] });
   }
 
+  /** Join a validated annotation batch to a surrounding native text transaction.
+   * Prepared annotation records must precede text edits so they cannot overwrite
+   * edits already staged in the transaction. Outside one, keep the usual path. */
+  stageAnnotationBatch(label:string,operations:RepositoryOperation[],revision:number):boolean {
+    if(!this.pending)return false;
+    if(this.pending.operations.length||this.repository.state.revision!==revision)throw new TreeCommandError('Annotation batch must precede text edits in a current transaction');
+    this.publish(label,operations);return true;
+  }
+
   transaction(label: string, operation: () => void, descriptor?: CommandDescriptor): void {
     if (this.pending) {
       const index = this.pending.commands.length;

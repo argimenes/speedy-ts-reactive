@@ -109,6 +109,7 @@ export class CrossBlockInput {
     } catch (error) { this.editor.crossText.notice(error instanceof Error ? error.message : String(error)); }
   }
   private down = (event: PointerEvent) => {
+    if(this.editor.completionInput?.pointer?.(event))return;
     if ((!this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("pointer")) || event.button !== 0 || event.metaKey || event.altKey) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target?.closest('.document-style-bar, [data-cross-text-controls]')) return;
@@ -230,6 +231,9 @@ export class CrossBlockInput {
     return true;
   }
   private key = (event: KeyboardEvent) => {
+    // An occurrence-scoped interaction leases its controls ahead of cross-Block
+    // selection. Ordinary input still follows the existing gateway path.
+    if(this.editor.completionInput?.key(event)){this.editor.selectionGestures.cancelGesture();return;}
     this.editor.clipboard.key(event);
     if (!this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("keyboard")) return;
     const target = event.target instanceof Element ? event.target : undefined;
@@ -314,6 +318,13 @@ export class CrossBlockInput {
     if (event.type === "beforeinput") {
       const input = event as InputEvent;
       if (target === this.input && (this.composing || input.isComposing || input.inputType === "insertCompositionText")) { event.stopImmediatePropagation(); return; }
+      const range=this.editor.crossText.range();
+      if(range&&range.anchor.occurrenceKey===range.head.occurrenceKey&&input.inputType==='insertText'&&input.data){
+        const start=Math.min(range.anchor.boundary.index,range.head.boundary.index),end=Math.max(range.anchor.boundary.index,range.head.boundary.index);
+        if(this.editor.completionInput?.intercept?.(range.anchor.occurrenceKey,start,end,input.data,input.inputType)||this.editor.completionInput?.before?.(range.anchor.occurrenceKey,start,end,input.data,input.inputType)){
+          this.editor.crossText.clear();this.up();this.stop(event);return;
+        }
+      }
       this.stop(event);
       if (["insertText", "insertReplacementText", "insertFromComposition"].includes(input.inputType) && input.data !== null) this.replace(input.data);
       else if (["insertParagraph", "insertLineBreak"].includes(input.inputType)) this.replace("\n");

@@ -75,7 +75,7 @@ export class LinkedAnnotations {
         ...(updates.has(key) ? { standoffProperties: updates.get(key)! } : {}),
       } } });
     }
-    this.editor.repository.commit(label, operations);
+    if(!this.editor.commands.stageAnnotationBatch(label,operations,revision))this.editor.repository.commit(label, operations);
     return ids;
   }
   edit(nodeKey: string, index: number, expected: JsonObject, action: AnnotationAction | AnnotationPatch) {

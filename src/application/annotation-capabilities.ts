@@ -132,7 +132,7 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
       check(); if (!panelTypes.has(type) || !editor.node(owner)) throw new Error("Open the panel from a document first.");
       if (editor.windowManager && type === "entity-search") {
         const source = locate(editor, owner, "document");
-        const existing = editor.overlays.overlays.find(overlay => overlay.viewType === type && editor.node(overlay.ownerKey)?.viewId === source.viewId && locate(editor,overlay.ownerKey,"document").rootKey === source.rootKey);
+        const existing = editor.overlays.overlays.find(overlay => (overlay.viewType === type || overlay.viewType === 'autocomplete' && (overlay.data as {entitySearch?:boolean})?.entitySearch) && editor.node(overlay.ownerKey)?.viewId === source.viewId && locate(editor,overlay.ownerKey,"document").rootKey === source.rootKey);
         if (existing) { const session = panelSession(editor,existing); session.focus(); return session; }
       } else for (const overlay of [...editor.overlays.overlays]) if (overlay.viewType === type) editor.overlays.close(overlay.key, false);
       const mount = editor.mounts.get(owner), rect = mount?.root.getBoundingClientRect();

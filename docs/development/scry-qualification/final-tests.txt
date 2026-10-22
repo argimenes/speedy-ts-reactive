@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/autocomplete.test.ts (27 tests) 3493ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 3038ms
+   ✓ active bracket edits do bounded affected-range work, preserve delimiters and release bindings on cancel 338ms
+ ✓ src/rendering/cross-block-selection.test.tsx (16 tests) 904ms
+
+ Test Files  2 passed (2)
+      Tests  43 passed (43)
+   Start at  16:45:17
+   Duration  7.60s (transform 5.20s, setup 0ms, collect 5.81s, tests 4.40s, environment 1.55s, prepare 144ms)
+

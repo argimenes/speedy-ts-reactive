@@ -1,0 +1,175 @@
+Caret presentation: {"mode":"normal","scoped":0,"opacities":["1"],"focus":false,"otherFlows":[]}
+{
+  "result": {
+    "webViews": 0,
+    "workerStarts": 0,
+    "academicViews": 0,
+    "serviceRequests": 0,
+    "pointerSpotlight": false,
+    "caretMode": "normal",
+    "characters": 499,
+    "paragraphs": 8,
+    "sync": {
+      "median": 8.5,
+      "p95": 19.59999990463257,
+      "max": 20
+    },
+    "settled": {
+      "median": 12.200000047683716,
+      "p95": 23.800000071525574,
+      "max": 24.899999976158142
+    },
+    "frame": {
+      "median": 25.200000047683716,
+      "p95": 149.10000002384186,
+      "max": 212.79999995231628
+    },
+    "snapshots": 0,
+    "statusReads": 0,
+    "vaultRows": 0,
+    "restored": true
+  },
+  "hottest": [
+    [
+      "(idle) :-1",
+      603.3059999999999
+    ],
+    [
+      "(program) :-1",
+      340.9229999999993
+    ],
+    [
+      "addRange :-1",
+      136.63300000000007
+    ],
+    [
+      "clone 127.0.0.1:52880/src/block-tree/clone.ts:0",
+      42.64300000000001
+    ],
+    [
+      "readSignal 127.0.0.1:52880/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:709",
+      28.22800000000001
+    ],
+    [
+      "(garbage collector) :-1",
+      27.501000000000005
+    ],
+    [
+      "localFragment 127.0.0.1:52880/src/runtime/local-coordinates.ts:6",
+      26.37200000000001
+    ],
+    [
+      "runTop 127.0.0.1:52880/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:909",
+      22.050000000000004
+    ],
+    [
+      "unwrap 127.0.0.1:52880/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:52",
+      18.44
+    ],
+    [
+      "nodeKey 127.0.0.1:52880/src/block-tree/projection.ts:50",
+      18.101999999999997
+    ],
+    [
+      "applyState 127.0.0.1:52880/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:394",
+      14.471999999999996
+    ],
+    [
+      "rangeFragments 127.0.0.1:52880/src/rendering/standoff-editor-view.tsx:376",
+      13.681000000000001
+    ],
+    [
+      "update 127.0.0.1:52880/src/rendering/direct-character-cells.ts:10",
+      13.667000000000003
+    ],
+    [
+      "get 127.0.0.1:52880/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:120",
+      12.810000000000002
+    ],
+    [
+      "getClientRects :-1",
+      12.671
+    ],
+    [
+      " 127.0.0.1:52880/src/rendering/standoff-editor-view.tsx:1175",
+      12.449000000000002
+    ],
+    [
+      "updateInline 127.0.0.1:52880/src/block-tree/projection.ts:166",
+      10.950999999999999
+    ],
+    [
+      "setAttribute :-1",
+      10.701999999999998
+    ],
+    [
+      " 127.0.0.1:52880/src/block-tree/repository.ts:563",
+      9.149000000000001
+    ],
+    [
+      " 127.0.0.1:52880/src/rendering/standoff-editor-view.tsx:561",
+      9.014000000000001
+    ],
+    [
+      " 127.0.0.1:52880/src/rendering/standoff-editor-view.tsx:958",
+      8.852000000000002
+    ],
+    [
+      " 127.0.0.1:52880/src/rendering/standoff-editor-view.tsx:1194",
+      8.078
+    ],
+    [
+      "inlineOwnerFor 127.0.0.1:52880/src/block-tree/inline-plan.ts:3",
+      7.029
+    ],
+    [
+      "node 127.0.0.1:52880/src/reactive-editor/editor.ts:430",
+      6.563
+    ],
+    [
+      "graphemeBoundaries 127.0.0.1:52880/src/input/graphemes.ts:0",
+      5.699
+    ],
+    [
+      "getNode 127.0.0.1:52880/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:93",
+      5.4670000000000005
+    ],
+    [
+      "proxyDescriptor$1 127.0.0.1:52880/node_modules/.vite/deps/solid-js_store.js?v=3b3ce6ed:103",
+      5.356
+    ],
+    [
+      "commitInline 127.0.0.1:52880/src/block-tree/repository.ts:533",
+      5.2490000000000006
+    ],
+    [
+      "get nodeKey 127.0.0.1:52880/src/rendering/block-outlet.tsx:70",
+      4.906
+    ],
+    [
+      "pack 127.0.0.1:52880/src/block-tree/undo-storage.ts:28",
+      4.189
+    ],
+    [
+      "cleanNode 127.0.0.1:52880/node_modules/.vite/deps/chunk-I3ZDUWJC.js?v=3b3ce6ed:1102",
+      4.0680000000000005
+    ],
+    [
+      "measure 127.0.0.1:52880/src/rendering/standoff-editor-view.tsx:675",
+      3.8149999999999995
+    ],
+    [
+      "onBeforeInput 127.0.0.1:52880/src/input/gateway.ts:126",
+      3.442
+    ],
+    [
+      "pointBoundary 127.0.0.1:52880/src/rendering/standoff-editor-view.tsx:324",
+      3.3129999999999997
+    ],
+    [
+      "isActive 127.0.0.1:52880/src/runtime/annotation-range-events.ts:46",
+      3.272
+    ]
+  ]
+}
+Real Chrome character input and undo: passed
