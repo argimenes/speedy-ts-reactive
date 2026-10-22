@@ -26,6 +26,13 @@ export interface CaretNotifications {
   setComposing?(value: boolean): void;
 }
 
+export interface CompletionInput {
+  before?(key:string,start:number,end:number,text:string,inputType:string):boolean;
+  edited(key: string, caret: number, inputType: string): void;
+  key(event: KeyboardEvent): boolean;
+  cancel(): void;
+}
+
 export class InputGateway {
   private installed = false;
 
@@ -49,6 +56,7 @@ export class InputGateway {
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
     private readonly caretEvents?: CaretNotifications,
     private readonly clipboard?: MutableClipboard,
+    private readonly completion?: () => CompletionInput | undefined,
   ) {}
 
   install(): () => void {
@@ -109,6 +117,7 @@ export class InputGateway {
   }
   private onKeyDown = (event: KeyboardEvent) => {
     this.clipboard?.key(event);
+    if (this.completion?.()?.key(event)) return;
     const target = event.target instanceof Element ? event.target : undefined;
     const resolved = this.mounts.resolveEvent(event);
     const field = target?.closest('input, textarea, select, [contenteditable="true"]');
@@ -250,11 +259,13 @@ export class InputGateway {
 
     if (event.cancelable) event.preventDefault();
     event.stopPropagation();
+    if(this.completion?.()?.before?.(resolved.nodeKey,start,end,text,event.inputType))return;
     this.commands.replaceInlineRange(resolved.nodeKey, start, end, text);
     const caret = start + [...text].length;
     this.selections.mapContentEdit(node.contentKey, start, end, [...text].length);
     this.selections.setPrimary(resolved.nodeKey, node.contentKey, node.viewId, caret);
     queueMicrotask(() => resolved.handle.restoreInlineSelection?.({ anchor: caret, head: caret }));
+    this.completion?.()?.edited(resolved.nodeKey, caret, event.inputType);
   };
 
   private onFocusIn = (event: FocusEvent) => {
@@ -279,6 +290,7 @@ export class InputGateway {
     this.bindings.cancelChord();
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
+      this.completion?.()?.cancel();
       resolved.handle.composing = true;
       this.caretEvents?.setComposing?.(true);
     }

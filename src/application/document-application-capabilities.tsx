@@ -1,3 +1,4 @@
+import {registerCompletionDocuments} from './completion-documents';
 import { CollectionDialog } from '../rendering/collection-dialog';
 import { createRecentDocuments } from './recent-documents';
 import { PublicationDialog } from '../rendering/publication-dialog';
@@ -433,6 +434,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       },accepts:key=>{const node=editor.node(key);return !!node&&[...liveViews.values()].some(view=>view.viewId===node.viewId);}}));
       createEffect(() => { const vault=selectedVault(); untrack(() => facts?.use(vault)); });
       const knowledge = native ? new VaultKnowledge(editor, native, knowledgeHost, undefined, facts) : undefined;
+      if(knowledge)onCleanup(registerCompletionDocuments(editor,{knowledge,accepts:key=>{const active=knowledgeHost.active();return !!active?.projection.node(key);}}));
       const entityList = new DocumentEntityList(entityAnnotations);
       const entityOrigin = createMemo(() => {
         viewRevision();

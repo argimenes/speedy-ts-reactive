@@ -1,3 +1,5 @@
+import {recordUsage} from '../autocomplete/history';
+import {AuthorityPanel} from '../autocomplete/authority-view';
 import {createManagedFloatingTool} from "../../rendering/managed-floating-tool";
 import {useManagedViewActivity} from "../../rendering/window-manager";
 import {For,Show,createEffect,createSignal,untrack,onCleanup,onMount} from 'solid-js';
@@ -14,7 +16,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
  const {api,panel}=props;
  const activity=useManagedViewActivity();
  const [target,setTarget]=createSignal<EntitySearchData>({...panel.data as EntitySearchData});
- const [query,setQuery]=createSignal(target().entityQuery),[stream,setStream]=createSignal<EntityResolutionQuery['stream']>('all');
+ const [query,setQuery]=createSignal(target().workstation?.query??target().entityQuery),[stream,setStream]=createSignal<EntityResolutionQuery['stream']>('all');
  const [match,setMatch]=createSignal<EntityResolutionQuery['match']>('partial'),[searchScope,setScope]=createSignal<EntityResolutionQuery['scope']>('vault');
  const [result,setResult]=createSignal<EntityResolution>(),[current,setCurrent]=createSignal(0),[page,setPage]=createSignal(0),[retry,setRetry]=createSignal(0);
  const [busy,setBusy]=createSignal(false),[error,setError]=createSignal(''),[working,setWorking]=createSignal(false),[valid,setValid]=createSignal(true);
@@ -24,6 +26,9 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
  const [rename,setRename]=createSignal('');
  let service:EntityService|undefined;try{service=api.entities?.(panel.ownerKey);}catch(e){setError(String(e));}
  let alive=true,editing=false;
+ let acquisitionGuard=()=>true,usageScope:string|undefined;
+ if(target().workstation)void service?.historyScope?.().then(key=>{usageScope=key;}).catch(()=>{});
+ const used=(entity:{id:string;name:string})=>{if(usageScope)recordUsage(usageScope,entity);};
  const [attempt,setAttempt]=createSignal<{id:string;operationId:string;name:string}>();
  const newCandidates=()=>new EntityCandidates(api,{...panel,data:target()});
  const [candidates,setCandidates]=createSignal(newCandidates());
@@ -43,9 +48,11 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   if(!target().entityRanges.length)throw Error('Enable Search additional occurrences and review mentions, or select text first.');
   if(!valid())throw Error('The original target is stale. Bind to a new selection.');
   editing=true;try{
+   const invocation=target().workstation?.invocation;
+   if(invocation){if(!api.replaceAndAnnotate)throw Error('Atomic completion unavailable');const label=replace?entity.name:target().entityQuery||entity.name;api.replaceAndAnnotate(invocation,label,'codex/entity-reference',entity.id,{entityId:entity.id,entityName:entity.name},target().entityRevision);used(entity);panel.close(false);api.focusRange?.({...invocation,version:api.text(invocation.nodeKey)!.version,end:invocation.start+[...label].length},api.revision());return;}
    if(replace){if(target().entityRanges.length!==1||!api.replaceAndAnnotate)throw Error('Replace & Link requires one plain-text Block');api.replaceAndAnnotate(target().entityRanges[0],entity.name,'codex/entity-reference',entity.id,{entityId:entity.id,entityName:entity.name},target().entityRevision);}
    else chooseEntity(api,target(),entity);
-   setOutcome('Created and linked');
+   used(entity);setOutcome('Created and linked');
    if(replace&&api.focusRange){const r=target().entityRanges[0],next=snapshotTarget([{nodeKey:r.nodeKey,start:r.start,end:r.start+[...entity.name].length}],api);panel.close(false);api.focusRange(next.entityRanges[0],next.entityRevision);}else close();
   }finally{editing=false;}
  };
@@ -54,7 +61,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   if(candidates().state.enabled&&!replace){candidates().nominate(entity);setDetails(entity);setRename(entity.name);return;}
   bind(entity,replace);
  });
- const showDetails=(id:string)=>void run(async()=>{const e=await service?.get(id);if(!e)throw Error('Entity unavailable');if(alive){setDetails(e);setRename(e.name);setAliasEdit(undefined);setAliasName('');}});
+ const showDetails=(id:string)=>void run(async()=>{const e=await service?.get(id);if(!e)throw Error('Entity unavailable');if(alive){setDetails(e);setRename(e.name);setAliasEdit(undefined);setAliasName(target().workstation?target().entityQuery:'');}});
  const create=()=>void run(async()=>{
   if(!service)throw Error('Canonical Entity service unavailable');
   if(!attempt()&&(!valid()||api.revision()!==target().entityRevision))throw Error('Select a valid target before creating an Entity');
@@ -95,17 +102,21 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
   onCleanup(()=>{active=false;clearTimeout(timer);controller.abort();});
  });
  onMount(()=>{
+  const initial=target().workstation;
+  if(initial?.review){candidates().configure({scope:'document'});candidates().enable();}
+  if(initial?.createName){setCanonicalName(initial.createName);setCreateForm(true);}
+  if(initial?.entityId){if(initial.review)select(initial.entityId);else void showDetails(initial.entityId);}
   const mount=panel.mountWidget(root,()=>{input.focus();input.select();});input.focus();input.select();
   const invalidate=()=>{if(editing)return;if(api.watchTarget||creating()||created()){setValid(false);candidates().disable();panel.allowDocumentInput(true);setError('The original target changed. Select a new target before linking.');}else close();};
   let stop:()=>void;
-  if(api.watchTarget) stop=api.watchTarget(panel.ownerKey,target().entityRanges,change=>{
+  if(api.watchTarget) stop=api.watchTarget(panel.ownerKey,target().workstation?.invocation?[target().workstation!.invocation!]:target().entityRanges,change=>{
    if(editing)return;
    // Preserve source ranges and identity. This does not retarget or repaint.
    if(change.valid&&valid()) target().entityRevision=change.revision;
    else invalidate();
   });
   else stop=api.beforeChange(invalidate);
-  const guard=panel.guardClose?.(()=>editing||!creating()&&!working()&&(!attempt()||!!created()||window.confirm('Entity creation outcome is unconfirmed. Close this tool and discard its retry receipt?')));
+  const guard=panel.guardClose?.(()=>acquisitionGuard()&&(editing||!creating()&&!working()&&(!attempt()||!!created()||window.confirm('Entity creation outcome is unconfirmed. Close this tool and discard its retry receipt?'))));
   onCleanup(()=>guard?.());
   onCleanup(()=>{mount();stop();});
  });
@@ -113,6 +124,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
  const keys=(e:KeyboardEvent)=>{
   e.stopPropagation();if(e.isComposing)return;
   if(e.key==='Escape'){e.preventDefault();close();return;}
+  if(target().workstation&&api.bindings.dispatch(e,['entity-search'],id=>{if(id!=='entity.candidates.selectAll')return false;candidates().enable();return true;}))return;
   const field=(e.target as Element).closest('input,textarea,select');
   if(api.bindings.dispatch(e,['entity-search'],id=>{
    if(id==='entity.candidates.open'){candidates().enable();return true;}
@@ -168,7 +180,8 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
    </section>}</Show>
    <button disabled={!valid()} onClick={()=>candidates().enable()}>Find other occurrences</button>
    <small>Up/Down: candidates · Enter: link or nominate · Escape: cancel · Alt+S/M/V: stream/match/scope. Tab keeps normal focus traversal. Number keys choose candidates outside text fields.</small>
-  </section><Show when={candidates()} keyed>{session=><EntityCandidatesPanel session={session} bind={()=>void run(async()=>{const e=candidates().state.entity;if(!e||!await service?.get(e.id))throw Error('Entity unavailable');editing=true;try{candidates().bind();close();}finally{editing=false;}})}/>}</Show></div>
+  <Show when={target().workstation?.authority && service}><AuthorityPanel service={service!} query={query()} guard={fn=>acquisitionGuard=fn} imported={e=>{setCreated(e);setDetails(e);setRename(e.name);setOutcome('Created but not linked');}}/></Show>
+  </section><Show when={candidates()} keyed>{session=><EntityCandidatesPanel session={session} bind={()=>void run(async()=>{const e=candidates().state.entity;if(!e||!await service?.get(e.id))throw Error('Entity unavailable');editing=true;try{candidates().bind();used(e);close();}finally{editing=false;}})}/>}</Show></div>
   <FloatingWindowResizeHandle controller={resize} class="reactive-entity-search__resize" label="Resize Entity Search window"/>
  </div>;
 }

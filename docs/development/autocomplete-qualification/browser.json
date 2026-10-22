@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "Inline completion keeps real Flint editing focus",
+    "Entity commit preserves authored label and canonical GUID",
+    "One native Undo restores literal invocation",
+    "Escape preserves typed literal",
+    "Colon over selection preserves source text",
+    "Independent query commits original selected wording",
+    "Scoped Ctrl+A previews three matches with conflicting reference excluded",
+    "Reviewed batch binds eligible occurrences and preserves conflict",
+    "Batch Undo restores precisely the prior conflicting reference",
+    "Slash date uses real text transaction",
+    "IME cancels optional completion without deleting text",
+    "Backslash escape remains literal",
+    "Late resolver cannot reopen cancelled popup",
+    "Popup stays within resized viewport",
+    "Tab traverses workstation controls without dismissing or changing source",
+    "Owner minimization dismisses completion and preserves unsaved literal",
+    "Another actual Flint window cancels the source completion without mutation",
+    "No browser exceptions"
+  ],
+  "errors": [],
+  "isolatedEntityResolver": true,
+  "realFlintComponents": true
+}

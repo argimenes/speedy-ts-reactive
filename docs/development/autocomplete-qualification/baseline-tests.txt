@@ -1,0 +1,40 @@
+
+ RUN  v2.1.9 /private/tmp/mutable-autocomplete-baseline
+
+ ❯ src/features/entity-references/entity-candidates.test.ts (11 tests | 2 failed) 332ms
+   × entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips 15ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+   × entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 192ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:42:54
+     40|     const snapshot = vi.spyOn(editor.repository,"snapshot"), commit = …
+     41|     // Repository before/after copies, independent of how many matches…
+     42|     expect(session.bind()).toBe(5); expect(snapshot).toHaveBeenCalledT…
+       |                                                      ^
+     43|     const properties = ["a","b","margin","hidden"].flatMap(id => node(…
+     44|     expect(new Set(properties.map(p => p.id)).size).toBe(5); expect(pr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:122:148
+    120|     session.enable(); await session.flush(true); session.nominate(enti…
+    121|     const snapshot = vi.spyOn(editor.repository,"snapshot"),commit = v…
+    122|     expect(session.bind()).toBe(300); expect(commit).toHaveBeenCalledT…
+       |                                                                                                                                                    ^
+    123|     editor.repository.undo(); expect(editor.repository.canUndo()).toBe…
+    124|     expect(editor.encodeDocument().children![0].children!.every(d => !…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  12:49:11
+   Duration  7.18s (transform 2.67s, setup 0ms, collect 4.17s, tests 332ms, environment 2.27s, prepare 113ms)
+

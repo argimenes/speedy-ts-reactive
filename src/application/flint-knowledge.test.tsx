@@ -126,3 +126,23 @@ it('reveals plain UTF-16 text in an inactive nested tab without authoring naviga
  f.editor.commands.insert({id:'inner-tabs',type:'tab-row-block',children:[{id:'inner-first',type:'tab-block',children:[{type:'plain-text-block',text:'first'}]},{id:'inner-second',type:'tab-block',children:[{id:'plain-target',type:'plain-text-block',text:'A 🧭 plain passage'}]}]},{kind:'at',parentKey:doc.view.state.rootKey,index:1});
  await search(a,'plain passage');expect(a.querySelectorAll('.flint-search-hit')).toHaveLength(1);const before=f.editor.repository.snapshot();a.querySelector<HTMLButtonElement>('.flint-search-hit')!.click();await wait(()=>expect(f.editor.node(f.editor.focus.state.focusedKey!)?.payload.id).toBe('plain-target'));const mount=f.editor.mounts.get(f.editor.focus.state.focusedKey!)!;await wait(()=>expect(mount.captureSelection?.()).toMatchObject({start:5,end:18}));expect(f.editor.repository.snapshot()).toEqual(before);
 },15000);
+it('Autocomplete uses native identities, commits replacement in one Undo unit and fences cancellation',async()=>{
+ const f=await fixture(),a=f.windows()[0];await open(a);
+ const target=await documentWithText(f,a,'target.mutable.json','Target','Destination');
+ f.editor.commands.setPayloadField(target.view.state.rootKey,'id','distinct-root-id');click(a,'Save Document');await wait(()=>expect(button(a,'Refresh').disabled).toBe(false));
+ const source=await documentWithText(f,a,'source.mutable.json','Source','[[Target');
+ const vaults=createDocumentVaults(f.service),v=await vaults.acquire('vault');disposers.push(()=>{v.release();vaults.dispose();});
+ const k=new VaultKnowledge(f.editor,f.service,{vault:()=>v,guard:()=>{},active:()=>({documentId:source.id,projection:source.view}),navigate:async()=>{}});disposers.push(()=>k.dispose());
+ const targetDescriptor=(await k.completionTargets()).sources.find(t=>t.documentId===target.id)!;
+ expect(targetDescriptor.blockId).toBe('distinct-root-id');
+ let token=k.selection(f.editor.textRanges.snapshot(source.node.key,0,8));
+ await expect(k.createReference(token,targetDescriptor,'Target',()=>false)).rejects.toThrow('cancelled');
+ expect(source.node.inlineContent).toHaveLength(8);
+ token=k.selection(f.editor.textRanges.snapshot(source.node.key,0,8));
+ await k.createReference(token,targetDescriptor,'Target');
+ const properties=source.node.payload.standoffProperties as any[];
+ expect(properties.at(-1)).toMatchObject({type:'codex/block-reference',value:'distinct-root-id',metadata:{documentId:target.id},start:0,end:5});
+ expect(source.node.inlineContent).toHaveLength(6);
+ f.editor.repository.undo();expect(source.node.inlineContent).toHaveLength(8);expect(source.node.payload.standoffProperties??[]).toHaveLength(0);
+ f.editor.repository.redo();expect(source.node.inlineContent).toHaveLength(6);
+},15000);

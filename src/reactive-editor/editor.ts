@@ -68,6 +68,7 @@ import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguratio
 import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
+  completionInput?: import("../input/gateway").CompletionInput;
   /** WorkspaceSession owns this runtime-only store; absent in legacy/isolated editors. */
   documentSessions?: import("../application/document-sessions").DocumentSessionStore;
   readonly blockPresentation = new BlockPresentation();
@@ -347,6 +348,7 @@ export class ReactiveEditor {
       },
       { setCaret: this.setCaret, setComposing: value => this.caretModes.setComposing(value) },
       this.clipboard,
+      () => this.completionInput,
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;

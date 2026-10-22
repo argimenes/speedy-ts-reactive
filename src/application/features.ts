@@ -1,3 +1,4 @@
+import {createAutocompleteFeature} from '../features/autocomplete';
 import { createThesisFeature } from './thesis';
 import { createPhosphorFeature } from "./phosphor";
 import { FormattedDocumentView } from "../features/document-formats/view";
@@ -29,6 +30,7 @@ export function registerApplicationViews(editor: ReactiveEditor): void {
   if (editor.features.canvasWorkspace) editor.featureHost.activate(createCanvasCounterFeature(scope => blockFeatureCapabilities(editor, scope)));
   if (editor.features.compactDocumentMode) editor.featureHost.activate(createCompactDocumentFeature(scope => presentationCapabilities(editor, scope)));
   if (editor.features.entityReferences) editor.featureHost.activate(createEntityReferencesFeature(scope => annotationCapabilities(editor, scope)));
+  if (editor.features.autocompleteWorkstation && editor.features.entityReferences) editor.featureHost.activate(createAutocompleteFeature(editor));
   if (editor.features.grouping) editor.featureHost.activate(createGroupingFeature(scope => textOperationCapabilities(editor, scope)));
   if (editor.features.timer) editor.featureHost.activate(createTimerFeature(scope => blockFeatureCapabilities(editor, scope)));
 }

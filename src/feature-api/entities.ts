@@ -5,7 +5,11 @@ export interface EntityResolutionQuery {query:string;stream:EntityStream;match:'
 export interface EntityEvidence {kind:string;text:string;resourceId?:string;mentionId?:string;ranges?:readonly {blockId:string;start:number;end:number}[]}
 export interface EntityCandidate {id:string;name:string;evidence:EntityEvidence[];localMentions?:number}
 export interface EntityResolution {candidates:EntityCandidate[];complete:boolean;diagnostics:string[];current():void}
+export interface AuthorityRecord { provider:'wikidata'|'gnd'; id:string; name:string; description:string; aliases:string[]; url:string; retrievedAt:string; wikidata?:string; revision?:number }
 export interface EntityService {
+ historyScope?():Promise<string>;
+ authorityLookup?(record:{provider:string;id:string},signal:AbortSignal):Promise<CanonicalEntity|undefined>;
+ acquireIdentity?(input:{id:string;operationId:string;record:AuthorityRecord;targetId?:string;expected?:number}):Promise<CanonicalEntity>;
  names(ids:string[],signal?:AbortSignal):Promise<Array<{id:string;name:string}>>;
  dbMentions(ids:string[],signal?:AbortSignal):Promise<Array<{id:string;mentions:number}>>;
  /** Canonical matches may be published while slower mention evidence is prepared. */

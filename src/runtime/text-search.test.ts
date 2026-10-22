@@ -138,3 +138,16 @@ it('searches authored source once in UTF16 without activating source annotations
  const results=await search.searchText({query:'Rome',scope:resolveSearchScope(editor,node.key,'document')});expect(results.matches).toHaveLength(2);expect(results.matches.map(m=>m.ranges[0].start)).toEqual([3,13]);expect(results.matches.every(m=>!m.capabilities.annotate&&!m.capabilities.highlight&&m.ranges[0].coordinate==='utf16')).toBe(true);
  const markup=await search.searchText({query:'<b>',scope:resolveSearchScope(editor,node.key,'document')});expect(markup.matches).toHaveLength(1);expect(editor.repository.state.revision).toBe(0);
 });
+it('returns canonical annotation-range versions after edits while retaining independent cache epochs',async()=>{
+ const editor=new ReactiveEditor({id:'doc',type:'document-block',children:[{id:'text',type:'standoff-editor-block',text:'he he'}]}),view=editor.createView(),node=Object.values(view.state.nodes).find(n=>n.payload.id==='text')!;
+ editor.commands.replaceInlineRange(node.key,0,2,'she');
+ const search=new TextSearch(editor,async(s,q,o)=>matchSources(s,q,o));
+ try {
+  const result=await search.searchText({query:'he',scope:resolveSearchScope(editor,node.key,'document')});
+  expect(result.matches).toHaveLength(2);
+  expect(()=>editor.textRanges.validate(result.matches.flatMap(m=>m.ranges),'cell')).not.toThrow();
+  editor.linkedAnnotations.createBatch(result.matches.map(m=>m.ranges),'codex/entity-reference','entity',{},result.revision,'Reviewed matches');
+  expect((node.payload.standoffProperties as unknown[]).length).toBe(2);
+  editor.repository.undo();expect(node.payload.standoffProperties??[]).toHaveLength(0);
+ }finally{search.dispose();editor.dispose();}
+});

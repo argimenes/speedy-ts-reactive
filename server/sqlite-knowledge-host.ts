@@ -147,7 +147,7 @@ export class SqliteKnowledgeHost {
     try{
       if(this.closed||this.options.entitiesEnabled===false)throw Error('Canonical Entity service is unavailable');
       if(this.options.readOnly)throw Error('Canonical Entity storage is read-only');
-      if(typeof body.vault!=='string'||!['create','rename','update','alias-add','alias-update','alias-remove'].includes(body.request?.op))throw Error('Invalid Entity mutation');
+      if(typeof body.vault!=='string'||!['authority-import','create','rename','update','alias-add','alias-update','alias-remove'].includes(body.request?.op))throw Error('Invalid Entity mutation');
       signal?.throwIfAborted();
       // Do not establish a new Vault as a side effect of choosing a name.
       await this.store.resolve(path.posix.join(body.vault,'.mutable/mutable.db'));
@@ -195,7 +195,7 @@ export class SqliteKnowledgeHost {
    * read-only connection keeps them out of the writer's reconciliation queue. */
   async entityLookup(body:any,signal?:AbortSignal,archive=false){
     if(this.closed || this.options.entitiesEnabled===false)throw Error('Canonical Entity service is unavailable');
-    if(typeof body.vault!=='string' || !(archive || ['search','get'].includes(body.request?.op)))throw Error('Invalid Entity lookup');
+    if(typeof body.vault!=='string' || !(archive || ['search','get','authority-lookup'].includes(body.request?.op)))throw Error('Invalid Entity lookup');
     signal?.throwIfAborted();
     const root=await this.store.resolve(body.vault),file=await this.store.resolve(path.posix.join(body.vault,'.mutable/mutable.db'));
     const stamp=await stat(file),identity=`${stamp.dev}:${stamp.ino}`;

@@ -9,6 +9,8 @@ export interface OverlayDescriptor {
   viewType: string;
   data?: unknown;
   allowDocumentInput?: boolean;
+  /** Inline completion must not take the editing caret when it opens. */
+  retainEditorFocus?: boolean;
   explicitDismissal?: boolean;
   anchor: { x: number; y: number };
   title?: string;
@@ -56,7 +58,7 @@ export class OverlayService {
       returnDomRange: external && selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : undefined,
     });
     const valid = this.focusLease?.();
-    queueMicrotask(() => { if (valid?.() !== false && this.isOverlayKey(key)) this.focus.request(key, { reason: "opened-panel" }); });
+    queueMicrotask(() => { if (!input.retainEditorFocus && valid?.() !== false && this.isOverlayKey(key)) this.focus.request(key, { reason: "opened-panel" }); });
     return key;
   }
 

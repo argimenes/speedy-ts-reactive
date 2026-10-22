@@ -1,0 +1,14 @@
+.autocomplete-workstation { box-sizing:border-box; position:fixed; width:min(460px,calc(100vw - 16px)); max-height:calc(100dvh - 16px); overflow:auto; background:#fffdf7; color:#20221e; border:1px solid #887e63; border-radius:8px; box-shadow:0 8px 30px #0004; padding:10px; font:13px/1.4 system-ui,sans-serif; }
+.autocomplete-workstation header { display:flex; justify-content:space-between; align-items:center; }
+.autocomplete-workstation label { display:block; margin:6px 0; }
+.autocomplete-workstation input { width:100%; box-sizing:border-box; }
+.autocomplete-workstation button,.autocomplete-workstation select,.autocomplete-workstation input { font:inherit; color:inherit; }
+.autocomplete-workstation button { cursor:pointer; border:1px solid #c2bcae; border-radius:4px; background:#fffcf5; padding:4px 7px; }
+.autocomplete-results { max-height:220px; overflow:auto; }
+.autocomplete-results button { display:block; text-align:left; width:100%; margin:3px 0; }
+.autocomplete-results button[aria-selected=true] { background:#dce9fa; border-color:#4778a7; }
+.autocomplete-results small { display:block; overflow-wrap:anywhere; }
+.autocomplete-actions { display:flex; gap:5px; flex-wrap:wrap; margin:8px 0; }
+.autocomplete-workstation footer { font-size:11px; border-top:1px solid #d7d2c6; padding-top:6px; }
+.autocomplete-workstation [role=alert] { color:#9b2525; }
+.autocomplete-authority { border-top:1px solid #aaa; margin-top:8px; padding-top:6px; }

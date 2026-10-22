@@ -1,3 +1,4 @@
+import {authorityIdentity} from './authority-identities.mjs';
 import {deterministicReview} from './deterministic.mjs';
 import {resources} from './resources.mjs';
 import {iiif} from './iiif.mjs';
@@ -11,7 +12,7 @@ const string = (v, max = 1000) => { if (typeof v !== 'string' || !v.trim() || v.
 const guid = v => { string(v, 512); if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)) throw Error('Supply a stable UUID'); return v; };
 const expected = v => { if (!Number.isSafeInteger(v) || v < 0) throw Error('Expected revision required'); return v; };
 const entity = (db, id) => { const row = db.prepare('SELECT guid AS id,name,revision,description,typename,attributes FROM Entity WHERE guid=?').get(string(id,512)); if (!row) return; return {...row,attributes:row.attributes===null?null:JSON.parse(row.attributes), aliases: db.prepare("SELECT guid AS id,alias AS name,origin,revision FROM EntityAlias WHERE entityGuid=? AND origin IN ('curated','imported') ORDER BY aliasKey,guid LIMIT 201").all(id)}; };
-export const entityMutation = op => ['deterministic-review','pdf-commit','resource-review','iiif-commit','wiki-commit','wiki-review','scholarly-commit','create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(op);
+export const entityMutation = op => ['authority-import','deterministic-review','pdf-commit','resource-review','iiif-commit','wiki-commit','wiki-review','scholarly-commit','create','rename','update','alias-add','alias-update','alias-remove','relationship-create','relationship-update'].includes(op);
 /** Typed semantic dispatch keeps the existing Entity/Relationship operation names. */
 export function entityCommand(request){
  const {recordType,...input}=request;
@@ -25,6 +26,7 @@ export function canonicalEntities(db, request, check = () => {}, ledger = canoni
   check();
   if (!request || typeof request !== 'object' || Buffer.byteLength(JSON.stringify(request)) > 32768) throw Error('Entity request budget exceeded');
   const {op}=request;
+  if(op==='authority-import'||op==='authority-lookup')return authorityIdentity(db,request,ledger,entity,check);
   if(op?.startsWith('deterministic-'))return deterministicReview(db,request,ledger,check);
   if(op?.startsWith('pdf-')||op?.startsWith('resource-'))return resources(db,request,ledger,check);
   if(op?.startsWith('iiif-'))return iiif(db,request,ledger,check);

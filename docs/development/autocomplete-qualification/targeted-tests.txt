@@ -1,0 +1,92 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/runtime/text-search.test.ts (13 tests) 492ms
+   ✓ scoped text search > does no search or snapshots synchronously on edit; only rematches dirty content 336ms
+ ❯ src/features/entity-references/entity-candidates.test.ts (11 tests | 2 failed) 1109ms
+   × entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips 80ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+   × entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo 630ms
+     → expected "snapshot" to be called 2 times, but got 0 times
+ ✓ src/features/entity-references/search-view.test.tsx (18 tests) 1441ms
+   ✓ keeps target Leonardo independent of resolver query Leonardo 376ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (20 tests) 44ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (15 tests) 3130ms
+   ✓ document entity listing > loads summaries, sorts every column and previews property ranges without document changes 464ms
+   ✓ fast Entity listing > times out optional totals without losing names and ignores late results 1031ms
+ ✓ src/features/entity-references/candidates-view.test.tsx (8 tests) 1766ms
+   ✓ entity candidate review > binds a manually checked match and closes despite incomplete document coverage 421ms
+   ✓ entity candidate review > keeps native select-all in query fields, supports a remapped opener and only nominates on Enter 390ms
+ ✓ src/application/workspace-session.test.ts (13 tests) 1450ms
+   ✓ canonical workspace session > defaults off, preserves legacy layout and retains unavailable presentation preferences 462ms
+ ✓ src/application/window-manager.test.tsx (24 tests) 3158ms
+   ✓ adopts imports independently of mount order, raises without resource/history changes, and cleans up 420ms
+   ✓ does no registry ordering, registration, snapshots or owner lookup on ordinary text edits 334ms
+ ✓ src/features/entity-references/lifecycle.test.tsx (3 tests) 576ms
+   ✓ disposes open UI, async lookup, bindings, effects and decorations; reactivation preserves authored data 530ms
+ ✓ src/input/bindings.test.ts (4 tests) 21ms
+ ✓ src/application/window-manager-phase-e.test.tsx (3 tests) 701ms
+   ✓ Phase E existing application surfaces > retains inspector DOM and pending fields across unrelated launch/geometry and owner hide/restore 425ms
+ ✓ src/runtime/window-manager.test.ts (4 tests) 18ms
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 18ms
+ ✓ src/features/entity-references/document-entities.test.ts (3 tests) 714ms
+   ✓ document entity inventory > reads annotation metadata without visiting character cells or making text snapshots 671ms
+ ✓ src/features/entity-references/property-details.test.tsx (2 tests) 183ms
+ ✓ src/application/entity-service.test.ts (13 tests) 8378ms
+   ✓ partial canonical searches bypass Vault discovery and saved Facts, including the first DocumentWindow search 1875ms
+   ✓ name lookup and selection make no document reads or boundary audits, even without a saved source 1040ms
+   ✓ All publishes canonical matches then merges indexed mentions without preparing document Facts 858ms
+   ✓ real HTTP/worker resolves canonical names, curated aliases and explicitly saved indexed mentions 933ms
+   ✓ selector reads ignore source-file changes while source-authorized operations still reject forged bindings 674ms
+   ✓ lost mutation response is explicitly unconfirmed and retrying the same attempt does not create another Entity 410ms
+   ✓ read-only vault permits resolution but rejects canonical writes, and another vault cannot supply source authority 510ms
+   ✓ unresolved saved definitions keep mention resolution and vault counts explicitly incomplete 301ms
+   ✓ DocumentWindows resolve SQLite names and vault counts without Flint, and reject closed occurrences 361ms
+   ✓ DocumentWindows still resolve names when saved-vault counts are disabled, without claiming complete counts 545ms
+   ✓ listing reads only names and indexed segment counts without Vault discovery or Facts reconstruction 357ms
+ ✓ src/application/flint-knowledge.test.tsx (13 tests) 11900ms
+   ✓ searches unmounted native text/title, reports unopened coverage, and navigates with no canonical or History changes 2842ms
+   ✓ uses the invoking Window occurrence; simultaneous occurrences never duplicate matches or steal the other selection 1208ms
+   ✓ uses cell-correct Unicode ranges and never joins text across inline images 819ms
+   ✓ creates, follows and removes native references with Undo/Redo; target titles and paths are not identity 1478ms
+   ✓ revalidates a displayed result after filesystem removal without mounting or changing bindings 766ms
+   ✓ cancels delayed queries on edits, Undo branches and query replacement without creating projections 557ms
+   ✓ rejects changed locations during a query and reports duplicate discovery without silently rebinding 488ms
+   ✓ cancels a picker and rejects source disappearance without changing the target 594ms
+   ✓ round-trips linked multi-Block references through native Save/Open and removes a mention with ordinary Undo 1013ms
+   ✓ excludes outside-vault resources and diagnoses nested resources and unsupported hosted text 658ms
+   ✓ does not rebuild canonical snapshots or run query matching during ordinary typing after a search 354ms
+   ✓ reveals plain UTF-16 text in an inactive nested tab without authoring navigation 401ms
+   ✓ Autocomplete uses native identities, commits replacement in one Undo unit and fences cancellation 721ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > requires nomination and explicit commit; binds separate IDs atomically and round-trips
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:42:54
+     40|     const snapshot = vi.spyOn(editor.repository,"snapshot"), commit = …
+     41|     // Repository before/after copies, independent of how many matches…
+     42|     expect(session.bind()).toBe(5); expect(snapshot).toHaveBeenCalledT…
+       |                                                      ^
+     43|     const properties = ["a","b","margin","hidden"].flatMap(id => node(…
+     44|     expect(new Set(properties.map(p => p.id)).size).toBe(5); expect(pr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/features/entity-references/entity-candidates.test.ts > entity mention candidates > batches many Blocks without per-match snapshots and preserves all-or-nothing undo
+AssertionError: expected "snapshot" to be called 2 times, but got 0 times
+ ❯ src/features/entity-references/entity-candidates.test.ts:122:148
+    120|     session.enable(); await session.flush(true); session.nominate(enti…
+    121|     const snapshot = vi.spyOn(editor.repository,"snapshot"),commit = v…
+    122|     expect(session.bind()).toBe(300); expect(commit).toHaveBeenCalledT…
+       |                                                                                                                                                    ^
+    123|     editor.repository.undo(); expect(editor.repository.canUndo()).toBe…
+    124|     expect(editor.encodeDocument().children![0].children!.every(d => !…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed | 16 passed (17)
+      Tests  2 failed | 168 passed (170)
+   Start at  14:40:18
+   Duration  22.32s (transform 12.06s, setup 0ms, collect 51.08s, tests 35.10s, environment 18.56s, prepare 2.39s)
+

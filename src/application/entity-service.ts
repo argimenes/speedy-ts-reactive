@@ -113,6 +113,9 @@ export function entityService(editor:ReactiveEditor,owner:string):EntityService 
   return result.entity;
  };
  return {
+  historyScope:()=>lookupRoot(),
+  async authorityLookup(record,signal){const vault=await lookupRoot(signal),result=await request('entity-lookup',{vault,request:{op:'authority-lookup',record}},signal);lookupCurrent();if(result.entity?.attributes!==undefined)result.entity.attributes=decodeAuthoredValue(result.entity.attributes);return result.entity;},
+  async acquireIdentity(input){return mutate({op:'authority-import',...input});},
   names:async(ids,signal)=>(await listingCall({op:'names',ids},signal)).rows,
   dbMentions:async(ids,signal)=>(await listingCall({op:'db-mentions',ids},signal)).rows,
   async get(id,signal){const vault=await lookupRoot(signal),result=await request('entity-lookup',{vault,request:{op:'get',id}},signal);lookupCurrent();if(result.entity?.attributes!==undefined)result.entity.attributes=decodeAuthoredValue(result.entity.attributes);return result.entity;},

@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/runtime/text-search.test.ts (13 tests) 495ms
+   ✓ scoped text search > does no search or snapshots synchronously on edit; only rematches dirty content 346ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (21 tests) 2093ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 2061ms
+
+ Test Files  2 passed (2)
+      Tests  34 passed (34)
+   Start at  14:42:22
+   Duration  3.78s (transform 1.71s, setup 0ms, collect 1.84s, tests 2.59s, environment 1.44s, prepare 279ms)
+

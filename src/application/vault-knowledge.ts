@@ -1,3 +1,4 @@
+import {graphemeBoundaries} from '../input/graphemes';
 import type { FactsQueryProvider, SavedSourceEvidence } from './facts-query-provider';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { NativeDocumentSession } from '../persistence/native-session';
@@ -144,12 +145,15 @@ export class VaultKnowledge implements ApplicationKnowledge {
     const target=this.target(hit.target,hit.stamp.vault);if(target.blockId!==hit.target.blockId||target.location!==hit.target.location)throw new Error('Search target identity or location changed');
     await this.host.navigate(target,hit.passage,()=>{try{return this.hits.get(id)===hit&&this.valid(hit.stamp);}catch{return false;}});
   };
-  selection=()=>{
+  /** Explicit lookup pool; consumers filter this bounded pool without rescanning on typing. */
+  completionTargets=async()=>{this.host.guard();const vault=this.host.vault();await vault.ensureVerified();this.host.guard();if(!this.live||this.host.vault()!==vault)throw Error("Document picker context changed");return this.scope(vault);};
+  selection=(explicit?:TextRangeSnapshot)=>{
     this.host.guard();const active=this.host.active();if(!active)throw new Error('Select text in this Flint Window first');
-    const key=[this.editor.focus.state.focusedKey,this.editor.focus.state.lastFocusedKey].find(k=>k&&active.projection.node(k)?.viewType==='standoff-editor-block'),node=key&&active.projection.node(key);
+    const key=explicit?.nodeKey??[this.editor.focus.state.focusedKey,this.editor.focus.state.lastFocusedKey].find(k=>k&&active.projection.node(k)?.viewType==='standoff-editor-block'),node=key&&active.projection.node(key);
     if(!node||node.viewType!=='standoff-editor-block'||this.editor.mounts.get(node.key)?.composing)throw new Error('Select nonempty text in this Window; finish composition first');
     let ranges:TextRangeSnapshot[]=[];const cross=this.editor.crossText.range();
-    if(cross){const segments=this.editor.crossText.resolve(cross.anchor,cross.head);if(segments.some(s=>!active.projection.node(s.nodeKey)))throw new Error('Selection must stay in this Document occurrence');ranges=segments.filter(s=>s.end>s.start).map(s=>this.editor.textRanges.snapshot(s.nodeKey,s.start,s.end));}
+    if(explicit){this.editor.textRanges.validate([explicit],'cell');if(!active.projection.node(explicit.nodeKey))throw Error('Source occurrence is outside the active Document');ranges=[explicit];}
+    else if(cross){const segments=this.editor.crossText.resolve(cross.anchor,cross.head);if(segments.some(s=>!active.projection.node(s.nodeKey)))throw new Error('Selection must stay in this Document occurrence');ranges=segments.filter(s=>s.end>s.start).map(s=>this.editor.textRanges.snapshot(s.nodeKey,s.start,s.end));}
     else {const range=this.editor.mounts.get(node.key)?.captureInlineSelection?.()??this.editor.mounts.inlineSelection(node.key);if(range&&range.anchor!==range.head)ranges=[this.editor.textRanges.snapshot(node.key,Math.min(range.anchor,range.head),Math.max(range.anchor,range.head))];}
     if(!ranges.length)throw new Error('Select nonempty text before opening the Document picker');
     const vault=this.host.vault(),source=this.target({documentId:active.documentId} as DocumentTarget,vault),state=this.editor.repository.readState();
@@ -162,14 +166,16 @@ export class VaultKnowledge implements ApplicationKnowledge {
     try {if(saved&&this.valid(saved)&&this.host.active()?.projection.viewId===saved.viewId){const first=saved.ranges[0];this.editor.focus.request(first.nodeKey,{reason:'cancel-document-reference'});this.editor.mounts.get(first.nodeKey)?.restoreInlineSelection?.({anchor:first.start,head:first.end});}}catch{/* A disposed source never regains focus. */}
   };
   picker=async(token:string)=>{const saved=this.selections.get(token);if(!saved)throw new Error('Selection expired');await this.refresh(saved);if(this.selections.get(token)!==saved)throw new Error('Selection cancelled');const scope=this.scope(saved.vault);return {targets:scope.sources.map(({contentKey,placement,...target})=>target),diagnostics:scope.diagnostics};};
-  createReference=async(token:string,value:DocumentTarget)=>{
+  createReference=async(token:string,value:DocumentTarget,replacement?:string,current:()=>boolean=()=>true)=>{
     const saved=this.selections.get(token);if(!saved)throw new Error('Selection expired');await this.refresh(saved);
     if(this.selections.get(token)!==saved)throw new Error('Selection cancelled');
     const active=this.host.active();if(active?.documentId!==saved.id||active.projection.viewId!==saved.viewId)throw new Error('Source occurrence changed; select the text again');
     const target=this.target(value,saved.vault);if(target.blockId!==value.blockId)throw new Error('Target identity changed');
     this.editor.textRanges.validate(saved.ranges,'cell');
-    this.editor.linkedAnnotations.createBatch([saved.ranges],'codex/block-reference',target.blockId,{documentId:target.documentId},saved.revision,'Create Document reference');
-    this.selections.delete(token);const first=saved.ranges[0];this.editor.focus.request(first.nodeKey,{reason:'document-reference'});this.editor.mounts.get(first.nodeKey)?.restoreInlineSelection?.({anchor:first.start,head:first.end});this.editor.selections.setPrimary(first.nodeKey,first.contentKey,saved.viewId,first.start,first.end);
+    if(!current())throw Error('Completion cancelled');
+    if(replacement!==undefined){if(saved.ranges.length!==1)throw Error('Completion requires one range');const r=saved.ranges[0],node=this.editor.node(r.nodeKey)!,cells=node.inlineContent.map(k=>this.editor.node(k)),boundaries=graphemeBoundaries(cells.map(c=>String(c?.payload.text??'\uFFFC')).join(''));if(!boundaries.includes(r.start)||!boundaries.includes(r.end)||cells.slice(r.start,r.end).some(c=>c?.viewType!=='text-cell'))throw Error('Completion requires whole graphemes and plain text');this.editor.commands.replaceAndAnnotate(saved.ranges[0].nodeKey,saved.ranges[0].start,saved.ranges[0].end,replacement,'codex/block-reference',target.blockId,{documentId:target.documentId});}
+    else this.editor.linkedAnnotations.createBatch([saved.ranges],'codex/block-reference',target.blockId,{documentId:target.documentId},saved.revision,'Create Document reference');
+    this.selections.delete(token);const first=saved.ranges[0],end=replacement===undefined?first.end:first.start+[...replacement].length,start=replacement===undefined?first.start:end;this.editor.focus.request(first.nodeKey,{reason:'document-reference'});this.editor.mounts.get(first.nodeKey)?.restoreInlineSelection?.({anchor:start,head:end});this.editor.selections.setPrimary(first.nodeKey,first.contentKey,saved.viewId,start,end);
   };
   references=async()=>{
     this.host.guard();const active=this.host.active();if(!active)throw new Error('Open a Document in this Window first');

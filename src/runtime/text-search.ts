@@ -106,10 +106,13 @@ export class TextSearch {
       if (zeroWidth) set.diagnostics.push(`${zeroWidth} zero-width regex matches skipped.`);
       outer: for (const { node, path, breadcrumb } of found) {
         const source = sources.get(node.contentKey)!;
+        // Cache epochs distinguish undo branches; edit authority uses canonical range versions.
+        const content = this.editor.repository.readState().contents[node.contentKey];
+        const rangeVersion = source.coordinate === "cell" ? content.inlineRevision : content.revision;
         for (const raw of local.get(node.contentKey)?.matches ?? []) {
           if (set.matches.length >= 5000) { set.status = "partial"; set.exact = false; break outer; }
           const id = `${set.sessionId}:${set.matches.length}`;
-          const range: SearchRange = { nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey, version: source.version, start: raw.start, end: raw.end, coordinate: source.coordinate };
+          const range: SearchRange = { nodeKey: node.key, contentKey: node.contentKey, placementKey: node.placementKey, version: rangeVersion, start: raw.start, end: raw.end, coordinate: source.coordinate };
           set.matches.push({ id, text: raw.text, context: raw.context, captures: raw.captures, groups: raw.groups, ranges: [range], path, breadcrumb, capabilities: { highlight: source.coordinate === "cell", reveal: true, annotate: source.coordinate === "cell" && raw.actionable, replace: raw.actionable, reason: !raw.actionable ? "Range splits a grapheme cluster." : source.coordinate === "utf16" ? "Plain-text results support reveal, not standoff highlights or annotations." : undefined } });
           (set.deduplication[`${node.contentKey}:${raw.start}:${raw.end}`] ??= []).push(id);
         }
