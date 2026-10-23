@@ -172,6 +172,28 @@ try {
   await evaluate(`click('WRITE');root.querySelector('textarea').focus()`);
   await send('Input.insertText', { text: 'Phosphor saved from Mutable' }, sessionId);
   check('workspace Screen accepts real keyboard input', await evaluate(`api.read().text.startsWith('Phosphor saved from Mutable')`));
+  // Real pointer activation is required by the browser Fullscreen API.
+  const pointerClick = async selector => {
+    const { x, y } = await evaluate(`(()=>{const r=root.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 }, sessionId);
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 }, sessionId);
+  };
+  await evaluate(`window.editingInput=root.querySelector('textarea');window.editingSurface=root.querySelector('.ph-cell-surface');window.beforeFullscreen=JSON.stringify(api.read());window.normalZoom=root.style.getPropertyValue('--screen-zoom');editingInput.setSelectionRange(1,4);`);
+  await pointerClick('[aria-label="Maximise ASCII screen"]');
+  await wait(`document.fullscreenElement===root.querySelector('.ph-display-bay')`);
+  check('ASCII screen fills the browser with a visible restore overlay', await evaluate(`(()=>{const bay=document.fullscreenElement.getBoundingClientRect(),b=root.querySelector('[aria-label="Restore ASCII screen"]').getBoundingClientRect();return bay.width===innerWidth&&bay.height===innerHeight&&b.width>0&&b.x>=0&&b.y>=0&&b.right<=innerWidth&&b.bottom<=innerHeight})()`));
+  check('fullscreen preserves editing DOM, artwork and selection', await evaluate(`editingInput===root.querySelector('textarea')&&editingSurface===root.querySelector('.ph-cell-surface')&&JSON.stringify(api.read())===beforeFullscreen&&editingInput.selectionStart===1&&editingInput.selectionEnd===4`));
+  await pointerClick('[aria-label="Restore ASCII screen"]');
+  await wait(`!document.fullscreenElement&&document.activeElement===editingInput`);
+  check('restore button returns normal zoom without editing artwork', await evaluate(`root.style.getPropertyValue('--screen-zoom')===normalZoom&&JSON.stringify(api.read())===beforeFullscreen&&editingInput.selectionStart===1&&editingInput.selectionEnd===4`));
+  await pointerClick('[aria-label="Maximise ASCII screen"]');
+  await wait(`document.fullscreenElement===root.querySelector('.ph-display-bay')`);
+  await send('Input.dispatchKeyEvent', {type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27}, sessionId);
+  await send('Input.dispatchKeyEvent', {type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27}, sessionId);
+  await wait(`!document.fullscreenElement&&document.activeElement===editingInput`);
+  check('Escape restores the same editor without clearing its selection', await evaluate(`editingInput===root.querySelector('textarea')&&editingInput.selectionStart===1&&editingInput.selectionEnd===4&&JSON.stringify(api.read())===beforeFullscreen`));
+  await writeFile('artifacts/phosphor/fullscreen-results.json', JSON.stringify({checks,errors},null,2));
+  if (!process.argv.includes('--fullscreen-only')) {
   await evaluate(`api.commit(model.paint(api.read(),[{column:3,row:4}],'\uf813',model.ATTRIBUTES),'MouseText with display attributes');window.expected=api.read();click('File');field('Document folder','vault');field('Document filename','workspace.phosphor');click('Save .phosphor')`);
   await wait(`api.status().includes('Saved native Document')`);
   const expected = await evaluate('expected');
@@ -210,8 +232,9 @@ try {
   await wait(`document.querySelectorAll('.ph-cell').length===960`);
   const associated = await evaluate(`(async()=>{const {phosphorPresentation}=await import('/src/features/phosphor/view.tsx');return phosphorPresentation(document.querySelector('.phosphor')).read()})()`);
   check('Mutable OS opens .phosphor files in Phosphor with exact saved content', isDeepStrictEqual(associated, expected));
+  }
   check('no uncaught browser exceptions', errors.length===0);
-  await writeFile('artifacts/phosphor/workspace-integration-results.json', JSON.stringify({checks,errors},null,2));
+  await writeFile(`artifacts/phosphor/${process.argv.includes('--fullscreen-only') ? 'fullscreen' : 'workspace-integration'}-results.json`, JSON.stringify({checks,errors},null,2));
   console.log(JSON.stringify({passed:checks.length}));
 } finally {
   socket?.close();

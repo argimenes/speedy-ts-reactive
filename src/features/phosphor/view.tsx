@@ -126,6 +126,7 @@ export function PhosphorView(props: {
     [ready, setReady] = createSignal(false),
     [zoom, setZoom] = createSignal(1),
     [fitView, setFitView] = createSignal(true);
+  const [fullscreen, setFullscreen] = createSignal(false);
   const [lightOpen, setLightOpen] = createSignal(false),
     [studioLight, setStudioLight] = createSignal(PHOSPHOR_STUDIO_LIGHT),
     [automaticLight, setAutomaticLight] = createSignal(true),
@@ -780,6 +781,21 @@ export function PhosphorView(props: {
     setFitView(true);
     fitCells();
   };
+  let normalScreen: { zoom: number; fit: boolean; left: number; top: number; row: number } | undefined;
+  let fullscreenFrame = 0, fullscreenPending = false, live = true;
+  const maximiseScreen = async () => {
+    if (fullscreenPending || document.fullscreenElement === displayBay) return;
+    if (!displayBay.requestFullscreen) { setMessage("Full screen is unavailable in this browser."); return; }
+    normalScreen = { zoom: zoom(), fit: fitView(), left: displayBay.scrollLeft, top: displayBay.scrollTop, row: viewport.scrollTop };
+    fullscreenPending = true;
+    try { await displayBay.requestFullscreen(); }
+    catch { if (live) { normalScreen = undefined; setMessage("Could not enter full screen. Please try again."); } }
+    finally { fullscreenPending = false; }
+  };
+  const restoreScreen = () => {
+    if (document.fullscreenElement === displayBay)
+      void document.exitFullscreen().catch(() => { if (live) setMessage("Could not leave full screen. Press Escape to return."); });
+  };
   onMount(() => {
     presentations.set(root, api);
     onCleanup(() => presentations.delete(root));
@@ -789,6 +805,41 @@ export function PhosphorView(props: {
     window.addEventListener("resize", fitCells);
     onCleanup(() => window.removeEventListener("resize", fitCells));
     onCleanup(() => observer.disconnect());
+    const fullscreenChanged = () => {
+      const active = document.fullscreenElement === displayBay;
+      if (!active && !fullscreen()) return;
+      setFullscreen(active);
+      cancelAnimationFrame(fullscreenFrame);
+      if (active) {
+        fitScreen();
+        input.focus({ preventScroll: true });
+      } else if (normalScreen) {
+        const previous = normalScreen;
+        normalScreen = undefined;
+        setFitView(previous.fit);
+        setZoom(previous.zoom);
+        fullscreenFrame = requestAnimationFrame(() => {
+          if (!live) return;
+          if (previous.fit) fitCells();
+          displayBay.scrollTo(previous.left, previous.top);
+          viewport.scrollTop = previous.row;
+          input.focus({ preventScroll: true });
+        });
+      }
+    };
+    const fullscreenKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing || document.fullscreenElement !== displayBay) return;
+      event.preventDefault(); event.stopImmediatePropagation(); restoreScreen();
+    };
+    document.addEventListener("fullscreenchange", fullscreenChanged);
+    document.addEventListener("keydown", fullscreenKey, true);
+    onCleanup(() => {
+      live = false;
+      cancelAnimationFrame(fullscreenFrame);
+      document.removeEventListener("fullscreenchange", fullscreenChanged);
+      document.removeEventListener("keydown", fullscreenKey, true);
+      restoreScreen();
+    });
     // Reduced motion retains a static physical emblem. Forced colours and the
     // explicit effects switch still use the accessible DOM surface fallback.
     const colours = matchMedia("(forced-colors: active)");
@@ -1142,12 +1193,16 @@ export function PhosphorView(props: {
               <small>
                 {data().settings.layout === "spatial" ? "SPATIAL" : "PROSE"}
               </small>
+              <button type="button" aria-label="Maximise ASCII screen" title="Maximise ASCII screen" onPointerDown={e => e.preventDefault()} onClick={() => void maximiseScreen()}>⛶</button>
             </div>
             <div
               ref={displayBay}
               class="ph-display-bay"
               aria-label="Screen workspace"
             >
+              <Show when={fullscreen()}>
+                <button type="button" class="ph-fullscreen-restore" aria-label="Restore ASCII screen" title="Return to normal view (Escape)" onPointerDown={e => e.preventDefault()} onClick={restoreScreen}>⤢ Restore <kbd>Esc</kbd></button>
+              </Show>
               <div class="ph-display-stage">
                 <div class="ph-display-aperture">
                   <div class="ph-ruler" aria-hidden="true">

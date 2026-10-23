@@ -156,6 +156,32 @@
   min-height: 100%;
   padding: calc(var(--screen-housing-outset) + 8px * var(--screen-zoom));
 }
+.ph-display-bay:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: #090d0b;
+}
+.ph-display-bay:fullscreen::backdrop {
+  background: #090d0b;
+}
+.phosphor .ph-fullscreen-restore {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: #ffe095;
+  background: #151b17;
+  border: 1px solid #bc8a37;
+  border-radius: 5px;
+}
+.ph-fullscreen-restore kbd {
+  font: inherit;
+  opacity: 0.75;
+}
 .ph-display-aperture {
   position: relative;
   flex: none;
