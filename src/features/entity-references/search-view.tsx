@@ -54,7 +54,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
  const resize=floating?.resize??createFloatingWindowResize({element:()=>root,size:()=>size()??{width:root?.offsetWidth||width,height:root?.offsetHeight||window.innerHeight*.76},minimum:{width:480,height:320},onCommit:setSize});
  let drag:{id:number;x:number;y:number;left:number;top:number}|undefined;
  const close=()=>panel.close();
- const canClose=()=>acquisitionGuard()&&(editing||!creating()&&!working()&&(!attempt()||!!created()||window.confirm('Entity creation outcome is unconfirmed. Close this tool and discard its retry receipt?')));
+ const canClose=()=>acquisitionGuard()&&(editing||!creating()&&!working()&&(!attempt()||!!created()||window.confirm('Entity creation outcome is unconfirmed. Close this tool and discard its retry receipt?')))&&(!completion||completion.session.host.canDismiss?.()!==false);
  const run=async(action:()=>Promise<void>)=>{if(working())return;setWorking(true);setError('');try{await action();}catch(e){if(alive)setError(String(e));}finally{if(alive)setWorking(false);}};
  const bind=(entity:CanonicalEntity,replace=false)=>{
   const scry=target().workstation?.scry;
@@ -178,7 +178,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
    <strong>Link Entity Reference</strong><button onClick={close}>Cancel</button>
   </header></Show>
   <div class="entity-search-columns"><section class="entity-search-lookup" aria-label="Entity lookup"><div class="entity-search-source">
-   <Show when={target().workstation?.scry}><p>{target().workstation?.scry?.mode==='mention'?'((mention)): linking preserves your exact wording.':'[[autocomplete]]: linking uses the canonical Entity name.'}</p><button disabled={working()||creating()} onClick={()=>{target().workstation?.scry?.keepLiteral();close();}}>Keep literal brackets</button></Show>
+   <Show when={target().workstation?.scry}><p>{target().workstation?.scry?.mode==='mention'?'((mention)): linking preserves your exact wording.':'[[autocomplete]]: linking uses the canonical Entity name.'}</p><Show when={target().workstation?.scry?.keepLiteral}><button disabled={working()||creating()} onClick={()=>{target().workstation?.scry?.keepLiteral?.();close();}}>Keep literal brackets</button></Show></Show>
    <p>Target: <strong data-entity-target>{target().entityQuery}</strong> {!valid()&&'— selection changed'}</p>
    <details class="entity-boundaries"><summary>Source range controls and shortcuts</summary><For each={['start','end'] as const}>{edge=><For each={[false,true]}>{word=><div><span>{edge==='start'?'Start':'End'} · {word?'word':'character'}: </span><For each={[-1,1] as const}>{d=><button disabled={!valid()||working()} onPointerDown={e=>e.preventDefault()} onClick={()=>adjust(edge,d,word)}>{edge} {d<0?'back':'forward'} {word?'word':'character'}</button>}</For><Show when={completion?.session.source.brackets}><kbd>Ctrl{edge==='start'?'+Alt':''}{word?'':'+Shift'}+←/→</kbd></Show></div>}</For>}</For></details>
    <label>Search<input ref={input} aria-label="Search entities" value={query()} maxLength={1000} onInput={e=>{setQuery(e.currentTarget.value);completion?.session.input(e.currentTarget.value);}}/></label>
@@ -209,7 +209,7 @@ export function EntitySearch(props:{api:AnnotationCapabilities;panel:PanelSessio
    <button disabled={!valid()} onClick={review}>Find other occurrences</button>
    <small>Up/Down: candidates · Enter: link or nominate · Escape: cancel · Alt+S/M/V: stream/match/scope. Tab keeps normal focus traversal. Number keys choose candidates outside text fields.</small>
   <Show when={authority() && service}><AuthorityPanel service={service!} query={query()} guard={fn=>acquisitionGuard=fn} imported={e=>{setCreated(e);setDetails(e);setRename(e.name);setOutcome('Created but not linked');}}/></Show>
-  </div></section><Show when={candidates()} keyed>{session=><EntityCandidatesPanel session={session} bind={()=>void run(async()=>{const e=candidates().state.entity;if(!e||!await service?.get(e.id))throw Error('Entity unavailable');editing=true;try{const scry=target().workstation?.scry;if(scry)scry.batch(()=>candidates().bind());else candidates().bind();used(e);close();}finally{editing=false;}})}/>}</Show></div>
+  </div></section><Show when={candidates()} keyed>{session=><EntityCandidatesPanel session={session} bind={()=>void run(async()=>{const e=candidates().state.entity;if(!e||!await service?.get(e.id))throw Error('Entity unavailable');editing=true;try{const scry=target().workstation?.scry;if(scry)scry.batch(()=>candidates().bind(),e);else candidates().bind();used(e);close();}finally{editing=false;}})}/>}</Show></div>
   <Show when={!completion}><FloatingWindowResizeHandle controller={resize} class="reactive-entity-search__resize" label="Resize Entity Search window"/></Show>
  </div>;
 }

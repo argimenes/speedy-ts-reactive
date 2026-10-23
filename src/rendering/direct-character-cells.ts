@@ -2,6 +2,8 @@ import { managedAsset, assetKey, type ManagedAssetReference } from '../interchan
 import type { JSX } from "solid-js";
 
 export interface CharacterCellPresentation {
+  /** Presentation identity only; never a canonical Cell/Block key. */
+  provisional?: boolean;
   key: string;
   index?: number;
   text: string;
@@ -74,7 +76,8 @@ export class DirectCharacterCells {
         const element = document.createElement("span");
         entry = { element, kind };
         this.entries.set(cell.key, entry);
-        if (cell.index !== undefined) element.dataset.inlineKey = cell.key;
+        if (cell.index !== undefined && !cell.provisional) element.dataset.inlineKey = cell.key;
+        if (cell.provisional) element.dataset.provisionalCell = cell.key;
         if (kind === "image") {
           element.className = "reactive-inline-image";
           element.contentEditable = "false";

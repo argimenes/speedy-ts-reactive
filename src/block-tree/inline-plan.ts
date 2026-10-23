@@ -18,6 +18,7 @@ export function inlineOwnerFor(
   const contents = new Map<string, RepositoryOperation>();
   const placements = new Map<string, RepositoryOperation>();
   let owner: ContentRecord | undefined;
+  const existing:ContentRecord[]=[];
   for (const operation of operations) {
     if (operation.kind === "set-root" || operation.kind === "record-batch") return;
     const key = "record" in operation ? operation.record.key : operation.key;
@@ -25,11 +26,15 @@ export function inlineOwnerFor(
     if (map.has(key)) return;
     map.set(key, operation);
     if (operation.kind === "put-content" && state.contents[key]) {
-      if (owner || operation.record.inlineKind !== "standoff") return;
-      owner = operation.record;
+      existing.push(operation.record);
     }
   }
+  const sameInline=(a:ContentRecord,b:ContentRecord)=>a.inlineContent.length===b.inlineContent.length&&a.inlineContent.every((key,i)=>key===b.inlineContent[i]);
+  const changed=existing.filter(record=>!sameInline(state.contents[record.key],record));
+  if(changed.length>1)return;
+  owner=changed[0]??existing.find(record=>record.inlineKind==='standoff');
   if (!owner) return;
+  if(owner.inlineKind!=='standoff')return;
   const previous = state.contents[owner.key];
   const structural = (record: ContentRecord) => {
     const { payload, inlineContent, inlineRevision, revision, ...rest } = record;
@@ -40,6 +45,17 @@ export function inlineOwnerFor(
   const newKeys = new Set(owner.inlineContent);
   if (newKeys.size !== owner.inlineContent.length) return;
   const usedContents = new Set<string>([owner.key]);
+  // A reviewed Scry action may annotate additional existing text owners in the
+  // same batch. Their graph and Cell membership must be exactly unchanged.
+  for(const record of existing){
+    if(record.key===owner.key)continue;
+    const before=state.contents[record.key];
+    if(record.inlineKind!=='standoff'||!sameInline(before,record)||structural(before)!==structural(record))return;
+    const {standoffProperties:oldProperties,...oldPayload}=before.payload;
+    const {standoffProperties:newProperties,...newPayload}=record.payload;
+    if(JSON.stringify(oldPayload)!==JSON.stringify(newPayload))return;
+    usedContents.add(record.key);
+  }
   const deltas = new Map<string, number>();
   let edges = 0;
   for (const key of oldKeys) {

@@ -59,8 +59,8 @@ it('active bracket edits do bounded affected-range work, retain transient bounda
  try{
   expect(editor.completionInput!.intercept!(node.key,0,0,'((','insertText')).toBe(true);expect(read()).toBe('tail');
   const snapshot=vi.spyOn(editor.repository,'snapshot'),nodes=vi.spyOn(editor,'node');
-  editor.completionInput!.intercept!(node.key,4,4,'!','insertText');expect(nodes.mock.calls.length).toBeLessThan(100);expect(snapshot).not.toHaveBeenCalled();expect(read()).toBe('tail!');
-  editor.completionInput!.intercept!(node.key,0,0,'','deleteContentBackward');expect(read()).toBe('tail!');
+  editor.completionInput!.intercept!(node.key,4,4,'!','insertText');expect(nodes.mock.calls.length).toBeLessThan(100);expect(snapshot).not.toHaveBeenCalled();expect(read()).toBe('tail');
+  editor.completionInput!.intercept!(node.key,0,0,'','deleteContentBackward');expect(read()).toBe('tail');
   editor.completionInput!.cancel();expect(read()).toBe('tail!');expect(editor.bindings.get('autocomplete.end.word.1')).toBeUndefined();
   // First-delimiter ownership cannot depend on InputGateway.edited: cross-selection
   // replacement also enters this interceptor, and does not emit that notification.

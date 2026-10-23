@@ -38,8 +38,8 @@ describe("entity mention candidates", () => {
     session.enable(); await session.flush(true); expect(session.canBind()).toBe(false);
     session.nominate(entity); expect(editor.repository.canUndo()).toBe(false);
     const snapshot = vi.spyOn(editor.repository,"snapshot"), commit = vi.spyOn(editor.repository,"commit");
-    // Repository before/after copies, independent of how many matches are bound.
-    expect(session.bind()).toBe(5); expect(snapshot).toHaveBeenCalledTimes(2); expect(commit).toHaveBeenCalledTimes(1); expect(commit.mock.calls[0][1]).toHaveLength(4);
+    // Validated local annotation batches require no repository copies, regardless of matches are bound.
+    expect(session.bind()).toBe(5); expect(snapshot).not.toHaveBeenCalled(); expect(commit).toHaveBeenCalledTimes(1); expect(commit.mock.calls[0][1]).toHaveLength(4);
     const properties = ["a","b","margin","hidden"].flatMap(id => node(id).payload.standoffProperties as any[]);
     expect(new Set(properties.map(p => p.id)).size).toBe(5); expect(properties.every(p => !p.annotationId && p.value === entity.id && p.metadata.entityName === entity.name)).toBe(true);
     const saved = editor.encodeDocument(), reopened = new ReactiveEditor(saved); expect(reopened.encodeDocument()).toEqual(saved); reopened.dispose();
@@ -119,7 +119,7 @@ describe("entity mention candidates", () => {
     const { session,editor } = setup(Array.from({ length: 100 },(_,i) => ({ id: i === 0 ? "a" : `b${i}`,type: "standoff-editor-block",text: "he he he" })));
     session.enable(); await session.flush(true); session.nominate(entity);
     const snapshot = vi.spyOn(editor.repository,"snapshot"),commit = vi.spyOn(editor.repository,"commit");
-    expect(session.bind()).toBe(300); expect(commit).toHaveBeenCalledTimes(1); expect(commit.mock.calls[0][1]).toHaveLength(100); expect(snapshot).toHaveBeenCalledTimes(2);
+    expect(session.bind()).toBe(300); expect(commit).toHaveBeenCalledTimes(1); expect(commit.mock.calls[0][1]).toHaveLength(100); expect(snapshot).not.toHaveBeenCalled();
     editor.repository.undo(); expect(editor.repository.canUndo()).toBe(false);
     expect(editor.encodeDocument().children![0].children!.every(d => !d.standoffProperties)).toBe(true);
   });

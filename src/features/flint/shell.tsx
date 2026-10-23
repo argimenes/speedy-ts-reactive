@@ -87,7 +87,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
       <button data-flint-relief="key" class="flint-search-launch" aria-label="Search collection" title="Search collection" onClick={showSearch}>{compact() ? "⌕" : "Search"}</button>
       <Show when={compact()}><button class="flint-panel-toggle" aria-label="Toggle Library" title="Toggle explorer" aria-controls={explorerId} aria-expanded={visible("library")} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle("library")}>◧</button><button class="flint-panel-toggle" aria-label="Toggle Context" title="Toggle inspector" aria-controls={inspectorId} aria-expanded={visible("context")} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle("context")}>◨</button></Show>
       <Show when={props.materialChrome !== false}><div class="flint-graph-lighting" hidden={compact() && view()!=="graph"}><MaterialChrome root={()=>shell} /></div></Show>
-      <button class="flint-save" data-flint-relief="key" disabled={!app.files||!app.properties()||busy()||vault()?.readOnly||vault()?.busy} onPointerDown={e=>e.preventDefault()} onClick={()=>void save()}>Save Document</button>
+      <button data-document-save class="flint-save" data-flint-relief="key" disabled={!app.files||!app.properties()||busy()||vault()?.readOnly||vault()?.busy} onPointerDown={e=>e.preventDefault()} onClick={()=>void save()}>Save Document</button>
     </header>
     <Show when={!compact()}><div class="flint-workspace-tools">
       <button data-flint-relief="key" aria-label="Toggle Library" aria-pressed={library()} onPointerDown={e=>e.preventDefault()} onClick={()=>toggle('library')}>☰ Library</button>

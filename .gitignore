@@ -20,3 +20,4 @@ writer.lock
 /public/pdfjs/
 
 /public/mutable-mermaid.js
+/docs/development/scry-provisional-*

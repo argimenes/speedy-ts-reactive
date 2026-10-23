@@ -4,6 +4,7 @@ import { parseInput, rank, type CompletionCandidate, type CompletionKind, type C
 import { usage, recordUsage, clearUsage } from './history';
 export interface CompletionSource { nodeKey: string; contentKey: string; placementKey: string; viewId: string; version: number; start: number; end: number; literal: string; inline: boolean; brackets?: 'mention'|'autocomplete' }
 export interface CompletionHost {
+  canDismiss?():boolean;
   service?: EntityService;
   historyScope(): Promise<string>;
   documentEntities(): CompletionCandidate[];
@@ -13,7 +14,7 @@ export interface CompletionHost {
   commit(source: CompletionSource, entity: CanonicalEntity, text: string): void;
   reference(source: CompletionSource, candidate: CompletionCandidate, text: string): Promise<void>;
   command(source: CompletionSource, id: string): void;
-  dismiss(keepLiteral?: boolean): void;
+  dismiss(keepLiteral?: boolean): void|boolean;
 }
 /** One occurrence, one source bookmark, cancellable optional reads, no canonical state ownership. */
 interface State {phase:'active'|'confirmed'|'cancelled';sourceText:string;searchQuery:string;queryMode:'following-source'|'independent';kind:CompletionKind;input:string;scope:CompletionScope;rows:CompletionCandidate[];selected:string;busy:boolean;pending:boolean;error:string;expanded:boolean;revision:number}
@@ -100,6 +101,6 @@ export class CompletionSession {
   assertSource(source=this.source) { if(!this.alive||source!==this.source||!this.host.valid(source))throw Error('The source occurrence changed. Reopen Autocomplete.'); }
   fail(error: unknown) { if(this.alive)this.set({error:String(error),pending:false}); }
   complete() { this.set('phase','confirmed');this.close(); }
-  close(keepLiteral=false) { if(this.disposed)return;if(this.state.phase==='active')this.set('phase','cancelled'); this.dispose(); this.host.dismiss(keepLiteral); }
+  close(keepLiteral=false) { if(this.disposed)return;if(this.host.dismiss(keepLiteral)===false)return;if(this.state.phase==='active')this.set('phase','cancelled');this.dispose(); }
   dispose() { if(this.disposed)return;if(this.state.phase==='active')this.set('phase','cancelled'); this.disposed=true; ++this.generation; clearTimeout(this.timer); this.controller?.abort(); this.host.service?.dispose(); }
 }

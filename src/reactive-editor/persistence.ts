@@ -117,6 +117,7 @@ export class PersistenceService {
   /** The same synchronous capture is used by local writes and server bundles.
    * Focus bookmarks belong to the DTO, not the repository/layout dirty clocks. */
   captureWorkspace(options: { upgrade?: boolean; managedVersion?: 4; server?: boolean } = {}): WorkspaceSaveSnapshot {
+    if(this.editor.completionInput?.beforeSave?.()===false)throw new Error('Finish or cancel Scry, then Save again.');
     if (this.disposed) throw new Error("Workspace persistence is disposed.");
     this.editor.documentSessions?.transfers.assertPersistable();
     const repository = this.editor.repository.snapshot();
@@ -302,6 +303,7 @@ export class PersistenceService {
   }
 
   async saveDocument(filename: string, folder = "data", options: { createOnly?: boolean } = {}): Promise<boolean> {
+    if(this.editor.completionInput?.beforeSave?.()===false)return false;
     if (this.state.saving) return false;
     const revision = this.editor.repository.state.revision;
     const token = this.state.requestToken + 1;
@@ -420,6 +422,7 @@ export class PersistenceService {
   }
 
   async saveExtendedRepository(filename: string): Promise<boolean> {
+    if(this.editor.completionInput?.beforeSave?.()===false)return false;
     try { assertLegacySaveAllowed(this.editor.repository); } catch (error) { this.setState({ error: String(error), saving: false }); return false; }
     const revision = this.editor.repository.state.revision;
     const token = this.state.requestToken + 1;

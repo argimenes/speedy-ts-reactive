@@ -95,6 +95,7 @@ export class DocumentDetachment {
     catch(error){w.set('error',`Original host is still unavailable. You can save the retained Document below. ${String(error)}`);}
   }
   async save(w: DetachedDocument, destination?: {folder:string;filename:string}) {
+    if(this.editor.completionInput?.beforeSave?.()===false)return;
     if(w.state.saving)return;
     const id=this.resource(w.session), location=this.native.location(id);
     if(!location&&!destination){w.set('saveAs',true);return;}
@@ -146,7 +147,7 @@ export function DetachedDocumentWindows(props:{controller:DocumentDetachment}) {
         return <ApplicationSurfaceBoundary><div ref={root} class="detached-document-dialog" role="dialog" aria-label={w.state.closePrompt?'Close unsaved Document':'Save Document As'} onKeyDown={e=>{if(e.key==='Escape'&&!w.state.saving){e.preventDefault();e.stopPropagation();if(w.state.closePrompt)w.decide?.(false);else w.set('saveAs',false);}}}>{p.children}</div></ApplicationSurfaceBoundary>;
       };
       return <><nav class="detached-document-toolbar" data-cross-text-controls>
-        <button onPointerDown={e=>e.preventDefault()} disabled={w.state.saving||w.state.pending} onClick={()=>void c.save(w)}>Save Document</button>
+        <button data-document-save onPointerDown={e=>e.preventDefault()} disabled={w.state.saving||w.state.pending} onClick={()=>void c.save(w)}>Save Document</button>
         <button disabled={w.state.saving||!!c.native.location(c.resource(w.session))} title="Choose a destination for a Document without a native file. Existing bindings are not relocated." onClick={()=>w.set('saveAs',true)}>Save As…</button>
         <button onPointerDown={e=>e.preventDefault()} disabled={w.state.pending||!c.canReturn(w)} title={c.canReturn(w)?'Move this editing session back to its original tab':'The original Flint tab is no longer available'} onClick={()=>void c.returnToFlint(w)}>Return to Flint</button>
         <Show when={w.state.pending}><button onClick={()=>w.controller.abort()}>Cancel transfer</button></Show>

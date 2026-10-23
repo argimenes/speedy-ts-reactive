@@ -45,6 +45,7 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
   const dirty = () => editor.repository.state.revision !== (editor.persistence.state.lastSavedRevision ?? 0);
   const busy = () => loading() || editor.persistence.state.saving;
   const saveAs = async (continuation?: PendingAction) => {
+    if(editor.completionInput?.beforeSave?.()===false)return;
     setError('');setLoading(true);
     try{const root=await activeVault();if(lifetime.signal.aborted)return;if(!root)throw Error('Open a Vault before saving this Document.');setSaveRoot(root);setBrowserLocation({folder:location()&&vaultContains(root,vaultRoot(location()!.folder))?location()!.folder:root,filename:localFile()?.filename??location()?.filename??'Document.json'});setConflict(false);setAfterSave(continuation);setBrowser('save');}
     catch(e){if(!lifetime.signal.aborted)setError((e as Error).message);}
@@ -57,6 +58,7 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
     } else continuation?.action();
   };
   const save = async (continuation?: PendingAction) => {
+    if(editor.completionInput?.beforeSave?.()===false)return;
     if (busy()) return;
     const target = location();
     let root:string|undefined;

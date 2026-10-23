@@ -1,6 +1,6 @@
 import { recordOperations } from "./record-batch";
 import {documentTabParentFor} from './document-tab-plan';
-import { batch } from "solid-js";
+import { batch, createSignal } from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
 import { inlineOwnerFor } from "./inline-plan";
 import { emptyParagraphChangeFor, splitChangeFor, type SplitChange, type EmptyParagraphChange } from "./split-plan";
@@ -281,6 +281,9 @@ export interface RepositoryChange {
 }
 
 export class CanonicalRepository {
+  private historyGuards=createSignal(0);
+  /** Shared Document history lease; does not modify either stack. */
+  suspendHistory(){this.historyGuards[1](n=>n+1);let live=true;return()=>{if(live){live=false;this.historyGuards[1](n=>n-1);}};}
   readonly state: RepositoryState;
   private readonly setState: (...args: any[]) => void;
   private subscribers = new Set<RepositorySubscriber>();
@@ -583,14 +586,15 @@ export class CanonicalRepository {
   }
 
   canUndo(): boolean {
-    return this.undoStack.length > 0;
+    return !this.historyGuards[0]() && this.undoStack.length > 0;
   }
 
   canRedo(): boolean {
-    return this.redoStack.length > 0;
+    return !this.historyGuards[0]() && this.redoStack.length > 0;
   }
 
   undo(): void {
+    if(this.historyGuards[0]())return;
     this.assertNotCaptureCallback();
     const entry = this.undoStack.pop();
     if (!entry) return;
@@ -606,6 +610,7 @@ export class CanonicalRepository {
   }
 
   redo(): void {
+    if(this.historyGuards[0]())return;
     this.assertNotCaptureCallback();
     const entry = this.redoStack.pop();
     if (!entry) return;

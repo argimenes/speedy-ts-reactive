@@ -240,19 +240,19 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
             <strong>Server</strong>
             <button type="button" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
             <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
-            <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
-            <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
+            <button data-document-save type="button" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
+            <button data-document-save type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
             <button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-            <button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace…</button>
+            <button data-document-save type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace…</button>
           </span>
           <span class="workspace-demo__toolbar-group" aria-label="Local files">
             <strong>Local</strong>
             <button type="button" onPointerDown={event => event.preventDefault()} onClick={props.onBackground}>Background…</button>
             <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.open", "local")}>Open…</button>
-            <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.save", "local")}>Save</button>
-            <button type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "local")}>Save as…</button>
+            <button data-document-save type="button" disabled={documents.busy()} onClick={() => documents.run("document.save", "local")}>Save</button>
+            <button data-document-save type="button" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "local")}>Save as…</button>
             <button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
-            <button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace…</button>
+            <button data-document-save type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace…</button>
           </span>
         </>}
         <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
@@ -273,18 +273,18 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
             <fieldset class="codex-system-menu__group" aria-label="Server files">
               <legend>Server</legend>
               <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "server")}>Open…</button>
-              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
-              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
+              <button data-document-save type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "server")}>Save</button>
+              <button data-document-save type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "server")}>Save as…</button>
               <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-              <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace…</button>
+              <button data-document-save type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace…</button>
             </fieldset>
             <fieldset class="codex-system-menu__group" aria-label="Local files">
               <legend>Local</legend>
               <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.open", "local")}>Open…</button>
-              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "local")}>Save</button>
-              <button type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "local")}>Save as…</button>
+              <button data-document-save type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.save", "local")}>Save</button>
+              <button data-document-save type="button" role="menuitem" disabled={documents.busy()} onClick={() => documents.run("document.saveAs", "local")}>Save as…</button>
               <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
-              <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace…</button>
+              <button data-document-save type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace…</button>
             </fieldset>
           </>}
           <hr role="separator" />
@@ -427,8 +427,8 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
       <Show when={editor.features.thesis}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} onClick={() => editor.commandRegistry.execute("thesis.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Thesis</button></Show>
       <Show when={editor.features.phosphor}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Phosphor on Desktop" onClick={() => editor.commandRegistry.execute("phosphor.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Phosphor</button></Show>
       {<>
-        <span class="workspace-demo__toolbar-group" aria-label="Server files"><strong>Server</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button></span>
-        <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button><Show when={session.presentation.enabled}><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show></span>
+        <span class="workspace-demo__toolbar-group" aria-label="Server files"><strong>Server</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button><button data-document-save type="button" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button></span>
+        <span class="workspace-demo__toolbar-group" aria-label="Local files"><strong>Local</strong><button type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button><button data-document-save type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button><Show when={session.presentation.enabled}><button data-document-save type="button" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show></span>
       </>}
       <button type="button" title={editor.bindings.label("sticky.createFloating")} onClick={() => editor.stickyNotes.create()}>New Sticky Note</button>
       <For each={editor.stickyNotes.closedWindows()}>{key => <button type="button" onClick={() => editor.stickyNotes.reopen(key)}>Reopen sticky note</button>}</For>
@@ -452,14 +452,14 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
           <fieldset class="codex-system-menu__group" aria-label="Server files">
             <legend>Server</legend>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceOpen}>Open Workspace…</button>
-            <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button>
+            <button data-document-save type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onWorkspaceSave}>Save Workspace</button>
             <Show when={editor.features.mutableWindowManager}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onUpgradeServer}>Upgrade Workspace and Save as…</button></Show>
           </fieldset>
           <fieldset class="codex-system-menu__group" aria-label="Local files">
             <legend>Local</legend>
             <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceOpen}>Open Workspace…</button>
-            <button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button>
-            <Show when={session.presentation.enabled || editor.features.mutableWindowManager}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
+            <button data-document-save type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSave}>Save Workspace</button>
+            <Show when={session.presentation.enabled || editor.features.mutableWindowManager}><button data-document-save type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onLocalWorkspaceSaveAs}>Save Workspace as…</button></Show>
             <Show when={editor.features.mutableWindowManager}><button type="button" role="menuitem" disabled={props.workspaceBusy} onClick={props.onUpgradeLocal}>Upgrade Workspace and Save as…</button></Show>
           </fieldset>
         </>}

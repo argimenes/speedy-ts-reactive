@@ -1,3 +1,4 @@
+import {ProvisionalCells} from './provisional-cells';
 import type { ReactiveEditor } from '../../reactive-editor/editor';
 import type { CodexFeature } from '../../feature-api';
 import { keyboard, chord } from '../../feature-api';
@@ -15,12 +16,15 @@ import './style.css';
 export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature {
  return { id:'autocomplete-workstation',activate(scope) {
   const api=annotationCapabilities(editor,scope);
+  let draft:{cells:ProvisionalCells;source:CompletionSource;release:()=>void}|undefined;
+  let finishing=false;
+  let composition:{key:string;start:number;end:number}|undefined;
   let current:CompletionSession|undefined, overlay:string|undefined, stopInventory:(()=>void)|undefined;
   let firstOpen:{key:string;cell:string;char:string}|undefined;
   let selectedOpen:{key:string;char:string;end:number;version:number}|undefined;
   let releaseBindings:(()=>void)[]=[];
   let entityControls: {run(id:string):boolean;busy():boolean;canClose():boolean}|undefined;
-  const text=(key:string,start:number,end:number)=>{const n=editor.node(key); if(!n)return '';let out='';for(let i=start;i<end;i++){const c=editor.node(n.inlineContent[i]);if(c?.viewType!=='text-cell')throw Error('Completion requires plain text');out+=String(c.payload.text??'');}return out;};
+  const text=(key:string,start:number,end:number)=>{if(draft?.source.nodeKey===key){if(draft.cells.cells.slice(start,end).some(c=>c.plain===false))throw Error('Completion requires plain text');return draft.cells.text(start,end);}const n=editor.node(key); if(!n)return '';let out='';for(let i=start;i<end;i++){const c=editor.node(n.inlineContent[i]);if(c?.viewType!=='text-cell')throw Error('Completion requires plain text');out+=String(c.payload.text??'');}return out;};
   const snapshot=(key:string,start:number,end:number,inline:boolean):CompletionSource=>{
    const n=editor.node(key);if(!n||n.viewType!=='standoff-editor-block')throw Error('Select a text occurrence first');
    return {nodeKey:key,contentKey:n.contentKey,placementKey:n.placementKey,viewId:n.viewId,version:editor.repository.state.contents[n.contentKey]?.inlineRevision??0,start,end,literal:text(key,start,end),inline};
@@ -29,18 +33,41 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    const n=editor.node(s.nodeKey),handle=editor.mounts.get(s.nodeKey);
    return !!n&&!!handle?.root.isConnected&&!handle.root.closest('[hidden],[inert]')&&!handle.composing&&n.viewId===s.viewId&&n.contentKey===s.contentKey&&n.placementKey===s.placementKey&&(editor.repository.state.contents[n.contentKey]?.inlineRevision??0)===s.version;
   };
+  const canDismiss=()=>{
+   if(!draft)return true;const d=draft,n=editor.node(d.source.nodeKey);
+   if(n?.contentKey===d.source.contentKey&&(editor.repository.state.contents[n.contentKey]?.inlineRevision??0)===d.source.version)return true;
+   if(d.cells.edits.length&&!window.confirm('The source changed in another view. Keep the newer Document text and discard this stale Scry draft? Choose Cancel to return and copy the source phrase first.'))return false;
+   editor.mounts.get(d.source.nodeKey)?.presentProvisional?.(undefined);draft=undefined;d.release();return true;
+  };
+  const finishDraft=(entity?:{id:string;name:string},reviewed:import('../../block-tree/types').RepositoryOperation[]=[])=>{
+   if(!draft||finishing)return;const d=draft,s=d.source;
+   const node=editor.node(s.nodeKey);
+   if(!node||node.contentKey!==s.contentKey||(editor.repository.state.contents[s.contentKey]?.inlineRevision??0)!==s.version)throw Error('The source changed in another view. Copy the draft text before closing; it cannot overwrite newer content.');
+   finishing=true;
+   try{
+    if(entity&&d.cells.mode==='autocomplete')d.cells.replacePhrase(entity.name);
+    editor.commands.completeProvisionalText(s.nodeKey,s.version,d.cells.edits,entity?{start:d.cells.start,end:d.cells.end,value:entity.id,name:entity.name}:undefined,reviewed);
+    editor.mounts.get(s.nodeKey)?.presentProvisional?.(undefined);draft=undefined;d.release();
+   }finally{finishing=false;}
+  };
+  const clearSession=()=>{
+   const old=current;current=undefined;entityControls=undefined;selectedOpen=undefined;firstOpen=undefined;boundaryCache=undefined;composition=undefined;
+   releaseBindings.splice(0).forEach(release=>release());old?.dispose();
+   stopInventory?.();stopInventory=undefined;const key=overlay;overlay=undefined;if(key)editor.overlays.close(key,false,true);
+  };
   const cancel=(keepLiteral=false)=>{
-   if(current?.alive&&entityControls&&!entityControls.canClose())return;
-   const old=current,s=old?.source;
-   // Only an explicit Keep literal action authors punctuation. Dismissal and
-   // boundary movement are interaction state, never Document edits.
-   if(keepLiteral&&s?.brackets&&valid(s)){
+   if(finishing)return false;
+   if(current?.alive&&entityControls&&!entityControls.canClose())return false;
+   if(!canDismiss())return false;
+   if(draft){try{if(draft.cells.pending)draft.cells.replace(draft.cells.start,draft.cells.end,draft.cells.mode==='mention'?'(':'[');finishDraft();}catch(e){current?.fail(e);return false;}}
+   const s=current?.source;
+   // The legacy fallback alone retains its explicit literal-punctuation action.
+   // Provisional markers are never part of the completed Document action.
+   if(!editor.features.scryProvisionalCells&&keepLiteral&&s?.brackets&&valid(s)){
     const opening=s.brackets==='mention'?'((':'[[',closing=s.brackets==='mention'?'))':']]';
     editor.commands.replaceInlineRange(s.nodeKey,s.start,s.end,opening+s.literal+closing,'Keep literal Scry brackets');
    }
-   current=undefined;entityControls=undefined;selectedOpen=undefined;firstOpen=undefined;boundaryCache=undefined;
-   releaseBindings.splice(0).forEach(release=>release());old?.dispose();
-   stopInventory?.();stopInventory=undefined;const key=overlay;overlay=undefined;if(key)editor.overlays.close(key,false,true);
+   clearSession();
   };
   const restore=(s:CompletionSource,end:number)=>{queueMicrotask(()=>{const n=editor.node(s.nodeKey),h=editor.mounts.get(s.nodeKey);if(!h?.root.isConnected||h.root.closest('[hidden],[inert]')||n?.contentKey!==s.contentKey)return;editor.focus.request(s.nodeKey,{reason:'autocomplete-commit'});h.restoreInlineSelection?.({anchor:end,head:end});editor.selections.setPrimary(s.nodeKey,s.contentKey,s.viewId,end);});};
   const entityData=(session:CompletionSession,review=false,authority=false):EntitySearchData=>{
@@ -48,11 +75,11 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     // Review annotations on the authored phrase; opening the tool never deletes syntax.
     let start=s.start,end=s.end;
     if(!s.brackets&&s.inline){start++;end=start+[...parsed.mention].length;}
-    const ranges=end>start?[{...editor.textRanges.snapshot(s.nodeKey,start,end),coordinate:'cell' as const}]:[];
-    return {entityRanges:ranges,entityRevision:api.revision(),entityQuery:parsed.mention,workstation:{query:parsed.createName??parsed.query,review,entityId:session.state.selected,createName:parsed.createName,authority,...(s.brackets?{scry:{mode:s.brackets,valid:()=>session.alive&&valid(session.source),commit:(entity)=>{session.assertSource();const label=s.brackets==='autocomplete'?entity.name:session.state.sourceText;if(!label)throw Error('Type mention text before linking.');session.host.commit(session.source,entity,label);session.complete();},batch:(commit)=>{session.assertSource();commit();restore(session.source,session.source.end);session.complete();},cancel:()=>session.close(),keepLiteral:()=>{if(!entityControls||entityControls.canClose())session.close(true);}}}:{}),...(s.inline&&!s.brackets?{invocation:editor.textRanges.snapshot(s.nodeKey,s.start,s.end)}:{})}};
+    const ranges=!draft&&end>start?[{...editor.textRanges.snapshot(s.nodeKey,start,end),coordinate:'cell' as const}]:[];
+    return {entityRanges:ranges,entityRevision:api.revision(),entityQuery:parsed.mention,workstation:{query:parsed.createName??parsed.query,review,entityId:session.state.selected,createName:parsed.createName,authority,...(s.brackets?{scry:{mode:s.brackets,valid:()=>session.alive&&valid(session.source),commit:(entity)=>{session.assertSource();const label=s.brackets==='autocomplete'?entity.name:session.state.sourceText;if(!label)throw Error('Type mention text before linking.');session.host.commit(session.source,entity,label);session.complete();},batch:(commit,entity)=>{session.assertSource();if(draft){if(!entity)throw Error('Select an Entity');const reviewed=editor.commands.captureAnnotationBatch(commit);finishDraft(entity,reviewed);}else commit();restore(session.source,session.source.end);session.complete();},cancel:()=>session.close(),keepLiteral:editor.features.scryProvisionalCells?undefined:()=>{if(!entityControls||entityControls.canClose())session.close(true);}}}:{}),...(s.inline&&!s.brackets?{invocation:editor.textRanges.snapshot(s.nodeKey,s.start,s.end)}:{})}};
   };
   const open=(source:CompletionSource,kind:CompletionSession['state']['kind'],input:string)=>{
-   cancel();if(current)return;
+   if(current)cancel();if(current)return;
    if(kind==='entity'){
     const documentScope=api.scope(source.nodeKey,'document');
     const existing=editor.overlays.overlays.find(o=>(o.viewType==='entity-search'||o.viewType==='autocomplete'&&(o.data as any)?.entitySearch)&&editor.node(o.ownerKey)?.viewId===source.viewId&&api.scope(o.ownerKey,'document').rootKey===documentScope.rootKey);
@@ -60,6 +87,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    }
    let service:import("../../feature-api/entities").EntityService|undefined;try{if(kind!=='entity')service=api.entities?.(source.nodeKey);}catch{/* Non-Entity commands remain usable. */}
    const session=new CompletionSession({service,historyScope:()=>service?.historyScope?.()??Promise.resolve(`session:${source.viewId}`),
+    canDismiss,
     documentEntities:()=>[], // Entity inventory and search belong to LER.
     documents:async()=>{const pool=await completionDocuments(editor,source.nodeKey).completionTargets();return pool.sources.map(t=>({id:t.documentId,name:t.title,reason:`Document · ${t.location}`,data:t}));},
     commands:()=>[
@@ -72,6 +100,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     valid,
     commit:(s,e,label)=>{
      if(!valid(s))throw Error('Stale source');
+     if(draft){const end=draft.cells.start+[...label].length;finishDraft(e);restore(s,end);return;}
      const range=editor.textRanges.snapshot(s.nodeKey,s.start,s.end),metadata={entityId:e.id,entityName:e.name};
      // Linking unchanged prose adds a standoff annotation. Replacing identical
      // text would delete/rebase existing overlapping annotations and Cell IDs.
@@ -110,19 +139,44 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    try{
     session.assertSource();const s=session.source;if(!s.brackets||entityControls?.busy())return;
     const n=editor.node(s.nodeKey)!;
-    if(boundaryCache?.key!==s.nodeKey||boundaryCache.version!==s.version){
-     boundaryCache={key:s.nodeKey,version:s.version,move:boundaryNavigator(text(s.nodeKey,0,n.inlineContent.length))};
+    if(boundaryCache?.key!==s.nodeKey||boundaryCache.version!==(draft?.cells.generation??s.version)){
+     boundaryCache={key:s.nodeKey,version:draft?.cells.generation??s.version,move:boundaryNavigator(draft?draft.cells.text():text(s.nodeKey,0,n.inlineContent.length))};
     }
     let {start,end}=s;const next=boundaryCache.move(edge==='start'?start:end,direction,word);
     if(edge==='start')start=Math.min(next,end);else end=Math.max(next,start);
     if(start===s.start&&end===s.end)return;
     if(text(s.nodeKey,start,end).length>1000)throw Error('Scry phrases are limited to 1000 characters.');
+    draft?.cells.boundaries(start,end);
     const updated=bracketSnapshot(s.nodeKey,start,end,s.brackets);
     session.update(updated,updated.literal);restore(updated,edge==='start'?start:end);
    }catch(e){session.fail(e);}
   };
   const run=(id:string)=>{const s=current;if(!s)return false;if(entityControls&&['autocomplete.next','autocomplete.previous','autocomplete.choose','autocomplete.review','autocomplete.close'].includes(id))return entityControls.run(id.slice(13));if(id==='autocomplete.next')s.move(1);else if(id==='autocomplete.previous')s.move(-1);else if(id==='autocomplete.choose')void s.choose();else if(id==='autocomplete.close'){const source=s.source;cancel();restore(source,source.end);}else if(id==='autocomplete.review'){return false;}else if(/^autocomplete\.(start|end)\.(word|character)\.-?1$/.test(id)){const [,edge,unit,dir]=id.split('.');changeBoundary(s,edge as 'start'|'end',Number(dir) as -1|1,unit==='word');}else return false;return true;};
   const intercept=(key:string,start:number,end:number,value:string,type:string):boolean=>{
+   if(editor.features.scryProvisionalCells&&!current){
+    if(draft?.cells.pending){
+     if(type==='insertText'&&value===(draft.cells.mode==='mention'?'(':'[')&&key===draft.source.nodeKey){
+      const d=draft;let finish=d.cells.end;
+      if(finish===d.cells.start)finish+=nextWordLength(d.cells.text(finish,Math.min(d.cells.cells.length,finish+1000)));
+      d.cells.activate(finish);const source=bracketSnapshot(key,d.cells.start,finish,d.cells.mode);
+      open(source,'entity',source.literal);restore(source,source.end);return true;
+     }
+     const at=draft.cells.start,extent=draft.cells.end;
+     if(type==='deleteContentBackward'){const d=draft;draft=undefined;editor.mounts.get(key)?.presentProvisional?.(undefined);d.release();restore(d.source,at);return true;}
+     cancel();if(type==='insertText'&&value){const position=at+1;editor.commands.replaceInlineRange(key,position,position,value);restore(snapshot(key,position,position+[...value].length,true),position+[...value].length);return true;}return false;
+    }
+    if(type==='insertText'&&['[','(','[[','(('].includes(value)){
+     const node=editor.node(key),mount=editor.mounts.get(key);if(!node||!mount||mount.composing||editor.selections.sets[key]?.items.length>1)return false;
+     if((node.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&(/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type??'')||p.type==='text/superposition')&&p.start<=end&&p.end>=start))return false;
+     if(start>0&&text(key,start-1,start)==='\\')return false;
+     const cells=node.inlineContent.map((cellKey,canonicalIndex)=>{const c=editor.node(cellKey)!;return {key:cellKey,text:String(c.payload.text??'\uFFFC'),canonicalIndex,plain:c.viewType==='text-cell'};});
+     const source=snapshot(key,start,end,true),mode=value[0]==='('?'mention':'autocomplete';
+     const provisional=new ProvisionalCells(cells,start,end,mode,value.length===1);
+     draft={cells:provisional,source,release:editor.repository.suspendHistory()};mount.presentProvisional?.(provisional);
+     if(value.length===2){let finish=end;if(start===end)finish+=nextWordLength(provisional.text(end,Math.min(cells.length,end+1000)));provisional.activate(finish);const s=bracketSnapshot(key,start,finish,mode);open(s,'entity',s.literal);restore(s,finish);}else restore(source,start);
+     return true;
+    }
+   }
    const session=current,s=session?.source;
    if(s?.brackets){
     if(key!==s.nodeKey){cancel();return false;}
@@ -137,7 +191,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     }
     value=value.replace(/[\r\n]/g,' ');if(value&&value.length+session!.state.sourceText.length-text(key,start,end).length>1000){session!.fail('Scry phrases are limited to 1000 characters.');return true;}
     if(start===end&&!value)return true;
-    editor.commands.replaceInlineRange(key,start,end,value);
+    if(draft)draft.cells.replace(start,end,value);else editor.commands.replaceInlineRange(key,start,end,value);
     const updated=bracketSnapshot(key,s.start,s.end+[...value].length-(end-start),s.brackets);
     session!.update(updated,updated.literal);restore(updated,start+[...value].length);return true;
    }
@@ -165,9 +219,23 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    const source=bracketSnapshot(key,begin,finish,char==='('?'mention':'autocomplete');
    open(source,'entity',source.literal);restore(source,source.end);return true;
   };
-  editor.completionInput={cancel,intercept,pointer(event){
+  editor.completionInput={cancel,intercept,input:key=>draft?.source.nodeKey===key,beforeSave(){
+   if(!draft)return true;
+   if(draft.cells.pending){cancel();return !draft;}
+   current?.fail('Finish linking, or cancel Scry to keep the phrase without a link, then Save again.');
+   if(window.confirm('Scry contains provisional text. Cancel Scry and keep the phrase without linking? Choose Cancel to continue Scry. Save again after Scry finishes.'))cancel();
+   return false;
+  },composition(key,phase,value){
+   if(!draft||draft.source.nodeKey!==key||draft.cells.pending)return false;
+   if(phase==='start'){const range=editor.mounts.get(key)?.captureInlineSelection?.();if(!range)return false;composition={key,start:Math.min(range.anchor,range.head),end:Math.max(range.anchor,range.head)};return true;}
+   const captured=composition;composition=undefined;if(!captured||!current)return false;
+   editor.mounts.get(key)?.finishProvisionalComposition?.();
+   intercept(key,captured.start,captured.end,value,'insertText');return true;
+  },pointer(event){
+   if(draft?.cells.pending){cancel();return false;}
    const s=current?.source;if(!s?.brackets)return false;
    const target=event.target as Element;
+   if(draft&&target.closest?.('[data-document-save],[data-system-menu-trigger],[role="menu"],[role="menuitem"]'))return false;
    if(target.closest?.('.autocomplete-workstation,.reactive-entity-search'))return false;
    const resolved=editor.mounts.resolveEvent(event),point=resolved?.handle.inlinePointAt?.(event.clientX,event.clientY);
    if(resolved?.nodeKey!==s.nodeKey||point===undefined||point<s.start||point>s.end){cancel();return false;}
@@ -176,8 +244,8 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    const s=current?.source,resolved=editor.mounts.resolveEvent(event);if(!s?.brackets||resolved?.nodeKey!==s.nodeKey)return false;
    const range=resolved.handle.captureInlineSelection?.();if(!range)return false;
    const start=Math.min(range.anchor,range.head),end=Math.max(range.anchor,range.head);
-   if(event.type==='cut'&&event.clipboardData)event.clipboardData.setData('text/plain',text(s.nodeKey,Math.max(s.start,start),Math.min(s.end,end)));
-   intercept(s.nodeKey,start,end,event.type==='paste'?event.clipboardData?.getData('text/plain')??'':'',event.type==='paste'?'insertFromPaste':'deleteByCut');event.preventDefault();event.stopPropagation();return true;
+   if((event.type==='copy'||event.type==='cut')&&event.clipboardData)event.clipboardData.setData('text/plain',text(s.nodeKey,Math.max(s.start,start),Math.min(s.end,end)));
+   if(event.type!=='copy')intercept(s.nodeKey,start,end,event.type==='paste'?event.clipboardData?.getData('text/plain')??'':'',event.type==='paste'?'insertFromPaste':'deleteByCut');event.preventDefault();event.stopPropagation();return true;
   },before(key,start,end,text,type){
    if(type!=='insertText'||text!==':'||end<=start||end-start>1000)return false;
    const n=editor.node(key);if((n?.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type??'')&&p.start<end&&p.end>=start))return false;
@@ -198,11 +266,12 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    if(current?.source.nodeKey===key&&current.source.start===token.start&&current.state.kind===token.kind&&!current.state.expanded)current.update(source,token.input);
    else open(source,token.kind,token.input);
   },key(event){
-   const s=current;if(!s)return false;
+   const s=current;if(!s){if(draft?.cells.pending&&['Escape','Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))cancel();return false;}
    if(event.defaultPrevented)return true;
    const target=event.target as Element,inside=!!target.closest?.('.autocomplete-workstation');
    if(inside&&target.closest('[data-scry-geometry]')&&(['Enter'].includes(event.key)||event.key.startsWith('Arrow')))return false;
-   if(event.isComposing){if(!inside)cancel();return false;}
+   if(event.isComposing){if(!inside&&!draft)cancel();return false;}
+   if(draft&&(event.metaKey||event.ctrlKey)&&['z','y','s'].includes(event.key.toLowerCase())){event.preventDefault();event.stopPropagation();if(event.key.toLowerCase()==='s')editor.completionInput?.beforeSave?.();return true;}
    const resolved=editor.mounts.resolveEvent(event);
    if(!inside&&resolved?.nodeKey!==s.source.nodeKey){cancel();return false;}
    // Native field editing, Save, history, copying and Tab are never completion shortcuts.
@@ -225,7 +294,15 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
   api.register.command({id:'autocomplete.open',label:'Autocomplete selected text',canExecute:({targetKey})=>editor.node(targetKey)?.viewType==='standoff-editor-block',execute:({targetKey})=>explicit(targetKey)});
   api.register.binding({id:'autocomplete.open',name:'Autocomplete selected text',description:'Keep the selected phrase and edit an independent query',category:'Autocomplete',tags:[],scope:'editor/standoff',defaults:[chord(keyboard(';','Ctrl'),keyboard('a'))],handler:ctx=>ctx.run('autocomplete.open')});
   api.register.action({id:'autocomplete.open',slot:'document-actions',command:'autocomplete.open',label:'Autocomplete',title:'Autocomplete selected text',binding:'autocomplete.open'});
-  const release=editor.repository.subscribeChanges(()=>{const s=current,source=s?.source;if(s)queueMicrotask(()=>{if(current===s&&s.source===source&&!valid(source!))cancel();});});
-  scope.own(()=>{entityControls=undefined;cancel();release();editor.completionInput=undefined;});
+  const release=editor.repository.subscribeChanges(()=>{if(finishing)return;const s=current,source=s?.source;if(s)queueMicrotask(()=>{if(current===s&&s.source===source&&!valid(source!)){if(draft)s.fail('The source changed in another view. Copy the draft phrase if needed, then cancel; newer canonical text will not be overwritten.');else cancel();}});});
+  scope.own(()=>{
+   entityControls=undefined;
+   try{cancel();}finally{
+    // Forced feature/workspace teardown cannot leave the shared history locked,
+    // even if a stale-source recovery dialog declined to close the draft.
+    const d=draft;draft=undefined;editor.mounts.get(d?.source.nodeKey??'')?.presentProvisional?.(undefined);d?.release();
+    clearSession();release();editor.completionInput=undefined;
+   }
+  });
  }};
 }

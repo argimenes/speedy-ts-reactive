@@ -20,7 +20,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
  const geometry=owner?.manager.geometry??new WindowGeometry();
  const floating=geometry.create(`scry:${props.panel.key}`,{element:()=>root,viewport:true,position,size,minimum:()=>({width:Math.min(400,size().width),height:Math.min(500,size().height)}),mode:()=> 'normal',allowed:()=>s.alive&&eligible(),commit:patch=>{manual=true;if(patch.position){preferred=size();setPosition(patch.position);}if(patch.size){preferred=patch.size;setSize(patch.size);}schedule();}});
  const close=()=>s.state.kind==='entity'?props.panel.close():s.close();
- retainSourceHighlight(props.editor,s);
+ if(!props.editor.features.scryProvisionalCells)retainSourceHighlight(props.editor,s);
  const id=`autocomplete-options-${props.panel.key.replaceAll(':','-')}`;
  const anchor=()=>{
   frame=0;if(!s.alive||floating.mode())return;
@@ -50,7 +50,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
  let pointerSelection=false;
  const selection=()=>{
   if(!s.alive||root?.contains(document.activeElement))return;
-  const h=props.editor.mounts.get(s.source.nodeKey),range=h?.captureInlineSelection?.();
+  const h=props.editor.mounts.get(s.source.nodeKey);if(h?.composing)return;const range=h?.captureInlineSelection?.();
   if(document.activeElement!==h?.focusElement)return;
   if(s.source.brackets){
    const lo=s.source.start,hi=s.source.end;
@@ -61,7 +61,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
   }else if(!s.state.expanded&&(!range||range.anchor!==range.head||range.head!==s.source.end))close();
   pointerSelection=false;
  };
- const outside=(event:Event)=>{const target=event.target as Node;if(root?.contains(target))return;const h=props.editor.mounts.get(s.source.nodeKey);if(!h?.root.contains(target))close();else if(event.type==='pointerdown'){pointerSelection=true;setTimeout(()=>{if(s.alive)selection();pointerSelection=false;},0);}};
+ const outside=(event:Event)=>{const target=event.target as Node;if(props.editor.features.scryProvisionalCells&&target instanceof Element&&target.closest('[data-document-save],[data-system-menu-trigger],[role="menu"],[role="menuitem"]'))return;if(root?.contains(target))return;const h=props.editor.mounts.get(s.source.nodeKey);if(!h?.root.contains(target))close();else if(event.type==='pointerdown'){pointerSelection=true;setTimeout(()=>{if(s.alive)selection();pointerSelection=false;},0);}};
  onMount(()=>{
   if(!owner)geometry.install(document.documentElement);
   if(typeof ResizeObserver!=='undefined'){resize=new ResizeObserver(schedule);const mount=props.editor.mounts.get(s.source.nodeKey);if(mount)resize.observe(mount.root);resize.observe(root);}
@@ -78,7 +78,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
    <label>{s.source.brackets?'Search query':'Phrase : query'}<input ref={input} role="combobox" aria-expanded="true" aria-controls={id} aria-activedescendant={s.state.selected?`${id}-${s.state.rows.findIndex(r=>r.id===s.state.selected)}`:undefined} aria-autocomplete="list" value={s.state.input} disabled={s.state.pending} onInput={e=>{if(!e.isComposing)s.input(e.currentTarget.value);}} onCompositionEnd={e=>s.input(e.currentTarget.value)} /></label>
   </Show>
   <Show when={s.source.brackets}><p>Source: {s.state.sourceText||'(empty mention)'} · {s.state.queryMode}</p><Show when={s.state.queryMode==='independent'}><button onClick={()=>s.follow()}>Resume following source</button></Show></Show>
-  <div class="autocomplete-actions"><button onClick={close}>Cancel</button><Show when={s.source.brackets}><button onClick={()=>s.close(true)}>Keep literal brackets</button></Show></div>
+  <div class="autocomplete-actions"><button onClick={close}>Cancel</button><Show when={s.source.brackets&&!props.editor.features.scryProvisionalCells}><button onClick={()=>s.close(true)}>Keep literal brackets</button></Show></div>
   </section><section class="autocomplete-candidates" aria-label="Scry matches">
   <div role="status" aria-live="polite">{s.state.busy?'Searching…':`${s.state.rows.length} candidates`}</div>
   <div id={id} role="listbox" aria-label="Completion candidates" class="autocomplete-results"><For each={s.state.rows}>{(row,i)=><button id={`${id}-${i()}`} role="option" aria-selected={s.state.selected===row.id} aria-disabled={row.disabled} disabled={s.state.pending||row.disabled} onPointerDown={e=>e.preventDefault()} onClick={()=>{s.select(row.id);void s.choose();}} onMouseMove={()=>s.select(row.id)}><strong>{row.name}</strong><small>{row.reason} · {row.id}</small></button>}</For></div>

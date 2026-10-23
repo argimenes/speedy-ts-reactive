@@ -82,7 +82,7 @@ export class EntityCandidates {
     this.original = { id: `${this.owner}:original`, text: overlay.entityQuery ?? "", context: overlay.entityQuery ?? "", captures: [], ranges, path: path.map(n => n.key), breadcrumb: path.map(n => n.label).join(" / "), capabilities: { annotate: actionable, highlight: true, reveal: true, replace: false, reason: actionable ? undefined : "The selected passage splits a grapheme or includes inline media." } };
     if (!ranges.length) this.original = undefined;
     const scope = editor.scope(panel.ownerKey);
-[this.state,this.setState] = createStore<{ enabled: boolean; query: string; options: SearchOptions; scope: SearchScope; result?: SearchMatchSet; rows: EntityCandidate[]; entity?: NominatedEntity; pending: boolean; visible: boolean; active?: string; activeMatch?: string; message: string; page: number; undoCount: number }>({ enabled: false, query: ranges.length === 1 ? (this.original?.text ?? "") : "", options: { wholeWords: true }, scope, rows: [], pending: false, visible: true, message: "", page: 0, undoCount: 0 });
+[this.state,this.setState] = createStore<{ enabled: boolean; query: string; options: SearchOptions; scope: SearchScope; result?: SearchMatchSet; rows: EntityCandidate[]; entity?: NominatedEntity; pending: boolean; visible: boolean; active?: string; activeMatch?: string; message: string; page: number; undoCount: number }>({ enabled: false, query: overlay.workstation?.scry ? overlay.entityQuery : ranges.length === 1 ? (this.original?.text ?? "") : "", options: { wholeWords: true }, scope, rows: [], pending: false, visible: true, message: "", page: 0, undoCount: 0 });
   }
   enable() {
     if (this.state.enabled) {

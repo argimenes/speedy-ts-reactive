@@ -27,6 +27,9 @@ export interface CaretNotifications {
 }
 
 export interface CompletionInput {
+  input?(key:string):boolean;
+  beforeSave?():boolean;
+  composition?(key:string,phase:'start'|'end',text:string):boolean;
   pointer?(event:PointerEvent):boolean;
   clipboard?(event:ClipboardEvent):boolean;
   intercept?(key:string,start:number,end:number,text:string,inputType:string):boolean;
@@ -90,6 +93,7 @@ export class InputGateway {
     const resolved = this.mounts.resolveEvent(event);
     if (!resolved) return;
     if (resolved.handle.composing) return;
+    if(this.completion?.()?.input?.(resolved.nodeKey))return;
     if (resolved.handle.inputPolicy === "native-text" && event.target instanceof HTMLTextAreaElement) {
       this.recordNativeText(resolved.nodeKey, event.target);
       return;
@@ -296,7 +300,7 @@ export class InputGateway {
     this.bindings.cancelChord();
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
-      this.completion?.()?.cancel();
+      if(!this.completion?.()?.composition?.(resolved.nodeKey,'start',event.data??''))this.completion?.()?.cancel();
       resolved.handle.composing = true;
       this.caretEvents?.setComposing?.(true);
     }
@@ -307,6 +311,7 @@ export class InputGateway {
     this.caretEvents?.setComposing?.(false);
     if (!resolved) return;
     resolved.handle.composing = false;
+    if(this.completion?.()?.composition?.(resolved.nodeKey,'end',event.data??''))return;
     if (resolved.handle.inputPolicy === "native-text" && event.target instanceof HTMLTextAreaElement) {
       this.recordNativeText(resolved.nodeKey, event.target);
     } else if (resolved.handle.inputPolicy === "standoff" && resolved.handle.captureText) {
@@ -426,6 +431,7 @@ export class InputGateway {
   }
 
   private onCopy = (event: ClipboardEvent) => {
+    if(this.completion?.()?.clipboard?.(event))return;
     if(this.clipboard?.copyProjectionEvent(event))return;
     if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     this.writeStandoffClipboard(event);

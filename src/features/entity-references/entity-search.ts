@@ -1,6 +1,6 @@
 import type {CanonicalEntity} from '../../feature-api/entities';
 import type { AnnotationCapabilities, AnnotationTarget, SearchRange } from "../../feature-api";
-export interface EntitySearchData { entityRanges: SearchRange[]; entityRevision: number; entityQuery: string; workstation?: {query:string;review:boolean;entityId?:string;createName?:string;authority?:boolean;invocation?:SearchRange;scry?:{mode:'mention'|'autocomplete';valid():boolean;commit(entity:CanonicalEntity):void;batch(commit:()=>void):void;cancel():void;keepLiteral():void}} }
+export interface EntitySearchData { entityRanges: SearchRange[]; entityRevision: number; entityQuery: string; workstation?: {query:string;review:boolean;entityId?:string;createName?:string;authority?:boolean;invocation?:SearchRange;scry?:{mode:'mention'|'autocomplete';valid():boolean;commit(entity:CanonicalEntity):void;batch(commit:()=>void,entity?:Pick<CanonicalEntity,'id'|'name'>):void;cancel():void;keepLiteral?():void}} }
 export function openEntitySearch(api: AnnotationCapabilities, ranges: readonly AnnotationTarget[], contextKey?: string) {
   const selected = ranges.filter(range => range.end > range.start);
   const owner = selected[0]?.nodeKey ?? contextKey ?? ranges[0]?.nodeKey;

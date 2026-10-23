@@ -21,7 +21,7 @@ const vite=await createServer({plugins:[{
  import {materializeLocalWorkspace} from '/src/reactive-editor/workspace-manifest.ts';
  import '/src/index.css';
  import '/src/demo/workspace-demo.css';
- const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{everydayWebResources:${process.env.BENCHMARK_EVERYDAY_WEB!=='false'},webResourceViewers:${process.env.BENCHMARK_WEB_RESOURCES!=='false'},deterministicAcademicResources:${process.env.BENCHMARK_DETERMINISTIC_ACADEMIC!=='false'},flintRecentDocuments:${process.env.BENCHMARK_FLINT_RECENTS!=='false'},webPublishing:${process.env.BENCHMARK_WEB_PUBLISHING!=='false'},applicationServices:${process.env.BENCHMARK_APPLICATION_SERVICES!=='false'},documentInterchange:${process.env.BENCHMARK_DOCUMENT_INTERCHANGE!=='false'},mutableClipboard:${process.env.BENCHMARK_MUTABLE_CLIPBOARD!=='false'},nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true,annotationRangeEvents:${process.env.BENCHMARK_ANNOTATION_RANGE_EVENTS!=='false'},caretModes:${process.env.BENCHMARK_CARET_MODES!=='false'},standoffPropertyRendering:${process.env.BENCHMARK_STANDOFF_RENDERING!=='false'}}});
+ const session=new WorkspaceSession(materializeLocalWorkspace({type:'workspace-block',children:[]}),{features:{directDomCharacterCells:${process.env.BENCHMARK_DIRECT_CELLS!=='false'},everydayWebResources:${process.env.BENCHMARK_EVERYDAY_WEB!=='false'},webResourceViewers:${process.env.BENCHMARK_WEB_RESOURCES!=='false'},deterministicAcademicResources:${process.env.BENCHMARK_DETERMINISTIC_ACADEMIC!=='false'},flintRecentDocuments:${process.env.BENCHMARK_FLINT_RECENTS!=='false'},webPublishing:${process.env.BENCHMARK_WEB_PUBLISHING!=='false'},applicationServices:${process.env.BENCHMARK_APPLICATION_SERVICES!=='false'},documentInterchange:${process.env.BENCHMARK_DOCUMENT_INTERCHANGE!=='false'},mutableClipboard:${process.env.BENCHMARK_MUTABLE_CLIPBOARD!=='false'},nativeDocumentPersistence:${!!process.env.BENCHMARK_VAULT_SIZE},nativeKnowledge:false,sqliteKnowledge:false,flintProbe:false,flintSceneChrome:true,annotationRangeEvents:${process.env.BENCHMARK_ANNOTATION_RANGE_EVENTS!=='false'},caretModes:${process.env.BENCHMARK_CARET_MODES!=='false'},standoffPropertyRendering:${process.env.BENCHMARK_STANDOFF_RENDERING!=='false'}}});
  const editor=session.editor;
  const bank=editor.commands.insert({type:'workspace-object-bank-block',children:[]},{kind:'at',parentKey:session.projection.state.rootKey,index:0});
  const {admitNative}=await import('/src/persistence/native-resource.ts');
@@ -88,6 +88,98 @@ try{
   proof.longTasks=[];proof.observer=new PerformanceObserver(list=>{for(const e of list.getEntries())proof.longTasks.push({start:e.startTime,ms:e.duration});});proof.observer.observe({type:'longtask'});
  })()`);
  console.log('Fixture',fixturePath,await evaluate('proof.stats'));
+ if(process.argv.includes('--inline-bracket-proof')||process.argv.includes('--presentation-cell-proof')) {
+  // Isolated DOM experiment: no production Scry code or document is changed.
+  const presentationProof=process.argv.includes('--presentation-cell-proof');
+  if(presentationProof)await evaluate(`(async()=>{proof.ProvisionalCells=(await import('/src/features/autocomplete/provisional-cells.ts')).ProvisionalCells})()`);
+  const result=await evaluate(`(()=>{
+   const cells=Array.from(proof.flow.children),selection=document.getSelection();
+   const originalChildren=Array.from(proof.flow.childNodes),originalText=proof.flow.textContent;
+   const revision=proof.editor.repository.state.revision,keys=[...proof.text.inlineContent];
+   const undo=proof.editor.repository.canUndo(),redo=proof.editor.repository.canRedo();
+   const markers=['((', '))'].map(text=>{const span=document.createElement('span');span.textContent=text;span.contentEditable='false';span.dataset.scryPrototype='true';span.style.color='#7d3cc8';return span;});
+   const boundary=index=>index<cells.length?{node:cells[index].firstChild,offset:0}:{node:cells.at(-1).firstChild,offset:cells.at(-1).textContent.length};
+   const draft=${presentationProof}?new proof.ProvisionalCells(cells.map((cell,i)=>({key:proof.text.inlineContent[i],text:cell.textContent,canonicalIndex:i})),proof.at,proof.at+5,'mention'):undefined;
+   if(draft)proof.mount.presentProvisional(draft);
+   const move=(start,end)=>{if(draft){draft.boundaries(start,end);proof.mount.restoreInlineSelection({anchor:end,head:end});return;}markers[0].remove();markers[1].remove();proof.flow.insertBefore(markers[0],cells[start]??null);proof.flow.insertBefore(markers[1],cells[end]??null);const at=boundary(end);selection.setPosition(at.node,at.offset);};
+   proof.records=[];proof.phase='literal-bracket-proof';
+   move(proof.at,proof.at+5);
+   const visible=proof.flow.textContent===originalText.slice(0,proof.at)+'(('+originalText.slice(proof.at,proof.at+5)+'))'+originalText.slice(proof.at+5);
+   // Demonstrate the existing mount assumption that must be fixed before release.
+   const rawCaptureIncludesMarkers=proof.mount.captureText().includes('((');
+   const boundaryMismatch=proof.mount.inlineBoundary(proof.at).node!==cells[proof.at].firstChild;
+   for(const [start,end] of [[proof.at,proof.at+6],[proof.at,proof.at+12],[proof.at+1,proof.at+12],[proof.at,proof.at+5]])move(start,end);
+   const mappedCaret=draft?proof.mount.captureInlineSelection().head===proof.at+5:selection.anchorNode===cells[proof.at+5].firstChild&&selection.anchorOffset===0;
+   const records=[...proof.records];
+   const unchanged=proof.editor.repository.state.revision===revision&&keys.every((k,i)=>proof.text.inlineContent[i]===k)&&proof.read()===proof.original;
+   const historyUnchanged=undo===proof.editor.repository.canUndo()&&redo===proof.editor.repository.canRedo();
+   proof.removePrototype=()=>{if(draft)proof.mount.presentProvisional(undefined);markers.forEach(m=>m.remove());};
+   proof.prototypeRestored=()=>originalChildren.length===proof.flow.childNodes.length&&originalChildren.every((c,i)=>proof.flow.childNodes[i]===c)&&proof.flow.textContent===originalText;
+   return {visible,mappedCaret,unchanged,historyUnchanged,rawCaptureIncludesMarkers,boundaryMismatch,records,sourceCells:cells.length,scope:'Literal bracket rendering and boundary movement only; draft typing, annotations, history suspension and Save gating are not implemented.'};
+  })()`);
+  check('literal in-flow brackets appear in the actual Flint TextBlock',result.visible);
+  check('moving brackets preserves canonical content, occurrence keys and history',result.unchanged&&result.historyUnchanged);
+  check('explicit endpoint mapping preserves a canonical caret',result.mappedCaret);
+  check('bracket movement calls no snapshots, commits, transactions or replacement commands',result.records.length===0);
+  if(presentationProof)check('mount text capture and caret endpoints exclude provisional markers',!result.rawCaptureIncludesMarkers&&!result.boundaryMismatch);
+  else check('existing raw mount mapping demonstrably needs adaptation',result.rawCaptureIncludesMarkers&&result.boundaryMismatch);
+  const {data}=await send('Page.captureScreenshot',{format:'png'},sessionId);
+  await writeFile(path.join(artifacts,presentationProof?'presentation-cell-proof.png':'literal-bracket-proof.png'),Buffer.from(data,'base64'));
+  await evaluate('proof.removePrototype()');
+  check('removal restores the exact original DOM nodes',await evaluate('proof.prototypeRestored()'));
+  check('no uncaught browser exceptions',errors.length===0);
+  await writeFile(path.join(artifacts,presentationProof?'presentation-cell-proof.json':'literal-bracket-proof.json'),JSON.stringify({fixturePath,result,checks,errors},null,2));
+ } else if(process.argv.includes('--provisional-input-proof')) {
+  await evaluate(`proof.reset('');proof.records=[];proof.startRevision=proof.editor.repository.state.revision;proof.entities.push({id:'33333333-3333-4333-8333-333333333333',name:'Florence',revision:0,aliases:[]})`);
+  await type('[[');await wait("document.querySelector('.autocomplete-workstation')");await type('Flo');
+  check('typing remains provisional and renders actual cells',await evaluate(`proof.read()===''&&proof.flow.textContent==='[[Flo]]'&&proof.editor.repository.state.revision===proof.startRevision`));
+  check('active source typing has no canonical operations',await evaluate(`proof.records.every(r=>r.name==='completion.key')`));
+  await evaluate(`proof.editor.repository.undo();proof.editor.repository.redo()`);await key('z',4);
+  check('shared and keyboard history are suspended',await evaluate(`!proof.editor.repository.canUndo()&&!proof.editor.repository.canRedo()&&proof.flow.textContent==='[[Flo]]'&&!!document.querySelector('.autocomplete-workstation')`));
+  await key('Escape');await wait("!document.querySelector('.autocomplete-workstation')");
+  check('Escape keeps Flo without markers in one native action',await evaluate(`proof.read()==='Flo'&&proof.flow.textContent==='Flo'&&proof.records.filter(r=>r.name==='commit').length===1`));
+  await evaluate(`proof.editor.repository.undo()`);check('Undo restores the pre-Scry phrase',await evaluate(`proof.read()===''`));
+  await evaluate(`proof.editor.repository.redo()`);check('Redo restores plain text without markers',await evaluate(`proof.read()==='Flo'&&proof.flow.textContent==='Flo'`));
+  await evaluate(`proof.reset('');proof.records=[]`);await type('[[');await wait("document.querySelector('.autocomplete-workstation')");await type('Flo');
+  await wait("[...document.querySelectorAll('.reactive-entity-search tr')].some(r=>r.textContent.includes('Florence')&&r.querySelector('button'))");
+  await evaluate(`[...document.querySelectorAll('.reactive-entity-search tr')].find(r=>r.textContent.includes('Florence')&&r.querySelector('button')).querySelector('button').click()`);
+  await wait("!document.querySelector('.autocomplete-workstation')");
+  check('actual LER autocomplete commits canonical name and annotation together',await evaluate(`proof.read()==='Florence'&&proof.text.payload.standoffProperties.some(p=>p.value==='33333333-3333-4333-8333-333333333333')&&proof.records.filter(r=>r.name==='commit').length===1`));
+  await evaluate(`proof.editor.repository.undo()`);check('one Undo removes both completion and annotation',await evaluate(`proof.read()===''&&!(proof.text.payload.standoffProperties??[]).length`));
+  await evaluate(`proof.editor.repository.redo()`);check('one Redo restores completion and annotation',await evaluate(`proof.read()==='Florence'&&proof.text.payload.standoffProperties.length===1`));
+  await evaluate(`proof.reset('');proof.records=[]`);await type('((');await wait("document.querySelector('.autocomplete-workstation')");await type('Flo');
+  await wait("[...document.querySelectorAll('.reactive-entity-search tr')].some(r=>r.textContent.includes('Florence')&&r.querySelector('button'))");
+  await evaluate(`[...document.querySelectorAll('.reactive-entity-search tr')].find(r=>r.textContent.includes('Florence')&&r.querySelector('button')).querySelector('button').click()`);await wait("!document.querySelector('.autocomplete-workstation')");
+  check('mention confirmation keeps authored wording',await evaluate(`proof.read()==='Flo'&&proof.text.payload.standoffProperties.length===1`));
+  await evaluate(`proof.reset('');proof.records=[]`);await type('((');await wait("document.querySelector('.autocomplete-workstation')");
+  await send('Input.imeSetComposition',{text:'東',selectionStart:1,selectionEnd:1},sessionId);
+  await send('Input.insertText',{text:'東京'},sessionId);
+  check('native IME composition stays provisional',await evaluate(`proof.read()===''&&proof.flow.textContent==='((東京))'&&proof.records.every(r=>r.name==='completion.key')`));
+  await key('Escape');check('IME cancellation keeps the composed phrase',await evaluate(`proof.read()==='東京'`));
+  await evaluate(`proof.reset('');proof.records=[]`);await type('((');await wait("document.querySelector('.autocomplete-workstation')");
+  await evaluate(`(()=>{const data=new DataTransfer();data.setData('text/plain','é😀');proof.flow.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));})()`);
+  check('plain-text paste is provisional and Unicode-safe',await evaluate(`proof.read()===''&&proof.flow.textContent==='((é😀))'`));
+  await evaluate(`(()=>{proof.mount.restoreInlineSelection({anchor:0,head:3});const data=new DataTransfer();proof.flow.dispatchEvent(new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:data}));proof.copied=data.getData('text/plain')})()`);
+  check('copy excludes markers and includes draft text',await evaluate(`proof.copied==='é😀'`));await key('Escape');
+  await evaluate(`proof.reset('');proof.records=[]`);await type('((');await wait("document.querySelector('.autocomplete-workstation')");await type('draft');
+  await evaluate(`proof.oldConfirm=window.confirm;window.confirm=()=>false;proof.saveBefore=proof.editor.repository.state.revision;try{proof.editor.persistence.captureWorkspace()}catch(e){proof.saveError=e.message}window.confirm=proof.oldConfirm`);
+  check('non-keyboard Workspace Save is blocked before capture',await evaluate(`proof.saveError.includes('Scry')&&proof.read()===''&&proof.editor.repository.state.revision===proof.saveBefore`));
+  await key('Escape');
+  await evaluate(`proof.reset('');proof.records=[]`);await type('((');await wait("document.querySelector('.autocomplete-workstation')");await type('retained');
+  await evaluate(`proof.owner=proof.editor.windowManager.ownerForNode(proof.text.key);proof.editor.windowManager.lifecycle.minimize(proof.owner)`);await wait("!document.querySelector('.autocomplete-workstation')");
+  check('owner minimization keeps draft text and releases history guard',await evaluate(`proof.read()==='retained'&&proof.editor.repository.canUndo()`));
+  await evaluate(`proof.editor.windowManager.lifecycle.reveal(proof.owner);proof.reset('')`);await type('((');await wait("document.querySelector('.autocomplete-workstation')");await type('draft');
+  await evaluate(`proof.editor.commands.replaceInlineRange(proof.text.key,0,0,'newer');proof.oldConfirm=window.confirm;window.confirm=()=>false`);
+  await key('Escape');check('stale source remains available for copying without overwriting newer text',await evaluate(`proof.read()==='newer'&&proof.flow.textContent==='((draft))'&&!!document.querySelector('.autocomplete-workstation')&&!proof.editor.repository.canUndo()`));
+  await evaluate(`window.confirm=()=>true`);await key('Escape');await evaluate(`window.confirm=proof.oldConfirm`);
+  check('explicit stale-draft discard reveals newer text and releases history',await evaluate(`proof.read()==='newer'&&proof.flow.textContent==='newer'&&proof.editor.repository.canUndo()`));
+  await evaluate(`proof.reset('')`);await type('((');await wait("document.querySelector('.autocomplete-workstation')");await type('on close');
+  await evaluate(`proof.closedContent=proof.text.contentKey;proof.root.querySelector('.flint-brand').click();[...proof.root.querySelectorAll('.flint-menu button')].find(b=>b.textContent==='Close tab').click()`);
+  await wait("!document.querySelector('.autocomplete-workstation')");
+  check('actual Flint tab close preserves draft text in canonical content and releases history',await evaluate(`(()=>{const r=proof.editor.repository.state,c=r.contents[proof.closedContent];return c.inlineContent.map(k=>r.contents[r.placements[k].contentKey].payload.text).join('')==='on close'&&proof.editor.repository.canUndo()})()`));
+  check('no uncaught browser exceptions',errors.length===0);
+  await writeFile(path.join(artifacts,'provisional-input-proof.json'),JSON.stringify({checks,errors,records:await evaluate('proof.records')},null,2));
+ } else {
  await evaluate("proof.phase='open'");await type('((');await wait("document.querySelector('.reactive-entity-search')");
  await evaluate(`(()=>{const data=proof.editor.overlays.overlays.find(o=>o.viewType==='autocomplete').data;proof.scry=data.session;const api=data.api;for(const name of ['documentAnnotations','text','scope']){const old=api[name];api[name]=function(...args){const start=performance.now();try{return old.apply(this,args);}finally{proof.records.push({phase:proof.phase,name:'api.'+name,ms:performance.now()-start});}};}})()`);
  await evaluate('new Promise(r=>setTimeout(r,350))');
@@ -104,6 +196,7 @@ try{
  }
  const output={fixturePath,stats:await evaluate('proof.stats'),measurements,errors,isolatedResolver:true,realFlintComponents:true};
  await writeFile(path.join(artifacts,'boundary-results.json'),JSON.stringify(output,null,2));
+ }
  await evaluate('proof.observer.disconnect();proof.restores.reverse().forEach(f=>f());proof.stopEntity();proof.dispose();proof.session.dispose()');
 }finally{await serviceLoad?.stop();socket?.close();chrome.kill();await vite.close();await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
 process.exit(0);

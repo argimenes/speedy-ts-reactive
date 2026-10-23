@@ -17,6 +17,7 @@ export function createDocumentSave(editor:ReactiveEditor,options:{vault:()=>Prom
  const guard=()=>{if(disposed)throw Error('Document Save view closed');options.guard();};
  return {
   async save(id:string,requested?:VaultLocation,forceChoose=false):Promise<boolean>{
+   if(editor.completionInput?.beforeSave?.()===false)return false;
    if(saving)throw Error('A Document Save is already in progress');saving=true;
    try {
     guard();const vault=await options.vault();guard();

@@ -482,3 +482,112 @@ Escape, clicking back into prose, moving the caret outside the token or hiding t
 2. Confirm literal-on-cancel behaviour and the initial ghost-closer approach; these intentionally differ from the old destructive bracket handling.
 3. Select the first command subset according to existing native capabilities. The twelve families are a direction, not authorization for new task, heading or transclusion models.
 4. Qualify proposed scoped bindings against the current binding registry and actual browsers, preserving the existing Thesis shortcut and manual Save.
+
+## Scry provisional text and literal bracket exploration — 23 October 2026
+
+> Historical exploration. The later user clarification and implementation below supersede its proposed cancellation behaviour and separate-span approach. **Cancel now keeps the authored phrase**, and production rendering uses the existing character-cell owners. See [implementation qualification](SCRY_PROVISIONAL_CELLS_QUALIFICATION.md).
+
+### Outcome and scope
+
+Literal `[[` / `]]` and `((` / `))` characters can participate in normal text layout without being canonical document edits. The recommended approach is real text nodes inside in-flow bracket elements, plus an occurrence-local provisional TextBlock draft. This is not a CSS-generated bracket or a highlight. Only successful linking publishes the final text and annotation to the repository.
+
+This section records an investigation and an isolated browser proof, not a production implementation. Production Scry currently still uses the purple highlight and commits phrase typing. The new cancellation, history and Save semantics below are requirements for the replacement, not claims about current behaviour. These decisions supersede the earlier Scry cancellation proposals in this document; slash commands and other completion modes are not changed by this decision.
+
+### User-confirmed interaction contract
+
+- Display actual in-flow bracket characters, but never persist them as part of the Document during Scry.
+- Keep phrase edits provisional. Cancel discards those edits and restores the pre-Scry phrase. Boundary movement and independent search-query changes also remain provisional.
+- Suspend document Undo and Redo until Scry completes or is cancelled. Neither boundary moves, search changes, trigger characters nor provisional phrase edits create history entries or clear the existing redo stack.
+- A successful link is one document history action. Undo removes the new entity-reference annotation and reverses any text changes belonging to that action. Redo restores that completed action; neither operation reopens Scry or restores temporary brackets.
+- A newly created canonical Entity remains in the knowledge graph when the document action is undone. Entity creation and document annotation are separate persistence domains.
+- Save during Scry asks the user to finish or cancel Scry before saving. It must not silently save an older canonical version while displaying provisional text, silently cancel the draft, or save the brackets.
+- Preserve the existing mode distinction: parentheses retain the final mention wording; square brackets use the selected Entity's canonical name. An independent query does not replace mention wording.
+
+Example: start with `the pianist`, enter Scry, provisionally change it to `the young pianist`, then link an Entity. Confirmation produces the final phrase and annotation in one history entry. Undo returns to `the pianist` without the new annotation. Cancel before confirmation returns to `the pianist` without changing history. If only the boundaries changed, Undo after confirmation removes only the newly created annotation.
+
+### What the browser experiment demonstrates
+
+The `--inline-bracket-proof` option in [the existing diagnosis harness](../../scripts/diagnose-scry-boundary-browser.mjs) loads a native Document into an isolated, real Flint presentation. It reads the source fixture without saving or changing its file. It uses a 926-cell TextBlock within a repository containing 15,791 content records and 15,791 placements. This is a bounded interaction proof, not load testing.
+
+The experiment inserts literal opening and closing text in normal-flow spans, moves the endpoints four times using retained cell references, and removes the markers. Instrumentation covers `snapshot`, `commit`, `transaction`, `replaceInlineRange`, `pruneUnreachable`, `diff`, and `publish`.
+
+Seven browser assertions passed:
+
+1. The real TextBlock displays the bracket characters in its text flow.
+2. Boundary movement preserves canonical text, occurrence keys and history availability.
+3. An explicit endpoint mapping preserves the intended native caret endpoint.
+4. No instrumented repository or command operations occur during insertion and movement.
+5. The existing unadapted mount APIs demonstrably misinterpret the inserted markers.
+6. Removing the markers restores the exact original DOM children, including node identities.
+7. No uncaught browser exceptions occur.
+
+Evidence: [browser results](scry-provisional-exploration/literal-bracket-proof.json), [screenshot](scry-provisional-exploration/literal-bracket-proof.png). The existing autocomplete suite also passed: 34 tests. Those tests qualify the current implementation, not the proposed provisional typing behaviour.
+
+The experiment does **not** prove provisional typing, IME, annotation geometry, Undo suspension, Save interception, final linking or failure rollback. Its explicit caret mapping is experimental and is not installed in production. It does not establish user-visible latency from headless timing, or imply that the browser performs no layout work when in-flow text moves.
+
+Reproduce:
+
+```sh
+BENCHMARK_OUTPUT=docs/development/scry-provisional-exploration \
+  node scripts/diagnose-scry-boundary-browser.mjs --inline-bracket-proof
+npx vitest run src/features/autocomplete/autocomplete.test.ts
+```
+
+### Why simply reinserting characters is insufficient
+
+In [the current interceptor](../../src/features/autocomplete/index.tsx), each phrase edit calls `replaceInlineRange`. The first typed opening delimiter is also committed and then removed when the second delimiter starts Scry. These operations are inconsistent with the new whole-interaction history boundary, even where the incremental text-edit path avoids snapshots.
+
+[The TextBlock renderer](../../src/rendering/standoff-editor-view.tsx) uses `flow.children[index]` for text capture, endpoint resolution and annotation geometry. Caret restoration also uses `childNodes`, and pointer hit testing enumerates children. Extra marker spans shift these indices. In the proof, the unmodified capture API included the opening brackets and the original boundary API returned a marker rather than the intended text cell. Changing only the marker drawing code would therefore be incorrect.
+
+[DirectCharacterCells](../../src/rendering/direct-character-cells.ts) owns the character DOM. A draft must cooperate with this owner rather than let two independent writers reorder its nodes. The legacy Solid cell renderer also requires explicit handling when the direct-DOM feature is disabled.
+
+Undo is reachable through shortcuts, native input events, command registry actions and direct repository callers. Blocking Command-Z alone is insufficient. Save is likewise reachable through commands and controls; intercepting only Command-S would leave bypasses.
+
+The current composition-start handler cancels completion, then reconciles browser text against the canonical model on composition end. That behaviour cannot be carried over unchanged: cancelling a provisional draft under an active browser composition could lose text or publish it outside the intended action.
+
+### Recommended implementation boundaries
+
+1. **One local draft for one mounted occurrence.** Retain source content identity, ViewId, occurrence key, source revision, original selection, original cell references and a local edit sequence. Read the affected TextBlock once when establishing the draft; do not capture the repository or entire Document. Keep authored cells unchanged until confirmation. Draft characters get local presentation identities, not canonical Block identities.
+2. **Explicit logical-to-DOM mapping.** Maintain a logical cell collection excluding the two bracket markers. Selection, hit testing, text capture, clipboard handling and annotation range resolution must use this mapping during Scry. Move marker nodes using retained endpoints; do not repeatedly search the document DOM. Keep the current highlighting implementation out of the bracket presentation.
+3. **Provisional input from the first delimiter.** The first `[` or `(` must remain visible while awaiting a possible second delimiter without creating a Scry history artefact. If the next input proves it is ordinary punctuation, publish ordinary typing with its normal history semantics. Matching second input starts the draft. Literal punctuation, escaped delimiters, selections and composition need separate regression cases.
+4. **Local phrase editing.** Typing, deletion and plain-text paste change the draft and its text-cell mapping only. Preserve unchanged canonical cell identities and retain removed source nodes until completion. Do not implement this as a transaction held open across user interaction or asynchronous search. Search follows the provisional phrase, with existing cancellation/generation checks.
+5. **History suspension at the shared authority.** Use a scoped, reliably released history guard, covering command availability and execution as well as native Undo/Redo events. Preserve the previous undo/redo stacks. Do not disable unrelated histories such as window-layout history. Every cancellation, failed startup and disposal path must release the guard.
+6. **One bounded final commit.** Revalidate the source occurrence and source content revision, and confirm the chosen Entity still exists. Prepare the actual text edits and new annotation before publishing. Publish once to history; never replace the entire TextBlock merely to remove bracket nodes. Preserve existing overlapping annotations and unchanged Cell IDs. Use a targeted operation batch rather than the existing whole-repository `commands.transaction` draft. The latter currently starts with a repository snapshot.
+7. **LER integration uses the same final action.** Current `entityRanges` and `scry.batch` paths assume canonical text offsets. Provisional ranges must not be passed to them as canonical ranges. Linking, creating-and-linking and reviewed mention binding must either prepare one valid final operation batch or explicitly explain why an action is unavailable; they must not commit the draft early or discard its edits. Existing Entity-creation receipts and stale-response protections remain intact.
+8. **Save and lifecycle gates.** Gate Document Save and applicable Workspace Save entry points before capture or dirty-state acknowledgement. Offer continuing Scry or explicitly cancelling it; Save itself cannot choose an Entity to finish linking. Do not queue an implicit save for later. On cancellation, restore the original draft source and selection. If another view has changed canonical content, discard the stale draft and render the current canonical state; never restore the old baseline over someone else's edit.
+
+Boundary motion needs endpoint updates, bounded phrase/query derivation and necessary local layout invalidation. Provisional typing costs should follow the affected TextBlock and its annotations. No Document-wide scan, repository transaction, full snapshot, dirty-state publication or backlinks-inventory rebuild belongs in either path. Reflow from real in-flow characters is legitimate; shared geometry must be invalidated for the affected flow and its reflow dependencies rather than remaining stale.
+
+### Conditions to qualify before replacing production Scry
+
+- Character and word movement at both boundaries, including zero-length spans, block ends, wrapped text, punctuation, combining characters and emoji.
+- Typing/paste/delete followed by cancellation restores exact source text, annotations, cells and pre-existing history. Genuine non-Scry typing remains immediate.
+- Literal trigger recognition never leaks temporary punctuation into history, saving, clipboard content or indexing.
+- Successful linking, name replacement and Entity creation produce one document action; Undo/Redo never resurrect brackets or delete the canonical Entity.
+- Overlapping entity references remain legal; final text changes rebase surviving properties correctly rather than deleting them through whole-phrase replacement.
+- Annotation geometry, caret placement, pointer selection and scrolling remain correct as brackets change wrapping. Use shared geometry invalidation; do not add a global cell sweep.
+- Keyboard, menu, native input and direct command history routes respect the guard. Save controls and Workspace Save respect the provisional state.
+- IME, source edits in another view, tab switching, application hide/close, pending Entity creation and failed linking have explicit, tested outcomes.
+- Existing source and reviewed-mention LER actions cannot bypass the provisional commit boundary.
+- Both current character renderers are qualified, with no silently unsafe fallback.
+- Real Flint browser tests instrument snapshots, commits, transactions, scans, unrelated reads/updates and requests. Repeat the existing affected-document typing comparison when production input handling changes; use it as comparative evidence, not a claim of guaranteed user-perceived latency.
+
+The bracket rendering itself is feasible and demonstrated. The substantive work is the provisional input and coordinate mapping, together with consistent history and Save gates. No production code or persistence format was changed by this exploration.
+
+
+## Implemented Scry provisional cells — 23 October 2026
+
+The final interpretation of `MUTABLE_SCRY_PROVISIONAL_CELLS_FEATURE_BRIEF.md` includes the user's subsequent clarification: **Escape cancels linking, not the text the user typed.** `[[Flo]]` or `((Flo))` becomes plain `Flo` on cancellation. No Entity reference is created. This supersedes the brief's earlier discard-on-cancel examples.
+
+Both opening and closing brackets are temporary presentation cells in the existing character renderer. The first trigger character is provisional too. While Scry is active, source typing/deletion/paste changes an occurrence-local draft; boundary changes update only its range. Neither path publishes Document content, creates history entries, takes repository snapshots or saves files. Search in the LER window may be edited independently.
+
+When Scry ends:
+
+- **Choose an Entity with `[[…]]`:** publish its canonical name and the Entity reference together.
+- **Choose an Entity with `((…))`:** publish the final authored phrase and Entity reference together.
+- **Escape/Cancel:** publish the final authored text without a reference. If text is unchanged, publish nothing and retain the previous Undo/Redo stacks.
+- **Undo after completion:** undo that single Document action. A newly created Entity remains in the knowledge graph.
+
+Document Undo/Redo is guarded at the shared repository authority during Scry. Save asks the user to finish linking or cancel Scry and keep the phrase; Save must then be invoked again. No temporary cells enter file formats. The default-enabled `scryProvisionalCells` flag retains the legacy path when disabled.
+
+The [A–D qualification report](SCRY_PROVISIONAL_CELLS_QUALIFICATION.md) records the implementation boundaries, actual Flint/LER browser evidence for both renderers, regression comparison, timing results and remaining restrictions.

@@ -19,6 +19,8 @@ export type FeatureFlags = Readonly<{
   mutableWindowManager: boolean;
   /** Occurrence-scoped, local-first annotation and reference completion. */
   autocompleteWorkstation: boolean;
+  /** Provisional, occurrence-local Scry character presentation and history. */
+  scryProvisionalCells: boolean;
   /** Workspace-owned retained Document render sessions. Session-fixed; no transfer UI. */
   retainedDocumentSessions: boolean;
   /** Internal E1.2 host transfer coordinator; product Detach UI remains a later milestone. */
@@ -138,6 +140,7 @@ export type FeatureFlags = Readonly<{
 export const featureFlags: FeatureFlags = Object.freeze({
   mutableWindowManager: true,
   autocompleteWorkstation: true,
+  scryProvisionalCells: true,
   retainedDocumentSessions: true,
   documentSessionHostTransfer: true,
   documentDetachment: true,

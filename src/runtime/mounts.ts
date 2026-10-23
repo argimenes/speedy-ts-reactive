@@ -22,6 +22,9 @@ export interface MountHandle {
   inlineBoundary?(index: number): { node: Node; offset: number };
   inlinePointAt?(x: number, y: number): number;
   captureText?(): string;
+  /** The existing character owner renders an occurrence-local Scry sequence. */
+  presentProvisional?(draft:import('../features/autocomplete/provisional-cells').ProvisionalCells|undefined):void;
+  finishProvisionalComposition?():void;
   /** Native textarea normalization back to authoritative source; called only on input. */
   authoredNativeText?(value: string): string;
   composing?: boolean;

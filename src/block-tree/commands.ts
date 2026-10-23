@@ -46,6 +46,43 @@ export class TreeCommandError extends Error {
 
 
 export class TreeCommands {
+  private annotationCapture?:RepositoryOperation[];
+  captureAnnotationBatch(action:()=>void){if(this.annotationCapture||this.pending)throw new TreeCommandError('Finish the current operation first');const operations:RepositoryOperation[]=[];this.annotationCapture=operations;try{action();return operations;}finally{this.annotationCapture=undefined;}}
+  /** Scry's local edit log becomes one bounded native history entry. No open
+   * transaction, graph draft or whole-paragraph replacement is required. */
+  completeProvisionalText(key:NodeKey,version:number,edits:readonly {start:number;end:number;text:string}[],annotation?:{start:number;end:number;value:string;name:string},reviewed:RepositoryOperation[]=[]) {
+    if(this.pending)throw new TreeCommandError('Finish the current operation first');
+    const state=this.repository.readState(),placement=this.placementKey(key,state),content=state.contents[state.placements[placement].contentKey];
+    if(content.inlineKind!=='standoff'||content.inlineRevision!==version)throw new TreeCommandError('Scry source changed; draft was not committed');
+    const keys=[...content.inlineContent],fresh=new Map<string,{content:ContentRecord;placement:PlacementKey}>();
+    const reviewedSource=reviewed.find(op=>op.kind==='put-content'&&op.record.key===content.key) as Extract<RepositoryOperation,{kind:'put-content'}>|undefined;
+    const originalProperties=content.payload.standoffProperties as Record<string,unknown>[]??[];
+    const initialProperties=reviewedSource?.record.payload.standoffProperties as Record<string,unknown>[]??originalProperties;
+    let properties=clone(initialProperties),origins:(number|null)[]=properties.map((_,i)=>i<originalProperties.length?i:null);
+    for(const edit of edits){
+      if(!Number.isInteger(edit.start)||!Number.isInteger(edit.end)||edit.start<0||edit.end<edit.start||edit.end>keys.length)throw new TreeCommandError('Invalid provisional range');
+      const added=[...edit.text].map(text=>{const ck=createContentKey(),pk=createPlacementKey();fresh.set(pk,{placement:pk,content:{key:ck,viewType:'text-cell',payload:{text},children:[],inlineContent:[],inlineRevision:0,ownedRelations:{},opaqueRelations:{},wireChildren:'omitted',wireRelation:'omitted',revision:0}});return pk;});
+      for(const pk of keys.slice(edit.start,edit.end))if(!fresh.has(pk)&&!isTextLeaf(state.contents[state.placements[pk].contentKey]))throw new TreeCommandError('Scry only edits plain text cells');
+      const nextOrigins:(number|null)[]=[];
+      properties=mapStandoffPropertiesForReplacement(properties,edit.start,edit.end,added.length,nextOrigins,keys.length) as Record<string,unknown>[];
+      origins=nextOrigins.map(i=>i===null?null:origins[i]);keys.splice(edit.start,edit.end-edit.start,...added);
+    }
+    const beforeText=content.inlineContent.map(pk=>String(state.contents[state.placements[pk].contentKey].payload.text??'')).join('');
+    const afterText=keys.map(pk=>String(fresh.get(pk)?.content.payload.text??state.contents[state.placements[pk].contentKey].payload.text??'')).join('');
+    const textChanged=beforeText!==afterText;
+    if(!textChanged){keys.splice(0,keys.length,...content.inlineContent);properties=clone(initialProperties);origins=properties.map((_,i)=>i<originalProperties.length?i:null);}
+    if(annotation){
+      if(!annotation.value||!Number.isInteger(annotation.start)||!Number.isInteger(annotation.end)||annotation.start<0||annotation.end<=annotation.start||annotation.end>keys.length)throw new TreeCommandError('Invalid Scry annotation');
+      if(!properties.some((p,i)=>i>=originalProperties.length&&p.type==='codex/entity-reference'&&p.value===annotation.value&&p.start===annotation.start&&p.end===annotation.end-1)){properties.push({id:crypto.randomUUID(),type:'codex/entity-reference',start:annotation.start,end:annotation.end-1,value:annotation.value,metadata:{entityId:annotation.value,entityName:annotation.name}});origins.push(null);}
+    }
+    if(!textChanged&&!annotation&&!reviewed.length)return;
+    const operations:RepositoryOperation[]=reviewed.filter(op=>op!==reviewedSource),kept=new Set(keys),old=new Set(content.inlineContent),removed=new Map<string,number>();
+    for(const pk of content.inlineContent)if(!kept.has(pk)){operations.push({kind:'remove-placement',key:pk});const ck=state.placements[pk].contentKey;removed.set(ck,(removed.get(ck)??0)+1);}
+    for(const [ck,count] of removed)if(this.repository.contentReferenceCount(ck)===count)operations.push({kind:'remove-content',key:ck});
+    for(const pk of keys)if(!old.has(pk)){const cell=fresh.get(pk)!;operations.push({kind:'put-content',record:cell.content},{kind:'put-placement',record:{key:pk,contentKey:cell.content.key,kind:'inline'}});}
+    operations.push({kind:'put-content',annotationOrigins:origins,record:{...clone(content),payload:{...clone(content.payload),standoffProperties:properties},inlineContent:keys,inlineRevision:content.inlineRevision+(textChanged?1:0),revision:content.revision+1}});
+    this.publish(annotation?'Link Scry Entity':'Finish Scry text',operations,{commandId:'autocomplete.finish',subjects:[this.subject(state,placement)]});
+  }
   private pending?: PendingTransaction;
   private restorePlans = new WeakSet<object>();
   /** Prepared fragments only: one history entry and validation batch for the entire paste. */
@@ -191,6 +228,7 @@ export class TreeCommands {
    * Prepared annotation records must precede text edits so they cannot overwrite
    * edits already staged in the transaction. Outside one, keep the usual path. */
   stageAnnotationBatch(label:string,operations:RepositoryOperation[],revision:number):boolean {
+    if(this.annotationCapture){if(this.repository.state.revision!==revision)throw new TreeCommandError('Reviewed mentions changed');this.annotationCapture.push(...clone(operations));return true;}
     if(!this.pending)return false;
     if(this.pending.operations.length||this.repository.state.revision!==revision)throw new TreeCommandError('Annotation batch must precede text edits in a current transaction');
     this.publish(label,operations);return true;

@@ -334,6 +334,7 @@ export class NativeDocumentSession {
     }finally{b.busy=false;this.notifyKnowledge();this.touch();}
   }
   async save(id: string, location?: DocumentLocation, overwrite?:NativeOverwrite) {
+    if(this.editor.completionInput?.beforeSave?.()===false)throw Error('Finish or cancel Scry, then Save again.');
     if(overwrite){
       if(!this.needsSaveDestination(id))throw Error('Overwrite confirmation is only valid for a first Save.');
       if(this.bindings.has(overwrite.resourceId)||this.compatibleSources.has(overwrite.resourceId))throw Error('The destination Document was opened while confirming. Save with a different name.');
@@ -352,6 +353,7 @@ export class NativeDocumentSession {
   }
   /** Explicit Save into a different Vault. The outside source is never written. */
   async saveCopy(id:string,location:DocumentLocation,overwrite?:NativeOverwrite){
+    if(this.editor.completionInput?.beforeSave?.()===false)throw Error('Finish or cancel Scry, then Save again.');
     const old=this.bindings.get(id),compatible=this.compatibleSources.get(id);
     if(old&&(old.busy||old.pending||old.relocation)||compatible&&(compatible.busy||compatible.pending))throw Error('Finish or recover the pending Save before saving a Vault copy.');
     if(old&&sameLocation(old.location,location)||compatible&&sameLocation(compatible.location,location))throw Error('Choose a new Vault location for this copy.');

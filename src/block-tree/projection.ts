@@ -54,6 +54,11 @@ export class BlockTreeProjection {
       }
       if (change.inlineOwner) {
         this.updateInline(change.inlineOwner);
+        // The validated inline batch may also annotate other existing text
+        // owners. Update those occurrences without rebuilding the projection.
+        for(const [key,previous] of change.previousContents){
+          if(key!==change.inlineOwner&&previous?.inlineKind==='standoff'&&repository.readState().contents[key]?.inlineKind==='standoff')this.updateInline(key);
+        }
         return;
       }
       const next = this.build();
