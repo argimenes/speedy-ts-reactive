@@ -381,7 +381,7 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
           <Show when={showJson()}><pre>{encoded()}</pre></Show>
         </details>
       </Show>
-      <Show when={documents.browser()}>{(mode) => <DocumentBrowser mode={mode()} initialLocation={documents.location()} busy={documents.busy()} error={documents.error()} conflict={documents.conflict()} onChoose={documents.choose} onClose={documents.closeBrowser} />}</Show>
+      <Show when={documents.browser()}>{(mode) => <DocumentBrowser mode={mode()} initialLocation={mode()==='save'?documents.browserLocation():documents.location()} busy={documents.busy()} error={documents.error()} conflict={documents.conflict()} onChoose={documents.choose} onClose={documents.closeBrowser} />}</Show>
       <Show when={documents.pending()}>{(next) => <DocumentDialog title="Save your changes?" compact busy={documents.busy()} onClose={documents.cancelPending}>
         <p class="document-dialog__body">Save changes to “{title()}” before you {next().label}?</p>
         <Show when={documents.error()}><p class="document-dialog__error" role="alert">{documents.error()}</p></Show>

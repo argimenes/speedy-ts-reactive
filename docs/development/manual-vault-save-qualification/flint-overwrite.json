@@ -1,0 +1,32 @@
+{
+  "checks": [
+    "New Notes remains unsaved before manual Save",
+    "New Notes remains unsaved before manual Save tab indicator",
+    "Default Document is Notes",
+    "Actual editor typing marks the active Document dirty",
+    "Actual editor typing marks the active Document dirty tab indicator",
+    "Collision does not write before confirmation",
+    "Cancelled collision keeps the Document unsaved",
+    "Cancelled collision keeps the Document unsaved tab indicator",
+    "Cancel preserves the existing file",
+    "Save button clears both native dirty state and tab indicator",
+    "Save button clears both native dirty state and tab indicator tab indicator",
+    "Rendering after Save does not dirty the Document",
+    "Rendering after Save does not dirty the Document tab indicator",
+    "Edited bytes were written to the isolated native file",
+    "Command-S saves and clears the active tab",
+    "Command-S saves and clears the active tab tab indicator",
+    "Command-S persisted its current edit",
+    "First Save uses available filename in active Vault",
+    "Save never opens Storage and recovery",
+    "Confirmed overwrite uses the requested filename",
+    "Saved resource keeps its canonical identity",
+    "Rejected Save retains the unsaved indicator",
+    "Rejected Save retains the unsaved indicator tab indicator",
+    "Rejected Save displays its reason in the main Flint window",
+    "Rejected Save preserves the external file",
+    "No browser exceptions"
+  ],
+  "errors": [],
+  "status": "Save blocked — newer/unsaved edits remain: External native changes or unknown destination"
+}

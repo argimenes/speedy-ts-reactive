@@ -42,7 +42,8 @@ export interface DocumentApplicationInstance {
   files?: {
     list(folder: string): Promise<string[]>;
     open(location: {folder: string; filename: string}, importMarkdown?: boolean): Promise<void>;
-    save(location: {folder: string; filename: string}): Promise<void>;
+    /** Omit location to use the current binding or a first-save filename in the active Vault. */
+    save(location?: {folder: string; filename: string}): Promise<void>;
     recover(location: {folder: string; filename: string}): Promise<void>;
     compare(): Promise<{external: string; generated: string}>;
     keepMutable(): Promise<void>;

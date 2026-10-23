@@ -1,5 +1,6 @@
 import {registerCompletionDocuments} from './completion-documents';
 import { CollectionDialog } from '../rendering/collection-dialog';
+import {createDocumentSave} from './document-save';
 import { createRecentDocuments } from './recent-documents';
 import { PublicationDialog } from '../rendering/publication-dialog';
 import { hasInternalBlockDrag } from '../rendering/block-selection';
@@ -260,6 +261,10 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
             if (target) { chooseTab(target); recents?.record({ id, title: doc.title, location: native?.location(id) }, recentVaultId()); }
           };
       const [selectedVault, setSelectedVault] = createSignal<DocumentVaultLease>();
+      const documentSaver=native?createDocumentSave(editor,{guard,vault:async()=>{
+        const selected=selectedVault();if(!selected)return undefined;
+        return {root:selected.root,check:()=>{if(selectedVault()!==selected||!selected.isAlive())throw Error('The active Vault changed before Save. Try again in the intended Vault.');},run:(action,first)=>selected.mutate(action,first)};
+      }}):undefined;
       onCleanup(registerDocumentApplicationNavigation(editor, props.nodeKey, id => openDocument(id)));
       let opening = 0, openQuery: AbortController | undefined;
       onCleanup(() => { opening++; openQuery?.abort(); selectedVault()?.release(); if (!editor.node(props.nodeKey)) vaultRoots.delete(props.nodeKey); });
@@ -464,10 +469,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           const id = await native.open(location, importMarkdown); guard();
           openDocument(id);
         },
-        async save(location: VaultLocation) {
-          guard(); const id = requireId(), lease = selectedVault(), destination = native.isCandidate(id) ? location : native.location(id) ?? location;
-          if (lease) { lease.requireDirectory(destination.folder); await lease.mutate(() => native.save(id, destination), !native.location(id) || native.isCandidate(id)); }
-          else await native.save(id, location);
+        async save(location?: VaultLocation) {
+          guard();await documentSaver!.save(requireId(),location);
         },
         async recover(location: {folder: string; filename: string}) { guard(); if(native.compatibleSource(activeId()??''))await native.recover(activeId(),location);else if (selectedVault()) await vault!.recoverNative(location); else await native.recover(activeId(), location); },
         compare() { guard(); return native.compare(requireId()); },
@@ -505,7 +508,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           else {const id=activeId();void editor.interchange.dropFiles(files,node!.key,()=>mounted&&scope.active()&&activeId()===id);}
         },
       } : undefined;
-      return <><Show when={publication()}>{p=><PublicationDialog editor={editor} initial={p().initial} close={()=>setPublication(undefined)}/>}</Show><Show when={collectionMode()}>{mode=><CollectionDialog editor={editor} vault={selectedVault()?.root??'.'} current={()=>mounted&&scope.active()} mode={mode()} close={()=>setCollectionMode(undefined)}/>}</Show><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
+      return <>{documentSaver && <documentSaver.Dialogs/>}<Show when={publication()}>{p=><PublicationDialog editor={editor} initial={p().initial} close={()=>setPublication(undefined)}/>}</Show><Show when={collectionMode()}>{mode=><CollectionDialog editor={editor} vault={selectedVault()?.root??'.'} current={()=>mounted&&scope.active()} mode={mode()} close={()=>setCollectionMode(undefined)}/>}</Show><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
         <Dynamic component={definition.view} application={{
           documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, interchange, entityBacklinks: EntityBacklinks,
           recentDocuments: recents ? {

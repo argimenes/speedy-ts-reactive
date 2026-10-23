@@ -1,0 +1,65 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ server/native-document-store.test.mjs (25 tests) 4436ms
+   ✓ saves/reopens rich native bytes through actual routes and preserves identity across a file rename 458ms
+   ✓ converts legacy paired saves to JSON-only without touching changed Markdown 472ms
+   ✓ Compare / Keep Mutable requires an exact reviewed external hash and preserves the displaced bytes 305ms
+   ✓ recognizes content independently of suffix with no enrollment, source rewrite or generated sidecar 419ms
+ ✓ src/persistence/native-session.test.ts (12 tests) 2858ms
+   ✓ opens canonically without an occurrence, saves/reopens, and blocks tree/extended/Workspace bypasses 427ms
+   ✓ does not refresh a stale client baseline after a rejected Save or Open 425ms
+   ✓ tracks empty paragraph removal and undo incrementally (retained=false) 315ms
+   ✓ tracks empty paragraph removal and undo incrementally (retained=true) 354ms
+ ✓ src/features/flint/compact-shell.test.tsx (7 tests) 1847ms
+   ✓ defaults on and keeps the existing editor and document state through shell interactions 1177ms
+ ✓ src/application/document-save.test.tsx (2 tests) 1623ms
+   ✓ saves a newly created standalone Ink Document directly into the default Vault 741ms
+   ✓ outside-Vault Ink Save asks for a Vault copy, supports cancellation, and retains its editing session 881ms
+ ✓ src/application/workspace-open.test.tsx (16 tests) 2621ms
+   ✓ open workspace content > opens Notes.ink in a DocumentWindow (existing bank=false, presentation=desktop) 977ms
+   ✓ open workspace content > opens a server Document into the existing empty session (Canvas=false) 364ms
+ ✓ src/demo/public-hosted-version.test.tsx (6 tests) 5989ms
+   ✓ ordinary Mutable server and local file actions > switches a loaded workspace through fallback commands and uses the same snapshot for Local Save As 2018ms
+   ✓ ordinary Mutable server and local file actions > offers writable Server actions alongside explicit Local actions 993ms
+   ✓ ordinary Mutable server and local file actions > keeps self-contained Local Workspace export available 526ms
+   ✓ ordinary Mutable server and local file actions > opens a Local Document without contacting the Server 628ms
+   ✓ ordinary Mutable server and local file actions > opens a self-contained Local Workspace from one JSON file 566ms
+   ✓ ordinary Mutable server and local file actions > preserves unavailable presentation data and leaves edits during a local write unsaved 1255ms
+ ✓ src/demo/document-browser.test.tsx (9 tests) 8918ms
+   ✓ workspace document controls > saves an unnamed edited document before continuing a reset 2857ms
+   ✓ workspace document controls > discards only unsaved edits when closing and restores the last saved copy on reopen 923ms
+   ✓ workspace document controls > browses nested folders, loads unchanged legacy data, saves edits, and reopens a saved copy 1121ms
+   ✓ workspace document controls > protects edits on reset and open, and keeps the editor intact when loading fails 1262ms
+   ✓ workspace document controls > requires explicit overwrite and restores focus when the browser is cancelled 1453ms
+   ✓ local Document Save selects a Vault copy and never writes the source browser handle 842ms
+ ✓ src/application/flint-vault.test.tsx (26 tests) 27715ms
+   ✓ default Notes saves directly into the active Vault (empty) 2577ms
+   ✓ default Notes saves directly into the active Vault (occupied) 943ms
+   ✓ default Notes saves directly into the active Vault (rejected first destination) 949ms
+   ✓ reviews a first-save filename collision (overwrite) 1357ms
+   ✓ reviews a first-save filename collision (cancel) 1832ms
+   ✓ reviews a first-save filename collision (stale) 723ms
+   ✓ cancels automatic first-save destination selection when the active Vault changes 747ms
+   ✓ marks edited tabs dirty and Command-S saves only the active document to its original filename 1552ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 1116ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 3131ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 952ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 837ms
+   ✓ exposes read-only storage, preserves ordinary editing, and cannot bypass it through Files 789ms
+   ✓ refresh discovers external changes without rebinding or replacing loaded dirty content; ambiguous identities stay unavailable 598ms
+   ✓ preserves unknown authored payloads and incompatible tags, and reports missing owned-resource dependencies 648ms
+   ✓ retains the selected vault across minimize/restore, with no serialized membership or root path 720ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 773ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 1271ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 804ms
+   ✓ relocates a Document containing a native external reference without rewriting its target or saved generation 816ms
+   ✓ reports a vanished location without discarding the live Document or adopting an external same-ID move 720ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 1742ms
+   ✓ browses physical files and opens a real historical Document without migration or hidden native enrollment 1474ms
+
+ Test Files  8 passed (8)
+      Tests  103 passed (103)
+   Start at  10:00:19
+   Duration  44.47s (transform 16.21s, setup 0ms, collect 75.66s, tests 56.01s, environment 16.64s, prepare 2.03s)
+

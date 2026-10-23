@@ -7,6 +7,9 @@ import type { PlacementKey } from "../block-tree/types";
 import type { DocumentLocation } from "../reactive-editor/persistence";
 import { DocumentBrowser } from "./document-browser";
 import { DocumentDialog } from "./document-dialog";
+import {createDocumentSave} from '../application/document-save';
+import {nativeDocumentSession} from '../persistence/native-session';
+import {useCurrentCavern} from '../application/cavern-startup';
 
 /** One browser/request lifetime for the current canonical workspace. */
 export function createWorkspaceOpenControls(session: WorkspaceSession, available: () => boolean) {
@@ -16,6 +19,11 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
   const [saveNotice, setSaveNotice] = createSignal('');
   const [url, setUrl] = createSignal("");
   const lifetime = new AbortController();
+  const cavern=useCurrentCavern();
+  const documentSaver=createDocumentSave(session.editor,{guard:()=>{lifetime.signal.throwIfAborted();},vault:async()=>{
+    const current=cavern?.current(),root=current?'.':await nativeDocumentSession(session.editor).defaultVault();
+    return root?{root,check:()=>{if(cavern?.current()!==current)throw Error('The active Vault changed before Save.');}}:undefined;
+  }});
   onCleanup(() => lifetime.abort());
   const enabled = () => available() && !busy() && !dialog() && !(session.windowManager ? session.windowManager.lifecycle.workspaceBlocked : document.querySelector('[role="dialog"]'));
   const open = (kind: "document" | "image") => { if (enabled()) { setError(""); setUrl(""); setDialog(kind); } };
@@ -50,7 +58,7 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
   const save = async (key: string) => {
     if (busy()) return;
     setBusy(true); setError(''); setSaveNotice('');
-    try { const message = await actions.saveDocument(key); if (!lifetime.signal.aborted) setSaveNotice(message); }
+    try { const message = await actions.saveDocument(key,id=>documentSaver.save(id)); if (!lifetime.signal.aborted) setSaveNotice(message); }
     catch (error) { if (!lifetime.signal.aborted) setError(error instanceof Error ? error.message : String(error)); }
     finally { if (!lifetime.signal.aborted) setBusy(false); }
   };
@@ -97,6 +105,7 @@ export function createWorkspaceOpenControls(session: WorkspaceSession, available
       <button type="button" role={props.menu ? "menuitem" : undefined} disabled={!available() || busy()} onClick={() => open("image")}>Open Image…</button>
     </>,
     Dialogs: () => <>
+      <documentSaver.Dialogs/>
       <Show when={dialog() === "document"}><DocumentBrowser mode="open" busy={busy()} error={error()} onChoose={choose} onClose={close} /></Show>
       <Show when={dialog() === "image"}><DocumentDialog title="Open image" onClose={close} compact>
         <form onSubmit={event => { event.preventDefault(); try { finish(actions.image(url())); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } }}>

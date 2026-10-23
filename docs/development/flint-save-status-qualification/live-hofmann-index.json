@@ -1,0 +1,14 @@
+{
+  "verifiedLocalDate": "2026-10-23",
+  "sourcePath": "documents/misc/pasting-tests.mutable.json",
+  "resourceId": "13d637ca-bd15-414e-9384-5ab5ecce4688",
+  "entityId": "71df4b7c-9d90-4b9d-a1a2-77f99586bdf0",
+  "dbMentions": [
+    {
+      "id": "71df4b7c-9d90-4b9d-a1a2-77f99586bdf0",
+      "mentions": 10
+    }
+  ],
+  "documentCount": 1,
+  "wholeVaultReconciliationComplete": false
+}

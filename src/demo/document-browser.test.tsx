@@ -29,6 +29,7 @@ function mockStore() {
   const files = new Map<string, ExistingBlockDto>([["archive/notes/Original.json", structuredClone(fixture)]]);
   const fetch = vi.fn(async (address: string, init?: RequestInit) => {
     const url = new URL(address, "http://localhost"); const folder = url.searchParams.get("folder") || ".";
+    if (url.pathname.endsWith("/vault/default")) return response({Success:true,Data:{vault:"."}});
     if (url.pathname.endsWith("listFolders")) return response({ folders: folder === "." ? ["archive", "empty"] : folder === "archive" ? ["notes"] : [] });
     if (url.pathname.endsWith("listDocuments")) return response({ files: [...files.keys()].filter((key) => key.slice(0, key.lastIndexOf("/")) === folder).map((key) => key.slice(key.lastIndexOf("/") + 1)) });
     if (url.pathname.endsWith("loadDocumentJson")) {
@@ -116,7 +117,7 @@ describe("workspace document controls", () => {
     expect(host.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Edited text");
     const before = store.fetch.mock.calls.length;
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "s", ctrlKey: true, bubbles: true, cancelable: true }));
-    await vi.waitFor(() => expect(store.fetch.mock.calls.length).toBe(before + 1));
+    await vi.waitFor(() => expect(store.fetch.mock.calls.length).toBe(before + 2));
   });
 
   it("protects edits on reset and open, and keeps the editor intact when loading fails", async () => {
@@ -190,4 +191,17 @@ it('reuses the folder tree for directory choice without loading or opening docum
   click(document.querySelector('[aria-label="Parent folder"]')!);
   expect((document.querySelector('[aria-label="Parent folder"]') as HTMLButtonElement).disabled).toBe(true);
   expect(store.fetch.mock.calls.every(([url])=>String(url).includes('/listFolders'))).toBe(true);
+});
+
+it('local Document Save selects a Vault copy and never writes the source browser handle',async()=>{
+ const store=mockStore(),source=JSON.stringify(fixture),write=vi.fn();
+ vi.stubGlobal('showOpenFilePicker',vi.fn().mockResolvedValue([{name:'Local.json',getFile:async()=>({name:'Local.json',text:async()=>source}),createWritable:write}]));
+ const host=mountWorkspace(),local=()=>host.querySelector('[aria-label="Local files"]')!;
+ click(button('Open…',local()));await vi.waitFor(()=>expect(host.querySelector<HTMLTextAreaElement>('textarea')?.value).toBe('Original text'));
+ input(host.querySelector('textarea')!,'Local edit');click(button('Save',local()));
+ await vi.waitFor(()=>expect(button('Save',dialog()).disabled).toBe(false));click(button('Cancel',dialog()));expect(write).not.toHaveBeenCalled();expect(store.files.has('./Local.json')).toBe(false);
+ click(button('Save',local()));await vi.waitFor(()=>expect(button('Save',dialog()).disabled).toBe(false));
+ input(dialog().querySelector('[aria-label="File name"]')!,'Vault copy.json');click(button('Save',dialog()));
+ await vi.waitFor(()=>expect(store.files.get('./Vault copy.json')?.children?.[0].text).toBe('Local edit'));
+ expect(write).not.toHaveBeenCalled();expect(JSON.parse(source).children[0].text).toBe('Original text');expect(store.files.get('./Vault copy.json')?.id).toBe(fixture.id);
 });

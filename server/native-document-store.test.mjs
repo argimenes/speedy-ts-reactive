@@ -182,3 +182,26 @@ it('publishes .ink with .ink.md, protects original Markdown and excludes project
  expect((await f.call('native/recognize',{location:{folder:'.',filename:'document.ink.md'}})).status).toBe(400);
  const scan=(await f.call('native/vault/discover',{vault:'.'})).Data;expect(scan.markdown).toEqual(['document.md']);expect(scan.other).not.toContain('document.ink.md');
 });
+
+it.each(['complete','interrupted'])('explicit first-save overwrite preserves prior bytes and can recover (%s)',async mode=>{
+ let interrupt=mode==='interrupted';
+ const f=await fixture({fault:async stage=>{if(interrupt&&stage==='after-native')throw Error('interrupted overwrite');}});
+ const old=nativeOnly(await f.generation()),next=nativeOnly(await f.generation('artifacts/flint-b1.2/b.mutable.json'));
+ await fs.writeFile(path.join(f.root,f.location.filename),old.native);
+ const overwrite={resourceId:old.resourceId,nativeHash:hash(old.native)};
+ const result=await f.save(next,absent,{overwrite});expect(result.Data.result.phase).toBe(interrupt?'confirmation-pending':'saved');
+ expect(await fs.readFile(path.join(f.root,`.mutable-pair-${hash(next.resourceId)}`,next.generation,'native.previous'),'utf8')).toBe(old.native);
+ interrupt=false;await f.restart();expect((await f.save(next,absent,{overwrite})).Data.result.phase).toBe('saved');
+ const loaded=(await f.call('native/open',{location:f.location})).Data;expect(loaded.resourceId).toBe(next.resourceId);expect(loaded.native).toBe(next.native);
+ expect((await f.save({...old,generation:crypto.randomUUID()},absent)).status).toBe(409);
+});
+it('rejects stale overwrite confirmation and an existing pending Save without changing its bytes',async()=>{
+ let interrupt=false;const f=await fixture({fault:async stage=>{if(interrupt&&stage==='after-native')throw Error('pending original');}});
+ const old=nativeOnly(await f.generation()),next=nativeOnly(await f.generation('artifacts/flint-b1.2/b.mutable.json'));
+ await fs.writeFile(path.join(f.root,f.location.filename),old.native+'\n');
+ expect((await f.save(next,absent,{overwrite:{resourceId:old.resourceId,nativeHash:hash(old.native)}})).status).toBe(409);
+ expect(await fs.readFile(path.join(f.root,f.location.filename),'utf8')).toBe(old.native+'\n');
+ await fs.unlink(path.join(f.root,f.location.filename));interrupt=true;await f.save(old);interrupt=false;
+ expect((await f.save(next,absent,{overwrite:{resourceId:old.resourceId,nativeHash:hash(old.native)}})).Error).toContain('pending Save');
+ expect(await fs.readFile(path.join(f.root,f.location.filename),'utf8')).toBe(old.native);
+});

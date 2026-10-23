@@ -79,26 +79,12 @@ describe("ordinary Mutable server and local file actions", () => {
     expect(button("Save", local).disabled).toBe(false);
   });
 
-  it("writes Local Documents and self-contained Local Workspaces through browser file handles", async () => {
-    const documentWrites: string[] = [], workspaceWrites: string[] = [];
-    const pick = vi.fn()
-      .mockResolvedValueOnce(writableHandle("My Document.json", documentWrites))
-      .mockResolvedValueOnce(writableHandle("My Workspace.json", workspaceWrites));
-    vi.stubGlobal("showSaveFilePicker", pick);
-    const host = mount();
-    const local = host.querySelector<HTMLElement>('[aria-label="Local files"]')!;
-    click(button("Save", local));
-    await vi.waitFor(() => expect(documentWrites).toHaveLength(1));
-    expect(JSON.parse(documentWrites[0]).type).toBe("document-block");
-    expect(host.querySelector(".workspace-demo__window-title")?.textContent).toContain("My Document.json");
-
-    click(button("Save Workspace…", local));
-    await vi.waitFor(() => expect(workspaceWrites).toHaveLength(1));
-    const workspace = JSON.parse(workspaceWrites[0]);
-    expect(workspace.type).toBe("workspace-block");
-    expect(JSON.stringify(workspace)).toContain("My Document.json");
-    expect(JSON.stringify(workspace)).toContain("document-block");
-    expect(JSON.stringify(workspace)).not.toContain("document-reference-block");
+  it("keeps self-contained Local Workspace export available", async () => {
+    const workspaceWrites: string[] = [];
+    vi.stubGlobal("showSaveFilePicker", vi.fn().mockResolvedValue(writableHandle("My Workspace.json",workspaceWrites)));
+    const host=mount();click(button("Save Workspace…",host.querySelector('[aria-label="Local files"]')!));
+    await vi.waitFor(()=>expect(workspaceWrites).toHaveLength(1));
+    const workspace=JSON.parse(workspaceWrites[0]);expect(workspace.type).toBe('workspace-block');expect(JSON.stringify(workspace)).toContain('document-block');expect(JSON.stringify(workspace)).not.toContain('document-reference-block');
   });
 
   it("opens a Local Document without contacting the Server", async () => {

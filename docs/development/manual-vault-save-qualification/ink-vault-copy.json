@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "Opened Document is clean",
+    "Actual editor typing marks the active Document dirty",
+    "Cancelling Vault copy keeps original binding",
+    "Save button clears both native dirty state and tab indicator",
+    "Rendering after Save does not dirty the Document",
+    "Edited bytes were written to the isolated native file",
+    "Command-S saves and clears the active tab",
+    "Command-S persisted its current edit",
+    "Outside original is untouched",
+    "Subsequent Save stays in selected Vault",
+    "Rejected Save retains the unsaved indicator",
+    "Rejected Save displays its reason in the main Flint window",
+    "Rejected Save preserves the external file",
+    "No browser exceptions"
+  ],
+  "errors": [],
+  "status": "Save blocked — newer/unsaved edits remain: External native changes or unknown destination"
+}

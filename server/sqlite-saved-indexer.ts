@@ -59,6 +59,12 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
         if(await store.readScopeFence(vault,signal)!==initialFence){const message='Vault changed during discovery';await client.indexIssue(vault,message);return {complete:false,issues:[...issues,{path:vault,message}],reconciled:[],removed:[]};}
         await checkpoint('discovered',{candidates});signal?.throwIfAborted();
         const old=await client.inventory();
+        const previousById=new Map<string,any>(old.map((r:any)=>[r.guid,r]));
+        // Publish missing and changed resources before rechecking unchanged rows.
+        // A newly saved Document must not wait behind the entire existing index.
+        // All candidates still passed the same discovery/collision checks above.
+        const priority=(c:any)=>{const previous=previousById.get(c.resourceId);return !previous?0:previous.contentHash!==c.contentHash||previous.path!==c.file?1:2;};
+        candidates.sort((a,b)=>priority(a)-priority(b));
         // Per-file failures do not block independent valid resources. Keep
         // incomplete coverage explicit and never use a partial scan to delete.
         for(const issue of issues)await client.indexIssue(issue.path??vault,issue.message);
@@ -74,7 +80,7 @@ export function createSavedIndexer(client:any,{root,vault='.',store=new NativeVa
           if(blocked.has(c.file))continue;
           let staged:any;
           try {
-            const previous=old.find((r:any)=>r.guid===c.resourceId);
+            const previous=previousById.get(c.resourceId);
             if(previous&&previous.path!==c.file&&issues.length)throw Error('Cannot relocate an indexed identity while saved coverage is incomplete');
             if(previous&&previous.path!==c.file&&c.native&&!c.native.baseline.locationRevision)throw Error('External native move needs explicit storage binding reconciliation');
             // A prior SQL write changes only reserved .mutable data, excluded from source fencing.

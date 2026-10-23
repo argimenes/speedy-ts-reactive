@@ -58,7 +58,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
   const showSearch=()=>{showLibrary();setBrowse('search');queueMicrotask(()=>shell.querySelector<HTMLInputElement>('[aria-label="Search vault"]')?.focus());};
   const openStorage=(invoker?:HTMLElement)=>{storageInvoker=invoker??menuButton;const bound=app.files?.location();if(bound)setDestination(bound);else setDestination({folder:vault()?.root??'.',filename:app.interchange?.suggestedFilename()??'Document.ink'});setMenu(false);setStorage(true);};
   const closeStorage=()=>{setStorage(false);queueMicrotask(()=>{const target=storageInvoker?.isConnected?storageInvoker:menuButton;if(target?.isConnected)target.focus();});};
-  const save=async()=>{if(!app.files||busy())return;if(!app.files.location()){openStorage();return;}setBusy(true);setError('');try{await app.files.save(destination());}catch(e){setError(String(e));}finally{setBusy(false);}};
+  const save=async()=>{if(!app.files||busy())return;if(!app.files.location()&&!vault()){openStorage();return;}setBusy(true);setError('');try{await app.files.save();}catch(e){setError(String(e));}finally{setBusy(false);}};
   const toggle=(rail:'library'|'context')=>{const open=rail==='library'?library():context(),set=rail==='library'?setLibrary:setContext;
     if(narrow(rail)){set(true);setNarrowPanel(narrowPanel()===rail?'':rail);}else set(!open);
   };

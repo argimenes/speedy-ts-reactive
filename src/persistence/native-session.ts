@@ -10,7 +10,8 @@ import { enrollPair, type PairGeneration, type PairResult, type ResourcePair } f
 import { markNativeBinding, ownNativeSession } from './native-bindings';
 import { recognizeCompatibleDocument } from './compatible-document';
 type Baseline = { nativeHash: string | null; markdownHash: string | null; generation: string | null; locationRevision?: string };
-type Binding = { location: DocumentLocation; baseline: Baseline; pair: ResourcePair; pending?: PairGeneration; message: string; comparedHash?: string; busy: boolean; relocation?: string; relocationWork?: Promise<unknown>; members: Set<string> };
+export type NativeOverwrite = {resourceId:string; nativeHash:string};
+type Binding = { location: DocumentLocation; baseline: Baseline; pair: ResourcePair; pending?: PairGeneration; overwrite?:NativeOverwrite; message: string; comparedHash?: string; busy: boolean; relocation?: string; relocationWork?: Promise<unknown>; members: Set<string> };
 const sessions = new WeakMap<ReactiveEditor, NativeDocumentSession>();
 export const existingNativeDocumentSession = (editor: ReactiveEditor) => sessions.get(editor);
 export function nativeDocumentSession(editor: ReactiveEditor) {
@@ -41,6 +42,21 @@ export class NativeDocumentSession {
   private dirtyState = createStore<Record<string, boolean>>({});
   /** Per-resource flags: reading a tab indicator must never capture a Document. */
   isDirty(id: string) { return this.dirtyState[0][id] ?? true; }
+  /** A failed first destination is not a saved binding. Pending generations keep their destination. */
+  needsSaveDestination(id: string) {
+    if (this.compatibleSources.has(id)) return false;
+    const binding = this.bindings.get(id);
+    return !binding || binding.baseline.nativeHash === null && !binding.pending && !binding.busy;
+  }
+  /** Read-only evidence for an explicit first-save confirmation. No admission. */
+  async inspectOverwrite(location:DocumentLocation):Promise<NativeOverwrite> {
+    const data=await request('open',{location});
+    if(this.disposed)throw Error('Document session closed');
+    if(data.readOnly)throw Error('This file is read-only.');
+    if(data.kind!=='native'||data.pending||!data.baseline?.nativeHash)throw Error('Recover the existing file before overwriting it.');
+    if(this.bindings.has(data.resourceId)||this.compatibleSources.has(data.resourceId))throw Error('This file is already open in this workspace. Save with a different name to preserve its editing session.');
+    return {resourceId:data.resourceId,nativeHash:data.baseline.nativeHash};
+  }
   private markDirty(id: string, dirty: boolean) { this.dirtyState[1](id, dirty); }
   // Tree observers must not rebuild for ordinary content/status changes.
   private storageChanged = createSignal(0);
@@ -285,22 +301,22 @@ export class NativeDocumentSession {
     const binding = { location: {...location}, baseline, message:'Native destination selected', busy:false, members:new Set(members ?? Object.keys(captureNative(this.editor.repository.snapshot(),id).contents)) } as Binding;
     const complete = (data: any) => {
       const r: PairResult=data.result;
-      if(r.phase==='saved'&&r.generation===binding.pending?.generation){binding.baseline=data.baseline;binding.pending=undefined;this.candidates.delete(id);}
-      if(r.phase==='failed'&&!r.generation)binding.pending=undefined;
+      if(r.phase==='saved'&&r.generation===binding.pending?.generation){binding.baseline=data.baseline;binding.pending=undefined;binding.overwrite=undefined;this.candidates.delete(id);}
+      if(r.phase==='failed'&&!r.generation){binding.pending=undefined;binding.overwrite=undefined;}
       return r;
     };
     binding.pair=enrollPair(this.editor.repository,id,{
       save: async generation => {
         binding.pending=generation as PairGeneration;this.notifyKnowledge();
-        try { const data=await request('save',{location:binding.location,generation,baseline:binding.baseline,dependencies:this.dependencies(id),acceptMarkdownHash:binding.comparedHash});
+        try { const data=await request('save',{location:binding.location,generation,baseline:binding.baseline,dependencies:this.dependencies(id),acceptMarkdownHash:binding.comparedHash,overwrite:binding.overwrite});
           const r=complete(data);if(r.phase==='failed'&&!r.generation)binding.pending=undefined;return r;
-        }catch(error){if((error as any).preflight){binding.pending=undefined;return {phase:'failed',error:String(error)};}return {phase:'failed',generation:generation.generation,error:`Save outcome unknown or rejected: ${String(error)}. Use Retry / Recover.`};}
+        }catch(error){if((error as any).preflight){binding.pending=undefined;binding.overwrite=undefined;return {phase:'failed',error:String(error)};}return {phase:'failed',generation:generation.generation,error:`Save outcome unknown or rejected: ${String(error)}. Use Retry / Recover.`};}
       },
       recover: async () => {
         if(!binding.pending)return {phase:'failed',error:'No pending generation'};
         // Resend exactly the captured request. The server verifies retry bytes
         // and recovers its intent/receipt, or starts it if it never arrived.
-        const data=await request('save',{location:binding.location,generation:binding.pending,baseline:binding.baseline,dependencies:this.dependencies(id),acceptMarkdownHash:binding.comparedHash});return complete(data);
+        const data=await request('save',{location:binding.location,generation:binding.pending,baseline:binding.baseline,dependencies:this.dependencies(id),acceptMarkdownHash:binding.comparedHash,overwrite:binding.overwrite});return complete(data);
       }
     },()=>this.targets());
     this.bindings.set(id,binding);this.markDirty(id,baseline.nativeHash===null);markNativeBinding(this.editor.repository,id);this.touchStorage();return binding;
@@ -317,7 +333,11 @@ export class NativeDocumentSession {
       return r;
     }finally{b.busy=false;this.notifyKnowledge();this.touch();}
   }
-  async save(id: string, location?: DocumentLocation) {
+  async save(id: string, location?: DocumentLocation, overwrite?:NativeOverwrite) {
+    if(overwrite){
+      if(!this.needsSaveDestination(id))throw Error('Overwrite confirmation is only valid for a first Save.');
+      if(this.bindings.has(overwrite.resourceId)||this.compatibleSources.has(overwrite.resourceId))throw Error('The destination Document was opened while confirming. Save with a different name.');
+    }
     if(this.compatibleSources.has(id)){if(location&&!sameLocation(location,this.compatibleSources.get(id)!.location))throw Error('Changing source format/location requires explicit Save As; no conversion was performed');return this.saveRecognized(id);}
     if(this.editor.blockHistory.state.storage==='persistent')throw new Error('Native pair integration does not migrate persistent History enrollment');
     let b=this.bindings.get(id);
@@ -327,7 +347,20 @@ export class NativeDocumentSession {
       if(!isNativeDocumentName(location.filename))throw new Error('Choose a .ink, .phosphor or .mutable.json destination');
       b.location={...location};this.touchStorage();
     }
+    if(!b.pending&&!b.busy)b.overwrite=overwrite;
     return this.operate(id,false);
+  }
+  /** Explicit Save into a different Vault. The outside source is never written. */
+  async saveCopy(id:string,location:DocumentLocation,overwrite?:NativeOverwrite){
+    const old=this.bindings.get(id),compatible=this.compatibleSources.get(id);
+    if(old&&(old.busy||old.pending||old.relocation)||compatible&&(compatible.busy||compatible.pending))throw Error('Finish or recover the pending Save before saving a Vault copy.');
+    if(old&&sameLocation(old.location,location)||compatible&&sameLocation(compatible.location,location))throw Error('Choose a new Vault location for this copy.');
+    // Retain the same canonical editing session and coordinator. Only the
+    // destination changes, after an explicit location choice.
+    if(old){old.location={...location};old.baseline={nativeHash:null,markdownHash:null,generation:null};old.comparedHash=undefined;}
+    if(compatible)this.compatibleSources.delete(id);
+    this.markDirty(id,true);this.touchStorage();
+    return this.save(id,location,overwrite);
   }
   async recoverRecognized(vault:string,resourceId:string,generation:string){const result=await request('recover-recognized',{vault,resourceId,generation});if(result.phase!=='saved')throw Error(result.error??'Document recovery remains pending');this.notice='Recovery complete. Explicitly reopen the Document; live source baselines were not replaced.';this.touch();return result;}
   async verifySource(vault:string,id:string){const proof=this.knowledgeEvidence(id);if(proof.pending||!proof.location||!proof.byteHash)throw Error('Source unavailable or pending');return request('verify-source',{vault,source:{resourceId:id,location:proof.location,byteHash:proof.byteHash}});}

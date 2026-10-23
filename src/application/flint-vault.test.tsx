@@ -37,6 +37,60 @@ async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise
 async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Cavern');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Cavern').disabled).toBe(false));}
 async function create(host:ParentNode,name='note.mutable.json',title='A title') {field(host,'New Document filename',name);field(host,'New Document title',title);click(host,'New Document');await wait(()=>expect(host.textContent).toContain('Saved Mutable JSON Document'));await wait(()=>expect(host.querySelector(`[aria-label="Open vault/${name}"]`)).toBeTruthy());await wait(()=>expect(button(host,'New Document').disabled).toBe(false));}
 const idOf=(host:ParentNode)=>host.querySelector('[data-flint-property="id"]')!.textContent!;
+it.each(['empty','occupied','rejected first destination'])('default Notes saves directly into the active Vault (%s)',async situation=>{
+ const f=await fixture({defaultVault:'vault'}),a=f.windows()[0];
+ await wait(()=>expect(a.querySelector('[aria-label="Selected folder"]')?.textContent).toBe('vault'));
+ const tab=[...a.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(b=>b.textContent==='Notes')!;tab.click();
+ const id=idOf(a),original=fixtureText(99,1);
+ if(situation!=='empty')await fs.writeFile(path.join(f.root,'vault/Notes.ink'),original);
+ if(situation==='rejected first destination')expect(await f.service.save(id,{folder:'vault',filename:'Notes.ink'})).toMatchObject({phase:'failed'});
+ const view=[...f.editor.projections.values()].find(v=>v!==f.projection&&v.state.nodes[v.state.rootKey]?.payload.id===id)!;
+ const text=Object.values(view.state.nodes).find(n=>n.viewType==='standoff-editor-block')!;
+ const cells=[...text.inlineContent];f.editor.commands.replaceInlineRange(text.key,0,0,'First manual Save ');
+ expect(f.service.isDirty(id)).toBe(true);
+ const filename=situation==='empty'?'Notes.ink':'Notes (2).ink';
+ expect(await fs.stat(path.join(f.root,'vault',filename)).catch(()=>null)).toBeNull();
+ tab.dispatchEvent(new KeyboardEvent('keydown',{key:'s',metaKey:true,bubbles:true,cancelable:true}));
+ if(situation!=='empty'){await wait(()=>expect(document.body.textContent).toContain('File already exists'));expect(await fs.readFile(path.join(f.root,'vault/Notes.ink'),'utf8')).toBe(original);click(document.body,'Save with a different name');}
+ await wait(()=>expect(f.service.status(id)).toBe('Saved Mutable JSON Document'));
+ expect(a.querySelector('[aria-label="Storage and recovery"]')).toBeNull();expect(f.service.isDirty(id)).toBe(false);
+ expect(f.service.location(id)).toEqual({folder:'vault',filename});expect(idOf(a)).toBe(id);
+ const saved=JSON.parse(await fs.readFile(path.join(f.root,'vault',filename),'utf8'));expect(saved.resourceId).toBe(id);
+ expect(text.inlineContent.slice(-cells.length)).toEqual(cells);
+ if(situation!=='empty')expect(await fs.readFile(path.join(f.root,'vault/Notes.ink'),'utf8')).toBe(original);
+ await wait(()=>expect(button(a,'Save Document').disabled).toBe(false));
+ f.editor.commands.replaceInlineRange(text.key,0,0,'Next manual Save ');click(a,'Save Document');
+ await wait(()=>expect(f.service.isDirty(id)).toBe(false));expect(f.service.location(id)?.filename).toBe(filename);
+ expect(await fs.readFile(path.join(f.root,'vault',filename),'utf8')).toContain('Next manual Save');
+ expect(await fs.stat(path.join(f.root,'vault/Notes (3).ink')).catch(()=>null)).toBeNull();
+},20000);
+
+it.each(['overwrite','cancel','stale'])('reviews a first-save filename collision (%s)',async choice=>{
+ const f=await fixture({defaultVault:'vault'}),a=f.windows()[0];
+ await wait(()=>expect(a.querySelector('[aria-label="Selected folder"]')?.textContent).toBe('vault'));
+ const id=idOf(a),original=fixtureText(99,1),file=path.join(f.root,'vault/Notes.ink');await fs.writeFile(file,original);
+ click(a,'Save Document');await wait(()=>expect(document.body.textContent).toContain('File already exists'));
+ expect(f.service.location(id)).toBeUndefined();expect(await fs.readFile(file,'utf8')).toBe(original);
+ if(choice==='cancel'){click(document.body,'Cancel');await wait(()=>expect(button(a,'Save Document').disabled).toBe(false));expect(f.service.isDirty(id)).toBe(true);expect(f.service.location(id)).toBeUndefined();expect(await fs.readFile(file,'utf8')).toBe(original);return;}
+ if(choice==='stale')await fs.writeFile(file,original+'\n');
+ click(document.body,'Overwrite');
+ if(choice==='stale'){await wait(()=>expect([...a.querySelectorAll('[role=alert]')].some(e=>e.textContent?.includes('Destination changed'))).toBe(true));expect(f.service.isDirty(id)).toBe(true);expect(await fs.readFile(file,'utf8')).toBe(original+'\n');return;}
+ await wait(()=>expect(f.service.isDirty(id)).toBe(false));expect(JSON.parse(await fs.readFile(file,'utf8')).resourceId).toBe(id);expect(f.service.location(id)).toEqual({folder:'vault',filename:'Notes.ink'});
+ await wait(()=>expect(button(a,'Save Document').disabled).toBe(false));click(a,'Save Document');await wait(()=>expect(button(a,'Save Document').disabled).toBe(false));expect(document.body.textContent).not.toContain('File already exists');
+},15000);
+
+it('cancels automatic first-save destination selection when the active Vault changes',async()=>{
+ const f=await fixture(),a=f.windows()[0];await open(a);const id=idOf(a);
+ await fs.mkdir(path.join(f.root,'other'));
+ let resume!:(names:string[])=>void;vi.spyOn(f.service,'list').mockImplementationOnce(()=>new Promise(r=>resume=r));
+ click(a,'Save Document');await wait(()=>expect(resume).toBeTypeOf('function'));
+ await open(a,'other');resume([]);
+ await wait(()=>expect(a.querySelector('[role=alert]')?.textContent).toContain('active Vault changed'));
+ expect(f.service.location(id)).toBeUndefined();expect(f.service.isDirty(id)).toBe(true);
+ expect(await fs.stat(path.join(f.root,'vault/Notes.ink')).catch(()=>null)).toBeNull();
+ expect(await fs.stat(path.join(f.root,'other/Notes.ink')).catch(()=>null)).toBeNull();
+},15000);
+
 it('marks edited tabs dirty and Command-S saves only the active document to its original filename',async()=>{
  const f=await fixture(),a=f.windows()[0];await open(a);
  await create(a,'first.ink','First');const first=idOf(a);

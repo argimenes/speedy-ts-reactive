@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-23T00:16:43.320Z",
+  "frontendStatus": 200,
+  "backendStatus": 200,
+  "cavern": "imported",
+  "path": "/Users/iianneill/Documents/GitHub/speedy-ts-reactive/vaults/imported",
+  "vault": ".",
+  "overwriteHandler": {
+    "status": 400,
+    "error": "Invalid first-save overwrite confirmation",
+    "publicationStarted": false
+  }
+}

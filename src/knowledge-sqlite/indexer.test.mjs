@@ -70,6 +70,14 @@ test('missing Block GUID recovery remains stable across refresh and leaves saved
  assert.deepEqual(body(await f.client.resourceProjection('r')),body(first));assert.deepEqual(await fs.readFile(path.join(f.root,'a.json')),before);
 });
 
+test('missing and changed resources publish before unchanged inventory despite filename order',async t=>{
+ const f=await fixture(t);await f.write('a-unchanged.json',document('unchanged'));await f.write('b-changed.json',document('changed'));
+ assert.equal((await f.index().refresh()).complete,true);
+ await f.write('b-changed.json',document('changed','New saved text'));await f.write('z-new.json',document('new'));
+ const order=[];const result=await f.index({checkpoint:async(phase,details)=>{if(phase==='staged')order.push(details.candidate.resourceId);}}).refresh();
+ assert.equal(result.complete,true);assert.deepEqual(order,['new','changed','unchanged']);
+});
+
 test('incomplete coverage cannot relocate an already indexed Resource identity',async t=>{
  const f=await fixture(t);await f.write('a.json',document());await f.index().refresh();
  await fs.rename(path.join(f.root,'a.json'),path.join(f.root,'moved.json'));await f.write('bad.json','{broken');await f.write('valid.json',document('valid'));

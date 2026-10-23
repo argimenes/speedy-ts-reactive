@@ -1,0 +1,23 @@
+{
+  "checks": [
+    "Opened Document is clean",
+    "Opened Document is clean tab indicator",
+    "Actual editor typing marks the active Document dirty",
+    "Actual editor typing marks the active Document dirty tab indicator",
+    "Save button clears both native dirty state and tab indicator",
+    "Save button clears both native dirty state and tab indicator tab indicator",
+    "Rendering after Save does not dirty the Document",
+    "Rendering after Save does not dirty the Document tab indicator",
+    "Edited bytes were written to the isolated native file",
+    "Command-S saves and clears the active tab",
+    "Command-S saves and clears the active tab tab indicator",
+    "Command-S persisted its current edit",
+    "Rejected Save retains the unsaved indicator",
+    "Rejected Save retains the unsaved indicator tab indicator",
+    "Rejected Save displays its reason in the main Flint window",
+    "Rejected Save preserves the external file",
+    "No browser exceptions"
+  ],
+  "errors": [],
+  "status": "Save blocked — newer/unsaved edits remain: External native changes or unknown destination"
+}

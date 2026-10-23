@@ -4,3 +4,4 @@ export function isWorkspaceName(name: unknown): boolean;
 export function nativeDocumentStem(name: string): string;
 export function markdownProjectionName(name: string): string;
 export function isDocumentName(name: unknown): boolean;
+export function availableNativeFilename(name: string, occupied: readonly string[]): string;

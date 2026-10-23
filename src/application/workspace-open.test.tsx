@@ -94,7 +94,7 @@ describe('open workspace content', () => {
     expect(nativeText(captureNative(editor.repository.snapshot(), resource.resourceId))).toContain('Unsaved edit');
     const reopened = await actions.serverDocument(location, signal);
     expect(reopened).not.toBe(placement);
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.filter(([url])=>!String(url).endsWith('/vault/default'))).toHaveLength(2);
   });
   it('uses an already-open Flint window and selects its existing tab without duplicating documents', async () => {
     const native = await fs.readFile('artifacts/flint-b1.2/rich.mutable.json', 'utf8');

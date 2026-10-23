@@ -150,13 +150,14 @@ export function workspaceOpen(session: WorkspaceSession) {
     const doc = editor.blockQueries.ancestors(key).find(n => n.viewType === 'document-block')
       ?? (node.viewType === 'document-window-block' ? node.children.map(k => editor.node(k)).find(n => n?.viewType === 'document-block') : undefined);
     const id = doc && String((doc.payload.metadata as any)?.documentId ?? doc.payload.id);
-    return id && nativeDocumentSession(editor).location(id) ? id : undefined;
+    return id;
   };
   return {
     canSaveDocument(key: string) { return !!boundDocument(key); },
-    async saveDocument(key: string) {
+    async saveDocument(key: string, save?: (id:string)=>Promise<boolean>) {
       const id = boundDocument(key); if (!id) throw new Error('Select an opened native Document to save.');
       const native = nativeDocumentSession(editor);
+      if(save)return await save(id)?native.status(id):'Save cancelled';
       const result = await native.save(id);
       if (result?.phase !== 'saved') throw new Error(native.status(id));
       return native.status(id);

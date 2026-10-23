@@ -4,7 +4,10 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import { PersistenceService, type DocumentLocation } from "../reactive-editor/persistence";
 import { decodeDocument } from "../block-tree/codecs";
 import { decodeHistoryDocument, isHistoryDocument } from "../history/durable-core";
-import { openJsonFile, saveJsonFile, type BrowserFileHandle } from "./browser-json-file";
+import { openJsonFile, type BrowserFileHandle } from "./browser-json-file";
+import {nativeDocumentSession} from '../persistence/native-session';
+import {vaultContains,vaultRoot} from '../application/document-vault';
+import {useCurrentCavern} from '../application/cavern-startup';
 
 type PendingAction = { label: string; action: () => void };
 export interface LocalDocumentFile { filename: string; handle?: BrowserFileHandle }
@@ -27,6 +30,10 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
 }) {
   const [location, setLocation] = createSignal(options.location);
   const [localFile, setLocalFile] = createSignal(options.localFile);
+  const cavern=useCurrentCavern();
+  const [saveRoot,setSaveRoot]=createSignal<string>();
+  const [browserLocation,setBrowserLocation]=createSignal(options.location);
+  const activeVault=async()=>cavern?.current()?'.':await nativeDocumentSession(editor).defaultVault();
   if (options.location) editor.blockHistory.attachLocation(options.location);
   const [browser, setBrowser] = createSignal<"open" | "save">();
   const [pending, setPending] = createSignal<PendingAction>();
@@ -37,8 +44,11 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
   const lifetime = new AbortController();
   const dirty = () => editor.repository.state.revision !== (editor.persistence.state.lastSavedRevision ?? 0);
   const busy = () => loading() || editor.persistence.state.saving;
-  const saveAs = (continuation?: PendingAction) => {
-    setError(""); setConflict(false); setAfterSave(continuation); setBrowser("save");
+  const saveAs = async (continuation?: PendingAction) => {
+    setError('');setLoading(true);
+    try{const root=await activeVault();if(lifetime.signal.aborted)return;if(!root)throw Error('Open a Vault before saving this Document.');setSaveRoot(root);setBrowserLocation({folder:location()&&vaultContains(root,vaultRoot(location()!.folder))?location()!.folder:root,filename:localFile()?.filename??location()?.filename??'Document.json'});setConflict(false);setAfterSave(continuation);setBrowser('save');}
+    catch(e){if(!lifetime.signal.aborted)setError((e as Error).message);}
+    finally{if(!lifetime.signal.aborted)setLoading(false);}
   };
   const finishSave = (continuation?: PendingAction) => {
     if (continuation && dirty()) {
@@ -49,7 +59,12 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
   const save = async (continuation?: PendingAction) => {
     if (busy()) return;
     const target = location();
-    if (!target) { saveAs(continuation); return; }
+    let root:string|undefined;
+    setLoading(true);
+    try{root=await activeVault();}catch(e){if(!lifetime.signal.aborted)setError((e as Error).message);return;}
+    finally{if(!lifetime.signal.aborted)setLoading(false);}
+    if(lifetime.signal.aborted)return;
+    if (!target||!root||!vaultContains(root,vaultRoot(target.folder))) { await saveAs(continuation); return; }
     setError("");
     if (await editor.persistence.saveDocument(target.filename, target.folder)) {
       if (!lifetime.signal.aborted) finishSave(continuation);
@@ -65,23 +80,9 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
     else action();
   };
   const open = () => guard("open another document", () => { setError(""); setBrowser("open"); });
-  const saveLocal = async (continuation?: PendingAction, saveAs = false) => {
-    if (busy()) return;
-    setLoading(true); setError("");
-    try {
-      const current = localFile();
-      const saved = await saveJsonFile(editor.encodeDocument(), {
-        suggestedName: saveAs ? current?.filename ?? location()?.filename ?? "Document.json" : current?.filename ?? location()?.filename ?? "Document.json",
-        handle: current?.handle,
-        saveAs,
-      });
-      if (!saved || lifetime.signal.aborted) return;
-      setLocalFile(saved);
-      editor.persistence.markCurrentRevisionSaved(editor.encodeDocument());
-      finishSave(continuation);
-    } catch (reason) {
-      if (!lifetime.signal.aborted) { setError(reason instanceof Error ? reason.message : String(reason)); if (continuation) setPending(continuation); }
-    } finally { if (!lifetime.signal.aborted) setLoading(false); }
+  // Local Document commands use the tracked Vault; local Workspace export is separate.
+  const saveLocal = async (continuation?: PendingAction, choose = false) => {
+    if(choose)await saveAs(continuation);else await save(continuation);
   };
   const openLocal = () => guard("open another document", () => void (async () => {
     if (busy()) return;
@@ -98,12 +99,19 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
     if (busy()) return false;
     setError(""); setConflict(false);
     if (browser() === "save") {
+      setLoading(true);
+      try {
+      const root=await activeVault();
+      if(lifetime.signal.aborted)return false;
+      if(!root||root!==saveRoot()||!vaultContains(root,vaultRoot(target.folder))){setError('Choose a location inside the active Vault.');return false;}
       const saved = await editor.persistence.saveDocument(target.filename, target.folder, { createOnly: !overwrite });
       if (lifetime.signal.aborted) return false;
       if (!saved) { setError(editor.persistence.state.error || "The document could not be saved."); setConflict(editor.persistence.state.status === 409); return false; }
-      setLocation(target); setBrowser(undefined);
+      setLocation(target); setLocalFile(undefined);setBrowser(undefined);
       const continuation = afterSave(); setAfterSave(undefined); finishSave(continuation);
       return true;
+      }catch(e){if(!lifetime.signal.aborted)setError((e as Error).message);return false;}
+      finally{if(!lifetime.signal.aborted)setLoading(false);}
     }
     setLoading(true);
     const request = new AbortController();
@@ -167,7 +175,7 @@ export function createWorkspaceDocuments(editor: ReactiveEditor, options: {
     window.removeEventListener("beforeunload", beforeUnload);
   });
   return {
-    location, localFile, browser, pending, dirty, busy, error, conflict, run, guard, choose,
+    location, localFile, browserLocation, browser, pending, dirty, busy, error, conflict, run, guard, choose,
     closeBrowser: () => { if (!busy()) { setBrowser(undefined); setAfterSave(undefined); setError(""); } },
     cancelPending: () => { if (!busy()) { setPending(undefined); setError(""); } },
     discardPending: () => { const next = pending(); setPending(undefined); next?.action(); },
