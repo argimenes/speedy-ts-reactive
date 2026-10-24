@@ -68,6 +68,19 @@ try{
  await evaluate(`proof.group=proof.byId(proof.group.payload.id);proof.surface=proof.editor.surfaces.nearest(proof.group.key);proof.front=proof.byId('reverse-a');proof.frontDom=proof.editor.mounts.get(proof.front.key).root;proof.back=proof.editor.node(proof.editor.node(proof.editor.node(proof.surface.children[1]).children[0]).children[0]);proof.backMount=proof.editor.mounts.get(proof.back.key);proof.backDom=proof.backMount.root;proof.backMount.focus();proof.backMount.restoreInlineSelection({anchor:0,head:0})`);
  await send('Input.insertText',{text:'Private reverse notes with an editable caret'},sessionId);
  check('reverse accepts real editor typing',await evaluate("proof.backMount.captureText()==='Private reverse notes with an editable caret'"));
+ // Regression: an annotation first measured on the hidden back must not retain
+ // mirrored or animation-distorted geometry when that face becomes visible.
+ await evaluate(`proof.editor.surfaces.run('surface.flip',proof.surface.key);proof.editor.commands.setPayloadField(proof.back.key,'standoffProperties',[{id:'back-underline-proof',type:'codex/entity-reference',value:'reverse-proof-entity',start:0,end:6}]);proof.underlineGeometry=()=>{const flow=proof.backDom.querySelector('.reactive-standoff-flow'),range=document.createRange();range.setStart(flow.children[0].firstChild,0);range.setEnd(flow.children[6].firstChild,1);const text=range.getBoundingClientRect(),path=proof.backDom.querySelector('path[data-property-type="codex/entity-reference"]'),line=path?.getBoundingClientRect();return {textLeft:text.left,textRight:text.right,lineLeft:line?.left,lineRight:line?.right,aligned:!!line&&Math.abs(line.left-text.left)<1&&Math.abs(line.right-text.right)<1}};`);
+ await evaluate('new Promise(r=>setTimeout(r,250))');
+ await wait(`!!proof.backDom.querySelector('path[data-property-type="codex/entity-reference"]')`);
+ await evaluate(`proof.editor.surfaces.run('surface.flip',proof.surface.key)`);
+ await evaluate('new Promise(r=>setTimeout(r,250))');
+ const underline=await evaluate('proof.underlineGeometry()');console.log('REVERSE UNDERLINE',JSON.stringify(underline));
+ check('reverse underline aligns after being measured while its face was hidden',underline.aligned);
+ await evaluate(`proof.editor.surfaces.run('surface.flip',proof.surface.key)`);await evaluate('new Promise(r=>setTimeout(r,250))');
+ await evaluate(`proof.editor.surfaces.run('surface.flip',proof.surface.key)`);await evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
+ check('reverse underline stays aligned during the face transition',await evaluate('proof.underlineGeometry().aligned'));
+ await evaluate('new Promise(r=>setTimeout(r,250))');
  await evaluate(`proof.counts={snapshot:0,commit:0};for(const name of ['snapshot','commit']){const original=proof.editor.repository[name].bind(proof.editor.repository);proof.editor.repository[name]=(...args)=>{proof.counts[name]++;return original(...args)}}proof.backMount.restoreInlineSelection({anchor:8,head:15})`);
  // Panel button activation should also restore a selection when focus is in the panel.
  await click(`proof.editor.mounts.get(proof.surface.key).root.querySelector(':scope > .block-selection-handle')`);await click(button('Flip'));await click(button('Flip'));
@@ -165,7 +178,7 @@ try{
  await screenshot('image-front-corner');
  await evaluate(`proof.cornerRoot.style.width='';`);
  await evaluate(`(async()=>{const {inspectUri}=await import('/src/interchange/uri.ts');proof.genericPlacement=proof.editor.commands.insert({id:'automatic-video',type:'mutable/video-block',video:inspectUri('https://vimeo.com/76979871').video},{kind:'after',anchorKey:proof.videoSurface.placementKey});proof.genericVideo=proof.editor.mounts.get(proof.byId('automatic-video').key).root;})()`);
- check('generic VideoBlock loads its player automatically without autoplay',await evaluate(`!!proof.genericVideo.querySelector('iframe')&&proof.genericVideo.querySelector('iframe').src.includes('autoplay=0')&&proof.genericVideo.querySelector('button').textContent==='Stop player'`));
+ check('generic VideoBlock loads its player automatically without autoplay',await evaluate(`!!proof.genericVideo.querySelector('iframe')&&proof.genericVideo.querySelector('iframe').src.includes('autoplay=0')`));
  const audit=await evaluate(`(async()=>{const {triggerKey,keyboard}=await import('/src/input/bindings.ts');return ['y','k','u'].flatMap(key=>[['Ctrl','Meta'],['Ctrl','Shift']].map(mods=>({key,modifiers:mods,conflicts:proof.editor.bindings.list().filter(a=>proof.editor.bindings.effective(a.id).some(t=>t.kind==='keyboard'&&triggerKey(t)===triggerKey(keyboard(key,...mods)))).map(a=>a.id)})))})()`);
  await writeFile(path.join(artifacts,'shortcut-audit.json'),JSON.stringify(audit,null,2));check('six proposed platform-specific shortcuts have no registered default conflict',audit.every(a=>a.conflicts.length===0));
  check('no browser exceptions',errors.length===0);

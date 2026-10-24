@@ -8,7 +8,7 @@ A native button with a 22px folded-paper graphic and a 36px hit target appears o
 
 The reserved gutter is the user-approved exception to the original overlay-only/no-spacing-change requirement. It uses conditional bottom padding on the runtime surface, not persisted Block attributes.
 
-The affordance is CSS-positioned; it performs no geometry measurement, persistence operation or document mutation. Its resource-control isolation and final positioning are covered by browser checks below. Perspective moved from the surface wrapper into the existing face transform so neighbouring Blocks cannot paint over the corner hit target. The existing 180ms rotation and reduced-motion rule are retained. Source-link and Copy URL spacing now wraps cleanly on narrow reverse faces.
+The affordance is CSS-positioned; it performs no geometry measurement, persistence operation or document mutation. Its resource-control isolation and final positioning are covered by browser checks below. The transition now uses a 180ms fade, with no rotation or perspective on editing faces, to keep annotation geometry stable. The reduced-motion rule is retained; see the underline-alignment follow-up below. Source-link and Copy URL spacing now wraps cleanly on narrow reverse faces.
 
 ## Shortcut proposals — none registered
 
@@ -56,3 +56,12 @@ External authenticated/DRM providers and every browser/OS combination are not qu
 At the user's request, valid generic, YouTube and Vimeo VideoBlocks now load their player automatically. The previous visibility handler unloaded players when a view, graph presentation or browser tab was hidden and did not reactivate them on return. It has been removed: retained occurrences keep the exact iframe and browsing context across visibility changes. Explicit Stop, view disposal and editor disposal still unload the player. A restored/new occurrence loads automatically; Stop remains local to its mounted occurrence. Provider URLs still use `autoplay=0`, so automatic loading does not start playback. URI-import labels now accurately describe player loading instead of claiming network-free video insertion. No persistence schema or manual Save behaviour changed.
 
 Qualification: 62 tests passed (URI import, URI validation and reverse surfaces), reactive TypeScript passed, and 38 Chrome checks passed with zero exceptions. Browser evidence includes a real switch away from and back to the browser tab, application visibility/graph transitions, generic VideoBlock auto-loading and the existing reverse-surface continuity checks. [Video activation evidence](evidence/reverse-surfaces-final/video-activation.json). The older URI acquisition browser runner was updated for the new behaviour and syntax-checked, but was not rerun in this follow-up.
+
+
+## Reverse-side SVG underline alignment
+
+Reproduced in Chrome: an entity-reference underline first measured on the hidden reverse was drawn at x=750.25–759 after reveal, while its annotated text occupied x=384–428.703125. The inactive face’s `rotateY(180deg)` mirrored the measured text; the reveal rotation could also leave intermediate projected coordinates in the retained SVG paths. The editor’s shared local-coordinate contract supports positive uniform scale and translation, not rotation/perspective.
+
+The fix removes transforms from both inactive and active editing faces and changes the existing 180ms reveal animation to a fade. Both subtrees remain mounted. It adds no measurement hooks, timers, repository work or typing-path scans. A browser regression measures actual text and SVG bounds after hidden-face measurement and during the transition; the fixed bounds match exactly. Reduced-motion behaviour remains unchanged.
+
+Qualification: 47 surface/annotation tests passed, including the bounded-work caret regression; 40 Chrome checks passed with zero exceptions. The new alignment regression failed before the CSS fix and passes afterward. Existing mount, media/PDF, reduced-motion, gutter, selection and no-history checks also pass. [Before/after geometry and browser results](evidence/reverse-surfaces-final/underline-alignment.json). The browser runner’s generic-video check now asserts the loaded iframe rather than the previously removed Stop button.

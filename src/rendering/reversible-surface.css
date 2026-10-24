@@ -1,8 +1,11 @@
 .reversible-surface { position:relative; margin:0; padding:0; border:0; background:transparent; }
 .reversible-surface.reversible-surface--has-reverse { padding-bottom:36px; }
-.reversible-face { position:absolute; inset:0 auto auto 0; width:100%; visibility:hidden; pointer-events:none; backface-visibility:hidden; transform:perspective(1100px) rotateY(180deg); }
-.reversible-face--active { position:relative; visibility:visible; pointer-events:auto; transform:perspective(1100px) rotateY(0); animation:reverse-face-in 180ms ease-out; }
-@keyframes reverse-face-in { from { transform:perspective(1100px) rotateY(-90deg); } to { transform:perspective(1100px) rotateY(0); } }
+/* Retained editors can measure while hidden. Their shared local-coordinate
+   contract supports scale/translation, not rotation or perspective. A fade
+   keeps both hidden and animating text/SVG in the same measurement frame. */
+.reversible-face { position:absolute; inset:0 auto auto 0; width:100%; visibility:hidden; pointer-events:none; }
+.reversible-face--active { position:relative; visibility:visible; pointer-events:auto; animation:reverse-face-in 180ms ease-out; }
+@keyframes reverse-face-in { from { opacity:.35; } to { opacity:1; } }
 @media(prefers-reduced-motion:reduce) { .reversible-face--active { animation:none; } }
 .structural-container, .reversible-face [data-block-type="side-block"] { margin:0!important; padding:0!important; border:0!important; background:transparent!important; }
 .resource-reverse-information { position:relative; overflow-wrap:anywhere; }
