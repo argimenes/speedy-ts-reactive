@@ -14,6 +14,7 @@ import { ReactiveTreeView } from '../rendering/reactive-tree-view';
 import { nativeDocumentSession } from '../persistence/native-session';
 import { fixtureText } from '../qualification/native-knowledge/fixture';
 import { captureNative, nativeText } from '../persistence/native-resource';
+import { createFormattedDocument, documentFormats, readDocumentFormat } from '../features/document-formats/model';
 execFileSync(process.execPath,['scripts/build-relocation-helper.mjs']);
 const disposers:Array<()=>any>=[], actualFetch=globalThis.fetch;
 afterEach(async()=>{for(const f of disposers.splice(0).reverse())await f();document.body.replaceChildren();localStorage.clear();vi.unstubAllGlobals();});
@@ -25,8 +26,8 @@ async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'flint-c1b-'));disposers.push(()=>fs.rm(root,{recursive:true,force:true}));await fs.mkdir(path.join(root,'vault/nested'),{recursive:true});await fs.writeFile(path.join(root,'vault/input.md'),'# Imported\n\n**Bold** text');
  const app=express();if(options.nativeMiddleware)app.use('/api/native',options.nativeMiddleware);app.use('/api/native',createNativeDocumentStoreRouter({root,...options}));const server:any=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});disposers.push(()=>new Promise(r=>server.close(r)));
  vi.stubGlobal('fetch',(input:any,init:any)=>actualFetch(typeof input==='string'&&input.startsWith('/')?`http://127.0.0.1:${server.address().port}${input}`:input,init));
- function make() {
-  const editor=new ReactiveEditor(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{compactEditorChrome:false}});registerApplicationViews(editor);const projection=editor.createView('workspace');disposers.push(()=>editor.dispose());
+ function make(formatsEnabled=true) {
+  const editor=new ReactiveEditor(materializeLocalWorkspace({id:crypto.randomUUID(),type:'workspace-block',children:[]}),{features:{compactEditorChrome:false,documentFormats:formatsEnabled}});registerApplicationViews(editor);const projection=editor.createView('workspace');disposers.push(()=>editor.dispose());
   const launch=()=>editor.commandRegistry.execute('flint.open',{targetKey:projection.state.rootKey,args:undefined});launch();
   const host=document.body.appendChild(document.createElement('div'));disposers.push(render(()=><ReactiveTreeView editor={editor} projection={projection}/>,host));
   const windows=()=>[...host.querySelectorAll<HTMLElement>('.flint-application')];
@@ -37,6 +38,32 @@ async function fixture(options:{readOnly?:boolean;fault?:(stage:string)=>Promise
 async function open(host:ParentNode,root='vault') {field(host,'Vault directory',root);click(host,'Open Cavern');await wait(()=>expect(host.querySelector('[aria-label="Selected folder"]')?.textContent).toBe(root));await wait(()=>expect(button(host,'Open Cavern').disabled).toBe(false));}
 async function create(host:ParentNode,name='note.mutable.json',title='A title') {field(host,'New Document filename',name);field(host,'New Document title',title);click(host,'New Document');await wait(()=>expect(host.textContent).toContain('Saved Mutable JSON Document'));await wait(()=>expect(host.querySelector(`[aria-label="Open vault/${name}"]`)).toBeTruthy());await wait(()=>expect(button(host,'New Document').disabled).toBe(false));}
 const idOf=(host:ParentNode)=>host.querySelector('[data-flint-property="id"]')!.textContent!;
+it('creates every Document format from Flint and preserves its template through native Save and reopen',async()=>{
+ const f=await fixture(),a=f.windows()[0];await open(a);
+ expect([...a.querySelectorAll<HTMLOptionElement>('[aria-label="New Document format"] option')].map(o=>o.value)).toEqual(documentFormats.map(d=>d.id));
+ const saved:{id:string;filename:string;format:typeof documentFormats[number]}[]=[];
+ for(const format of documentFormats){
+  field(a,'New Document format',format.id);const filename=`${format.id}.ink`;await create(a,filename,`My ${format.label}`);
+  const id=idOf(a),doc=Object.values(f.editor.repository.state.contents).find(c=>c.viewType==='document-block'&&(c.payload.metadata as any)?.documentId===id)!;
+  expect(readDocumentFormat(doc.payload.metadata)).toEqual({version:1,format:format.id,template:format.template,theme:format.theme});
+  expect((doc.payload.metadata as any).title).toBe(`My ${format.label}`);
+  expect(f.service.location(id)).toEqual({folder:'vault',filename});
+  if(format.id!=='page')expect(a.querySelector(`.document-format--${format.id}`)).not.toBeNull();
+  saved.push({id,filename,format});
+ }
+ const reopened=f.make();
+ for(const {id,filename,format} of saved){
+  expect(await reopened.service.open({folder:'vault',filename})).toBe(id);
+  const state=reopened.editor.repository.state,doc=Object.values(state.contents).find(c=>c.viewType==='document-block'&&(c.payload.metadata as any)?.documentId===id)!;
+  expect(readDocumentFormat(doc.payload.metadata)?.format).toBe(format.id);
+  expect(doc.children.map(k=>state.contents[state.placements[k].contentKey].viewType)).toEqual(createFormattedDocument(format.id).document.children!.map(c=>c.type));
+ }
+},60000);
+it('keeps Flint ordinary Document creation when formats are disabled',async()=>{
+ const f=await fixture(),disabled=f.make(false),a=disabled.windows()[0];await open(a);
+ expect(a.querySelector('[aria-label="New Document format"]')).toBeNull();await create(a);
+ expect(disabled.service.location(idOf(a))?.filename).toBe('note.mutable.json');
+},15000);
 it.each(['empty','occupied','rejected first destination'])('default Notes saves directly into the active Vault (%s)',async situation=>{
  const f=await fixture({defaultVault:'vault'}),a=f.windows()[0];
  await wait(()=>expect(a.querySelector('[aria-label="Selected folder"]')?.textContent).toBe('vault'));

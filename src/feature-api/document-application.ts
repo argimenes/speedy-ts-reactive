@@ -1,5 +1,6 @@
 import type {SavedProviderCoverage} from './backlinks';
 import type { Component } from "solid-js";
+import type { DocumentFormat } from "../features/document-formats/model";
 import type { ExistingBlockDto } from "./index";
 
 export interface ApplicationDocument { id: string; title: string }
@@ -78,6 +79,7 @@ export interface ApplicationVaultState {
   checking?: boolean; cached?: boolean;
 }
 export interface ApplicationVault {
+  documentFormats?: readonly { id: DocumentFormat; label: string }[];
   /** Host-owned, confined server directory chooser. Selection still requires native discovery. */
   choose?(): void;
   state(): ApplicationVaultState | undefined;
@@ -90,7 +92,7 @@ export interface ApplicationVault {
   verify?(): Promise<void>;
   openFile(location: {folder: string; filename: string}): Promise<void>;
   openCandidate?(location: {folder: string; filename: string}): Promise<void>;
-  createDocument(folder: string, filename: string, title: string): Promise<void>;
+  createDocument(folder: string, filename: string, title: string, format?: DocumentFormat): Promise<void>;
   importMarkdown(source: {folder: string; filename: string}, destination: {folder: string; filename: string}): Promise<void>;
   createDirectory(parent: string, name: string): Promise<void>;
   relocateDocument(source: {folder: string; filename: string}, destination: {folder: string; filename: string}): Promise<void>;

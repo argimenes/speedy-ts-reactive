@@ -22,7 +22,7 @@ import { VaultKnowledge, type KnowledgeHost } from "./vault-knowledge";
 import { revealMatch } from "../runtime/reveal-match";
 import type { BlockTreeProjection } from "../block-tree/projection";
 import { createDocumentVaults, vaultPath, vaultLeaf, vaultContains, type DocumentVaultLease, type VaultLocation } from "./document-vault";
-import { createFormattedDocument, readDocumentFormat } from "../features/document-formats/model";
+import { createFormattedDocument, documentFormats, readDocumentFormat } from "../features/document-formats/model";
 import type { ApplicationVault } from "../feature-api/document-application";
 import { nativeDocumentSession } from "../persistence/native-session";
 import { documentRootPlacements } from "../block-tree/resource-registration";
@@ -317,6 +317,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       const [vaultLoading,setVaultLoading]=createSignal(false),[vaultError,setVaultError]=createSignal('');
       let requestedVault: string | undefined;
       const vault: ApplicationVault | undefined = native && vaults ? {
+        documentFormats: editor.features.documentFormats ? documentFormats : undefined,
         state: vaultState,
         loading: vaultLoading,
         error: vaultError,
@@ -353,11 +354,12 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           if(![...(v.listing().other??[]),...v.listing().markdown].includes(vaultPath(location)))throw Error('File is no longer in this vault; Refresh first');
           const id=await native.openCompatible(location,v.root);if(mounted&&selectedVault()===v)openDocument(id);
         },
-        async createDocument(folder, filename, title) {
+        async createDocument(folder, filename, title, format = 'page') {
+          if (!editor.features.documentFormats && format !== 'page') throw new Error('Document formats are disabled.');
           const v = lease(), destination = {folder, filename}; destinationIn(v, destination);
           await v.mutate(async () => {
             guard();
-            const {document} = createFormattedDocument('page');
+            const {document} = createFormattedDocument(format);
             const {folder: _folder, filename: _filename, ...metadata} = document.metadata as Record<string, unknown>;
             document.metadata = {...metadata, title: title.trim() || 'Untitled', tags: []};
             const state = editor.repository.readState(), root = state.rootPlacementKey;

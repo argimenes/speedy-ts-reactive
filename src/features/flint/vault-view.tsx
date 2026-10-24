@@ -1,6 +1,7 @@
 import { For, Show, createEffect, createMemo, createSignal, on } from 'solid-js';
 import type { ApplicationVault, DocumentApplicationInstance } from '../../feature-api/document-application';
 import { useCurrentCavern } from '../../application/cavern-startup';
+import type { DocumentFormat } from '../document-formats/model';
 const path = (l: {folder:string;filename:string}) => l.folder === '.' ? l.filename : `${l.folder}/${l.filename}`;
 const location = (p:string) => { const parts=p.split('/'), filename=parts.pop()!; return {folder:parts.join('/')||'.',filename}; };
 function groupByFolder<T>(rows: readonly T[], folder: (row:T)=>string) {
@@ -14,6 +15,7 @@ export function VaultView(props:{vault:ApplicationVault; compact?:boolean; activ
   const cavern = useCurrentCavern();
   const [root,setRoot]=createSignal('.'), [folder,setFolder]=createSignal('.'), [selected,setSelected]=createSignal('');
   const [name,setName]=createSignal('Document.mutable.json'), [title,setTitle]=createSignal('Untitled'), [directory,setDirectory]=createSignal('New folder');
+  const [format,setFormat]=createSignal<DocumentFormat>('page');
   const [destination,setDestination]=createSignal('.'), [moveName,setMoveName]=createSignal(''), [importSource,setImportSource]=createSignal(''), [tag,setTag]=createSignal('');
   const [working,setWorking]=createSignal(false), [error,setError]=createSignal('');
   const state=createMemo(()=>props.vault.state()), busy=()=>working()||props.vault.loading?.()||state()?.busy, readOnly=()=>state()?.readOnly;
@@ -49,9 +51,12 @@ export function VaultView(props:{vault:ApplicationVault; compact?:boolean; activ
       <Folder path={state()!.root}/>
       <p>Selected folder: <output aria-label="Selected folder">{folder()}</output></p>
       <details><summary>New Document / import</summary>
+        <Show when={props.vault.documentFormats}><label>Document format<select aria-label="New Document format" value={format()} disabled={busy()||readOnly()} onChange={e=>setFormat(e.currentTarget.value as DocumentFormat)}>
+          <For each={props.vault.documentFormats}>{item=><option value={item.id}>{item.label}{item.id==='framed'?' — Illuminated Manuscript':''}</option>}</For>
+        </select></label></Show>
         <label>Authored title<input aria-label="New Document title" value={title()} onInput={e=>setTitle(e.currentTarget.value)}/></label>
         <label>Native filename<input aria-label="New Document filename" value={name()} onInput={e=>setName(e.currentTarget.value)}/></label>
-        <button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.createDocument(folder(),name(),title()))}>New Document</button>
+        <button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.createDocument(folder(),name(),title(),format()))}>New Document</button>
         <label>Standalone Markdown<select aria-label="Markdown source" value={importSource()} onChange={e=>setImportSource(e.currentTarget.value)}><option value="">Choose source</option><For each={state()!.markdown}>{p=><option value={p}>{p}</option>}</For></select></label>
         <button disabled={busy()||readOnly()||!importSource()} onClick={()=>void run(()=>props.vault.importMarkdown(location(importSource()),{folder:folder(),filename:name()}))}>Import into new native Document</button>
         <p>Import preserves the source. Choose a fresh destination filename in the selected folder.</p>
