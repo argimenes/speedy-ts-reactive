@@ -83,6 +83,17 @@ try{
  await evaluate(`(async()=>{const {resourceBlock}=await import('/src/interchange/resource-url.ts');const {resourceSurface}=await import('/src/interchange/resource-surface.ts');const native=resourceSurface(resourceBlock('https://youtu.be/M7lc1UVf-VE').native);proof.videoSurface=proof.editor.nodeForPlacementInView(proof.editor.commands.insertFragment(native,{kind:'after',anchorKey:proof.surface.placementKey})[0],proof.view.viewId);proof.video=proof.editor.node(proof.editor.node(proof.videoSurface.children[0]).children[0]);proof.iframe=proof.editor.mounts.get(proof.video.key).root.querySelector('iframe');proof.editor.surfaces.run('surface.flip',proof.video.key)})()`);
  check('video reverse preserves the exact iframe',await evaluate("proof.editor.mounts.get(proof.video.key).root.querySelector('iframe')===proof.iframe"));
  check('resource attributes and editable initial metadata coexist on the back',await evaluate(`proof.editor.mounts.get(proof.videoSurface.key).root.textContent.includes('Source: https://youtu.be/M7lc1UVf-VE')&&proof.video.payload.sourceUrl==='https://youtu.be/M7lc1UVf-VE'`));
+ // Returning to an application/browser tab must not discard the loaded player.
+ await evaluate(`proof.playerWindow=proof.iframe.contentWindow;proof.playerRevision=proof.editor.repository.state.revision;proof.playerCounts={...proof.counts}`);
+ for(const [name,value] of [['hidden',''],['aria-hidden','true'],['data-view','graph']]){
+  await evaluate(`(async()=>{const root=proof.root,name=${JSON.stringify(name)},value=${JSON.stringify(value)},before=root.getAttribute(name);root.setAttribute(name,value);await new Promise(r=>setTimeout(r,0));if(before===null)root.removeAttribute(name);else root.setAttribute(name,before);await new Promise(r=>setTimeout(r,0));})()`);
+ }
+ check('returning from hidden and graph views retains the same loaded video player',await evaluate(`proof.editor.mounts.get(proof.video.key).root.querySelector('iframe')===proof.iframe&&proof.iframe.contentWindow===proof.playerWindow`));
+ const {targetId:awayTarget}=await send('Target.createTarget',{url:'about:blank'});
+ const {sessionId:awaySession}=await send('Target.attachToTarget',{targetId:awayTarget,flatten:true});
+ await send('Page.bringToFront',{},awaySession);await wait('document.hidden');
+ await send('Page.bringToFront',{},sessionId);await wait('!document.hidden');await send('Target.closeTarget',{targetId:awayTarget});
+ check('real browser tab departure and return retain player identity without document work',await evaluate(`proof.editor.mounts.get(proof.video.key).root.querySelector('iframe')===proof.iframe&&proof.iframe.contentWindow===proof.playerWindow&&proof.editor.repository.state.revision===proof.playerRevision&&proof.counts.commit===proof.playerCounts.commit&&proof.counts.snapshot===proof.playerCounts.snapshot`));
  // Already-open viewer: verify its browsing context, not merely iframe identity.
  await evaluate(`proof.editor.blockSelection.clear();proof.livePlacement=proof.editor.commands.insert({type:'iframe-block',id:'live-frame',metadata:{url:'about:blank'}},{kind:'after',anchorKey:proof.videoSurface.placementKey});proof.live=proof.byId('live-frame');proof.liveRoot=proof.editor.mounts.get(proof.live.key).root;proof.liveFrame=proof.liveRoot.querySelector('iframe')`);
  await wait('proof.liveFrame.contentDocument?.readyState==="complete"');
@@ -153,6 +164,8 @@ try{
  check('resized gutter still clears the following source-preview controls',await clearFollowingControls());
  await screenshot('image-front-corner');
  await evaluate(`proof.cornerRoot.style.width='';`);
+ await evaluate(`(async()=>{const {inspectUri}=await import('/src/interchange/uri.ts');proof.genericPlacement=proof.editor.commands.insert({id:'automatic-video',type:'mutable/video-block',video:inspectUri('https://vimeo.com/76979871').video},{kind:'after',anchorKey:proof.videoSurface.placementKey});proof.genericVideo=proof.editor.mounts.get(proof.byId('automatic-video').key).root;})()`);
+ check('generic VideoBlock loads its player automatically without autoplay',await evaluate(`!!proof.genericVideo.querySelector('iframe')&&proof.genericVideo.querySelector('iframe').src.includes('autoplay=0')&&proof.genericVideo.querySelector('button').textContent==='Stop player'`));
  const audit=await evaluate(`(async()=>{const {triggerKey,keyboard}=await import('/src/input/bindings.ts');return ['y','k','u'].flatMap(key=>[['Ctrl','Meta'],['Ctrl','Shift']].map(mods=>({key,modifiers:mods,conflicts:proof.editor.bindings.list().filter(a=>proof.editor.bindings.effective(a.id).some(t=>t.kind==='keyboard'&&triggerKey(t)===triggerKey(keyboard(key,...mods)))).map(a=>a.id)})))})()`);
  await writeFile(path.join(artifacts,'shortcut-audit.json'),JSON.stringify(audit,null,2));check('six proposed platform-specific shortcuts have no registered default conflict',audit.every(a=>a.conflicts.length===0));
  check('no browser exceptions',errors.length===0);

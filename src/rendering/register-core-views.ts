@@ -11,7 +11,6 @@ import {IIIFBlockView} from './iiif-block-view';
 import {WebArticleBlockView} from './web-article-block-view';
 import {CitationBlockView} from './citation-block-view';
 import { VideoBlockView } from './video-block-view';
-import { createComponent } from 'solid-js';
 import { SourceBlockView } from "./source-block-view";
 import { sourceTypes } from "../interchange/source-block";
 import { WorkspaceObjectBankView } from "./workspace-object-bank";
@@ -52,8 +51,7 @@ function many(editor: ReactiveEditor, types: string[], view: any, capabilities: 
 export function registerCoreViews(editor: ReactiveEditor, documentView = ContainerBlockView): void {
   editor.registry.register({ type: 'mutable/opaque-block', view: OpaqueClipboardView, capabilities: ['selectable'] });
   if (editor.features.documentInterchange) many(editor, ["mutable/video-block"], VideoBlockView, ["media", "opaque-widget", "selectable"]);
-  if (editor.features.resourceUrlPaste) many(editor, ["youtube-player-block", "vimeo-player-block"],
-    (props: import('../block-tree/types').BlockViewProps) => createComponent(VideoBlockView, { ...props, loadOnMount: true }), ["media", "opaque-widget", "selectable"]);
+  if (editor.features.resourceUrlPaste) many(editor, ["youtube-player-block", "vimeo-player-block"], VideoBlockView, ["media", "opaque-widget", "selectable"]);
   if(editor.features.webResourceViewers)many(editor,[WEB_BLOCK],WebResourceView,['selectable','opaque-widget']);
   if(editor.features.deterministicAcademicResources)many(editor,[ACADEMIC_BLOCK],AcademicResourceView,['selectable','opaque-widget']);
   if(editor.features.structuredResources)many(editor,[STRUCTURED_BLOCK],StructuredResourceView,['selectable','opaque-widget']);

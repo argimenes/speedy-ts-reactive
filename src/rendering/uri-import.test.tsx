@@ -21,12 +21,12 @@ const start=async(s:ReturnType<typeof setup>,choice:string,url='https://example.
 const mockText=(s:ReturnType<typeof setup>,source='<p>Hello <b>world</b></p>')=>{
  const lease={id:'op',token:'token',cavernId:'c'};const begin=vi.spyOn(s.editor.assets,'beginText').mockResolvedValue(lease),acquire=vi.spyOn(s.editor.assets,'acquireText').mockImplementation(async(_l,url,format)=>({source,url,format,mediaType:'text/html',byteHash:'a'.repeat(64)})),action=vi.spyOn(s.editor.assets,'action').mockResolvedValue(undefined);return {begin,acquire,action};
 };
-it('ordinary URL and passive video insertion make zero requests and each undo/redo as one edit',async()=>{
+it('URL and video insertion do not acquire content through fetch and each undo/redo as one edit',async()=>{
  const s=setup(),fetch=vi.spyOn(globalThis,'fetch'),commits=vi.spyOn(s.editor.repository,'commit');
- for(const choice of ['Insert URL link (no network)','Insert passive VideoBlock (no network)']){
+ for(const choice of ['Insert URL link (no network)','Insert VideoBlock (loads player)']){
   const before=authored(s),{promise}=await start(s,choice,'https://vimeo.com/76979871');await promise;const after=authored(s);expect(after).not.toEqual(before);expect(commits).toHaveBeenCalledTimes(1);s.editor.repository.undo();expect(authored(s)).toEqual(before);s.editor.repository.redo();expect(authored(s)).toEqual(after);s.editor.repository.undo();commits.mockClear();
  }
- expect(fetch).not.toHaveBeenCalled();expect(s.host.querySelector('iframe')).toBeNull();
+ expect(fetch).not.toHaveBeenCalled();expect(s.host.querySelector('iframe')).not.toBeNull();
 });
 it('cannot acquire before consent; cancelled consent changes nothing',async()=>{
  const s=setup(),m=mockText(s),before=authored(s),{promise}=await start(s,'Import html as native Ink at the destination');await question(s,'Allow linked-resource acquisition?');expect(m.begin).not.toHaveBeenCalled();expect(m.acquire).not.toHaveBeenCalled();s.editor.interchange.cancel();await promise;expect(authored(s)).toEqual(before);expect(m.begin).not.toHaveBeenCalled();
@@ -48,12 +48,28 @@ it('source refresh requires fresh consent and restores source identity and basel
  const source=()=>Object.values(s.view.state.nodes).find(n=>n.viewType==='mutable/html-source-block')!;s.editor.commands.setPayloadField(source().key,'text','local edit');const before=authored(s);
  m.acquire.mockResolvedValue({source:'<p>updated</p>',url:'https://example.org/a',format:'html',mediaType:'text/html',byteHash:'b'.repeat(64)});s.editor.interchange.refreshSource(source().key);await question(s,'Allow linked-resource acquisition?');expect(m.acquire).toHaveBeenCalledTimes(1);s.editor.interchange.respond([]);await question(s,'Source and local text have changed');s.editor.interchange.respond(['Replace this source Block']);await vi.waitFor(()=>expect(s.editor.interchange.busy()).toBe(false));expect(source().payload.text).toBe('<p>updated</p>');s.editor.repository.undo();expect(authored(s)).toEqual(before);
 });
-it('player is inert until activated, history-free, restrictive, unloadable, and never reactivates on Undo',async()=>{
- const s=setup(),snapshot=authored(s),revision=s.editor.repository.state.revision;expect(s.host.querySelector('iframe')).toBeNull();s.button().click();let iframe=s.host.querySelector('iframe')!;expect(iframe.src).toBe('https://player.vimeo.com/video/76979871?autoplay=0&dnt=1');expect(iframe.sandbox?.value??iframe.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-presentation');expect(iframe.getAttribute('allow')).not.toContain('autoplay');expect(s.editor.repository.state.revision).toBe(revision);expect(authored(s)).toEqual(snapshot);
- s.button().click();expect(s.host.querySelector('iframe')).toBeNull();s.button().click();s.editor.commands.remove(s.node('v').key);expect(s.host.querySelector('iframe')).toBeNull();s.editor.repository.undo();expect(s.host.querySelector('iframe')).toBeNull();s.button().click();s.editor.disposeView(s.view);expect(s.host.querySelector('iframe')).toBeNull();
+it('player loads automatically without autoplay, remains history-free and reloads on restored occurrence',async()=>{
+ const s=setup(),snapshot=authored(s),revision=s.editor.repository.state.revision;const iframe=s.host.querySelector('iframe')!;
+ expect(iframe.src).toBe('https://player.vimeo.com/video/76979871?autoplay=0&dnt=1');expect(iframe.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-presentation');expect(iframe.getAttribute('allow')).not.toContain('autoplay');expect(s.editor.repository.state.revision).toBe(revision);expect(authored(s)).toEqual(snapshot);
+ s.button().click();expect(s.host.querySelector('iframe')).toBeNull();s.button().click();expect(s.host.querySelector('iframe')).not.toBeNull();
+ s.editor.commands.remove(s.node('v').key);expect(s.host.querySelector('iframe')).toBeNull();s.editor.repository.undo();expect(s.host.querySelector('iframe')).not.toBeNull();
+ s.editor.disposeView(s.view);expect(s.host.querySelector('iframe')).toBeNull();
 });
-it('hidden presentation and editor disposal tear down activated players',async()=>{
- const s=setup();s.button().click();s.host.hidden=true;await vi.waitFor(()=>expect(s.host.querySelector('iframe')).toBeNull());s.host.hidden=false;s.button().click();expect(s.host.querySelector('iframe')).not.toBeNull();s.editor.dispose();expect(s.host.querySelector('iframe')).toBeNull();s.button().click();expect(s.host.querySelector('iframe')).toBeNull();
+it('retains the exact player across hidden, graph and browser visibility transitions without repository work',async()=>{
+ const s=setup(),iframe=s.host.querySelector('iframe'),revision=s.editor.repository.state.revision,commit=vi.spyOn(s.editor.repository,'commit'),snapshot=vi.spyOn(s.editor.repository,'snapshot');
+ for(const [name,value] of [['hidden',''],['aria-hidden','true'],['data-view','graph']]){
+  s.host.setAttribute(name,value);await new Promise(r=>setTimeout(r,0));expect(s.host.querySelector('iframe')).toBe(iframe);
+  s.host.removeAttribute(name);await new Promise(r=>setTimeout(r,0));expect(s.host.querySelector('iframe')).toBe(iframe);
+ }
+ const hidden=vi.spyOn(document,'hidden','get').mockReturnValue(true);document.dispatchEvent(new Event('visibilitychange'));await new Promise(r=>setTimeout(r,0));
+ hidden.mockReturnValue(false);document.dispatchEvent(new Event('visibilitychange'));expect(s.host.querySelector('iframe')).toBe(iframe);
+ expect(s.editor.repository.state.revision).toBe(revision);expect(commit).not.toHaveBeenCalled();expect(snapshot).not.toHaveBeenCalled();
+ s.editor.dispose();expect(s.host.querySelector('iframe')).toBeNull();s.button().click();expect(s.host.querySelector('iframe')).toBeNull();
+});
+it('respects an explicit Stop across visibility transitions until Load is clicked',async()=>{
+ const s=setup();s.button().click();expect(s.button().textContent).toBe('Load player');
+ s.host.hidden=true;await new Promise(r=>setTimeout(r,0));s.host.hidden=false;await new Promise(r=>setTimeout(r,0));
+ expect(s.host.querySelector('iframe')).toBeNull();s.button().click();expect(s.host.querySelector('iframe')).not.toBeNull();
 });
 it('feature-off hides URI commands and leaves video data inactive',async()=>{
  const s=setup(false),fetch=vi.spyOn(globalThis,'fetch');expect(blockMenuItems(s.editor,s.node().key).some(i=>i.label==='Inspect / Import linked resource…')).toBe(false);expect(s.button()).toBeNull();await s.editor.interchange.inspectLinkedResource(s.node().key,'https://example.org');expect(fetch).not.toHaveBeenCalled();
