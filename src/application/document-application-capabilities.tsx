@@ -513,6 +513,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
           documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, interchange, entityBacklinks: EntityBacklinks,
           recentDocuments: recents ? {
             items: () => recents.items(recentVaultId()).map(d => ({ ...d, title: resolve(d.id)?.title ?? d.title, location: native?.location(d.id) ?? d.location })),
+            remove(id) { guard(); recents.remove(id, recentVaultId()); },
             async open(id) {
               guard();
               if (!recents.items(recentVaultId()).some(d => d.id === id)) throw Error('This Document is no longer in the recent list.');

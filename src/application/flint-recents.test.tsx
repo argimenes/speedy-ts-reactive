@@ -14,7 +14,7 @@ function setup(enabled = true) {
   editor.commandRegistry.execute('flint.open',{targetKey:projection.state.rootKey,args:undefined});
   const host=document.body.appendChild(document.createElement('div'));
   disposers.push(()=>editor.dispose(),render(()=><ReactiveTreeView editor={editor} projection={projection}/>,host));
-  return {editor,host,projection,tabs:()=>[...host.querySelectorAll<HTMLButtonElement>('[role=tab]')],recent:()=>[...host.querySelectorAll<HTMLButtonElement>('.flint-recent-documents button')]};
+  return {editor,host,projection,tabs:()=>[...host.querySelectorAll<HTMLButtonElement>('[role=tab]')],recent:()=>[...host.querySelectorAll<HTMLButtonElement>('.flint-recent-documents .flint-open-document')]};
 }
 it('lists ten recent tabs, reopens a closed document with edits intact, and does no work on typing', async () => {
   const f=setup();
@@ -46,4 +46,17 @@ it('promotes a successful reopen even when that document is already active in an
   expect(windows[0].querySelector('.flint-recent-documents button')?.textContent).toBe('Letter 1');
   windows[0].querySelector<HTMLButtonElement>('[aria-label="Reopen Letter 0"]')!.click();
   expect(windows[0].querySelector('.flint-recent-documents button')?.textContent).toBe('Letter 0');
+});
+it('removes a recent entry across Flint windows without closing or editing the Document', () => {
+  const f=setup();
+  f.editor.commandRegistry.execute('flint.open',{targetKey:f.projection.state.rootKey,args:undefined});
+  const windows=f.host.querySelectorAll('.flint-application');
+  const tabs=f.tabs(),revision=f.editor.repository.state.revision;
+  const snapshot=vi.spyOn(f.editor.repository,'snapshot');
+  windows[0].querySelector<HTMLButtonElement>('[aria-label="Remove Letter 0 from recently opened documents"]')!.click();
+  for(const window of windows)expect(window.querySelector('[aria-label="Reopen Letter 0"]')).toBeNull();
+  expect(f.tabs()).toEqual(tabs);expect(f.editor.repository.state.revision).toBe(revision);expect(snapshot).not.toHaveBeenCalled();
+  windows[0].querySelectorAll<HTMLButtonElement>('[role=tab]')[1].click();
+  windows[0].querySelectorAll<HTMLButtonElement>('[role=tab]')[0].click();
+  for(const window of windows)expect(window.querySelector('[aria-label="Reopen Letter 0"]')).not.toBeNull();
 });

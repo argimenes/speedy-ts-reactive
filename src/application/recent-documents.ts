@@ -28,15 +28,22 @@ export function createRecentDocuments() {
     }
     return entries.get(vaultId)!;
   };
+  const update = (next: readonly RecentApplicationDocument[], vaultId?: string) => {
+    entries.set(vaultId, next); changed(n => n + 1);
+    // Unsaved documents are usable in this session, but cannot be reopened after a restart.
+    if (vaultId) try { localStorage.setItem(RECENT_DOCUMENTS_KEY + encodeURIComponent(vaultId), JSON.stringify(next.filter(d => d.location))); } catch { /* Session history remains available. */ }
+  };
   return {
     items(vaultId?: string) { revision(); return read(vaultId); },
+    remove(id: string, vaultId?: string) {
+      const previous = read(vaultId), next = previous.filter(d => d.id !== id);
+      if (next.length !== previous.length) update(next, vaultId);
+    },
     record(document: RecentApplicationDocument, vaultId?: string) {
       const previous = read(vaultId), first = previous[0];
       if (first?.id === document.id && first.title === document.title && first.location?.folder === document.location?.folder && first.location?.filename === document.location?.filename) return;
       const next = [{ ...document, ...(document.location ? { location: { ...document.location } } : {}) }, ...previous.filter(d => d.id !== document.id)].slice(0, limit);
-      entries.set(vaultId, next); changed(n => n + 1);
-      // Unsaved documents are usable in this session, but cannot be reopened after a restart.
-      if (vaultId) try { localStorage.setItem(RECENT_DOCUMENTS_KEY + encodeURIComponent(vaultId), JSON.stringify(next.filter(d => d.location))); } catch { /* Session history remains available. */ }
+      update(next, vaultId);
     },
   };
 }

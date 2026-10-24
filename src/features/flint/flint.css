@@ -66,6 +66,9 @@
 .flint-recent-documents { margin:8px 0 12px; }
 .flint-recent-documents > summary { cursor:pointer; font-size:12px; font-weight:600; }
 .flint-recent-documents ol { list-style:none; padding:0; margin:4px 0; }
+.flint-recent-documents li { display:flex; align-items:center; gap:4px; }
+.flint-recent-documents .flint-open-document { flex:1; min-width:0; }
+.flint-recent-documents .flint-recent-remove { flex:0 0 24px; width:24px; min-height:24px; padding:0; font-size:18px; line-height:1; }
 .flint-recent-documents .flint-open-document span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .flint-application .flint-vault-controls > button { margin:3px 3px 3px 0; }
 .flint-application .flint-vault-controls details:not(.flint-tree-folder) { border-top:1px solid var(--flint-line); padding-top:10px; margin-top:12px; }

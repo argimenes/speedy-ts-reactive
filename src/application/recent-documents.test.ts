@@ -26,6 +26,20 @@ it('keeps unsaved or unscoped documents session-local and only persists explicit
   history.record({ id: 'unsaved', title: 'Untitled' }, 'vault');
   expect(writes).not.toHaveBeenCalled();
 });
+it('persists removal in its Vault and allows a later open to restore the entry', () => {
+  const history = createRecentDocuments();
+  history.record(document('a'), 'vault-a'); history.record(document('b'), 'vault-a');
+  history.record(document('a'), 'vault-b');
+  history.remove('a', 'vault-a');
+  expect(history.items('vault-a').map(d => d.id)).toEqual(['b']);
+  const restored = createRecentDocuments();
+  expect(restored.items('vault-a').map(d => d.id)).toEqual(['b']);
+  expect(restored.items('vault-b').map(d => d.id)).toEqual(['a']);
+  restored.remove('b', 'vault-a');
+  expect(createRecentDocuments().items('vault-a')).toEqual([]);
+  restored.record(document('a'), 'vault-a');
+  expect(createRecentDocuments().items('vault-a').map(d => d.id)).toEqual(['a']);
+});
 it('ignores corrupt storage and tolerates restricted storage', () => {
   localStorage.setItem(RECENT_DOCUMENTS_KEY + 'vault', JSON.stringify([null, document('ok'), document('ok'), {id:'bad'}]));
   expect(createRecentDocuments().items('vault').map(d => d.id)).toEqual(['ok']);
