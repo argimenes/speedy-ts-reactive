@@ -1,3 +1,4 @@
+import { HttpApplicationServices } from '../runtime/application-services';
 import {annotationCapabilities} from '../application/annotation-capabilities';
 import {collectDocumentEntities} from '../features/entity-references/document-entities';
 import {normalizeScholarly} from '../interchange/scholarly';
@@ -33,6 +34,87 @@ function setup(enabled = true, externalHtml = true, directDomCharacterCells = tr
   };
   return { editor, projection, host, node, select, dispatch, texts: () => editor.encodeDocument().children!.map(c => c.text) };
 }
+
+describe('process resource URI at the caret', () => {
+  const url = 'https://youtu.be/M7lc1UVf-VE?si=historical';
+  function source(direct = true, text = '🙂 Before ' + url + ' after') {
+    const s = setup(true, true, direct);
+    s.editor.commands.replaceInlineRange(s.node('b').key, 0, 6, text);
+    const target = s.select('b', [...text.slice(0, text.indexOf('https://'))].length + 12);
+    return { ...s, target, text };
+  }
+  const press = (target: Element, extra: KeyboardEventInit = {}) => {
+    const event = new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true, ...extra });
+    target.dispatchEvent(event); return event;
+  };
+  it.each([true, false])('converts only the URI with exact Undo/Redo (direct cells %s)', async direct => {
+    const s = source(direct), before = nativeEnvelope(captureNative(s.editor.repository.readState(), 'doc'));
+    const commit = vi.spyOn(s.editor.repository, 'commit'), fetch = vi.spyOn(globalThis, 'fetch');
+    expect(press(s.target).defaultPrevented).toBe(true);
+    await vi.waitFor(() => expect(s.host.querySelector('[data-block-type="youtube-player-block"]')).not.toBeNull());
+    expect(s.texts()).toEqual(['Rome abc', '🙂 Before ', undefined, ' after']);
+    expect(commit).toHaveBeenCalledTimes(1); expect(fetch).not.toHaveBeenCalled();
+    expect(Object.values(s.editor.repository.readState().contents).find(c => c.viewType === 'youtube-player-block')?.payload.sourceUrl).toBe(url);
+    s.editor.repository.undo(); expect(nativeEnvelope(captureNative(s.editor.repository.readState(), 'doc'))).toEqual(before);
+    s.editor.repository.redo(); expect(s.host.querySelector('[data-block-type="youtube-player-block"]')).not.toBeNull();
+  });
+  it.each(['success', 'failure', 'cancel', 'stale', 'caret'])('uses PDF acquisition and preserves the URI until success: %s', async outcome => {
+    const pdf = 'https://example.org/paper.pdf', s = source(true, 'Before ' + pdf + ' after');
+    let resolve!: (value: any) => void, reject!: (reason: Error) => void;
+    const call = vi.spyOn(HttpApplicationServices.prototype, 'call').mockImplementation(() => new Promise((a,b) => { resolve = a; reject = b; }));
+    const commit = vi.spyOn(s.editor.repository, 'commit');
+    press(s.target);
+    expect(call).toHaveBeenCalledWith('pdf.import', expect.objectContaining({ source: pdf }), expect.any(AbortSignal));
+    expect(s.texts()[1]).toBe(s.text); expect(commit).not.toHaveBeenCalled();
+    if (outcome === 'cancel') s.editor.clipboard.cancel();
+    if (outcome === 'stale') s.editor.commands.replaceInlineRange(s.node('b').key, 0, 0, '!');
+    if (outcome === 'caret') s.select('b', 0);
+    if (outcome === 'failure') reject(Error('PDF unavailable'));
+    else resolve({ snapshot: {version:1,kind:'pdf',snapshotId:crypto.randomUUID(),identityId:crypto.randomUUID(),entityId:crypto.randomUUID(),resourceId:crypto.randomUUID(),sourceUrl:pdf,endpoint:pdf,retrievedAt:'2026-10-24T00:00:00Z',asset:{kind:'managed',cavernId:'cavern',assetId:'sha256:'+'a'.repeat(64)},inspection:{kind:'pdf-inspection',pages:2,label:'Paper',version:'1.7'}} });
+    await tick(); await tick();
+    if (outcome === 'success') {
+      expect(s.texts()).toEqual(['Rome abc','Before ',undefined,' after']); expect(commit).toHaveBeenCalledTimes(1);
+      expect(s.host.querySelector('.mutable-pdf')).not.toBeNull();
+      s.editor.repository.undo(); expect(s.texts()[1]).toBe(s.text);
+    } else {
+      expect(s.texts()[1]).toBe((outcome === 'stale' ? '!' : '') + s.text);
+      expect(s.host.querySelector('.mutable-pdf')).toBeNull();
+    }
+  });
+  it('rejects no-URI, selection, repeated keys and IME without edits or snapshots', () => {
+    const s = source(), snapshot = vi.spyOn(s.editor.repository, 'snapshot'), commit = vi.spyOn(s.editor.repository, 'commit');
+    press(s.target, { repeat: true }); press(s.target, { isComposing: true });
+    s.select('b', 0); press(s.target);
+    s.select('b', 12, 20); press(s.target);
+    expect(commit).not.toHaveBeenCalled(); expect(snapshot).not.toHaveBeenCalled(); expect(s.texts()[1]).toBe(s.text);
+  });
+  it('leaves dialog fields and ordinary keypresses alone', () => {
+    const s = source(), field = s.target.appendChild(document.createElement('input'));
+    const snapshot = vi.spyOn(s.editor.repository, 'snapshot'), commit = vi.spyOn(s.editor.repository, 'commit');
+    expect(press(field).defaultPrevented).toBe(false);
+    s.target.dispatchEvent(new KeyboardEvent('keydown', {key:'a',bubbles:true}));
+    expect(commit).not.toHaveBeenCalled(); expect(snapshot).not.toHaveBeenCalled();
+  });
+  it('uses the existing web confirmation flow without changing the URI on cancellation', async () => {
+    const s = source(true, 'Before https://example.org/article after');
+    const commit = vi.spyOn(s.editor.repository, 'commit');
+    press(s.target);
+    expect(s.editor.interchange.question()?.title).toBe('Capture web preview?');
+    expect(s.editor.interchange.question()?.details).toContain('https://example.org/article');
+    expect(document.getSelection()?.toString()).toBe('https://example.org/article');
+    s.editor.interchange.respond(undefined); await tick();
+    expect(s.texts()[1]).toBe(s.text); expect(commit).not.toHaveBeenCalled();
+  });
+  it('respects disabled resource handlers and restores the caret', () => {
+    const s = source(), before = s.editor.mounts.get(s.node('b').key)!.captureInlineSelection!();
+    s.editor.features.resourceUrlPaste = false;
+    const commit = vi.spyOn(s.editor.repository, 'commit');
+    press(s.target);
+    expect(s.editor.clipboard.message()).toContain('No enabled resource handler');
+    expect(s.editor.mounts.get(s.node('b').key)!.captureInlineSelection!()).toEqual(before);
+    expect(s.texts()[1]).toBe(s.text); expect(commit).not.toHaveBeenCalled();
+  });
+});
 
 describe('Mutable clipboard UI routing and lifecycle', () => {
   const clipboardRead = (read: () => Promise<unknown>) => {

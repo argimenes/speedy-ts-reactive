@@ -529,6 +529,8 @@ export class InputGateway {
     if (!["native-text", "standoff"].includes(resolved.handle.inputPolicy)) return this.runCommand(id, resolved.nodeKey);
     if (resolved.handle.inputPolicy === "native-text" && !(event.target instanceof HTMLTextAreaElement)) return false;
 
+    if (id === "resource.processAtCaret") return this.clipboard?.processAtCaret(event) ?? false;
+
     if (id === "tabs.create" && resolved.handle.inputPolicy === "standoff") {
       if (event.target instanceof Element && event.target.closest('input, textarea, select, [role="dialog"]')) return false;
       if (event instanceof KeyboardEvent && event.repeat) return;

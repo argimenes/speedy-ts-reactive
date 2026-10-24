@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BindingRegistry, chord, keyboard } from "./bindings";
+import { registerInputActions } from './binding-catalog';
 
 afterEach(() => { vi.useRealTimers(); localStorage.clear(); });
 
@@ -9,6 +10,14 @@ function action(registry: BindingRegistry, id: string, defaults: any[]) {
 }
 
 describe("chord bindings", () => {
+  it.each([['MacIntel', 'metaKey'], ['Win32', 'ctrlKey']])('registers resource processing on %s', (platform, modifier) => {
+    const registry = new BindingRegistry(); registerInputActions(registry, platform);
+    const run = vi.fn();
+    const event = new KeyboardEvent('keydown', {key:'Enter',shiftKey:true,[modifier]:true,cancelable:true});
+    expect(registry.dispatch(event, ['editor/standoff'], run)).toBe(true);
+    expect(run).toHaveBeenCalledWith('resource.processAtCaret');
+    registry.dispose();
+  });
   it("shows a pending hint and invokes only the completed sequence", () => {
     const registry = new BindingRegistry();
     action(registry, "list", [chord(keyboard(";", "Ctrl"), keyboard("l"))]);

@@ -24,6 +24,7 @@ import { preparePaste, type PastePreparation, type PreparedPaste } from '../inte
 import type { BlockFragment } from '../block-tree/clipboard';
 import type { MountHandle } from './mounts';
 import { resourceUrl, resourceBlock, type ResourceUrl } from '../interchange/resource-url';
+import { uriAtCaret } from '../interchange/uri-at-caret';
 
 interface Bookmark {
   kind: 'text' | 'blocks'; viewId: string; slices: Slice[]; disjoint: boolean;
@@ -72,6 +73,38 @@ export class MutableClipboard {
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'v') { this.plainUntil = Date.now() + 1500; this.plainTarget = this.editor.mounts.resolveEvent(event)?.handle.focusElement ?? event.target; }
   }
   clearIntent() { this.plainUntil = 0; this.plainTarget = undefined; this.markdownIntent = undefined; }
+  /** Explicit shortcut only: no clipboard access, subscriptions or document scan. */
+  processAtCaret(event: Event): boolean {
+    if (!this.enabled() || !this.alive) return false;
+    const b = this.textBookmark(event);
+    if (!b?.nodeKey) return false;
+    this.stop(event);
+    if (event instanceof KeyboardEvent && event.repeat) return true;
+    try {
+      if (this.pending || this.editor.interchange.busy()) throw Error('Finish or cancel the current resource operation first.');
+      if (b.disjoint || this.editor.crossText.range() || b.slices[0].start !== b.slices[0].end) throw Error('Place the caret inside one resource URI.');
+      const node = this.editor.node(b.nodeKey)!;
+      const uri = uriAtCaret(b.slices[0].start!, node.inlineContent.length, index => {
+        const cell = this.editor.node(node.inlineContent[index]);
+        return cell?.viewType === 'text-cell' ? String(cell.payload.text ?? '') : undefined;
+      });
+      if (!uri) throw Error('Place the caret inside an absolute HTTP(S) resource URI.');
+      const mount = this.editor.mounts.get(node.key)!;
+      const original = mount.captureInlineSelection!()!;
+      // Reuse the exact paste selection and async validity checks. Selecting the
+      // URI is not an edit; acquisition failure/cancellation leaves it intact.
+      mount.restoreInlineSelection?.({ anchor: uri.start, head: uri.end });
+      this.editor.selections.setPrimary(node.key, node.contentKey, node.viewId, uri.start, uri.end);
+      const bookmark = this.textBookmark(event)!;
+      this.clearIntent();
+      if (!this.processResource(bookmark, uri.source, event, false)) {
+        mount.restoreInlineSelection?.(original);
+        this.editor.selections.setPrimary(node.key, node.contentKey, node.viewId, original.anchor, original.head);
+        this.notify('No enabled resource handler accepts this URI.');
+      }
+    } catch (error) { this.error(error); }
+    return true;
+  }
   /** An empty editing host has one valid insertion point, even before a browser establishes its native range. */
   private ensureEmptyCaret(nodeKey: string, mount: MountHandle) {
     const document = mount.focusElement.ownerDocument;
@@ -247,18 +280,7 @@ export class MutableClipboard {
       const asMarkdown = !!intent && intent.until >= Date.now() && intent.target === event.target && this.valid(intent.bookmark, event, cross);
       this.clearIntent();
       const data = captureClipboard(event.clipboardData);
-      if(plain&&b.nodeKey&&this.editor.features.deterministicAcademicResources){const source=data['text/plain']??'';if(academicIdentifier(source)||academicJob(source)){void this.editor.interchange.importAcademicSource(b.nodeKey,source);return;}const bibliography=/^\s*@(?:article|book|misc|inproceedings|incollection|string|proceedings|phdthesis|techreport)\s*[{(]/i.test(source)?'bibtex':/^\s*TY  - /m.test(source)?'ris':undefined;if(bibliography){void this.editor.interchange.importBibliographyText(b.nodeKey,source,bibliography);return;}}
-      const pdf=plain&&this.editor.features.crossResourceLoaders?pdfInput(data['text/plain']):undefined;
-      if(pdf){this.pastePdf(b,pdf,event,cross);return;}
-      const iiif=plain&&this.editor.features.iiifResourceLoaders?iiifInput(data['text/plain']):undefined;
-      if(iiif){this.pasteIIIF(b,data['text/plain'].trim(),event,cross);return;}
-      const wiki=plain&&this.editor.features.academicResourceLoaders?wikipediaInput(data['text/plain']):undefined;
-      if(wiki){this.pasteWikipedia(b,wiki.sourceUrl,event,cross);return;}
-      const doi = plain && this.editor.features.academicResourceLoaders ? doiInput(data['text/plain']) : undefined;
-      if(doi){this.pasteAcademic(b,doi.sourceUrl,event,cross);return;}
-      if(plain&&b.nodeKey&&this.editor.features.webResourceViewers&&(webCandidate(data['text/plain']??'')||/^mutable-web-job:[a-f0-9-]{36}$/i.test((data['text/plain']??'').trim()))){if(b.disjoint)throw Error('Choose one insertion destination');void this.editor.interchange.importWebResource(b.nodeKey,data['text/plain']);return;}
-      const resource = plain && this.editor.features.resourceUrlPaste ? resourceUrl(data['text/plain'] ?? '') : undefined;
-      if (resource) { this.pasteResource(b, resource, data['text/plain'].trim(), event, cross); return; }
+      if (plain && this.processResource(b, data['text/plain'] ?? '', event, cross)) return;
       const files = this.editor.features.managedAssetClipboard && !plain ? captureFiles(event.clipboardData) : [];
       if ((!plain && this.editor.features.managedAssetClipboard && (files.length > 0 || Object.values(data).some(value => /image-cell|data-mutable-fragment|<img\b|!\[/i.test(value)))) || (this.editor.features.markdownClipboard && !plain && (asMarkdown || MARKDOWN_MIMES.some(type => data[type] !== undefined))) || Object.values(data).reduce((n, value) => n + value.length, 0) > 10000) {
         this.notify('Preparing paste…');
@@ -278,7 +300,29 @@ export class MutableClipboard {
     if (b.kind === 'text' && b.disjoint) b = { ...b, slices: b.slices.filter(s => s.start !== s.end) };
     this.write(b, event.type === 'cut', event, cross);
   }
-  private pastePdf(bookmark:Bookmark,source:string,event:ClipboardEvent,cross:boolean){
+  /** Shared dispatch order for resource paste and processing an existing URI. */
+  private processResource(b: Bookmark, source: string, event: Event, cross: boolean): boolean {
+    if (b.nodeKey && this.editor.features.deterministicAcademicResources) {
+      if (academicIdentifier(source) || academicJob(source)) { void this.editor.interchange.importAcademicSource(b.nodeKey, source); return true; }
+      const bibliography = /^\s*@(?:article|book|misc|inproceedings|incollection|string|proceedings|phdthesis|techreport)\s*[{(]/i.test(source) ? 'bibtex' : /^\s*TY  - /m.test(source) ? 'ris' : undefined;
+      if (bibliography) { void this.editor.interchange.importBibliographyText(b.nodeKey, source, bibliography); return true; }
+    }
+    const pdf = this.editor.features.crossResourceLoaders ? pdfInput(source) : undefined;
+    if (pdf) { this.pastePdf(b, pdf, event, cross); return true; }
+    if (this.editor.features.iiifResourceLoaders && iiifInput(source)) { this.pasteIIIF(b, source.trim(), event, cross); return true; }
+    const wiki = this.editor.features.academicResourceLoaders ? wikipediaInput(source) : undefined;
+    if (wiki) { this.pasteWikipedia(b, wiki.sourceUrl, event, cross); return true; }
+    const doi = this.editor.features.academicResourceLoaders ? doiInput(source) : undefined;
+    if (doi) { this.pasteAcademic(b, doi.sourceUrl, event, cross); return true; }
+    if (b.nodeKey && this.editor.features.webResourceViewers && (webCandidate(source) || /^mutable-web-job:[a-f0-9-]{36}$/i.test(source.trim()))) {
+      if (b.disjoint) throw Error('Choose one insertion destination');
+      void this.editor.interchange.importWebResource(b.nodeKey, source); return true;
+    }
+    const resource = this.editor.features.resourceUrlPaste ? resourceUrl(source) : undefined;
+    if (resource) { this.pasteResource(b, resource, source.trim(), event, cross); return true; }
+    return false;
+  }
+  private pastePdf(bookmark:Bookmark,source:string,event:Event,cross:boolean){
     if(bookmark.disjoint)throw Error('Paste a PDF into one selection.');
     this.notify('Acquiring managed PDF…');this.asyncTask(async()=>{
       const signal=this.importController!.signal;const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; PDF insertion cancelled. The original may have been retained.');};check();
@@ -286,7 +330,7 @@ export class MutableClipboard {
       const result=await api.call('pdf.import',{id:crypto.randomUUID(),source},signal);check();const prepared=pdfBlock(result.snapshot,source);this.insert(bookmark,prepared.fragment,false,[prepared.native]);this.notify('Pasted retained PDF. Open its local viewer; save to retain this occurrence.');
     });
   }
-  private pasteIIIF(bookmark:Bookmark,source:string,event:ClipboardEvent,cross:boolean){
+  private pasteIIIF(bookmark:Bookmark,source:string,event:Event,cross:boolean){
     if(bookmark.disjoint)throw Error('Paste an IIIF resource into one selection.');
     this.notify('Capturing IIIF source…');this.asyncTask(async()=>{
       const signal=this.importController!.signal;const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; IIIF insertion cancelled. Captured sources may have been retained.');};
@@ -294,7 +338,7 @@ export class MutableClipboard {
       const result=await api.call('iiif.import',{id:crypto.randomUUID(),source},signal);check();const prepared=iiifBlock(result.snapshot,source);this.insert(bookmark,prepared.fragment,false,[prepared.native]);this.notify('Pasted IIIF source. Activate its viewer to load remote tiles. Save to retain this occurrence.');
     });
   }
-  private pasteWikipedia(bookmark:Bookmark,source:string,event:ClipboardEvent,cross:boolean){
+  private pasteWikipedia(bookmark:Bookmark,source:string,event:Event,cross:boolean){
     if(bookmark.disjoint)throw Error('Paste an article into one selection.');
     this.notify('Capturing Wikipedia revision…');this.asyncTask(async()=>{
       const signal=this.importController!.signal;const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; article insertion cancelled. Captured knowledge may have been retained.');};
@@ -302,7 +346,7 @@ export class MutableClipboard {
       const result=await api.call('encyclopedia.import',{id:crypto.randomUUID(),source},signal);check();const prepared=webArticleBlock(result,source);check();this.insert(bookmark,prepared.fragment,false,[prepared.native]);this.notify('Pasted captured article. Save the document to retain this occurrence.');
     });
   }
-  private pasteAcademic(bookmark:Bookmark,source:string,event:ClipboardEvent,cross:boolean){
+  private pasteAcademic(bookmark:Bookmark,source:string,event:Event,cross:boolean){
     if(bookmark.disjoint)throw Error('Paste a citation into one selection.');
     const id=crypto.randomUUID();this.notify('Resolving DOI…');
     this.asyncTask(async()=>{
@@ -314,7 +358,7 @@ export class MutableClipboard {
       this.notify('Pasted citation. Save the document to retain this occurrence.');
     });
   }
-  private pasteResource(bookmark: Bookmark, resource: ResourceUrl, sourceUrl: string, event: ClipboardEvent, cross: boolean) {
+  private pasteResource(bookmark: Bookmark, resource: ResourceUrl, sourceUrl: string, event: Event, cross: boolean) {
     if (bookmark.disjoint) throw Error('Paste a resource Block into a single text selection.');
     this.notify(resource.kind === 'image' ? 'Downloading image…' : 'Creating resource Block…');
     this.asyncTask(async () => {

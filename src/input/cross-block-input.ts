@@ -326,6 +326,11 @@ export class CrossBlockInput {
       return false;
     })) return;
     if (!active) return;
+    if (this.editor.bindings.matches('resource.processAtCaret', event)) {
+      this.stop(event);
+      this.editor.clipboard.notify('Place the caret inside one resource URI.');
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && ["c", "x", "v"].includes(event.key.toLowerCase())) {
       // The focused textarea supplies real browser clipboard events. Do not
       // prevent this keydown: guard() handles the subsequent clipboard event.

@@ -24,6 +24,15 @@ function setup(children = [paragraph("a"), paragraph("b"), paragraph("c")]) {
   return { editor, projection, host, node, point, flow };
 }
 describe("experimental cross-Block text selection", () => {
+  it('does not replace a cross-Block selection with a newline for the resource shortcut', () => {
+    const {editor, point, flow} = setup(); editor.crossText.enable(true);
+    editor.crossText.set(point('a', 1), point('b', 3));
+    const commit = vi.spyOn(editor.repository, 'commit'), snapshot = vi.spyOn(editor.repository, 'snapshot');
+    const event = new KeyboardEvent('keydown', {key:'Enter',ctrlKey:true,shiftKey:true,bubbles:true,cancelable:true});
+    flow('a').dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true); expect(editor.crossText.range()).toBeDefined();
+    expect(commit).not.toHaveBeenCalled(); expect(snapshot).not.toHaveBeenCalled();
+  });
   it.each([false, true])('selects and drags whole words without document work (cross selection=%s)', enabled => {
     const f=setup([paragraph('a','Alpha bravo charlie delta'),paragraph('b','Echo foxtrot')]);f.editor.crossText.enable(enabled);
     let hit=f.flow('a').children[8];const previous=document.elementFromPoint;
