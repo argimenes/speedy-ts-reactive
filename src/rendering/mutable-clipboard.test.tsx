@@ -37,8 +37,8 @@ function setup(enabled = true, externalHtml = true, directDomCharacterCells = tr
 
 describe('process resource URI at the caret', () => {
   const url = 'https://youtu.be/M7lc1UVf-VE?si=historical';
-  function source(direct = true, text = '🙂 Before ' + url + ' after') {
-    const s = setup(true, true, direct);
+  function source(direct = true, text = '🙂 Before ' + url + ' after', resources = true) {
+    const s = setup(true, true, direct, true, false, false, resources);
     s.editor.commands.replaceInlineRange(s.node('b').key, 0, 6, text);
     const target = s.select('b', [...text.slice(0, text.indexOf('https://'))].length + 12);
     return { ...s, target, text };
@@ -106,8 +106,7 @@ describe('process resource URI at the caret', () => {
     expect(s.texts()[1]).toBe(s.text); expect(commit).not.toHaveBeenCalled();
   });
   it('respects disabled resource handlers and restores the caret', () => {
-    const s = source(), before = s.editor.mounts.get(s.node('b').key)!.captureInlineSelection!();
-    s.editor.features.resourceUrlPaste = false;
+    const s = source(true, undefined, false), before = s.editor.mounts.get(s.node('b').key)!.captureInlineSelection!();
     const commit = vi.spyOn(s.editor.repository, 'commit');
     press(s.target);
     expect(s.editor.clipboard.message()).toContain('No enabled resource handler');

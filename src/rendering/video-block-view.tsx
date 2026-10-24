@@ -19,13 +19,9 @@ export function VideoBlockView(props:BlockViewProps & { loadOnMount?: boolean })
   const visibility=()=>{if(document.hidden)setActive(false);};document.addEventListener('visibilitychange',visibility);hide();
   onCleanup(()=>{observer.disconnect();document.removeEventListener('visibilitychange',visibility);});
  });
- return <div ref={root} tabindex="0" class="abstract-block mutable-video-block" data-runtime-key={props.nodeKey} data-client-id={props.nodeKey} data-block-type={node()?.viewType ?? 'mutable/video-block'} style={{margin:'10px 0',padding:'12px',border:'1px solid var(--flint-border,#ddd)'}}>
+ return <div ref={root} tabindex="0" class="abstract-block mutable-video-block" data-runtime-key={props.nodeKey} data-client-id={props.nodeKey} data-block-type={node()?.viewType ?? 'mutable/video-block'}>
   <Show when={video()} fallback={<p>Unsupported video descriptor. Original data retained; no player loaded.</p>}>{v=><>
-   <strong>{v().title??`${v().provider==='youtube'?'YouTube':'Vimeo'} video`}</strong>{' '}
-   <a href={v().canonicalUrl} target="_blank" rel="noopener noreferrer">Open on {v().provider==='youtube'?'YouTube':'Vimeo'} ↗</a>
-   <p>Load player connects to {v().provider==='youtube'?'YouTube / Google':'Vimeo'} and its services, sharing your IP address and this site's origin. The provider may use cookies or storage. No autoplay.</p>
-   <button onClick={()=>setActive(!active())}>{active()?'Unload player':'Load player — connect to provider'}</button>
-   <Show when={active()}><iframe title={v().title??`${v().provider} video player`} src={playerUrl(v())} sandbox="allow-scripts allow-same-origin allow-presentation" allow="fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style={{display:'block',width:'100%','max-width':'960px','min-height':'200px','aspect-ratio':'16 / 9',border:'0',margin:'8px 0'}}/><p>If playback is blocked or unavailable, use the provider link above. Player permissions are not relaxed automatically.</p></Show>
+   <Show when={active()}><button onClick={()=>setActive(!active())}>{active()?'':'Load player — connect to provider'}</button><iframe title={v().title??`${v().provider} video player`} src={playerUrl(v())} sandbox="allow-scripts allow-same-origin allow-presentation" allow="fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style={{display:'block',width:'100%','max-width':'960px','min-height':'200px','aspect-ratio':'16 / 9',border:'0'}}/></Show>
   </>}</Show>
  </div>;
 }
