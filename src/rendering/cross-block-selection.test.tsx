@@ -24,6 +24,29 @@ function setup(children = [paragraph("a"), paragraph("b"), paragraph("c")]) {
   return { editor, projection, host, node, point, flow };
 }
 describe("experimental cross-Block text selection", () => {
+  it.each([false, true])('selects and drags whole words without document work (cross selection=%s)', enabled => {
+    const f=setup([paragraph('a','Alpha bravo charlie delta'),paragraph('b','Echo foxtrot')]);f.editor.crossText.enable(enabled);
+    let hit=f.flow('a').children[8];const previous=document.elementFromPoint;
+    document.elementFromPoint=()=>hit;cleanups.push(()=>{document.elementFromPoint=previous;});
+    const send=(type:string,index:number,block='a',detail=0)=>{
+      hit=f.flow(block).children[index];const event=new MouseEvent(type,{bubbles:true,cancelable:true,button:0,buttons:type==='pointerup'?0:1,detail});
+      if(type==='pointerdown'){Object.defineProperty(event,'pointerType',{value:'mouse'});Object.defineProperty(event,'pointerId',{value:1});}
+      hit.dispatchEvent(event);
+    };
+    const snapshot=vi.spyOn(f.editor.repository,'snapshot'),commit=vi.spyOn(f.editor.repository,'commit'),segments=vi.spyOn(Intl.Segmenter.prototype,'segment');
+    const mount=f.editor.mounts.get(f.node('a').key)!,restore=vi.fn(mount.restoreInlineSelection!.bind(mount));mount.restoreInlineSelection=restore;
+    send('pointerdown',8);send('mousedown',8,'a',2);
+    expect(document.getSelection()?.toString()).toBe('bravo');const calls=restore.mock.calls.length;
+    for(let i=0;i<10;i++)send('pointermove',9);
+    expect(restore).toHaveBeenCalledTimes(calls);expect(segments).toHaveBeenCalledTimes(1);
+    send('pointermove',20);expect(document.getSelection()?.toString()).toBe('bravo charlie delta');
+    send('pointermove',1);expect(document.getSelection()?.toString()).toBe('Alpha bravo');
+    send('pointermove',2,'b');
+    if(enabled)expect(f.editor.crossText.selectedText()).toBe('bravo charlie delta\nEcho');
+    else expect(document.getSelection()?.toString()).toBe('Alpha bravo');
+    send('pointermove',14);send('pointerup',14);expect(document.getSelection()?.toString()).toBe('bravo charlie');
+    expect(snapshot).not.toHaveBeenCalled();expect(commit).not.toHaveBeenCalled();
+  });
   it("replaces via beforeinput and pastes plain multiline text atomically", () => {
     const { editor, point, flow } = setup(); editor.crossText.enable(true);
     const before = editor.encodeDocument();

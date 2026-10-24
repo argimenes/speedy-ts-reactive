@@ -2,10 +2,14 @@ import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { ViewPosition } from "../block-tree/types";
 import { graphemeBoundaries } from "./graphemes";
 import { createEffect, createRoot } from "solid-js";
+import { wordSelection } from './word-selection';
 
 /** Model-owned selection across separate contenteditables. Installed before InputGateway. */
 export class CrossBlockInput {
   private drag?: ViewPosition;
+  private mousePointer?: number;
+  private wordDrag?: { start: ViewPosition; end: ViewPosition; anchor: ViewPosition; head: ViewPosition; revision: number };
+  private words = new Map<string, { revision: number; at: ReturnType<typeof wordSelection> }>();
   private pointer?: { x: number; y: number };
   private frame = 0;
   private preferredX?: number;
@@ -18,6 +22,18 @@ export class CrossBlockInput {
   constructor(private editor: ReactiveEditor, private document: Document) {
     const listen = (name: string, fn: (event: any) => void) => { document.addEventListener(name, fn, true); this.listeners.push([name, fn]); };
     listen("pointerdown", this.down); listen("pointermove", this.move); listen("pointerup", this.up); listen("pointercancel", this.cancel);
+    // MouseEvent.detail contains the browser's click count. PointerEvent.detail
+    // is zero in Chromium; guessing a double-click timeout would ignore OS settings.
+    listen("mousedown", (event: MouseEvent) => {
+      const pointerId = this.mousePointer; this.mousePointer = undefined;
+      if (pointerId !== undefined) this.begin(event, pointerId);
+    });
+    listen("lostpointercapture", (event: PointerEvent) => {
+      const capture = this.capture;
+      // A queued release from the first click must not cancel the second click.
+      if (capture?.element === event.target && capture.pointerId === event.pointerId && !capture.element.hasPointerCapture?.(capture.pointerId)) this.up();
+    });
+    document.defaultView?.addEventListener('blur', this.up);
     listen("keydown", this.key); listen("selectionchange", event => { if (editor.crossText.range()) event.stopImmediatePropagation(); });
     for (const name of ["beforeinput", "input", "compositionstart", "compositionupdate", "compositionend", "copy", "cut", "paste", "contextmenu", "click", "drop", "dragstart"]) listen(name, this.guard);
     listen("focusin", event => {
@@ -28,7 +44,11 @@ export class CrossBlockInput {
       const resolved = editor.mounts.resolveEvent(event);
       if (!resolved || !editor.crossText.segments[resolved.nodeKey]) editor.crossText.clear();
     });
-    this.observer = new MutationObserver(() => { if (editor.crossText.range()) editor.crossText.validate(); });
+    this.observer = new MutationObserver(() => {
+      if (editor.crossText.range()) editor.crossText.validate();
+      const root = this.drag && editor.mounts.get(this.drag.occurrenceKey)?.root;
+      if (this.drag && (!root?.isConnected || root.closest('[hidden], [inert], [aria-hidden="true"]'))) this.up();
+    });
     this.observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "aria-hidden"] });
     this.disposeEffect = createRoot(dispose => {
       createEffect(() => {
@@ -109,16 +129,23 @@ export class CrossBlockInput {
     } catch (error) { this.editor.crossText.notice(error instanceof Error ? error.message : String(error)); }
   }
   private down = (event: PointerEvent) => {
+    this.up();
     if(this.editor.completionInput?.pointer?.(event))return;
-    if ((!this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("pointer")) || event.button !== 0 || event.metaKey || event.altKey) return;
+    if (event.pointerType === 'mouse') { this.mousePointer = event.pointerId; return; }
+    this.begin(event, event.pointerId);
+  };
+  private begin = (event: MouseEvent, pointerId?: number) => {
+    const byWord = event.detail === 2 && !event.ctrlKey && !event.shiftKey;
+    if ((!byWord && !this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("pointer")) || event.button !== 0 || event.metaKey || event.altKey) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target?.closest('.document-style-bar, [data-cross-text-controls]')) return;
+    if (byWord && target?.closest('img, video, audio, iframe, [data-superposition-id]')) return;
     const prior = this.editor.crossText.range();
     const resolved = this.editor.mounts.resolveEvent(event);
-    if (!resolved || !resolved.handle.inlinePoint || target?.closest('[data-block-selection-handle]')) { this.editor.crossText.clear(); return; }
+    if (!resolved || !resolved.handle.inlinePoint || resolved.handle.composing || target?.closest('button, input, textarea, select, [data-block-selection-handle]')) { this.editor.crossText.clear(); return; }
     // Restore editability before hit-testing a new ordinary caret.
     if (prior && !event.shiftKey) this.editor.crossText.clear();
-    const point = this.at(event.clientX, event.clientY); if (!point) return;
+    const point = byWord ? this.wordPoint(event.clientX, event.clientY) : this.at(event.clientX, event.clientY); if (!point) return;
     this.preferredX = undefined;
     // Own the gesture from its first event. Waiting until the pointer leaves
     // an editing host allows browser text selection/dragging to cancel or clamp
@@ -126,9 +153,9 @@ export class CrossBlockInput {
     this.stop(event);
     const capturePointer = () => {
       const capture = resolved.handle.root;
-      if (typeof event.pointerId === "number" && capture.setPointerCapture) {
-        capture.setPointerCapture(event.pointerId);
-        this.capture = { element: capture, pointerId: event.pointerId };
+      if (typeof pointerId === "number" && capture.setPointerCapture) {
+        capture.setPointerCapture(pointerId);
+        this.capture = { element: capture, pointerId };
       }
     };
     if (event.shiftKey) {
@@ -137,23 +164,62 @@ export class CrossBlockInput {
     }
     this.editor.selections.clearExcept(point.occurrenceKey);
     this.editor.blockSelection.clear();
+    if (byWord) {
+      const word = this.wordAt(point), start = this.editor.crossText.position(point.occurrenceKey, word.start), end = this.editor.crossText.position(point.occurrenceKey, word.end);
+      this.wordDrag = { start, end, anchor: start, head: end, revision: this.editor.repository.state.contents[point.contentKey].inlineRevision };
+      this.drag = start; this.select(start, end); capturePointer(); return;
+    }
     this.select(point, point);
     this.drag = point;
-    this.editor.crossText.siblings(point.occurrenceKey); // Cache the stream once per gesture.
+    // Resolve/cache sibling order only if the drag actually crosses a Block.
     capturePointer();
   };
+  private wordPoint(x: number, y: number) {
+    const element = this.document.elementFromPoint?.(x, y), cell = element?.closest('[data-inline-index]');
+    const hit = cell && this.editor.mounts.resolveElement(cell);
+    // Choose the character under the pointer, not the nearest caret boundary
+    // (the right half of a final character otherwise selects the following word).
+    const index = hit && cell?.firstChild && hit.handle.inlinePoint?.(cell.firstChild, 0);
+    return hit && typeof index === 'number' ? this.editor.crossText.position(hit.nodeKey, index) : this.at(x, y);
+  }
+  private wordAt(point: ViewPosition) {
+    const node = this.editor.node(point.occurrenceKey)!, revision = this.editor.repository.state.contents[node.contentKey].inlineRevision;
+    let cached = this.words.get(node.key);
+    if (!cached || cached.revision !== revision) {
+      const text = node.inlineContent.map(key => String(this.editor.node(key)?.payload.text ?? '\uFFFC')).join('');
+      this.words.set(node.key, cached = { revision, at: wordSelection(text) });
+    }
+    return cached.at(point.boundary.index);
+  }
+  private dragTo(head: ViewPosition) {
+    const word = this.wordDrag;
+    if (!word) { this.select(this.drag!, head); return; }
+    if (this.editor.repository.state.contents[word.start.contentKey]?.inlineRevision !== word.revision) { this.up(); return; }
+    let backward = head.boundary.index < word.start.boundary.index;
+    if (head.occurrenceKey !== word.start.occurrenceKey) {
+      if (!this.editor.crossText.enabled()) return;
+      const siblings = this.editor.crossText.siblings(word.start.occurrenceKey);
+      if (!siblings.includes(head.occurrenceKey)) return;
+      backward = siblings.indexOf(head.occurrenceKey) < siblings.indexOf(word.start.occurrenceKey);
+    }
+    const range = this.wordAt(head);
+    const anchor = backward ? word.end : word.start, endpoint = this.editor.crossText.position(head.occurrenceKey, backward ? range.start : range.end);
+    if (word.anchor.occurrenceKey === anchor.occurrenceKey && word.anchor.boundary.index === anchor.boundary.index && word.head.occurrenceKey === endpoint.occurrenceKey && word.head.boundary.index === endpoint.boundary.index) return;
+    word.anchor = anchor; word.head = endpoint;
+    this.select(anchor, endpoint);
+  }
   private move = (event: PointerEvent) => {
     if (!this.drag || !(event.buttons & 1)) return;
     this.pointer = { x: event.clientX, y: event.clientY };
-    const head = this.at(event.clientX, event.clientY);
+    const head = this.wordDrag ? this.wordPoint(event.clientX, event.clientY) : this.at(event.clientX, event.clientY);
     if (head) {
-      this.stop(event); this.select(this.drag, head);
+      this.stop(event); this.dragTo(head);
       if (!this.frame) this.frame = requestAnimationFrame(this.scroll);
     }
   };
   private scroll = () => {
     this.frame = 0;
-    if (!this.drag || !this.pointer || !this.editor.crossText.range()) return;
+    if (!this.drag || !this.pointer || (!this.editor.crossText.range() && !this.wordDrag)) return;
     let root = this.editor.mounts.get(this.drag.occurrenceKey)?.root.parentElement;
     while (root && !(root.scrollHeight > root.clientHeight && /auto|scroll/.test(getComputedStyle(root).overflowY))) root = root.parentElement;
     if (!root) return;
@@ -164,13 +230,13 @@ export class CrossBlockInput {
     root.scrollTop += delta;
     if (root.scrollTop === previousScroll) return;
     const head = this.at(this.pointer.x, Math.max(rect.top + 2, Math.min(rect.bottom - 2, y)));
-    if (head) this.select(this.drag, head);
+    if (head) this.dragTo(head);
     this.frame = requestAnimationFrame(this.scroll);
   };
   private up = () => {
     const capture = this.capture; this.capture = undefined;
     if (capture?.element.hasPointerCapture?.(capture.pointerId)) capture.element.releasePointerCapture(capture.pointerId);
-    this.drag = undefined; this.pointer = undefined; if (this.frame) cancelAnimationFrame(this.frame); this.frame = 0;
+    this.drag = undefined; this.wordDrag = undefined; this.words.clear(); this.mousePointer = undefined; this.pointer = undefined; if (this.frame) cancelAnimationFrame(this.frame); this.frame = 0;
   };
   private cancel = () => { this.up(); this.editor.crossText.clear(); };
   private collapse(point: ViewPosition) {
@@ -334,5 +400,5 @@ export class CrossBlockInput {
     if (target === this.input && ["input", "compositionupdate"].includes(event.type)) { event.stopImmediatePropagation(); return; }
     this.stop(event); this.editor.crossText.notice();
   };
-  dispose() { this.up(); this.removeInput(); this.disposeEffect(); this.observer.disconnect(); for (const [name, fn] of this.listeners) this.document.removeEventListener(name, fn, true); this.editor.crossText.clear(); }
+  dispose() { this.up(); this.document.defaultView?.removeEventListener('blur', this.up); this.removeInput(); this.disposeEffect(); this.observer.disconnect(); for (const [name, fn] of this.listeners) this.document.removeEventListener(name, fn, true); this.editor.crossText.clear(); }
 }
