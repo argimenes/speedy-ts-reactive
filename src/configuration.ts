@@ -15,6 +15,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Structural containers and retained front/back surfaces. */
+  reversibleBlocks: boolean;
   /** Canonical workspace A0 ordering and owner-scoped surface layers. Session-fixed. */
   mutableWindowManager: boolean;
   /** Occurrence-scoped, local-first annotation and reference completion. */
@@ -138,6 +140,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  reversibleBlocks: true,
   mutableWindowManager: true,
   autocompleteWorkstation: true,
   scryProvisionalCells: true,

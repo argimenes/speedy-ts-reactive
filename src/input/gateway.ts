@@ -63,6 +63,7 @@ export class InputGateway {
     private readonly caretEvents?: CaretNotifications,
     private readonly clipboard?: MutableClipboard,
     private readonly completion?: () => CompletionInput | undefined,
+    private readonly blockDeleteTarget?: (key:NodeKey)=>NodeKey|undefined,
   ) {}
 
   install(): () => void {
@@ -628,9 +629,11 @@ export class InputGateway {
     if (id !== "block.delete") return this.runCommand(id, resolved.nodeKey);
     if (event.cancelable) event.preventDefault();
     event.stopPropagation();
-    const fallback = this.focusFallback(resolved.nodeKey);
-    this.focus.clearRemoved(resolved.nodeKey);
-    this.commands.remove(resolved.nodeKey);
+    const target = this.blockDeleteTarget ? this.blockDeleteTarget(resolved.nodeKey) : resolved.nodeKey;
+    if (!target) return;
+    const fallback = this.focusFallback(target);
+    this.focus.clearRemoved(target);
+    this.commands.remove(target);
     if (fallback) queueMicrotask(() => this.focus.request(fallback, { caret: "start" }));
   };
 

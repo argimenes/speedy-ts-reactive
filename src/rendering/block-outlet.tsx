@@ -1,5 +1,5 @@
 import { Dynamic } from "solid-js/web";
-import { For, Show, onCleanup, onMount } from "solid-js";
+import { For, Show, onCleanup, onMount, getOwner } from "solid-js";
 import type { NodeKey } from "../block-tree/types";
 import { useReactiveView } from "../reactive-editor/context";
 import { UnknownBlockView } from "./unknown-block-view";
@@ -7,6 +7,18 @@ import { BlockSelectionHandle } from "./block-selection";
 import { marginSide, useDocumentMargins } from "./document-margins";
 
 export function BlockOutlet(props: { nodeKey: NodeKey }) {
+  const { retainedBlocks } = useReactiveView();
+  if (!retainedBlocks) return <BlockContents nodeKey={props.nodeKey} />;
+  const key = props.nodeKey, owner = getOwner();
+  let slot!: HTMLDivElement;
+  onMount(() => {
+    const release = retainedBlocks.attach(key, slot, owner, () => <BlockContents nodeKey={key} />);
+    onCleanup(release);
+  });
+  return <div ref={slot} style={{ display: 'contents' }} data-block-slot={key} />;
+}
+
+function BlockContents(props: { nodeKey: NodeKey }) {
   const { editor, projection, coordinates } = useReactiveView();
   const registration = () => {
     const type = projection.state.nodes[props.nodeKey]?.viewType ?? "unknown-block";

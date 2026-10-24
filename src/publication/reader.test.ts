@@ -36,3 +36,8 @@ it('keeps overlapping reviewed references accessible without nesting anchor elem
  const p=publicProjection(new TextEncoder().encode(nativeText(captureNative(state,'doc'))),profile,'vault',undefined,id=>'b-'+Buffer.from(id).toString('hex'),research);
  expect(p.html).not.toMatch(/<a[^>]*>[^<]*<a/);for(const e of entries)expect(p.html).toContain(`entities/${e.key}.html`);expect(p.diagnostics.join(' ')).toContain('Overlapping links');
 });
+it('publishes only the front of recursively nested surfaces and excludes private notes from search and research',()=>{
+ const state=decodeBlockTree({id:'doc',type:'document-block',children:[{id:'surface',type:'surface-block',children:[{id:'front',type:'side-block',children:[{id:'public',type:'standoff-editor-block',text:'PUBLIC FRONT'}]},{id:'back',type:'side-block',children:[{id:'notes',type:'container-block',children:[{id:'private',type:'standoff-editor-block',text:'PRIVATE_REVERSE_CANARY',standoffProperties:[{id:'secret-property',type:'codex/entity-reference',value:'SECRET_ENTITY',start:0,end:6}]}]}]}]}]}).state;
+ const result=publicProjection(new TextEncoder().encode(nativeText(captureNative(state,'doc'))),profile,'vault',undefined,id=>'b-'+Buffer.from(id).toString('hex'));
+ expect(result.html).toContain('PUBLIC FRONT');expect(JSON.stringify(result)).not.toMatch(/PRIVATE_REVERSE_CANARY|SECRET_ENTITY/);
+});

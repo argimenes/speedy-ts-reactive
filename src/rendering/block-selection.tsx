@@ -1,3 +1,4 @@
+import { surfaceCommands } from '../runtime/block-surfaces';
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { ApplicationSurfacePortal } from "./window-manager";
@@ -134,6 +135,19 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
     nodes.root.classList.toggle("block-is-selected", selected); nodes.button.setAttribute("aria-pressed", String(selected));
     nodes.button.title = `Select Block (${editor.bindings.label("selection.single")}); range: ${editor.bindings.label("selection.range")}; toggle: ${editor.bindings.label("selection.toggle")}. Drag to reorder.`;
   });
+  createEffect(() => {
+    if (!editor.features.reversibleBlocks) return;
+    const mountedBlock=mounted(),node=editor.node(props.nodeKey);
+    if(node)editor.projections.get(node.viewId)?.structureVersion();
+    if(!mountedBlock)return;
+    const {root,button}=mountedBlock;
+    queueMicrotask(() => {
+      if (!root.contains(button)) return;
+      let depth=0;
+      for(let parent=root.parentElement;parent;parent=parent.parentElement)if(parent.matches('.structural-container,.reversible-surface'))depth++;
+      button.style.left=`${-19-depth*20}px`;
+    });
+  });
   return null;
 }
 
@@ -154,6 +168,7 @@ export function BlockSelectionInspector(props: { editor: ReactiveEditor; viewId:
     }}>
       <div><strong role="status">{selection.state.items.length} Block(s) selected</strong><button type="button" onClick={clear}>Clear selection</button></div>
       <div class="block-clipboard-actions"><For each={["copy", "cut", "paste", "delete"]}>{action => <button type="button" disabled={action === "paste" ? !clipboard.available() : !selection.state.items.length} title={props.editor.bindings.label(`selection.${action}`)} onClick={() => clipboard.run(`selection.${action}`)}>{action[0].toUpperCase() + action.slice(1)}</button>}</For></div>
+      <Show when={props.editor.features.reversibleBlocks}><div class="block-structure-actions"><For each={surfaceCommands}>{action=><button type="button" disabled={!props.editor.surfaces.can(action.id,selection.state.leadKey??'')} onClick={()=>props.editor.surfaces.run(action.id,selection.state.leadKey??'')}>{({'surface.flip':'Flip','surface.create':'Create reverse','surface.unwrap':'Unwrap reverse','surface.delete':'Delete reverse','container.group':'Group into Container','container.dissolve':'Dissolve Container'} as Record<string,string>)[action.id]}</button>}</For></div></Show>
       <small>Drag a selected handle to reorder the group. Shift-click: range · Ctrl/Cmd-click: toggle.</small>
       <Show when={selection.state.items.length === 1 && props.editor.blockPresentation.current()}>{contribution =>
         <Dynamic component={contribution().controls} nodeKey={selection.state.items[0].nodeKey} />

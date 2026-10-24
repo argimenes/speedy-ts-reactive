@@ -1,3 +1,4 @@
+import { resourceSurface } from '../interchange/resource-surface';
 import {localSource,type WebFile} from '../web-resources/everyday';
 import {webCandidate} from '../web-resources/registry';
 import {webBlock} from '../web-resources/block';
@@ -291,7 +292,8 @@ export class DocumentInterchange {
   });
  }
  private async commit(fragment:MutableFragment,assets:[string,string][],t:Ticket,signal:AbortSignal,operation:'import'|'convert',prepared?:BlockFragment){
-  const native=prepared??await runInterchange({kind:'materialize',fragment,scope:t.scope,assets},signal);this.check(t);
+  const materialized=prepared??await runInterchange({kind:'materialize',fragment,scope:t.scope,assets},signal);this.check(t);
+  const native=this.editor.features.reversibleBlocks&&operation==='import'?resourceSurface(materialized):materialized;
   if(t.destination)this.editor.commands.insertFragment(native,t.destination,{commandId:'interchange.insert',subjects:[]});
   else {const [result]=this.editor.commands.insertMutableText([{segments:t.segments!,fragment:native,slices:fragment.roots}],false,operation);this.editor.crossText.clear();const node=this.editor.nodeForPlacementInView(result.placementKey,t.viewId!);if(node){this.editor.selections.setPrimary(node.key,node.contentKey,node.viewId,result.caret);queueMicrotask(()=>{if(this.alive){const mount=this.editor.mounts.get(node.key);mount?.focus();mount?.restoreInlineSelection?.({anchor:result.caret,head:result.caret});}});}}
   this.committed=true;

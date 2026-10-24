@@ -55,7 +55,8 @@ describe("workspace demo fixture", () => {
     const editor = createWorkspaceDemoEditor();
     const projection = editor.createView("fixture-test");
     const encoded = editor.encodeDocument();
-    expect(walkDemoBlocks(encoded)).toHaveLength(92);
+    expect(walkDemoBlocks(encoded)).toHaveLength(94); // legacy reverse gains a neutral container and information Block
+    expect(blocks.every(original=>walkDemoBlocks(encoded).some(block=>block.id===original.id))).toBe(true);
     expect(projection.state.nodes[projection.state.rootKey].viewType).toBe("document-block");
     expect(["universe-block", ...workspaceBuilderTypes].every((type) => editor.registry.resolve(type)?.view)).toBe(true);
     editor.dispose();
@@ -110,21 +111,18 @@ describe("WorkspaceDemo", () => {
 
     click(button("Page 1", host));
     click(button("C", host));
-    const surface = host.querySelector(".reactive-flippable")!;
-    const imageSide = surface.querySelector<HTMLElement>("[data-side-label='Image side']")!;
-    const textSide = surface.querySelector<HTMLElement>("[data-side-label='Text side']")!;
-    expect(imageSide.getAttribute("aria-hidden")).toBe("false");
-    expect(textSide.getAttribute("aria-hidden")).toBe("true");
-    click(button("Flip to text side", surface));
-    expect(imageSide.getAttribute("aria-hidden")).toBe("true");
-    expect(textSide.getAttribute("aria-hidden")).toBe("false");
-    expect(surface.querySelectorAll(".reactive-flippable__side")).toHaveLength(2);
-    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe("revision 1");
-
-    surface.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
-    expect(imageSide.getAttribute("aria-hidden")).toBe("false");
-    expect(textSide.getAttribute("aria-hidden")).toBe("true");
-    expect(host.querySelector(".workspace-demo__toolbar span")?.textContent).toBe("revision 2");
+    const surface = host.querySelector(".reversible-surface")!;
+    const [imageSide,textSide]=surface.querySelectorAll<HTMLElement>(':scope > .reversible-face');
+    const revision=host.querySelector('.workspace-demo__toolbar')?.textContent;
+    expect(imageSide.getAttribute('aria-hidden')).toBe('false');expect(textSide.getAttribute('aria-hidden')).toBe('true');
+    click(surface.querySelector<HTMLButtonElement>(':scope > .block-selection-handle')!);
+    click(button('Flip',document.body));
+    expect(imageSide.getAttribute('aria-hidden')).toBe('true');expect(textSide.getAttribute('aria-hidden')).toBe('false');
+    expect(host.querySelector('.workspace-demo__toolbar')?.textContent).toBe(revision);
+    surface.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+    expect(textSide.getAttribute('aria-hidden')).toBe('false'); // double-click belongs to word selection
+    click(button('Flip',document.body));expect(imageSide.getAttribute('aria-hidden')).toBe('false');
+    expect(host.querySelector('.workspace-demo__toolbar')?.textContent).toBe(revision);
   });
 
   it("loads the YouTube player paused by default", () => {

@@ -1,3 +1,4 @@
+import { ReverseInformation } from './reversible-surface';
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import type { BlockViewProps } from '../block-tree/types';
 import { useReactiveView } from '../reactive-editor/context';
@@ -72,8 +73,8 @@ export function SourceBlockView(props:BlockViewProps) {
   <Show when={mode()==='preview'&&preview()}>{value=><div class="mutable-source-preview">
    <div class="mutable-source-frame"><iframe title="Isolated source preview" sandbox="" referrerpolicy="no-referrer" srcdoc={value().srcdoc}/></div>
    <For each={value().warnings}>{warning=><p>{warning}</p>}</For>
-   <Show when={value().resources.length}><details><summary>External resources (not loaded)</summary><ul><For each={value().resources}>{url=><li>{url}</li>}</For></ul></details></Show>
-   <Show when={value().links.length}><details><summary>External links</summary><For each={value().links}>{url=><a href={url} target="_blank" rel="noopener noreferrer">{url}</a>}</For></details></Show>
+   <ReverseInformation nodeKey={props.nodeKey}>   <Show when={value().resources.length}><details><summary>External resources (not loaded)</summary><ul><For each={value().resources}>{url=><li>{url}</li>}</For></ul></details></Show>
+   <Show when={value().links.length}><details><summary>External links</summary><For each={value().links}>{url=><a href={url} target="_blank" rel="noopener noreferrer">{url}</a>}</For></details></Show></ReverseInformation>
   </div>}</Show>
   <Show when={node()?.payload.inactiveSourceAnnotations||Array.isArray(node()?.payload.standoffProperties)&&(node()?.payload.standoffProperties as unknown[]).length}><p>Source annotations are retained as inactive data.</p></Show>
   <ChildBlocks parentKey={props.nodeKey}/>

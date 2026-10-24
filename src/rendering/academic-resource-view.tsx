@@ -1,3 +1,4 @@
+import { ReverseInformation } from './reversible-surface';
 import { academicDerivative } from '../academic/derivative';
 import { AcademicPageBinding } from './academic-page-binding';
 import { AcademicIdentityReview } from './academic-identity-review';
@@ -175,7 +176,7 @@ export function AcademicResourceView(props: BlockViewProps) {
         {(c) => (
           <>
             <h3>{c().projection.title}</h3>
-            <small>{c().format} · retained source · unreviewed metadata</small>
+            <ReverseInformation nodeKey={props.nodeKey}>            <small>{c().format} · retained source · unreviewed metadata</small>
             <details>
               <summary>Source and provenance</summary>
               <p>{c().source}</p>
@@ -218,7 +219,7 @@ export function AcademicResourceView(props: BlockViewProps) {
                 </pre>
               </Show>
               <For each={data()?.diagnostics}>{(d) => <p>{d}</p>}</For>
-            </details>
+            </details></ReverseInformation>
             <Show when={node()?.payload.academicJobId && !node()?.payload.academicArchive}>
               <AcademicIdentityReview
                 ownerKey={props.nodeKey}

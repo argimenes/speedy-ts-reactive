@@ -1,3 +1,4 @@
+import { ReverseInformation } from './reversible-surface';
 import {archivedResourceApi} from '../runtime/archived-resources';
 import {ResourceRelationships} from './resource-relationships';
 import {unwrap} from 'solid-js/store';
@@ -34,11 +35,12 @@ export function IIIFBlockView(props:BlockViewProps){
  function remove(id:string){editor.commands.setPayloadField(props.nodeKey,'blockProperties',(unwrap(node().payload.blockProperties) as any[]).filter(p=>p.id!==id));}
  function Overlay(p:{id:string}){createEffect(()=>{const a=currentAnnotations().find(a=>a.id===p.id),v=viewer();if(a&&v)onCleanup(v.overlay(a.id,a.anchor,a.value));});return null;}
  return <section ref={root} tabindex="0" class="abstract-block mutable-iiif" data-runtime-key={props.nodeKey} data-client-id={props.nodeKey} style={{padding:'12px',border:'1px solid var(--flint-border,#ddd)'}}>
-  <h3>{snapshot()?.label??'IIIF resource'}</h3><p>Captured {snapshot()?.retrievedAt}. Source and image-information captures are immutable; importing again creates a separate occurrence.</p>
+  <ReverseInformation nodeKey={props.nodeKey}>  <h3>{snapshot()?.label??'IIIF resource'}</h3><p>Captured {snapshot()?.retrievedAt}. Source and image-information captures are immutable; importing again creates a separate occurrence.</p>
   <Show when={source()}>{p=><><p>{p().attribution} {p().rights}</p><details><summary>Source and diagnostics</summary><p style={{'overflow-wrap':'anywhere'}}>{snapshot()?.sourceUrl}</p><For each={p().diagnostics}>{d=><p>{d}</p>}</For><Show when={p().kind==='manifest'}><For each={(p() as any).metadata??[]}>{(m:any)=><p>{m.label}: {m.value}</p>}</For></Show></details></>}</Show>
+</ReverseInformation>
   <Show when={!editor.features.iiifResourceLoaders}><p>IIIF viewers are disabled. Saved source references and annotations are preserved.</p></Show>
   <label>Canvas <select aria-label="IIIF canvas" value={selected()} onChange={e=>{close();setSelected(e.currentTarget.value);setStatus('Canvas selected; activate its viewer.');}}><For each={canvases()}>{c=><option value={c.id}>{c.label}</option>}</For></select></label>
-  <Show when={canvas()}>{c=><><p>{c().attribution} {c().rights} {imageNotice()}</p><p>{c().width} × {c().height} canvas units. <For each={c().diagnostics}>{d=><span>{d} </span>}</For></p>
+  <Show when={canvas()}>{c=><><ReverseInformation nodeKey={props.nodeKey}><p>{c().attribution} {c().rights} {imageNotice()}</p><p>{c().width} × {c().height} canvas units. <For each={c().diagnostics}>{d=><span>{d} </span>}</For></p></ReverseInformation>
    <Show when={c().service}><p>Online activation sends image-region requests to {new URL(c().service!).origin}. No cookies or credentials are forwarded.</p><Show when={!archive}><button disabled={busy()} onClick={()=>void activate(true)}>Activate online viewer</button></Show>{' '}<button disabled={busy()} onClick={()=>void activate(false)}>Open retained / cached tiles only</button></Show>
   </>}</Show>
   <button onClick={close}>Close / cancel viewer</button><p role="status">{status()}</p>
@@ -51,6 +53,6 @@ export function IIIFBlockView(props:BlockViewProps){
    <label>Note <input aria-label="Spatial note" value={note()} maxlength={4000} onInput={e=>setNote(e.currentTarget.value)}/></label><button disabled={!note().trim()||!editor.features.iiifResourceLoaders} onClick={saveNote}>Add spatial annotation</button>
    <For each={currentAnnotations()}>{a=><p>{a.value} <button aria-label={`Delete annotation ${a.value}`} onClick={()=>remove(a.id)}>Delete</button></p>}</For>
   </details></Show>
- <Show when={!archive}><ResourceRelationships ownerKey={props.nodeKey} snapshotId={snapshot()?.snapshotId}/></Show>
+ <Show when={!archive}><ReverseInformation nodeKey={props.nodeKey}><ResourceRelationships ownerKey={props.nodeKey} snapshotId={snapshot()?.snapshotId}/></ReverseInformation></Show>
  </section>;
 }

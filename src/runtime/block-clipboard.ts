@@ -42,6 +42,7 @@ export class BlockClipboardService {
   remove(cut: boolean, acknowledged = false) {
     if (cut && this.editor.features.mutableClipboard && !acknowledged) { this.editor.clipboard.handleBlocks('selection.cut'); return; }
     const selection = this.editor.blockSelection, items = selection.actionTargets(); if (!items.length) return;
+    if (!cut && !this.editor.surfaces.confirmDelete(items.map(item=>item.nodeKey))) return;
     const state = this.editor.repository.readState(), location = deriveLocations(state).get(items[0].placementKey);
     if (!location || location.slot.kind !== "children") throw new Error("Select Blocks in a child list.");
     const parent = Object.values(state.placements).find(p => p.contentKey === location.ownerContentKey)!;

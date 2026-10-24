@@ -1,3 +1,5 @@
+import { ReversibleSurfaceView, ResourceInformationView } from './reversible-surface';
+import { surfaceCommands } from '../runtime/block-surfaces';
 import {WebResourceView} from './web-resource-view';
 import {WEB_BLOCK} from '../web-resources/model';
 import {AcademicResourceView} from './academic-resource-view';
@@ -59,6 +61,8 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
   many(editor, ['mutable/iiif-manifest-block','mutable/iiif-image-block'], IIIFBlockView, ['selectable','opaque-widget']);
   many(editor, ['mutable/web-article-block'], WebArticleBlockView, ['selectable','opaque-widget']);
   many(editor, ['mutable/citation-block'], CitationBlockView, ['selectable','opaque-widget']);
+  many(editor, ['resource-information-block'], ResourceInformationView, ['container','selectable']);
+  if(editor.features.reversibleBlocks)for(const action of surfaceCommands)editor.commandRegistry.register({id:action.id,label:action.name,canExecute:({targetKey})=>editor.surfaces.can(action.id,targetKey),execute:({targetKey,args})=>editor.surfaces.run(action.id,targetKey,(args as any)?.invocation)});
   registerTextSuperpositionCommands(editor);
   editor.registry.register({ type: "workspace-object-bank-block", view: WorkspaceObjectBankView, capabilities: ["container"] });
   editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: documentView, capabilities: ["container", "selectable"] });
@@ -72,7 +76,7 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
   editor.registry.register({ type: "document-reference-block", view: DocumentReferenceView, capabilities: ["reference-placeholder", "selectable"] });
 
   many(editor, ["universe-block", "workspace-block", "root-block", "container-block", "book-block", "fixed-size-page-block", "side-block", "embed-document-block", "entities-list-block", "context-menu-block", "control-panel-block", "monitor-block", "left-margin-block", "right-margin-block", "error-block", "unknown-block"], GenericContainerView, ["container", "selectable"]);
-  many(editor, ["surface-block"], FlippableSurfaceView, ["container", "sides", "selectable"]);
+  many(editor, ["surface-block"], editor.features.reversibleBlocks ? ReversibleSurfaceView : FlippableSurfaceView, ["container", "sides", "selectable"]);
   many(editor, ["canvas-block"], CanvasPreviewView, ["container", "canvas-preview", "selectable"]);
   many(editor, ["page-block"], PageView, ["container", "selectable"]);
   many(editor, ["indented-list-block"], ListView, ["container", "selectable"]);
@@ -109,6 +113,6 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
     id: "block.remove",
     label: "Remove Block",
     canExecute: ({ targetKey }) => targetKey !== editor.projections.values().next().value?.state.rootKey,
-    execute: ({ targetKey }) => editor.commands.remove(targetKey),
+    execute: ({ targetKey }) => { const key=editor.surfaces.wholeBlockKey(targetKey); if(editor.surfaces.confirmDelete([key]))editor.commands.remove(key); },
   });
 }

@@ -1,0 +1,50 @@
+[
+  {
+    "key": "y",
+    "modifiers": [
+      "Ctrl",
+      "Meta"
+    ],
+    "conflicts": []
+  },
+  {
+    "key": "y",
+    "modifiers": [
+      "Ctrl",
+      "Shift"
+    ],
+    "conflicts": []
+  },
+  {
+    "key": "k",
+    "modifiers": [
+      "Ctrl",
+      "Meta"
+    ],
+    "conflicts": []
+  },
+  {
+    "key": "k",
+    "modifiers": [
+      "Ctrl",
+      "Shift"
+    ],
+    "conflicts": []
+  },
+  {
+    "key": "u",
+    "modifiers": [
+      "Ctrl",
+      "Meta"
+    ],
+    "conflicts": []
+  },
+  {
+    "key": "u",
+    "modifiers": [
+      "Ctrl",
+      "Shift"
+    ],
+    "conflicts": []
+  }
+]

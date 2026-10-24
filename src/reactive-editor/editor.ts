@@ -1,3 +1,5 @@
+import { upgradeLegacySurfaces } from '../interchange/legacy-surfaces';
+import { BlockSurfaces } from '../runtime/block-surfaces';
 import { sourceTextTypes } from '../knowledge/policy';
 import { ManagedAssets, type AssetContext } from '../runtime/managed-assets';
 import { DocumentInterchange } from '../runtime/document-interchange';
@@ -68,6 +70,7 @@ import { resolveFeatureFlags, type FeatureFlags, type ReactiveEditorConfiguratio
 import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
+  readonly surfaces = new BlockSurfaces(this);
   completionInput?: import("../input/gateway").CompletionInput;
   /** WorkspaceSession owns this runtime-only store; absent in legacy/isolated editors. */
   documentSessions?: import("../application/document-sessions").DocumentSessionStore;
@@ -153,7 +156,7 @@ export class ReactiveEditor {
     const loadedWorkspace = "state" in dto && "references" in dto ? dto as LoadedWorkspace : undefined;
     if ((loadedWorkspace?.localContainer || loadedWorkspace?.manifest?.schemaVersion === 2) && !this.features.mutableWindowManager) throw new Error("Enable the Mutable Window Manager to open a managed Workspace.");
     const decoded = loadedWorkspace ? { state: loadedWorkspace.state } : isHistoryDocument(dto) ? decodeHistoryDocument(dto) : decodeBlockTree(dto as ExistingBlockDto);
-    this.repository = new CanonicalRepository(decoded.state);
+    this.repository = new CanonicalRepository(this.features.reversibleBlocks ? upgradeLegacySurfaces(decoded.state) : decoded.state);
     this.annotationIdentities = new AnnotationIdentities(this.repository);
     registerVisualEffectRenderers(this.visualEffects);
     registerFocusFade(this.visualEffects);
@@ -244,6 +247,7 @@ export class ReactiveEditor {
       viewId,
       this.occurrences,
       rootPlacementKey,
+      this.features.reversibleBlocks,
     );
     this.projections.set(viewId, projection);
     return projection;
@@ -349,6 +353,7 @@ export class ReactiveEditor {
       { setCaret: this.setCaret, setComposing: value => this.caretModes.setComposing(value) },
       this.clipboard,
       () => this.completionInput,
+      key => { const target=this.surfaces.wholeBlockKey(key); return this.surfaces.confirmDelete([target])?target:undefined; },
     );
     const dispose = this.gateway.install();
     const crossInput = this.crossInput;

@@ -82,6 +82,8 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   if(--budget<0)throw Error('Export traversal limit exceeded.');
   const b=get(edge);if(!b){warn('external-block','Out-of-document Blocks remain unresolved links.');return '[Unresolved Block]';}
   if(seen.has(b.localId)){warn('repeated-block','Repeated or cyclic Block bodies are exported once.');return format==='html'?`<a href="#${escapeHtml(b.localId)}">Repeated Block</a>`:'[Repeated Block]';}seen.add(b.localId);
+  if(b.type==='resource-information-block'){warn('private-reverse','Resource information is excluded from reading exports.');return '';}
+  if(b.type==='surface-block'){warn('private-reverse','Reverse faces are excluded from reading exports.');return b.children[0]?visit(b.children[0]):'';}
   if(b.data.packageAuthoredSource)warn('authored-value-preserved','Non-JSON authored values are preserved in an inactive native-codec carrier and are not used for presentation.');
   const meta=b.data.metadata as any??{},children=()=>b.children.map(visit).join(format==='html'?'':format==='text'?'\n':'\n\n');
   let result='';
@@ -128,7 +130,7 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   else if(['table-cell-block','grid-cell-block'].includes(b.type)){
    const cell=meta.htmlTableCell??{},tag=cell.header?'th':'td';if(cell.colSpan>1||cell.rowSpan>1)warn('table-spans','Merged table layout was previously flattened; span metadata is not reapplied.');
    result=format==='html'?`<${tag}>${children()}</${tag}>`:children();
-  }else if(['document-block','container-block','book-block'].includes(b.type))result=format==='html'?`<div id="${escapeHtml(b.localId)}">${children()}</div>`:children();
+  }else if(['document-block','container-block','book-block','side-block'].includes(b.type))result=format==='html'?`<div id="${escapeHtml(b.localId)}">${children()}</div>`:children();
   else {warn('block-fallback',`Presentation of ${b.type} is flattened or represented by a label.`);const label=`[${b.type}]`;result=(format==='html'?`<p id="${escapeHtml(b.localId)}">${escapeHtml(label)}</p>`:format==='markdown'?md(label):label)+(b.inline?inline(b):'')+children();}
   for(const [name,relation]of Object.entries(b.relations)){warn('relation-layout',`Related ${name} content is exported after its owner.`);result+=(format==='html'?`<aside><p>${escapeHtml(name)}</p>${visit(relation)}</aside>`:`\n\n[${format==='markdown'?md(name):name}]\n${visit(relation)}`);}
   return result;

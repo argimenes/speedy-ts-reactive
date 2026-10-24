@@ -1,3 +1,4 @@
+import { ReverseInformation } from './reversible-surface';
 import { WindowRestorationBoundary } from "./window-restoration";
 import { createWindowMaximize } from "./window-maximize";
 import { ManagedWindowFrame, RetainedWindowBody, useManagedWindowOwner } from "./window-manager";
@@ -58,7 +59,7 @@ export function GenericContainerView(props: BlockViewProps) {
   return (
     <div
       ref={root}
-      class={`abstract-block reactive-generic-block ${appearance().classes.join(" ")}`}
+      class={`abstract-block reactive-generic-block ${(node()?.payload.metadata as any)?.structuralContainer ? "structural-container" : ""} ${appearance().classes.join(" ")}`}
       style={{ ...appearance().style, ...(node()?.viewType === "container-block" && (node()?.payload.metadata as any)?.height ? { height: `${Number((node()?.payload.metadata as any).height)}px`, "overflow-y": "auto" } : {}) }}
       tabIndex={-1}
       {...data(props.nodeKey, node)}
@@ -422,7 +423,7 @@ export function IframeView(props: BlockViewProps) {
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
   return <div ref={root} class="abstract-block reactive-iframe" tabIndex={-1} {...data(props.nodeKey, node)}>
-    <Show when={resource()}><p><a href={url()} target="_blank" rel="noopener noreferrer">Open externally ↗</a> · Some sites do not permit embedding.</p></Show>
+    <ReverseInformation nodeKey={props.nodeKey}><Show when={resource()}><p><a href={url()} target="_blank" rel="noopener noreferrer">Open externally ↗</a> · Some sites do not permit embedding.</p></Show></ReverseInformation>
     <iframe src={url()} title={String(metadata()?.title ?? "Embedded content")}
       sandbox={resource() ? 'allow-scripts allow-forms allow-presentation' : undefined}
       referrerpolicy={resource() ? 'no-referrer' : undefined}

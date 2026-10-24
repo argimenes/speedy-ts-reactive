@@ -14,14 +14,14 @@ export function VideoBlockView(props:BlockViewProps & { loadOnMount?: boolean })
   const release=editor.interchange.registerVideo(projection.viewId,()=>setActive(false));onCleanup(release);
   // Observe only presentation changes on the finite ancestor chain, never text mutations.
   const ancestors:Element[]=[];for(let e:Element|null=root;e;e=e.parentElement)ancestors.push(e);
-  const hide=()=>{if(ancestors.some(e=>e.hasAttribute('hidden')||e.getAttribute('aria-hidden')==='true'||e.getAttribute('data-view')==='graph'))setActive(false);};
+  const hide=()=>{if(ancestors.some(e=>e.hasAttribute('hidden')||e.getAttribute('aria-hidden')==='true'&&!e.hasAttribute('data-surface-face')||e.getAttribute('data-view')==='graph'))setActive(false);};
   const observer=new MutationObserver(hide);ancestors.forEach(e=>observer.observe(e,{attributes:true,attributeFilter:['hidden','aria-hidden','data-view']}));
   const visibility=()=>{if(document.hidden)setActive(false);};document.addEventListener('visibilitychange',visibility);hide();
   onCleanup(()=>{observer.disconnect();document.removeEventListener('visibilitychange',visibility);});
  });
  return <div ref={root} tabindex="0" class="abstract-block mutable-video-block" data-runtime-key={props.nodeKey} data-client-id={props.nodeKey} data-block-type={node()?.viewType ?? 'mutable/video-block'}>
   <Show when={video()} fallback={<p>Unsupported video descriptor. Original data retained; no player loaded.</p>}>{v=><>
-   <Show when={active()}><button onClick={()=>setActive(!active())}>{active()?'':'Load player — connect to provider'}</button><iframe title={v().title??`${v().provider} video player`} src={playerUrl(v())} sandbox="allow-scripts allow-same-origin allow-presentation" allow="fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style={{display:'block',width:'100%','max-width':'960px','min-height':'200px','aspect-ratio':'16 / 9',border:'0'}}/></Show>
+   <button onClick={()=>setActive(!active())}>{active()?'Stop player':'Load player — connect to provider'}</button><Show when={active()}><iframe title={v().title??`${v().provider} video player`} src={playerUrl(v())} sandbox="allow-scripts allow-same-origin allow-presentation" allow="fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style={{display:'block',width:'100%','max-width':'960px','min-height':'200px','aspect-ratio':'16 / 9',border:'0'}}/></Show>
   </>}</Show>
  </div>;
 }

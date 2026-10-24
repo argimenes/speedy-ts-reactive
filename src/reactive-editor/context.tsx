@@ -1,4 +1,5 @@
-import { createContext, useContext, type ParentComponent } from "solid-js";
+import { RetainedBlockOutlets } from '../rendering/retained-block-outlets';
+import { createContext, useContext, onCleanup, type ParentComponent } from "solid-js";
 import type { BlockTreeProjection } from "../block-tree/projection";
 import type { ReactiveEditor } from "./editor";
 import type { NodeKey } from "../block-tree/types";
@@ -6,6 +7,7 @@ import { identityCoordinates, type LocalCoordinates } from "../runtime/local-coo
 import type { WindowGeometryHost } from "../rendering/window-geometry";
 
 interface ReactiveViewContextValue {
+  retainedBlocks?: RetainedBlockOutlets;
   editor: ReactiveEditor;
   projection: BlockTreeProjection;
   coordinates?: LocalCoordinates;
@@ -15,11 +17,13 @@ interface ReactiveViewContextValue {
 
 const ReactiveViewContext = createContext<ReactiveViewContextValue>();
 
-export const ReactiveViewProvider: ParentComponent<ReactiveViewContextValue> = (props) => (
-  <ReactiveViewContext.Provider value={{ editor: props.editor, projection: props.projection, coordinates: props.coordinates ?? identityCoordinates, windowGeometry: props.windowGeometry, activity: props.activity }}>
+export const ReactiveViewProvider: ParentComponent<ReactiveViewContextValue> = (props) => {
+  const retainedBlocks = props.editor.features.reversibleBlocks ? new RetainedBlockOutlets() : undefined;
+  onCleanup(() => retainedBlocks?.dispose());
+  return <ReactiveViewContext.Provider value={{ retainedBlocks, editor: props.editor, projection: props.projection, coordinates: props.coordinates ?? identityCoordinates, windowGeometry: props.windowGeometry, activity: props.activity }}>
     {props.children}
-  </ReactiveViewContext.Provider>
-);
+  </ReactiveViewContext.Provider>;
+};
 
 export function useReactiveView(): ReactiveViewContextValue {
   const context = useContext(ReactiveViewContext);

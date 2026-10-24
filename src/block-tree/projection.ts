@@ -1,3 +1,4 @@
+import { createSignal } from 'solid-js';
 import { createStore, reconcile, unwrap } from "solid-js/store";
 import { clone } from "./clone";
 import { createNodeKey } from "./ids";
@@ -14,6 +15,16 @@ import type {
 } from "./types";
 
 export class BlockTreeProjection {
+  private readonly topology = createSignal(0);
+  readonly structureVersion = this.topology[0];
+  /** Reuse the existing occurrence route index for bounded ancestor navigation. */
+  parentOf(key: NodeKey): BlockNode | undefined {
+    this.structureVersion();
+    const route = this.nodeRoutes.get(key);
+    if (!route || !route.includes('/')) return;
+    const parent = this.routeKeys.get(route.slice(0, route.lastIndexOf('/')));
+    return parent ? this.state.nodes[parent] : undefined;
+  }
   readonly state: BlockTreeState;
   private readonly setState: (...args: any[]) => void;
   private readonly routeKeys = new Map<string, NodeKey>();
@@ -28,6 +39,7 @@ export class BlockTreeProjection {
     readonly viewId: ViewId,
     private readonly occurrences: OccurrenceIndex,
     readonly rootPlacementKey: PlacementKey = repository.state.rootPlacementKey,
+    private readonly retainStructuralIdentity = false,
   ) {
     const initial = this.build();
     const [state, setState] = createStore(initial);
@@ -65,6 +77,7 @@ export class BlockTreeProjection {
       this.unregister();
       this.setState(reconcile(next));
       this.register(next);
+      this.topology[1](v => v + 1);
     });
   }
 
@@ -157,7 +170,37 @@ export class BlockTreeProjection {
       return key;
     };
 
-    const rootKey = project(rootPlacementKey, rootRoute, ancestors);
+    let rootKey = project(rootPlacementKey, rootRoute, ancestors);
+    // Structural edits may change the route of an existing, unique occurrence.
+    // Reuse its identity only when BOTH projections contain exactly one instance
+    // of that placement. Shared/reference occurrences must never be conflated.
+    // This runs on structural rebuilds, never on the inline typing path.
+    if (this.retainStructuralIdentity && rootRoute === "root" && this.registeredKeys.size) {
+      const byPlacement = new Map<PlacementKey, NodeKey[]>();
+      for (const node of Object.values(nodes)) {
+        const keys = byPlacement.get(node.placementKey) ?? [];
+        keys.push(node.key); byPlacement.set(node.placementKey, keys);
+      }
+      const moves = new Map<NodeKey, NodeKey>();
+      for (const [placement, next] of byPlacement) {
+        const previous = this.placementNodes.get(placement);
+        if (next.length !== 1 || previous?.size !== 1) continue;
+        const old = previous.values().next().value!;
+        if (old !== next[0] && !nodes[old]) moves.set(next[0], old);
+      }
+      const keyFor = (key: NodeKey) => moves.get(key) ?? key;
+      for (const [fresh, old] of moves) {
+        const route = this.nodeRoutes.get(fresh)!, oldRoute = this.nodeRoutes.get(old);
+        if (oldRoute && this.routeKeys.get(oldRoute) === old) this.routeKeys.delete(oldRoute);
+        this.routeKeys.set(route, old); this.nodeRoutes.set(old, route); this.nodeRoutes.delete(fresh);
+        nodes[old] = { ...nodes[fresh], key: old }; delete nodes[fresh];
+      }
+      if (moves.size) for (const node of Object.values(nodes)) {
+        node.children = node.children.map(keyFor); node.inlineContent = node.inlineContent.map(keyFor);
+        node.ownedRelations = Object.fromEntries(Object.entries(node.ownedRelations).map(([name, key]) => [name, keyFor(key)]));
+      }
+      rootKey = keyFor(rootKey);
+    }
     return { rootKey, nodes, revision: snapshot.revision };
   }
 
@@ -295,6 +338,8 @@ export class BlockTreeProjection {
   node(key: NodeKey): BlockNode | undefined {
     return this.state.nodes[key];
   }
+
+  occurrenceCount(placementKey: PlacementKey): number { return this.placementNodes.get(placementKey)?.size ?? 0; }
 
   nodeForPlacement(placementKey: PlacementKey): BlockNode | undefined {
     const key = this.placementNodes.get(placementKey)?.values().next().value;

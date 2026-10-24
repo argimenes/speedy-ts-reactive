@@ -1,3 +1,4 @@
+import { resourceSurface } from '../interchange/resource-surface';
 import {webCandidate} from '../web-resources/registry';
 import {academicIdentifier,academicJob} from '../academic/identifiers';
 import {pdfInput} from '../pdf/model';
@@ -327,7 +328,7 @@ export class MutableClipboard {
     this.notify('Acquiring managed PDF…');this.asyncTask(async()=>{
       const signal=this.importController!.signal;const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; PDF insertion cancelled. The original may have been retained.');};check();
       const api=new HttpApplicationServices(()=>{const c=this.context();if(!c?.cavernId||!c.session)throw Error('Open a Vault before importing a PDF');return {cavernId:c.cavernId,session:c.session};});
-      const result=await api.call('pdf.import',{id:crypto.randomUUID(),source},signal);check();const prepared=pdfBlock(result.snapshot,source);this.insert(bookmark,prepared.fragment,false,[prepared.native]);this.notify('Pasted retained PDF. Open its local viewer; save to retain this occurrence.');
+      const result=await api.call('pdf.import',{id:crypto.randomUUID(),source},signal);check();const prepared=pdfBlock(result.snapshot,source);this.insert(bookmark,prepared.fragment,false,[this.editor.features.reversibleBlocks ? resourceSurface(prepared.native) : prepared.native]);this.notify('Pasted retained PDF. Open its local viewer; save to retain this occurrence.');
     });
   }
   private pasteIIIF(bookmark:Bookmark,source:string,event:Event,cross:boolean){
@@ -335,7 +336,7 @@ export class MutableClipboard {
     this.notify('Capturing IIIF source…');this.asyncTask(async()=>{
       const signal=this.importController!.signal;const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; IIIF insertion cancelled. Captured sources may have been retained.');};
       check();const api=new HttpApplicationServices(()=>{const c=this.context();if(!c?.cavernId||!c.session)throw Error('Open a Vault before importing IIIF');return {cavernId:c.cavernId,session:c.session};});
-      const result=await api.call('iiif.import',{id:crypto.randomUUID(),source},signal);check();const prepared=iiifBlock(result.snapshot,source);this.insert(bookmark,prepared.fragment,false,[prepared.native]);this.notify('Pasted IIIF source. Activate its viewer to load remote tiles. Save to retain this occurrence.');
+      const result=await api.call('iiif.import',{id:crypto.randomUUID(),source},signal);check();const prepared=iiifBlock(result.snapshot,source);this.insert(bookmark,prepared.fragment,false,[this.editor.features.reversibleBlocks ? resourceSurface(prepared.native) : prepared.native]);this.notify('Pasted IIIF source. Activate its viewer to load remote tiles. Save to retain this occurrence.');
     });
   }
   private pasteWikipedia(bookmark:Bookmark,source:string,event:Event,cross:boolean){
@@ -343,7 +344,7 @@ export class MutableClipboard {
     this.notify('Capturing Wikipedia revision…');this.asyncTask(async()=>{
       const signal=this.importController!.signal;const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; article insertion cancelled. Captured knowledge may have been retained.');};
       check();const api=new HttpApplicationServices(()=>{const c=this.context();if(!c?.cavernId||!c.session)throw Error('Open a Vault before importing an article');return {cavernId:c.cavernId,session:c.session};});
-      const result=await api.call('encyclopedia.import',{id:crypto.randomUUID(),source},signal);check();const prepared=webArticleBlock(result,source);check();this.insert(bookmark,prepared.fragment,false,[prepared.native]);this.notify('Pasted captured article. Save the document to retain this occurrence.');
+      const result=await api.call('encyclopedia.import',{id:crypto.randomUUID(),source},signal);check();const prepared=webArticleBlock(result,source);check();this.insert(bookmark,prepared.fragment,false,[this.editor.features.reversibleBlocks ? resourceSurface(prepared.native) : prepared.native]);this.notify('Pasted captured article. Save the document to retain this occurrence.');
     });
   }
   private pasteAcademic(bookmark:Bookmark,source:string,event:Event,cross:boolean){
@@ -354,7 +355,7 @@ export class MutableClipboard {
       const check=()=>{signal.throwIfAborted();if(!this.valid(bookmark,event,cross))throw Error('Destination changed; citation insertion cancelled. Canonical metadata may have been retained.');};
       check();const api=new HttpApplicationServices(()=>{const scope=this.context();if(!scope?.cavernId||!scope.session)throw Error('Open a Vault before importing a DOI');return {cavernId:scope.cavernId,session:scope.session};});
       const result=await api.call('academic.import',{id,source},signal);check();
-      const prepared=citationBlock(result.citation,source);check();this.insert(bookmark,prepared.fragment,false,[prepared.native]);
+      const prepared=citationBlock(result.citation,source);check();this.insert(bookmark,prepared.fragment,false,[this.editor.features.reversibleBlocks ? resourceSurface(prepared.native) : prepared.native]);
       this.notify('Pasted citation. Save the document to retain this occurrence.');
     });
   }
@@ -373,7 +374,7 @@ export class MutableClipboard {
         await this.assets.action(lease, 'publish', signal); check();
       }
       const prepared = resourceBlock(sourceUrl, image); check();
-      this.insert(bookmark, prepared.fragment, false, [prepared.native]);
+      this.insert(bookmark, prepared.fragment, false, [this.editor.features.reversibleBlocks ? resourceSurface(prepared.native) : prepared.native]);
       this.notify(`Pasted ${resource.video ? `${resource.video.provider === 'youtube' ? 'YouTube' : 'Vimeo'} player` : resource.kind === 'image' ? 'image' : 'web page'} Block.`);
     });
   }

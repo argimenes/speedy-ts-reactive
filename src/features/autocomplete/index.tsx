@@ -1,3 +1,4 @@
+import { surfaceCommands } from '../../runtime/block-surfaces';
 import {ProvisionalCells} from './provisional-cells';
 import type { ReactiveEditor } from '../../reactive-editor/editor';
 import type { CodexFeature } from '../../feature-api';
@@ -91,6 +92,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     documentEntities:()=>[], // Entity inventory and search belong to LER.
     documents:async()=>{const pool=await completionDocuments(editor,source.nodeKey).completionTargets();return pool.sources.map(t=>({id:t.documentId,name:t.title,reason:`Document · ${t.location}`,data:t}));},
     commands:()=>[
+     ...(editor.features.reversibleBlocks?surfaceCommands:[]),
      {id:'entity',name:'entity',reason:'Resolve an Entity or create explicitly'},
      {id:'link',name:'link',reason:'Reference an available native Document'},
      {id:'entity.list.open',name:'backlinks',reason:'Open the current Document Entity references'},
@@ -110,6 +112,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     },
     reference:async(s,c,label)=>{const k=completionDocuments(editor,s.nodeKey),token=k.selection(editor.textRanges.snapshot(s.nodeKey,s.start,s.end));await k.createReference(token,c.data as DocumentTarget,label,()=>session.alive&&valid(s));restore(s,s.start+[...label].length);},
     command:(s,id)=>{
+     if(surfaceCommands.some(c=>c.id===id)){queueMicrotask(()=>{if(valid(s))editor.surfaces.run(id,s.nodeKey,{nodeKey:s.nodeKey,start:s.start,end:s.end,version:s.version});});return;}
      if(id==='entity'||id==='link') {queueMicrotask(()=>open(s,id==='entity'?'entity':'document',''));return;}
      if(id==='date'){const now=new Date(),label=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;editor.commands.replaceInlineRange(s.nodeKey,s.start,s.end,label);restore(s,s.start+label.length);return;}
      if(!editor.commandRegistry.canExecute(id,{targetKey:s.nodeKey,args:undefined}))throw Error('Action unavailable');

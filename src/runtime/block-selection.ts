@@ -12,7 +12,7 @@ export interface SelectedBlock {
   type: string;
 }
 export type BlockSelectionMode = "single" | "toggle" | "range" | "add-range";
-const shells = new Set(["document-block", "main-list-block", "membrane-block", "root-block", "workspace-block", "universe-block", "page-block", "fixed-size-page-block", "window-block", "document-window-block", "tab-block", "document-tab-block", "sticky-tab-block", "document-tab-row-block", "sticky-tab-row-block", "table-row-block", "grid-row-block", "table-cell-block", "grid-cell-block", "left-margin-block", "right-margin-block"]);
+const shells = new Set(["side-block","document-block", "main-list-block", "membrane-block", "root-block", "workspace-block", "universe-block", "page-block", "fixed-size-page-block", "window-block", "document-window-block", "tab-block", "document-tab-block", "sticky-tab-block", "document-tab-row-block", "sticky-tab-row-block", "table-row-block", "grid-row-block", "table-cell-block", "grid-cell-block", "left-margin-block", "right-margin-block"]);
 
 /** Occurrence-local UI state. No canonical repository writes or document snapshots. */
 export class BlockSelectionService {
@@ -103,7 +103,7 @@ export class BlockSelectionService {
   }
   /** Future structural commands should consume these, avoiding parent/child duplication. */
   actionTargets(): SelectedBlock[] {
-    const items = this.snapshot(); if (!items.length) return [];
+    const items = this.snapshot().map(item => { const node=this.editor.node(this.editor.surfaces.wholeBlockKey(item.nodeKey)); return node?this.entry(node):item; }); if (!items.length) return [];
     const selected = new Set(items.map(item => item.nodeKey)), parents = this.parents(items[0].viewId);
     const placements = new Set<string>();
     return items.filter(item => {

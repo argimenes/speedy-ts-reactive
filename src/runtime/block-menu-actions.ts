@@ -36,6 +36,8 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   };
   const remove = (target: NodeKey) => {
     if (target === root) throw new Error("The root Block cannot be deleted.");
+    target=editor.surfaces.wholeBlockKey(target);
+    if (!editor.surfaces.confirmDelete([target])) return;
     const fallback = editor.focusFallback(target);
     editor.commands.remove(target); editor.focus.clearRemoved(target);
     if (fallback) focus(fallback);

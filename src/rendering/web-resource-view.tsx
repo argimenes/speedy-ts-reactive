@@ -1,3 +1,4 @@
+import { ReverseInformation } from './reversible-surface';
 import {everydayFrame,isLocalSource} from "../web-resources/everyday";
 import {
   createMemo,
@@ -278,7 +279,7 @@ export function WebResourceView(props: BlockViewProps) {
                 Show retained thumbnail
               </button>
             </Show>
-            <For each={p()?.diagnostics}>
+            <ReverseInformation nodeKey={props.nodeKey}><For each={p()?.diagnostics}>
               {(d) => <p style={{ "font-size": ".9em" }}>{d}</p>}
             </For>
             <Show when={!isLocalSource(c().source)}><p>
@@ -301,7 +302,7 @@ export function WebResourceView(props: BlockViewProps) {
               >
                 Copy link
               </button>
-            </p></Show>
+            </p></Show></ReverseInformation>
             <Show when={p()?.location || socialEmbed(c()) || blueskyFrame(c()) || editor.features.everydayWebResources&&everydayFrame(c())}>
               <Show
                 when={!src() && !srcdoc()}
@@ -349,12 +350,12 @@ export function WebResourceView(props: BlockViewProps) {
                 }
                 style={{ width: "100%", height: "440px", border: "0" }}
               />
-              <p>
+              <ReverseInformation nodeKey={props.nodeKey}><p>
                 Provider content may be blocked or unavailable. The captured
-                preview and original link remain above.
-              </p>
+                preview remains on the front; the original link is on the reverse.
+              </p></ReverseInformation>
             </Show>
-            <details>
+            <ReverseInformation nodeKey={props.nodeKey}>            <details>
               <summary>Source and capture</summary>
               <p>{c().source}</p>
               <Show when={p()?.canonicalUrl}>
@@ -377,7 +378,7 @@ export function WebResourceView(props: BlockViewProps) {
               >
                 Capture again…
               </button></Show>
-            </details>
+            </details></ReverseInformation>
           </>
         )}
       </Show>

@@ -1,3 +1,4 @@
+import { ReverseInformation } from './reversible-surface';
 import {createEffect,createMemo,createSignal,For,Show,onCleanup,onMount} from 'solid-js';
 import {useReactiveView} from '../reactive-editor/context';
 import type {BlockViewProps} from '../block-tree/types';
@@ -27,12 +28,12 @@ export function StructuredResourceView(props:BlockViewProps){
  });
  async function copy(){try{await navigator.clipboard.writeText(data()?.text??'');if(alive)setStatus('Source copied.');}catch{if(alive)setStatus('Clipboard unavailable. Select and copy from Source.');}}
  return <section ref={root} tabindex="0" class="abstract-block structured-resource" data-runtime-key={props.nodeKey} data-client-id={props.nodeKey}>
-  <div class="structured-toolbar"><strong>{data()?.meta.filename??'Resource'}</strong><small>read-only</small><label>View <select aria-label="Resource presentation" value={format()} onChange={e=>{setFormat(e.currentTarget.value as Presentation);setSource(false);}}><option value="json">JSON tree</option><option value="yaml">YAML tree</option><option value="csv">CSV table</option><option value="tsv">TSV table</option><option value="source">Source</option><option value="mermaid">Mermaid diagram</option></select></label>
+  <div class="structured-toolbar"><ReverseInformation nodeKey={props.nodeKey}><strong>{data()?.meta.filename??'Resource'}</strong><small>read-only</small></ReverseInformation><label>View <select aria-label="Resource presentation" value={format()} onChange={e=>{setFormat(e.currentTarget.value as Presentation);setSource(false);}}><option value="json">JSON tree</option><option value="yaml">YAML tree</option><option value="csv">CSV table</option><option value="tsv">TSV table</option><option value="source">Source</option><option value="mermaid">Mermaid diagram</option></select></label>
    <Show when={format()!=='source'}><button aria-pressed={source()} onClick={()=>setSource(v=>!v)}>{source()?'Structured':'Source'}</button></Show><button onClick={()=>void copy()}>Copy source</button>
    <Show when={source()||format()==='source'}><label>Language <select aria-label="Source language" value={language()} onChange={e=>setLanguage(e.currentTarget.value)}><option>Auto</option><For each={languages()}>{l=><option>{l}</option>}</For></select></label><label><input type="checkbox" checked={wrap()} onChange={e=>setWrap(e.currentTarget.checked)}/>Wrap</label></Show>
   </div>
   <Show when={status()}><p role="status">{status()}</p></Show><div ref={display}/>
-  <Show when={parsed()?.tree}>{tree=><div class="structured-scroll"><Branch label="$" node={tree()}/></div>}</Show>
-  <Show when={parsed()?.rows}>{table=><><label><input type="checkbox" checked={header()} onChange={e=>setHeader(e.currentTarget.checked)}/>First row is a header</label><div class="structured-scroll"><table><Show when={header()}><thead><tr><For each={table()[0]}>{cell=><th scope="col">{cell}</th>}</For></tr></thead></Show><tbody><For each={table().slice(header()?1:0,rows())}>{row=><tr><For each={row}>{cell=><td>{cell}</td>}</For></tr>}</For></tbody></table></div><Show when={table().length>rows()}><button onClick={()=>setRows(n=>n+100)}>Show next 100 rows ({table().length} total)</button></Show></>}</Show>
+  <Show when={parsed()?.tree}>{tree=><div data-retain-scroll="" class="structured-scroll"><Branch label="$" node={tree()}/></div>}</Show>
+  <Show when={parsed()?.rows}>{table=><><label><input type="checkbox" checked={header()} onChange={e=>setHeader(e.currentTarget.checked)}/>First row is a header</label><div data-retain-scroll="" class="structured-scroll"><table><Show when={header()}><thead><tr><For each={table()[0]}>{cell=><th scope="col">{cell}</th>}</For></tr></thead></Show><tbody><For each={table().slice(header()?1:0,rows())}>{row=><tr><For each={row}>{cell=><td>{cell}</td>}</For></tr>}</For></tbody></table></div><Show when={table().length>rows()}><button onClick={()=>setRows(n=>n+100)}>Show next 100 rows ({table().length} total)</button></Show></>}</Show>
  </section>;
 }

@@ -16,7 +16,7 @@ import {searchEntry,type SearchEntry} from './search';
 import type {SemanticTarget,SemanticOccurrence,ResearchBundle} from './research';
 export interface Projection {html:string;text:string;diagnostics:string[];assets:Array<{reference:ManagedAssetReference;path:string}>;omittedAnnotations:number;omittedBlocks:number;targets:SemanticTarget[];occurrences:SemanticOccurrence[];headings:string[];search?:SearchEntry}
 const formats=new Set(['style/bold','style/italics','style/underline','style/strike','style/strikethrough','style/superscript','style/subscript']);
-const containers=new Set(['document-block','container-block','book-block','page-block','left-margin-block','right-margin-block','indented-list-block','table-block','grid-block','table-row-block','grid-row-block','table-cell-block','grid-cell-block']);
+const containers=new Set(['side-block','document-block','container-block','book-block','page-block','left-margin-block','right-margin-block','indented-list-block','table-block','grid-block','table-row-block','grid-row-block','table-cell-block','grid-cell-block']);
 export function publicProjection(native:Uint8Array,profile:PublicationProfile,cavernId:string,directory?:DirectoryProjectionContext,alias?:(id:string)=>string,research?:ResearchBundle,inspectFrozen=false):Projection {
  if(native.length>8*1024*1024)throw Error('Publication native input exceeds 8 MiB');
  const canonical=new Map<string,string>(),snapshot=decodeNative(native);
@@ -34,6 +34,7 @@ export function publicProjection(native:Uint8Array,profile:PublicationProfile,ca
   if(depth>64||serial>50000)throw Error('Publication traversal limit');
   const placement=input.placements.find(p=>p.localId===edge),targetId=placement?.target.kind==='local'?placement.target.id:undefined,original=input.blocks.find(b=>b.localId===targetId);
   if(!original||placement?.kind==='reference'||stack.has(original.localId)){notes.add('External, repeated or reference Blocks are omitted; no linked content was acquired.');omittedBlocks++;return;}
+  if(original.type==='surface-block'){omittedBlocks++;notes.add('Reverse faces and their metadata are excluded from publication.');if(original.children[0])append(input,original.children[0],parent,depth+1,new Set([...stack,original.localId]));return;}
   if(original.type==='mutable/package-data-block'){omittedBlocks++;return;}
   if(isSourceType(original.type)){
    const text=String(original.data.text??'');if(text.length>200000)throw Error('Source Block exceeds conversion limit');
