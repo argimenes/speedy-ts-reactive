@@ -71,3 +71,63 @@
 }
 
 .document-style-bar .document-style-bar__caret-mode { flex: 0 0 auto; max-width: 9.5rem; font-size: 12px; padding: 4px; }
+
+/* Sticky is the fallback for detached and legacy hosts. Ink windows and
+   compact-shell Flint keep the bar outside their content scrollport. */
+.document-style-bar[data-annotation-bar-state] {
+  position: sticky; top: var(--annotation-bar-top, 0px); z-index: 8; flex-shrink: 0;
+  box-sizing: border-box; max-width: 100%; background: #fff;
+  container: annotation-bar / inline-size;
+}
+.document-style-bar .annotation-bar__session { display: flex; align-items: center; gap: 3px; flex: none; }
+.document-style-bar .annotation-bar__policy { flex: none; margin-left: auto; align-self: flex-start; width: 88px; height: 32px; font: 12px Arial,sans-serif; }
+.document-style-bar .annotation-bar__style { flex: none; width: 86px; height: 32px; font: 12px Arial,sans-serif; }
+.document-style-bar.annotation-bar--hidden { min-height: 28px; height: 28px; padding: 0 5px; flex: 0 0 28px; }
+.document-style-bar.annotation-bar--hidden .annotation-bar__policy { height: 26px; }
+.document-style-bar .annotation-bar__reveal { font-size: 12px; padding: 3px 5px; }
+.annotation-bar__overflow-options { display: none; }
+/* Essential controls + More + policy fit a 280px Document pane. The toolset
+   and session options remain in the existing application-owned More panel. */
+@container annotation-bar (max-width: 760px) {
+  .document-style-bar--compact > .annotation-bar__session,
+  .document-style-bar--compact .compact-toolbar__picker { display: none; }
+}
+.document-style-bar.compact-toolbar__panel .annotation-bar__overflow-options { display: flex; flex-wrap: wrap; gap: 4px; }
+@container annotation-bar (max-width: 440px) {
+  .document-style-bar .annotation-bar__policy { width: 68px; }
+  .document-style-bar .annotation-bar__style { width: 58px; }
+  .document-style-bar .compact-toolbar__persistent { gap: 0; }
+  .document-style-bar .compact-toolbar__persistent button { width: 27px!important; min-width: 27px; padding: 1px; }
+  .document-style-bar .compact-toolbar__more { width: 46px; min-width: 46px; padding: 1px; font-size: 12px; }
+  .document-style-bar .compact-toolbar__tools { display: none; }
+}
+
+.flint-application .document-style-bar[data-annotation-bar-state] { background: var(--flint-coal, #f3efe4); }
+/* Retained editor text uses layer 2; keep the existing detached Save/Return
+   strip above it as well as above the annotation bar's lower sticky edge. */
+.reactive-window .detached-document-toolbar { z-index: 9; }
+/* The app-tab panel's old top padding left a slit of scrolled text above the
+   sticky bar. Content already supplies its own inset; page tabs are untouched. */
+.flint-application .flint-application__editor > .reactive-tabs > .reactive-tabs__panel { padding-top: 0; }
+/* Keep scrolled Block handles and annotation layers underneath their own bar,
+   without raising the bar above application dialogs or owned popovers. */
+.reactive-document-occurrence__content { isolation: isolate; }
+.reactive-window__content:has(> .reactive-window__document-body > .detached-document-toolbar) { padding-top: 0; }
+.document-style-bar[data-annotation-bar-state="expanded"] > [role="status"]:empty { display: none; }
+
+/* Flint's tab is a bounded viewport: the bar owns a non-scrolling row, and
+   only the retained Document content scrolls. Do not rely on sticky tracking
+   through the application tab and retained-session wrappers. Page tabs remain
+   inside the content scrollport. Detached views keep their existing layout. */
+.flint-application.flint-compact .flint-application__editor > .reactive-tabs > .reactive-tabs__panel {
+  overflow: hidden; padding: 0;
+}
+.flint-compact .reactive-document-occurrence {
+  display: flex; flex-direction: column; height: 100%; min-height: 0;
+}
+.flint-compact .reactive-document-occurrence > .document-style-bar {
+  position: relative; top: auto; flex-shrink: 0;
+}
+.flint-compact .reactive-document-occurrence > .reactive-document-occurrence__content {
+  box-sizing: border-box; flex: 1; min-height: 0; overflow: auto;
+}

@@ -8,6 +8,7 @@ import "./document-style-bar.css";
 import "./pointer-spotlight.css";
 import { DocumentCountBar } from "./document-count-bar";
 import { CompactToolbar, type CompactTool, type Toolset } from "./compact-toolbar";
+import { createAnnotationBarPresentation, annotationBarPolicies, type AnnotationBarPolicy } from "./annotation-bar-policy";
 import { createTextSuperposition } from "../runtime/text-superposition";
 
 /** Canonical style types, including the three preserved range-wrapper styles. */
@@ -50,6 +51,10 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const [linkedType, setLinkedType] = createSignal(editor.annotationUI.list()[0]?.type ?? "codex/reference"), [linkedValue, setLinkedValue] = createSignal("");
   const [colour, setColour] = createSignal("#ff0000"), [background, setBackground] = createSignal("#ffff00");
   const [localToolset, setLocalToolset] = createSignal<Toolset>("Typography");
+  let bar!: HTMLElement;
+  const presentation = createAnnotationBarPresentation(() => bar);
+  const barState = () => editor.features.compactEditorChrome ? presentation.state() : "expanded";
+  const compact = () => barState() === "compact";
   const featureNotice = () => editor.featureActions.toolbar().map(item => item.notice()).find(Boolean) ?? "";
   createEffect(() => props.onNotice?.(notice() || featureNotice() || editor.crossText.message()));
   let savedRange: { anchor: number; head: number } | undefined;
@@ -249,6 +254,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
       id: type, label, glyph,
       toolset: type === "style/show-hide" ? "Selection" : typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
       get description() { return editor.featureActions.toolbar().map(item => item.annotationDescriptions?.[type]).find(Boolean) ?? (deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined); },
+      persistent: ["style/bold", "style/italics", "style/underline"].includes(type),
       width: typographyTypes.has(type) ? 36 : 88, pressed: type === "style/show-hide" ? hiddenTextRevealed : undefined, run: () => type === "style/show-hide" ? showHide() : annotate(type),
     })),
     ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
@@ -258,7 +264,16 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     { id: "clear", label: "Clear formatting", glyph: "T×", toolset: "Typography", disabled: hasCrossRange, run: clear },
     ...editor.annotationUI.list().map((item): CompactTool => ({ id: item.id, label: item.label, glyph: item.label, width: 120, toolset: "Annotations", run: () => annotate(item.type) })),
   ];
+  const StylePicker = () => <select class="annotation-bar__style" aria-label="Paragraph style" title="Paragraph or heading style" disabled={hasCrossRange()} value="" onChange={event => {
+    const value = event.currentTarget.value;
+    if (value) blockStyle("block/font/size", value);
+    event.currentTarget.value = "";
+  }}>
+    <option value="">Style</option><option value="normal">Paragraph</option>
+    <For each={["h1", "h2", "h3", "h4"]}>{size => <option value={size}>{size.toUpperCase()}</option>}</For>
+  </select>;
   const MoreControls = () => <>
+    <div class="annotation-bar__overflow-options"><SessionControls /></div>
     <fieldset><legend>Document</legend><DocumentActions /></fieldset>
     <Show when={(target() && !hasCrossRange()) || editor.features.blockHistory}><fieldset><legend>Block</legend><HistoryAction /><Show when={target() && !hasCrossRange()}><TabAction /></Show></fieldset></Show>
     <Show when={hasCrossRange()}><fieldset><legend>Selection</legend>
@@ -268,7 +283,7 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <For each={editor.featureActions.toolbar()}>{item => createComponent(item.selectionDetails, {})}</For>
     <fieldset><legend>Editor options</legend><SelectionOption /></fieldset>
   </>;
-  return <nav ref={element => onCleanup(ownSelectionToolbar(element, editor.mounts))} class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": editor.features.compactEditorChrome }} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
+  const SessionControls = () => <>
     <Show when={editor.features.caretModes && editor.caretModes.enabled()}>
       <select class="document-style-bar__caret-mode" aria-label="Caret Mode" title="Session text focus" value={editor.caretModes.active()}
         onChange={event => { editor.pointerSpotlight.setActive(false); editor.caretModes.select(event.currentTarget.value); restore(); }}>
@@ -288,7 +303,11 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
         Margins ({props.margins?.count})
       </button>
     </Show>
-    <Show when={editor.features.compactEditorChrome} fallback={<>
+  </>;
+  return <nav ref={element => { bar = element; onCleanup(ownSelectionToolbar(element, editor.mounts)); }} class="workspace-demo__stylebar document-style-bar" classList={{ "document-style-bar--compact": compact(), "annotation-bar--hidden": barState() === "hidden" }} data-annotation-bar-state={barState()} data-annotation-bar-policy={presentation.policy()} aria-label="Document formatting" onPointerDown={retainSelection} onFocusIn={capture}>
+    <Show when={barState() !== "hidden"} fallback={<button type="button" class="annotation-bar__reveal" title="Show compact annotation bar" onClick={() => { presentation.reveal(); bar.querySelector<HTMLElement>(".annotation-bar__style")?.focus({ preventScroll: true }); }}>Show annotation bar</button>}>
+    <div class="annotation-bar__session"><SessionControls /></div>
+    <Show when={compact()} fallback={<>
     <Show when={editor.features.textSuperposition}><button type="button" title="Add alternative" onClick={addAlternative}>Alternative</button></Show>
     <DocumentActions />
     <HistoryAction />
@@ -311,9 +330,13 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
     <TabAction />
     <button type="button" title="Clear formatting" onClick={clear}>T×</button>
     <span role="status">{notice() || featureNotice() || editor.crossText.message()}</span>
-    <DocumentCountBar editor={editor} scopeKey={props.scopeKey} />
+    <Show when={!editor.features.compactEditorChrome}><DocumentCountBar editor={editor} scopeKey={props.scopeKey} /></Show>
     </>}>
-      <CompactToolbar tools={tools()} toolset={props.toolset ?? localToolset()} onToolset={value => { setLocalToolset(value); props.onToolset?.(value); }} capture={capture} restore={restore} retainSelection={retainSelection} more={MoreControls} />
+      <CompactToolbar leading={StylePicker} tools={tools()} toolset={props.toolset ?? localToolset()} onToolset={value => { setLocalToolset(value); props.onToolset?.(value); }} capture={capture} restore={restore} retainSelection={retainSelection} more={MoreControls} />
     </Show>
+    </Show>
+    <Show when={editor.features.compactEditorChrome}><select class="annotation-bar__policy" aria-label="Annotation bar presentation" title={`Annotation bar: ${presentation.policy()} (${presentation.state()}). Choose Auto, Expanded, Compact or Hidden.`} value={presentation.policy()} onChange={event => presentation.set(event.currentTarget.value as AnnotationBarPolicy)}>
+      <For each={annotationBarPolicies}>{value => <option value={value}>{value[0].toUpperCase() + value.slice(1)}</option>}</For>
+    </select></Show>
   </nav>;
 }

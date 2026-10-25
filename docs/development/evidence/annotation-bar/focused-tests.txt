@@ -1,0 +1,39 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/annotation-bar-policy.test.tsx (8 tests) 1941ms
+   ✓ preserves exact editing DOM and selected range across presentations without snapshots or revisions 636ms
+   ✓ hides temporarily in reading mode, supports reveal, then restores the saved policy 405ms
+   ✓ applies one saved policy across live Documents and newly mounted Documents 402ms
+ ✓ src/rendering/caret-modes.test.tsx (4 tests) 2171ms
+   ✓ composes focus with persisted/temporary renderers without writes, geometry reads or cell replacement (direct=true) 707ms
+   ✓ composes focus with persisted/temporary renderers without writes, geometry reads or cell replacement (direct=false) 367ms
+   ✓ shares the native caret feed even with annotation events disabled; preserves input, undo, selection and IME 640ms
+   ✓ tracks spotlight geometry in bounded frames, reuses flow origins on scrolling, and releases on selection/disable 454ms
+ ✓ src/rendering/compact-toolbar.test.tsx (8 tests) 2929ms
+   ✓ compact editor chrome > toggles pointer spotlight without changing selection, text, annotations or history and releases its window host 743ms
+   ✓ compact editor chrome > defaults on, has one footer outside scrolling content and leaves document mounts/history unchanged on switching 332ms
+   ✓ compact editor chrome > keeps toolset state per window across minimize/restore 368ms
+   ✓ compact editor chrome > keeps one worker through switching and disposes it with the window 451ms
+   ✓ compact editor chrome > preserves colour drafts without creating edits and keeps linked creation contextual 342ms
+ ✓ src/rendering/cross-block-selection.test.tsx (19 tests) 3781ms
+   ✓ experimental cross-Block text selection > does not replace a cross-Block selection with a newline for the resource shortcut 497ms
+   ✓ experimental cross-Block text selection > selects and drags whole words without document work (cross selection=false) 392ms
+   ✓ experimental cross-Block text selection > persists linked annotations, shares settings, separates segment deletion, and rekeys Block copies 359ms
+   ✓ experimental cross-Block text selection > applies all ordinary styles and colours locally with atomic history and persistence 414ms
+ ✓ src/features/flint/compact-shell.test.tsx (7 tests) 1703ms
+   ✓ defaults on and keeps the existing editor and document state through shell interactions 880ms
+ ✓ src/application/document-detachment.test.tsx (16 tests) 5416ms
+   ✓ E1.3 product Document detachment > product controls detach, reference and return the same editor without canonical or projection mutations 993ms
+   ✓ E1.3 product Document detachment > source close leaves editing and Save independent; standalone close is guarded and disposes once 500ms
+   ✓ E1.3 product Document detachment > refuses workspace and named-arrangement capture/selection without modifying saved arrangements 371ms
+   ✓ E1.3 product Document detachment > keeps two independently detached views of one canonical resource distinct 638ms
+   ✓ E1.3 product Document detachment > preserves a passive inline image node and avoids validation or snapshots during typing 494ms
+   ✓ E1.3 product Document detachment > the product rollout flag removes Detach controls while retaining E1.1/E1.2 309ms
+   ✓ E1.3 product Document detachment > returns from a shared shell-tab group and retires its runtime layout membership 392ms
+
+ Test Files  6 passed (6)
+      Tests  62 passed (62)
+   Start at  22:16:52
+   Duration  30.20s (transform 25.32s, setup 0ms, collect 99.39s, tests 17.94s, environment 13.73s, prepare 1.67s)
+

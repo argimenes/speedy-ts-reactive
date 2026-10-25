@@ -1,0 +1,25 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/annotation-bar-policy.test.tsx (9 tests) 1180ms
+   ✓ preserves exact editing DOM and selected range across presentations without snapshots or revisions 451ms
+ ✓ src/rendering/compact-toolbar.test.tsx (8 tests) 1362ms
+   ✓ compact editor chrome > toggles pointer spotlight without changing selection, text, annotations or history and releases its window host 525ms
+ ✓ src/rendering/caret-modes.test.tsx (4 tests) 1701ms
+   ✓ composes focus with persisted/temporary renderers without writes, geometry reads or cell replacement (direct=true) 500ms
+   ✓ shares the native caret feed even with annotation events disabled; preserves input, undo, selection and IME 577ms
+   ✓ tracks spotlight geometry in bounded frames, reuses flow origins on scrolling, and releases on selection/disable 404ms
+ ✓ src/features/flint/compact-shell.test.tsx (7 tests) 1246ms
+   ✓ defaults on and keeps the existing editor and document state through shell interactions 634ms
+ ✓ src/application/document-detachment.test.tsx (16 tests) 3477ms
+   ✓ E1.3 product Document detachment > product controls detach, reference and return the same editor without canonical or projection mutations 781ms
+   ✓ E1.3 product Document detachment > source close leaves editing and Save independent; standalone close is guarded and disposes once 323ms
+   ✓ E1.3 product Document detachment > preserves a passive inline image node and avoids validation or snapshots during typing 311ms
+ ✓ src/application/document-host-transfers.test.tsx (27 tests) 4108ms
+   ✓ E1.2 controlled Document host transfer > restores scrolling to the retained content when returning to an initially empty Flint tab 687ms
+
+ Test Files  6 passed (6)
+      Tests  71 passed (71)
+   Start at  23:07:50
+   Duration  18.80s (transform 13.63s, setup 0ms, collect 59.31s, tests 13.07s, environment 10.05s, prepare 1.15s)
+

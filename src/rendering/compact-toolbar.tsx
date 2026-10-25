@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, untrack, type JSX } from "solid-js";
+import { Portal as DOMPortal } from "solid-js/web";
 import { ApplicationSurfacePortal as Portal, useManagedWindowOwner, useManagedViewActivity } from "./window-manager";
 
 export type Toolset = "Typography" | "Annotations" | "Visual effects" | "Selection";
@@ -20,6 +21,7 @@ export interface CompactTool {
 }
 
 export function CompactToolbar(props: {
+  leading?: () => JSX.Element;
   tools: CompactTool[];
   toolset: Toolset;
   onToolset: (value: Toolset) => void;
@@ -113,10 +115,18 @@ export function CompactToolbar(props: {
     };
     const reposition = () => { if (panel()) locate(); };
     document.addEventListener("pointerdown", outside, true);
+    const fullscreenChanged = () => close();
+    document.addEventListener("fullscreenchange", fullscreenChanged);
     window.addEventListener("resize", reposition);
     window.addEventListener("scroll", reposition, true);
-    onCleanup(() => { observer?.disconnect(); document.removeEventListener("pointerdown", outside, true); window.removeEventListener("resize", reposition); window.removeEventListener("scroll", reposition, true); clearTimeout(wheelTimer); });
+    onCleanup(() => { observer?.disconnect(); document.removeEventListener("fullscreenchange", fullscreenChanged); document.removeEventListener("pointerdown", outside, true); window.removeEventListener("resize", reposition); window.removeEventListener("scroll", reposition, true); clearTimeout(wheelTimer); });
   });
+  // Native fullscreen only paints descendants of its root. Keep the existing
+  // application surface lease, but place its popup inside that root while open.
+  const PopupHost = (p: { children: JSX.Element }) => {
+    const fullscreen = document.fullscreenElement;
+    return <Portal>{fullscreen?.contains(root) ? <DOMPortal mount={fullscreen}>{p.children}</DOMPortal> : p.children}</Portal>;
+  };
   const ToolButton = (p: { tool: CompactTool; overflow?: boolean }) => <button type="button" data-tool-id={p.tool.id}
     data-annotation-type={p.tool.id.includes("/") ? p.tool.id : undefined}
     aria-label={p.tool.label} title={p.tool.description ? `${p.tool.label}: ${p.tool.description}` : p.tool.label} disabled={p.tool.disabled?.()}
@@ -132,10 +142,11 @@ export function CompactToolbar(props: {
       </select>
       <button type="button" class="compact-toolbar__cycle" aria-label="Next toolset" title="Next toolset" onClick={() => step(1)}>›</button>
     </div>
+    {props.leading?.()}
     <div class="compact-toolbar__persistent"><For each={persistent()}>{tool => <ToolButton tool={tool} />}</For></div>
     <div ref={strip} class="compact-toolbar__tools"><For each={current().slice(0, visibleCount())}>{tool => <ToolButton tool={tool} />}</For></div>
     <button ref={moreButton} type="button" class="compact-toolbar__more" aria-haspopup="dialog" aria-expanded={panel() === "more"} onClick={event => open("more", event)}>More ▾</button>
-    <Show when={panel()}>{value => <Portal><div ref={popup} class="document-style-bar compact-toolbar__panel" role="dialog" aria-label={value() === "more" ? "More editor tools" : (value() as CompactTool).label}
+    <Show when={panel()}>{value => <PopupHost><div ref={popup} class="document-style-bar compact-toolbar__panel" role="dialog" aria-label={value() === "more" ? "More editor tools" : (value() as CompactTool).label}
       data-native-context-menu data-cross-text-controls
       style={{ left: `${position().left}px`, top: `${position().top}px`, "max-height": `${position().maxHeight}px` }}
       onPointerDown={props.retainSelection}
@@ -151,8 +162,9 @@ export function CompactToolbar(props: {
       <header><strong>{value() === "more" ? props.toolset : (value() as CompactTool).label}</strong><button type="button" aria-label="Close tools" onClick={() => close(true)}>×</button></header>
       <Show when={value() === "more"} fallback={(value() as CompactTool).panel?.()}>
         <div class="compact-toolbar__overflow"><For each={current().slice(visibleCount())}>{tool => <ToolButton tool={tool} overflow />}</For></div>
+        <label class="annotation-bar__overflow-toolset">Toolset <select aria-label="Overflow toolset" value={props.toolset} onChange={event => props.onToolset(event.currentTarget.value as Toolset)}><For each={toolsets}>{name => <option>{name}</option>}</For></select></label>
         {props.more()}
       </Show>
-    </div></Portal>}</Show>
+    </div></PopupHost>}</Show>
   </div>;
 }

@@ -1,0 +1,11 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/annotation-bar-policy.test.tsx (9 tests) 949ms
+ ✓ src/rendering/compact-toolbar.test.tsx (8 tests) 1112ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  22:30:47
+   Duration  10.37s (transform 6.01s, setup 0ms, collect 14.57s, tests 2.06s, environment 2.12s, prepare 247ms)
+

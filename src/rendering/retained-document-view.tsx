@@ -15,7 +15,13 @@ export function RetainedDocumentHost(props: {
   const slot = document.createElement("div"); slot.style.display = "contents";
   const lease = store.transfers.register({ kind: props.sharedRoot ? "managed-document" : "flint-tab",
     ownerKey: props.ownerKey, slotKey: props.slotKey, windowId: owner?.windowId ?? props.ownerKey,
-    container: slot, get scrollport() { return slot.closest<HTMLElement>('[role="tabpanel"],.reactive-window__content') ?? slot; },
+    container: slot, get scrollport() {
+      // The retained content is Flint's scroller; its annotation bar is a fixed
+      // sibling. Resolve lazily because a returning slot is initially empty.
+      const content = slot.closest('.flint-compact') && slot.querySelector<HTMLElement>(
+        ':scope > .retained-document-session > .reactive-document-occurrence > .reactive-document-occurrence__content');
+      return content || slot.closest<HTMLElement>('[role="tabpanel"],.reactive-window__content') || slot;
+    },
     coordinates: context.coordinates!, selected: () => props.selected });
   let session!: RetainedDocumentSession;
   try { session = store.mount({

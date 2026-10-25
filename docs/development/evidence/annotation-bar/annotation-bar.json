@@ -1,0 +1,323 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/155.0.8059.85",
+    "revision": "@0e66b94549a8bd85f03fbdf189b752d6e7b63c32",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "jsVersion": "15.5.35.25"
+  },
+  "checks": [
+    "loaded Flint Document shows Compact even with saved Reading density",
+    "long Document scroll keeps annotation bar below Flint tabs",
+    "manual Expanded exposes all canonical annotations",
+    "Hidden keeps only accessible reveal and policy controls",
+    "keyboard reveal selects Compact",
+    "density toggle preserves Expanded",
+    "Reading density does not conceal the annotation bar",
+    "Block Focus keeps Compact visible",
+    "Reading Spotlight keeps Compact visible",
+    "pointer formatting preserves the intended editor selection",
+    "style, bold, italic, underline, More and policy fit a 280px pane",
+    "overflow escapes pane clipping and exposes toolsets and editor options",
+    "detached Document retains the exact annotation bar and editing DOM",
+    "spacious maximised detached Document resolves Expanded",
+    "expanded controls wrap without horizontal overflow at the 960px threshold",
+    "scrolled Block handles cannot paint above the annotation bar",
+    "detached annotation bar clears its Save/Return chrome while scrolling",
+    "restored detached Document returns to Compact",
+    "tiled Document stays Compact with the exact editor session",
+    "manual Expanded survives maximise and restore",
+    "actual full-screen Document resolves Expanded under Auto",
+    "More stays usable inside native full-screen",
+    "Return retains bar, editor, and Auto policy",
+    "presentation changes create no snapshots, commits or content revision",
+    "returned fixed bar sits above the Flint Document scrollport",
+    "Document page tabs retain ordinary non-sticky positioning",
+    "compact floating Document has a bounded content scrollport",
+    "compact floating wheel 450 keeps bar fixed and clickable",
+    "compact floating wheel 100000 keeps bar fixed and clickable",
+    "compact floating wheel -100000 keeps bar fixed and clickable",
+    "expanded floating Document has a bounded content scrollport",
+    "expanded floating wheel 450 keeps bar fixed and clickable",
+    "expanded floating wheel 100000 keeps bar fixed and clickable",
+    "expanded floating wheel -100000 keeps bar fixed and clickable",
+    "compact maximised Document has a bounded content scrollport",
+    "compact maximised wheel 450 keeps bar fixed and clickable",
+    "compact maximised wheel 100000 keeps bar fixed and clickable",
+    "compact maximised wheel -100000 keeps bar fixed and clickable",
+    "expanded maximised Document has a bounded content scrollport",
+    "expanded maximised wheel 450 keeps bar fixed and clickable",
+    "expanded maximised wheel 100000 keeps bar fixed and clickable",
+    "expanded maximised wheel -100000 keeps bar fixed and clickable",
+    "wheel scrolling creates no snapshots, commits or content revision",
+    "no browser exceptions"
+  ],
+  "narrow": {
+    "width": 280,
+    "controls": [
+      {
+        "name": "Paragraph style",
+        "left": 5,
+        "right": 63,
+        "width": 58
+      },
+      {
+        "name": "Bold selection",
+        "left": 67,
+        "right": 94,
+        "width": 27
+      },
+      {
+        "name": "Italicise selection",
+        "left": 94,
+        "right": 121,
+        "width": 27
+      },
+      {
+        "name": "Underline",
+        "left": 121,
+        "right": 148,
+        "width": 27
+      },
+      {
+        "name": "More ▾",
+        "left": 152,
+        "right": 198,
+        "width": 46
+      },
+      {
+        "name": "Annotation bar presentation",
+        "left": 207,
+        "right": 275,
+        "width": 68
+      }
+    ],
+    "fits": true
+  },
+  "expandedFit": {
+    "width": 960,
+    "height": 132,
+    "scrollWidth": 960,
+    "clientWidth": 960,
+    "state": "expanded"
+  },
+  "scrollEvidence": [
+    {
+      "maximized": false,
+      "policy": "compact",
+      "delta": 450,
+      "bar": 183,
+      "bottom": 223,
+      "content": 223,
+      "scroll": 450,
+      "maximum": 3826,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 0
+      },
+      "revision": 5,
+      "unchanged": true
+    },
+    {
+      "maximized": false,
+      "policy": "compact",
+      "delta": 100000,
+      "bar": 183,
+      "bottom": 223,
+      "content": 223,
+      "scroll": 3826,
+      "maximum": 3826,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 0
+      },
+      "revision": 5,
+      "unchanged": true
+    },
+    {
+      "maximized": false,
+      "policy": "compact",
+      "delta": -100000,
+      "bar": 183,
+      "bottom": 223,
+      "content": 223,
+      "scroll": 0,
+      "maximum": 3826,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 0
+      },
+      "revision": 5,
+      "unchanged": true
+    },
+    {
+      "maximized": false,
+      "policy": "expanded",
+      "delta": 450,
+      "bar": 183,
+      "bottom": 362.75,
+      "content": 362.75,
+      "scroll": 450,
+      "maximum": 3966,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 0
+      },
+      "revision": 5,
+      "unchanged": true
+    },
+    {
+      "maximized": false,
+      "policy": "expanded",
+      "delta": 100000,
+      "bar": 183,
+      "bottom": 362.75,
+      "content": 362.75,
+      "scroll": 3966,
+      "maximum": 3966,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 0
+      },
+      "revision": 5,
+      "unchanged": true
+    },
+    {
+      "maximized": false,
+      "policy": "expanded",
+      "delta": -100000,
+      "bar": 183,
+      "bottom": 362.75,
+      "content": 362.75,
+      "scroll": 0,
+      "maximum": 3966,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 0
+      },
+      "revision": 5,
+      "unchanged": true
+    },
+    {
+      "maximized": true,
+      "policy": "compact",
+      "delta": 450,
+      "bar": 141,
+      "bottom": 181,
+      "content": 181,
+      "scroll": 450,
+      "maximum": 3644,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 1
+      },
+      "revision": 6,
+      "unchanged": true
+    },
+    {
+      "maximized": true,
+      "policy": "compact",
+      "delta": 100000,
+      "bar": 141,
+      "bottom": 181,
+      "content": 181,
+      "scroll": 3644,
+      "maximum": 3644,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 1
+      },
+      "revision": 6,
+      "unchanged": true
+    },
+    {
+      "maximized": true,
+      "policy": "compact",
+      "delta": -100000,
+      "bar": 141,
+      "bottom": 181,
+      "content": 181,
+      "scroll": 0,
+      "maximum": 3644,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 1
+      },
+      "revision": 6,
+      "unchanged": true
+    },
+    {
+      "maximized": true,
+      "policy": "expanded",
+      "delta": 450,
+      "bar": 141,
+      "bottom": 286.5625,
+      "content": 286.5625,
+      "scroll": 450,
+      "maximum": 3750,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 1
+      },
+      "revision": 6,
+      "unchanged": true
+    },
+    {
+      "maximized": true,
+      "policy": "expanded",
+      "delta": 100000,
+      "bar": 141,
+      "bottom": 286.5625,
+      "content": 286.5625,
+      "scroll": 3749,
+      "maximum": 3750,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 1
+      },
+      "revision": 6,
+      "unchanged": true
+    },
+    {
+      "maximized": true,
+      "policy": "expanded",
+      "delta": -100000,
+      "bar": 141,
+      "bottom": 286.5625,
+      "content": 286.5625,
+      "scroll": 0,
+      "maximum": 3750,
+      "reachable": true,
+      "outerScroll": 0,
+      "counts": {
+        "snapshot": 0,
+        "commit": 1
+      },
+      "revision": 6,
+      "unchanged": true
+    }
+  ],
+  "errors": []
+}

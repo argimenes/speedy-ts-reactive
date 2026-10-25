@@ -1,0 +1,26 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/annotation-bar-policy.test.tsx (9 tests) 1833ms
+   ✓ preserves exact editing DOM and selected range across presentations without snapshots or revisions 476ms
+   ✓ applies one saved policy across live Documents and newly mounted Documents 451ms
+   ✓ defaults Flint to an explicit Compact policy without overwriting saved choices or Ink defaults 358ms
+ ✓ src/rendering/caret-modes.test.tsx (4 tests) 1902ms
+   ✓ composes focus with persisted/temporary renderers without writes, geometry reads or cell replacement (direct=true) 580ms
+   ✓ shares the native caret feed even with annotation events disabled; preserves input, undo, selection and IME 621ms
+   ✓ tracks spotlight geometry in bounded frames, reuses flow origins on scrolling, and releases on selection/disable 446ms
+ ✓ src/rendering/compact-toolbar.test.tsx (8 tests) 2374ms
+   ✓ compact editor chrome > toggles pointer spotlight without changing selection, text, annotations or history and releases its window host 598ms
+   ✓ compact editor chrome > keeps Show/Hide in Selection without Group or Clear buttons 482ms
+   ✓ compact editor chrome > keeps toolset state per window across minimize/restore 302ms
+   ✓ compact editor chrome > keeps one worker through switching and disposes it with the window 328ms
+ ✓ src/features/flint/compact-shell.test.tsx (7 tests) 1834ms
+   ✓ defaults on and keeps the existing editor and document state through shell interactions 843ms
+   ✓ validates stored preferences: {invalid 325ms
+   ✓ validates stored preferences: {"library":"false","explorerWidth":9000,"inspectorWidth":-12,"density":"giant"} 374ms
+
+ Test Files  4 passed (4)
+      Tests  28 passed (28)
+   Start at  22:38:55
+   Duration  23.63s (transform 19.03s, setup 0ms, collect 55.37s, tests 7.94s, environment 9.58s, prepare 2.16s)
+

@@ -285,7 +285,10 @@ export class DocumentHostTransfers {
       focusCurrent = mayRestore ? manager.lifecycle.ticket() : () => false;
       let focusError: string | undefined;
       try { restoreFocus(); } catch (error) { focusError = String(error); }
-      destinationScroll.scrollTop = scroll.top; destinationScroll.scrollLeft = scroll.left;
+      // A host may expose a scroller inside the editing subtree, which did not
+      // exist in the empty destination before attachment (e.g. a Flint tab).
+      const committedScroll = destination.port.scrollport ?? destination.port.container;
+      committedScroll.scrollTop = scroll.top; committedScroll.scrollLeft = scroll.left;
       manager.layout.invalidateMinimum(source.port.windowId); manager.layout.invalidateMinimum(destination.port.windowId);
       return { committed: true as const, focusError };
     } catch (error) {

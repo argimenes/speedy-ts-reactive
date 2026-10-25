@@ -58,6 +58,27 @@ async function transferFixture(transferEnabled = true) {
 }
 
 describe('E1.2 controlled Document host transfer', () => {
+  it('restores scrolling to the retained content when returning to an initially empty Flint tab', async () => {
+    const f = await transferFixture(), s = f.sessionView;
+    const content = s.element.querySelector<HTMLElement>('.reactive-document-occurrence__content')!;
+    expect(f.source.port.scrollport).toBe(content);
+    content.scrollTop = 240;
+    await f.transfer.transfer(s, f.destination);
+    expect(f.destination.port.container.scrollTop).toBe(240);
+    expect(f.source.port.scrollport).not.toBe(content); // Slot is empty until attachment.
+    f.destination.port.container.scrollTop = 370;
+    await expect(f.transfer.transfer(s, f.source, { checkpoint: stage => {
+      if (stage === 'attached') throw Error('Return interrupted');
+    } })).rejects.toThrow('Return interrupted');
+    expect(f.destination.port.container.scrollTop).toBe(370);
+    expect(f.transfer.owns(s, f.destination)).toBe(true);
+    content.scrollTop = 0;
+    await f.transfer.transfer(s, f.source);
+    expect(f.source.port.scrollport).toBe(content);
+    expect(content.scrollTop).toBe(370);
+    expect(f.editor.mounts.get(f.node.key)).toBe(f.mount);
+  });
+
   it('moves and returns the real editor, context and portal leases without creating an editor or subscription', async () => {
     const f = await transferFixture(), s = f.sessionView, owner = f.records.find(r => r.key === f.node.key)!;
     const surface = document.querySelector<HTMLInputElement>(`[aria-label="Session tool ${f.node.key}"]`)!;

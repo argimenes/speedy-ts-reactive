@@ -123,9 +123,12 @@
   .flint-application .reactive-document-occurrence__content { padding:12px; }
 }
 /* Fit the existing Window content host; title bar and geometry remain core-owned. */
-.reactive-window__content:has(> .reactive-window__document-body > [data-block-type="flint-application-block"]) { padding:0; overflow:hidden; }
-.reactive-window__document-body:has(> [data-block-type="flint-application-block"]) { height:100%; min-height:0; }
-.reactive-window__document-body > [data-block-type="flint-application-block"] { height:100%; }
+/* Retained Block slots and selection wrappers sit between the window body and
+   Flint. Direct-child matching misses them and leaves a second outer scroller. */
+.reactive-window__content:has(.flint-application) { padding:0; overflow:hidden; }
+.reactive-window__document-body:has(.flint-application) { height:100%; min-height:0; }
+.reactive-window__document-body [data-block-type="flint-application-block"],
+.reactive-window__document-body .block-selectable:has(> [data-block-type="flint-application-block"]) { height:100%; min-height:0; }
 .flint-surfaces { display:flex; flex-direction:column; height:100%; min-height:0; }
 .flint-application__header,.flint-workspace-tools,.flint-status,.flint-attention { flex-shrink:0; }
 .flint-attention { max-height:90px; overflow:auto; }

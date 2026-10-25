@@ -1,0 +1,49 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/annotation-bar-policy.test.tsx (6 tests) 531ms
+   ✓ preserves exact editing DOM and selected range across presentations without snapshots or revisions 302ms
+ ✓ src/rendering/compact-toolbar.test.tsx (8 tests) 1294ms
+   ✓ compact editor chrome > toggles pointer spotlight without changing selection, text, annotations or history and releases its window host 379ms
+ ❯ src/features/grouping/document-style-bar.test.tsx (30 tests | 2 failed) 6386ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > exposes every canonical style and both colours, creating inclusive Cell ranges with IDs 1649ms
+   × DocumentWindow annotation toolbar (compact=true) > collects only Control-held gestures, excludes early release, and keeps static highlights 141ms
+     → expected <g …(2)><path …(7)></path></g>
+…(3) to have a length of 2 but got 4
+   ✓ DocumentWindow annotation toolbar (compact=true) > collects successive local keyboard gestures without enabling cross-Block selection 516ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > does not capture a keyboard selection started without Control or abandoned on blur 413ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > Control-click removes only its range, while dragging from a highlight adds a range 315ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > Escape restores hidden text and a subsequent group cannot affect cancelled ranges 718ms
+   ✓ DocumentWindow annotation toolbar (compact=false) > exposes every canonical style and both colours, creating inclusive Cell ranges with IDs 406ms
+   × DocumentWindow annotation toolbar (compact=false) > collects only Control-held gestures, excludes early release, and keeps static highlights 189ms
+     → expected <g …(2)><path …(7)></path></g>
+…(3) to have a length of 2 but got 4
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/grouping/document-style-bar.test.tsx > DocumentWindow annotation toolbar (compact=true) > collects only Control-held gestures, excludes early release, and keeps static highlights
+ FAIL  src/features/grouping/document-style-bar.test.tsx > DocumentWindow annotation toolbar (compact=false) > collects only Control-held gestures, excludes early release, and keeps static highlights
+AssertionError: expected <g …(2)><path …(7)></path></g>
+…(3) to have a length of 2 but got 4
+
+- Expected
++ Received
+
+- 2
++ 4
+
+ ❯ src/features/grouping/document-style-bar.test.tsx:124:84
+    122|     expect(groupSelection.ranges()).toHaveLength(2);
+    123|     await new Promise(resolve => setTimeout(resolve, 30));
+    124|     expect(host.querySelectorAll('[data-property-type="editor/group-se…
+       |                                                                                    ^
+    125|     expect(host.querySelector('[data-property-type="editor/group-selec…
+    126|     click("Show / hide"); click("Show / hide");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  2 failed | 42 passed (44)
+   Start at  22:00:37
+   Duration  16.54s (transform 7.38s, setup 0ms, collect 23.24s, tests 8.21s, environment 3.90s, prepare 603ms)
+

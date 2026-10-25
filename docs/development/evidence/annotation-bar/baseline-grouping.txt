@@ -1,0 +1,43 @@
+
+ RUN  v2.1.9 /private/var/folders/q0/2ktlxrj54ygdjxkg2vx_b30r0000gn/T/annotation-bar-baseline-611_hokl
+
+ ❯ src/features/grouping/document-style-bar.test.tsx (30 tests | 2 failed) 5953ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > exposes every canonical style and both colours, creating inclusive Cell ranges with IDs 2006ms
+   ✓ DocumentWindow annotation toolbar (compact=true) > increments paragraph placement repeatedly, clamps outdent at zero, preserves tree and undoes 426ms
+   × DocumentWindow annotation toolbar (compact=true) > collects only Control-held gestures, excludes early release, and keeps static highlights 244ms
+     → expected <g …(2)><path …(7)></path></g>
+…(3) to have a length of 2 but got 4
+   ✓ DocumentWindow annotation toolbar (compact=true) > routes Escape and toolbar deletion only to their owning editor 304ms
+   ✓ DocumentWindow annotation toolbar (compact=false) > exposes every canonical style and both colours, creating inclusive Cell ranges with IDs 353ms
+   × DocumentWindow annotation toolbar (compact=false) > collects only Control-held gestures, excludes early release, and keeps static highlights 149ms
+     → expected <g …(2)><path …(7)></path></g>
+…(3) to have a length of 2 but got 4
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/grouping/document-style-bar.test.tsx > DocumentWindow annotation toolbar (compact=true) > collects only Control-held gestures, excludes early release, and keeps static highlights
+ FAIL  src/features/grouping/document-style-bar.test.tsx > DocumentWindow annotation toolbar (compact=false) > collects only Control-held gestures, excludes early release, and keeps static highlights
+AssertionError: expected <g …(2)><path …(7)></path></g>
+…(3) to have a length of 2 but got 4
+
+- Expected
++ Received
+
+- 2
++ 4
+
+ ❯ src/features/grouping/document-style-bar.test.tsx:124:84
+    122|     expect(groupSelection.ranges()).toHaveLength(2);
+    123|     await new Promise(resolve => setTimeout(resolve, 30));
+    124|     expect(host.querySelectorAll('[data-property-type="editor/group-se…
+       |                                                                                    ^
+    125|     expect(host.querySelector('[data-property-type="editor/group-selec…
+    126|     click("Show / hide"); click("Show / hide");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 28 passed (30)
+   Start at  22:03:08
+   Duration  20.25s (transform 9.54s, setup 0ms, collect 12.06s, tests 5.95s, environment 1.42s, prepare 208ms)
+
