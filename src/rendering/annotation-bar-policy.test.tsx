@@ -127,3 +127,13 @@ it('defaults Flint to an explicit Compact policy without overwriting saved choic
   flint.policy('auto');
   expect(fixture(true).bar.dataset.annotationBarPolicy).toBe('auto');
 });
+
+it('uses Expanded in fullscreen Flint only when no explicit override was saved',()=>{
+  const f=fixture(true);expect(f.bar.dataset.annotationBarState).toBe('compact');
+  Object.defineProperty(document,'fullscreenElement',{configurable:true,value:f.host});
+  cleanup.push(()=>{delete (document as any).fullscreenElement;});
+  document.dispatchEvent(new Event('fullscreenchange'));
+  expect(f.bar.dataset.annotationBarState).toBe('expanded');
+  f.policy('compact');document.dispatchEvent(new Event('fullscreenchange'));
+  expect(f.bar.dataset.annotationBarState).toBe('compact');
+});

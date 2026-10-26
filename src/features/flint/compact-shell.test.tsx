@@ -27,7 +27,10 @@ it('defaults on and keeps the existing editor and document state through shell i
   expect(shell.classList.contains('flint-compact')).toBe(true);
   button('Toggle Library').click(); expect(shell.dataset.library).toBe('false');
   button('Toggle Library').click(); expect(shell.dataset.library).toBe('true');
+  expect(shell.dataset.context).toBe('false');
+  button('Toggle Context').click(); expect(shell.dataset.context).toBe('true');
   button('Toggle Context').click(); expect(shell.dataset.context).toBe('false');
+  button('Flint application menu').click();
   button('Reading density').click(); expect(shell.dataset.density).toBe('reading');
   const separator=shell.querySelector('[aria-label="Resize explorer"]')!;
   separator.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));
@@ -53,7 +56,7 @@ it.each(['{invalid', JSON.stringify({library:'false',explorerWidth:9000,inspecto
 it('works when browser storage is blocked',()=>{
   vi.spyOn(Storage.prototype,'getItem').mockImplementation(()=>{throw Error('blocked');});
   vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('blocked');});
-  const {button,shell}=setup();expect(()=>button('Reading density').click()).not.toThrow();expect(shell.dataset.density).toBe('reading');
+  const {button,shell}=setup();button('Flint application menu').click();expect(()=>button('Reading density').click()).not.toThrow();expect(shell.dataset.density).toBe('reading');
 });
 describe.each(['library','context'] as const)('%s splitter',pane=>{
   it('resizes under host scaling, commits once, cancels and supports keyboard bounds',()=>{
@@ -70,4 +73,18 @@ describe.each(['library','context'] as const)('%s splitter',pane=>{
     handle.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));expect(width()).toBe(450);
     handle.dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));expect(width()).toBe(pane==='library'?150:190);
   });
+});
+
+it('honours an existing visible inspector preference and retains the session through Recent and Search',()=>{
+  localStorage.setItem(FLINT_LAYOUT_KEY,JSON.stringify({context:true,inspectorWidth:310}));
+  const {shell,editor}=setup();
+  expect(shell.dataset.context).toBe('true');expect(shell.style.getPropertyValue('--flint-inspector-width')).toBe('310px');
+  const flow=shell.querySelector('.reactive-standoff-flow');const snapshot=vi.spyOn(editor.repository,'snapshot');
+  const revision=editor.repository.state.revision;
+  for(const name of ['Recent','Search','Files']) {
+    [...shell.querySelectorAll<HTMLButtonElement>('[aria-label="Library views"] button')].find(b=>b.textContent===name)!.click();
+    expect(shell.querySelector('.reactive-standoff-flow')).toBe(flow);
+  }
+  expect(snapshot).not.toHaveBeenCalled();expect(editor.repository.state.revision).toBe(revision);
+  expect(shell.querySelector('.flint-primary-rail')).toBeNull();
 });

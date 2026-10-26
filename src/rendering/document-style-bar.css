@@ -131,3 +131,16 @@
 .flint-compact .reactive-document-occurrence > .reactive-document-occurrence__content {
   box-sizing: border-box; flex: 1; min-height: 0; overflow: auto;
 }
+
+/* Everyday commands in one quiet row; full toolsets and session options remain
+   in More. No editor state or command semantics depend on this presentation. */
+.document-style-bar--compact > .annotation-bar__session,
+.document-style-bar--compact .compact-toolbar__picker { display:none; }
+.document-style-bar .compact-toolbar__persistent { order:1; }
+.document-style-bar .annotation-bar__style { order:2; border:0; background:transparent; }
+.document-style-bar .compact-toolbar__tools { order:3; }
+.document-style-bar .compact-toolbar__more { order:4; border:0; }
+.document-style-bar .annotation-bar__policy { border:0; background:transparent; color:inherit; }
+.document-style-bar.compact-toolbar__panel { background:#faf8f3; color:#35322d; border-color:#dedbd3; }
+.document-style-bar button:hover, .document-style-bar button:focus-visible { background:#e8e2d7; outline-color:#8b7455; }
+.document-style-bar.compact-toolbar__panel fieldset { border:0; padding:6px 0; }

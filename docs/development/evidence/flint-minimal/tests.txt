@@ -1,0 +1,104 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/annotation-bar-policy.test.tsx (10 tests) 1584ms
+   ✓ preserves exact editing DOM and selected range across presentations without snapshots or revisions 453ms
+   ✓ applies one saved policy across live Documents and newly mounted Documents 359ms
+   ✓ defaults Flint to an explicit Compact policy without overwriting saved choices or Ink defaults 380ms
+ ✓ src/rendering/compact-toolbar.test.tsx (9 tests) 2095ms
+   ✓ compact editor chrome > toggles pointer spotlight without changing selection, text, annotations or history and releases its window host 766ms
+   ✓ routes toolbar history through existing input guards, including provisional Scry and IME 344ms
+ ✓ src/features/flint/compact-shell.test.tsx (8 tests) 2090ms
+   ✓ defaults on and keeps the existing editor and document state through shell interactions 883ms
+ ✓ src/application/document-detachment.test.tsx (16 tests) 5925ms
+   ✓ E1.3 product Document detachment > product controls detach, reference and return the same editor without canonical or projection mutations 1123ms
+   ✓ E1.3 product Document detachment > source close leaves editing and Save independent; standalone close is guarded and disposes once 437ms
+   ✓ E1.3 product Document detachment > disables product Detach for an unqualified iframe with a visible reason 439ms
+   ✓ E1.3 product Document detachment > rejects the live DOM-based Canvas preview even though it contains no canvas element 401ms
+   ✓ E1.3 product Document detachment > Return rollback keeps the same standalone session and allows a fresh retry 698ms
+   ✓ E1.3 product Document detachment > keeps two independently detached views of one canonical resource distinct 397ms
+   ✓ E1.3 product Document detachment > returns from a shared shell-tab group and retires its runtime layout membership 305ms
+ ✓ src/application/document-host-transfers.test.tsx (27 tests) 7160ms
+   ✓ E1.2 controlled Document host transfer > restores scrolling to the retained content when returning to an initially empty Flint tab 895ms
+   ✓ E1.2 controlled Document host transfer > moves and returns the real editor, context and portal leases without creating an editor or subscription 357ms
+   ✓ E1.2 controlled Document host transfer > rolls back a failure at commit without losing source DOM, tools or ownership 476ms
+   ✓ E1.2 controlled Document host transfer > captures edits and selection at final validation and leaves undo authority intact 306ms
+   ✓ E1.2 controlled Document host transfer > rejects affected pending Save, composition, modal and pending close without disturbing them 381ms
+   ✓ E1.2 controlled Document host transfer > source close after commit cannot dispose the transferred editor or reroute Save to another Document 367ms
+   ✓ E1.2 controlled Document host transfer > rejects Document tools outside the retained owner and unqualified surface adapters 307ms
+   ✓ E1.2 controlled Document host transfer > reserves a destination exclusively across two independent live sessions 548ms
+ ❯ src/application/flint-lifecycle.test.tsx (24 tests | 1 failed) 10610ms
+   ✓ Flint composite transient hosting > keeps chrome in HTML even when a retired prototype flag is supplied 863ms
+   ✓ Flint composite transient hosting > switches to the integrated entity Graph without remounting or altering the Document 568ms
+   ✓ Flint composite transient hosting > can disable the new Graph capability without restoring an alternate presentation 330ms
+   ✓ Flint composite transient hosting > closes a background Document from its tab button without changing the active view or deleting content 416ms
+   ✓ Flint composite transient hosting > closes tabs without snapshots, repository edits or History, and Undo still undoes text 371ms
+   ✓ Flint composite transient hosting > closes the active tab and activates its neighbour without copying the workspace 799ms
+   ✓ Flint composite transient hosting > persists closed tabs as layout and reopening a saved tab does not insert or edit a Block 828ms
+   × Flint composite transient hosting > closes a Flint window without changing Documents or History and keeps it closed after saving 512ms
+     → expected [ BlockTreeProjection{ …(15) } ] to have a length of +0 but got 1
+   ✓ Flint composite transient hosting > offers Close Document on the clicked tab's mouse and keyboard context menus 342ms
+   ✓ Flint composite transient hosting > keeps the editor and canonical History stable across F1 shell controls 342ms
+   ✓ Flint composite transient hosting > ignores late image completion after a transient occurrence is disposed 317ms
+   ✓ Flint composite transient hosting > mounts one ordinary editor, restores selection across tab switches, and releases occurrence state 1287ms
+   ✓ Flint composite transient hosting > restores occurrence-local cross-Block selection and drops stale bookmarks after edits elsewhere 542ms
+   ✓ Flint composite transient hosting > prevents a different Window toolbar from applying another occurrence's grouped selection 312ms
+   ✓ Flint composite transient hosting > owns Entity panel focus and cancels asynchronous work when its tab disappears 516ms
+   ✓ Flint composite transient hosting > does not resurrect disposed focus from a queued panel return 303ms
+   ✓ Flint composite transient hosting > keeps two application Windows independent while editing shared content and renaming tabs 371ms
+ ✓ src/application/flint-vault.test.tsx (28 tests) 34668ms
+   ✓ creates every Document format from Flint and preserves its template through native Save and reopen 7248ms
+   ✓ keeps Flint ordinary Document creation when formats are disabled 898ms
+   ✓ default Notes saves directly into the active Vault (empty) 948ms
+   ✓ default Notes saves directly into the active Vault (occupied) 802ms
+   ✓ default Notes saves directly into the active Vault (rejected first destination) 942ms
+   ✓ reviews a first-save filename collision (overwrite) 934ms
+   ✓ reviews a first-save filename collision (cancel) 617ms
+   ✓ reviews a first-save filename collision (stale) 788ms
+   ✓ cancels automatic first-save destination selection when the active Vault changes 578ms
+   ✓ marks edited tabs dirty and Command-S saves only the active document to its original filename 948ms
+   ✓ uses the real tree in two Windows, shared native properties and independent occurrences; title never renames files 893ms
+   ✓ moves pairs and directories without changing authored data or generations, and Save uses the new location 1546ms
+   ✓ keeps typing and resource-owned relocation alive after both initiating occurrences close 606ms
+   ✓ imports explicitly, preserves source, and exposes collisions as unsaved candidates rather than files 944ms
+   ✓ exposes read-only storage, preserves ordinary editing, and cannot bypass it through Files 395ms
+   ✓ refresh discovers external changes without rebinding or replacing loaded dirty content; ambiguous identities stay unavailable 460ms
+   ✓ preserves unknown authored payloads and incompatible tags, and reports missing owned-resource dependencies 369ms
+   ✓ retains the selected vault across minimize/restore, with no serialized membership or root path 620ms
+   ✓ keeps a lost completion recoverable in the UI even when the durable journal already says relocated 2299ms
+   ✓ preserves nested unknown native properties through property editing, Save and fresh Open 1452ms
+   ✓ allows an unsaved collision candidate to choose a fresh first-save destination without relocating the existing resource 768ms
+   ✓ relocates a Document containing a native external reference without rewriting its target or saved generation 505ms
+   ✓ reports a vanished location without discarding the live Document or adopting an external same-ID move 519ms
+   ✓ derives vault rows once per publication and retains unchanged DOM rows across binding and discovery updates 2991ms
+   ✓ browses physical files and opens a real historical Document without migration or hidden native enrollment 4179ms
+   ✓ shows loading at startup and lists the Vault with an older backend 439ms
+   ✓ shows startup errors from /vault/default in the Library and Retry loads the contents 443ms
+   ✓ shows startup errors from /vault/browse in the Library and Retry loads the contents 533ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/application/flint-lifecycle.test.tsx > Flint composite transient hosting > closes a Flint window without changing Documents or History and keeps it closed after saving
+AssertionError: expected [ BlockTreeProjection{ …(15) } ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ src/application/flint-lifecycle.test.tsx:142:86
+    140|     const snapshot = vi.spyOn(f.editor.repository,'snapshot');
+    141|     f.host.querySelector<HTMLButtonElement>('[aria-label="Close window…
+    142|     expect(f.host.querySelector('.flint-application')).toBeNull(); exp…
+       |                                                                                      ^
+    143|     expect(snapshot).not.toHaveBeenCalled(); expect(history).not.toHav…
+    144|     expect(f.editor.repository.snapshot()).toEqual(before);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 6 passed (7)
+      Tests  1 failed | 121 passed (122)
+   Start at  15:37:39
+   Duration  57.71s (transform 25.22s, setup 0ms, collect 126.11s, tests 64.13s, environment 12.46s, prepare 1.82s)
+

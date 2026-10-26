@@ -61,7 +61,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
   }else if(!s.state.expanded&&(!range||range.anchor!==range.head||range.head!==s.source.end))close();
   pointerSelection=false;
  };
- const outside=(event:Event)=>{const target=event.target as Node;if(props.editor.features.scryProvisionalCells&&target instanceof Element&&target.closest('[data-document-save],[data-system-menu-trigger],[role="menu"],[role="menuitem"]'))return;if(root?.contains(target))return;const h=props.editor.mounts.get(s.source.nodeKey);if(!h?.root.contains(target))close();else if(event.type==='pointerdown'){pointerSelection=true;setTimeout(()=>{if(s.alive)selection();pointerSelection=false;},0);}};
+ const outside=(event:Event)=>{const target=event.target as Node;if(props.editor.features.scryProvisionalCells&&target instanceof Element&&target.closest('[data-document-save],[data-document-history],[data-system-menu-trigger],[role="menu"],[role="menuitem"]'))return;if(root?.contains(target))return;const h=props.editor.mounts.get(s.source.nodeKey);if(!h?.root.contains(target))close();else if(event.type==='pointerdown'){pointerSelection=true;setTimeout(()=>{if(s.alive)selection();pointerSelection=false;},0);}};
  onMount(()=>{
   if(!owner)geometry.install(document.documentElement);
   if(typeof ResizeObserver!=='undefined'){resize=new ResizeObserver(schedule);const mount=props.editor.mounts.get(s.source.nodeKey);if(mount)resize.observe(mount.root);resize.observe(root);}

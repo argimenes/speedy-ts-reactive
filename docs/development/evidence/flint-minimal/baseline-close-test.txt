@@ -1,0 +1,33 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ❯ src/application/flint-lifecycle.test.tsx (24 tests | 1 failed | 23 skipped) 445ms
+   × Flint composite transient hosting > closes a Flint window without changing Documents or History and keeps it closed after saving 443ms
+     → expected [ BlockTreeProjection{ …(15) } ] to have a length of +0 but got 1
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/application/flint-lifecycle.test.tsx > Flint composite transient hosting > closes a Flint window without changing Documents or History and keeps it closed after saving
+AssertionError: expected [ BlockTreeProjection{ …(15) } ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ src/application/flint-lifecycle.test.tsx:141:86
+    140|     const snapshot = vi.spyOn(f.editor.repository,'snapshot');
+    141|     f.host.querySelector<HTMLButtonElement>('[aria-label="Close window…
+    142|     expect(f.host.querySelector('.flint-application')).toBeNull(); exp…
+       | ^
+    143|     expect(snapshot).not.toHaveBeenCalled(); expect(history).not.toHav…
+    144|     expect(f.editor.repository.snapshot()).toEqual(before);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 23 skipped (24)
+   Start at  15:38:32
+   Duration  14.89s (transform 9.71s, setup 0ms, collect 11.79s, tests 445ms, environment 1.21s, prepare 240ms)
+

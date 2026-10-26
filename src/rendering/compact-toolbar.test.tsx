@@ -4,6 +4,7 @@ import { ReactiveEditor } from "../reactive-editor/editor";
 import { registerCoreViews } from "./register-core-views";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { toolbarControl } from "./toolbar-test-helpers";
+import { createAutocompleteFeature } from "../features/autocomplete";
 import { countText } from "../runtime/text-counts";
 
 const cleanup: (() => void)[] = [];
@@ -153,4 +154,29 @@ describe("compact editor chrome", () => {
     choose("Annotations"); host.querySelector<HTMLButtonElement>('.compact-toolbar__more')!.click();
     expect(document.querySelector('[aria-label="Linked annotation type"]')).toBeNull();
   });
+});
+
+it("routes toolbar history through existing input guards, including provisional Scry and IME", () => {
+  const {editor,host,node,select}=fixture();select();
+  const n=node('a-p'), mount=editor.mounts.get(n.key)!;
+  const read=()=>n.inlineContent.map(k=>editor.node(k)!.payload.text).join('');
+  const command=(label:string)=>toolbarControl<HTMLButtonElement>(host,`[aria-label="${label}"]`,'Typography').click();
+  editor.commands.replaceInlineRange(n.key,0,0,'x');
+  command('Undo');expect(read()).toBe('one two three');
+  command('Redo');expect(read()).toBe('xone two three');
+  mount.composing=true;command('Undo');expect(read()).toBe('xone two three');mount.composing=false;
+  const original = Range.prototype.getBoundingClientRect;
+  Range.prototype.getBoundingClientRect = () => ({x:0,y:0,left:0,top:0,right:10,bottom:20,width:10,height:20,toJSON(){return {};}});
+  cleanup.push(()=>{if(original)Range.prototype.getBoundingClientRect=original;else delete (Range.prototype as any).getBoundingClientRect;});
+  editor.featureHost.activate(createAutocompleteFeature(editor));
+  editor.completionInput!.intercept!(n.key,0,0,'((','insertText');
+  const revision=editor.repository.state.revision,snapshot=vi.spyOn(editor.repository,'snapshot');
+  const undo=toolbarControl<HTMLButtonElement>(host,'[aria-label="Undo"]','Typography');
+  undo.dispatchEvent(new MouseEvent('pointerdown',{bubbles:true,cancelable:true}));
+  expect(editor.repository.canUndo()).toBe(false);
+  undo.focus();undo.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  expect(editor.repository.canUndo()).toBe(false);
+  command('Undo');command('Redo');expect(read()).toBe('xone two three');
+  expect(editor.repository.state.revision).toBe(revision);expect(snapshot).not.toHaveBeenCalled();
+  editor.completionInput!.cancel();command('Undo');expect(read()).toBe('one two three');
 });

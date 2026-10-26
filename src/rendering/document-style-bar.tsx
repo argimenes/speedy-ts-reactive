@@ -247,17 +247,29 @@ export function DocumentStyleBar(props: { editor: ReactiveEditor; scopeKey?: Nod
   const typographyTypes = new Set(["style/bold", "style/italics", "style/underline", "style/strikethrough", "style/superscript", "style/subscript", "style/uppercase", "style/blur"]);
   const markupTypes = new Set(["style/highlight", "style/highlighter", "style/show-hide"]);
   const deferredTypes = new Set(["style/flip", "style/mirror"]);
+  const historyTrigger = (direction: "undo" | "redo") => editor.bindings.effective(`history.${direction}`).find(trigger => trigger.kind === "keyboard" || trigger.kind === "chord");
+  const history = (direction: "undo" | "redo") => {
+    const node = target(), trigger = historyTrigger(direction);
+    const mount = node && editor.mounts.get(node.key);
+    if (!mount?.focusElement || mount.composing || !trigger || (trigger.kind !== "keyboard" && trigger.kind !== "chord")) return;
+    restore();
+    for (const stroke of trigger.kind === "chord" ? trigger.steps : [trigger]) mount.focusElement.dispatchEvent(new KeyboardEvent("keydown", {
+      key: stroke.key, ctrlKey: stroke.modifiers.includes("Ctrl"), metaKey: stroke.modifiers.includes("Meta"),
+      altKey: stroke.modifiers.includes("Alt"), shiftKey: stroke.modifiers.includes("Shift"), bubbles: true, cancelable: true,
+    }));
+  };
   const tools = (): CompactTool[] => [
+    ...(["undo", "redo"] as const).map(direction => ({ id: `history.${direction}`, label: direction === "undo" ? "Undo" : "Redo", glyph: direction === "undo" ? "↶" : "↷", toolset: "Typography" as const, primary: true, disabled: () => !target() || !historyTrigger(direction), run: () => history(direction) })),
     { id: "colours", label: "Text colour and fill", glyph: "Colour / Fill", width: 104, toolset: "Visual effects", panel: ColourControls },
     ...(editor.features.textSuperposition ? [{ id: "superposition.add", label: "Add alternative", glyph: "Alternative", width: 96, toolset: "Annotations" as const, run: addAlternative }] : []),
     ...annotationTools.map(([type, label, glyph]): CompactTool => ({
       id: type, label, glyph,
       toolset: type === "style/show-hide" ? "Selection" : typographyTypes.has(type) ? "Typography" : markupTypes.has(type) ? "Annotations" : "Visual effects",
       get description() { return editor.featureActions.toolbar().map(item => item.annotationDescriptions?.[type]).find(Boolean) ?? (deferredTypes.has(type) ? "Annotation is stored; visual rendering is pending." : undefined); },
-      persistent: ["style/bold", "style/italics", "style/underline"].includes(type),
+      persistent: ["style/bold", "style/italics"].includes(type),
       width: typographyTypes.has(type) ? 36 : 88, pressed: type === "style/show-hide" ? hiddenTextRevealed : undefined, run: () => type === "style/show-hide" ? showHide() : annotate(type),
     })),
-    ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
+    ...["h1", "h2", "h3", "h4"].map(size => ({ id: size, primary: size === "h1" || size === "h2", label: `Apply ${size.toUpperCase()}`, glyph: size.toUpperCase(), toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/font/size", size) })),
     ...[["left", "Align left", "≡"], ["center", "Align centre", "≣"], ["right", "Align right", "≡"], ["justify", "Justify", "☰"]].map(([value, label, glyph]) => ({ id: `align-${value}`, label, glyph, toolset: "Typography" as const, disabled: hasCrossRange, run: () => blockStyle("block/alignment", value) })),
     { id: "indent", label: "Increase indent", glyph: "⇥", toolset: "Typography", disabled: hasCrossRange, run: () => indent(1) },
     { id: "outdent", label: "Decrease indent", glyph: "⇤", toolset: "Typography", disabled: hasCrossRange, run: () => indent(-1) },

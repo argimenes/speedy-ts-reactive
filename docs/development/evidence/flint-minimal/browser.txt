@@ -1,0 +1,19 @@
+PASS wide header shares the document tab row
+PASS inspector is collapsed with no saved visibility preference
+PASS Cavern tree is open by default with no administrative forms
+PASS header plus opens existing Document formats and creation form
+PASS new folder form uses selected tree location
+PASS Escape closes file controls and restores focus
+PASS Search is an alternate Explorer view
+PASS Recent remains available separately
+PASS pane toggles preserve mounted editing DOM
+PASS formatting applies to the retained source selection
+PASS Undo button uses document history
+PASS Redo restores the annotation
+PASS advanced typography remains in More
+PASS real Scry suspends toolbar history without commits or snapshots
+PASS cancelling boundary-only Scry preserves canonical text and history
+PASS constrained layout separates header and tabs
+PASS narrow Explorer is an accessible overlay
+PASS responsive layouts do not snapshot or edit documents
+PASS no browser exceptions

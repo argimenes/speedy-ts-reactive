@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/provisional-integration.test.ts (11 tests) 405ms
+ ✓ src/rendering/compact-toolbar.test.tsx (9 tests) 2272ms
+   ✓ compact editor chrome > toggles pointer spotlight without changing selection, text, annotations or history and releases its window host 657ms
+   ✓ routes toolbar history through existing input guards, including provisional Scry and IME 443ms
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  15:46:44
+   Duration  16.34s (transform 11.08s, setup 0ms, collect 19.58s, tests 2.68s, environment 2.64s, prepare 310ms)
+

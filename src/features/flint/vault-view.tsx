@@ -13,6 +13,9 @@ const join = (folder:string,name:string) => folder==='.'?name:`${folder}/${name}
 
 export function VaultView(props:{vault:ApplicationVault; compact?:boolean; activeLocation?:()=>{folder:string;filename:string}|undefined}) {
   const cavern = useCurrentCavern();
+  const [panel, setPanel] = createSignal('');
+  let controls!: HTMLElement;
+  const showPanel = (value: string) => { setPanel(panel() === value ? '' : value); queueMicrotask(() => controls.querySelector<HTMLElement>(`[data-vault-panel="${value}"] input, [data-vault-panel="${value}"] select`)?.focus()); };
   const [root,setRoot]=createSignal('.'), [folder,setFolder]=createSignal('.'), [selected,setSelected]=createSignal('');
   const [name,setName]=createSignal('Document.mutable.json'), [title,setTitle]=createSignal('Untitled'), [directory,setDirectory]=createSignal('New folder');
   const [format,setFormat]=createSignal<DocumentFormat>('page');
@@ -28,15 +31,23 @@ export function VaultView(props:{vault:ApplicationVault; compact?:boolean; activ
   const childFolders=createMemo(()=>groupByFolder(state()?.folders??[],f=>location(f).folder));
   const candidateFolders=createMemo(()=>groupByFolder(state()?.candidates??[],f=>location(f).folder));
   const pickFolder=(p:string)=>{setFolder(p);setSelected('');setMoveName(p.split('/').pop()!);setDestination(state()!.root);};
-  const Folder=(p:{path:string})=> <details class="flint-tree-folder"><summary><button aria-pressed={folder()===p.path&&!selected()} onClick={()=>pickFolder(p.path)}>{p.path===state()?.root?p.path:p.path.split('/').pop()}</button></summary>
+  const Folder=(p:{path:string})=> <details class="flint-tree-folder" open={p.path===state()?.root}><summary><button aria-pressed={folder()===p.path&&!selected()} onClick={()=>pickFolder(p.path)}>{p.path===state()?.root?(cavern?.current()?.name ?? (p.path==='.'?'Cavern':p.path)):p.path.split('/').pop()}</button></summary>
     <For each={documentFolders().get(p.path)}>{d=><div class="flint-tree-document"><button title={`${d.title} · ${path(d.location)} · ${d.state}`} aria-current={props.activeLocation?.() && path(props.activeLocation()!)===path(d.location) ? "page" : undefined} aria-label={`Open ${path(d.location)}`} disabled={busy()||!state()!.complete||d.state==='ambiguous'||d.state==='pending'} onClick={()=>{setSelected(path(d.location));setFolder(d.location.folder);setDestination(d.location.folder);setMoveName(d.location.filename);void run(()=>props.vault.openFile(d.location));}}>{d.title}<small>{d.location.filename} · {d.state}</small></button><Show when={d.state==='pending'}><button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.recoverNative(d.location))}>Recover {d.location.filename}</button></Show></div>}</For>
     <For each={childFolders().get(p.path)}>{f=><Folder path={f}/>}</For>
     <For each={candidateFolders().get(p.path)}>{candidate=><div class="flint-tree-document"><button aria-label={`Open ${candidate}`} disabled={busy()} onClick={()=>{setSelected('');setFolder(location(candidate).folder);void run(async()=>{if(!props.vault.openCandidate)throw Error('Content recognition is unavailable');await props.vault.openCandidate(location(candidate));});}}>{location(candidate).filename}<small>File · recognize on Open</small></button></div>}</For>
   </details>;
-  return <section class="flint-vault-controls" aria-label="Filesystem Cavern">
+  return <section ref={controls} class="flint-vault-controls" aria-label="Filesystem Cavern" onKeyDown={event=>{if(props.compact&&panel()&&event.key==='Escape'){event.preventDefault();event.stopPropagation();setPanel('');controls.querySelector<HTMLButtonElement>('[data-new-document]')?.focus();}}}>
+    <Show when={props.compact}><div class="flint-file-actions" role="group" aria-label="File actions">
+      <button data-new-document aria-label="New Document in selected folder" title="New Document / Document formats" disabled={!state()||busy()||readOnly()} onClick={()=>showPanel('new')}>＋</button>
+      <button aria-label="New folder" title="New folder" disabled={!state()||busy()||readOnly()} onClick={()=>showPanel('directory')}>▱＋</button>
+      <button aria-label="Refresh files" title="Refresh files" disabled={!state()||busy()||state()?.checking} onClick={()=>void run(()=>props.vault.refresh())}>↻</button>
+      <select aria-label="File actions" value="" onChange={event=>{showPanel(event.currentTarget.value);event.currentTarget.value='';}}>
+        <option value="">Actions…</option><option value="move" disabled={!state()}>Rename / move selected item</option><option value="new" disabled={!state()}>Import Markdown…</option><option value="options">Cavern &amp; filters…</option>
+      </select>
+    </div><Show when={panel()}><button class="flint-close-file-form" onClick={()=>setPanel('')}>Close file controls ×</button></Show></Show>
     <Show when={props.vault.loading?.()}><p role="status">Loading Vault contents…</p></Show>
     <Show when={props.vault.error?.()}><p role="alert">Could not load Vault contents: {props.vault.error!()}</p><Show when={props.vault.retry}><button disabled={busy()} onClick={()=>void run(()=>props.vault.retry!())}>Retry</button></Show></Show>
-    <details class="flint-vault-options" open={!props.compact}><summary>Cavern &amp; filters</summary>
+    <details data-vault-panel="options" hidden={props.compact && panel()!=='options'} class="flint-vault-options" open={!props.compact || panel()==='options'}><summary>Cavern &amp; filters</summary>
     <Show when={props.vault.choose}><button disabled={busy()} onClick={()=>props.vault.choose!()}>Open Another Cavern…</button><p>{cavern?.current()?.path ?? 'Choose a directory in the server Documents store.'}</p></Show>
     <Show when={!cavern}><details><summary>Open by managed relative path</summary><label>Managed directory<input aria-label="Vault directory" value={root()} onInput={e=>setRoot(e.currentTarget.value)}/></label>
     <button disabled={busy()} onClick={()=>void run(()=>props.vault.open(root()))}>Open Cavern</button></details></Show>
@@ -49,8 +60,8 @@ export function VaultView(props:{vault:ApplicationVault; compact?:boolean; activ
     <Show when={state()}>
       <Show when={state()!.complete&&!state()!.documents.length}><p role="status">No enrolled native Documents in this Cavern. Existing files remain browsable; Open recognizes compatible Document content without converting the source.</p></Show>
       <Folder path={state()!.root}/>
-      <p>Selected folder: <output aria-label="Selected folder">{folder()}</output></p>
-      <details><summary>New Document / import</summary>
+      <p hidden={props.compact && !panel()}>Selected folder: <output aria-label="Selected folder">{folder()}</output></p>
+      <details data-vault-panel="new" hidden={props.compact && panel()!=='new'} open={props.compact && panel()==='new'}><summary>New Document / import</summary>
         <Show when={props.vault.documentFormats}><label>Document format<select aria-label="New Document format" value={format()} disabled={busy()||readOnly()} onChange={e=>setFormat(e.currentTarget.value as DocumentFormat)}>
           <For each={props.vault.documentFormats}>{item=><option value={item.id}>{item.label}{item.id==='framed'?' — Illuminated Manuscript':''}</option>}</For>
         </select></label></Show>
@@ -61,8 +72,8 @@ export function VaultView(props:{vault:ApplicationVault; compact?:boolean; activ
         <button disabled={busy()||readOnly()||!importSource()} onClick={()=>void run(()=>props.vault.importMarkdown(location(importSource()),{folder:folder(),filename:name()}))}>Import into new native Document</button>
         <p>Import preserves the source. Choose a fresh destination filename in the selected folder.</p>
       </details>
-      <details><summary>Create directory</summary><label>Directory name<input aria-label="New directory name" value={directory()} onInput={e=>setDirectory(e.currentTarget.value)}/></label><button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.createDirectory(folder(),directory()))}>Create directory</button></details>
-      <details><summary>Rename / move</summary><p>{selected()||folder()}</p>
+      <details data-vault-panel="directory" hidden={props.compact && panel()!=='directory'} open={props.compact && panel()==='directory'}><summary>Create directory</summary><label>Directory name<input aria-label="New directory name" value={directory()} onInput={e=>setDirectory(e.currentTarget.value)}/></label><button disabled={busy()||readOnly()} onClick={()=>void run(()=>props.vault.createDirectory(folder(),directory()))}>Create directory</button></details>
+      <details data-vault-panel="move" hidden={props.compact && panel()!=='move'} open={props.compact && panel()==='move'}><summary>Rename / move</summary><p>{selected()||folder()}</p>
         <label>Destination folder<select aria-label="Move destination folder" value={destination()} onChange={e=>setDestination(e.currentTarget.value)}><For each={folders()}>{f=><option value={f}>{f}</option>}</For></select></label>
         <label>{selected()?'Native filename':'Directory name'}<input aria-label="Move destination name" value={moveName()} onInput={e=>setMoveName(e.currentTarget.value)}/></label>
         <button disabled={busy()||readOnly()||!moveName()||(!selected()&&folder()===state()!.root)} onClick={()=>void run(async()=>{

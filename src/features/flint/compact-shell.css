@@ -149,3 +149,48 @@
 /* File drops name their actual gap; internal Block drags keep their own owner. */
 .flint-application [data-interchange-drop] { outline: 2px dashed var(--flint-accent, #56857b); outline-offset: 3px; }
 .flint-application [data-interchange-drop]::after { content: attr(data-interchange-drop); display: block; color: var(--flint-accent, #56857b); font: 12px system-ui; border-top: 2px solid currentColor; }
+
+/* Minimal writing shell. The retained tabs stay in their original DOM owner;
+   wide layouts share their row with the application controls. */
+.flint-compact .flint-header-actions { display:flex; align-items:center; gap:3px; margin-left:auto; flex:none; }
+.flint-compact .flint-new-document { width:28px; height:30px; padding:0; font-size:22px!important; }
+.flint-compact .flint-application__header .flint-vault-name { display:none; }
+.flint-compact .flint-menu { max-height:min(720px,calc(100vh - 130px)); overflow:auto; min-width:250px; }
+.flint-application.flint-compact .flint-rail-heading { padding:0 7px 4px; }
+.flint-application.flint-compact .flint-rail-heading h2 { text-transform:none; letter-spacing:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.flint-compact .flint-segments { margin-bottom:4px; border-bottom:0; }
+.flint-compact .flint-file-actions { display:flex; gap:2px; align-items:center; margin-bottom:8px; }
+.flint-compact .flint-file-actions button { height:30px; min-width:30px; padding:2px; font-size:18px; }
+.flint-compact .flint-file-actions select { width:auto; min-width:0; flex:1; border:0; background:transparent; padding:4px 1px; }
+.flint-compact .flint-close-file-form { font-size:11px; margin-bottom:4px; }
+.flint-compact .flint-vault-controls > details[data-vault-panel] { border:0; padding:8px 3px; margin:0; }
+.flint-compact .flint-vault-controls > details[data-vault-panel] > summary { font-weight:600; }
+.flint-compact .flint-vault-controls > [role=status]:empty { display:none; }
+.flint-compact .flint-pane-splitter { width:3px; flex-basis:3px; background:transparent; border-right:1px solid var(--flint-line); }
+.flint-compact .flint-pane-splitter:hover { background:var(--flint-ochre); }
+.flint-application.flint-compact .flint-application__editor > .reactive-tabs > .reactive-tabs__labels { padding:0; height:39px; min-height:39px; gap:0; }
+.flint-application.flint-compact .flint-application__editor > .reactive-tabs > .reactive-tabs__labels button { height:38px; }
+.flint-compact .flint-document-tab { border:0; }
+.flint-compact .flint-document-tab[data-active=true] { box-shadow:inset 0 -2px var(--flint-ochre); }
+.flint-compact .flint-application__header .flint-save { max-width:none; }
+@container flint (min-width:1080px) {
+  .flint-application.flint-compact .flint-application__header {
+    position:absolute; inset:0 0 auto; height:39px; min-height:39px; z-index:12;
+    background:transparent; border:0; pointer-events:none; padding:0 8px;
+  }
+  .flint-compact .flint-application__header > :is(.flint-menu-anchor,.flint-header-actions) { pointer-events:auto; background:var(--flint-coal); }
+  .flint-application.flint-compact .flint-application__vault,
+  .flint-application.flint-compact .flint-context { padding-top:43px; }
+  .flint-application.flint-compact[data-library=false] .flint-application__editor > .reactive-tabs > .reactive-tabs__labels { padding-left:140px; }
+  .flint-application.flint-compact[data-context=false] .flint-application__editor > .reactive-tabs > .reactive-tabs__labels { padding-right:195px; }
+  .flint-compact .flint-header-actions { min-width:183px; justify-content:flex-end; }
+  .flint-compact .flint-graph-lighting { position:absolute; top:40px; right:8px; }
+}
+@container flint (max-width:619px) {
+  .flint-application.flint-compact[data-narrow-panel=library] .flint-application__vault { left:0; width:min(310px,calc(100% - 32px)); }
+}
+
+@media (hover:hover) and (pointer:fine) {
+  .flint-compact .reactive-document-occurrence__content .block-selectable > .block-selection-handle { opacity:0; }
+  .flint-compact .reactive-document-occurrence__content .block-selectable:is(:hover,:focus-within,.block-is-selected) > .block-selection-handle { opacity:1; }
+}

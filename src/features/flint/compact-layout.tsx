@@ -3,13 +3,13 @@ import { createStore } from 'solid-js/store';
 
 export const FLINT_LAYOUT_KEY = 'mutable.flint.compact-layout.v1';
 export type FlintLayout = { library: boolean; context: boolean; explorerWidth: number; inspectorWidth: number; density: 'compact' | 'reading' };
-const defaults: FlintLayout = { library: true, context: true, explorerWidth: 238, inspectorWidth: 255, density: 'compact' };
+const defaults: FlintLayout = { library: true, context: false, explorerWidth: 238, inspectorWidth: 255, density: 'compact' };
 export const paneBounds = { library: { min: 150, max: 450 }, context: { min: 190, max: 450 } };
 export function clampPane(value: number, pane: keyof typeof paneBounds) { return Math.round(Math.max(paneBounds[pane].min, Math.min(paneBounds[pane].max, value))); }
 
 /** Local presentation preferences only; never a document edit or history entry. */
 export function createFlintLayout(persistent: boolean) {
-  const initial = { ...defaults };
+  const initial = { ...defaults, context: !persistent };
   if (persistent) try {
     const saved = JSON.parse(localStorage.getItem(FLINT_LAYOUT_KEY) ?? '{}');
     for (const key of ['library', 'context'] as const) if (typeof saved?.[key] === 'boolean') initial[key] = saved[key];

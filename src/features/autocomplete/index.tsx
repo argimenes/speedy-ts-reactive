@@ -238,7 +238,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    if(draft?.cells.pending){cancel();return false;}
    const s=current?.source;if(!s?.brackets)return false;
    const target=event.target as Element;
-   if(draft&&target.closest?.('[data-document-save],[data-system-menu-trigger],[role="menu"],[role="menuitem"]'))return false;
+   if(draft&&target.closest?.('[data-document-save],[data-document-history],[data-system-menu-trigger],[role="menu"],[role="menuitem"]'))return false;
    if(target.closest?.('.autocomplete-workstation,.reactive-entity-search'))return false;
    const resolved=editor.mounts.resolveEvent(event),point=resolved?.handle.inlinePointAt?.(event.clientX,event.clientY);
    if(resolved?.nodeKey!==s.nodeKey||point===undefined||point<s.start||point>s.end){cancel();return false;}
@@ -275,6 +275,8 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    if(inside&&target.closest('[data-scry-geometry]')&&(['Enter'].includes(event.key)||event.key.startsWith('Arrow')))return false;
    if(event.isComposing){if(!inside&&!draft)cancel();return false;}
    if(draft&&(event.metaKey||event.ctrlKey)&&['z','y','s'].includes(event.key.toLowerCase())){event.preventDefault();event.stopPropagation();if(event.key.toLowerCase()==='s')editor.completionInput?.beforeSave?.();return true;}
+   // History buttons activate via Enter/Space, then dispatch through the guarded source input.
+   if(draft&&target.closest?.('[data-document-history]'))return false;
    const resolved=editor.mounts.resolveEvent(event);
    if(!inside&&resolved?.nodeKey!==s.source.nodeKey){cancel();return false;}
    // Native field editing, Save, history, copying and Tab are never completion shortcuts.

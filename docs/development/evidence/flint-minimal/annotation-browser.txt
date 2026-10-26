@@ -1,0 +1,48 @@
+(node:30373) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS loaded Flint Document shows Compact even with saved Reading density
+PASS long Document scroll keeps annotation bar below Flint tabs
+PASS manual Expanded exposes all canonical annotations
+PASS Hidden keeps only accessible reveal and policy controls
+PASS keyboard reveal selects Compact
+PASS density toggle preserves Expanded
+PASS Reading density does not conceal the annotation bar
+PASS Block Focus keeps Compact visible
+PASS Reading Spotlight keeps Compact visible
+PASS pointer formatting preserves the intended editor selection
+NARROW {"width":280,"controls":[{"name":"Paragraph style","left":63,"right":121,"width":58},{"name":"Bold selection","left":5,"right":32,"width":27},{"name":"Italicise selection","left":32,"right":59,"width":27},{"name":"More ▾","left":125,"right":171,"width":46},{"name":"Annotation bar presentation","left":207,"right":275,"width":68}],"fits":true}
+PASS style, bold, italic, More and policy fit a 280px pane
+PASS overflow escapes pane clipping and exposes toolsets and editor options
+PASS detached Document retains the exact annotation bar and editing DOM
+PASS spacious maximised detached Document resolves Expanded
+EXPANDED FIT {"width":960,"height":132,"scrollWidth":960,"clientWidth":960,"state":"expanded"}
+PASS expanded controls wrap without horizontal overflow at the 960px threshold
+PASS scrolled Block handles cannot paint above the annotation bar
+PASS detached annotation bar clears its Save/Return chrome while scrolling
+PASS restored detached Document returns to Compact
+PASS tiled Document stays Compact with the exact editor session
+PASS manual Expanded survives maximise and restore
+PASS actual full-screen Document resolves Expanded under Auto
+PASS More stays usable inside native full-screen
+PASS Return retains bar, editor, and Auto policy
+PASS presentation changes create no snapshots, commits or content revision
+PASS returned fixed bar sits above the Flint Document scrollport
+PASS Document page tabs retain ordinary non-sticky positioning
+PASS compact floating Document has a bounded content scrollport
+PASS compact floating wheel 450 keeps bar fixed and clickable
+PASS compact floating wheel 100000 keeps bar fixed and clickable
+PASS compact floating wheel -100000 keeps bar fixed and clickable
+PASS expanded floating Document has a bounded content scrollport
+PASS expanded floating wheel 450 keeps bar fixed and clickable
+PASS expanded floating wheel 100000 keeps bar fixed and clickable
+PASS expanded floating wheel -100000 keeps bar fixed and clickable
+PASS compact maximised Document has a bounded content scrollport
+PASS compact maximised wheel 450 keeps bar fixed and clickable
+PASS compact maximised wheel 100000 keeps bar fixed and clickable
+PASS compact maximised wheel -100000 keeps bar fixed and clickable
+PASS expanded maximised Document has a bounded content scrollport
+PASS expanded maximised wheel 450 keeps bar fixed and clickable
+PASS expanded maximised wheel 100000 keeps bar fixed and clickable
+PASS expanded maximised wheel -100000 keeps bar fixed and clickable
+PASS wheel scrolling creates no snapshots, commits or content revision
+PASS no browser exceptions

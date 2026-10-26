@@ -69,9 +69,9 @@ try{
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r',unmodifiedText:'\r'},sessionId);
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13},sessionId);
  check('keyboard reveal selects Compact',await evaluate(`proof.state()==='compact'&&localStorage.getItem('mutable.ink.annotation-bar.v1')==='compact'`));
- await evaluate(`proof.policy('expanded')`);await click(`proof.root.querySelector('[aria-label="Reading density"]')`);
+ await evaluate(`proof.policy('expanded')`);await click(`proof.root.querySelector('[aria-label="Flint application menu"]')`);await click(`proof.root.querySelector('[aria-label="Reading density"]')`);
  check('density toggle preserves Expanded',await evaluate(`proof.state()==='expanded'&&localStorage.getItem('mutable.ink.annotation-bar.v1')==='expanded'`));
- await click(`proof.root.querySelector('[aria-label="Reading density"]')`);
+ await click(`proof.root.querySelector('[aria-label="Flint application menu"]')`);await click(`proof.root.querySelector('[aria-label="Reading density"]')`);
  check('Reading density does not conceal the annotation bar',await evaluate(`proof.root.dataset.density==='reading'&&proof.state()==='expanded'`));
  await evaluate(`proof.policy('compact');proof.editor.caretModes.select('block-focus')`);
  check('Block Focus keeps Compact visible',await evaluate(`proof.state()==='compact'&&!proof.bar.querySelector('.annotation-bar__reveal')`));
@@ -84,7 +84,7 @@ try{
  await evaluate(`proof.editorRegion=proof.root.querySelector('.flint-application__editor');proof.originalRegionStyle=proof.editorRegion.getAttribute('style');proof.editorRegion.style.cssText='flex:none;width:280px;min-width:280px'`);
  await evaluate('new Promise(r=>setTimeout(r,300))');
  const narrow=await evaluate(`(()=>{const root=proof.bar.getBoundingClientRect(),els=[...proof.bar.querySelectorAll('.annotation-bar__style,.compact-toolbar__persistent button,.compact-toolbar__more,.annotation-bar__policy')];return {width:root.width,controls:els.map(el=>({name:el.getAttribute('aria-label')||el.textContent,left:el.getBoundingClientRect().left-root.left,right:el.getBoundingClientRect().right-root.left,width:el.getBoundingClientRect().width})),fits:els.every(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.left>=root.left&&r.right<=root.right+1})}})()`);
- console.log('NARROW',JSON.stringify(narrow));check('style, bold, italic, underline, More and policy fit a 280px pane',narrow.fits);
+ console.log('NARROW',JSON.stringify(narrow));check('style, bold, italic, More and policy fit a 280px pane',narrow.fits);
  await click(`proof.bar.querySelector('.compact-toolbar__more')`);
  check('overflow escapes pane clipping and exposes toolsets and editor options',await evaluate(`(()=>{const popup=document.querySelector('.compact-toolbar__panel'),r=popup.getBoundingClientRect();return r.width>0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&!!popup.querySelector('[aria-label="Overflow toolset"]')&&!!popup.querySelector('[aria-label="Caret Mode"]')})()`));
  await click(`document.querySelector('[aria-label="Close tools"]')`);

@@ -43,7 +43,7 @@ export function resolveAnnotationBar(policy: AnnotationBarPolicy, context: { ful
 export function createAnnotationBarPresentation(root: () => HTMLElement) {
   const [context, setContext] = createSignal({ fullscreen: false, maximized: false, spacious: false, flint: false });
   // An absent preference follows the host; an explicit Auto/manual choice remains shared.
-  const preference = createAnnotationBarPreference(() => context().flint ? 'compact' : 'auto'), owner = useManagedWindowOwner();
+  const preference = createAnnotationBarPreference(() => context().flint && !context().fullscreen ? 'compact' : 'auto'), owner = useManagedWindowOwner();
   let refresh = () => {};
   createEffect(() => { if (owner) { owner.windowId; } untrack(refresh); });
   onMount(() => {

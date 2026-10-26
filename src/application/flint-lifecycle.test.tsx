@@ -30,6 +30,7 @@ describe("Flint composite transient hosting", () => {
     const shell = f.host.querySelector<HTMLElement>('.flint-application')!;
     expect(shell.querySelector('.flint-scene-chrome,.flint-material-canvas')).toBeNull();
     expect(shell.querySelector('[aria-label="Toggle Document and Graph"]')).toBeNull();
+    shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Context"]')!.click();
     expect(shell.querySelector('[data-flint-content="entities"] [aria-label="Document backlinks"]')).not.toBeNull();
     const node = f.text(), mount = f.editor.mounts.get(node.key), before = f.editor.repository.snapshot();
     const button = (label: string) => [...shell.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label)!;
@@ -49,12 +50,12 @@ describe("Flint composite transient hosting", () => {
     const node=f.text(), mount=f.editor.mounts.get(node.key)!, view=f.views()[0];
     f.editor.focus.request(node.key); mount.restoreInlineSelection!({anchor:1,head:4});
     const before=f.editor.repository.snapshot();
-    const toggle=f.host.querySelector<HTMLButtonElement>('[aria-label="Toggle Document and Graph"]')!;
-    toggle.click();
+    const toggle=()=>{f.host.querySelector<HTMLButtonElement>('[aria-label="Flint application menu"]')!.click();f.host.querySelector<HTMLButtonElement>('[aria-label="Show graph"]')!.click();};
+    toggle();
     await vi.waitFor(()=>expect(f.host.querySelector('[aria-label="Document entity graph"]')).toBeTruthy());
     expect(f.editor.mounts.get(node.key)).toBe(mount); expect(f.views()[0]).toBe(view);
     expect(f.host.querySelector('.flint-application')?.getAttribute('data-view')).toBe('graph');
-    toggle.click(); await tick();
+    toggle(); await tick();
     expect(f.editor.mounts.get(node.key)).toBe(mount);
     expect(f.editor.repository.snapshot()).toEqual(before);
     expect(f.host.querySelector('[aria-label="Document entity graph"]')).toBeNull();
@@ -179,7 +180,7 @@ describe("Flint composite transient hosting", () => {
     const stop=f.editor.repository.subscribeHistoryChanges(()=>history++,e=>{throw e;});
     const click=(name:string)=>[...shell.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===name)!.click();
     for(let i=0;i<3;i++){
-      click('Search');click('Browse');click('References');click('Properties');click('Backlinks');
+      click('Search');click('Files');click('References');click('Properties');click('Backlinks');
       shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Library"]')!.click();
       shell.querySelector<HTMLButtonElement>('[aria-label="Toggle Context"]')!.click();
       await tick();

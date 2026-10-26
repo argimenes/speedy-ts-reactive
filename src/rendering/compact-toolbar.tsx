@@ -15,6 +15,7 @@ export interface CompactTool {
   disabled?: () => boolean;
   pressed?: () => boolean;
   persistent?: boolean;
+  primary?: boolean;
   visible?: () => boolean;
   run?: () => void;
   panel?: () => JSX.Element;
@@ -37,7 +38,7 @@ export function CompactToolbar(props: {
   const [panel, setPanel] = createSignal<"more" | CompactTool>();
   const [position, setPosition] = createSignal({ left: 0, top: 0, maxHeight: 400 });
   const persistent = createMemo(() => props.tools.filter(tool => tool.persistent));
-  const current = createMemo(() => props.tools.filter(tool => !tool.persistent && tool.toolset === props.toolset && (tool.visible?.() ?? true)));
+  const current = createMemo(() => props.tools.filter(tool => !tool.persistent && tool.primary && (tool.visible?.() ?? true)));
   const visibleCount = createMemo(() => {
     let used = 0, count = 0;
     for (const tool of current()) { used += (tool.width ?? 36) + 3; if (used > width()) break; count++; }
@@ -128,6 +129,7 @@ export function CompactToolbar(props: {
     return <Portal>{fullscreen?.contains(root) ? <DOMPortal mount={fullscreen}>{p.children}</DOMPortal> : p.children}</Portal>;
   };
   const ToolButton = (p: { tool: CompactTool; overflow?: boolean }) => <button type="button" data-tool-id={p.tool.id}
+    data-document-history={p.tool.id.startsWith("history.") ? p.tool.id : undefined}
     data-annotation-type={p.tool.id.includes("/") ? p.tool.id : undefined}
     aria-label={p.tool.label} title={p.tool.description ? `${p.tool.label}: ${p.tool.description}` : p.tool.label} disabled={p.tool.disabled?.()}
     aria-pressed={p.tool.pressed?.()}
@@ -161,7 +163,7 @@ export function CompactToolbar(props: {
       })}>
       <header><strong>{value() === "more" ? props.toolset : (value() as CompactTool).label}</strong><button type="button" aria-label="Close tools" onClick={() => close(true)}>×</button></header>
       <Show when={value() === "more"} fallback={(value() as CompactTool).panel?.()}>
-        <div class="compact-toolbar__overflow"><For each={current().slice(visibleCount())}>{tool => <ToolButton tool={tool} overflow />}</For></div>
+        <div class="compact-toolbar__overflow"><For each={props.tools.filter(tool => !tool.persistent && tool.toolset === props.toolset && (tool.visible?.() ?? true) && !current().slice(0, visibleCount()).includes(tool))}>{tool => <ToolButton tool={tool} overflow />}</For></div>
         <label class="annotation-bar__overflow-toolset">Toolset <select aria-label="Overflow toolset" value={props.toolset} onChange={event => props.onToolset(event.currentTarget.value as Toolset)}><For each={toolsets}>{name => <option>{name}</option>}</For></select></label>
         {props.more()}
       </Show>
