@@ -21,8 +21,10 @@ export function nextWordLength(text:string):number {
 /** Cached per occurrence inline revision: selection moves reuse segmentation. */
 export function boundaryNavigator(text:string) {
  const graphemes=graphemeBoundaries(text),back=wordEdges(text,-1),forward=wordEdges(text,1);
- return (position:number,direction:-1|1,word:boolean)=>{
-  const values=word?(direction<0?back:forward):graphemes;
+ return (position:number,direction:-1|1,word:boolean,edge?:'start'|'end')=>{
+  // Opening markers track word starts; closing markers track word ends,
+  // independently of travel direction. Do not strand a marker before whitespace.
+  const values=word?((edge?edge==='start':direction<0)?back:forward):graphemes;
   let lo=0,hi=values.length;
   while(lo<hi){const mid=(lo+hi)>>>1;if(values[mid]<position||(direction>0&&values[mid]===position))lo=mid+1;else hi=mid;}
   return direction<0?values[Math.max(0,lo-1)]:values[Math.min(values.length-1,lo)];

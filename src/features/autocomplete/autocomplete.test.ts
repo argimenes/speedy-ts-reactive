@@ -173,3 +173,44 @@ it('source highlighting resolves only two endpoints without changing cells, text
   disposeOther();expect(highlights.has('mutable-scry-source')).toBe(false);expect(root.textContent).toBe('one two');
  }finally{dispose();session.dispose();root.remove();selection.removeAllRanges();}
 });
+
+it('cached word navigation aligns each boundary to its own edge in both directions',async()=>{
+ const {boundaryNavigator}=await import('./brackets');
+ const navigate=boundaryNavigator('one  two\tthree');
+ expect(navigate(0,1,true,'start')).toBe(5);
+ expect(navigate(5,1,true,'start')).toBe(9);
+ expect(navigate(9,-1,true,'start')).toBe(5);
+ expect(navigate(3,1,true,'end')).toBe(8);
+ expect(navigate(8,-1,true,'end')).toBe(3);
+ expect(navigate(0,1,false,'start')).toBe(1);
+ const unicode=boundaryNavigator('😀 e\u0301clair next');
+ expect(unicode(2,1,true,'start')).toBe(10);
+});
+it('Option arrows move the end by word, Ctrl Option arrows move the start exactly, without canonical work',async()=>{
+ const {ReactiveEditor}=await import('../../reactive-editor/editor');const {createAutocompleteFeature}=await import('./index');
+ const editor=new ReactiveEditor({type:'document-block',children:[{id:'text',type:'standoff-editor-block',text:'one two three'}]});
+ const view=editor.createView(),node=Object.values(view.state.nodes).find(n=>n.payload.id==='text')!;
+ const root=document.body.appendChild(document.createElement('div'));let selection={anchor:0,head:3};
+ const release=editor.mounts.register(node.key,{root,focusElement:root,inputPolicy:'standoff',focus:()=>{},captureInlineSelection:()=>selection,restoreInlineSelection:s=>selection=s});editor.featureHost.activate(createAutocompleteFeature(editor));
+ try{
+  editor.completionInput!.intercept!(node.key,0,3,'((','insertText');
+  const data=editor.overlays.overlays.find(o=>o.viewType==='autocomplete')!.data as any;
+  const commit=vi.spyOn(editor.repository,'commit'),snapshot=vi.spyOn(editor.repository,'snapshot');
+  const revision=editor.repository.state.revision,segment=vi.spyOn(Intl.Segmenter.prototype,'segment');
+  const key=(direction:string,ctrlKey=false,altKey=true,target=root)=>{const event=new KeyboardEvent('keydown',{key:direction,ctrlKey,altKey,cancelable:true});Object.defineProperty(event,'target',{value:target});return editor.completionInput!.key(event);};
+  expect(key('ArrowRight')).toBe(true);expect(data.session.source).toMatchObject({start:0,end:7});
+  const segmentationCount=segment.mock.calls.length;
+  expect(key('ArrowRight',true,true)).toBe(true);expect(data.session.source).toMatchObject({start:4,end:7,literal:'two'});
+  expect(key('ArrowRight',true,false)).toBe(true);expect(data.session.source.end).toBe(13);
+  expect(key('ArrowLeft')).toBe(true);expect(data.session.source.end).toBe(7);
+  expect(key('ArrowLeft',true,true)).toBe(true);expect(data.session.source.start).toBe(0);
+  expect(segment).toHaveBeenCalledTimes(segmentationCount);
+  const popup=document.body.appendChild(document.createElement('div'));popup.className='autocomplete-workstation';const input=popup.appendChild(document.createElement('input'));
+  expect(key('ArrowRight',false,true,input)).toBe(false);expect(data.session.source.end).toBe(7);popup.remove();
+  expect(commit).not.toHaveBeenCalled();expect(snapshot).not.toHaveBeenCalled();expect(editor.repository.state.revision).toBe(revision);expect(editor.repository.canUndo()).toBe(false);
+  editor.completionInput!.cancel();editor.commands.replaceInlineRange(node.key,0,node.inlineContent.length,'four longer words here');
+  editor.completionInput!.intercept!(node.key,0,4,'((','insertText');expect(key('ArrowRight')).toBe(true);
+  const reopened=editor.overlays.overlays.find(o=>o.viewType==='autocomplete')!.data as any;
+  expect(reopened.session.source).toMatchObject({start:0,end:11,literal:'four longer'});
+ }finally{release();editor.dispose();root.remove();}
+});

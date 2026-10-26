@@ -128,7 +128,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
   const leaseBindings=()=>{
    const binding=(id:string,key:string,mods:('Ctrl'|'Shift'|'Meta'|'Alt')[]=[])=>{
     const action=`autocomplete.${id}`;
-    const release=editor.bindings.register({id:action,name:`Scry ${id}`,description:'Only during this occurrence-scoped Scry interaction',category:'Autocomplete',tags:[],scope:'autocomplete',defaults:[keyboard(key,...mods)],handler:ctx=>ctx.run(action)},scope.owner);
+    const release=editor.bindings.register({id:action,name:`Scry ${id}`,description:'Only during this occurrence-scoped Scry interaction',category:'Autocomplete',tags:[],scope:'autocomplete',defaults:id.startsWith('end.word.')?[keyboard(key,'Alt'),keyboard(key,...mods)]:[keyboard(key,...mods)],handler:ctx=>ctx.run(action)},scope.owner);
     releaseBindings.push(release);
     const conflicts=editor.bindings.conflicts(action,editor.bindings.effective(action));
     if(conflicts.length){release();current?.fail(`Scry shortcut ${id} conflicts with ${conflicts.map(c=>c.name).join(', ')}. Change its binding to enable it.`);}
@@ -137,15 +137,15 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    for(const edge of ['start','end'])for(const unit of ['word','character'])for(const direction of [-1,1])binding(`${edge}.${unit}.${direction}`,direction<0?'ArrowLeft':'ArrowRight',['Ctrl',...(edge==='start'?['Alt' as const]:[]),...(unit==='character'?['Shift' as const]:[])]);
   };
   const bracketSnapshot=(key:string,start:number,end:number,mode:NonNullable<CompletionSource['brackets']>)=>({...snapshot(key,start,end,true),brackets:mode});
-  let boundaryCache:{key:string;version:number;move:(position:number,direction:-1|1,word:boolean)=>number}|undefined;
+  let boundaryCache:{session:CompletionSession;key:string;version:number;move:ReturnType<typeof boundaryNavigator>}|undefined;
   const changeBoundary=(session:CompletionSession,edge:'start'|'end',direction:-1|1,word:boolean)=>{
    try{
     session.assertSource();const s=session.source;if(!s.brackets||entityControls?.busy())return;
     const n=editor.node(s.nodeKey)!;
-    if(boundaryCache?.key!==s.nodeKey||boundaryCache.version!==(draft?.cells.generation??s.version)){
-     boundaryCache={key:s.nodeKey,version:draft?.cells.generation??s.version,move:boundaryNavigator(draft?draft.cells.text():text(s.nodeKey,0,n.inlineContent.length))};
+    if(boundaryCache?.session!==session||boundaryCache.key!==s.nodeKey||boundaryCache.version!==(draft?.cells.generation??s.version)){
+     boundaryCache={session,key:s.nodeKey,version:draft?.cells.generation??s.version,move:boundaryNavigator(draft?draft.cells.text():text(s.nodeKey,0,n.inlineContent.length))};
     }
-    let {start,end}=s;const next=boundaryCache.move(edge==='start'?start:end,direction,word);
+    let {start,end}=s;const next=boundaryCache.move(edge==='start'?start:end,direction,word,edge);
     if(edge==='start')start=Math.min(next,end);else end=Math.max(next,start);
     if(start===s.start&&end===s.end)return;
     if(text(s.nodeKey,start,end).length>1000)throw Error('Scry phrases are limited to 1000 characters.');
@@ -288,12 +288,15 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    }
    if(!inside&&event.ctrlKey&&event.key.toLowerCase()==='a'&&!s.source.brackets)return false;
    if(inside&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return false;
+   // Source boundary shortcuts must precede ordinary caret confinement (Alt arrows
+   // are the OS-safe word-boundary alternative on macOS). Query fields stay native.
+   if(editor.bindings.dispatch(event,['autocomplete'],run))return true;
    if(!inside&&s.source.brackets&&(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)&&(!event.ctrlKey||['Home','End'].includes(event.key))||['ArrowUp','ArrowDown'].includes(event.key)&&(event.shiftKey||event.metaKey||event.altKey||event.ctrlKey))){
     const r=resolved?.handle.captureInlineSelection?.(),lo=s.source.start,hi=s.source.end;if(!r)return false;
     const forward=['ArrowRight','ArrowDown','End'].includes(event.key),position=event.key==='Home'?lo:event.key==='End'?hi:moveBoundary(s.state.sourceText,r.head-lo,forward?1:-1,false)+lo;
     event.preventDefault();event.stopPropagation();resolved?.handle.restoreInlineSelection?.({anchor:event.shiftKey?r.anchor:position,head:position});return true;
    }
-   return editor.bindings.dispatch(event,['autocomplete'],run);
+   return false;
   }};
   const explicit=(key:string)=>{const h=editor.mounts.get(key),r=h?.captureInlineSelection?.();if(!r||r.anchor===r.head)throw Error('Select a phrase, or type @ to open Autocomplete');const s=snapshot(key,Math.min(r.anchor,r.head),Math.max(r.anchor,r.head),false);open(s,'entity',s.literal);};
   api.register.command({id:'autocomplete.open',label:'Autocomplete selected text',canExecute:({targetKey})=>editor.node(targetKey)?.viewType==='standoff-editor-block',execute:({targetKey})=>explicit(targetKey)});

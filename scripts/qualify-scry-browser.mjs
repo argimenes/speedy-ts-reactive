@@ -91,6 +91,23 @@ try{
  const phrase='The Florentine master',guid='11111111-1111-4111-8111-111111111111';
  const reset=async(text='',at=[...text].length,end=at)=>{await evaluate(`proof.reset(${JSON.stringify(text)});proof.mount.restoreInlineSelection({anchor:${at},head:${end}})`);};
  const source=()=>evaluate('proof.display()');
+ if(process.env.SCRY_BOUNDARIES_ONLY==='1'){
+  await reset('one two three',0,3);await type('((');
+  await evaluate(`proof.initialRevision=proof.editor.repository.state.revision;proof.boundaryCommits=0;proof.boundarySnapshots=0;const commit=proof.editor.repository.commit.bind(proof.editor.repository),snapshot=proof.editor.repository.snapshot.bind(proof.editor.repository);proof.editor.repository.commit=(...args)=>{proof.boundaryCommits++;return commit(...args);};proof.editor.repository.snapshot=(...args)=>{proof.boundarySnapshots++;return snapshot(...args);};`);
+  for(const [name,arrow,mods,expected] of [
+   ['Option Right extends closing boundary','ArrowRight',1,'((one two)) three'],
+   ['Ctrl Option Right aligns opening boundary to word start','ArrowRight',3,'one ((two)) three'],
+   ['Repeated opening movement stays at word starts','ArrowLeft',3,'((one two)) three'],
+   ['Ctrl Right remains supported when delivered by the OS','ArrowRight',2,'((one two three))'],
+   ['Option Left retracts closing boundary to word end','ArrowLeft',1,'((one two)) three'],
+   ['Repeated Option Left retracts one more word','ArrowLeft',1,'((one)) two three']
+  ]){await key(arrow,mods);check(name,await source()===expected);}
+  check('No content changes, commits, snapshots or revision changes',await evaluate("proof.read()==='one two three' && proof.editor.repository.state.revision===proof.initialRevision && proof.boundaryCommits===0 && proof.boundarySnapshots===0"));
+  await evaluate("document.querySelector('.autocomplete-workstation input').focus()");await key('ArrowRight',1);check('Query word navigation does not move source brackets',await source()==='((one)) two three');
+  await key('Escape');check('Cancellation leaves source unchanged',await source()==='one two three');check('No browser exceptions',errors.length===0);
+  await writeFile(path.join(artifacts,'word-boundaries.json'),JSON.stringify({checks,errors},null,2));
+  await evaluate('proof.stopEntity();proof.dispose();proof.session.dispose()');
+ }else{
  const query=async(value)=>{await evaluate(`document.querySelector('.autocomplete-workstation input')?.focus()`);await wait("document.querySelector('.autocomplete-workstation input')===document.activeElement");await key('a',4);await type(value);};
  const confirm=async()=>{await wait("document.querySelector('.reactive-entity-search [aria-label^=\"Select \"]')");await key('Enter');await wait("!document.querySelector('.autocomplete-workstation')");};
  await reset('one two three four',4,7);
@@ -115,7 +132,7 @@ try{
  check('Square trigger works immediately after prose without a space',await source()==='prose[[]]');
  check('Bracket entry opens one shared Link Entity Reference interface',await evaluate("document.querySelectorAll('.reactive-entity-search').length===1&&document.querySelectorAll('.autocomplete-workstation').length===1&&!document.querySelector('.autocomplete-results')"));
  check('Scry uses provisional cells without authored text changes',await evaluate("proof.read()==='prose'&&proof.flow.querySelectorAll('[data-provisional-cell]').length===4&&!CSS.highlights.has('mutable-scry-source')"));
- check('Both bracket edges expose character and word shortcuts',await evaluate("[...document.querySelectorAll('.entity-boundaries kbd')].map(e=>e.textContent).sort().join('|')===['Ctrl+Alt+Shift+←/→','Ctrl+Alt+←/→','Ctrl+Shift+←/→','Ctrl+←/→'].sort().join('|')"));
+ check('Both bracket edges expose character and word shortcuts',await evaluate("[...document.querySelectorAll('.entity-boundaries kbd')].map(e=>e.textContent).sort().join('|')===['Ctrl+Alt+Shift+←/→','Ctrl+Alt+←/→','Ctrl+Shift+←/→','Alt/Option+←/→ (Ctrl+←/→)'].sort().join('|')"));
  await key('Escape');await reset('Leo',0);
  const clickPoint=await evaluate("(()=>{const b=proof.mount.inlineBoundary(0),r=document.createRange();r.setStart(b.node,b.offset);r.collapse(true);const a=[...r.getClientRects()].find(r=>r.height);return{x:a.left+1,y:a.top+a.height/2}})()");
  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...clickPoint},sessionId);
@@ -166,12 +183,12 @@ try{
  await evaluate("document.querySelector('.reactive-entity-search input').focus()");await key('Escape');await wait("!document.querySelector('.reactive-entity-search')");check('Entity tool cancellation consumes owned delimiters only',await source()==='Florentine master');
 
  const gestureCases=[
-  ['closing word back', 'one two three',0,7,'ArrowLeft',2,'((one ))two three'],
+  ['closing word back', 'one two three',0,7,'ArrowLeft',2,'((one)) two three'],
   ['closing word forward','one two three',0,3,'ArrowRight',2,'((one two)) three'],
   ['closing character back','one two',0,3,'ArrowLeft',10,'((on))e two'],
   ['closing character forward','one two',0,3,'ArrowRight',10,'((one ))two'],
   ['opening word back','one two three',4,7,'ArrowLeft',3,'((one two)) three'],
-  ['opening word forward','one two three',0,7,'ArrowRight',3,'one(( two)) three'],
+  ['opening word forward','one two three',0,7,'ArrowRight',3,'one ((two)) three'],
   ['opening character back','one two three',4,7,'ArrowLeft',11,'one(( two)) three'],
   ['opening character forward','one two three',4,7,'ArrowRight',11,'one t((wo)) three']
  ];
@@ -250,5 +267,6 @@ try{
  console.log(JSON.stringify({checks,errors},null,2));
  await evaluate('proof.stopEntity();proof.dispose();proof.session.dispose()');
 
+ }
 }finally{await serviceLoad?.stop();socket?.close();chrome.kill();await vite.close();await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
 process.exit(0);
