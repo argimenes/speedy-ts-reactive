@@ -253,3 +253,60 @@ describe("experimental cross-Block text selection", () => {
     expect(editor.encodeDocument().children![0].standoffProperties).toBeUndefined(); expect(editor.crossText.range()).toBeUndefined();
   });
 });
+
+describe('two-stage Document Select All',()=>{
+  const press=(target:Element,key='a',extra:KeyboardEventInit={})=>{
+    const event=new KeyboardEvent('keydown',{key,metaKey:key==='a',bubbles:true,cancelable:true,...extra});target.dispatchEvent(event);return event;
+  };
+  it.each(['metaKey','ctrlKey'])('selects the Block then visible nested Document text with %s, without enabling experimental gestures or editing',modifier=>{
+    const f=setup([paragraph('a','Alpha'),{type:'container-block',children:[paragraph('b','Bravo')]},paragraph('hidden','Hidden'),paragraph('c','Charlie')]);
+    f.editor.mounts.get(f.node('hidden').key)!.root.setAttribute('hidden','');
+    const mount=f.editor.mounts.get(f.node('b').key)!;mount.focus();mount.restoreInlineSelection!({anchor:1,head:1});
+    const snapshot=vi.spyOn(f.editor.repository,'snapshot'),commit=vi.spyOn(f.editor.repository,'commit'),all=vi.spyOn(f.editor.crossText,'selectDocument');
+    const revision=f.editor.repository.state.revision;
+    press(f.flow('b'),'a',{metaKey:false,[modifier]:true});
+    expect(mount.captureInlineSelection?.()).toEqual({anchor:0,head:5});expect(f.editor.crossText.range()).toBeUndefined();expect(all).not.toHaveBeenCalled();
+    press(f.flow('b'),'a',{metaKey:false,[modifier]:true});
+    expect(f.editor.crossText.selectedText()).toBe('Alpha\nBravo\nCharlie');
+    expect(f.editor.crossText.enabled()).toBe(false);expect(localStorage.getItem(CROSS_TEXT_PREFERENCE_KEY)).not.toBe('true');
+    const input=document.querySelector<HTMLTextAreaElement>('[data-cross-text-input]')!;expect(document.activeElement).toBe(input);expect(input.value).toBe('Alpha\nBravo\nCharlie');
+    press(input,'a',{metaKey:false,[modifier]:true});expect(all).toHaveBeenCalledTimes(1);
+    expect(snapshot).not.toHaveBeenCalled();expect(commit).not.toHaveBeenCalled();expect(f.editor.repository.state.revision).toBe(revision);
+    press(input,'Escape',{metaKey:false});expect(f.editor.crossText.range()).toBeUndefined();expect(document.activeElement).toBe(f.flow('c'));
+  });
+  it('supports copy, formatting, replacement and Undo for an ordinary paragraph Document',()=>{
+    const f=setup([paragraph('a','Alpha'),paragraph('b','Bravo')]);const mount=f.editor.mounts.get(f.node('a').key)!;
+    mount.focus();mount.restoreInlineSelection!({anchor:0,head:5});press(f.flow('a'));
+    const input=document.querySelector<HTMLTextAreaElement>('[data-cross-text-input]')!;
+    const data=new Map<string,string>(),copy=new Event('copy',{bubbles:true,cancelable:true});
+    Object.defineProperty(copy,'clipboardData',{value:{setData:(type:string,text:string)=>data.set(type,text)}});input.dispatchEvent(copy);
+    expect(data.get('text/plain')).toBe('Alpha\nBravo');
+    f.editor.crossText.annotate('style/bold');expect(f.node('b').payload.standoffProperties).toEqual([expect.objectContaining({type:'style/bold',start:0,end:4})]);
+    input.dispatchEvent(new InputEvent('beforeinput',{inputType:'insertText',data:'Replacement',bubbles:true,cancelable:true}));
+    expect(f.editor.encodeDocument().children!.map(b=>b.text)).toEqual(['Replacement']);
+    f.editor.repository.undo();expect(f.editor.encodeDocument().children!.map(b=>b.text)).toEqual(['Alpha','Bravo']);
+  });
+  it('preserves structural replacement guards while selecting text across containers and media',()=>{
+    const f=setup([paragraph('a','Alpha'),{type:'container-block',children:[paragraph('b','Bravo')]},paragraph('c','Charlie')]);
+    const mount=f.editor.mounts.get(f.node('a').key)!;mount.focus();mount.restoreInlineSelection!({anchor:0,head:5});press(f.flow('a'));
+    const commit=vi.spyOn(f.editor.repository,'commit');press(document.activeElement!,'Backspace',{metaKey:false});
+    expect(commit).not.toHaveBeenCalled();expect(f.editor.crossText.selectedText()).toBe('Alpha\nBravo\nCharlie');expect(f.editor.crossText.message()).toMatch(/structural boundaries/);
+  });
+  it('leaves fields and composition native; held-key repeat does not expand; empty Blocks require two presses',()=>{
+    const f=setup([paragraph('a',''),paragraph('b','Bravo')]);const mount=f.editor.mounts.get(f.node('a').key)!;mount.focus();mount.restoreInlineSelection!({anchor:0,head:0});
+    press(f.flow('a'));expect(f.editor.crossText.range()).toBeUndefined();press(f.flow('a'),'a',{repeat:true});expect(f.editor.crossText.range()).toBeUndefined();
+    mount.composing=true;expect(press(f.flow('a')).defaultPrevented).toBe(false);mount.composing=false;
+    press(f.flow('a'));expect(f.editor.crossText.selectedText()).toBe('\nBravo');
+    const field=f.host.appendChild(document.createElement('input'));field.focus();expect(press(field).defaultPrevented).toBe(false);expect(f.editor.crossText.range()).toBeUndefined();
+  });
+  it('invalidates the selection when a selected Block becomes hidden',async()=>{
+    const f=setup();f.editor.crossText.selectDocument(f.node('a').key);f.editor.mounts.get(f.node('b').key)!.root.setAttribute('hidden','');
+    await Promise.resolve();expect(f.editor.crossText.range()).toBeUndefined();
+  });
+  it('releases Document selection on pointer placement even with experimental drag selection disabled',()=>{
+    const f=setup();f.editor.crossText.selectDocument(f.node('a').key);
+    f.flow('b').dispatchEvent(new MouseEvent('pointerdown',{bubbles:true,button:0}));
+    expect(f.editor.crossText.range()).toBeUndefined();
+    expect(f.editor.crossText.enabled()).toBe(false);
+  });
+});

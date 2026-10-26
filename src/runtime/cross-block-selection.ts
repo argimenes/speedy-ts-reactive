@@ -20,6 +20,8 @@ export class CrossBlockSelection {
   private keys: string[] = [];
   private stream?: { revision: number; viewId: string; keys: string[]; indices: Map<string, number> };
   private formatting = false;
+  private documentKeys?: string[];
+  isDocumentSelection() { return !!this.documentKeys; }
   constructor(private editor: ReactiveEditor) {
     [this.segments, this.setSegments] = createStore<Record<string, TextSegment | undefined>>({});
     try { this.enabledSignal[1](localStorage.getItem(CROSS_TEXT_PREFERENCE_KEY) === "true"); }
@@ -38,7 +40,7 @@ export class CrossBlockSelection {
   }
   private visible(key: string) {
     const root = this.editor.mounts.get(key)?.focusElement;
-    return !!root?.isConnected && !root.closest('[hidden], [aria-hidden="true"]');
+    return !!root?.isConnected && !root.closest('[hidden], [inert], [aria-hidden="true"]');
   }
   siblings(key: string): string[] {
     const node = this.editor.node(key); if (!node) return [];
@@ -49,7 +51,7 @@ export class CrossBlockSelection {
     this.stream = { revision: this.editor.repository.state.revision, viewId: node.viewId, keys, indices: new Map(keys.map((key, index) => [key, index])) };
     return keys;
   }
-  resolve(anchor: ViewPosition, head: ViewPosition): TextSegment[] {
+  private resolveParagraphs(anchor: ViewPosition, head: ViewPosition): TextSegment[] {
     const a = this.editor.node(anchor.occurrenceKey), h = this.editor.node(head.occurrenceKey);
     if (!a || !h || a.viewId !== h.viewId || a.contentKey !== anchor.contentKey || h.contentKey !== head.contentKey) throw new Error("Text selection endpoints are stale or in different views");
     this.position(a.key, anchor.boundary.index); this.position(h.key, head.boundary.index);
@@ -63,9 +65,41 @@ export class CrossBlockSelection {
       return { nodeKey: key, contentKey: node.contentKey, start: key === start.occurrenceKey ? start.boundary.index : 0, end: key === end.occurrenceKey ? end.boundary.index : node.inlineContent.length };
     });
   }
+  resolve(anchor: ViewPosition, head: ViewPosition): TextSegment[] {
+    if (!this.documentKeys) return this.resolveParagraphs(anchor, head);
+    const range = this.range();
+    if (!range || anchor.occurrenceKey !== range.anchor.occurrenceKey || head.occurrenceKey !== range.head.occurrenceKey) throw new Error("Document selection changed");
+    return this.documentKeys.map(key => {
+      const node = this.editor.node(key), selected = this.segments[key];
+      if (!node || node.viewId !== range.viewId || node.contentKey !== selected?.contentKey || !this.visible(key)) throw new Error("Document selection is no longer visible");
+      return { nodeKey: key, contentKey: node.contentKey, start: 0, end: node.inlineContent.length };
+    });
+  }
+  /** Explicit selection only: walk structural Blocks, never inline Cells or other Documents. */
+  selectDocument(key: string): boolean {
+    const origin = this.editor.node(key), projection = origin && this.editor.projections.get(origin.viewId);
+    let scope = origin;
+    while (scope && scope.viewType !== 'document-block') scope = projection?.parentOf(scope.key);
+    if (!scope) return false;
+    const segments: TextSegment[] = [], seen = new Set<string>();
+    const visit = (key: string) => {
+      if (seen.has(key)) return; seen.add(key);
+      const node = this.editor.node(key); if (!node || node.viewType === 'document-block' && node.key !== scope!.key) return;
+      if (node.viewType === 'standoff-editor-block' && this.visible(key)) segments.push({nodeKey:key,contentKey:node.contentKey,start:0,end:node.inlineContent.length});
+      for (const child of [...node.children, ...Object.values(node.ownedRelations)]) visit(child);
+    };
+    visit(scope.key);
+    if (!segments.length) return false;
+    this.documentKeys = segments.map(segment => segment.nodeKey);
+    return this.publish(this.position(segments[0].nodeKey,0),this.position(segments.at(-1)!.nodeKey,segments.at(-1)!.end),segments);
+  }
   set(anchor: ViewPosition, head: ViewPosition): boolean {
     if (!this.enabled()) return false;
-    const segments = this.resolve(anchor, head);
+    const segments = this.resolveParagraphs(anchor, head);
+    this.documentKeys = undefined;
+    return this.publish(anchor, head, segments);
+  }
+  private publish(anchor: ViewPosition, head: ViewPosition, segments: TextSegment[]): boolean {
     this.editor.blockSelection.clear(); this.editor.blockClipboard.dismiss();
     batch(() => {
       const retained = new Set(segments.map(s => s.nodeKey));
@@ -81,6 +115,7 @@ export class CrossBlockSelection {
     return true;
   }
   clear() {
+    this.documentKeys = undefined;
     batch(() => { for (const key of this.keys) this.setSegments(key, undefined); this.keys = []; this.rangeSignal[1](undefined); this.messageSignal[1](""); });
   }
   collapseToHead() {

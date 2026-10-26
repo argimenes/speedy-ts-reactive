@@ -3,6 +3,7 @@ import { BindingRegistry, chord, keyboard as k, mouse, type Trigger } from "./bi
 export function registerInputActions(registry: BindingRegistry, platform = typeof navigator === "undefined" ? "" : navigator.platform) {
   const add = (id: string, name: string, description: string, category: string, scope: string, defaults: Trigger[], tags: string[] = []) => registry.register({ id, name, description, category, scope, defaults, tags, handler: context => context.run(id) });
   const primary = /Mac|iPhone|iPad|iPod/i.test(platform) ? "Meta" : "Ctrl";
+  add("text.selectAll", "Select Block, then Document text", "Select the active TextBlock; repeat with the whole Block selected to select visible text in this Document.", "Text Selection", "document-select-all", [k("a", "Meta"), k("a", "Ctrl")]);
   add("find.open", "Find in document", "Find text recursively in the current Page, Container, or Document.", "Find", "document-find-open", [k("f", primary)]);
   for (const [id, name, trigger] of [["next", "Next match", k("Enter")], ["previous", "Previous match", k("Enter", "Shift")], ["close", "Close Find", k("Escape")]] as const) add(`find.${id}`, name, "Navigate search matches or close the session without changing document content.", "Find", "document-find", [trigger]);
   const stickyChord = chord(k(";", "Ctrl"), k("n"));

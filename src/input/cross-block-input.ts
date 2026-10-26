@@ -18,6 +18,7 @@ export class CrossBlockInput {
   private listeners: Array<[string, EventListener]> = [];
   private input?: HTMLTextAreaElement;
   private composing = false;
+  private emptySelectAll?: string;
   private disposeEffect: () => void;
   constructor(private editor: ReactiveEditor, private document: Document) {
     const listen = (name: string, fn: (event: any) => void) => { document.addEventListener(name, fn, true); this.listeners.push([name, fn]); };
@@ -49,7 +50,7 @@ export class CrossBlockInput {
       const root = this.drag && editor.mounts.get(this.drag.occurrenceKey)?.root;
       if (this.drag && (!root?.isConnected || root.closest('[hidden], [inert], [aria-hidden="true"]'))) this.up();
     });
-    this.observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "aria-hidden"] });
+    this.observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "inert", "aria-hidden"] });
     this.disposeEffect = createRoot(dispose => {
       createEffect(() => {
         const range = editor.crossText.range();
@@ -129,8 +130,14 @@ export class CrossBlockInput {
     } catch (error) { this.editor.crossText.notice(error instanceof Error ? error.message : String(error)); }
   }
   private down = (event: PointerEvent) => {
+    this.emptySelectAll = undefined;
     this.up();
     if(this.editor.completionInput?.pointer?.(event))return;
+    // Explicit Document selection works even when experimental drag selection
+    // is disabled. Release it before the browser places an ordinary caret.
+    const target = event.target instanceof Element ? event.target : undefined;
+    if (this.editor.crossText.isDocumentSelection() && target !== this.input &&
+        !target?.closest('.document-style-bar, [data-cross-text-controls], [data-block-selection-handle], [data-block-selection-inspector]')) this.editor.crossText.clear();
     if (event.pointerType === 'mouse') { this.mousePointer = event.pointerId; return; }
     this.begin(event, event.pointerId);
   };
@@ -296,16 +303,35 @@ export class CrossBlockInput {
     this.editor.mounts.get(next.occurrenceKey)?.root.scrollIntoView?.({ block: "nearest" });
     return true;
   }
+  private selectAll(key: string) {
+    const node = this.editor.node(key), mount = this.editor.mounts.get(key);
+    if (!node || !mount?.restoreInlineSelection) return false;
+    if (this.editor.crossText.isDocumentSelection()) return true;
+    const range = mount.captureInlineSelection?.(), length = node.inlineContent.length;
+    const whole = range && Math.min(range.anchor,range.head) === 0 && Math.max(range.anchor,range.head) === length;
+    if (this.editor.crossText.range() || whole && (length > 0 || this.emptySelectAll === key)) {
+      if (this.editor.crossText.selectDocument(key)) {
+        this.document.getSelection()?.removeAllRanges(); this.prepareInput(); return true;
+      }
+    }
+    this.editor.crossText.clear(); this.editor.selections.clearExcept(key); this.editor.blockSelection.clear();
+    mount.restoreInlineSelection({anchor:0,head:length});
+    this.editor.selections.setPrimary(node.key,node.contentKey,node.viewId,0,length);
+    this.emptySelectAll = length === 0 ? key : undefined;
+    return true;
+  }
   private key = (event: KeyboardEvent) => {
     // An occurrence-scoped interaction leases its controls ahead of cross-Block
     // selection. Ordinary input still follows the existing gateway path.
     if(this.editor.completionInput?.key(event)){this.editor.selectionGestures.cancelGesture();return;}
     this.editor.clipboard.key(event);
-    if (!this.editor.crossText.enabled() && !this.editor.selectionGestures.selecting("keyboard")) return;
     const target = event.target instanceof Element ? event.target : undefined;
-    if (target !== this.input && target?.closest('input, textarea, select, .document-style-bar, [data-block-selection-handle], [data-block-selection-inspector]')) return;
+    if (target !== this.input && target?.closest('input, textarea, select, [role=dialog], [role=menu], .document-style-bar, [data-block-selection-handle], [data-block-selection-inspector]')) return;
     const resolved = target === this.input && this.editor.crossText.range() ? { nodeKey: this.editor.crossText.range()!.anchor.occurrenceKey, handle: this.editor.mounts.get(this.editor.crossText.range()!.anchor.occurrenceKey)! } : this.editor.mounts.resolveEvent(event);
-    if (!resolved || resolved.handle.inputPolicy !== "standoff") return;
+    if (!resolved || resolved.handle.inputPolicy !== "standoff" || resolved.handle.composing || event.isComposing || this.composing) return;
+    if (!this.editor.bindings.matches('text.selectAll',event)) this.emptySelectAll = undefined;
+    if (this.editor.bindings.dispatch(event,['document-select-all'],id=>id==='text.selectAll' && (event.repeat || this.selectAll(resolved.nodeKey)))) return;
+    if (!this.editor.crossText.enabled() && !this.editor.crossText.range() && !this.editor.selectionGestures.selecting("keyboard")) return;
     const active = this.editor.crossText.range();
     if (active && (this.composing || event.isComposing)) return;
     if (this.editor.bindings.dispatch(event, ["cross-text"], id => {
