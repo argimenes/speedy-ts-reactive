@@ -1,4 +1,5 @@
 import {registerCompletionDocuments} from './completion-documents';
+import { exportDocument } from '../runtime/export-document';
 import { CollectionDialog } from '../rendering/collection-dialog';
 import {createDocumentSave} from './document-save';
 import { createRecentDocuments } from './recent-documents';
@@ -115,7 +116,11 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
             const key = (menu?.data as { documentTab?: string } | undefined)?.documentTab ?? activeTab();
             const session=key&&tabSession(key), detached=key&&detachedTab(key);
             const reason=detachment && !detached ? detachment.reason(session||undefined) : undefined;
-            return [...(detachment ? [{label: detached ? "Return to Flint" : "Detach Document", disabled: !session || !!reason || !!detached && !detachment.canReturn(detachment.forSession(session)!), run:()=>{if(key)void transferTab(key);}}, ...(reason?[{label:reason,disabled:true,run:()=>{}}]:[])] : []), { label: "Close Document", disabled: !key || !tabKeys().includes(key), run: () => { if (key) closeTab(key); } }];
+            return [{ label: 'Export Document', disabled: !key || !tabId(key), run: () => {
+              guard(); const id = key && tabId(key);
+              if (!id) throw new Error('The Document is no longer available.');
+              exportDocument(editor, id);
+            } }, ...(detachment ? [{label: detached ? "Return to Flint" : "Detach Document", disabled: !session || !!reason || !!detached && !detachment.canReturn(detachment.forSession(session)!), run:()=>{if(key)void transferTab(key);}}, ...(reason?[{label:reason,disabled:true,run:()=>{}}]:[])] : []), { label: "Close Document", disabled: !key || !tabKeys().includes(key), run: () => { if (key) closeTab(key); } }];
           },
         });
         onCleanup(release);

@@ -5,6 +5,7 @@ import { unwrap as unwrapStore } from "solid-js/store";
 import { createTextTab } from "./text-tabs";
 import { backgroundImages, defaultBackgroundUrls, isBackgroundType, mediaUrl, youtubeId, type BackgroundType } from "../rendering/backgrounds";
 import { stickyNoteDto } from "./sticky-notes";
+import { exportDocument } from './export-document';
 
 import type { BlockMenuItem } from "./block-menu-types";
 export type { BlockMenuItem } from "./block-menu-types";
@@ -110,6 +111,12 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   const doc = ancestor("document-block", "left-margin-block", "right-margin-block");
   if(doc&&editor.features.documentInterchange)items.push(input('Inspect / Import linked resource…',value=>{void editor.interchange.inspectLinkedResource(key,value);}));
   if (doc) {
+    const document = ancestor('document-block');
+    if (document) items.push({ label: 'Export Document', run: () => {
+      const current = editor.node(document.key);
+      if (!current) throw new Error('The Document is no longer available.');
+      exportDocument(editor, String(metadata(current).documentId ?? current.payload.id ?? ''));
+    } });
     if(editor.features.documentInterchange)items.push({label:"Embed source file…",run:()=>editor.interchange.pickEmbed(key)},{label:"Link to source file…",run:()=>editor.interchange.pickEmbed(key,true)});
     items.push(command("sticky.createFloating", "New Sticky Note"));
     items.push({ label: "Add Block", children: [
@@ -131,7 +138,6 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
       if (!ancestor("indented-list-block")) items.push({ label: "Convert to list", run: () => convert(dto("indented-list-block"), 0) });
       items.push(unavailable("Convert to pocket", "This action is a no-op in the original source; existing pocket controls are available."));
     }
-    const document = ancestor("document-block");
     const containsPage = (key: NodeKey): boolean => {
       const current = editor.node(key);
       return !!current && (["page-block", "document-tab-row-block"].includes(current.viewType)

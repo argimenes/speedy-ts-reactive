@@ -49,6 +49,23 @@ export function encodeGateDocument(state: DeepReadonly<ResourceSnapshot>, profil
     if (["text-cell", "image-cell"].includes(c.viewType)) continue;
     const properties = clone(c.payload) as JsonObject;
     delete properties.id; delete properties.type;
+    // Native Save/Export refreshes optional cached excerpts from their inclusive
+    // Cell ranges. Legacy files can contain truncated/stale text. Do this only
+    // during serialization, never while typing or in historical snapshots.
+    if (profile === 'native' && c.inlineKind === 'standoff' && Array.isArray(properties.standoffProperties)) {
+      for (const property of properties.standoffProperties) {
+        if (!property || typeof property !== 'object' || typeof property.text !== 'string' || property.isDeleted) continue;
+        const { start, end } = property;
+        if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end >= c.inlineContent.length) continue;
+        if (property.isZeroWidth === true && end === start - 1 && start <= c.inlineContent.length) { property.text = ''; continue; }
+        if (end < start || property.isZeroWidth) continue;
+        property.text = c.inlineContent.slice(start, end + 1).map(key => {
+          const target = state.placements[key].target;
+          const cell = target.kind === 'local' ? state.contents[target.contentKey] : undefined;
+          return cell?.viewType === 'text-cell' ? cell.payload.text : '\uFFFC';
+        }).join('');
+      }
+    }
     requireValue(!["children", "relation"].some(k => own(properties, k)), "ambiguous structural authority");
     const authoredType = profile === "native" ? c.payload.type ?? c.viewType : c.viewType;
     requireValue(typeof authoredType === "string" && viewTypeFor(authoredType) === c.viewType, "authored type and canonical type disagree");

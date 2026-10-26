@@ -3,7 +3,7 @@ import {afterEach,expect,it} from 'vitest';
 import Database from 'better-sqlite3';
 import {ReactiveEditor} from '../reactive-editor/editor';
 import {materializeLocalWorkspace} from '../reactive-editor/workspace-manifest';
-import {captureNative,nativeBytes,decodeNative} from '../persistence/native-resource';
+import {captureNative,nativeBytes,nativeEnvelope,decodeNative} from '../persistence/native-resource';
 import {encodeHistoryDocument} from '../history/durable-core';
 import {decodeAuthoredValue} from '../history/preplan-spike/wire';
 import {timerBlockDto} from '../features/timer/model';
@@ -29,6 +29,32 @@ function host(documents:any[]=[doc()]) {
 function database(){const db=new Database(':memory:');migrate(db,'mutable',{fresh:true,vaultGuid:vault});cleanups.push(()=>db.close());return db;}
 const evidence=(p:any)=>({path:'doc.mutable.json',contentHash:p.contentHash});
 const semantic=(v:any)=>({...v,resource:{...v.resource,indexedUtc:null}});
+
+it.each(['legacy', 'native'])('indexes full entity mentions from ranges despite truncated %s excerpt caches', async format => {
+  const dto = doc('doc', [
+    { id: 'dino-block', type: 'standoff-editor-block', text: '-dino\r', standoffProperties: [
+      { id: 'dino-mention', type: 'codex/entity-reference', value: 'entity-dino', start: 1, end: 4, text: 'din' },
+    ] },
+    { id: 'unicode-block', type: 'standoff-editor-block', text: '😀-dino\r', standoffProperties: [
+      { id: 'unicode-mention', type: 'codex/entity-reference', value: 'entity-dino', start: 2, end: 5, text: 'din' },
+      { id: 'one-cell', type: 'codex/entity-reference', value: 'entity-emoji', start: 0, end: 0, text: '' },
+    ] },
+  ]);
+  let wire: any = dto;
+  if (format === 'native') {
+    wire = nativeEnvelope(host([dto]).capture());
+    // Reproduce an already-saved file from before excerpt-cache correction.
+    for (const block of wire.document.blocks) for (const p of block.properties.standoffProperties ?? []) p.text = p.id === 'one-cell' ? '' : 'din';
+  }
+  const original = bytes(wire), projection = await projectSaved(original, vault), db = database();
+  reconcile(db, projection, evidence(projection), null);
+  const row = (id: string) => db.prepare('SELECT text,startIndex,endIndex,coordinate,attributes FROM StandoffProperty WHERE authoredId=?').get(id);
+  expect(row('dino-mention')).toMatchObject({ text: 'dino', startIndex: 1, endIndex: 5, coordinate: 'cell' });
+  expect(row('unicode-mention')).toMatchObject({ text: 'dino', startIndex: 2, endIndex: 6, coordinate: 'cell' });
+  expect(row('one-cell')).toMatchObject({ text: '😀', startIndex: 0, endIndex: 1, coordinate: 'cell' });
+  expect(decodeAuthoredValue(JSON.parse(row('dino-mention').attributes)).text).toBe('din');
+  expect(bytes(wire)).toEqual(original);
+});
 
 it('actual rich producers retain every persistent definition, raw payload, properties, margins, anchors, references and Cell runs',async()=>{
   const h=host(),{editor,node}=h;

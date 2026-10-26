@@ -5,6 +5,28 @@ import { resourceToRepository } from '../history/durable-core';
 import { decodeGateDocument } from '../history/stage-c-gates/portable';
 import { validateResource, type ResourceSnapshot } from '../history/stage-c-gates/resource';
 import { captureNative, decodeNative, nativeEnvelope, nativeText, parseNativeEnvelope } from './native-resource';
+import { encodeGateDocument } from '../history/stage-c-gates/portable';
+
+it('refreshes existing native excerpt caches with inclusive Cell ranges without changing source or History', () => {
+  const state = decodeBlockTree({ id: 'doc', type: 'document-block', children: [{
+    id: 'p', type: 'standoff-editor-block', text: '😀-dino\r', standoffProperties: [
+      { id: 'entity', type: 'codex/entity-reference', value: 'entity-id', start: 2, end: 5, text: 'din' },
+      { id: 'single', type: 'style/bold', start: 2, end: 2, text: '' },
+      { id: 'emoji', type: 'style/bold', start: 0, end: 0, text: '' },
+      { id: 'missing', type: 'style/bold', start: 2, end: 5 },
+      { id: 'deleted', type: 'style/bold', start: 2, end: 5, text: 'historical', isDeleted: true },
+      { id: 'point', type: 'style/bold', start: 2, end: 1, text: 'stale', isZeroWidth: true },
+    ],
+  }] }).state;
+  const source = captureNative(state, 'doc'), original = JSON.stringify(source);
+  const wire = nativeEnvelope(source), properties = wire.document.blocks.find(b => b.id === 'p')!.properties.standoffProperties;
+  expect(properties.map((p: any) => p.text)).toEqual(['dino', 'd', '😀', undefined, 'historical', '']);
+  expect(properties[0]).toMatchObject({ start: 2, end: 5, value: 'entity-id' });
+  expect(JSON.stringify(source)).toBe(original);
+  expect(encodeGateDocument(source).blocks.find(b => b.id === 'p')!.properties.standoffProperties[0].text).toBe('din');
+  const serialized = nativeText(source);
+  expect(nativeText(decodeNative(new TextEncoder().encode(serialized)))).toBe(serialized);
+});
 
 const bytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
 const fixture = () => nativeEnvelope(captureNative(decodeBlockTree({

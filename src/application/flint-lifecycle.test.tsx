@@ -152,6 +152,16 @@ describe("Flint composite transient hosting", () => {
     const active = f.text().key;
     f.tabs()[1].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 50, clientY: 60 })); await tick();
     const close = () => [...document.querySelectorAll<HTMLButtonElement>('.reactive-block-menu [role=menuitem]')].find(b => b.textContent === 'Close Document')!;
+    let exportFilename = '';
+    const download = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { exportFilename = this.download; });
+    const create = vi.fn(() => 'blob:document-export');
+    vi.stubGlobal('URL', class extends URL { static createObjectURL = create; static revokeObjectURL = vi.fn(); });
+    const exported = [...document.querySelectorAll<HTMLButtonElement>('.reactive-block-menu [role=menuitem]')].find(b => b.textContent === 'Export Document')!;
+    expect(exported).toBeDefined(); exported.click(); await tick();
+    expect(download).toHaveBeenCalledTimes(1);
+    expect(exportFilename).toBe('Ideas.mutable.json');
+    expect(f.text().key).toBe(active);
+    f.tabs()[1].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })); await tick();
     expect(close()).toBeDefined(); close().click(); await tick();
     expect(f.tabs()).toHaveLength(1); expect(f.text().key).toBe(active);
     expect(document.querySelector('.reactive-block-menu')).toBeNull();

@@ -7,8 +7,11 @@ import { registerCoreViews } from "./register-core-views";
 import { registerApplicationViews } from "../application/features";
 import { ReactiveTreeView } from "./reactive-tree-view";
 import { blockMenuItems, type BlockMenuItem } from "../runtime/block-menu-actions";
+import { decodeNative } from '../persistence/native-resource';
+import { resourceToRepository } from '../history/durable-core';
+import { encodeDocument } from '../block-tree/codecs';
 const cleanup: Array<() => void> = [];
-afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup.splice(0).reverse().forEach(fn => fn()); document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const text = (id: string): ExistingBlockDto => ({ id, type: "standoff-editor-block", text: id, children: [] });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 function mount(children: ExistingBlockDto[] = [text("first"), text("second")], application = false) {
@@ -30,6 +33,42 @@ function action(items: BlockMenuItem[], ...path: string[]): BlockMenuItem {
   return path.length === 1 ? item : action(item.children!, ...path.slice(1));
 }
 describe("Block context menu", () => {
+  it('exports full native JSON through the menu, preserving hidden content and unsaved edits without saving', async () => {
+    const { editor, key, element } = mount([
+      { ...text('first'), standoffProperties: [{ id: 'annotation', type: 'codex/entity-reference', start: 0, end: 4, value: 'entity-id' }], metadata: { future: { keep: true } } },
+      { id: 'tabs', type: 'tab-row-block', children: [
+        { id: 'visible', type: 'tab-block', metadata: { active: true }, children: [text('second')] },
+        { id: 'hidden', type: 'tab-block', metadata: { active: false }, children: [text('hidden-text')] },
+      ] },
+    ]);
+    editor.commands.setPayloadField(key('doc'), 'metadata', { title: 'Export test.ink' });
+    editor.commands.replaceInlineRange(key('first'), 5, 5, ' unsaved');
+    const before = editor.encodeDocument(), revision = editor.repository.state.revision, canUndo = editor.repository.canUndo();
+    const commit = vi.spyOn(editor.repository, 'commit'), snapshot = vi.spyOn(editor.repository, 'snapshot');
+    const create = vi.fn((_blob: Blob) => 'blob:export');
+    vi.stubGlobal('URL', class extends URL { static createObjectURL = create; static revokeObjectURL = vi.fn(); });
+    let filename = '';
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { filename = this.download; });
+    element('first').dispatchEvent(new MouseEvent('contextmenu', { button: 2, bubbles: true, cancelable: true })); await tick();
+    menuButton('Export Document').click(); await tick();
+    expect(filename).toBe('Export test.mutable.json'); expect(create).toHaveBeenCalledTimes(1);
+    const blob = create.mock.calls[0][0]; expect(blob.type).toBe('application/json;charset=utf-8');
+    const json = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsText(blob); });
+    const resource = decodeNative(new TextEncoder().encode(json));
+    expect(resource.resourceId).toBe('doc'); expect(encodeDocument(resourceToRepository(resource))).toEqual(before);
+    expect(commit).not.toHaveBeenCalled(); expect(snapshot).not.toHaveBeenCalled();
+    expect(editor.repository.state.revision).toBe(revision); expect(editor.repository.canUndo()).toBe(canUndo);
+    expect(document.querySelector('.reactive-block-menu')).toBeNull();
+  });
+  it('shows a recoverable menu error when Scry blocks export', async () => {
+    const { editor, element } = mount();
+    editor.completionInput = { beforeSave: () => false } as typeof editor.completionInput;
+    const snapshot = vi.spyOn(editor.repository, 'snapshot');
+    element('first').dispatchEvent(new MouseEvent('contextmenu', { button: 2, bubbles: true, cancelable: true })); await tick();
+    menuButton('Export Document').click(); await tick();
+    expect(document.querySelector('.reactive-block-menu [role=alert]')?.textContent).toContain('Finish or cancel Scry');
+    expect(snapshot).not.toHaveBeenCalled();
+  });
   it.each(["click", "early native menu", "secondary native menu"])("opens with Grouping enabled for %s and exposes inline StickyNote insertion", async sequence => {
     const { element, editor, key } = mount(undefined, true);
     const target = element("second").querySelector("[data-inline-index]")!;
