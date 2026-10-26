@@ -17,10 +17,11 @@
 
 .workspace-stage { position: relative; isolation: isolate; min-height: 100vh; background: #061322; }
 .workspace-stage__background { position: fixed; inset: 0; z-index: 0; }
-.workspace-stage__background > .reactive-surface { height: 100%; min-height: 0; }
-.workspace-demo--canonical { min-height: 100vh; padding: 48px 0 0; }
-.workspace-demo--canonical > .reactive-generic-block,
-.workspace-demo--canonical > .reactive-generic-block > .reactive-surface { min-height: calc(100vh - 48px); }
+/* Retained Block slots use display:contents but still interrupt CSS child
+   selectors. Size the actual workspace background, excluding embedded media. */
+.workspace-stage__background [data-workspace-background] { height: 100%; min-height: 0; }
+.workspace-demo.workspace-demo--canonical { --workspace-desktop-top: 48px; min-height: 100vh; padding: var(--workspace-desktop-top) 0 0; }
+.workspace-demo--canonical [data-workspace-background] { min-height: calc(100vh - var(--workspace-desktop-top)); }
 .workspace-demo__workspace-notice { position: fixed; top: 50px; left: 50%; z-index: 1001; max-width: min(760px, 90vw); padding: 8px 12px; border: 1px solid #b7791f; border-radius: 6px; background: #fffaf0; color: #5f370e; transform: translateX(-50%); }
 .workspace-demo > * { pointer-events: auto; }
 .workspace-demo .workspace-demo__window--glass { --paper: transparent; --ink: #fff; color: #fff; background: linear-gradient(135deg, #ffffff1a, #ffffff00); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-color: #ffffff2e; text-shadow: 1px 1px #000; }
@@ -384,9 +385,7 @@
 /* The system bar replaces the floating workspace toolbar and owns the fixed
    desktop reserve at the top of the viewport. */
 .workspace-demo--system-bar { padding-top: 36px; }
-.workspace-demo--system-bar.workspace-demo--canonical { padding-top: 36px; }
-.workspace-demo--system-bar.workspace-demo--canonical > .reactive-generic-block,
-.workspace-demo--system-bar.workspace-demo--canonical > .reactive-generic-block > .reactive-surface { min-height: calc(100vh - 36px); }
+.workspace-demo--system-bar.workspace-demo--canonical { --workspace-desktop-top: 36px; padding-top: 36px; }
 .workspace-demo--system-bar .workspace-demo__window { height: calc(100vh - 70px); }
 
 @media (max-width: 640px) {

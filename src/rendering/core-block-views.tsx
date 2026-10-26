@@ -475,10 +475,11 @@ export function StableBackgroundView(props: BlockViewProps) {
   const node = () => projection.state.nodes[props.nodeKey];
   const metadata = () => node()?.payload.metadata as Record<string, unknown> | undefined;
   const type = () => String(node()?.payload.type ?? node()?.viewType);
+  const workspaceBackground = () => props.nodeKey === projection.state.rootKey || projection.parentOf(props.nodeKey)?.viewType === 'workspace-block';
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
   return (
-    <div ref={root} class="abstract-block reactive-surface" tabIndex={-1} {...data(props.nodeKey, node)} data-block-type={type()}>
+    <div ref={root} class="abstract-block reactive-surface" tabIndex={-1} {...data(props.nodeKey, node)} data-block-type={type()} data-workspace-background={workspaceBackground() ? '' : undefined}>
       <div class="reactive-surface__background">
         <BackgroundMedia type={type()} metadata={metadata()} />
       </div>
