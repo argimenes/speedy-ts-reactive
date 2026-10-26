@@ -115,7 +115,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
     if (document) items.push({ label: 'Export Document', run: () => {
       const current = editor.node(document.key);
       if (!current) throw new Error('The Document is no longer available.');
-      exportDocument(editor, String(metadata(current).documentId ?? current.payload.id ?? ''));
+      return exportDocument(editor, String(metadata(current).documentId ?? current.payload.id ?? ''), {viewId: current.viewId, current: () => !!editor.node(document.key)});
     } });
     if(editor.features.documentInterchange)items.push({label:"Embed source file…",run:()=>editor.interchange.pickEmbed(key)},{label:"Link to source file…",run:()=>editor.interchange.pickEmbed(key,true)});
     items.push(command("sticky.createFloating", "New Sticky Note"));

@@ -1,3 +1,7 @@
+import { documentContextInventory, unavailableDocumentContext, withDocumentContext, withFrozenDocumentContext } from '../interchange/package/document-context';
+import { nativeText } from '../persistence/native-resource';
+import { nativeDocumentStem } from '../persistence/document-file-names.mjs';
+import { validatePackageData } from '../interchange/package/data';
 import { resourceSurface } from '../interchange/resource-surface';
 import {localSource,type WebFile} from '../web-resources/everyday';
 import {webCandidate} from '../web-resources/registry';
@@ -303,15 +307,47 @@ export class DocumentInterchange {
   const title=String((state.contents[state.placements[state.rootPlacementKey].contentKey].payload.metadata as {title?:string})?.title??'Document');
   const fragment=serializeSelection(state,[{placementKey:state.rootPlacementKey}],{...t.scope,resourceId:id});
   const result=await runInterchange({kind:'export',fragment,format,title,document:true},signal);await this.confirm(result.diagnostics);this.check(t);
-  const url=URL.createObjectURL(new Blob([result.text],{type:result.mediaType+';charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=`${safeFilename(title)}.${result.extension}`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);this.status[1]('Export downloaded. The Ink document and its save destination are unchanged.');
+  const url=URL.createObjectURL(new Blob([result.text],{type:result.mediaType+';charset=utf-8'})),revoke=URL.revokeObjectURL.bind(URL),link=document.createElement('a');link.href=url;link.download=`${safeFilename(title)}.${result.extension}`;document.body.append(link);link.click();link.remove();setTimeout(()=>revoke(url),1000);this.status[1]('Export downloaded. The Ink document and its save destination are unchanged.');
  });}
- private download(value:BlobPart,name:string,type:string){const url=URL.createObjectURL(new Blob([value],{type})),link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ private download(value:BlobPart,name:string,type:string){const url=URL.createObjectURL(new Blob([value],{type})),revoke=URL.revokeObjectURL.bind(URL),link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>revoke(url),1000);}
  async exportPortable(id:string,format:'html'|'markdown',standalone:boolean,current:()=>boolean){return this.task(async signal=>{
   const t=this.base(current),snapshot=captureNative(this.editor.repository.readState(),id),state=resourceToRepository(snapshot),inventory=nativeInventory(snapshot,false);this.check(t);
   const assets=[];for(const a of inventory.assets){assets.push(await this.editor.assets.original(a,signal));this.check(t);}
   const fragment=serializeSelection(state,[{placementKey:state.rootPlacementKey}],t.scope),title=String((state.contents[state.placements[state.rootPlacementKey].contentKey].payload.metadata as any)?.title??'Document');
   const result=await runInterchange({kind:'portable-export',fragment,assets,format,standalone,title},signal);this.check(t);await this.confirm(result.diagnostics);this.check(t);
   this.download(new Uint8Array(result.bytes),`${safeFilename(title)}.${result.extension}`,result.mediaType);this.status[1]('Portable projection downloaded with verified original images. The Ink document is unchanged.');
+ });}
+ /** Native JSON plus the established read-only retained PackageDataBlock. */
+ async exportSemanticDocument(id:string,title:string,options:{vault?:string;current?:()=>boolean;viewId?:string}={}) {return this.task(async signal=>{
+  const t=this.base(options.current);t.viewId=options.viewId;this.check(t);
+  const snapshot=captureNative(this.editor.repository.readState(),id);
+  const frozen=Object.values(snapshot.contents).filter(c=>c.viewType==='mutable/package-data-block');
+  // Imported context belongs to its source, never to the currently selected Vault.
+  if(frozen.length){
+   this.download(nativeText(withFrozenDocumentContext(snapshot)),`${safeFilename(nativeDocumentStem(title))}.mutable.json`,'application/json;charset=utf-8');
+   this.status[1]('Document exported with its existing frozen package context. It was not refreshed from the active Vault.');return;
+  }
+  const inventory=documentContextInventory(snapshot),vault=options.vault??(t.scope.cavernId?'.':undefined);
+  let context=unavailableDocumentContext(snapshot,'Source Vault unavailable; semantic dependency remains unresolved.');
+  if(vault){
+   const documentHash=await hash(nativeBytes(snapshot));this.check(t);
+   const response=await fetch('/api/sqlite/knowledge/package-data',{method:'POST',headers:{'Content-Type':'application/json',...(t.session?{'X-Mutable-Cavern':t.session}:{})},signal,
+    body:JSON.stringify({vault,request:{entities:inventory.entities,claimsById:inventory.claims,relationships:true,actors:true,observedAliases:true,evidence:true,documentHash,documentContext:{resourceId:id,blockReferences:inventory.blockReferences}}})});
+   if(!response.body)throw Error('Semantic export reader unavailable; nothing downloaded.');
+   const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
+   try{for(;;){const part=await reader.read();if(part.done)break;if((size+=part.value.length)>10*1024*1024)throw Error('Semantic export exceeds the 10 MiB response budget');chunks.push(part.value);this.check(t);}}finally{await reader.cancel();}
+   const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+   const result=JSON.parse(new TextDecoder().decode(bytes));if(!response.ok||!result.Success)throw Error(result.Error??'Semantic export unavailable; nothing downloaded.');
+   validatePackageData(result.Data?.data);
+   if(result.Data.data.selection?.profile!=='document-context-v1')throw Error('The server does not support Document semantic export yet. Restart the updated server and retry.');
+   context=result.Data;
+  }
+  this.check(t);
+  if(this.editor.completionInput?.beforeSave?.()===false)throw Error('Finish or cancel Scry, then export again.');
+  const enriched=withDocumentContext(snapshot,context,{resourceId:id,...t.scope.cavernId?{cavernId:t.scope.cavernId}:{},profile:'document-context-v1',
+   readingGuide:'The document tree is authored content. Retained PackageDataBlock is subsequent read-only enrichment, outside reading order. Join table rows by canonical GUIDs using columns and SQLite storage tags. Block rows describe canonical Thesis propositions; StandoffProperty rows use their coordinate field and half-open SQL ends; raw authored annotations retain inclusive Cell ends. Captured source passages and evidence hashes describe provenance and are not verified against the current edited text. Entity.typename and Claim.typename preserve kinds; no trait/proposition coercion.'});
+  this.download(nativeText(enriched),`${safeFilename(nativeDocumentStem(title))}.mutable.json`,'application/json;charset=utf-8');
+  this.status[1](`Document exported with semantic context${context.data.unresolved.length||inventory.unresolved.length?' and explicit unresolved dependencies':''}. The Document and Save state are unchanged.`);
  });}
  async exportPackage(id:string,vault:string|undefined,current:()=>boolean){return this.task(async signal=>{
   const t=this.base(current),snapshot=captureNative(this.editor.repository.readState(),id),native=nativeBytes(snapshot),inventory=nativeInventory(snapshot,this.editor.features.crossResourceLoaders||this.editor.features.webResourceViewers);

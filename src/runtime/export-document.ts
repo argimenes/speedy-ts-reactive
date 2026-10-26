@@ -5,13 +5,14 @@ import { safeFilename } from '../interchange/formats';
 import { nativeDocumentStem } from '../persistence/document-file-names.mjs';
 
 /** Explicit download of current canonical content; never acknowledges Save or changes its binding. */
-export function exportDocument(editor: ReactiveEditor, resourceId: string) {
+export function exportDocument(editor: ReactiveEditor, resourceId: string, options: {vault?: string; current?: () => boolean; viewId?: string} = {}) {
   if (editor.completionInput?.beforeSave?.() === false) throw new Error('Finish or cancel Scry, then export the Document again.');
   const state = editor.repository.readState();
   const document = findResource(state, { scope: 'document', resourceId });
   if (!document) throw new Error('The Document is no longer available.');
   const metadata = document.payload.metadata as { title?: string; name?: string } | undefined;
   const title = String(metadata?.title || metadata?.name || 'Document');
+  if (editor.features.documentInterchange) return editor.interchange.exportSemanticDocument(resourceId, title, options);
   // Native capture preserves owned hidden content, references, annotations and
   // unknown authored fields; the legacy tree codec can lose graph semantics.
   const json = nativeText(captureNative(state, resourceId));

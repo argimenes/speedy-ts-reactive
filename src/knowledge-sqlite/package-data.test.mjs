@@ -46,7 +46,7 @@ test('independent JSON-to-SQLite reconstruction preserves logical rows and relat
 test('real read-only worker accepts package extraction without document discovery or write authority',async()=>{
  const {mkdtemp,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join}=await import('node:path'),{openSqliteFoundation}=await import('./client.mjs'),{randomUUID}=await import('node:crypto');
  const vault=await mkdtemp(join(tmpdir(),'package-reader-'));let client;
- try{client=await openSqliteFoundation({vault,initialize:true});const id=randomUUID();await client.entities({op:'create',id,name:'Read-only archive',operationId:randomUUID()});await client.close();client=await openSqliteFoundation({vault,readOnly:true,entityReader:true});const archive=await client.packageData({entities:[id]});assert.equal(archive.data.tables.find(t=>t.name==='Entity').rows.length,1);await assert.rejects(client.entities({op:'get',id}),/only accepts lookups/);}finally{await client?.close();await rm(vault,{recursive:true,force:true});}
+ try{client=await openSqliteFoundation({vault,initialize:true});const id=randomUUID();await client.entities({op:'create',id,name:'Read-only archive',operationId:randomUUID()});await client.close();client=await openSqliteFoundation({vault,readOnly:true,entityReader:true});const archive=await client.packageData({entities:[id],documentContext:{resourceId:'doc',blockReferences:[]}});assert.equal(archive.data.selection.profile,'document-context-v1');assert.equal(archive.data.tables.find(t=>t.name==='Entity').rows.length,1);await assert.rejects(client.entities({op:'get',id}),/only accepts lookups/);}finally{await client?.close();await rm(vault,{recursive:true,force:true});}
 });
 test('direct Claim references seed the required relational closure without enabling adjacent-claim discovery',()=>{const db=fixture();try{const result=extractPackageData(db,{entities:[],claimsById:['claim','missing-claim']});assert.equal(result.data.tables.find(t=>t.name==='Claim').rows.length,1);assert.equal(result.data.tables.find(t=>t.name==='ClaimParticipant').rows.length,2);assert.equal(result.data.tables.find(t=>t.name==='Entity').rows.length,3);assert.equal(result.data.tables.find(t=>t.name==='ClaimEvidence').rows.length,0);assert.ok(result.data.unresolved.some(r=>r.table==='Claim'&&r.value==='missing-claim'));}finally{db.close();}});
 test('rejects over-budget seeds and high-fan-out rows without partial export or writes',()=>{const db=fixture();try{
@@ -54,3 +54,46 @@ test('rejects over-budget seeds and high-fan-out rows without partial export or 
  db.exec("WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<5001) INSERT INTO EntityAlias(guid,entityGuid,alias,aliasKey,origin) SELECT 'fanout-'||x,'a','alias-'||x,'alias-'||x,'curated' FROM n");
  const before=db.prepare('SELECT total_changes() AS n').get().n;assert.throws(()=>extractPackageData(db,{entities:['a']}),/row limit/);assert.equal(db.prepare('SELECT total_changes() AS n').get().n,before);assert.equal(db.inTransaction,false);
 }finally{db.close();}});
+test('Document semantic context retains canonical propositions, aliases and strict internal relationships without recursive discovery',()=>{
+ const db=fixture();try{
+ db.exec(`INSERT INTO Entity(guid,name,nameKey,typename) VALUES('p','Thesis','thesis','Proposition'),('q','Referenced','referenced','Proposition'),('outside','Outside thesis','outside thesis','Proposition');
+ INSERT INTO Block(guid,entityGuid,typename,authoredType,text,coordinate,attributes) VALUES
+ ('pb','p','mutable/proposition-block','mutable/proposition-block','Abbey has history','cell','{"thesis":{"source":{"resourceGuid":"doc","blockGuid":"text","text":"captured","vaultGuid":"origin"},"archived":false,"annotationOrder":["pa"]}}'),
+ ('qb','q','mutable/proposition-block','mutable/proposition-block','Explicit reference','cell','{"thesis":{"source":{"resourceGuid":"external","blockGuid":"other"}}}'),
+ ('ob','outside','mutable/proposition-block','mutable/proposition-block','Unrelated','cell','{"thesis":{"source":{"resourceGuid":"unrelated"}}}');
+ INSERT INTO StandoffProperty(guid,sourceBlockGuid,authoredId,identityKind,logicalGuid,typename,startIndex,endIndex,coordinate,text,value,targetEntityGuid,resolution,attributes) VALUES('pa','pb','pa','authored','pa','codex/entity-reference',0,5,'utf16','Abbey','a','a','direct','{"id":"pa","start":0,"end":4,"value":"a","type":"codex/entity-reference"}');`);
+ const before=db.prepare('SELECT total_changes() AS n').get().n;
+ const result=extractPackageData(db,{entities:['a','b','missing'],relationships:true,actors:true,observedAliases:true,documentContext:{resourceId:'doc',blockReferences:['qb','missing-block']}});
+ const rows=name=>values(result.data.tables.find(t=>t.name===name));
+ assert.equal(result.data.selection.profile,'document-context-v1');
+ assert.deepEqual(rows('Block').map(r=>r.guid[1]).sort(),['pb','qb']);
+ assert.deepEqual(rows('Relationship').map(r=>r.guid[1]),['r']);
+ assert.deepEqual(rows('Entity').map(r=>r.guid[1]).sort(),['a','b','p','q']);
+ assert.equal(rows('EntityAlias').length,2);assert.equal(rows('StandoffProperty')[0].endIndex[1],'5');
+ assert.equal(JSON.parse(rows('StandoffProperty')[0].attributes[1]).end,4);
+ assert.ok(result.data.unresolved.some(r=>r.value==='missing-block'));assert.ok(result.data.unresolved.some(r=>r.value==='external'));assert.ok(result.data.unresolved.some(r=>r.value==='private-actor'));
+ assert.equal(db.prepare('SELECT total_changes() AS n').get().n,before);
+ // Relationship endpoint closure must not broaden the original Document boundary.
+ const single=extractPackageData(db,{entities:['a'],relationships:true,documentContext:{resourceId:'empty',blockReferences:[]}});
+ assert.equal(single.data.tables.find(t=>t.name==='Relationship').rows.length,0);
+ assert.throws(()=>extractPackageData(db,{entities:[],documentContext:{resourceId:'doc',blockReferences:Array(501).fill('x')}}),/boundary/);
+ }finally{db.close();}
+});
+test('source-document claims retain their Trait kind, complete participants and evidence without adjacent discovery',()=>{
+ const db=fixture();try{
+ const result=extractPackageData(db,{entities:[],relationships:true,evidence:true,documentContext:{resourceId:'old-doc',blockReferences:[]}});
+ const rows=name=>values(result.data.tables.find(t=>t.name===name));
+ assert.deepEqual(rows('Claim').map(r=>[r.guid[1],r.typename[1]]),[['claim','Trait']]);
+ assert.equal(rows('ClaimParticipant').length,2);assert.equal(rows('ClaimEvidence').length,1);assert.equal(rows('Relationship').length,0);
+ assert.deepEqual(rows('Entity').map(r=>r.guid[1]).sort(),['a','b','c']);
+ }finally{db.close();}
+});
+test('proposition discovery is bounded even when none of the candidates matches the Document',()=>{
+ const db=fixture();try{
+ db.exec("WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<5001) INSERT INTO Entity(guid,name,nameKey,typename) SELECT 'p-'||x,'Proposition '||x,'proposition-'||x,'Proposition' FROM n");
+ db.exec("INSERT INTO Block(guid,entityGuid,typename,authoredType,text) SELECT 'b-'||guid,guid,'mutable/proposition-block','mutable/proposition-block','text' FROM Entity WHERE typename='Proposition'");
+ const before=db.prepare('SELECT total_changes() AS n').get().n;
+ assert.throws(()=>extractPackageData(db,{entities:[],documentContext:{resourceId:'none',blockReferences:[]}}),/5000 candidates/);
+ assert.equal(db.prepare('SELECT total_changes() AS n').get().n,before);assert.equal(db.inTransaction,false);
+ }finally{db.close();}
+});

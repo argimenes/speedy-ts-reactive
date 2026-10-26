@@ -74,3 +74,72 @@ The viewer uses a pure in-memory table adapter, the native decoder and safe sema
 “Export HTML/Markdown with assets” writes a projection ZIP with relative original-image paths; “Export standalone HTML” embeds originals as data URLs with a 20 MiB final limit. Neither projection contains a hidden native payload or database slice. “Open native Ink”, “Import external”, “Embed source”, “Link to source” and “Import Ink package” retain their different ownership and save semantics.
 
 Local source links persist only version, linkId, basename, format, accepted byte hash and accepted decoded-text hash. File handles and absolute paths are not persisted. Refresh uses explicit file reselection and rebind confirmation, compares the source baseline and current local text, and offers replace/separate/cancel on conflicts. Source and baseline update in one undo transaction; ordinary typing performs no hashing, preview, file reads or refresh. The external source is never overwritten.
+
+## Document JSON semantic export extension — 2026-10-27
+
+The existing **Export Document** context action now includes semantic context in the
+native `.mutable.json` download. It reuses native capture/serialization,
+`mutable/package-data-block`, retained-definition membership, the read-only package
+extractor and worker endpoint, and the existing interchange cancellation/status UI.
+The existing default-enabled `documentInterchange` switch governs enrichment;
+disabling it preserves the previous native-only export.
+
+The outer format remains `mutable-document` **version 1**. The authored portable
+Block graph retains its existing version and identities. One PackageDataBlock
+(version 1, PackageData version 1, knowledge-schema version 1) is retained through
+`definitionOwnerBlockIds`, outside authored reading order. Its existing
+`packageContext` contains `data`, `schema` and `source`; no top-level `semantic`
+object, new Block type, import implementation or persistence migration was added.
+`data.selection.profile = "document-context-v1"` identifies the collection policy.
+
+Collection includes authored Entity/Time references, all available aliases and
+actor provenance, Relationships whose **both endpoints** are original Document
+entity seeds, explicitly referenced Claims and source-document Claims with their
+participants, qualifiers and evidence. Canonical Thesis propositions are selected
+by explicit entity/Block references or their source Document GUID. Their canonical
+`Block` and `StandoffProperty` rows preserve identities, full text, annotation order,
+attributes, source passages and provenance. Entity kinds and typed Trait Claims are
+not converted into propositions. SQL annotation coordinates remain distinct from
+inclusive authored Cell ranges. The source guide explains how to traverse these
+rows and distinguishes enrichment from authored content.
+
+Collection is explicit export-time work: at most 500 entity/claim seeds, 500 Block
+reference seeds, 5,000 proposition-discovery candidates, 5,000 selected rows and
+8 MiB encoded SQL values; the client caps the response at 10 MiB. There is no new
+source index: proposition discovery uses the existing Block-type index and rejects
+excessive candidates rather than silently truncating. It never scans Vault files
+or recursively follows unrelated graph endpoints. Cancellation, changed Documents,
+closed views, changed Caverns, reader errors and unsupported reader responses
+prevent a partial-success download. Export does not commit, save, clear dirty state
+or add undo history. Frozen package context is reused without querying another
+Vault; new references absent from that context are listed explicitly.
+
+### Qualification
+
+- **Chrome, actual Buzzetti correspondence (2019-07-16):** exported through the
+  Document context menu using a real read-only SQLite worker. All 8 authored Blocks
+  and the portable graph matched the source; all 17 referenced entities resolved;
+  1 internal Relationship was included; no unresolved dependencies. One database
+  request, zero repository commits, unchanged source state, no browser exceptions.
+  Reproducible with `node scripts/check-semantic-document-export-browser.mjs`.
+- **Focused checks:** 35 package/export/context-menu tests and 8 read-only extractor
+  tests passed, including canonical propositions, source-linked Trait Claims,
+  missing records, bounds, cancellation, frozen context and native round-trips.
+  Application/server TypeScript checks passed. The running server accepted the new
+  profile without a restart.
+- A broader Flint check was also run before scope was narrowed. Its one window-close
+  projection-count failure was independently reproduced on unchanged HEAD in an
+  isolated worktree, which was removed afterward. No new regression was identified.
+
+### Remaining boundaries
+
+JSON preserves media/resource descriptors but does not embed original binaries;
+those dependencies are explicit and the existing `.inkpkg` exporter remains the
+route for originals. Without a source Vault, the file identifies missing semantic
+context instead of consulting an unrelated database. Frozen context is not refreshed.
+Saved canonical propositions are included; unsaved Thesis drafts are not. Captured
+source passages/evidence hashes are provenance, not proof that historical ranges
+still match edited text. Unknown attribute references, unrelated Documents and
+arbitrary DataPoint discovery remain outside the collection boundary. The Buzzetti
+sample had no matching saved propositions; proposition traversal was qualified with
+controlled canonical database fixtures instead.
