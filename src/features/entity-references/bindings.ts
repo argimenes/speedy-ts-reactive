@@ -3,6 +3,8 @@ import type { AnnotationCapabilities } from "../../feature-api";
 export function registerEntityBindings(api: AnnotationCapabilities, platform = typeof navigator === "undefined" ? "" : navigator.platform) {
   const add = (id: string, name: string, description: string, category: string, scope: string, defaults: Parameters<AnnotationCapabilities["register"]["binding"]>[0]["defaults"], tags: string[] = []) => api.register.binding({ id, name, description, category, scope, defaults, tags, handler: context => context.run(id) });
   const primary = /Mac|iPhone|iPad|iPod/i.test(platform) ? "Meta" : "Ctrl";
+  add('entity.toggleMode','Toggle Query / Command mode','Switch between editing the entity query and using LER commands.','Entities','entity-search/mode',[k('.','Meta'),k('.','Ctrl')]);
+  add('entity.createFromQuery','Create Entity and link source','Create an Entity named by the query and link its GUID to the source selection.','Entities','entity-search/create',[k('Enter','Meta'),k('Enter','Ctrl')]);
   for(const [id,name,defaults] of [
     ['editQuery','Edit entity query',[k('F2')]],
     ['prepare','Prepare entity without linking',[k('Enter','Shift')]],

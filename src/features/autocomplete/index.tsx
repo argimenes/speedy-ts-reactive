@@ -283,6 +283,12 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    if((event.metaKey||event.ctrlKey)&&['s','z','y'].includes(event.key.toLowerCase())){if(!inside)cancel();return false;}
    // LER owns its Command/Edit contexts, including native query select-all.
    if(inside&&target.closest('.ler-instrument'))return false;
+   // LER shortcuts also work from Scry's source editing context, before
+   // ordinary editor shortcuts such as Ctrl+. annotation inspection.
+   if(!inside&&entityControls&&editor.bindings.dispatch(event,['entity-search/mode','entity-search/create'],id=>{
+    const action=id==='entity.toggleMode'?'toggleMode':id==='entity.createFromQuery'?'createFromQuery':undefined;
+    return !!action&&(event.repeat||entityControls!.run(action));
+   }))return true;
    if(event.key==='Tab'){if(!inside)cancel();return false;}
    if(inside&&target.closest('button,select')&&['Enter','ArrowUp','ArrowDown'].includes(event.key))return false;
    if(!inside&&s.source.brackets&&event.metaKey&&event.key.toLowerCase()==='a'){

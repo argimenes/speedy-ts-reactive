@@ -165,7 +165,7 @@ export function LerSearch(props:{api:AnnotationCapabilities;panel:PanelSession;c
   onCleanup(()=>guard?.());
   onCleanup(()=>{mount();stop();});
  });
- completion?.controls({canClose,busy:()=>working()||creating(),run:id=>{if(id==='close'){close();return true;}if(id==='review'){expand();return true;}if(id==='create'){createFormOpen();return true;}if(id==='authority'){setAuthority(true);session.view('authority');return true;}if(id==='next'||id==='previous'){const n=pageRows().length;if(n)navigate((current()+(id==='next'?1:-1)+n)%n);return true;}if(id==='choose'){const row=pageRows()[current()];if(row&&!working())select(row.id);return true;}return false;}});
+ completion?.controls({canClose,busy:()=>working()||creating(),run:id=>{if(id==='createFromQuery'){createFromQuery();return true;}if(id==='toggleMode'){toggleMode();return true;}if(id==='close'){close();return true;}if(id==='review'){expand();return true;}if(id==='create'){createFormOpen();return true;}if(id==='authority'){setAuthority(true);session.view('authority');return true;}if(id==='next'||id==='previous'){const n=pageRows().length;if(n)navigate((current()+(id==='next'?1:-1)+n)%n);return true;}if(id==='choose'){const row=pageRows()[current()];if(row&&!working())select(row.id);return true;}return false;}});
  onCleanup(()=>completion?.controls(undefined));
  const rows=createMemo(()=>searchScope()==='live'?documentRows():result()?.candidates??[]);
  const pageRows=createMemo(()=>rows().slice(page()*10,page()*10+10));
@@ -194,8 +194,14 @@ export function LerSearch(props:{api:AnnotationCapabilities;panel:PanelSession;c
   });
  };
  onCleanup(()=>{if(revealFrame!==undefined)cancelAnimationFrame(revealFrame);});
- const commandFocus=()=>{session.mode('command');queueMicrotask(()=>list?.focus());};
+ const commandFocus=()=>{session.mode('command');queueMicrotask(()=>{if(alive)list?.focus({preventScroll:true});});};
  const editQuery=()=>{session.mode('edit');input.focus();input.select();};
+ const toggleMode=()=>{
+  const command=session.state.mode==='command'&&root.contains(document.activeElement);
+  session.view('results');
+  if(command){session.mode('edit');input.focus({preventScroll:true});}
+  else commandFocus();
+ };
  const accepted=()=>candidates().state.enabled?candidates().acceptedCount():valid()?target().entityRanges.length?1:target().workstation?.scry?1:0:0;
  const expand=()=>{
   try{
@@ -219,12 +225,35 @@ export function LerSearch(props:{api:AnnotationCapabilities;panel:PanelSession;c
  const reset=()=>{candidates().disable();try{api.validateRanges?.(session.origin.entityRanges);setTarget({...target(),...session.origin,entityRanges:session.origin.entityRanges.map(r=>({...r})),entityRevision:api.revision()});setValid(true);}catch{setValid(false);}session.view('results');commandFocus();};
  const adoptSelection=()=>{try{const data=snapshotTarget(api.recoverySelection?.(panel.ownerKey)??api.selection(panel.ownerKey),api);candidates().dispose();setTarget(data);setCandidates(newCandidates(data));setValid(true);setError('');session.view('results');commandFocus();}catch(e){setError(String(e));}};
  const createFormOpen=()=>{setCreateForm(true);if(!attempt())setCanonicalName(query().trim()||target().entityQuery);session.view('create');};
+ const createFromQuery=()=>{
+  if(working()||creating()||composing())return;
+  if(created()){setCreateForm(true);session.view('create');setError('This Entity was already created. Use Bind to new selection to finish linking it.');return;}
+  const name=query().trim();
+  if(attempt()){
+   setCreateForm(true);session.view('create');
+   if(name!==attempt()!.name){setError(`Creation of “${attempt()!.name}” is unconfirmed. Retry that creation before starting another.`);return;}
+  }else{
+   if(!name){setError('Enter an entity name in the query field.');return;}
+   try{
+    const source=target(),scry=source.workstation?.scry;
+    if(scry){if(!scry.valid()||!source.entityQuery.trim())throw Error('Select or type source text before creating an Entity.');}
+    else {if(!source.entityRanges.length)throw Error('Select source text before creating an Entity.');api.validateRanges?.(source.entityRanges);}
+   }catch(e){setError(String(e));return;}
+   setCanonicalName(name);setCreateForm(true);session.view('create');
+  }
+  create();
+ };
  const refresh=()=>{if(searchScope()==='live')live()?.refresh();else setRetry(n=>n+1);};
  const keys=(e:KeyboardEvent)=>{
   if(e.defaultPrevented||e.isComposing||e.key==='Process'||e.key==='Dead'||e.getModifierState?.('AltGraph'))return;
   const element=e.target as Element,field=element.closest('input,textarea,select,[contenteditable=true]');
   if(element.closest('[data-window-move],[data-scry-geometry],.reactive-entity-search__resize'))return;
   e.stopPropagation();
+  if(api.bindings.dispatch(e,['entity-search/mode','entity-search/create'],id=>{
+   if(id==='entity.toggleMode'){if(!e.repeat)toggleMode();return true;}
+   if(id==='entity.createFromQuery'){if(!e.repeat)createFromQuery();return true;}
+   return false;
+  }))return;
   if(e.key==='Escape'){e.preventDefault();goBack();return;}
   if(field){
    if(e.target===input&&!e.altKey&&!e.ctrlKey&&!e.metaKey){
@@ -280,7 +309,7 @@ export function LerSearch(props:{api:AnnotationCapabilities;panel:PanelSession;c
    <Show when={session.state.view==='review'&&session.state.prepared}><button disabled={working()||!candidates().canBind()} aria-label="Link accepted ranges" onClick={()=>select(session.state.prepared!.id)}>Link {accepted()}</button></Show>
    <Show when={!valid()}><span role="status">Source changed.</span><button onPointerDown={e=>e.preventDefault()} onClick={adoptSelection}>Use current selection</button></Show>
   </div>
-  <div class="ler-query"><input ref={input} aria-label="Search entities" role="combobox" aria-expanded={session.state.view==='results'} aria-controls={`${panel.key}-results`} aria-activedescendant={pageRows()[current()]?`${panel.key}-result-${current()}`:undefined} aria-autocomplete="list" maxLength={1000} value={query()} onFocus={()=>session.mode('edit')} onInput={e=>{setQuery(e.currentTarget.value);if(!e.isComposing&&searchScope()!=='live')completion?.session.input(e.currentTarget.value);}} onCompositionStart={()=>setComposing(true)} onCompositionEnd={e=>{setComposing(false);setQuery(e.currentTarget.value);if(searchScope()!=='live')completion?.session.input(e.currentTarget.value);}}/><button onClick={editQuery}>Edit</button><button onClick={commandFocus}>{session.state.mode==='edit'?'Editing query':'Commands'}</button></div>
+  <div class="ler-query"><input ref={input} aria-label="Search entities" role="combobox" aria-expanded={session.state.view==='results'} aria-controls={`${panel.key}-results`} aria-activedescendant={pageRows()[current()]?`${panel.key}-result-${current()}`:undefined} aria-autocomplete="list" maxLength={1000} value={query()} onFocus={()=>session.mode('edit')} onInput={e=>{setQuery(e.currentTarget.value);if(!e.isComposing&&searchScope()!=='live')completion?.session.input(e.currentTarget.value);}} onCompositionStart={()=>setComposing(true)} onCompositionEnd={e=>{setComposing(false);setQuery(e.currentTarget.value);if(searchScope()!=='live')completion?.session.input(e.currentTarget.value);}}/><button onClick={editQuery}>Edit</button><button title={`Query / Command mode: ${api.bindings.label('entity.toggleMode')}`} onClick={commandFocus}>{session.state.mode==='edit'?'Editing query':'Commands'}</button></div>
   <div class="ler-modes">
    <label>Scope<select aria-label="Entity scope" value={searchScope()} onChange={e=>setScope(e.currentTarget.value as LerSource)}><Show when={completion}><option value="blend">Local blend</option><option value="session">This session</option><option value="day">Last 24 hours</option><option value="week">Last 7 days</option></Show><option value="vault">Vault</option><option value="live">Document Entities</option><option value="document">Saved document</option></select></label>
    <label>Field<select aria-label="Entity stream" value={stream()} onChange={e=>setStream(e.currentTarget.value as any)}><option value="all">All</option><option value="name">Name</option><option value="alias">Alias</option><option value="mention">Mention</option></select></label>
@@ -299,7 +328,7 @@ export function LerSearch(props:{api:AnnotationCapabilities;panel:PanelSession;c
     <button disabled={!pageRows()[current()]||working()} onClick={()=>select(pageRows()[current()].id,false,true)}>Prepare entity</button><button onClick={expand}>Expand original selection</button><button onClick={review}>Review other mention text</button><button onClick={createFormOpen}>+ Create Entity</button><button onClick={()=>session.view('source')}>Source range controls</button><button onClick={()=>{setScope('live');session.view('results');commandFocus();}}>Browse Document Entities</button><button onClick={reset}>Reset to original targets</button>
     <Show when={pageRows()[current()]&&!target().workstation?.scry}><button disabled={!valid()||target().entityRanges.length!==1||candidates().state.enabled} onClick={()=>select(pageRows()[current()].id,true)}>Replace &amp; Link</button></Show>
     <Show when={completion}><button onClick={()=>{if(usageScope())clearUsage(usageScope()!);setRetry(n=>n+1);}}>Clear usage history</button><Show when={service}><button onClick={()=>{setAuthority(true);session.view('authority');}}>External authorities…</button></Show></Show>
-    <p>Enter links · Shift+Enter prepares · → inspects · F2 edits</p><p>* toggles match · @ cycles fields · ~ cycles scopes · / commands</p><p>Numbers 0–9 link in Command mode. Other text starts query editing. | is reserved for future composition.</p>
+    <p>Enter links · Shift+Enter prepares · → inspects · F2 edits</p><p>{api.bindings.label('entity.toggleMode')} toggles Query / Command mode</p><p>{api.bindings.label('entity.createFromQuery')} creates from the query and links the source</p><p>* toggles match · @ cycles fields · ~ cycles scopes · / commands</p><p>Numbers 0–9 link in Command mode. Other text starts query editing. | is reserved for future composition.</p>
    </div></Show>
    <Show when={session.state.view==='source'}>
     <p>Current target: {target().entityQuery}</p>

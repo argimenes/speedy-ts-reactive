@@ -5,6 +5,7 @@ import {ReactiveTreeView} from '../../rendering/reactive-tree-view';
 import {entityTestApi,registerEntityTestViews} from './test-support';
 import {mockResolver} from './resolver-test-support';
 import {openEntitySearch} from './entity-search';
+import {keyboard} from '../../input/bindings';
 const cleanup:Array<()=>void>=[];
 beforeEach(()=>vi.useFakeTimers());afterEach(()=>{cleanup.splice(0).reverse().forEach(f=>f());document.body.replaceChildren();vi.restoreAllMocks();vi.useRealTimers();localStorage.clear();});
 async function fixture(){
@@ -88,4 +89,58 @@ it('reveals keyboard-selected rows with bounded frame reads and preserves query 
  expect(body.scrollTop).toBe(0);expect(document.activeElement).toBe(f.input());
  viewport.mockClear();reads.forEach(read=>read.mockClear());f.text('Franz');await vi.advanceTimersByTimeAsync(30);
  expect(viewport).not.toHaveBeenCalled();reads.forEach(read=>expect(read).not.toHaveBeenCalled());
+});
+it.each([{metaKey:true},{ctrlKey:true}])('toggles Query / Command with %j and retains query, caret and selection',async modifiers=>{
+ const f=await fixture();f.key('F2');f.input().setSelectionRange(1,3);
+ const value=f.input().value,selected=f.panel().querySelector('[aria-selected=true]');
+ expect(f.key('.',{...modifiers,isComposing:true},f.input()).defaultPrevented).toBe(false);
+ expect(f.key('.',modifiers,f.input()).defaultPrevented).toBe(true);await vi.advanceTimersByTimeAsync(0);
+ expect(document.activeElement?.getAttribute('role')).toBe('listbox');
+ expect(f.panel().querySelector('[aria-selected=true]')).toBe(selected);
+ f.key('.',{...modifiers,repeat:true});await vi.advanceTimersByTimeAsync(0);expect(document.activeElement?.getAttribute('role')).toBe('listbox');
+ expect(f.key('.',modifiers).defaultPrevented).toBe(true);expect(document.activeElement).toBe(f.input());
+ expect(f.input().value).toBe(value);expect(f.input().selectionStart).toBe(1);expect(f.input().selectionEnd).toBe(3);
+ expect(f.key('.',{},f.input()).defaultPrevented).toBe(false);
+ expect(f.key('*',{shiftKey:true},f.input()).defaultPrevented).toBe(false);
+ f.key('.',modifiers,f.input());await vi.advanceTimersByTimeAsync(0);f.key('*',{shiftKey:true});
+ expect(f.panel().querySelector<HTMLSelectElement>('[aria-label="Entity match"]')!.value).toBe('exact');
+ expect(f.editor.repository.canUndo()).toBe(false);
+});
+it('honours a remapped mode toggle inside the query field',async()=>{
+ const f=await fixture();f.key('F2');f.editor.bindings.assign('entity.toggleMode',[keyboard('F6')]);
+ expect(f.key('.',{ctrlKey:true},f.input()).defaultPrevented).toBe(false);
+ expect(f.key('F6',{},f.input()).defaultPrevented).toBe(true);await vi.advanceTimersByTimeAsync(0);
+ expect(document.activeElement?.getAttribute('role')).toBe('listbox');
+ f.key('F6');expect(document.activeElement).toBe(f.input());
+});
+it.each([{metaKey:true},{ctrlKey:true}])('creates from the query and links the source with %j Enter',async modifiers=>{
+ const f=await fixture();f.key('F2');f.text('  Franz Liszt  ');
+ expect(f.key('Enter',{...modifiers,isComposing:true},f.input()).defaultPrevented).toBe(false);
+ f.key('Enter',{...modifiers,repeat:true},f.input());expect(f.service.create).not.toHaveBeenCalled();
+ expect(f.key('Enter',modifiers,f.input()).defaultPrevented).toBe(true);await vi.advanceTimersByTimeAsync(0);
+ expect(f.service.create).toHaveBeenCalledTimes(1);const request=vi.mocked(f.service.create).mock.calls[0][0];
+ expect(request.name).toBe('Franz Liszt');expect(request.id).not.toBe('liszt');expect(f.panel()).toBeNull();
+ expect(f.node('source').payload.standoffProperties).toEqual([expect.objectContaining({value:request.id,start:0,end:4})]);
+ expect(f.editor.encodeDocument().children![0].text).toBe('Liszt');
+ f.editor.repository.undo();expect(f.node('source').payload.standoffProperties).toBeUndefined();expect(f.entities.has(request.id)).toBe(true);
+});
+it('rejects an empty query and retries an uncertain creation with the same identity in Command mode',async()=>{
+ const f=await fixture();f.text('   ');f.key('Enter',{ctrlKey:true});expect(f.service.create).not.toHaveBeenCalled();
+ expect(f.panel().textContent).toContain('Enter an entity name in the query field');
+ vi.mocked(f.service.create).mockRejectedValueOnce(Error('Response lost'));
+ f.text('New name');f.key('Enter',{ctrlKey:true});await vi.advanceTimersByTimeAsync(0);
+ const request=vi.mocked(f.service.create).mock.calls[0][0];expect(f.panel().textContent).toContain('Creation outcome unconfirmed');
+ f.text('Different name');f.key('Enter',{ctrlKey:true},f.input());expect(f.service.create).toHaveBeenCalledTimes(1);
+ f.text('New name');f.key('Enter',{ctrlKey:true},f.input());await vi.advanceTimersByTimeAsync(0);
+ expect(vi.mocked(f.service.create).mock.calls[1][0]).toEqual(request);
+ expect(f.node('source').payload.standoffProperties).toEqual([expect.objectContaining({value:request.id})]);
+});
+it('suppresses duplicate creation while pending and after a created Entity loses its source range',async()=>{
+ const f=await fixture();let finish!:(value:any)=>void;
+ vi.mocked(f.service.create).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+ f.text('New name');f.key('Enter',{metaKey:true});f.key('Enter',{ctrlKey:true},f.input());expect(f.service.create).toHaveBeenCalledTimes(1);
+ f.editor.commands.replaceInlineRange(f.node('source').key,0,0,'Now ');
+ const request=vi.mocked(f.service.create).mock.calls[0][0];finish({...request,revision:0,aliases:[]});await vi.advanceTimersByTimeAsync(0);
+ expect(f.panel().textContent).toContain('created, but');expect(f.node('source').payload.standoffProperties).toBeUndefined();
+ f.key('Enter',{metaKey:true},f.input());expect(f.service.create).toHaveBeenCalledTimes(1);expect(f.panel().textContent).toContain('Bind to new selection');
 });
