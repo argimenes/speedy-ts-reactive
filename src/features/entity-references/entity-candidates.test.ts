@@ -14,7 +14,11 @@ function setup(extra?: ExistingBlockDto[], original?: Array<{ id: string; start:
     { type: "tab-row-block",children: [{ type: "tab-block",children: [] },{ type: "tab-block",children: [{ id: "hidden",type: "standoff-editor-block",text: "he" }] }] },
   ] }] });
   const view = editor.createView("candidate-test"), node = (id: string) => Object.values(view.state.nodes).find(n => n.payload.id === id)!;
-  const ranges = (original ?? [{ id: "a",start: 0,end: 2 }]).map(r => ({ nodeKey: node(r.id).key,start: r.start,end: r.end }));
+  const api=entityTestApi(editor);
+  const ranges = (original ?? [{ id: "a",start: 0,end: 2 }]).map(r => {
+    const text=api.text(node(r.id).key)!;
+    return {nodeKey:node(r.id).key,start:r.start,end:r.end,contentKey:text.contentKey,placementKey:text.placementKey,version:text.version,coordinate:'cell' as const};
+  });
   const session = new EntityCandidates(entityTestApi(editor),{ close() {}, allowDocumentInput() {}, mountWidget() { return () => {}; }, focus() {}, key: "test-overlay",ownerKey: ranges[0].nodeKey,data: { entityRevision: editor.repository.state.revision,entityRanges: ranges,entityQuery: ranges.map(r => node(original?.find(o => node(o.id).key === r.nodeKey)?.id ?? "a").inlineContent.slice(r.start,r.end).map(k => String(editor.node(k)?.payload.text ?? "")).join("")).join(" ") } },async (sources,query,options) => matchSources(sources,query,options));
   cleanup.push(() => { session.dispose(); editor.dispose(); });
   return { editor,view,node,session };

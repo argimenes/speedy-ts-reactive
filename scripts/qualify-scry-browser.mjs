@@ -104,11 +104,12 @@ try{
   ]){await key(arrow,mods);check(name,await source()===expected);}
   check('No content changes, commits, snapshots or revision changes',await evaluate("proof.read()==='one two three' && proof.editor.repository.state.revision===proof.initialRevision && proof.boundaryCommits===0 && proof.boundarySnapshots===0"));
   await evaluate("document.querySelector('.autocomplete-workstation input').focus()");await key('ArrowRight',1);check('Query word navigation does not move source brackets',await source()==='((one)) two three');
-  await key('Escape');check('Cancellation leaves source unchanged',await source()==='one two three');check('No browser exceptions',errors.length===0);
+  await key('Escape');await key('Escape');check('Cancellation leaves source unchanged',await source()==='one two three');check('No browser exceptions',errors.length===0);
   await writeFile(path.join(artifacts,'word-boundaries.json'),JSON.stringify({checks,errors},null,2));
   await evaluate('proof.stopEntity();proof.dispose();proof.session.dispose()');
  }else{
  const query=async(value)=>{await evaluate(`document.querySelector('.autocomplete-workstation input')?.focus()`);await wait("document.querySelector('.autocomplete-workstation input')===document.activeElement");await key('a',4);await type(value);};
+ const command=async label=>{await evaluate("document.querySelector('[aria-label=\"Commands and help\"]').click()");await evaluate(`[...document.querySelectorAll('.ler-command-list button')].find(b=>b.textContent===${JSON.stringify(label)}).click()`);};
  const confirm=async()=>{await wait("document.querySelector('.reactive-entity-search [aria-label^=\"Select \"]')");await key('Enter');await wait("!document.querySelector('.autocomplete-workstation')");};
  await reset('one two three four',4,7);
  await evaluate("proof.overlapOriginal=[{id:'scry-overlap-left',type:'codex/entity-reference',value:'22222222-2222-4222-8222-222222222222',start:0,end:5},{id:'scry-overlap-inner',type:'codex/entity-reference',value:'22222222-2222-4222-8222-222222222222',start:8,end:12},{id:'scry-overlap-right',type:'codex/entity-reference',value:'22222222-2222-4222-8222-222222222222',start:12,end:17}];proof.editor.commands.setPayloadField(proof.text.key,'standoffProperties',proof.overlapOriginal);proof.mount.restoreInlineSelection({anchor:4,head:7})");
@@ -132,6 +133,7 @@ try{
  check('Square trigger works immediately after prose without a space',await source()==='prose[[]]');
  check('Bracket entry opens one shared Link Entity Reference interface',await evaluate("document.querySelectorAll('.reactive-entity-search').length===1&&document.querySelectorAll('.autocomplete-workstation').length===1&&!document.querySelector('.autocomplete-results')"));
  check('Scry uses provisional cells without authored text changes',await evaluate("proof.read()==='prose'&&proof.flow.querySelectorAll('[data-provisional-cell]').length===4&&!CSS.highlights.has('mutable-scry-source')"));
+ await command('Source range controls');
  check('Both bracket edges expose character and word shortcuts',await evaluate("[...document.querySelectorAll('.entity-boundaries kbd')].map(e=>e.textContent).sort().join('|')===['Ctrl+Alt+Shift+←/→','Ctrl+Alt+←/→','Ctrl+Shift+←/→','Alt/Option+←/→ (Ctrl+←/→)'].sort().join('|')"));
  await key('Escape');await reset('Leo',0);
  const clickPoint=await evaluate("(()=>{const b=proof.mount.inlineBoundary(0),r=document.createRange();r.setStart(b.node,b.offset);r.collapse(true);const a=[...r.getClientRects()].find(r=>r.height);return{x:a.left+1,y:a.top+a.height/2}})()");
@@ -173,6 +175,7 @@ try{
  await key('c',2);check('Ctrl C does not cancel query context',await evaluate("!!document.querySelector('.autocomplete-workstation')"));
  await evaluate("proof.editor.focus.request(proof.text.key);proof.mount.restoreInlineSelection({anchor:6,head:6})");await type('!');
  check('Independent query survives source edit',await evaluate("document.querySelector('.autocomplete-workstation input').value==='Leonardo'&&proof.read()===''&&proof.flow.textContent==='((master!))'"));
+ await command('Source range controls');
  await evaluate("[...document.querySelectorAll('.autocomplete-workstation button')].find(b=>b.textContent==='Resume following source').click()");
  check('Resume following source is explicit',await evaluate("document.querySelector('.autocomplete-workstation input').value==='master!'"));
  check('Temporary marker persistence action is removed',await evaluate("![...document.querySelectorAll('.autocomplete-workstation button')].some(b=>b.textContent==='Keep literal brackets')"));await key('Escape');check('Cancellation keeps edited source without brackets',await source()==='master!');
@@ -180,7 +183,7 @@ try{
  await reset('old ',4);await type('((');await type('edited');await evaluate("document.querySelector('[aria-label=\"Close Autocomplete\"]').click()");check('Popup X retains edits and removes only owned delimiters',await source()==='old edited');
  await reset('Florentine master',0);await type('((');await query('Leonardo');await wait("document.querySelector('.reactive-entity-search [aria-label^=\"Select \"]')");
  await wait("document.querySelector('.reactive-entity-search')");check('One LER uses the live source bookmark without deleting brackets',await source()==='((Florentine)) master');
- await evaluate("document.querySelector('.reactive-entity-search input').focus()");await key('Escape');await wait("!document.querySelector('.reactive-entity-search')");check('Entity tool cancellation consumes owned delimiters only',await source()==='Florentine master');
+ await evaluate("document.querySelector('.reactive-entity-search input').focus()");await key('Escape');await key('Escape');await wait("!document.querySelector('.reactive-entity-search')");check('Entity tool cancellation consumes owned delimiters only',await source()==='Florentine master');
 
  const gestureCases=[
   ['closing word back', 'one two three',0,7,'ArrowLeft',2,'((one)) two three'],
@@ -199,7 +202,8 @@ try{
  const outsidePoint=await evaluate("(()=>{const b=proof.mount.inlineBoundary(1),r=document.createRange();r.setStart(b.node,b.offset);r.setEnd(b.node,Math.min(b.offset+1,b.node.textContent.length));const a=r.getBoundingClientRect();return {x:a.left+1,y:a.top+a.height/2}})()");
  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...outsidePoint},sessionId);await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...outsidePoint},sessionId);
  await wait("!document.querySelector('.autocomplete-workstation')");check('Pointer outside source range cancels and preserves edited text',await source()==='before afteredited');
- await reset('he he he',0,2);await type('((');await query('Leonardo');await wait("document.querySelector('.reactive-entity-search [aria-label^=\"Select \"]')");await key('a',2);await wait("document.querySelector('.reactive-entity-search')");await evaluate("document.querySelector('[aria-label=\"Select Leonardo da Vinci\"]').click()");await wait("document.querySelectorAll('[data-candidate-row]').length===3");
+ await reset('he he he',0,2);await type('((');await query('Leonardo');await wait("document.querySelector('.reactive-entity-search [role=option]')");
+ await evaluate("document.querySelector('.reactive-entity-search [role=listbox]').focus()");await key('Enter',8);await wait("document.querySelector('.ler-prepared')");await key('a',2);await wait("document.querySelectorAll('[data-candidate-row]').length===3");
  check('Reviewed Ctrl A uses existing Entity candidate workflow',true);
  await evaluate("document.querySelector('.entity-candidates__bind').click()");await wait("!document.querySelector('.reactive-entity-search')");
  check('Batch links reviewed occurrences without authored delimiters',await evaluate("proof.read()==='he he he'&&proof.text.payload.standoffProperties.filter(p=>p.type==='codex/entity-reference').length===3"));
@@ -211,11 +215,11 @@ try{
 
  await reset(phrase,0);for(let i=0;i<phrase.length;i++)await key('ArrowRight',8);await type('((');check('Real keyboard-created selection is wrapped through cross-Block input routing',await source()==='(('+phrase+'))');await key('Escape');
  await reset('the master',0,10);await type('((');await query('New Person');await wait("document.querySelector('.reactive-entity-search')");
- await evaluate("[...document.querySelectorAll('.reactive-entity-search button')].find(b=>b.textContent==='+ Create Entity').click()");await evaluate("[...document.querySelectorAll('.reactive-entity-search button')].find(b=>b.textContent==='Create and link').click()");await wait("!document.querySelector('.reactive-entity-search')");
+ await command('+ Create Entity');await evaluate("[...document.querySelectorAll('.reactive-entity-search button')].find(b=>b.textContent==='Create and link').click()");await wait("!document.querySelector('.reactive-entity-search')");
  check('Existing creation UI creates once and links original round mention by returned GUID',await evaluate("proof.created.length===1&&proof.read()==='the master'&&proof.text.payload.standoffProperties.some(p=>p.value===proof.created[0].id)"));
  await reset('the master',0,10);await type('((');await query('Leonardo');await wait("document.querySelector('.reactive-entity-search [aria-label^=\"Select \"]')");await evaluate("[...document.querySelectorAll('.reactive-entity-search button')].find(b=>b.textContent==='Details / aliases').click()");await wait("document.querySelector('[aria-label=\"Explicit alias\"]')");
  check('Mention preservation does not automatically write an alias',await evaluate('proof.aliasWrites.length===0'));
- await evaluate("[...document.querySelectorAll('.reactive-entity-search button')].find(b=>b.textContent==='Add alias').click()");await wait('proof.aliasWrites.length===1');await wait("document.querySelector('[aria-label=\"Select Leonardo da Vinci\"]')?.disabled===false");await evaluate("document.querySelector('[aria-label=\"Select Leonardo da Vinci\"]').click()");await wait("!document.querySelector('.reactive-entity-search')");
+ await evaluate("[...document.querySelectorAll('.reactive-entity-search button')].find(b=>b.textContent==='Add alias').click()");await wait('proof.aliasWrites.length===1');await evaluate("document.querySelector('.ler-back').click()");await wait("document.querySelector('[aria-label=\"Select Leonardo da Vinci\"]')");await evaluate("document.querySelector('[aria-label=\"Select Leonardo da Vinci\"]').click()");await wait("!document.querySelector('.reactive-entity-search')");
  check('Explicit alias workflow retains original source identity and wording',await evaluate("proof.aliasWrites[0].entityId==='11111111-1111-4111-8111-111111111111'&&proof.read()==='the master'"));
  await reset('Leo',0);await type('((');await query('Leonardo');
  await key('ArrowLeft',10);check('Query word-selection keys do not move source boundaries',await source()==='((Leo))');
@@ -230,10 +234,10 @@ try{
  await reset('Leo',0);await type('((');await wait("document.querySelector('.autocomplete-workstation')");
  await evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');await evaluate("proof.anchorLeft=document.querySelector('.autocomplete-workstation').getBoundingClientRect().left");await type(' more words');await evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');check('Typing does not move anchor along with caret',await evaluate("Math.abs(proof.anchorLeft-document.querySelector('.autocomplete-workstation').getBoundingClientRect().left)<1"));
 
- check('Scry uses about 75 percent of the viewport width and at least 500px height',await evaluate("(()=>{const r=document.querySelector('.autocomplete-workstation').getBoundingClientRect();return Math.abs(r.width-innerWidth*.75)<2&&r.height>=500})()"));
+ check('Entity Scry uses a compact 560px width and 500px height',await evaluate("(()=>{const r=document.querySelector('.autocomplete-workstation').getBoundingClientRect();return Math.abs(r.width-560)<2&&r.height>=500})()"));
  await evaluate("proof.sourceRect=()=>{const s=proof.editor.overlays.overlays.find(o=>o.viewType==='autocomplete').data.session.source,a=proof.mount.inlineBoundary(s.start),b=proof.mount.inlineBoundary(s.end),r=document.createRange();r.setStart(a.node,a.offset);r.setEnd(b.node,b.offset);return r.getBoundingClientRect()};proof.clearOfSource=()=>{const a=proof.sourceRect(),r=document.querySelector('.autocomplete-workstation').getBoundingClientRect();return r.bottom<=a.top-19||r.top>=a.bottom+19||r.right<=a.left-19||r.left>=a.right+19};proof.searchVisible=()=>{const e=document.querySelector('[aria-label=\"Search entities\"]'),r=e.getBoundingClientRect(),p=document.querySelector('.autocomplete-workstation').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom&&r.left>=p.left&&r.right<=p.right}");
  check('Full source selection remains clear of the window and search is visible',await evaluate('proof.clearOfSource()&&proof.searchVisible()'));
- check('Standard search controls fit without scrolling',await evaluate("(()=>{const source=document.querySelector('.entity-search-source'),r=source.getBoundingClientRect();return [...source.querySelectorAll('input,select')].filter(e=>e.getClientRects().length).every(e=>{const b=e.getBoundingClientRect();return b.top>=r.top&&b.bottom<=r.bottom})})()"));
+ check('Standard search controls fit without scrolling',await evaluate("(()=>{const source=document.querySelector('.ler-instrument'),r=source.getBoundingClientRect();return [...source.querySelectorAll('input,select')].filter(e=>e.getClientRects().length).every(e=>{const b=e.getBoundingClientRect();return b.top>=r.top&&b.bottom<=r.bottom})})()"));
  const moveWindow=async(selector,dx,dy)=>{const p=await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...p},sessionId);await send('Input.dispatchMouseEvent',{type:'mouseMoved',button:'left',buttons:1,x:p.x+dx,y:p.y+dy},sessionId);await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:p.x+dx,y:p.y+dy},sessionId);await evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');};
  await evaluate("proof.scryBefore=document.querySelector('.autocomplete-workstation').getBoundingClientRect().toJSON()");
  await moveWindow('.autocomplete-workstation header',-80,0);

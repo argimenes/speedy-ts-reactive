@@ -18,7 +18,12 @@ function setup(text='he',name='Leonardo da Vinci'){
  const open=(ranges=[{nodeKey:node().key,start:0,end:[...text].length}])=>{editor.mounts.get(node().key)!.focus();openEntitySearch(api,ranges);};
  const panel=()=>document.querySelector<HTMLElement>('[role=dialog][aria-label="Link Entity Reference"]')!;
  const input=(label:string,value:string)=>{const e=panel().querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;e.value=value;e.dispatchEvent(new InputEvent('input',{bubbles:true}));};
- const button=(label:string)=>[...panel().querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label)!;
+ const button=(label:string)=>{
+  const find=()=>[...panel().querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label);
+  if(!find()&&['+ Create Entity','Replace & Link'].includes(label))panel().querySelector<HTMLButtonElement>('[aria-label="Commands and help"]')!.click();
+  if(!find()&&/^(start|end) /.test(label)){panel().querySelector<HTMLButtonElement>('[aria-label="Commands and help"]')!.click();[...panel().querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Source range controls')!.click();}
+  return find()!;
+ };
  const choose=async()=>{panel().querySelector<HTMLButtonElement>(`[aria-label="Select ${name}"]`)!.click();await vi.advanceTimersByTimeAsync(0);};
  return {editor,api,node,open,panel,input,button,choose,...mock};
 }
@@ -59,10 +64,10 @@ it('Replace & Link is one undoable native edit and remaps other annotations',asy
  expect(f.editor.encodeDocument().children![0].text).toBe('Leonardo da Vinci writes');expect(f.node().payload.standoffProperties).toEqual(expect.arrayContaining([expect.objectContaining({id:'style',start:18,end:23}),expect.objectContaining({value:'blake',start:0,end:16})]));f.editor.repository.undo();expect(f.editor.encodeDocument().children![0].text).toBe('Leo writes');expect(f.node().payload.standoffProperties).toHaveLength(1);
 });
 it('adjusts grapheme and word boundaries without authored brackets or query changes',async()=>{
- const f=setup('e\u0301 city');f.open([{nodeKey:f.node().key,start:0,end:2}]);f.input('Search entities','Florence');f.button('end forward word').click();expect(f.panel().querySelector('[data-entity-target]')!.textContent).toBe('e\u0301 ');f.button('end forward word').click();expect(f.panel().querySelector('[data-entity-target]')!.textContent).toBe('e\u0301 city');expect(f.editor.repository.canUndo()).toBe(false);expect(f.panel().querySelector<HTMLInputElement>('[aria-label="Search entities"]')!.value).toBe('Florence');
+ const f=setup('e\u0301 city');f.open([{nodeKey:f.node().key,start:0,end:2}]);f.input('Search entities','Florence');f.button('end forward word').click();expect(f.panel().querySelector('[data-entity-target]')!.textContent).toBe('e\u0301');expect(f.panel().textContent).toContain('Current target: e\u0301 ');f.button('end forward word').click();expect(f.panel().querySelector('[data-entity-target]')!.textContent).toBe('e\u0301');expect(f.panel().textContent).toContain('Current target: e\u0301 city');expect(f.editor.repository.canUndo()).toBe(false);expect(f.panel().querySelector<HTMLInputElement>('[aria-label="Search entities"]')!.value).toBe('Florence');
 });
 it('preserves cross-Block identity and clears stale target on external edits',async()=>{
- const f=setup();f.open([{nodeKey:f.node().key,start:0,end:2},{nodeKey:f.node('b').key,start:0,end:7}]);f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);await f.choose();const a=(f.node().payload.standoffProperties as any[])[0],b=(f.node('b').payload.standoffProperties as any[])[0];expect(a.annotationId).toBe(b.annotationId);f.editor.repository.undo();expect(f.node('b').payload.standoffProperties).toBeUndefined();f.open();f.editor.commands.replaceInlineRange(f.node().key,0,0,'x');expect(f.panel()).toBeNull();
+ const f=setup();f.open([{nodeKey:f.node().key,start:0,end:2},{nodeKey:f.node('b').key,start:0,end:7}]);f.input('Search entities','Leonardo');await vi.advanceTimersByTimeAsync(220);await f.choose();const a=(f.node().payload.standoffProperties as any[])[0],b=(f.node('b').payload.standoffProperties as any[])[0];expect(a.annotationId).toBe(b.annotationId);f.editor.repository.undo();expect(f.node('b').payload.standoffProperties).toBeUndefined();f.open();f.editor.commands.replaceInlineRange(f.node().key,0,0,'x');expect(f.panel().textContent).toContain('original target changed');
 });
 it('passes stream, match and scope independently and rejects late search publication',async()=>{
  const f=setup();let finish!:(e:any)=>void;vi.mocked(f.service.search).mockImplementationOnce(()=>new Promise(r=>finish=r));f.open();await vi.advanceTimersByTimeAsync(220);f.input('Search entities','leonardo');await vi.advanceTimersByTimeAsync(220);finish({candidates:[{id:'wrong',name:'Stale'}],complete:true,diagnostics:[],current(){}});await vi.advanceTimersByTimeAsync(0);expect(f.panel().textContent).not.toContain('Stale');
@@ -76,8 +81,8 @@ it('keeps canonical partial matches visible and selectable when mention resoluti
   return new Promise((_resolve,reject)=>{fail=reject;});
  });
  f.open();f.input('Search entities','abbey');await vi.advanceTimersByTimeAsync(220);
- expect(f.panel().textContent).toContain(name);expect(f.panel().textContent).toContain('Resolving mention evidence');
- expect(f.panel().querySelector<HTMLButtonElement>(`[aria-label="Select ${name}"]`)!.disabled).toBe(false);
+ expect(f.panel().textContent).toContain(name);expect(f.panel().textContent).toContain('Resolving…');
+ expect(f.button("Link ").disabled).toBe(false);
  fail(Error('Mention search timed out'));await vi.advanceTimersByTimeAsync(0);
  expect(f.panel().textContent).toContain(name);expect(f.panel().textContent).toContain('Mention search timed out');
  await f.choose();expect(f.node().payload.standoffProperties).toEqual([expect.objectContaining({value:'blake'})]);

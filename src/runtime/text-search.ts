@@ -32,10 +32,11 @@ export function resolveSearchScope(editor: ReactiveEditor, key: string, kind: Sc
   }
   return { kind, viewId: root.viewId, rootKey: root.key, placementKey: root.placementKey, region, label: `${nodeLabel(root)}${region === "main" ? " / main text" : ""}`, fallback };
 }
-export function scopeNodes(editor: ReactiveEditor, scope: SearchScope, extraTypes: readonly string[] = []) {
+export function scopeNodes(editor: ReactiveEditor, scope: SearchScope, extraTypes: readonly string[] = [], owns?: (contentKey:string)=>boolean) {
   const found: { node: BlockNode; path: string[]; breadcrumb: string }[] = [], unsupported = new Set<string>();
   const visit = (key: string, path: string[], labels: string[], seen: Set<string>) => {
     const node = editor.node(key); if (!node || seen.has(node.contentKey)) return;
+    if (owns && !owns(node.contentKey)) return;
     if (key !== scope.rootKey && node.viewType === "document-block") return;
     if (scope.region === "main" && key !== scope.rootKey && side.test(node.viewType)) return;
     const route = [...path, key], names = [...labels, nodeLabel(node)], next = new Set(seen).add(node.contentKey);
@@ -78,14 +79,14 @@ export class TextSearch {
     if ((this.epochs.get(content.key) ?? 0) !== version) throw new DOMException("Document changed; search again.", "AbortError");
     this.sources.set(content.key, result); return result;
   }
-  async searchText(request: { query: string; options?: SearchOptions; scope: SearchScope; signal?: AbortSignal }): Promise<SearchMatchSet> {
+  async searchText(request: { query: string; options?: SearchOptions; scope: SearchScope; signal?: AbortSignal; owns?: (contentKey: string) => boolean }): Promise<SearchMatchSet> {
     const { query, scope, signal } = request, options = request.options ?? {}, generation = ++this.generation;
     const signature = JSON.stringify([query, options]);
     const set: SearchMatchSet = { sessionId: crypto.randomUUID(), generation, signature, scope: { ...scope }, revision: this.editor.repository.state.revision, status: "complete", diagnostics: [], matches: [], exact: true, deduplication: {} };
     try {
       if (!this.editor.node(scope.rootKey)) throw new Error("The search scope no longer exists.");
       if (!query) return freeze(set);
-      const { found, unsupported } = scopeNodes(this.editor, scope);
+      const { found, unsupported } = scopeNodes(this.editor, scope, [], request.owns);
       if (unsupported.length) { set.status = "partial"; set.exact = false; set.diagnostics.push(`Not searched (adapter required): ${unsupported.join(", ")}.`); }
       const sources = new Map<string, SearchSource>();
       let visited = 0;

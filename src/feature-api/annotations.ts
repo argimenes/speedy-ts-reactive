@@ -18,6 +18,11 @@ export interface AnnotationText {
   readonly properties: readonly JsonObject[];
 }
 export interface AnnotationCapabilities {
+  liveDocumentEntities?(owner: string): import('./live-entities').LiveDocumentEntities;
+  /** Validate snapshots without copying paragraph text. Used only before mutation. */
+  validateRanges?(ranges: readonly SearchRange[]): void;
+  /** Changed content identities; no text snapshots or document traversal. */
+  watchContent?(listener: (change: {keys: ReadonlySet<string>; revision: number; structural: boolean}) => void): Disposer;
   readonly caretEvents?:boolean;
   temporaryRanges?(owner:string): import("../runtime/session-decorations").TemporaryRangeCollection;
   entities?(owner:string):import('./entities').EntityService;

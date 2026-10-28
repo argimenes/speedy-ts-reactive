@@ -1,0 +1,43 @@
+.reactive-entity-search.ler-instrument { padding:10px; gap:6px; font:13px/1.35 Arial,sans-serif; min-height:0; }
+.ler-instrument > header { margin:0; min-height:24px; }
+.ler-instrument .ler-context { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; flex-shrink:0; padding:5px 7px; background:#fff2cb; border-radius:4px; }
+.ler-context > span:first-child { flex:1; min-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ler-prepared { display:inline-flex; align-items:center; gap:6px; max-width:100%; border:1px solid #72998c; border-radius:5px; background:#e4f1eb; padding:2px 6px; overflow-wrap:anywhere; }
+.ler-instrument .ler-prepared button { padding:0 4px; background:transparent; border:0; }
+.ler-query,.ler-modes,.ler-actions { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.ler-instrument .ler-query input { margin:0; min-width:50px; padding:6px; }
+.ler-query button { white-space:nowrap; }
+.ler-instrument button,.ler-instrument select { font:inherit; padding:3px 6px; }
+.ler-modes { flex-wrap:wrap; }
+.ler-modes label { display:flex; align-items:center; gap:3px; font-size:11px; }
+.ler-modes select { max-width:155px; }
+.ler-body { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; }
+.ler-instrument [role=listbox] { min-height:32px; outline-offset:-2px; }
+.ler-result { display:flex; align-items:center; gap:8px; min-height:28px; padding:3px 6px; border-bottom:1px solid #e5ece8; cursor:pointer; }
+.ler-result.current { background:#dcefe9; }
+.ler-result:hover { background:#edf5f1; }
+.ler-result[aria-selected=true] { box-shadow:inset 3px 0 #39795f; }
+.ler-name { flex:1; min-width:0; overflow-wrap:anywhere; }
+.ler-name small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#50665b; font-size:11px; }
+.ler-index { color:#607469; width:12px; font-variant-numeric:tabular-nums; }
+.ler-actions { margin-top:6px; flex-wrap:wrap; }
+.ler-status,.ler-coverage { font-size:11px; flex-shrink:0; }
+.ler-instrument .ler-error { margin:0; font-size:12px; max-height:70px; overflow:auto; }
+.ler-instrument > footer { margin:0; gap:4px; font-size:11px; flex-shrink:0; }
+.ler-command-list { display:grid; gap:5px; }
+.ler-command-list p { margin:2px; font-size:12px; }
+.ler-instrument .entity-candidates { margin:0; padding:0; border:0; }
+.ler-instrument .entity-candidates h3 { font-size:14px; }
+.ler-instrument .entity-candidates > details { margin:5px 0 8px; }
+.ler-instrument .entity-candidates > details > label { display:block; margin:5px 0; }
+.ler-instrument .entity-candidates table { margin:5px 0; font-size:12px; }
+.ler-instrument .entity-candidates th,.ler-instrument .entity-candidates td { padding:4px; }
+.ler-instrument .entity-candidates .entity-search-options { margin:4px 0; gap:5px; justify-content:flex-start; }
+.ler-instrument .entity-candidates__actions { gap:3px; margin:5px 0; }
+.ler-instrument .entity-candidates__actions button { font-size:11px; }
+.ler-instrument .entity-candidates > p { margin:5px 0; }
+.ler-instrument .ler-evidence { color:#607469; font-size:11px; }
+.ler-instrument .ler-back { align-self:flex-start; }
+.ler-instrument section[aria-label="Canonical Entity details"] > label { display:block; margin-top:8px; }
+.ler-instrument.reactive-entity-search--embedded { width:100%; }
+@media (max-width:480px) { .ler-query button { font-size:11px; } .ler-modes select { max-width:130px; } }

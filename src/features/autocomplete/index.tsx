@@ -281,6 +281,8 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    if(!inside&&resolved?.nodeKey!==s.source.nodeKey){cancel();return false;}
    // Native field editing, Save, history, copying and Tab are never completion shortcuts.
    if((event.metaKey||event.ctrlKey)&&['s','z','y'].includes(event.key.toLowerCase())){if(!inside)cancel();return false;}
+   // LER owns its Command/Edit contexts, including native query select-all.
+   if(inside&&target.closest('.ler-instrument'))return false;
    if(event.key==='Tab'){if(!inside)cancel();return false;}
    if(inside&&target.closest('button,select')&&['Enter','ArrowUp','ArrowDown'].includes(event.key))return false;
    if(!inside&&s.source.brackets&&event.metaKey&&event.key.toLowerCase()==='a'){

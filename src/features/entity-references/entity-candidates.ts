@@ -1,4 +1,5 @@
 import { createStore } from "solid-js/store";
+import { createSignal } from 'solid-js';
 import type { AnnotationCapabilities, PanelSession, SearchMatch, SearchMatchSet, SearchScope, ScopeKind, SearchOptions, SearchRunner } from "../../feature-api";
 import { graphemeBoundaries } from "../../feature-api";
 import type { EntitySearchData } from "./entity-search";
@@ -66,15 +67,20 @@ export class EntityCandidates {
   private disposed = false;
   private undo: string[] = [];
   private sourceSet?: SearchMatchSet;
-  constructor(private editor: AnnotationCapabilities, private panel: PanelSession, runner?: SearchRunner) {
+  private stop?: () => void;
+  private invalid = new Set<string>();
+  private contentRows = new Map<string, number[]>();
+  private counts = createSignal({selected:0,invalid:0});
+  constructor(private editor: AnnotationCapabilities, private panel: PanelSession, runner?: SearchRunner, private policy?: {owns(contentKey:string):boolean}) {
     const overlay = panel.data as EntitySearchData;
     this.owner = `entity-candidates:${panel.key}`; this.search = editor.search(runner);
     this.decorations = editor.decorations(this.owner);
-    const ranges = (overlay.entityRanges ?? []).map(r => { const node = editor.text(r.nodeKey)!; return { ...r, contentKey: node.contentKey, placementKey: node.placementKey, version: node.version, coordinate: "cell" as const }; });
+    const ranges = (overlay.entityRanges ?? []).map(r => ({ ...r }));
     const path = editor.path(panel.ownerKey);
     let actionable = true;
     for (const r of ranges) {
-      const node = editor.text(r.nodeKey)!;
+      const node = editor.text(r.nodeKey);
+      if (!node) { actionable = false; continue; }
       const cells = node.cells;
       const boundaries = graphemeBoundaries(cells.map(c => c.plain ? c.text : "\uFFFC").join(""));
       actionable &&= boundaries.includes(r.start) && boundaries.includes(r.end) && cells.slice(r.start,r.end).every(c => c.plain);
@@ -83,14 +89,26 @@ export class EntityCandidates {
     if (!ranges.length) this.original = undefined;
     const scope = editor.scope(panel.ownerKey);
 [this.state,this.setState] = createStore<{ enabled: boolean; query: string; options: SearchOptions; scope: SearchScope; result?: SearchMatchSet; rows: EntityCandidate[]; entity?: NominatedEntity; pending: boolean; visible: boolean; active?: string; activeMatch?: string; message: string; page: number; undoCount: number }>({ enabled: false, query: overlay.workstation?.scry ? overlay.entityQuery : ranges.length === 1 ? (this.original?.text ?? "") : "", options: { wholeWords: true }, scope, rows: [], pending: false, visible: true, message: "", page: 0, undoCount: 0 });
+    if(policy)this.stop=editor.watchContent?.(change=>{
+      if(!this.state.enabled||!this.state.result)return;
+      let {selected,invalid}=this.counts[0]();
+      for(const key of change.keys)for(const index of this.contentRows.get(key)??[]){
+        const row=this.state.rows[index];if(this.invalid.has(row.key))continue;
+        if(row.checked){invalid++;if(!row.reason)selected--;}
+        this.invalid.add(row.key);this.setState('rows',index,'reason','Range changed. Refresh or exclude this target.');
+      }
+      if(selected!==this.counts[0]().selected||invalid!==this.counts[0]().invalid)this.counts[1]({selected,invalid});
+      // Structural changes are checked on explicit commit, never by scanning on typing.
+      this.setState('result','revision',change.revision);
+    });
   }
-  enable() {
+  enable(selectAll = true) {
     if (this.state.enabled) {
       if (this.state.result?.status === "error" || this.state.result?.status === "cancelled") this.schedule(true);
-      else this.selectAll();
+      else if(selectAll)this.selectAll();
       return;
     }
-    this.setState("enabled",true); this.panel.allowDocumentInput(true); this.schedule(true);
+    this.setState("enabled",true); this.panel.allowDocumentInput(true); this.schedule(selectAll);
   }
   configure(change: { query?: string; options?: SearchOptions; scope?: ScopeKind }) {
     if (change.query !== undefined) this.setState("query",change.query);
@@ -101,9 +119,10 @@ export class EntityCandidates {
   disable() {
     this.controller?.abort(); clearTimeout(this.timer); this.generation++; this.undo = [];
     this.sourceSet = undefined;
+    this.counts[1]({selected:0,invalid:0});
     this.setState({ enabled: false, pending: false, result: undefined, rows: [], undoCount: 0, active: undefined, activeMatch: undefined, message: "" });
     this.decorations.clear();
-    this.panel.allowDocumentInput(false);
+    this.panel.allowDocumentInput(!!this.policy);
   }
   private schedule(selectAll: boolean) {
     this.controller?.abort(); clearTimeout(this.timer); this.generation++; this.undo = [];
@@ -114,37 +133,47 @@ export class EntityCandidates {
   async flush(selectAll = false) {
     clearTimeout(this.timer); this.controller?.abort();
     const token = ++this.generation, controller = this.controller = new AbortController();
-    const result = await this.search.searchText({ query: this.state.query, options: { ...this.state.options }, scope: { ...this.state.scope }, signal: controller.signal });
+    const result = await this.search.searchText({ query: this.state.query, options: { ...this.state.options }, scope: { ...this.state.scope }, signal: controller.signal, owns:this.policy?.owns });
     if (this.disposed || token !== this.generation) return;
     const originalChecked = this.state.rows.find(r => r.original)?.checked ?? true;
     const rows = new Map<string,EntityCandidate>();
     for (const match of [...(this.original ? [this.original] : []),...result.matches]) {
       const key = candidateKey(match), existing = rows.get(key);
       if (existing) { if (!existing.occurrences.some(m => m.ranges[0].nodeKey === match.ranges[0].nodeKey)) existing.occurrences.push(match); continue; }
-      const original = match === this.original, reason = candidateReason(this.editor,match,this.state.entity);
+      const original = match === this.original;
+      let reason = this.policy && match.ranges.some(r=>!this.policy!.owns(r.contentKey)) ? 'Not owned by this Document.' : candidateReason(this.editor,match,this.state.entity);
+      if(this.policy&&original)try{this.editor.validateRanges?.(match.ranges);}catch{reason='Original range changed. Select a new target or exclude it.';}
       rows.set(key,{ key, match, occurrences: [match], original, reason, checked: !reason && (original ? originalChecked : selectAll && result.status === "complete" && result.exact) });
     }
     // Keep the explicit original if substring/regex candidates overlap it.
     const checked: SearchMatch[] = [];
     for (const row of rows.values()) if (row.checked) { if (checked.some(m => overlaps(m,row.match))) row.checked = false; else checked.push(row.match); }
     this.sourceSet = { ...result, matches: [...rows.values()].flatMap(row => row.occurrences) };
-    this.setState({ result, rows: [...rows.values()], pending: false, message: result.diagnostics.join(" ") });
+    this.invalid.clear();this.contentRows.clear();
+    [...rows.values()].forEach((row,index)=>row.match.ranges.forEach(r=>{const indices=this.contentRows.get(r.contentKey)??[];indices.push(index);this.contentRows.set(r.contentKey,indices);}));
+    this.setState({ result: {...result}, rows: [...rows.values()], pending: false, message: result.diagnostics.join(" ") });
+    this.countSelection();
     this.paint();
   }
   nominate(entity?: NominatedEntity) {
     // Typing subsequent entity-query characters must not repeatedly reclassify
     // and repaint thousands of candidates after the nomination is already clear.
     if (!entity && !this.state.entity) return;
+    if(entity?.id===this.state.entity?.id&&entity?.name===this.state.entity?.name)return;
     this.setState("entity",entity);
-    this.setState("rows",rows => rows.map(row => { const reason = candidateReason(this.editor,row.match,entity); return { ...row, reason, checked: row.checked && !reason }; }));
+    this.setState("rows",rows => rows.map(row => { const reason = this.invalid.has(row.key)?row.reason:this.policy&&row.match.ranges.some(r=>!this.policy!.owns(r.contentKey))?'Not owned by this Document.':candidateReason(this.editor,row.match,entity); return { ...row, reason, checked: this.invalid.has(row.key)?row.checked:row.checked && !reason }; }));
+    this.countSelection();
     this.paint();
   }
   selected() { return this.state.rows.filter(r => r.checked && !r.reason); }
+  acceptedCount() { return this.counts[0]().selected; }
+  private countSelection() { this.counts[1]({selected:this.selected().length,invalid:this.state.rows.filter(row=>row.checked&&this.invalid.has(row.key)).length}); }
   bindingDisabledReason() {
     if (!this.state.enabled) return "Enable search to bind matching mentions.";
     if (this.state.pending) return "Wait for the mention search to finish.";
-    if (!this.state.entity) return "Choose an entity from the results on the left.";
-    if (!this.selected().length) return "Check at least one eligible mention.";
+    if (this.counts[0]().invalid) return 'An accepted range changed. Refresh or exclude it before linking.';
+    if (!this.state.entity) return "Prepare an entity from the results.";
+    if (!this.acceptedCount()) return "Check at least one eligible mention.";
     if (!this.state.result || !["complete", "partial"].includes(this.state.result.status)) return "Run a successful mention search first.";
     if (this.state.result.revision !== this.editor.revision()) return "The document changed. Search again.";
     return "";
@@ -152,17 +181,17 @@ export class EntityCandidates {
   canBind() { return !this.bindingDisabledReason(); }
   toggle(key: string, checked: boolean) {
     const index = this.state.rows.findIndex(r => r.key === key), row = this.state.rows[index];
-    if (!row || row.reason || this.state.pending) return;
+    if (!row || row.reason && !(this.invalid.has(row.key)&&!checked) || this.state.pending) return;
     if (checked && this.selected().some(other => other.key !== key && overlaps(other.match,row.match))) { this.setState("message","This mention overlaps a checked target. Uncheck that target first."); return; }
     if (!checked && row.checked) { this.undo.push(key); this.setState("undoCount",this.undo.length); }
-    this.setState("rows",index,"checked",checked); this.paint();
+    this.setState("rows",index,"checked",checked); this.countSelection();this.paint();
   }
   selectAll() {
     if (this.state.pending || this.state.result?.status !== "complete" || !this.state.result.exact) return;
     const selected: SearchMatch[] = [];
-    this.setState("rows",rows => rows.map(row => { const checked = !row.reason && !selected.some(m => overlaps(m,row.match)); if (checked) selected.push(row.match); return { ...row,checked }; })); this.paint();
+    this.setState("rows",rows => rows.map(row => { const checked = !row.reason && !selected.some(m => overlaps(m,row.match)); if (checked) selected.push(row.match); return { ...row,checked }; })); this.countSelection();this.paint();
   }
-  selectNone() { this.setState("rows",rows => rows.map(row => ({ ...row,checked: false }))); this.paint(); }
+  selectNone() { this.setState("rows",rows => rows.map(row => ({ ...row,checked: false })));this.countSelection();this.paint(); }
   undoExclusion() { const key = this.undo.pop(); this.setState("undoCount",this.undo.length); if (key) this.toggle(key,true); }
   toggleHighlights() { this.setState("visible",v => !v); this.decorations.visible(this.state.visible); }
   setPage(page: number) { this.setState("page",Math.max(0,page)); }
@@ -173,8 +202,10 @@ export class EntityCandidates {
   }
   bind() {
     if (this.state.result && this.state.result.revision !== this.editor.revision()) throw new Error("The document changed. Select the text again.");
-    if (!this.canBind()) throw new Error("Choose an entity and checked mentions from a complete search first.");
-    return bindEntityCandidates(this.editor,this.state.result!,this.selected().map(r => r.match),this.state.entity!);
+    if (!this.canBind()) throw new Error(this.bindingDisabledReason());
+    const matches=this.selected().map(r=>r.match);
+    if(this.policy){const ranges=matches.flatMap(m=>m.ranges);if(ranges.some(r=>!this.policy!.owns(r.contentKey)))throw Error('Target ownership changed. Review again.');this.editor.validateRanges?.(ranges);}
+    return bindEntityCandidates(this.editor,this.state.result!,matches,this.state.entity!);
   }
   private paint() {
     if (!this.sourceSet || this.disposed || this.state.pending) return;
@@ -187,5 +218,5 @@ export class EntityCandidates {
     const active = rows.find(row => row.key === this.state.active);
     if (active) this.decorations.active(this.state.activeMatch ?? active.match.id);
   }
-  dispose() { this.disposed = true; this.generation++; clearTimeout(this.timer); this.controller?.abort(); this.search.dispose(); this.decorations.dispose(); }
+  dispose() { this.disposed = true; this.generation++;this.stop?.(); clearTimeout(this.timer); this.controller?.abort(); this.search.dispose(); this.decorations.dispose(); }
 }

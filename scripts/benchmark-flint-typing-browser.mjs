@@ -14,6 +14,7 @@
 // BENCHMARK_MUTABLE_CLIPBOARD=false selects legacy clipboard routing for comparison.
 // BENCHMARK_FLINT_RECENTS=false disables recent-document navigation history for comparison.
 // BENCHMARK_AUTOCOMPLETE=false disables completion for paired input-cost checks.
+// BENCHMARK_LER=live|review opens LER with an isolated resolver. BENCHMARK_LER_INSIDE=1 types inside a linked span.
 // Native binding/listing responses are local stubs: no user vault is opened.
 // Reports handler and queued-caret costs separately; headless animation-frame
 // timings are diagnostic, not an input-to-display latency guarantee.
@@ -115,6 +116,20 @@ try{
    const movement=await evaluate(`(async()=>{let reads=0,changes=0,snapshots=0;const host=proof.pointerHost,read=host.getBoundingClientRect.bind(host),snapshot=proof.editor.repository.snapshot.bind(proof.editor.repository),release=proof.editor.repository.subscribeChanges(()=>changes++);host.getBoundingClientRect=()=>{reads++;return read()};proof.editor.repository.snapshot=()=>{snapshots++;return snapshot()};for(let i=0;i<100;i++)proof.flow.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:${point.x}+i/10,clientY:${point.y},pointerType:'mouse'}));await new Promise(r=>requestAnimationFrame(r));release();host.getBoundingClientRect=read;proof.editor.repository.snapshot=snapshot;return {reads,changes,snapshots}})()`);
    assert.deepEqual(movement,{reads:0,changes:0,snapshots:0});console.log('Pointer spotlight geometry, hit-testing and bounded movement: passed');
  }
+ if(process.env.BENCHMARK_LER){
+  await evaluate(`(async()=>{
+   const {registerStandaloneEntityService}=await import('/src/application/entity-service.ts');
+   const entity={id:'benchmark-entity',name:'Benchmark entity',revision:0,aliases:[]};proof.lerReads=0;proof.lerSearches=0;
+   proof.stopLer=registerStandaloneEntityService(proof.editor,()=>({get:async()=>{proof.lerReads++;return entity;},search:async(q,signal)=>{proof.lerSearches++;return {candidates:[{...entity,evidence:[]}],complete:true,diagnostics:[],current(){signal.throwIfAborted();}};},dispose(){}}));
+   proof.editor.linkedAnnotations.createBatch([[proof.editor.textRanges.snapshot(proof.text.key,0,5)]],'codex/entity-reference',entity.id,{entityName:entity.name},proof.editor.repository.state.revision,'Benchmark link');
+   proof.mount.restoreInlineSelection({anchor:0,head:5});await proof.editor.commandRegistry.execute('entity.open',{targetKey:proof.text.key,args:undefined});
+  })()`);
+  await wait('document.querySelector(".ler-instrument [role=option]")');
+  if(process.env.BENCHMARK_LER==='live')await evaluate(`(()=>{const scope=document.querySelector('[aria-label="Entity scope"]');scope.value='live';scope.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+  else await evaluate(`(()=>{const panel=document.querySelector('.ler-instrument');panel.querySelector('[role=listbox]').dispatchEvent(new KeyboardEvent('keydown',{key:'a',ctrlKey:true,bubbles:true,cancelable:true}));})()`);
+  await evaluate('new Promise(r=>setTimeout(r,350))');
+  await evaluate(`proof.lerReads=0;proof.lerSearches=0;proof.editor.focus.request(proof.text.key);proof.flow.focus();proof.mount.restoreInlineSelection({anchor:${process.env.BENCHMARK_LER_INSIDE==='1'?2:100},head:${process.env.BENCHMARK_LER_INSIDE==='1'?2:100}})`);
+ }
  const screenshot=await send('Page.captureScreenshot',{format:'png'},sessionId);await writeFile(path.join(artifacts,'caret-mode.png'),Buffer.from(screenshot.data,'base64'));
  await send('Profiler.enable',{},sessionId);await send('Profiler.setSamplingInterval',{interval:200},sessionId);await send('Profiler.start',{},sessionId);
  if(process.env.BENCHMARK_PUBLICATION_LOAD==='1')serviceLoad=await (await import('./publication-typing-load.mjs')).startPublicationTypingLoad();
@@ -133,7 +148,7 @@ try{
    }
    const stats=xs=>{xs.sort((a,b)=>a-b);return {median:xs[Math.floor(xs.length/2)],p95:xs[Math.floor(xs.length*.95)],max:xs.at(-1)}};
    window.fetch=request;window.Worker=OriginalWorker;
-   return {webViews:document.querySelectorAll('.web-resource-card').length,workerStarts,academicViews:document.querySelectorAll('.mutable-academic-resource').length,serviceRequests,pointerSpotlight:editor.pointerSpotlight.active(),caretMode:editor.caretModes.active(),characters:before.length,paragraphs:proof.root.querySelectorAll('.reactive-standoff-flow').length,sync:stats(sync),settled:stats(settled),frame:stats(frames),snapshots,statusReads,vaultRows:proof.root.querySelectorAll('.flint-tree-document').length,restored:mount.captureText()===before};
+   return {lerOpen:!!document.querySelector('.ler-instrument'),lerReads:proof.lerReads??0,lerSearches:proof.lerSearches??0,webViews:document.querySelectorAll('.web-resource-card').length,workerStarts,academicViews:document.querySelectorAll('.mutable-academic-resource').length,serviceRequests,pointerSpotlight:editor.pointerSpotlight.active(),caretMode:editor.caretModes.active(),characters:before.length,paragraphs:proof.root.querySelectorAll('.reactive-standoff-flow').length,sync:stats(sync),settled:stats(settled),frame:stats(frames),snapshots,statusReads,vaultRows:proof.root.querySelectorAll('.flint-tree-document').length,restored:mount.captureText()===before};
  })()`);
  const {profile:cpu}=await send('Profiler.stop',{},sessionId);await writeFile(path.join(artifacts,'typing.cpuprofile'),JSON.stringify(cpu));
  const nodeById=new Map(cpu.nodes.map(n=>[n.id,n]));const totals=new Map();
@@ -141,6 +156,7 @@ try{
  const hottest=[...totals].sort((a,b)=>b[1]-a[1]).slice(0,35);console.log(JSON.stringify({result,hottest},null,2));
  await writeFile(path.join(artifacts,'results.json'),JSON.stringify({result,hottest},null,2));
  assert.ok(result.restored);assert.equal(result.snapshots,0);assert.equal(result.serviceRequests,0);assert.equal(result.workerStarts,0);
+ if(process.env.BENCHMARK_LER){assert.ok(result.lerOpen);assert.equal(result.lerReads,0);assert.equal(result.lerSearches,0);}
  if(serviceLoad){console.log('Concurrent application-service workload:',JSON.stringify(serviceLoad.status()));await serviceLoad.stop();serviceLoad=undefined;}
  if(process.env.BENCHMARK_VAULT_SIZE)assert.ok(result.statusReads<=80,'40 edits must not read status once per vault row');
  const before=await evaluate('proof.mount.captureText()');

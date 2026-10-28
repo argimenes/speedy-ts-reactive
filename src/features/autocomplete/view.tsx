@@ -14,8 +14,9 @@ import {FloatingWindowResizeHandle} from '../../rendering/floating-window-resize
 export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;cancelled():void}) {
  const data=props.panel.data as {session:CompletionSession;api:AnnotationCapabilities;entityData():EntitySearchData;adjust(edge:'start'|'end',direction:-1|1,word:boolean):void;controls(value:{run(id:string):boolean;busy():boolean;canClose():boolean}|undefined):void},s=data.session;
  const activity=useManagedViewActivity(),owner=useManagedWindowOwner(),[position,setPosition]=createSignal({x:8,y:8},{equals:(a,b)=>a.x===b.x&&a.y===b.y});
- const [size,setSize]=createSignal({width:Math.max(400,window.innerWidth*.75),height:560},{equals:(a,b)=>a.width===b.width&&a.height===b.height});
- let manual=false,preferred={width:Math.max(400,window.innerWidth*.75),height:560},previousSurface:{x:number;y:number}|undefined;
+ const preferredSize=()=>s.state.kind==='entity'?{width:Math.min(560,window.innerWidth-16),height:500}:{width:Math.max(400,window.innerWidth*.75),height:560};
+ const [size,setSize]=createSignal(preferredSize(),{equals:(a,b)=>a.width===b.width&&a.height===b.height});
+ let manual=false,preferred=preferredSize(),previousSurface:{x:number;y:number}|undefined;
  let root!:HTMLDivElement,input!:HTMLInputElement,frame=0,resize:ResizeObserver|undefined;
  const geometry=owner?.manager.geometry??new WindowGeometry();
  const floating=geometry.create(`scry:${props.panel.key}`,{element:()=>root,viewport:true,position,size,minimum:()=>({width:Math.min(400,size().width),height:Math.min(500,size().height)}),mode:()=> 'normal',allowed:()=>s.alive&&eligible(),commit:patch=>{manual=true;if(patch.position){preferred=size();setPosition(patch.position);}if(patch.size){preferred=patch.size;setSize(patch.size);}schedule();}});
@@ -34,7 +35,7 @@ export function CompletionPopup(props:{editor:ReactiveEditor;panel:PanelSession;
   const area=geometry.bounds(true),viewport=window.visualViewport;
   const surface=mount.root.closest('.flint-application, [data-managed-window-id], .reactive-window')?.getBoundingClientRect();
   const current=position(),origin={x:surface?.left??area.x,y:surface?.top??area.y};
-  const desired=manual?preferred:{width:(viewport?.width??innerWidth)*.75,height:560};
+  const desired=manual?preferred:preferredSize();
   const placed=placeScry(area,{x:rect.left,y:rect.top,width:rect.width,height:rect.height},desired,manual?{x:current.x+(previousSurface?origin.x-previousSurface.x:0),y:current.y+(previousSurface?origin.y-previousSurface.y:0),...size()}:undefined);
   if(!placed){close();return;}
   previousSurface=origin;

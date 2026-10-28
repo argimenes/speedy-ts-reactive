@@ -3,6 +3,15 @@ import type { AnnotationCapabilities } from "../../feature-api";
 export function registerEntityBindings(api: AnnotationCapabilities, platform = typeof navigator === "undefined" ? "" : navigator.platform) {
   const add = (id: string, name: string, description: string, category: string, scope: string, defaults: Parameters<AnnotationCapabilities["register"]["binding"]>[0]["defaults"], tags: string[] = []) => api.register.binding({ id, name, description, category, scope, defaults, tags, handler: context => context.run(id) });
   const primary = /Mac|iPhone|iPad|iPod/i.test(platform) ? "Meta" : "Ctrl";
+  for(const [id,name,defaults] of [
+    ['editQuery','Edit entity query',[k('F2')]],
+    ['prepare','Prepare entity without linking',[k('Enter','Shift')]],
+    ['inspect','Inspect entity',[k('ArrowRight')]],
+    ['field','Cycle matching field',[k('@','Shift'),k('@'),k('s','Alt')]],
+    ['match','Toggle matching behavior',[k('*','Shift'),k('*'),k('m','Alt')]],
+    ['scope','Cycle entity scope',[k('~','Shift'),k('~'),k('v','Alt')]],
+    ['commands','LER commands',[k('/')]],
+  ] as const)add(`entity.${id}`,name,name,'Entities','entity-search',[...defaults]);
   for (const [id, name, key] of [["close", "Cancel entity search", "Escape"], ["choose", "Link selected entity", "Enter"], ["next", "Next entity result", "ArrowDown"], ["previous", "Previous entity result", "ArrowUp"]]) add(`entity.${id}`, name, "Navigate the entity search dialog without changing the document until a result is selected.", "Entities", "entity-search", [k(key)]);
   add("entity.clear", "Clear entity search", "Clear the entity query.", "Entities", "entity-search", [k("Backspace", "Ctrl"), k("Backspace", "Meta")]);
   add("entity.candidates.open", "Find other occurrences", "Review scoped text matches as candidates for the nominated entity.", "Entities", "entity-search", [k("a",primary,"Shift")], ["search","bulk"]);

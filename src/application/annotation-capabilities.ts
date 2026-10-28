@@ -9,6 +9,7 @@ import { panelSession } from "../runtime/panel-session";
 import { entityService } from './entity-service';
 import { graphemeBoundaries } from '../input/graphemes';
 import { watchDocumentEntities } from './document-entity-changes';
+import { liveDocumentEntities } from './live-document-entities';
 
 export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureScope, standaloneRoot?: string): AnnotationCapabilities {
   // Explicit native standalone surface: no synthetic Document/Resource owner.
@@ -39,6 +40,13 @@ export function annotationCapabilities(editor: ReactiveEditor, scope: FeatureSco
     texts.set(key, snapshot); return snapshot;
   };
   return {
+    liveDocumentEntities(owner) {
+      check();const root=locate(editor,owner,'document').rootKey;
+      const inventory=liveDocumentEntities(editor,editor.node(root)!.contentKey);
+      return {...inventory,dispose:scope.own(inventory.dispose)};
+    },
+    validateRanges(ranges) { check();editor.textRanges.validate(ranges,'cell'); },
+    watchContent(listener) { check();return scope.own(editor.repository.subscribeChanges(change=>listener({keys:new Set(change.previousContents.keys()),revision:editor.repository.readState().revision,structural:!change.inlineOwner}))); },
     caretEvents: editor.features.annotationRangeEvents,
     temporaryRanges(owner) {
       check();const collection=editor.temporaryRanges.createCollection(`${scope.owner}:${owner}`);
