@@ -1,4 +1,5 @@
 import { ReverseInformation } from './reversible-surface';
+import { listItemChildren, listItemOwner, setListItemCollapsed } from '../runtime/text-lists';
 import { WindowRestorationBoundary } from "./window-restoration";
 import { createWindowMaximize } from "./window-maximize";
 import { ManagedWindowFrame, RetainedWindowBody, useManagedWindowOwner } from "./window-manager";
@@ -97,24 +98,60 @@ export function ListView(props: BlockViewProps) {
   const node = () => projection.state.nodes[props.nodeKey];
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
-  // Imported list semantics use the existing container and child Block views.
+  const owner = createMemo(() => listItemOwner(projection, props.nodeKey));
+  const collapsed = () => !!(owner()?.payload.metadata as any)?.listCollapsed;
   // Markers depend on structure/metadata, never paragraph text or caret updates.
-  const items = createMemo(() => {
-    const list = (node()?.payload.metadata as any)?.htmlList;
-    if (!list) return undefined;
+  const markers = createMemo(() => {
+    const list = (node()?.payload.metadata as any)?.htmlList ?? {};
     let ordinal = Number.isSafeInteger(list.start) ? list.start : 1;
-    return (node()?.children ?? []).map(key => {
+    return new Map((node()?.children ?? []).map(key => {
+      if (projection.state.nodes[key]?.viewType === 'indented-list-block') return [key, ''];
       const item = (projection.state.nodes[key]?.payload.metadata as any)?.htmlListItem;
-      if (!item) return { key, marker: '' };
-      if (Number.isSafeInteger(item.value)) ordinal = item.value;
+      if (Number.isSafeInteger(item?.value)) ordinal = item.value;
       const marker = list.ordered ? `${ordinal}.` : '•'; ordinal += list.reversed ? -1 : 1;
-      return { key, marker };
-    });
+      return [key, marker];
+    }));
   });
-  return <div ref={root} class="abstract-block reactive-list" role="list" tabIndex={-1} {...data(props.nodeKey, node)}>
-    <Show when={items()} fallback={<ChildBlocks parentKey={props.nodeKey} />}>{entries => <For each={entries()}>{item =>
-      <div role="listitem" class="reactive-imported-list-item"><span class="reactive-imported-list-marker" contentEditable={false}>{item.marker}</span><BlockOutlet nodeKey={item.key} /></div>
-    }</For>}</Show>
+  return <div ref={root} id={`list-${props.nodeKey}`} class="abstract-block reactive-list" role="list" tabIndex={-1} hidden={collapsed()} {...data(props.nodeKey, node)}>
+    <For each={node()?.children ?? []}>{key => <Show when={projection.state.nodes[key]?.viewType !== 'indented-list-block'} fallback={<BlockOutlet nodeKey={key} />}>
+      <ListItem nodeKey={key} marker={markers().get(key) ?? '•'} />
+    </Show>}</For>
+  </div>;
+}
+
+function ListItem(props: { nodeKey: NodeKey; marker: string }) {
+  const { editor, projection } = useReactiveView();
+  const children = createMemo(() => listItemChildren(projection, props.nodeKey));
+  const collapsed = () => !!(projection.state.nodes[props.nodeKey]?.payload.metadata as any)?.listCollapsed;
+  const toggle = () => {
+    const next = !collapsed();
+    let focused = editor.focus.state.focusedKey && projection.state.nodes[editor.focus.state.focusedKey];
+    let hidesFocus = false;
+    while (focused) {
+      if (children().includes(focused.key)) { hidesFocus = true; break; }
+      focused = projection.parentOf(focused.key);
+    }
+    // A click must not strand the caret inside the newly hidden branch.
+    if (next && hidesFocus) {
+      const item = projection.state.nodes[props.nodeKey];
+      const target = item.viewType === 'standoff-editor-block' ? item : item.children.map(k => projection.state.nodes[k]).find(n => n?.viewType === 'standoff-editor-block');
+      if (target) editor.focus.request(target.key, { caret: 'end', reason: 'collapse-list' });
+    }
+    setListItemCollapsed(editor, props.nodeKey, next);
+  };
+  return <div role="listitem" class="reactive-imported-list-item" data-list-item={props.nodeKey}>
+    <Show when={children().length} fallback={<span class="reactive-imported-list-marker" contentEditable={false} aria-hidden="true">{props.marker}</span>}>
+      <button type="button" class="reactive-imported-list-marker reactive-list-toggle" classList={{ 'reactive-list-toggle--collapsed': collapsed() }}
+        contentEditable={false} data-native-context-menu aria-expanded={!collapsed()} aria-controls={children().map(k => `list-${k}`).join(' ')}
+        aria-label={collapsed() ? 'Expand child list' : 'Collapse child list'} title={collapsed() ? 'Expand child list' : 'Collapse child list'}
+        onPointerDown={e => { e.preventDefault(); e.stopPropagation(); }} onClick={e => { e.stopPropagation(); toggle(); }}
+        onKeyDown={e => {
+          if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey || !['Enter', ' '].includes(e.key)) return;
+          e.preventDefault(); e.stopPropagation(); if (!e.repeat) toggle();
+        }}
+      >{props.marker}</button>
+    </Show>
+    <BlockOutlet nodeKey={props.nodeKey} />
   </div>;
 }
 

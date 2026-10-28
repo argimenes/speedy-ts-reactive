@@ -57,6 +57,7 @@ export class InputGateway {
     private readonly focusFallback: (nodeKey: NodeKey) => NodeKey | undefined,
     private readonly bindings: BindingRegistry,
     private readonly createTextTab: (key: NodeKey) => boolean,
+    private readonly changeTextList: (key: NodeKey, outdent: boolean) => boolean,
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
@@ -531,6 +532,13 @@ export class InputGateway {
     if (resolved.handle.inputPolicy === "native-text" && !(event.target instanceof HTMLTextAreaElement)) return false;
 
     if (id === "resource.processAtCaret") return this.clipboard?.processAtCaret(event) ?? false;
+
+    if (id === 'list.indent' || id === 'list.outdent') {
+      if (resolved.handle.inputPolicy !== 'standoff' || !(event.target instanceof Node) ||
+        !resolved.handle.focusElement.contains(event.target)) return false;
+      if (event instanceof KeyboardEvent && event.repeat) return;
+      return this.changeTextList(resolved.nodeKey, id === 'list.outdent');
+    }
 
     if (id === "tabs.create" && resolved.handle.inputPolicy === "standoff") {
       if (event.target instanceof Element && event.target.closest('input, textarea, select, [role="dialog"]')) return false;

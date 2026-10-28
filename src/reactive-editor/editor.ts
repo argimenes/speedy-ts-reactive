@@ -52,6 +52,7 @@ import { MeasurementService } from "../runtime/measurements";
 import { BindingRegistry } from "../input/bindings";
 import { registerInputActions } from "../input/binding-catalog";
 import { createTextTab } from "../runtime/text-tabs";
+import { changeTextList } from '../runtime/text-lists';
 import { BlockSelectionService } from "../runtime/block-selection";
 import { BlockClipboardService } from "../runtime/block-clipboard";
 import { CrossBlockSelection } from "../runtime/cross-block-selection";
@@ -342,6 +343,7 @@ export class ReactiveEditor {
       (nodeKey) => this.focusFallback(nodeKey),
       this.bindings,
       key => createTextTab(this, key),
+      (key, outdent) => changeTextList(this, key, outdent),
       this.blockSelection,
       direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
       (id, targetKey) => {

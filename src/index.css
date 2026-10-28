@@ -425,8 +425,14 @@ textarea {
   border-collapse: collapse;
 }
 
-.reactive-imported-list-item { position: relative; padding-left: 1.75em; min-width: 0; }
+/* Keep the bullet clear of the Block's existing 20px selection/drag handle. */
+.reactive-imported-list-item { position: relative; padding-left: calc(1.75em + 20px); min-width: 0; }
 .reactive-imported-list-marker { position: absolute; left: 0; top: 0; user-select: none; }
+.reactive-list[hidden] { display: none; }
+.reactive-list-toggle { width: 1.3em; height: 1.3em; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font: inherit; line-height: 1.3; cursor: pointer; }
+.reactive-list-toggle:hover { background: #e4e9e5; }
+.reactive-list-toggle--collapsed { background: #dce3de; box-shadow: 0 0 0 2px #dce3de; }
+.reactive-list-toggle:focus-visible { outline: 2px solid #577c68; outline-offset: 3px; }
 
 .reactive-table-row {
   display: table-row;
