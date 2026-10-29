@@ -1,3 +1,4 @@
+import { taskPrefixOpening, cancelTaskPrefix } from '../../runtime/text-lists';
 import { surfaceCommands } from '../../runtime/block-surfaces';
 import {ProvisionalCells} from './provisional-cells';
 import type { ReactiveEditor } from '../../reactive-editor/editor';
@@ -156,6 +157,20 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
   };
   const run=(id:string)=>{const s=current;if(!s)return false;if(entityControls&&['autocomplete.next','autocomplete.previous','autocomplete.choose','autocomplete.review','autocomplete.close'].includes(id))return entityControls.run(id.slice(13));if(id==='autocomplete.next')s.move(1);else if(id==='autocomplete.previous')s.move(-1);else if(id==='autocomplete.choose')void s.choose();else if(id==='autocomplete.close'){const source=s.source;cancel();restore(source,source.end);}else if(id==='autocomplete.review'){return false;}else if(/^autocomplete\.(start|end)\.(word|character)\.-?1$/.test(id)){const [,edge,unit,dir]=id.split('.');changeBoundary(s,edge as 'start'|'end',Number(dir) as -1|1,unit==='word');}else return false;return true;};
   const intercept=(key:string,start:number,end:number,value:string,type:string):boolean=>{
+   if (!current && !draft && type === 'insertText' && value === '[') {
+    const task = taskPrefixOpening(editor, key, start, end);
+    if (task === 'fresh') return false; // Let the gateway's task recognizer own this opener.
+    if (task === 'restored') {
+     // A second bracket is Scry, not a task. Transfer the already-authored first
+     // bracket once, then use the ordinary two-character Scry trigger.
+     cancelTaskPrefix(editor);
+     const node=editor.node(key)!;
+     editor.commands.replaceInlineRange(key, start - 1, start, '', 'Start Scry');
+     editor.commands.wrapTextBlockInList(key, 2);
+     const target=editor.nodeForPlacementInView(node.placementKey,node.viewId)!;
+     return intercept(target.key, 0, 0, '[[', type);
+    }
+   }
    if(editor.features.scryProvisionalCells&&!current){
     if(draft?.cells.pending){
      if(type==='insertText'&&value===(draft.cells.mode==='mention'?'(':'[')&&key===draft.source.nodeKey){

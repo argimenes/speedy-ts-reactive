@@ -1,0 +1,24 @@
+{
+  "prefix": "-",
+  "annotatedNestedContext": true,
+  "samples": 20,
+  "warmups": 2,
+  "documentCharacters": 936,
+  "sync": {
+    "median": 3.700000047683716,
+    "p95": 6.100000023841858,
+    "max": 6.100000023841858
+  },
+  "settled": {
+    "median": 7.300000071525574,
+    "p95": 11.100000023841858,
+    "max": 11.100000023841858
+  },
+  "frame": {
+    "median": 113.60000002384186,
+    "p95": 137.20000004768372,
+    "max": 137.20000004768372
+  },
+  "snapshots": 0,
+  "undoLiteralVerified": true
+}

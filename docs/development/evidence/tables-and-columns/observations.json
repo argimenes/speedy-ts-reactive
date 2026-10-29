@@ -1,0 +1,95 @@
+{
+  "observations": {
+    "conversion": {
+      "sourceIdentityPreserved": true,
+      "placementPreserved": true,
+      "annotation": [
+        {
+          "id": "probe-entity",
+          "type": "codex/entity-reference",
+          "value": "probe-only",
+          "start": 0,
+          "end": 8
+        }
+      ],
+      "ownedRelations": [
+        "leftMargin"
+      ],
+      "shape": [
+        "grid-block",
+        "grid-row-block",
+        "grid-cell-block"
+      ],
+      "columns": 2,
+      "retainedDom": true,
+      "caretBefore": {
+        "anchor": 4,
+        "head": 4
+      },
+      "caretAfter": {
+        "anchor": 0,
+        "head": 0
+      },
+      "snapshots": 1,
+      "cellSelectable": false,
+      "rowSelectable": false
+    },
+    "history": {
+      "oneUndoRestoresOrdinary": true,
+      "redoRestoresGrid": true,
+      "sourceIdentityPreserved": true
+    },
+    "native": {
+      "sourceFound": true,
+      "annotation": [
+        {
+          "end": 8,
+          "id": "probe-entity",
+          "start": 0,
+          "type": "codex/entity-reference",
+          "value": "probe-only"
+        }
+      ],
+      "ownedRelations": [
+        "leftMargin"
+      ]
+    },
+    "menu": {
+      "nestedGridRendered": true,
+      "directCells": 4
+    },
+    "wide": {
+      "tableWidth": 1031,
+      "tableLayout": "fixed",
+      "cells": [
+        257.5,
+        257.5,
+        257.5,
+        257.5
+      ],
+      "rowHeights": [
+        104.1875
+      ]
+    },
+    "constrained": {
+      "tableWidth": 440,
+      "tableLayout": "fixed",
+      "cells": [
+        109.75,
+        109.75,
+        109.75,
+        109.75
+      ],
+      "rowHeights": [
+        266.5625
+      ]
+    },
+    "dissolve": {
+      "nestedGridSurvives": false,
+      "undoRestoresNestedGrid": true
+    }
+  },
+  "errors": [],
+  "realFlintComponents": true,
+  "scope": "Existing functionality only; no feature implementation"
+}

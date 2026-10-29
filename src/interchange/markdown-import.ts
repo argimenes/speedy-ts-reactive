@@ -53,7 +53,14 @@ export function markdownTree(source: string, adapter?:MarkdownAdapter) {
         return [element('pre', [text(node.value)])];
       case 'blockquote': return [element('blockquote', children(node))];
       case 'list': return [element(node.ordered ? 'ol' : 'ul', children(node), node.ordered ? { start: String(node.start ?? 1) } : {})];
-      case 'listItem': return [element('li', children(node))];
+      case 'listItem': {
+        const first = node.children[0], lead = first?.type === 'paragraph' ? first.children[0] : undefined;
+        const literal = lead?.type === 'text' ? source.slice(lead.position?.start.offset ?? 0, lead.position?.end.offset ?? 0) : '';
+        const marker = /^\[([ xX])\](?:[ \t]+|$)/.exec(literal);
+        if (!marker || first.type !== 'paragraph' || lead?.type !== 'text') return [element('li', children(node))];
+        const trimmed = { ...node, children: [{ ...first, children: [{ ...lead, value: lead.value.slice(marker[0].length) }, ...first.children.slice(1)] }, ...node.children.slice(1)] } as Nodes;
+        return [element('li', [element('input', [], { type: 'checkbox', disabled: '', ...(marker[1] !== ' ' ? { checked: '' } : {}) }), ...children(trimmed)])];
+      }
       case 'link': return adapter?.reference?.(node,node.url,false,children(node)) ?? [link(node, node.url, node.title)];
       case 'image': return adapter?.reference?.(node,node.url,true,[text(node.alt??'')]) ?? [image(node.alt, node.url, node.title)];
       case 'linkReference': case 'imageReference': {

@@ -20,6 +20,7 @@ export class DocumentCounts {
   constructor(private repository: CanonicalRepository, private root: string, private count: (text: string) => Promise<TextCounts>) {
     [this.state, this.setState] = createStore<{ blocks: Record<string, TextCounts>; totals: Record<string, TextCounts>; pages: Record<string, string>; pending: boolean; error: string }>({ blocks: {}, totals: {}, pages: {}, pending: true, error: "" });
     this.unsubscribe = repository.subscribeChanges(change => {
+      if (change.taskStateOwner) return;
       this.generation++;
       if (change.inlineOwner) this.dirty.add(change.inlineOwner);
       else if (change.listWrap) {

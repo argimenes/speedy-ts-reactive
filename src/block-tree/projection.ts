@@ -53,6 +53,12 @@ export class BlockTreeProjection {
         this.setState(reconcile({ rootKey: this.state.rootKey, nodes: {}, revision: repository.state.revision }));
         return;
       }
+      if (change.taskStateOwner) {
+        const content = repository.readState().contents[change.taskStateOwner];
+        for (const key of this.contentNodes.get(content.key) ?? [])
+          this.setState("nodes", key, "payload", "checked", content.payload.checked);
+        return;
+      }
       if (change.listWrap) {
         this.updateListWrap(change.listWrap);
         return;

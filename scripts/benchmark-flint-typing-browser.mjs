@@ -14,6 +14,7 @@
 // BENCHMARK_MUTABLE_CLIPBOARD=false selects legacy clipboard routing for comparison.
 // BENCHMARK_FLINT_RECENTS=false disables recent-document navigation history for comparison.
 // BENCHMARK_LIST_PREFIX=1 additionally measures matched conversion in the intact native Document.
+// BENCHMARK_TASK_PREFIX=1 measures the full fresh task continuation and final conversion.
 // BENCHMARK_LIST_PREFIX_TEXT selects the marker (default "-"); BENCHMARK_LIST_PREFIX_RICH=1 adds annotations and nested Blocks.
 // BENCHMARK_AUTOCOMPLETE=false disables completion for paired input-cost checks.
 // BENCHMARK_LER=live|review opens LER with an isolated resolver. BENCHMARK_LER_INSIDE=1 types inside a linked span.
@@ -75,7 +76,7 @@ try{
  await send('Page.bringToFront',{},sessionId);await send('Runtime.enable',{},sessionId);await send('Emulation.setDeviceMetricsOverride',{width:1500,height:990,deviceScaleFactor:1,mobile:false},sessionId);
  await send('Page.navigate',{url:`http://127.0.0.1:${vite.httpServer.address().port}/__flint-integration`},sessionId);
  await wait("window.proof && document.querySelector('.flint-compact .reactive-standoff-flow')");
- await evaluate(`proof.root=proof.host.querySelector('.flint-application');proof.view=[...proof.editor.projections.values()].find(v=>v!==proof.session.projection);proof.text=Object.values(proof.view.state.nodes).filter(n=>n.viewType==='standoff-editor-block').sort((a,b)=>b.inlineContent.length-a.inlineContent.length)[0];proof.mount=proof.editor.mounts.get(proof.text.key);proof.flow=proof.mount.root.querySelector('.reactive-standoff-flow')??proof.mount.root;proof.editor.focus.request(proof.text.key);proof.mount.restoreInlineSelection({anchor:100,head:100});`);
+ await evaluate(`proof.root=proof.host.querySelector('.flint-application');proof.view=[...proof.editor.projections.values()].find(v=>v!==proof.session.projection);proof.text=Object.values(proof.view.state.nodes).filter(n=>n.viewType==='standoff-editor-block'&&proof.editor.mounts.get(n.key)).sort((a,b)=>b.inlineContent.length-a.inlineContent.length)[0];proof.mount=proof.editor.mounts.get(proof.text.key);proof.flow=proof.mount.root.querySelector('.reactive-standoff-flow')??proof.mount.root;proof.editor.focus.request(proof.text.key);proof.mount.restoreInlineSelection({anchor:100,head:100});`);
  if(process.env.BENCHMARK_EVERYDAY_SOURCE==='1'){await evaluate(`proof.editor.commands.insert({id:crypto.randomUUID(),type:'mutable/web-resource-block',web:{version:1,snapshotId:crypto.randomUUID(),source:'mutable-file:Calendar.ics',capturedAt:'2026-10-19T00:00:00Z',asset:{kind:'managed',cavernId:'benchmark',assetId:'sha256:'+'a'.repeat(64)},projection:{provider:'calendar',status:'captured',title:'Retained event collection',diagnostics:[],everyday:{version:1,identity:{type:'local-file'},fields:[],items:Array.from({length:25},(_,i)=>({title:'Event '+i,fields:[{label:'Start',value:'2026-10-20T10:00:00 Australia/Brisbane',provenance:'VEVENT/DTSTART'}]}))}}}},{kind:'after',anchorKey:proof.text.key});`);await wait('document.querySelector(".web-resource-card")');}
  if(process.env.BENCHMARK_WEB_SOURCE==='1'){await evaluate(`proof.editor.commands.insert({id:crypto.randomUUID(),type:'mutable/web-resource-block',web:{version:1,snapshotId:crypto.randomUUID(),source:'https://example.org/benchmark',capturedAt:'2026-10-19T00:00:00Z',asset:{kind:'managed',cavernId:'benchmark',assetId:'sha256:'+'a'.repeat(64)},projection:{provider:'web',status:'captured',title:'Retained preview',description:'No remote work while typing.',diagnostics:[]}}},{kind:'after',anchorKey:proof.text.key});`);await wait('document.querySelector(".web-resource-card")');}
  if(process.env.BENCHMARK_ACADEMIC_SOURCE==='1'){await evaluate(`(async()=>{const {alto}=await import('/src/academic/fixtures.ts'),{parseOcr}=await import('/src/academic/ocr.ts');proof.editor.commands.insert({id:crypto.randomUUID(),type:'mutable/academic-resource-block',academicArchive:true,academic:{version:1,kind:'deterministic',snapshotId:crypto.randomUUID(),resourceId:'benchmark-source',source:'benchmark.alto',endpoint:'local-file',retrievedAt:'2026-10-19T00:00:00Z',asset:{kind:'managed',cavernId:'benchmark',assetId:'sha256:'+'a'.repeat(64)},format:'alto',projection:JSON.parse(JSON.stringify(parseOcr(alto)))}},{kind:'after',anchorKey:proof.text.key});})()`);await wait('document.querySelector(".mutable-academic-resource")');}
@@ -164,29 +165,34 @@ try{
 
  if(process.env.BENCHMARK_LIST_PREFIX==='1'){
   const prefix=await evaluate(`(async()=>{
-   const {editor}=proof,viewId=proof.text.viewId,token=${JSON.stringify(process.env.BENCHMARK_LIST_PREFIX_TEXT??'-')};
-   const rich=${process.env.BENCHMARK_LIST_PREFIX_RICH==='1'},annotations=[{id:crypto.randomUUID(),type:'style/bold',start:0,end:token.length-1}];
-   const placement=editor.commands.insert({id:crypto.randomUUID(),type:'standoff-editor-block',text:token,...rich?{standoffProperties:annotations,children:[{id:crypto.randomUUID(),type:'container-block',children:[{id:crypto.randomUUID(),type:'standoff-editor-block',text:'Retained nested content. '.repeat(10)}]}],relation:{leftMargin:{id:crypto.randomUUID(),type:'left-margin-block',children:[{id:crypto.randomUUID(),type:'standoff-editor-block',text:'Retained annotation note.'}]}}}:{}},{kind:'after',anchorKey:proof.text.key});
+   const {editor}=proof,viewId=proof.text.viewId,task=${process.env.BENCHMARK_TASK_PREFIX==='1'},token=${JSON.stringify(process.env.BENCHMARK_TASK_PREFIX==='1'?'- [x]':process.env.BENCHMARK_LIST_PREFIX_TEXT??'-')},initial=task?'-':token;
+   const rich=${process.env.BENCHMARK_LIST_PREFIX_RICH==='1'},annotations=[{id:crypto.randomUUID(),type:'style/bold',start:0,end:initial.length-1}];
+   const placement=editor.commands.insert({id:crypto.randomUUID(),type:'standoff-editor-block',text:initial,...rich?{standoffProperties:annotations,children:[{id:crypto.randomUUID(),type:'container-block',children:[{id:crypto.randomUUID(),type:'standoff-editor-block',text:'Retained nested content. '.repeat(10)}]}],relation:{leftMargin:{id:crypto.randomUUID(),type:'left-margin-block',children:[{id:crypto.randomUUID(),type:'standoff-editor-block',text:'Retained annotation note.'}]}}}:{}},{kind:'after',anchorKey:proof.text.key});
    const documentCharacters=Object.values(proof.view.state.nodes).filter(n=>n.viewType==='standoff-editor-block').reduce((sum,n)=>sum+n.inlineContent.length,0);
    const node=()=>editor.nodeForPlacementInView(placement,viewId),mount=()=>editor.mounts.get(node().key);
-   const sync=[],settled=[],frames=[];let snapshots=0,matchedSnapshots=0;
+   const sync=[],settled=[],frames=[],continuations=[];let snapshots=0,matchedSnapshots=0;
    const snapshot=editor.repository.snapshot.bind(editor.repository);editor.repository.snapshot=()=>{snapshots++;return snapshot()};
    for(let i=0;i<22;i++){
-    if(i)editor.commands.replaceInlineRange(node().key,0,node().inlineContent.length,token);
+    if(i)editor.commands.replaceInlineRange(node().key,0,node().inlineContent.length,initial);
     if(rich)editor.commands.setPayloadField(node().key,'standoffProperties',annotations);
-    await new Promise(r=>requestAnimationFrame(r));mount().focus();mount().restoreInlineSelection({anchor:token.length,head:token.length});
-    const beforeSnapshots=snapshots,start=performance.now();
+    await new Promise(r=>requestAnimationFrame(r));mount().focus();mount().restoreInlineSelection({anchor:initial.length,head:initial.length});
+    const beforeSnapshots=snapshots;let continuation=0;
+    if(task)for(const character of [' ','[','x',']']){
+      const t=performance.now();mount().focusElement.dispatchEvent(new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'insertText',data:character}));continuation+=performance.now()-t;
+      await Promise.resolve();await Promise.resolve();
+    }
+    const start=performance.now();
     mount().focusElement.dispatchEvent(new InputEvent('beforeinput',{bubbles:true,cancelable:true,inputType:'insertText',data:' '}));
     const handler=performance.now()-start;await Promise.resolve();const caret=performance.now()-start;
     await new Promise(r=>requestAnimationFrame(r));const frame=performance.now()-start;
     if(node().inlineContent.length||proof.view.parentOf(node().key)?.viewType!=='indented-list-block'||mount().captureInlineSelection().anchor!==0)throw Error('Prefix conversion/caret failed: '+JSON.stringify({iteration:i,text:mount().captureText(),parent:proof.view.parentOf(node().key)?.viewType,selection:mount().captureInlineSelection(),focused:document.activeElement===mount().focusElement}));
-    if(i>=2){sync.push(handler);settled.push(caret);frames.push(frame);matchedSnapshots+=snapshots-beforeSnapshots;}
+    if(i>=2){continuations.push(continuation+handler);sync.push(handler);settled.push(caret);frames.push(frame);matchedSnapshots+=snapshots-beforeSnapshots;}
     editor.repository.undo();await Promise.resolve();
     if(mount().captureText()!==token+' '||proof.view.parentOf(node().key)?.viewType==='indented-list-block')throw Error('Prefix Undo did not restore literal marker');
    }
    const stats=xs=>{xs.sort((a,b)=>a-b);return {median:xs[Math.floor(xs.length/2)],p95:xs[Math.floor(xs.length*.95)],max:xs.at(-1)}};
    editor.repository.snapshot=snapshot;editor.commands.remove(node().key);proof.mount.focus();proof.mount.restoreInlineSelection({anchor:100,head:100});
-   return {prefix:token,annotatedNestedContext:rich,samples:20,warmups:2,documentCharacters,sync:stats(sync),settled:stats(settled),frame:stats(frames),snapshots:matchedSnapshots,undoLiteralVerified:true};
+   return {prefix:token,annotatedNestedContext:rich,samples:20,warmups:2,documentCharacters,sync:stats(sync),settled:stats(settled),frame:stats(frames),...(task?{fullContinuationHandlerSum:stats(continuations)}:{}),snapshots:matchedSnapshots,undoLiteralVerified:true};
   })()`);
   assert.equal(prefix.snapshots,0,'Prefix conversion must not snapshot the repository');
   console.log('Matched list prefix:',JSON.stringify(prefix));await writeFile(path.join(artifacts,'list-prefix.json'),JSON.stringify(prefix,null,2));

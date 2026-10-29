@@ -60,6 +60,8 @@ try{
  const checks=[];
  const check=(name,value)=>{if(!value)console.error(JSON.stringify(errors,null,2));assert.ok(value,name);checks.push(name);console.log('PASS '+name);};
 
+ const key=async(key,modifiers=0)=>{await send('Input.dispatchKeyEvent',{type:'keyDown',key,modifiers,windowsVirtualKeyCode:({Enter:13,Tab:9,z:90})[key]},sessionId);await send('Input.dispatchKeyEvent',{type:'keyUp',key,modifiers},sessionId);};
+ if(!process.env.QUALIFY_TASK_ONLY) {
  await evaluate(`
   proof.placement=proof.text.placementKey;
   proof.current=()=>proof.editor.nodeForPlacementInView(proof.placement,proof.view.viewId);
@@ -69,7 +71,6 @@ try{
   proof.editor.commands.replaceInlineRange(proof.text.key,0,proof.text.inlineContent.length,'First item');
   proof.currentMount().focus();proof.currentMount().restoreInlineSelection({anchor:2,head:5});
  `);
- const key=async(key,modifiers=0)=>{await send('Input.dispatchKeyEvent',{type:'keyDown',key,modifiers,windowsVirtualKeyCode:({Enter:13,Tab:9,z:90})[key]},sessionId);await send('Input.dispatchKeyEvent',{type:'keyUp',key,modifiers},sessionId);};
  await key('Tab');await wait("proof.parent(proof.current())?.viewType==='indented-list-block'");
  check('Tab creates a list from the source TextBlock',await evaluate("proof.read()==='First item'&&proof.parent(proof.current()).children.length===1"));
  check('Conversion preserves text selection and focus',await evaluate("document.activeElement===proof.currentMount().focusElement&&JSON.stringify(proof.currentMount().captureInlineSelection())===JSON.stringify({anchor:2,head:5})"));
@@ -144,6 +145,8 @@ try{
  await evaluate('proof.editor.completionInput.cancel()');
  check(`Cancelling Scry keeps literal ${token}`,await evaluate(`proof.scryNode().inlineContent.map(k=>proof.editor.node(k).payload.text).join('')===${JSON.stringify(token+' ')}&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'`));
  }
+ }
+ if(process.env.QUALIFY_TASK_LISTS==='1') await (await import('./task-list-browser-checks.mjs')).qualifyTasks({evaluate,send,sessionId,check,key,resourceId:JSON.parse(fixture).resourceId});
  check('No browser exceptions',errors.length===0);
  await send('Page.captureScreenshot',{format:'png'},sessionId).then(r=>writeFile(path.join(artifacts,'text-lists.png'),Buffer.from(r.data,'base64')));
  await writeFile(path.join(artifacts,'results.json'),JSON.stringify({checks,errors,realFlintComponents:true},null,2));

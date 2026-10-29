@@ -23,6 +23,7 @@ export class DocumentFind {
     this.search = new TextSearch(editor);
     [this.state, this.setState] = createStore<{ open: boolean; query: string; options: SearchOptions; scope?: SearchScope; pageKey?: string; result?: SearchMatchSet; pending: boolean; active: number; visible: boolean; concertinaRequested: boolean; message: string; focusRequest: number }>({ open: false, query: "", options: {}, pending: false, active: -1, visible: true, concertinaRequested: false, message: "", focusRequest: 0 });
     this.unsubscribe = editor.repository.subscribeChanges(change => {
+      if (change.taskStateOwner) return;
       // All decoration owners must lose stale ranges, even if Find is closed.
       if (change.inlineOwner) { editor.decorations.invalidateContent(change.inlineOwner); editor.minimap.invalidateContent(change.inlineOwner); }
       else for (const [key, previous] of change.previousContents) {

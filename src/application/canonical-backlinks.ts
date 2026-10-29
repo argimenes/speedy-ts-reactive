@@ -32,6 +32,7 @@ export class CanonicalBacklinks implements BacklinksService {
 
   private notify() { untrack(() => { for (const listener of this.listeners) listener(); }); }
   private changed(change: RepositoryChange) {
+    if (change.taskStateOwner) return;
     // Typing invalidates only its cached resource; no tree walk or snapshot here.
     const keys = change.inlineOwner ? [change.inlineOwner] : [...change.previousContents.keys()];
     for (const [key, entry] of this.entries) if (keys.some(k => entry.members.has(k))) this.entries.delete(key);

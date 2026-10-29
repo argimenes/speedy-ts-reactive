@@ -725,3 +725,21 @@ textarea {
 .workspace-object-bank__viewer { position: relative; min-height: 720px; overflow: auto; }
 
 .reactive-window.reactive-window--maximized { min-width:0; min-height:0; border-radius:0; }
+
+/* Completion, disclosure and Block handles occupy separate gutters. */
+.reactive-task-row { display: block; position: relative; padding-left: calc(1.75em + 20px); min-width: 0; }
+.reactive-task-content { min-width: 0; }
+.reactive-task-checkbox, .reactive-checkbox > .reactive-task-checkbox { position: absolute; left: 0; top: 4px; width: 16px; height: 16px; margin: 0; cursor: pointer; }
+.reactive-task-list-item { padding-left: 0; }
+.reactive-task-list-item > .reactive-list-toggle { left: -22px; }
+.reactive-task-row--checked > .reactive-standoff-surface > .reactive-standoff-flow { opacity: .65; }
+.reactive-task-content > .block-selectable > .block-selection-handle,
+.reactive-task-row.block-selectable > .block-selection-handle { opacity: 0; }
+.reactive-task-content > .block-selectable:hover > .block-selection-handle,
+.reactive-task-content > .block-is-selected > .block-selection-handle,
+.reactive-task-content > .block-selectable > .block-selection-handle:focus-visible,
+.reactive-task-row.block-selectable:hover > .block-selection-handle,
+.reactive-task-row.block-is-selected > .block-selection-handle,
+.reactive-task-row.block-selectable > .block-selection-handle:focus-visible { opacity: 1; }
+.reactive-task-row.block-selectable > .block-selection-handle { left: -43px; }
+.reactive-task-disclosure { position: absolute; left: -22px; top: 1px; width: 20px; border: 0; background: transparent; cursor: pointer; padding: 0; }

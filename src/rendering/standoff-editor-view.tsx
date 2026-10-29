@@ -1,3 +1,5 @@
+import { TaskControl, StandaloneTaskDisclosure } from './task-control';
+import { taskState } from '../runtime/tasks';
 import { managedAsset } from '../interchange/managed-asset';
 import type { ProvisionalCells } from '../features/autocomplete/provisional-cells';
 import { createRangeRendering, RangeEffectLayer, classesAt, type RangeEffectSource } from "./range-rendering";
@@ -825,12 +827,14 @@ export function StandoffEditorView(props: BlockViewProps) {
       ref={root}
       class={`abstract-block reactive-standoff-block ${appearance().classes.join(" ")}`}
       style={appearance().style}
-      classList={{ "reactive-block--focused": editor.focus.state.focusedKey === props.nodeKey }}
+      classList={{ "reactive-block--focused": editor.focus.state.focusedKey === props.nodeKey, "reactive-task-row": editor.features.taskLists && taskState(node()) !== undefined, "reactive-task-row--checked": editor.features.taskLists && taskState(node()) === true }}
       data-block-id={(node()?.payload.id as string | undefined) ?? ""}
       data-client-id={props.nodeKey}
       data-runtime-key={props.nodeKey}
+      data-task-item={editor.features.taskLists && taskState(node()) !== undefined ? props.nodeKey : undefined}
       data-block-type="standoff-editor-block"
     >
+      <Show when={editor.features.taskLists && taskState(node()) !== undefined}><StandaloneTaskDisclosure nodeKey={props.nodeKey} /><TaskControl nodeKey={props.nodeKey} /></Show>
       <div ref={surface} class="reactive-standoff-surface" onPointerMove={hoverCandidate} onPointerLeave={() => setHovered(undefined)}>
         <DecorationLayer class="reactive-annotation-layer reactive-annotation-layer--foreground" shapes={highlighterShapes().filter(shape=>!shape.annotationKey||legacySvgKeys().has(shape.annotationKey))} blendMode="color-dodge" />
         <DecorationLayer class="reactive-selection-layer" shapes={selectionShapes()} />

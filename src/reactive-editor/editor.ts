@@ -1,5 +1,7 @@
+import { enterTask, toggleTask } from '../runtime/tasks';
 import { upgradeLegacySurfaces } from '../interchange/legacy-surfaces';
 import { BlockSurfaces } from '../runtime/block-surfaces';
+import { TableOperations } from '../runtime/tables';
 import { sourceTextTypes } from '../knowledge/policy';
 import { ManagedAssets, type AssetContext } from '../runtime/managed-assets';
 import { DocumentInterchange } from '../runtime/document-interchange';
@@ -52,7 +54,7 @@ import { MeasurementService } from "../runtime/measurements";
 import { BindingRegistry } from "../input/bindings";
 import { registerInputActions } from "../input/binding-catalog";
 import { createTextTab } from "../runtime/text-tabs";
-import { changeTextList, convertTypedListPrefix, exitEmptyListItem } from '../runtime/text-lists';
+import { changeTextList, convertTypedListPrefix, exitEmptyListItem, continueTaskPrefix, cancelTaskPrefix, checkTaskPrefixSelection } from '../runtime/text-lists';
 import { BlockSelectionService } from "../runtime/block-selection";
 import { BlockClipboardService } from "../runtime/block-clipboard";
 import { CrossBlockSelection } from "../runtime/cross-block-selection";
@@ -72,6 +74,7 @@ import { ShowHideProjection } from "../runtime/show-hide-projection";
 
 export class ReactiveEditor {
   readonly surfaces = new BlockSurfaces(this);
+  readonly tables = new TableOperations(this);
   completionInput?: import("../input/gateway").CompletionInput;
   /** WorkspaceSession owns this runtime-only store; absent in legacy/isolated editors. */
   documentSessions?: import("../application/document-sessions").DocumentSessionStore;
@@ -344,7 +347,7 @@ export class ReactiveEditor {
       this.bindings,
       key => createTextTab(this, key),
       (key, outdent) => changeTextList(this, key, outdent),
-      { prefix: (key, caret) => convertTypedListPrefix(this, key, caret), exitEmpty: key => exitEmptyListItem(this, key) },
+      { prefix: (key, caret) => convertTypedListPrefix(this, key, caret), exitEmpty: key => exitEmptyListItem(this, key), task: (key, start, end, text) => continueTaskPrefix(this, key, start, end, text), cancelTask: () => cancelTaskPrefix(this), taskSelection: (key, caret) => checkTaskPrefixSelection(this, key, caret), taskEnter: (key, start, end) => enterTask(this, key, start, end), toggleTask: key => toggleTask(this, key) },
       this.blockSelection,
       direction => { if (direction === "undo") this.repository.undo(); else this.repository.redo(); },
       (id, targetKey) => {
@@ -505,6 +508,7 @@ export class ReactiveEditor {
   }
 
   dispose(): void {
+    this.tables.dispose();
     this.viewCloseGuards.clear();
     this.interchange.dispose(); this.disposeInterchangeStatus?.();
     this.clipboard.dispose(); this.assets.dispose(); this.disposeClipboardStatus?.();

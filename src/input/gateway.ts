@@ -58,7 +58,7 @@ export class InputGateway {
     private readonly bindings: BindingRegistry,
     private readonly createTextTab: (key: NodeKey) => boolean,
     private readonly changeTextList: (key: NodeKey, outdent: boolean) => boolean,
-    private readonly listInput: { prefix(key: NodeKey, caret: number): boolean; exitEmpty(key: NodeKey): boolean },
+    private readonly listInput: { prefix(key: NodeKey, caret: number): boolean; exitEmpty(key: NodeKey): boolean; task?(key: NodeKey, start: number, end: number, text: string): boolean; cancelTask?(): void; taskSelection?(key?: string, caret?: number): void; taskEnter?(key: string, start: number, end: number): boolean; toggleTask?(key: string): boolean },
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
@@ -126,8 +126,9 @@ export class InputGateway {
     return resolved.handle.inputPolicy === "standoff" ? ["editor/standoff", "editor"] : ["editor"];
   }
   private onKeyDown = (event: KeyboardEvent) => {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1 && event.key !== "Shift") this.listInput.cancelTask?.();
     this.clipboard?.key(event);
-    if (this.completion?.()?.key(event)) return;
+    if (this.completion?.()?.key(event)) { this.listInput.cancelTask?.(); return; }
     const target = event.target instanceof Element ? event.target : undefined;
     const resolved = this.mounts.resolveEvent(event);
     const field = target?.closest('input, textarea, select, [contenteditable="true"]');
@@ -161,9 +162,11 @@ export class InputGateway {
     let end = Math.max(selection.anchor, selection.head);
     let text: string | undefined;
     if(this.completion?.()?.intercept?.(resolved.nodeKey,start,end,event.data??"",event.inputType)){
+      this.listInput.cancelTask?.();
       if(event.cancelable)event.preventDefault();event.stopPropagation();return;
     }
 
+    if (event.isComposing || event.inputType !== "insertText" || !event.cancelable) this.listInput.cancelTask?.();
     const selectionSet = this.selections.sets[resolved.nodeKey];
     if (
       selectionSet?.items.length > 1 &&
@@ -272,7 +275,8 @@ export class InputGateway {
 
     if (event.cancelable) event.preventDefault();
     event.stopPropagation();
-    if(this.completion?.()?.before?.(resolved.nodeKey,start,end,text,event.inputType))return;
+    if(this.completion?.()?.before?.(resolved.nodeKey,start,end,text,event.inputType)) { this.listInput.cancelTask?.(); return; }
+    if (event.cancelable && !event.isComposing && event.inputType === "insertText" && this.listInput.task?.(resolved.nodeKey, start, end, text)) return;
     if (event.cancelable && !event.isComposing && event.inputType === 'insertText' && text === ' ' && start === end &&
       this.listInput.prefix(resolved.nodeKey, start)) return;
     this.commands.replaceInlineRange(resolved.nodeKey, start, end, text);
@@ -299,9 +303,10 @@ export class InputGateway {
     else this.caretEvents.setCaret();
   };
 
-  private onFocusOut = () => { this.clipboard?.clearIntent(); this.caretEvents?.setComposing?.(false); this.caretEvents?.setCaret(); };
+  private onFocusOut = () => { this.listInput.cancelTask?.(); this.clipboard?.clearIntent(); this.caretEvents?.setComposing?.(false); this.caretEvents?.setCaret(); };
 
   private onCompositionStart = (event: CompositionEvent) => {
+    this.listInput.cancelTask?.();
     this.bindings.cancelChord();
     const resolved = this.mounts.resolveEvent(event);
     if (resolved && (resolved.handle.inputPolicy === "native-text" || resolved.handle.inputPolicy === "standoff")) {
@@ -333,8 +338,10 @@ export class InputGateway {
           ? selection.anchorNode.parentNode
           : null;
     const resolved = this.mounts.resolveElement(anchorElement);
-    if (!resolved || resolved.handle.inputPolicy !== "standoff") { this.caretEvents?.setCaret(); return; }
+    if (!resolved || resolved.handle.inputPolicy !== "standoff") { this.listInput.cancelTask?.(); this.caretEvents?.setCaret(); return; }
     const inline = resolved.handle.captureInlineSelection?.();
+    this.listInput.taskSelection?.(resolved.nodeKey,
+      inline?.anchor === inline?.head && this.document.activeElement === resolved.handle.focusElement ? inline?.head : undefined);
     if (inline && inline.anchor === inline.head && this.document.activeElement === resolved.handle.focusElement) {
       this.caretEvents?.setCaret(resolved.nodeKey, inline.head);
     } else this.caretEvents?.setCaret();
@@ -351,6 +358,7 @@ export class InputGateway {
   };
 
   private onPointerDown = (event: PointerEvent) => {
+    this.listInput.cancelTask?.();
     if (this.bindings.pendingHint()) this.bindings.cancelChord();
     const element = event.target instanceof Element ? event.target : undefined;
     if (element?.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
@@ -458,6 +466,7 @@ export class InputGateway {
   };
 
   private onPaste = (event: ClipboardEvent) => {
+    this.listInput.cancelTask?.();
     if(this.completion?.()?.clipboard?.(event))return;
     if (this.clipboard?.enabled()) { this.clipboard.handleText(event); return; }
     const context = this.standoffClipboardContext(event);
@@ -536,6 +545,7 @@ export class InputGateway {
 
     if (id === "resource.processAtCaret") return this.clipboard?.processAtCaret(event) ?? false;
 
+    if (id === 'task.toggle') return event.target instanceof Node && resolved.handle.focusElement.contains(event.target) ? this.listInput.toggleTask?.(resolved.nodeKey) ?? false : false;
     if (id === 'list.indent' || id === 'list.outdent') {
       if (resolved.handle.inputPolicy !== 'standoff' || !(event.target instanceof Node) ||
         !resolved.handle.focusElement.contains(event.target)) return false;
@@ -655,6 +665,7 @@ export class InputGateway {
     start: number,
     end: number,
   ): void {
+    if (this.listInput.taskEnter?.(nodeKey, start, end)) return;
     if (start === 0 && end === 0 && node.inlineContent.length === 0 && this.listInput.exitEmpty(nodeKey)) return;
     const resultingLength = node.inlineContent.length - (end - start);
     let focusPlacement: PlacementKey | undefined;

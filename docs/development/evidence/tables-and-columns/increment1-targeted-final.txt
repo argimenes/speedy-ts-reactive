@@ -1,0 +1,11 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/block-tree/commit-capture.test.ts (11 tests) 364ms
+ ✓ src/rendering/tables.test.tsx (28 tests) 799ms
+
+ Test Files  2 passed (2)
+      Tests  39 passed (39)
+   Start at  16:32:37
+   Duration  5.80s (transform 3.10s, setup 0ms, collect 4.06s, tests 1.16s, environment 1.48s, prepare 117ms)
+

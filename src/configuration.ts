@@ -17,6 +17,10 @@
 export type FeatureFlags = Readonly<{
   /** Structural containers and retained front/back surfaces. */
   reversibleBlocks: boolean;
+  /** Native task items and automatic task prefixes. Legacy data remains readable. */
+  taskLists: boolean;
+  /** Canonical table layout operations; legacy tables remain readable. */
+  tableLayouts: boolean;
   /** Canonical workspace A0 ordering and owner-scoped surface layers. Session-fixed. */
   mutableWindowManager: boolean;
   /** Occurrence-scoped, local-first annotation and reference completion. */
@@ -141,6 +145,8 @@ export type FeatureFlags = Readonly<{
 
 export const featureFlags: FeatureFlags = Object.freeze({
   reversibleBlocks: true,
+  taskLists: true,
+  tableLayouts: true,
   mutableWindowManager: true,
   autocompleteWorkstation: true,
   scryProvisionalCells: true,

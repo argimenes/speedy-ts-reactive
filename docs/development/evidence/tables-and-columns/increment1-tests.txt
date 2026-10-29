@@ -1,0 +1,41 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/block-tree/commit-capture.test.ts (11 tests) 466ms
+ ✓ src/runtime/block-history-persistence.test.tsx (6 tests) 687ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (36 tests) 3345ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 3122ms
+ ✓ src/block-tree/undo-storage-parity.test.ts (7 tests) 4864ms
+   ✓ ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 7129 1608ms
+   ✓ ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 305419896 1410ms
+   ✓ ordinary undo storage semantic parity with full-operation snapshots > preserves every intermediate Unicode edit, counter and branch for seed 3735928559 1365ms
+ ✓ src/rendering/text-lists.test.tsx (15 tests) 1528ms
+   ✓ typing in a list does not run structural planning or take a document snapshot 397ms
+ ✓ src/rendering/task-lists.test.tsx (18 tests) 1613ms
+ ✓ src/persistence/native-resource.test.ts (15 tests) 164ms
+ ✓ src/rendering/tables.test.tsx (28 tests) 2162ms
+   ✓ dissolves only direct shells, retaining nested tables, lists, containers and both surface faces in row-major order 316ms
+ ✓ src/rendering/reversible-surface.test.tsx (43 tests) 2425ms
+ ✓ src/block-tree/inline-performance.test.ts (14 tests) 3928ms
+   ✓ incremental inline editing (capture=false) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 1283ms
+   ✓ incremental inline editing (capture=false) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 1167ms
+   ✓ incremental inline editing (capture=true) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 484ms
+   ✓ incremental inline editing (capture=true) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 819ms
+ ✓ src/block-tree/split-performance.test.ts (12 tests) 7432ms
+   ✓ incremental paragraph splitting (capture=false) > inserts empty siblings across shared parent views without touching existing paragraphs 1128ms
+   ✓ incremental paragraph splitting (capture=false) > rejects a nonempty or detached paragraph from the empty insertion fast path 682ms
+   ✓ incremental paragraph splitting (capture=false) > splits and restores annotations and Cell identities without snapshots, including redo and another split 840ms
+   ✓ incremental paragraph splitting (capture=false) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 942ms
+   ✓ incremental paragraph splitting (capture=false) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 323ms
+   ✓ incremental paragraph splitting (capture=false) > falls back safely for inline atoms and maintains indexes for the next plain-text split 538ms
+   ✓ incremental paragraph splitting (capture=true) > inserts empty siblings across shared parent views without touching existing paragraphs 325ms
+   ✓ incremental paragraph splitting (capture=true) > splits and restores annotations and Cell identities without snapshots, including redo and another split 646ms
+   ✓ incremental paragraph splitting (capture=true) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 865ms
+   ✓ incremental paragraph splitting (capture=true) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 314ms
+   ✓ incremental paragraph splitting (capture=true) > falls back safely for inline atoms and maintains indexes for the next plain-text split 558ms
+
+ Test Files  11 passed (11)
+      Tests  205 passed (205)
+   Start at  16:29:26
+   Duration  13.91s (transform 6.37s, setup 0ms, collect 24.57s, tests 28.61s, environment 7.41s, prepare 1.09s)
+

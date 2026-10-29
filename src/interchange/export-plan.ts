@@ -78,14 +78,14 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
  };
  const seen=new Set<string>();let budget=10000;
  const get=(edge:string)=>{const p=edges.get(edge);return p?.target.kind==='local'?blocks.get(p.target.id):undefined;};
- const visit=(edge:string):string=>{
+ const visit=(edge:string, inListItem = false):string=>{
   if(--budget<0)throw Error('Export traversal limit exceeded.');
   const b=get(edge);if(!b){warn('external-block','Out-of-document Blocks remain unresolved links.');return '[Unresolved Block]';}
   if(seen.has(b.localId)){warn('repeated-block','Repeated or cyclic Block bodies are exported once.');return format==='html'?`<a href="#${escapeHtml(b.localId)}">Repeated Block</a>`:'[Repeated Block]';}seen.add(b.localId);
   if(b.type==='resource-information-block'){warn('private-reverse','Resource information is excluded from reading exports.');return '';}
   if(b.type==='surface-block'){warn('private-reverse','Reverse faces are excluded from reading exports.');return b.children[0]?visit(b.children[0]):'';}
   if(b.data.packageAuthoredSource)warn('authored-value-preserved','Non-JSON authored values are preserved in an inactive native-codec carrier and are not used for presentation.');
-  const meta=b.data.metadata as any??{},children=()=>b.children.map(visit).join(format==='html'?'':format==='text'?'\n':'\n\n');
+  const meta=b.data.metadata as any??{},children=()=>b.children.map(edge => visit(edge)).join(format==='html'?'':format==='text'?'\n':'\n\n');
   let result='';
   if(b.type==='mutable/video-block'&&passiveVideo(b.data.video)){
    const v=passiveVideo(b.data.video)!;result=format==='html'?`<p><a href="${escapeHtml(v.canonicalUrl)}" rel="noopener noreferrer">${escapeHtml(v.title??v.canonicalUrl)}</a></p>`:format==='markdown'?`[${md(v.title??v.canonicalUrl)}](<${v.canonicalUrl}>)`:v.canonicalUrl;
@@ -111,17 +111,19 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
    if(b.children.length)result+=(format==='html'?'':'\n\n')+children();
   }else if(b.type==='indented-list-block'){
    const list=meta.htmlList??{},ordered=!!list.ordered;let n=Number(list.start)||1;
-   const items=b.children.map(edge=>{const item=get(edge),value=Number((item?.data.metadata as any)?.htmlListItem?.value);if(Number.isFinite(value))n=value;const number=n;n+=list.reversed?-1:1;const body=visit(edge);
-    if(format==='html')return `<li${ordered?` value="${number}"`:''}>${body}</li>`;
-    const prefix=ordered?`${number}. `:'- ';return prefix+body.replace(/\n/g,'\n'+' '.repeat(prefix.length));});
+   const items=b.children.map(edge=>{const item=get(edge),value=Number((item?.data.metadata as any)?.htmlListItem?.value);if(Number.isFinite(value))n=value;const number=n;n+=list.reversed?-1:1;const body=visit(edge, true);
+    const checked=item?.type==='checkbox-block'?item.data.checked===true:typeof item?.data.checked==='boolean'?item.data.checked:undefined;
+    const task=checked===undefined?'':format==='html'?`<input type="checkbox" disabled${checked?' checked':''}>`:`[${checked?'x':' '}] `;
+    if(format==='html')return `<li${ordered?` value="${number}"`:''}>${task}${body}</li>`;
+    const prefix=ordered?`${number}. `:'- ';return prefix+task+body.replace(/\n/g,'\n'+' '.repeat(prefix.length+task.length));});
    if(format==='markdown'&&list.reversed)warn('reversed-list','Markdown readers may renumber a reversed list.');
    result=format==='html'?`<${ordered?'ol':'ul'} id="${escapeHtml(b.localId)}"${ordered?` start="${Number(list.start)||1}"${list.reversed?' reversed':''}`:''}>${items.join('')}</${ordered?'ol':'ul'}>`:items.join('\n');
   }else if(['table-block','grid-block'].includes(b.type)){
    const rows=b.children.map(get),grid=rows.map(r=>r?.children.map(get)??[]);
-   if(format==='html')result=`<table id="${escapeHtml(b.localId)}">${b.children.map(visit).join('')}</table>`;
+   if(format==='html')result=`<table id="${escapeHtml(b.localId)}">${b.children.map(edge => visit(edge)).join('')}</table>`;
    else {
     const simple=grid.length>0&&grid[0].length>0&&grid.every(row=>row.length===grid[0].length&&row.every(c=>c&&!(Number((c.data.metadata as any)?.htmlTableCell?.colSpan)>1)&&!(Number((c.data.metadata as any)?.htmlTableCell?.rowSpan)>1)&&c.children.length===1&&get(c.children[0])?.type==='standoff-editor-block'&&!get(c.children[0])?.children.length));
-    const values=grid.map(row=>row.map(c=>c?c.children.map(visit).join(' / '):'').map(v=>v.replace(/\r?\n/g,' ')));
+    const values=grid.map(row=>row.map(c=>c?c.children.map(edge => visit(edge)).join(' / '):'').map(v=>v.replace(/\r?\n/g,' ')));
     const headers=grid[0]?.every(c=>(c?.data.metadata as any)?.htmlTableCell?.header)||(meta.headerRows===1);
     if(format==='markdown'&&simple&&headers){const lines=values.map(row=>`| ${row.join(' | ')} |`);lines.splice(1,0,`| ${grid[0].map(()=>'---').join(' | ')} |`);result=lines.join('\n');}
     else {if(format==='markdown')warn('table-fallback','Complex or headerless tables are exported as labeled plain rows.');result=values.map((row,i)=>(format==='markdown'?`Row ${i+1}: `:'')+row.join('\t')).join('\n');}
@@ -130,9 +132,14 @@ export function exportFragment(input:MutableFragment,format:ExportFormat,title='
   else if(['table-cell-block','grid-cell-block'].includes(b.type)){
    const cell=meta.htmlTableCell??{},tag=cell.header?'th':'td';if(cell.colSpan>1||cell.rowSpan>1)warn('table-spans','Merged table layout was previously flattened; span metadata is not reapplied.');
    result=format==='html'?`<${tag}>${children()}</${tag}>`:children();
-  }else if(['document-block','container-block','book-block','side-block'].includes(b.type))result=format==='html'?`<div id="${escapeHtml(b.localId)}">${children()}</div>`:children();
+  }else if(['document-block','container-block','checkbox-block','book-block','side-block'].includes(b.type))result=format==='html'?`<div id="${escapeHtml(b.localId)}">${children()}</div>`:children();
   else {warn('block-fallback',`Presentation of ${b.type} is flattened or represented by a label.`);const label=`[${b.type}]`;result=(format==='html'?`<p id="${escapeHtml(b.localId)}">${escapeHtml(label)}</p>`:format==='markdown'?md(label):label)+(b.inline?inline(b):'')+children();}
   for(const [name,relation]of Object.entries(b.relations)){warn('relation-layout',`Related ${name} content is exported after its owner.`);result+=(format==='html'?`<aside><p>${escapeHtml(name)}</p>${visit(relation)}</aside>`:`\n\n[${format==='markdown'?md(name):name}]\n${visit(relation)}`);}
+  const checked=b.type==='checkbox-block'?b.data.checked===true:typeof b.data.checked==='boolean'?b.data.checked:undefined;
+  if(checked!==undefined&&!inListItem) {
+   result=format==='html'?`<ul><li><input type="checkbox" disabled${checked?' checked':''}>${result}</li></ul>`:
+    `${format==='markdown'?'- ':''}[${checked?'x':' '}] ${result.replace(/\n/g,'\n      ')}`;
+  }
   return result;
  };
  const body=(options.rootOnly?f.roots.slice(0,1):f.roots).map(r=>visit(r.placement)).join(format==='html'?'':format==='text'?'\n':'\n\n');

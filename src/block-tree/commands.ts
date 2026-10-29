@@ -470,7 +470,7 @@ export class TreeCommands {
   /** Wrap one existing TextBlock without intermediate insert/move transactions.
    * Its placement, owned subtree and definition owner stay intact in the same
    * resource. Optional prefix removal uses the ordinary native inline planner. */
-  wrapTextBlockInList(key: NodeKey | PlacementKey, prefixLength = 0, list: AutomaticListMetadata = { ordered: false }): PlacementKey {
+  wrapTextBlockInList(key: NodeKey | PlacementKey, prefixLength = 0, list: AutomaticListMetadata = { ordered: false }, checked?: boolean): PlacementKey {
     if (!isAutomaticListMetadata(list)) throw new TreeCommandError("Invalid automatic list metadata");
     const state = this.pending?.draft ?? this.repository.readState();
     const sourceKey = this.placementKey(key, state), source = state.placements[sourceKey];
@@ -486,6 +486,11 @@ export class TreeCommands {
     const children = [...parent.children];
     children[location.index!] = wrapper.key;
     const operations = prefixLength ? this.inlineReplacementOperations(state, sourceKey, 0, prefixLength, "") : [];
+    if (checked !== undefined) {
+      const owner = operations.find(op => op.kind === 'put-content' && op.record.key === content.key);
+      if (!owner || owner.kind !== 'put-content') throw new TreeCommandError('Task conversion requires a native prefix edit');
+      owner.record.payload.checked = checked;
+    }
     operations.push(
       { kind: "put-content", record: this.updatedChildren(decoded.state.contents[wrapper.contentKey], [sourceKey]) },
       { kind: "put-placement", record: wrapper },
@@ -1033,7 +1038,7 @@ export class TreeCommands {
     })[0];
   }
 
-  insertEmptyStandoffSibling(key: NodeKey | PlacementKey, side: "before" | "after"): PlacementKey {
+  insertEmptyStandoffSibling(key: NodeKey | PlacementKey, side: "before" | "after", checked?: boolean): PlacementKey {
     const state = this.pending?.draft ?? this.repository.readState();
     const placementKey = this.placementKey(key, state);
     const content = state.contents[state.placements[placementKey].contentKey];
@@ -1043,7 +1048,7 @@ export class TreeCommands {
     const parent = state.contents[location.ownerContentKey];
     const decoded = decodeDetachedSubtree({
       ...clone(content.payload), id: createBlockId(), type: "standoff-editor-block",
-      text: "", standoffProperties: [], children: [],
+      text: "", standoffProperties: [], children: [], ...(checked === undefined ? {} : { checked }),
     });
     const children = [...parent.children];
     children.splice(location.index! + (side === "after" ? 1 : 0), 0, decoded.rootPlacementKey);
@@ -1055,7 +1060,7 @@ export class TreeCommands {
     return decoded.rootPlacementKey;
   }
 
-  splitStandoff(key: NodeKey | PlacementKey, index: number): PlacementKey {
+  splitStandoff(key: NodeKey | PlacementKey, index: number, checked?: boolean): PlacementKey {
     const state = this.pending?.draft ?? this.repository.readState();
     const placementKey = this.placementKey(key, state);
     const placement = state.placements[placementKey];
@@ -1103,6 +1108,7 @@ export class TreeCommands {
     const leftPayload: Record<string, unknown> = { ...clone(content.payload), standoffProperties: leftAnnotations };
     const rightPayload: Record<string, unknown> = { ...clone(content.payload), standoffProperties: rightAnnotations };
     rightPayload.id = createBlockId();
+    if (checked !== undefined) rightPayload.checked = checked;
     operations.push({ kind: "put-content", record: {
       ...clone(content),
       payload: leftPayload,

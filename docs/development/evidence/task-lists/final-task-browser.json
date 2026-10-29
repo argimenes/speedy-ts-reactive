@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "Real typed [ ]  creates a task with the caret at its start",
+    "Single Undo restores exact literal - [ ] ",
+    "Redo restores [ ]  completion",
+    "Real typed [x]  creates a task with the caret at its start",
+    "Single Undo restores exact literal - [x] ",
+    "Redo restores [x]  completion",
+    "Real typed [X]  creates a task with the caret at its start",
+    "Single Undo restores exact literal - [X] ",
+    "Redo restores [X]  completion",
+    "Real click on task text does not toggle completion",
+    "Checkbox mouse activation preserves text focus and selection",
+    "Native Space toggles the focused checkbox",
+    "Enter creates an unchecked task and Tab nests it",
+    "Checkbox disclosure and Block handle hit areas do not overlap",
+    "Disclosure collapses descendants without toggling completion",
+    "Outermost outdent retains a standalone task and its collapsed descendants",
+    "Native serialization and reload retain task completion and collapsed descendants",
+    "No browser exceptions"
+  ],
+  "errors": [],
+  "realFlintComponents": true
+}

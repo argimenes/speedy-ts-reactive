@@ -1,0 +1,32 @@
+{
+  "lerOpen": false,
+  "lerReads": 0,
+  "lerSearches": 0,
+  "webViews": 0,
+  "workerStarts": 0,
+  "academicViews": 0,
+  "serviceRequests": 0,
+  "pointerSpotlight": false,
+  "caretMode": "normal",
+  "characters": 926,
+  "paragraphs": 8,
+  "sync": {
+    "median": 9.800000071525574,
+    "p95": 13.600000023841858,
+    "max": 16.299999952316284
+  },
+  "settled": {
+    "median": 18.299999952316284,
+    "p95": 24.5,
+    "max": 24.600000023841858
+  },
+  "frame": {
+    "median": 33.300000071525574,
+    "p95": 34.199999928474426,
+    "max": 65.89999997615814
+  },
+  "snapshots": 0,
+  "statusReads": 0,
+  "vaultRows": 0,
+  "restored": true
+}

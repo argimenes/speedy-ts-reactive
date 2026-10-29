@@ -36,6 +36,7 @@ export function registerInputActions(registry: BindingRegistry, platform = typeo
   add("annotation.open", "Inspect annotations", "Open annotations encompassing the caret's left Cell.", "Annotations", "editor/standoff", [k(".", "Ctrl"), k("/", "Ctrl"), k("/", "Meta"), { kind: "custom", name: "inspect-annotation" }]);
   for (const side of ["left", "right"] as const) add(`margin.${side}`, `Open ${side} margin`, "Create or focus the margin owned by the current Block.", "Blocks & Margins", "editor/standoff", [k(side === "left" ? "l" : "r", "Ctrl", "Shift")]);
   add("text.paragraph", "New paragraph", "Split at the caret or insert an empty neighbouring paragraph.", "Text Editing", "editor/standoff", [k("Enter")]);
+  add('task.toggle', 'Toggle task completion', 'Toggle the task containing the caret.', 'Text Editing', 'editor/standoff', []);
   add('list.indent', 'Create list / indent item', 'Make the TextBlock a list item, or nest it under the preceding item.', 'Text Editing', 'editor/standoff', [k('Tab')]);
   add('list.outdent', 'Outdent list item', 'Move a list item up one level; leave the list at its outermost level.', 'Text Editing', 'editor/standoff', [k('Tab', 'Shift')]);
   add("resource.processAtCaret", "Process resource URI", "Process the URI under the caret using the resource-paste handlers, preserving surrounding text.", "Text Editing", "editor/standoff", [k("Enter", primary, "Shift")], ["resource", "clipboard"]);

@@ -142,7 +142,8 @@ export function importSemanticHtml(tree: HtmlNode, baseUrl?: string): { fragment
     for (const child of node.childNodes ?? []) {
       if (child.tagName === 'li') {
         const value = attribute(child, 'value');
-        const item = makeBlock('container-block', { metadata: { htmlListItem: { ...(value !== undefined ? { value: integer(value, start) } : {}) } } }, flow(child.childNodes ?? [], marksFor(child, marks), preformatted(child, preserve), true));
+        const task = leadingTaskCheckbox(child.childNodes ?? []);
+        const item = makeBlock('container-block', { ...(task.checked === undefined ? {} : { checked: task.checked }), metadata: { htmlListItem: { ...(value !== undefined ? { value: integer(value, start) } : {}) } } }, flow(task.nodes, marksFor(child, marks), preformatted(child, preserve), true));
         children.push(item.edge);
       } else if (child.nodeName === '#text' && !child.value?.trim()) continue;
       else { warn('Non-item list content was retained without a list marker.'); children.push(...flow([child], marks, preserve)); }
@@ -171,4 +172,18 @@ export function importSemanticHtml(tree: HtmlNode, baseUrl?: string): { fragment
   const roots = flow(tree.childNodes ?? []);
   f.roots = roots.map((placement, index) => ({ placement, openStart: !closed.has(placement), openEnd: !closed.has(placement), clippedStart: false, clippedEnd: false, ...(index < roots.length - 1 ? { separatorAfter: 'paragraph' as const } : {}) }));
   return { ...(roots.length ? { fragment: validateFragment(f) } : {}), ...(warnings.size ? { notice: [...warnings].join(' ') } : {}) };
+}
+
+/** Consume only one leading task checkbox as inert data. All other active HTML
+ * stays under the existing sanitizer; no input attributes become executable. */
+function leadingTaskCheckbox(nodes: HtmlNode[], depth = 0): { nodes: HtmlNode[]; checked?: boolean } {
+  const index = nodes.findIndex(n => !(n.nodeName === '#text' && !n.value?.trim()));
+  const first = nodes[index];
+  if (first?.tagName === 'input' && attribute(first, 'type')?.toLowerCase() === 'checkbox')
+    return { nodes: nodes.filter((_, i) => i !== index), checked: attribute(first, 'checked') !== undefined };
+  if (depth < 2 && first && ['p', 'div'].includes(first.tagName ?? '')) {
+    const inner = leadingTaskCheckbox(first.childNodes ?? [], depth + 1);
+    if (inner.checked !== undefined) return { checked: inner.checked, nodes: nodes.map((n, i) => i === index ? { ...n, childNodes: inner.nodes } : n) };
+  }
+  return { nodes };
 }

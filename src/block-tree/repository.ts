@@ -1,3 +1,4 @@
+import { taskStateChangeFor } from './task-state-plan';
 import { listWrapChangeFor, type ListWrapChange } from "./list-wrap-plan";
 import { recordOperations } from "./record-batch";
 import {documentTabParentFor} from './document-tab-plan';
@@ -268,6 +269,9 @@ type CaptureAttempt = {
 type HistorySubscriber = { listener: (event: DeepReadonly<HistoryChanges>) => void; onError: CommitSubscriber["onError"] };
 
 export interface RepositoryChange {
+  /** Lightweight identity/cause for occurrence-local history restoration.
+   * Does not enable exact-record capture on ordinary typing. */
+  commit?: { id: string; cause: CommitMetadata['cause'] };
   annotationOrigins?: ReadonlyMap<ContentKey, readonly (number | null)[]>;
   label: string;
   previousContents: Map<ContentKey, ContentRecord | undefined>;
@@ -278,6 +282,7 @@ export interface RepositoryChange {
   /** Validated empty-leaf membership delta, including undo/redo. */
   emptyParagraph?: EmptyParagraphChange;
   listWrap?: ListWrapChange;
+  taskStateOwner?: ContentKey;
   /** Fully validated append of fresh subtrees; existing records/edges are unchanged. */
   appendedChildrenOwner?: ContentKey;
 }
@@ -291,7 +296,7 @@ export class CanonicalRepository {
   private subscribers = new Set<RepositorySubscriber>();
   private beforeSubscribers = new Set<RepositorySubscriber>();
   private changeSubscribers = new Set<(change: RepositoryChange) => void>();
-  private beforeChangeSubscribers = new Set<(label: string) => void>();
+  private beforeChangeSubscribers = new Set<(label: string, cause?: CommitMetadata['cause']) => void>();
   private references: ReferenceBookkeeping;
   private boundary?: ResourceBoundaryBookkeeping;
   private locations = new Map<PlacementKey, Location>();
@@ -354,7 +359,7 @@ export class CanonicalRepository {
     return () => this.changeSubscribers.delete(subscriber);
   }
 
-  subscribeBeforeChanges(subscriber: (label: string) => void): () => void {
+  subscribeBeforeChanges(subscriber: (label: string, cause?: CommitMetadata['cause']) => void): () => void {
     this.beforeChangeSubscribers.add(subscriber);
     return () => this.beforeChangeSubscribers.delete(subscriber);
   }
@@ -433,6 +438,11 @@ export class CanonicalRepository {
     if (!operations.length) return;
     const placementDelta = this.placementIdentity.validateCommit(operations);
     const bulk = operations.some(op => op.kind === "record-batch");
+    const taskStateOwner = !bulk && taskStateChangeFor(this.readState(), operations);
+    if (taskStateOwner) {
+      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, undefined, placementDelta, undefined, undefined, taskStateOwner);
+      return;
+    }
     const inlineOwner = !bulk && inlineOwnerFor(this.readState(), operations, this.references);
     if (inlineOwner) {
       this.commitInline(label, operations, inlineOwner, recordHistory, metadata, undefined, undefined, placementDelta);
@@ -455,7 +465,7 @@ export class CanonicalRepository {
       return;
     }
     const current = this.readState();
-    for (const subscriber of this.beforeChangeSubscribers) subscriber(label);
+    for (const subscriber of this.beforeChangeSubscribers) subscriber(label, metadata.cause);
     for (const subscriber of this.beforeSubscribers) subscriber(this.snapshot(), label);
     const validation: BoundaryValidation | undefined = this.boundary ? {} : undefined;
     const { next, inverse } = planChangedRecords(current, operations, validation);
@@ -516,11 +526,11 @@ export class CanonicalRepository {
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
       const origins = annotationOrigins(operations);
-      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, appendedChildrenOwner, annotationOrigins: origins });
+      for (const subscriber of this.changeSubscribers) subscriber({ commit: { id: commitId, cause: metadata.cause }, label, previousContents, appendedChildrenOwner, annotationOrigins: origins });
     });
   }
 
-  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta, emptyParagraph?: EmptyParagraphChange, listWrap?: ListWrapChange): void {
+  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta, emptyParagraph?: EmptyParagraphChange, listWrap?: ListWrapChange, taskStateOwner?: ContentKey): void {
     const current = this.readState();
     // Capture inverse data before changing any reactive records.
     const inverse = operations.map((operation) => inverseFor(current, operation)).reverse();
@@ -544,7 +554,7 @@ export class CanonicalRepository {
         operation.record.revision = previous.revision + 1;
       }
     }
-    for (const subscriber of this.beforeChangeSubscribers) subscriber(label);
+    for (const subscriber of this.beforeChangeSubscribers) subscriber(label, metadata.cause);
     for (const subscriber of this.beforeSubscribers) subscriber(this.snapshot(), label);
     const identityDelta = this.identity?.validateCommit(prepared);
     const capture = this.prepareCapture(current, prepared, metadata);
@@ -592,7 +602,7 @@ export class CanonicalRepository {
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
       const origins = annotationOrigins(operations);
-      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph, listWrap, annotationOrigins: origins });
+      for (const subscriber of this.changeSubscribers) subscriber({ commit: { id: commitId, cause: metadata.cause }, label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph, listWrap, taskStateOwner, annotationOrigins: origins });
     });
   }
 

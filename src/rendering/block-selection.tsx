@@ -1,3 +1,4 @@
+import { taskState } from '../runtime/tasks';
 import { surfaceCommands } from '../runtime/block-surfaces';
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { Dynamic } from "solid-js/web";
@@ -141,11 +142,12 @@ export function BlockSelectionHandle(props: { editor: ReactiveEditor; nodeKey: s
     if(node)editor.projections.get(node.viewId)?.structureVersion();
     if(!mountedBlock)return;
     const {root,button}=mountedBlock;
+    const task = (editor.features.taskLists || node?.viewType === "checkbox-block") && taskState(node) !== undefined;
     queueMicrotask(() => {
       if (!root.contains(button)) return;
       let depth=0;
       for(let parent=root.parentElement;parent;parent=parent.parentElement)if(parent.matches('.structural-container,.reversible-surface'))depth++;
-      button.style.left=`${-19-depth*20}px`;
+      button.style.left=`${-(task ? 43 : 19)-depth*20}px`;
     });
   });
   return null;

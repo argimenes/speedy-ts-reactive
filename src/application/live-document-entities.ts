@@ -67,6 +67,7 @@ class Inventory {
     this.links.delete(key);this.invalid.delete(key);this.clearCells(key);
   }
   private changed(change: RepositoryChange) {
+    if (change.taskStateOwner) return;
     const state = this.editor.repository.readState(), affectedOwners=new Set<string>();
     for (const [key,before] of change.previousContents) {
       if (this.members.has(key) || this.definitionUsed(key)) {

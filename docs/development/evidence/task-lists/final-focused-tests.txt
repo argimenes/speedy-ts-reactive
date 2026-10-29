@@ -1,0 +1,20 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/rendering/task-prefix-comparison.test.tsx (3 tests) 308ms
+ ✓ src/rendering/standoff-editor-view.test.tsx (26 tests) 3485ms
+   ✓ StandoffEditorView > removes an empty empty paragraph through input without repository scans 739ms
+   ✓ StandoffEditorView > removes an previous empty paragraph through input without repository scans 469ms
+   ✓ StandoffEditorView > removes an next empty paragraph through input without repository scans 621ms
+ ✓ src/rendering/task-lists.test.tsx (18 tests) 2454ms
+   ✓ converts a fresh task [ ]  with exact literal Undo and identity 461ms
+   ✓ keeps existing list items, pasted candidates, disabled feature and interrupted candidates literal 495ms
+ ✓ src/rendering/list-prefix.test.tsx (67 tests) 4332ms
+   ✓ converts -, retains identity and recovers the empty-item caret 312ms
+   ✓ rejects long unmatched paragraphs with a constant number of Cell reads 738ms
+
+ Test Files  4 passed (4)
+      Tests  114 passed (114)
+   Start at  13:30:58
+   Duration  22.19s (transform 14.04s, setup 0ms, collect 47.56s, tests 10.58s, environment 8.15s, prepare 1.34s)
+

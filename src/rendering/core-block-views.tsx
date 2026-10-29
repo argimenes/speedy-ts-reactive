@@ -1,3 +1,5 @@
+import { TaskControl, StandaloneTaskDisclosure } from './task-control';
+import { taskState } from '../runtime/tasks';
 import { ReverseInformation } from './reversible-surface';
 import { listItemChildren, listItemOwner, setListItemCollapsed } from '../runtime/text-lists';
 import { WindowRestorationBoundary } from "./window-restoration";
@@ -52,7 +54,7 @@ function data(nodeKey: NodeKey, node: () => any) {
 }
 
 export function GenericContainerView(props: BlockViewProps) {
-  const { projection } = useReactiveView();
+  const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   const appearance = createMemo(() => blockAppearance(node()));
   let root!: HTMLDivElement;
@@ -60,11 +62,14 @@ export function GenericContainerView(props: BlockViewProps) {
   return (
     <div
       ref={root}
+      classList={{ "reactive-task-row": editor.features.taskLists && taskState(node()) !== undefined, "reactive-task-row--checked": editor.features.taskLists && taskState(node()) === true }}
+      data-task-item={editor.features.taskLists && taskState(node()) !== undefined ? props.nodeKey : undefined}
       class={`abstract-block reactive-generic-block ${(node()?.payload.metadata as any)?.structuralContainer ? "structural-container" : ""} ${appearance().classes.join(" ")}`}
       style={{ ...appearance().style, ...(node()?.viewType === "container-block" && (node()?.payload.metadata as any)?.height ? { height: `${Number((node()?.payload.metadata as any).height)}px`, "overflow-y": "auto" } : {}) }}
       tabIndex={-1}
       {...data(props.nodeKey, node)}
     >
+      <Show when={editor.features.taskLists && taskState(node()) !== undefined}><StandaloneTaskDisclosure nodeKey={props.nodeKey} /><TaskControl nodeKey={props.nodeKey} /></Show>
       <RelationBlocks parentKey={props.nodeKey} />
       <ChildBlocks parentKey={props.nodeKey} />
     </div>
@@ -123,6 +128,7 @@ export function ListView(props: BlockViewProps) {
 function ListItem(props: { nodeKey: NodeKey; marker: string }) {
   const { editor, projection } = useReactiveView();
   const children = createMemo(() => listItemChildren(projection, props.nodeKey));
+  const task = () => (editor.features.taskLists || projection.state.nodes[props.nodeKey]?.viewType === "checkbox-block") && taskState(projection.state.nodes[props.nodeKey]) !== undefined;
   const collapsed = () => !!(projection.state.nodes[props.nodeKey]?.payload.metadata as any)?.listCollapsed;
   const toggle = () => {
     const next = !collapsed();
@@ -140,8 +146,8 @@ function ListItem(props: { nodeKey: NodeKey; marker: string }) {
     }
     setListItemCollapsed(editor, props.nodeKey, next);
   };
-  return <div role="listitem" class="reactive-imported-list-item" data-list-item={props.nodeKey}>
-    <Show when={children().length} fallback={<span class="reactive-imported-list-marker" contentEditable={false} aria-hidden="true">{props.marker}</span>}>
+  return <div role="listitem" class="reactive-imported-list-item" classList={{ "reactive-task-list-item": task() }} data-list-item={props.nodeKey}>
+    <Show when={children().length} fallback={<span class="reactive-imported-list-marker" contentEditable={false} aria-hidden="true">{task() ? "" : props.marker}</span>}>
       <button type="button" class="reactive-imported-list-marker reactive-list-toggle" classList={{ 'reactive-list-toggle--collapsed': collapsed() }}
         contentEditable={false} data-native-context-menu aria-expanded={!collapsed()} aria-controls={children().map(k => `list-${k}`).join(' ')}
         aria-label={collapsed() ? 'Expand child list' : 'Collapse child list'} title={collapsed() ? 'Expand child list' : 'Collapse child list'}
@@ -150,7 +156,7 @@ function ListItem(props: { nodeKey: NodeKey; marker: string }) {
           if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey || !['Enter', ' '].includes(e.key)) return;
           e.preventDefault(); e.stopPropagation(); if (!e.repeat) toggle();
         }}
-      >{props.marker}</button>
+      >{task() ? (collapsed() ? "▸" : "▾") : props.marker}</button>
     </Show>
     <BlockOutlet nodeKey={props.nodeKey} />
   </div>;
@@ -183,29 +189,13 @@ export function TableCellView(props: BlockViewProps) {
 export function CheckboxView(props: BlockViewProps) {
   const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
-  let root!: HTMLLabelElement;
-  let checkbox!: HTMLInputElement;
-  let dispose: (() => void) | undefined;
-  onMount(() => {
-    dispose = editor.mounts.register(props.nodeKey, {
-      root,
-      focusElement: checkbox,
-      inputPolicy: "control",
-      focus: () => checkbox.focus({ preventScroll: true }),
-    });
-  });
-  onCleanup(() => dispose?.());
-  return (
-    <label ref={root} class="abstract-block reactive-checkbox" {...data(props.nodeKey, node)}>
-      <input
-        ref={checkbox}
-        type="checkbox"
-        checked={Boolean(node()?.payload.checked)}
-        onChange={(event) => editor.commands.setPayloadField(props.nodeKey, "checked", event.currentTarget.checked, "Toggle Checkbox")}
-      />
-      <span class="reactive-checkbox__content"><ChildBlocks parentKey={props.nodeKey} /></span>
-    </label>
-  );
+  let root!: HTMLDivElement;
+  useContainerMount(props.nodeKey, () => root);
+  return <div ref={root} class="abstract-block reactive-checkbox reactive-task-row" data-task-item={props.nodeKey}
+    classList={{ 'reactive-task-row--checked': taskState(node()) === true }} {...data(props.nodeKey, node)}>
+    <StandaloneTaskDisclosure nodeKey={props.nodeKey} /><TaskControl nodeKey={props.nodeKey} />
+    <div class="reactive-task-content"><ChildBlocks parentKey={props.nodeKey} /></div>
+  </div>;
 }
 
 export function TabRowView(props: BlockViewProps) {

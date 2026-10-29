@@ -59,6 +59,7 @@ function source(editor: ReactiveEditor, key: string, release: () => void) {
   let current = snapshot(editor, key), queued = false, disposed = false, rangesChanged = false;
   const listeners = new Set<Listener>();
   const stop = editor.repository.subscribeChanges(change => {
+    if (change.taskStateOwner) return;
     let relevant = false;
     const state = editor.repository.readState();
     if (change.emptyParagraph && current.dependencies.has(change.emptyParagraph.parent)) {

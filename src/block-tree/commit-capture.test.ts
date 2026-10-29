@@ -4,6 +4,24 @@ import type { RepositoryOperation, RepositoryState } from "./types";
 import { applyCapturedCommitForTest, setupCaptureSpike } from "./test-support/captured-replay";
 
 describe("repository commit results", () => {
+  it("provides lightweight edit identity and history cause without enabling record capture", () => {
+    const s = setupCaptureSpike(); s.unsubscribe();
+    const changes: import('./repository').RepositoryChange[] = [];
+    const stop = s.repository.subscribeChanges(change => changes.push(change));
+    const capture = vi.spyOn(s.repository as any, 'prepareCapture');
+    s.commands.replaceInlineRange(s.block('p').key, 1, 2, 'X');
+    s.commands.setPayloadField(s.block('q').key, 'extra', 'structural');
+    s.repository.undo(); s.repository.undo(); s.repository.redo(); s.repository.redo();
+    expect(changes).toHaveLength(6);
+    expect(new Set(changes.map(c => c.commit!.id)).size).toBe(6);
+    expect(changes[2].commit!.cause).toEqual({ kind: 'undo', sourceCommitId: changes[1].commit!.id });
+    expect(changes[3].commit!.cause).toEqual({ kind: 'undo', sourceCommitId: changes[0].commit!.id });
+    expect(changes[4].commit!.cause).toEqual({ kind: 'redo', sourceCommitId: changes[0].commit!.id });
+    expect(changes[5].commit!.cause).toEqual({ kind: 'redo', sourceCommitId: changes[1].commit!.id });
+    expect(capture.mock.results.every(result => result.value === undefined)).toBe(true);
+    capture.mockRestore(); stop(); s.view.dispose();
+  });
+
   it("links undo and redo to an edit made before capture was subscribed", () => {
     const s = setupCaptureSpike();
     s.unsubscribe();

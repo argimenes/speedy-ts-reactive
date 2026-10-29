@@ -83,3 +83,12 @@ it('tracks in-place Cell payload changes and a new edit after Undo without stale
  expect(inventory.read().rows.find(r=>r.id==='liszt')?.forms).not.toContain('LIszt');
  expect(inventory.read().rows.find(r=>r.id==='other')).toBe(unchanged);
 });
+
+it('completion-only changes do not refresh the entity inventory', async () => {
+ const {editor,node}=fixture(),inventory=liveDocumentEntities(editor,node('doc').contentKey);cleanup.push(()=>inventory.dispose());
+ const notify=vi.fn();inventory.subscribe(notify);const before=inventory.read();
+ editor.commands.setPayloadField(node('a').key,'checked',false);
+ editor.commands.setPayloadField(node('a').key,'checked',true);
+ const reads=vi.spyOn(editor.repository,'readState');await Promise.resolve();
+ expect(reads).not.toHaveBeenCalled();expect(notify).not.toHaveBeenCalled();expect(inventory.read()).toBe(before);
+});

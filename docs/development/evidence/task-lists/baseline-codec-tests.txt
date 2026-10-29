@@ -1,0 +1,48 @@
+
+ RUN  v2.1.9 /private/tmp/mutable-task-lists-baseline
+
+ ❯ src/block-tree/portable-spike/codec.test.ts (31 tests | 2 failed) 1017ms
+   × isolated portable authored Document spike > copies allocate fresh Block/placement IDs while preserving sharing inside the copied graph 95ms
+     → Portable spike: unsupported structural field
+   × isolated portable authored Document spike > preserves Unicode, inline images, authored annotation units and rich canonical copies 154ms
+     → Portable spike: unsupported structural field
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/block-tree/portable-spike/codec.test.ts > isolated portable authored Document spike > copies allocate fresh Block/placement IDs while preserving sharing inside the copied graph
+Error: Portable spike: unsupported structural field
+ ❯ requireValue src/block-tree/portable-spike/codec.ts:36:25
+     34| 
+     35| function requireValue(condition: unknown, message: string): asserts co…
+     36|   if (!condition) throw new Error(`Portable spike: ${message}`);
+       |                         ^
+     37| }
+     38| const own = (object: object, key: string) => Object.prototype.hasOwnPr…
+ ❯ fields src/block-tree/portable-spike/codec.ts:44:3
+ ❯ Module.encodePortable src/block-tree/portable-spike/codec.ts:206:52
+ ❯ roundTrip src/block-tree/portable-spike/codec.test.ts:46:39
+ ❯ src/block-tree/portable-spike/codec.test.ts:115:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/block-tree/portable-spike/codec.test.ts > isolated portable authored Document spike > preserves Unicode, inline images, authored annotation units and rich canonical copies
+Error: Portable spike: unsupported structural field
+ ❯ requireValue src/block-tree/portable-spike/codec.ts:36:25
+     34| 
+     35| function requireValue(condition: unknown, message: string): asserts co…
+     36|   if (!condition) throw new Error(`Portable spike: ${message}`);
+       |                         ^
+     37| }
+     38| const own = (object: object, key: string) => Object.prototype.hasOwnPr…
+ ❯ fields src/block-tree/portable-spike/codec.ts:44:3
+ ❯ Module.encodePortable src/block-tree/portable-spike/codec.ts:206:52
+ ❯ roundTrip src/block-tree/portable-spike/codec.test.ts:46:39
+ ❯ src/block-tree/portable-spike/codec.test.ts:138:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 29 passed (31)
+   Start at  13:28:29
+   Duration  10.48s (transform 1.94s, setup 0ms, collect 5.18s, tests 1.02s, environment 1.46s, prepare 776ms)
+

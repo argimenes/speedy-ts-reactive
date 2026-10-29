@@ -1,17 +1,18 @@
+import { taskOwner, taskState, setTaskState } from './tasks';
 import type { AutomaticListMetadata } from "../block-tree/list-wrap-plan";
 import type { BlockNode, ExistingBlockDto, NodeKey } from '../block-tree/types';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { BlockTreeProjection } from '../block-tree/projection';
 
 const isList = (node?: BlockNode) => node?.viewType === 'indented-list-block';
-const isItemContainer = (node?: BlockNode) => node?.viewType === 'container-block' && !!(node.payload.metadata as any)?.htmlListItem;
+const isItemContainer = (node?: BlockNode) => node?.viewType === 'checkbox-block' || node?.viewType === 'container-block' && (!!(node.payload.metadata as any)?.htmlListItem || taskState(node) !== undefined);
 
 /** Both current item-owned lists and older sibling-nested lists have one owner. */
 export function listItemOwner(projection: BlockTreeProjection, listKey: NodeKey): BlockNode | undefined {
   const parent = projection.parentOf(listKey);
   if (!parent) return;
   if (!isList(parent)) {
-    if (isList(projection.parentOf(parent.key))) return parent;
+    if (isList(projection.parentOf(parent.key)) || taskState(parent) !== undefined) return parent;
     return;
   }
   const index = parent.children.indexOf(listKey);
@@ -74,7 +75,7 @@ function listPrefix(editor: ReactiveEditor, source: BlockNode, caret: number): A
 }
 export function convertTypedListPrefix(editor: ReactiveEditor, key: NodeKey, caret: number): boolean {
   const source = editor.node(key);
-  if (source?.viewType !== 'standoff-editor-block' || source.inlineContent.length !== caret) return false;
+  if (source?.viewType !== 'standoff-editor-block' || source.inlineContent.length !== caret || taskState(source) !== undefined) return false;
   const rule = listPrefix(editor, source, caret);
   if (!rule || editor.crossText.range() || (editor.selections.sets[key]?.items.length ?? 0) > 1) return false;
   const projection = editor.projections.get(source.viewId)!;
@@ -87,12 +88,18 @@ export function convertTypedListPrefix(editor: ReactiveEditor, key: NodeKey, car
   }
   const properties = source.payload.standoffProperties as Record<string, any>[] | undefined;
   if (properties?.some(p => !p.isDeleted && (/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type ?? '') || p.type === 'text/superposition') && p.start <= caret && p.end >= 0)) return false;
+  const prefixCharacter = caret === 1 ? editor.node(source.inlineContent[0])?.payload.text : undefined;
   const placement = source.placementKey, viewId = source.viewId, contentKey = source.contentKey;
   // Accept the user's space as ordinary native input. The following conversion
   // is its own atomic history entry: Undo restores the complete literal marker.
   editor.commands.replaceInlineRange(key, caret, caret, ' ');
   editor.selections.mapContentEdit(contentKey, caret, caret, 1);
   wrapTextBlockInList(editor, key, caret + 1, rule);
+  if (editor.features.taskLists && caret === 1 && !rule.ordered && source.payload.checked === undefined && editor.repository.canUndo()) {
+    const literal = editor.repository.readState();
+    // Only the hyphen rule participates; asterisk task prefixes remain deferred.
+    if (prefixCharacter === "-") taskCandidates.set(editor, { placement, viewId, revision: literal.revision, text: "" });
+  }
   editor.selections.mapContentEdit(contentKey, 0, caret + 1, 0);
   const target = editor.nodeForPlacementInView(placement, viewId);
   if (target) editor.selections.setPrimary(target.key, contentKey, viewId, 0);
@@ -109,6 +116,10 @@ export function exitEmptyListItem(editor: ReactiveEditor, key: NodeKey): boolean
   if (source?.viewType !== 'standoff-editor-block' || source.inlineContent.length || source.children.length) return false;
   const projection = editor.projections.get(source.viewId)!;
   if (!isList(projection.parentOf(key))) return false;
+  if (editor.features.taskLists && taskState(source) !== undefined) {
+    editor.commands.transaction('Exit empty task', () => { setTaskState(editor, key, undefined); changeTextList(editor, key, true); });
+    return true;
+  }
   return changeTextList(editor, key, true);
 }
 
@@ -121,7 +132,7 @@ export function changeTextList(editor: ReactiveEditor, key: NodeKey, outdent: bo
   const parentOf = (node: BlockNode) => projection.parentOf(node.key);
   const parent = parentOf(source);
   if (!parent?.children.includes(key)) return false;
-  const item = isItemContainer(parent) && isList(parentOf(parent)) ? parent : source;
+  const item = (editor.features.taskLists ? taskOwner(editor, key) : undefined) ?? (isItemContainer(parent) && isList(parentOf(parent)) ? parent : source);
   const list = parentOf(item);
   const inside = isList(list);
   if (outdent && !inside) return false;
@@ -134,7 +145,11 @@ export function changeTextList(editor: ReactiveEditor, key: NodeKey, outdent: bo
     return isList(last) ? last!.placementKey : commands.insert(listDto(template), { kind: 'at', parentKey: owner.placementKey, index: commands.childrenOf(owner.placementKey).length });
   };
   if (!inside) {
-    wrapTextBlockInList(editor, key);
+    if (item.key === source.key) wrapTextBlockInList(editor, key);
+    else commands.transaction('Wrap task in list', () => {
+      const wrapper = commands.insert(listDto(), { kind: 'before', anchorKey: item.placementKey });
+      commands.move(item.placementKey, { kind: 'at', parentKey: wrapper, index: 0 });
+    });
   } else if (!outdent) {
     const index = list!.children.indexOf(item.key), previous = editor.node(list!.children[index - 1]);
     // The first item has no preceding item to become its parent.
@@ -168,7 +183,7 @@ export function changeTextList(editor: ReactiveEditor, key: NodeKey, outdent: bo
           const tail = commands.insert(listDto(list!), { kind: 'after', anchorKey: item.placementKey });
           following.forEach(k => append(tail, k));
         }
-        if (isItemContainer(item) && !Object.keys(item.ownedRelations).length) commands.unwrap(item.placementKey);
+        if (isItemContainer(item) && taskState(item) === undefined && !Object.keys(item.ownedRelations).length) commands.unwrap(item.placementKey);
       }
       if (!commands.childrenOf(list!.placementKey).length && !Object.keys(list!.ownedRelations).length) commands.remove(list!.placementKey);
     });
@@ -178,6 +193,65 @@ export function changeTextList(editor: ReactiveEditor, key: NodeKey, outdent: bo
     if (!target) return;
     editor.focus.request(target.key, { reason: 'text-list', caret: 'start' });
     if (selection) editor.mounts.get(target.key)?.restoreInlineSelection?.(selection);
+  });
+  return true;
+}
+
+
+// A bounded, occurrence-specific continuation. A revision change, navigation or
+// unrelated input invalidates it. No draft, repository scan or live transaction.
+const taskCandidates = new WeakMap<ReactiveEditor, { placement: string; viewId: string; revision: number; text: string }>();
+export function cancelTaskPrefix(editor: ReactiveEditor) { taskCandidates.delete(editor); }
+/** Arbitration with Scry's provisional first bracket. An active Scry session
+ * always owns its input; this only describes an untouched task candidate. */
+export function taskPrefixOpening(editor: ReactiveEditor, key: string, start: number, end: number): 'fresh' | 'restored' | undefined {
+  const candidate = taskCandidates.get(editor), node = editor.node(key);
+  if (!candidate || !node || start !== end || start !== candidate.text.length || node.inlineContent.length !== start ||
+      candidate.revision !== editor.repository.state.revision || node.placementKey !== candidate.placement || node.viewId !== candidate.viewId ||
+      editor.crossText.range() || (editor.selections.sets[key]?.items.length ?? 0) > 1) return;
+  if (candidate.text === '') return 'fresh';
+  if (candidate.text === '- [') return 'restored';
+}
+export function checkTaskPrefixSelection(editor: ReactiveEditor, key?: string, caret?: number) {
+  const candidate = taskCandidates.get(editor);
+  if (!candidate) return;
+  const node = key && editor.node(key);
+  if (!node || node.placementKey !== candidate.placement || node.viewId !== candidate.viewId || caret !== candidate.text.length) cancelTaskPrefix(editor);
+}
+export function continueTaskPrefix(editor: ReactiveEditor, key: string, start: number, end: number, text: string): boolean {
+  const candidate = taskCandidates.get(editor);
+  if (!candidate) return false;
+  taskCandidates.delete(editor);
+  const source = editor.node(key);
+  if (!editor.features.taskLists || !source || source.placementKey !== candidate.placement || source.viewId !== candidate.viewId ||
+      editor.repository.state.revision !== candidate.revision || start !== end || start !== candidate.text.length ||
+      source.inlineContent.length !== start || editor.crossText.range() || (editor.selections.sets[key]?.items.length ?? 0) > 1) return false;
+  let next = candidate.text + text;
+  if (!candidate.text) {
+    if (text !== '[' || !editor.repository.canUndo()) return false;
+    // Revert only the immediately preceding, known automatic conversion. Its
+    // exact native inverse restores prefix Cells and annotations. Subsequent
+    // typing creates an ordinary history branch; durable commits are not rewritten.
+    editor.repository.undo();
+    next = '- [';
+  } else if (!['- [ ', '- [x', '- [X', '- [ ]', '- [x]', '- [X]', '- [ ] ', '- [x] ', '- [X] '].includes(next) || text.length !== 1) return false;
+  const target = editor.nodeForPlacementInView(candidate.placement, candidate.viewId)!;
+  const at = target.inlineContent.length;
+  editor.commands.replaceInlineRange(target.key, at, at, text);
+  editor.selections.mapContentEdit(target.contentKey, at, at, text.length);
+  let caret = next.length;
+  if (/^- \[[ xX]\] $/.test(next)) {
+    editor.commands.wrapTextBlockInList(target.key, next.length, { ordered: false }, next[3] !== ' ');
+    editor.selections.mapContentEdit(target.contentKey, 0, next.length, 0);
+    caret = 0;
+  } else taskCandidates.set(editor, { ...candidate, text: next, revision: editor.repository.state.revision });
+  const current = editor.nodeForPlacementInView(candidate.placement, candidate.viewId)!;
+  editor.selections.setPrimary(current.key, current.contentKey, current.viewId, caret);
+  queueMicrotask(() => {
+    const node = editor.nodeForPlacementInView(candidate.placement, candidate.viewId);
+    if (!node) return;
+    editor.focus.request(node.key, { reason: 'task-prefix', caret: { start: caret, end: caret, direction: 'none' } });
+    editor.mounts.get(node.key)?.restoreInlineSelection?.({anchor:caret,head:caret});
   });
   return true;
 }

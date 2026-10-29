@@ -1,0 +1,114 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/persistence/native-resource.test.ts (15 tests) 78ms
+ ✓ src/interchange/markdown-import.test.ts (9 tests) 42ms
+ ✓ src/interchange/html-import.test.ts (14 tests) 72ms
+ ✓ src/interchange/document-interchange.test.ts (16 tests) 162ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (36 tests) 2801ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 2610ms
+stderr | src/rendering/block-selection.test.tsx > Block selection and reordering > handles drag/drop events and rejects cross-parent list moves
+Error: Uncaught [TypeError: Cannot read properties of undefined (reading 'length')]
+    at reportException (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
+    at innerInvokeEventListeners (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:353:9)
+    at invokeEventListeners (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+    at HTMLDivElementImpl._dispatch (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
+    at HTMLDivElementImpl.dispatchEvent (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
+    at HTMLDivElement.dispatchEvent (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
+    at drag (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.test.tsx:209:168)
+    at /Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.test.tsx:213:5
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/@vitest/runner/dist/index.js:533:11 TypeError: Cannot read properties of undefined (reading 'length')
+    at HTMLDivElement.drop (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.tsx:94:31)
+    at HTMLDivElement.callTheUserObjectsOperation (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
+    at invokeEventListeners (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+    at HTMLDivElementImpl._dispatch (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
+    at HTMLDivElementImpl.dispatchEvent (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
+    at HTMLDivElement.dispatchEvent (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
+    at drag (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.test.tsx:209:168)
+    at /Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.test.tsx:213:5
+    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/@vitest/runner/dist/index.js:146:14 {
+  stackStr: "TypeError: Cannot read properties of undefined (reading 'length')\n" +
+    '    at HTMLDivElement.drop (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.tsx:94:31)\n' +
+    '    at HTMLDivElement.callTheUserObjectsOperation (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)\n' +
+    '    at innerInvokeEventListeners (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)\n' +
+    '    at invokeEventListeners (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)\n' +
+    '    at HTMLDivElementImpl._dispatch (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)\n' +
+    '    at HTMLDivElementImpl.dispatchEvent (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)\n' +
+    '    at HTMLDivElement.dispatchEvent (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)\n' +
+    '    at drag (/Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.test.tsx:209:168)\n' +
+    '    at /Users/iianneill/Documents/GitHub/speedy-ts-reactive/src/rendering/block-selection.test.tsx:213:5\n' +
+    '    at file:///Users/iianneill/Documents/GitHub/speedy-ts-reactive/node_modules/@vitest/runner/dist/index.js:146:14',
+  nameStr: 'TypeError',
+  expected: 'undefined',
+  actual: 'undefined'
+}
+
+ ❯ src/rendering/block-selection.test.tsx (17 tests | 1 failed) 699ms
+   × Block selection and reordering > handles drag/drop events and rejects cross-parent list moves 37ms
+     → expected [ 'a', 'b', 'group' ] to deeply equal [ 'b', 'a', 'group' ]
+ ✓ src/rendering/reversible-surface.test.tsx (43 tests) 1293ms
+ ✓ src/rendering/block-context-menu.test.tsx (12 tests) 456ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/rendering/block-selection.test.tsx > Block selection and reordering > handles drag/drop events and rejects cross-parent list moves
+AssertionError: expected [ 'a', 'b', 'group' ] to deeply equal [ 'b', 'a', 'group' ]
+
+- Expected
++ Received
+
+  Array [
+-   "b",
+    "a",
++   "b",
+    "group",
+  ]
+
+ ❯ src/rendering/block-selection.test.tsx:214:62
+    212|     expect(drag(root("b"), "dragover").defaultPrevented).toBe(true); e…
+    213|     drag(root("b"), "drop"); drag(handle("a"), "dragend");
+    214|     expect(editor.encodeDocument().children!.map(b => b.id)).toEqual([…
+       |                                                              ^
+    215|     expect(root("b").dataset.blockDrop).toBeUndefined();
+    216|     const revision = editor.repository.state.revision; expect(editor.b…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'length')
+ ❯ HTMLDivElement.drop src/rendering/block-selection.tsx:94:31
+     92|       drag.dropped = true;
+     93|       event.preventDefault(); event.stopPropagation();
+     94|       if (event.dataTransfer?.files.length || Array.from(event.dataTra…
+       |                               ^
+     95|         selection.setMessage('Mixed internal Block and external file d…
+     96|         if (drag.indicator) delete drag.indicator.dataset.blockDrop;
+ ❯ HTMLDivElement.callTheUserObjectsOperation node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30
+ ❯ innerInvokeEventListeners node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25
+ ❯ invokeEventListeners node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3
+ ❯ HTMLDivElementImpl._dispatch node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9
+ ❯ HTMLDivElementImpl.dispatchEvent node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17
+ ❯ HTMLDivElement.dispatchEvent node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34
+ ❯ drag src/rendering/block-selection.test.tsx:209:168
+ ❯ src/rendering/block-selection.test.tsx:213:5
+ ❯ node_modules/@vitest/runner/dist/index.js:146:14
+
+This error originated in "src/rendering/block-selection.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "handles drag/drop events and rejects cross-parent list moves". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  1 failed | 7 passed (8)
+      Tests  1 failed | 161 passed (162)
+     Errors  1 error
+   Start at  15:10:39
+   Duration  7.25s (transform 6.17s, setup 0ms, collect 18.30s, tests 5.60s, environment 6.87s, prepare 959ms)
+

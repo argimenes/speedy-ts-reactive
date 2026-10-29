@@ -1,0 +1,224 @@
+{
+  "observations": {
+    "typingBefore": {
+      "samples": 40,
+      "characters": 926,
+      "documentCharacters": 15734,
+      "sync": {
+        "median": 5,
+        "p95": 8.799999952316284,
+        "max": 9.700000047683716
+      },
+      "settled": {
+        "median": 9.899999976158142,
+        "p95": 14.299999952316284,
+        "max": 14.899999976158142
+      },
+      "frame": {
+        "median": 16.700000047683716,
+        "p95": 18.100000023841858,
+        "max": 18.200000047683716
+      },
+      "snapshots": 0,
+      "builds": 0,
+      "requests": 0,
+      "statusReads": 0,
+      "restored": true
+    },
+    "core": {
+      "identity": true,
+      "retainedRoot": true,
+      "text": "Alpha  Beta",
+      "caret": {
+        "anchor": 6,
+        "head": 6
+      },
+      "ownedRelation": 1,
+      "annotations": 1,
+      "undo": {
+        "text": "Alpha /c2 Beta",
+        "caret": {
+          "anchor": 9,
+          "head": 9
+        },
+        "ordinary": true
+      },
+      "redoCaret": {
+        "anchor": 6,
+        "head": 6
+      },
+      "counts": [
+        4,
+        2
+      ],
+      "cellWidths": [
+        507,
+        507
+      ],
+      "verticalFlow": [
+        601.953125,
+        628.25,
+        654.546875
+      ],
+      "moveBefore": true
+    },
+    "continuity": {
+      "swap": true,
+      "undoSwap": true,
+      "redoSwap": true,
+      "transfer": true,
+      "undoTransfer": true,
+      "dissolve": true,
+      "listPreserved": true,
+      "undoDissolve": true,
+      "rowMove": true,
+      "undoRowMove": true,
+      "failureRejected": true,
+      "failureContinuity": true,
+      "failureAtomic": true,
+      "noParking": true,
+      "trace": [
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        },
+        {
+          "dom": true,
+          "window": true,
+          "document": true,
+          "sentinel": true
+        }
+      ]
+    },
+    "typingAfter": {
+      "samples": 40,
+      "characters": 926,
+      "documentCharacters": 15910,
+      "sync": {
+        "median": 4.899999976158142,
+        "p95": 5.799999952316284,
+        "max": 5.800000071525574
+      },
+      "settled": {
+        "median": 9.899999976158142,
+        "p95": 11,
+        "max": 11
+      },
+      "frame": {
+        "median": 16.700000047683716,
+        "p95": 18.600000023841858,
+        "max": 18.700000047683716
+      },
+      "snapshots": 0,
+      "builds": 0,
+      "requests": 0,
+      "statusReads": 0,
+      "restored": true
+    },
+    "structural": {
+      "samplesPerPath": 12,
+      "warmupsPerPath": 2,
+      "selectedCharacters": 926,
+      "documentCharacters": 16850,
+      "legacy": {
+        "median": 530.2000000476837,
+        "p95": 564.1000000238419,
+        "max": 564.1000000238419
+      },
+      "table": {
+        "median": 496.39999997615814,
+        "p95": 570.1999999284744,
+        "max": 570.1999999284744
+      },
+      "preflight": {
+        "median": 0.20000004768371582,
+        "p95": 0.2999999523162842,
+        "max": 0.2999999523162842
+      },
+      "snapshots": {
+        "legacy": 12,
+        "table": 12
+      }
+    },
+    "typingInside": {
+      "samples": 40,
+      "characters": 926,
+      "documentCharacters": 16850,
+      "sync": {
+        "median": 5.299999952316284,
+        "p95": 5.899999976158142,
+        "max": 6
+      },
+      "settled": {
+        "median": 11.100000023841858,
+        "p95": 13.299999952316284,
+        "max": 14.299999952316284
+      },
+      "frame": {
+        "median": 16.699999928474426,
+        "p95": 17.899999976158142,
+        "max": 18.199999928474426
+      },
+      "snapshots": 0,
+      "builds": 0,
+      "requests": 0,
+      "statusReads": 0,
+      "restored": true
+    }
+  },
+  "errors": [],
+  "realFlintComponents": true,
+  "fixture": "vaults/imported/documents/edgar-allan-poe/masque-of-the-red-death-[1c48f303].ink",
+  "directCells": true,
+  "scope": "Increment 1 API, not slash/UI or release qualification"
+}
