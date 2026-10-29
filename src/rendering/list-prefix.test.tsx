@@ -14,6 +14,12 @@ const paragraph = (id = 'source', text = '-'): ExistingBlockDto => ({ id, type: 
 const prefixes = ['-', '*', '1.', '3.', '123456789.', '9007199254740991.', '0003.'];
 const metadataFor = (prefix: string) => prefix.endsWith('.') ? { ordered: true, start: Number(prefix.slice(0, -1)) } : { ordered: false };
 const list = (children: ExistingBlockDto[]): ExistingBlockDto => ({ type: 'indented-list-block', children });
+const table = (family: string, children: ExistingBlockDto[]): ExistingBlockDto => ({ id: 'table', type: `${family}-block`, children: [
+  { type: `${family}-row-block`, children: [
+    { id: 'cell', type: `${family}-cell-block`, children },
+    { id: 'neighbour', type: `${family}-cell-block`, children: [paragraph('other', 'untouched')] },
+  ] },
+] });
 function setup(children = [paragraph(), paragraph('other', 'untouched')]) {
   const editor = new ReactiveEditor({ type: 'document-block', children }); registerCoreViews(editor);
   const projection = editor.createView('prefix'), host = document.body.appendChild(document.createElement('div'));
@@ -39,6 +45,41 @@ it.each(prefixes)('converts %s, retains identity and recovers the empty-item car
   expect(document.activeElement).toBe(f.mount().focusElement); expect(f.mount().captureInlineSelection!()).toEqual({ anchor: 0, head: 0 });
   expect(f.host.querySelector('.reactive-imported-list-marker')?.textContent).toBe(prefix.endsWith('.') ? `${Number(prefix.slice(0, -1))}.` : '•');
   await f.input('item'); expect(f.text()).toBe('item');
+});
+
+it.each(['table', 'grid'].flatMap(family => ['-', '1.'].flatMap(prefix => [false, true].map(inList => ({ family, prefix, inList })))))
+('converts $prefix inside a $family cell (outer list=$inList) without changing surrounding structure', async ({ family, prefix, inList }) => {
+  const layout = table(family, [paragraph('source', '')]);
+  const f = setup(inList ? [list([{ type: 'container-block', metadata: { htmlListItem: {} }, children: [layout] }])] : [layout]);
+  const source = f.node(), root = f.mount().root, cell = f.node('cell'), neighbour = f.node('other');
+  for (const ch of prefix) await f.input(ch);
+  const snapshot = vi.spyOn(f.editor.repository, 'snapshot'), build = vi.spyOn(f.projection as any, 'build');
+  const indexes = vi.spyOn(f.editor.repository as any, 'rebuildReferences');
+  await f.input(' ');
+  const wrapper = f.projection.parentOf(source.key)!;
+  expect(wrapper.viewType).toBe('indented-list-block');
+  expect(wrapper.payload.metadata).toMatchObject({ htmlList: metadataFor(prefix) });
+  expect(f.projection.parentOf(wrapper.key)?.placementKey).toBe(cell.placementKey);
+  expect(f.node().placementKey).toBe(source.placementKey); expect(f.mount().root).toBe(root);
+  expect(f.mount().captureInlineSelection!()).toEqual({ anchor: 0, head: 0 });
+  expect(f.node('other').placementKey).toBe(neighbour.placementKey);
+  f.editor.repository.undo(); await tick(); expect(f.text()).toBe(prefix+' ');
+  expect(f.projection.parentOf(source.key)?.placementKey).toBe(cell.placementKey);
+  f.editor.repository.redo(); await tick(); expect(f.projection.parentOf(source.key)?.placementKey).toBe(wrapper.placementKey);
+  expect(snapshot).not.toHaveBeenCalled(); expect(build).not.toHaveBeenCalled(); expect(indexes).not.toHaveBeenCalled();
+  f.focus(0); await f.input('first'); await f.enter(); await f.input('second');
+  expect(f.editor.node(wrapper.key)?.children).toHaveLength(2);
+  await f.enter(); await f.enter();
+  expect(f.projection.parentOf(f.editor.focus.state.focusedKey!)?.placementKey).toBe(cell.placementKey);
+});
+
+it.each(['table', 'grid'])('preserves existing-list and literal exclusions within %s cells', async family => {
+  const existing = setup([table(family, [list([paragraph()])])]);
+  await existing.input(' '); expect(existing.text()).toBe('- ');
+  expect(existing.projection.parentOf(existing.node().key)?.viewType).toBe('indented-list-block');
+  const literal = setup([{ type: 'container-block', metadata: { htmlPreformatted: true }, children: [table(family, [paragraph()])] }]);
+  await literal.input(' '); expect(literal.text()).toBe('- ');
+  expect(literal.projection.parentOf(literal.node().key)?.viewType).toBe(`${family}-cell-block`);
 });
 
 it.each(prefixes)('one Undo restores literal %s and Redo restores the same list', async prefix => {

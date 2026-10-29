@@ -81,9 +81,14 @@ export function convertTypedListPrefix(editor: ReactiveEditor, key: NodeKey, car
   const projection = editor.projections.get(source.viewId)!;
   const parent = projection.parentOf(key);
   if (!parent?.children.includes(key)) return false;
+  let outsideCell = false;
   for (let ancestor: BlockNode | undefined = source; ancestor; ancestor = projection.parentOf(ancestor.key)) {
     const meta = ancestor.payload.metadata as any;
-    if (isList(ancestor) || isItemContainer(ancestor) || meta?.htmlPreformatted || meta?.markdownCode) return false;
+    if (meta?.htmlPreformatted || meta?.markdownCode) return false;
+    if (!outsideCell && (isList(ancestor) || isItemContainer(ancestor))) return false;
+    // A cell owns an independent Block flow. Lists containing the table do
+    // not make its paragraphs list items; literal/code ancestry still applies.
+    if (ancestor.viewType === 'table-cell-block' || ancestor.viewType === 'grid-cell-block') outsideCell = true;
     if (ancestor.viewType === 'document-block') break;
   }
   const properties = source.payload.standoffProperties as Record<string, any>[] | undefined;
