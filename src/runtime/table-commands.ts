@@ -30,8 +30,8 @@ export function tableLocation(editor: ReactiveEditor, key: string) {
 export function tableCommandAvailable(editor: ReactiveEditor, id: string, key: string): boolean {
   const node = editor.node(key);
   if (!editor.features.tableLayouts || !node || editor.crossText.range()) return false;
+  if (id.startsWith('table.columns-')) return editor.blockSelection.eligible(key);
   const location = tableLocation(editor, key);
-  if (id.startsWith('table.columns-')) return !location && editor.blockSelection.eligible(key);
   if (!location) return false;
   const { table, row, cell } = location;
   if (id === 'table.dissolve') return true;

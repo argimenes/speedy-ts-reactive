@@ -146,11 +146,10 @@ it('rejects unsafe selections and individual list/task items without changing hi
   f.run({ kind: 'create', targets: [f.key('list')], columns: 2 }); expect(f.tree().children![2].children![0].children![0].children![0]).toEqual(before.children![2]);
 });
 
-it('requires explicit nested creation and refuses partial or malformed table operations', () => {
-  const f = setup([table()]); const before = f.tree();
-  expect(() => f.run({ kind: 'create', targets: [f.key('a')], columns: 2 })).toThrow(/nested/);
+it.each(['table', 'grid'])('allows ordinary creation inside a %s cell and still rejects a same-cell transfer', family => {
+  const f = setup([table(family)]); const before = f.tree();
   expect(() => f.run({ kind: 'transfer', targets: [f.key('a')], destination: f.key('cell00') })).toThrow(); expect(f.tree()).toEqual(before);
-  f.run({ kind: 'create', targets: [f.key('a')], columns: 2, nested: true }); expect(f.tree().children![0].children![0].children![0].children![0].type).toBe('table-block');
+  f.run({ kind: 'create', targets: [f.key('a')], columns: 2 }); expect(f.tree().children![0].children![0].children![0].children![0].type).toBe('table-block');
 });
 
 it.each(['span', 'ragged', 'relation', 'reference', 'metadata'])('rejects unsafe %s shells before invocation cleanup', kind => {
@@ -264,6 +263,32 @@ it.each(['row', 'col', 'mc r', 'mr d', 'move-cell right', 'move-row down', 'unc'
   await session.choose(); await tick(); expect(session.state.error).toBe(''); expect(f.tree()).not.toEqual(literal);
   f.editor.repository.undo(); await tick(); expect(f.tree()).toEqual(literal);
 });
+it.each(['c', 'c2', 'c3', 'c4'])('creates a nested table through /%s with local publication and exact history', async alias => {
+  const original = p('a', 'Alpha  Beta', { standoffProperties: [{ id: 'bold', type: 'style/bold', start: 0, end: 4 }] });
+  const f = setup([table('table', [[[original, p('sibling')], [p('b')]]])]);
+  f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a', 6);
+  const placement = f.node('a').placementKey, content = f.node('a').contentKey, root = f.editor.mounts.get(f.key('a'))!.root;
+  const outerCell = f.node('cell00').placementKey, outerRow = f.node('row0').placementKey;
+  const snapshots = vi.spyOn(f.editor.repository, 'snapshot'), build = vi.spyOn(f.view as any, 'build');
+  const indexes = vi.spyOn(f.editor.repository as any, 'rebuildReferences');
+  const bounded = () => { expect(snapshots).not.toHaveBeenCalled(); expect(build).not.toHaveBeenCalled(); expect(indexes).not.toHaveBeenCalled(); };
+  await type(f, '/'+alias); const literal = f.tree(), session = completion(f)!;
+  snapshots.mockClear(); // tree() captures test evidence, outside the operation.
+  expect(session.state.selected).toBe(`table.columns-${alias === 'c' ? 2 : alias[1]}`);
+  await session.choose(); await tick(); expect(session.state.error).toBe('');
+  bounded();
+  const nested = f.tree().children![0].children![0].children![0].children![0];
+  expect(nested.type).toBe('table-block'); expect(nested.children![0].children).toHaveLength(alias === 'c' ? 2 : Number(alias[1]));
+  expect(nested.children![0].children![0].children![0]).toEqual(original);
+  expect(f.node('cell00').placementKey).toBe(outerCell); expect(f.node('row0').placementKey).toBe(outerRow);
+  expect(f.node('cell00').children[1]).toBe(f.key('sibling'));
+  expect(f.node('a').placementKey).toBe(placement); expect(f.node('a').contentKey).toBe(content);
+  expect(f.editor.mounts.get(f.key('a'))!.root).toBe(root);
+  expect(f.editor.mounts.get(f.key('a'))!.captureInlineSelection!()).toEqual({ anchor: 6, head: 6 });
+  const after = f.tree(); snapshots.mockClear();
+  f.editor.repository.undo(); await tick(); bounded(); expect(f.tree()).toEqual(literal); snapshots.mockClear();
+  f.editor.repository.redo(); await tick(); bounded(); expect(f.tree()).toEqual(after);
+});
 it('keeps unknown, cancelled, pasted, code and composing invocations literal', async () => {
   const f = setup([p('a', '')]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a');
   await type(f, '/c99'); expect(completion(f)!.state.rows).toHaveLength(0); const before = f.tree(); await completion(f)!.choose(); expect(f.tree()).toEqual(before);
@@ -281,6 +306,7 @@ it('does not interpret Entity query punctuation as table arguments', async () =>
 });
 it('keeps an unavailable exact /c literal instead of selecting /col or container', async () => {
   const f = setup([table()]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a', 1);
+  f.editor.commandRegistry.permit = (_key, id) => id !== 'table.columns-2';
   await type(f, ' /c'); const session = completion(f)!;
   expect(session.state.selected).toBe(''); expect(session.state.rows.every(r => r.disabled)).toBe(true);
   const before = f.tree(); await session.choose(); expect(f.tree()).toEqual(before);

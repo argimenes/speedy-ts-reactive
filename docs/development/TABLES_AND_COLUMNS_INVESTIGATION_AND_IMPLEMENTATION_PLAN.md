@@ -94,7 +94,7 @@ Use one genuine rectangular structure for both spatial columns and ordinary mult
 7. One accepted structural action publishes one history entry. Validation errors leave both structure and invocation text unchanged. No async transaction remains open while a command menu is displayed.
 8. Restore focus from `{view, placement, content, local selection}` after publication. Resolve the surviving occurrence; do not use a generic “focus first descendant at offset zero” helper. Undo/Redo need equivalent occurrence/caret recovery tests, not just tree equality.
 
-Retain nested table content when moving or dissolving an outer table. Initial creation of another table while already inside a cell should require choosing an explicitly labelled **nested table** action; ordinary insertion/movement commands target the nearest table. Existing nested tables remain readable and editable through their nested Blocks. This avoids silently choosing between operating on a table and creating one inside it.
+Retain nested table content when moving or dissolving an outer table. As requested on 30 October 2026, `/c`, `/c2`, `/c3` and `/c4` create a nested table when invoked on content inside a cell, without requiring a separate nested-table action. Ordinary insertion/movement commands still target the nearest table. Existing nested tables remain readable and editable through their nested Blocks. Creation wraps the selected content at its current location; it does not add columns to the enclosing table.
 
 Cells/rows with spans, ragged membership or unsupported structural metadata remain readable. Rectangular operations should explain why they are unavailable rather than silently normalize or discard data. Header metadata continues to render and round-trip; header authoring and complex span editing are deferred.
 
@@ -260,6 +260,6 @@ Unmatched typing and filtering must add no structural transactions, snapshots, v
 | Nonempty removal | Extract contents with a preview or cancel; no silent deletion. |
 | Reading presentation | Per-view table guides rather than a new global reading mode. Approved as part of the overall architecture. |
 | Markdown rich layouts | Keep explicit warned fallback; native/HTML for structural round trips. Raw HTML in Markdown remains deferred. |
-| Nested creation and list items | Preserve existing nested tables; make new nesting explicit. Avoid automatic extraction/replacement of individual list/task items without a reviewed policy. |
+| Nested creation and list items | Preserve existing nested tables; allow the ordinary creation commands inside cells. Avoid automatic extraction/replacement of individual list/task items without a reviewed policy. |
 
 Custom ratios/resizing, new keyboard mappings, rectangular selection/paste, cell merges/spans, header-authoring tools, sorting, formulas, rich table styling and broad outliner changes are deferred. None requires a new Block type now. Shared/referenced shell dissolution and live-media continuity remain qualification gates for the affected cases, not reasons to redesign the entire editor.

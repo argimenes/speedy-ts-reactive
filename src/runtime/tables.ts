@@ -237,7 +237,6 @@ export class TableOperations {
     if (request.kind === 'create') {
       if (![2, 3, 4].includes(request.columns)) fail('Choose two, three or four columns.');
       const nodes = this.targets(request.targets); target = nodes[0]; moving = nodes; affectedBlocks = nodes.length;
-      if (this.nearest(target.key) && !request.nested) fail('Choose explicit nested-table creation inside a cell.');
       const count = request.columns;
       apply = () => {
         const rows = Array.from({ length: Math.ceil(nodes.length / count) }, (_, r) => dto('table-row-block',
