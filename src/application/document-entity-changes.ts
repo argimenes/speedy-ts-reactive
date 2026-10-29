@@ -72,7 +72,15 @@ function source(editor: ReactiveEditor, key: string, release: () => void) {
         return;
       }
     }
+    const wrap = change.listWrap;
+    if (wrap && current.dependencies.has(wrap.parent)) {
+      if (wrap.wrapped) current.dependencies.add(wrap.wrapperContent);
+      else current.dependencies.delete(wrap.wrapperContent);
+    }
     for (const [key, before] of change.previousContents) {
+      // Wrapping preserves all existing reference consumers; the prefix's own
+      // annotation changes still pass through the comparison below.
+      if (wrap && (key === wrap.parent || key === wrap.wrapperContent)) continue;
       if (!current.dependencies.has(key)) continue;
       const after = state.contents[key];
       if (!before || !after || before.viewType !== after.viewType

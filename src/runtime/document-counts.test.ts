@@ -76,3 +76,14 @@ describe("cached text counts", () => {
     expect(counts.state.totals[root].words).toBe(7);
   });
 });
+
+it('updates only the edited text count when wrapping, without rebuilding document membership', async()=>{
+  const {editor,counts,count,node,root}=setup(50); await counts.flush(); count.mockClear();
+  const rebuild=vi.spyOn(counts as any,'rebuild'), before=counts.state.totals[root].characters;
+  const wrapper=editor.commands.wrapTextBlockInList(node('p0').key,2); await counts.flush();
+  expect(count).toHaveBeenCalledTimes(1); expect(counts.state.totals[root].characters).toBe(before-2);
+  expect(counts.state.pages[wrapper]).toBe(node('page').placementKey);
+  editor.repository.undo(); await counts.flush(); expect(counts.state.totals[root].characters).toBe(before);
+  editor.repository.redo(); await counts.flush(); expect(counts.state.totals[root].characters).toBe(before-2);
+  expect(rebuild).not.toHaveBeenCalled();
+});

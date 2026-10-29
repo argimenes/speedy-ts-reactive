@@ -22,7 +22,11 @@ export class DocumentCounts {
     this.unsubscribe = repository.subscribeChanges(change => {
       this.generation++;
       if (change.inlineOwner) this.dirty.add(change.inlineOwner);
-      else {
+      else if (change.listWrap) {
+        const { child, item, wrapper, wrapped, inlineChanged } = change.listWrap;
+        if (inlineChanged) this.dirty.add(child);
+        this.setState("pages", wrapper, wrapped ? this.state.pages[item] : undefined!);
+      } else {
         this.structure = true;
         for (const [key, previous] of change.previousContents) {
           const current = repository.readState().contents[key];

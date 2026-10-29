@@ -58,6 +58,7 @@ export class InputGateway {
     private readonly bindings: BindingRegistry,
     private readonly createTextTab: (key: NodeKey) => boolean,
     private readonly changeTextList: (key: NodeKey, outdent: boolean) => boolean,
+    private readonly listInput: { prefix(key: NodeKey, caret: number): boolean; exitEmpty(key: NodeKey): boolean },
     private readonly blockSelection: BlockSelectionService,
     private readonly history: (direction: "undo" | "redo") => void,
     private readonly runCommand: (id: string, key: NodeKey) => boolean,
@@ -272,6 +273,8 @@ export class InputGateway {
     if (event.cancelable) event.preventDefault();
     event.stopPropagation();
     if(this.completion?.()?.before?.(resolved.nodeKey,start,end,text,event.inputType))return;
+    if (event.cancelable && !event.isComposing && event.inputType === 'insertText' && text === ' ' && start === end &&
+      this.listInput.prefix(resolved.nodeKey, start)) return;
     this.commands.replaceInlineRange(resolved.nodeKey, start, end, text);
     const caret = start + [...text].length;
     this.selections.mapContentEdit(node.contentKey, start, end, [...text].length);
@@ -652,6 +655,7 @@ export class InputGateway {
     start: number,
     end: number,
   ): void {
+    if (start === 0 && end === 0 && node.inlineContent.length === 0 && this.listInput.exitEmpty(nodeKey)) return;
     const resultingLength = node.inlineContent.length - (end - start);
     let focusPlacement: PlacementKey | undefined;
     const insert = () => {

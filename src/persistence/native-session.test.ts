@@ -132,3 +132,20 @@ it.each([false,true])('tracks empty paragraph removal and undo incrementally (re
  const fresh=f.make(); await fresh.service.open({folder:'.',filename:'rich.mutable.json'});
  expect(nativeText(captureNative(fresh.editor.repository.readState(),id))).toBe(nativeText(captureNative(editor.repository.readState(),id)));
 });
+
+it('tracks list wrapping without snapshots and saves the list and literal Undo states',async()=>{
+ const f=await host(),{editor,service}=f.make(),location={folder:'.',filename:'rich.mutable.json'},id=await service.open(location);
+ const state=editor.repository.readState(),content=Object.values(state.contents).find(c=>c.viewType==='standoff-editor-block')!;
+ const placement=Object.values(state.placements).find(p=>p.contentKey===content.key)!;
+ editor.commands.replaceInlineRange(placement.key,0,content.inlineContent.length,'- ');
+ const snapshot=vi.spyOn(editor.repository,'snapshot');
+ const wrapper=editor.commands.wrapTextBlockInList(placement.key,2);editor.repository.undo();editor.repository.redo();
+ expect(snapshot).not.toHaveBeenCalled();expect(service.isDirty(id)).toBe(true);snapshot.mockRestore();
+ expect(await service.save(id)).toMatchObject({phase:'saved',dirty:false});
+ const fresh=f.make();await fresh.service.open(location);
+ expect(nativeText(captureNative(fresh.editor.repository.readState(),id))).toBe(nativeText(captureNative(editor.repository.readState(),id)));
+ expect(editor.repository.readState().placements[wrapper]).toBeDefined();
+ editor.repository.undo();expect(await service.save(id)).toMatchObject({phase:'saved',dirty:false});
+ const literal=f.make();await literal.service.open(location);
+ expect(nativeText(captureNative(literal.editor.repository.readState(),id))).toBe(nativeText(captureNative(editor.repository.readState(),id)));
+});

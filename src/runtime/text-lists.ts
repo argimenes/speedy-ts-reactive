@@ -45,6 +45,57 @@ const listDto = (source?: BlockNode): ExistingBlockDto => ({
   id: crypto.randomUUID(), type: 'indented-list-block', children: [],
 });
 
+/** Shared structural primitive. The caller decides eligibility and caret policy. */
+export function wrapTextBlockInList(editor: ReactiveEditor, key: NodeKey, prefixLength = 0): string {
+  return editor.commands.wrapTextBlockInList(key, prefixLength);
+}
+
+// Recognition rules are separate from conversion; further prefixes can be added
+// without putting structural work on unmatched keystrokes.
+const listPrefixes = [{ text: '-', kind: 'unordered' }] as const;
+export function convertTypedListPrefix(editor: ReactiveEditor, key: NodeKey, caret: number): boolean {
+  const source = editor.node(key);
+  if (source?.viewType !== 'standoff-editor-block' || source.inlineContent.length !== caret) return false;
+  const rule = listPrefixes.find(rule => rule.text.length === caret && [...rule.text].every((char, i) => {
+    const cell = editor.node(source.inlineContent[i]);
+    return cell?.viewType === 'text-cell' && cell.payload.text === char;
+  }));
+  if (!rule || editor.crossText.range() || (editor.selections.sets[key]?.items.length ?? 0) > 1) return false;
+  const projection = editor.projections.get(source.viewId)!;
+  const parent = projection.parentOf(key);
+  if (!parent?.children.includes(key)) return false;
+  for (let ancestor: BlockNode | undefined = source; ancestor; ancestor = projection.parentOf(ancestor.key)) {
+    const meta = ancestor.payload.metadata as any;
+    if (isList(ancestor) || isItemContainer(ancestor) || meta?.htmlPreformatted || meta?.markdownCode) return false;
+    if (ancestor.viewType === 'document-block') break;
+  }
+  const properties = source.payload.standoffProperties as Record<string, any>[] | undefined;
+  if (properties?.some(p => !p.isDeleted && (/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type ?? '') || p.type === 'text/superposition') && p.start <= caret && p.end >= 0)) return false;
+  const placement = source.placementKey, viewId = source.viewId, contentKey = source.contentKey;
+  // Accept the user's space as ordinary native input. The following conversion
+  // is its own atomic history entry: Undo restores the complete literal marker.
+  editor.commands.replaceInlineRange(key, caret, caret, ' ');
+  editor.selections.mapContentEdit(contentKey, caret, caret, 1);
+  wrapTextBlockInList(editor, key, caret + 1);
+  editor.selections.mapContentEdit(contentKey, 0, caret + 1, 0);
+  const target = editor.nodeForPlacementInView(placement, viewId);
+  if (target) editor.selections.setPrimary(target.key, contentKey, viewId, 0);
+  queueMicrotask(() => {
+    const target = editor.nodeForPlacementInView(placement, viewId);
+    if (target) editor.focus.request(target.key, { reason: 'list-prefix', caret: 'start' });
+  });
+  return true;
+}
+
+/** Empty direct items exit one level; compound ContainerBlock editing is unchanged. */
+export function exitEmptyListItem(editor: ReactiveEditor, key: NodeKey): boolean {
+  const source = editor.node(key);
+  if (source?.viewType !== 'standoff-editor-block' || source.inlineContent.length || source.children.length) return false;
+  const projection = editor.projections.get(source.viewId)!;
+  if (!isList(projection.parentOf(key))) return false;
+  return changeTextList(editor, key, true);
+}
+
 /** Move existing placements, preserving text, annotations and owned relations.
  * Called only by an explicit list command; ancestor lookup uses occurrence routes. */
 export function changeTextList(editor: ReactiveEditor, key: NodeKey, outdent: boolean): boolean {
@@ -67,10 +118,7 @@ export function changeTextList(editor: ReactiveEditor, key: NodeKey, outdent: bo
     return isList(last) ? last!.placementKey : commands.insert(listDto(template), { kind: 'at', parentKey: owner.placementKey, index: commands.childrenOf(owner.placementKey).length });
   };
   if (!inside) {
-    commands.transaction('Convert TextBlock to list', () => {
-      const wrapper = commands.insert(listDto(), { kind: 'before', anchorKey: key });
-      append(wrapper, sourcePlacement);
-    });
+    wrapTextBlockInList(editor, key);
   } else if (!outdent) {
     const index = list!.children.indexOf(item.key), previous = editor.node(list!.children[index - 1]);
     // The first item has no preceding item to become its parent.

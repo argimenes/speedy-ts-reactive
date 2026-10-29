@@ -114,6 +114,23 @@ try{
  check('Shift Tab at the outermost level returns to normal text',await evaluate('proof.parent(proof.secondNode()).key===proof.parent(proof.parent(proof.current())).key'));
  await key('z',4);await wait('proof.parent(proof.secondNode()).key===proof.parent(proof.current()).key');
  check('One Undo restores the list structure',true);
+
+ await evaluate(`proof.prefixPlacement=proof.editor.commands.insert({id:crypto.randomUUID(),type:'standoff-editor-block',text:''},{kind:'after',anchorKey:proof.parent(proof.current()).key});proof.prefix=()=>proof.editor.nodeForPlacementInView(proof.prefixPlacement,proof.view.viewId);proof.prefixMount=()=>proof.editor.mounts.get(proof.prefix().key);proof.prefixText=()=>proof.prefix().inlineContent.map(k=>proof.editor.node(k).payload.text).join('');proof.prefixMount().focus();proof.prefixMount().restoreInlineSelection({anchor:0,head:0});`);
+ await send('Input.insertText',{text:'-'},sessionId);await send('Input.insertText',{text:' '},sessionId);
+ check('Real typed hyphen-space creates an empty list item with the caret at its start',await evaluate("proof.parent(proof.prefix()).viewType==='indented-list-block'&&proof.prefixText()===''&&document.activeElement===proof.prefixMount().focusElement&&proof.prefixMount().captureInlineSelection().anchor===0"));
+ await key('z',4);
+ check('One native Undo restores the ordinary TextBlock and complete literal hyphen-space',await evaluate("proof.parent(proof.prefix()).viewType!=='indented-list-block'&&proof.prefixText()==='- '"));
+ await key('z',12);check('Redo restores the converted list',await evaluate("proof.parent(proof.prefix()).viewType==='indented-list-block'&&proof.prefixText()===''"));
+ await evaluate('proof.prefixMount().focus();proof.prefixMount().restoreInlineSelection({anchor:0,head:0})');await send('Input.insertText',{text:'First automatic item'},sessionId);await key('Enter');
+ check('Enter creates the next direct list item',await evaluate('proof.parent(proof.prefix()).children.length===2'));
+ await key('Enter');check('Enter on the empty item exits the list',await evaluate("proof.parent(proof.editor.node(proof.editor.focus.state.focusedKey)).viewType!=='indented-list-block'&&proof.parent(proof.prefix()).children.length===1"));
+ await evaluate("proof.scryPlacement=proof.editor.commands.insert({id:crypto.randomUUID(),type:'standoff-editor-block',text:''},{kind:'after',anchorKey:proof.parent(proof.prefix()).key});proof.scryNode=()=>proof.editor.nodeForPlacementInView(proof.scryPlacement,proof.view.viewId);proof.editor.focus.request(proof.scryNode().key,{caret:'start'})");
+ for(const text of ['(','(','-',' '])await send('Input.insertText',{text},sessionId);
+ check('Scry owns hyphen-space source input without automatic conversion',await evaluate("proof.scryNode().inlineContent.length===0&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'&&!!document.querySelector('.ler-instrument')"));
+ await evaluate("const input=document.querySelector('[aria-label=\"Search entities\"]');input.focus();input.select()");await send('Input.insertText',{text:'- '},sessionId);
+ check('Scry query hyphen-space remains query text',await evaluate("document.querySelector('[aria-label=\"Search entities\"]').value==='- '&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'"));
+ await evaluate('proof.editor.completionInput.cancel()');
+ check('Cancelling Scry keeps the literal phrase without converting it',await evaluate("proof.scryNode().inlineContent.map(k=>proof.editor.node(k).payload.text).join('')==='- '&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'"));
  check('No browser exceptions',errors.length===0);
  await send('Page.captureScreenshot',{format:'png'},sessionId).then(r=>writeFile(path.join(artifacts,'text-lists.png'),Buffer.from(r.data,'base64')));
  await writeFile(path.join(artifacts,'results.json'),JSON.stringify({checks,errors,realFlintComponents:true},null,2));

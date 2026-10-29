@@ -109,3 +109,14 @@ it('updates empty-paragraph dependencies without rescanning links, including und
   f.editor.commands.remove(placement); await tick(); expect(f.a).toHaveBeenCalledTimes(2);
   f.editor.repository.undo(); await tick(); expect(f.a).toHaveBeenCalledTimes(3);
 });
+
+it('does not rescan references for wrapping or undo, but reports annotations removed with a prefix', async()=>{
+  const f=fixture(), resolve=vi.spyOn(linked,'resolveLinkedProperty');
+  f.editor.commands.wrapTextBlockInList(f.node('text').key); await tick();
+  f.editor.repository.undo(); await tick(); f.editor.repository.redo(); await tick();
+  expect(resolve).not.toHaveBeenCalled(); expect(f.a).not.toHaveBeenCalled();
+  f.editor.repository.undo(); await tick();
+  f.editor.commands.wrapTextBlockInList(f.node('text').key,5); await tick();
+  expect(f.a).toHaveBeenCalledOnce();
+  f.editor.repository.undo(); await tick(); expect(f.a).toHaveBeenCalledTimes(2);
+});

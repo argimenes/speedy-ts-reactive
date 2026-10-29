@@ -71,7 +71,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
     const viewBookmarks = new Map<string, { placement: string; tabs: Map<string, DocumentViewBookmark> }>();
     scope.own(() => viewBookmarks.clear());
     scope.own(editor.repository.subscribeChanges(change => {
-      if (change.inlineOwner || change.split || change.childrenOwner) return;
+      if (change.inlineOwner || change.split || change.childrenOwner || change.listWrap) return;
       for (const [key, value] of viewBookmarks) if (!editor.repository.state.placements[value.placement]) { viewBookmarks.delete(key); vaultRoots.delete(key); navigationTabs.delete(key); }
       scope.defer(() => { for (const [owner, value] of viewBookmarks) for (const key of value.tabs.keys()) if (!editor.node(key) && !navigationTabs.get(owner)?.tabs.has(key)) value.tabs.delete(key); });
     }));
@@ -83,7 +83,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       if (editor.blockQueries.ancestors(props.nodeKey).some(n => n.viewType === "document-block")) return <p role="status">This application requires a Window outside a Document.</p>;
       const [revision, setRevision] = createSignal(0);
       // Text fast paths cannot change identity or titles.
-      onCleanup(editor.repository.subscribeChanges(change => { if (!change.inlineOwner && !change.split && !change.childrenOwner) setRevision(n => n + 1); }));
+      onCleanup(editor.repository.subscribeChanges(change => { if (!change.inlineOwner && !change.split && !change.childrenOwner && !change.listWrap) setRevision(n => n + 1); }));
       const all = createMemo(() => { revision(); return catalog(); });
       const documents = all;
       const byId = createMemo(() => {

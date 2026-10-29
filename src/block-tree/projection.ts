@@ -1,3 +1,4 @@
+import type { ListWrapChange } from "./list-wrap-plan";
 import { createSignal } from 'solid-js';
 import { createStore, reconcile, unwrap } from "solid-js/store";
 import { clone } from "./clone";
@@ -50,6 +51,10 @@ export class BlockTreeProjection {
       if (!repository.readState().placements[this.rootPlacementKey]) {
         this.unregister();
         this.setState(reconcile({ rootKey: this.state.rootKey, nodes: {}, revision: repository.state.revision }));
+        return;
+      }
+      if (change.listWrap) {
+        this.updateListWrap(change.listWrap);
         return;
       }
       if (change.appendedChildrenOwner) {
@@ -265,6 +270,44 @@ export class BlockTreeProjection {
       this.setState("nodes", key, "inlineContent", reconcile(inlineContent));
     }
     this.setState("revision", source.revision);
+  }
+
+  /** Reparent existing occurrences; only routes in the moved subtree change. */
+  private updateListWrap(change: ListWrapChange): void {
+    if (change.inlineChanged) this.updateInline(change.child);
+    const source = this.repository.readState(), nodes = unwrap(this.state.nodes);
+    const reroute = (key: NodeKey, oldPrefix: string, newPrefix: string) => {
+      const node = nodes[key], old = this.nodeRoutes.get(key)!;
+      const route = newPrefix + old.slice(oldPrefix.length);
+      if (this.routeKeys.get(old) === key) this.routeKeys.delete(old);
+      this.routeKeys.set(route, key); this.nodeRoutes.set(key, route);
+      for (const child of [...node.children, ...node.inlineContent, ...Object.values(node.ownedRelations)]) reroute(child, oldPrefix, newPrefix);
+    };
+    for (const key of this.contentNodes.get(change.parent) ?? []) {
+      const parent = nodes[key];
+      if (parent.viewType === "cyclic-reference") continue;
+      const route = this.nodeRoutes.get(key)!;
+      const index = parent.children.findIndex(k => nodes[k].placementKey === (change.wrapped ? change.item : change.wrapper));
+      if (index < 0) continue;
+      const children = [...parent.children];
+      if (change.wrapped) {
+        const child = children[index], wrapperRoute = `${route}/child:${change.wrapper}`;
+        const wrapperKey = this.nodeKey(wrapperRoute, change.wrapper), list = source.contents[change.wrapperContent];
+        reroute(child, this.nodeRoutes.get(child)!, `${wrapperRoute}/child:${change.item}`);
+        const wrapper: BlockNode = { key: wrapperKey, placementKey: change.wrapper, contentKey: list.key, viewId: this.viewId,
+          viewType: list.viewType, payload: clone(list.payload), children: [child], inlineContent: [], ownedRelations: {} };
+        this.setState("nodes", wrapperKey, wrapper); this.registerNode(wrapper);
+        children[index] = wrapperKey;
+      } else {
+        const wrapper = nodes[children[index]], child = wrapper.children[0];
+        reroute(child, this.nodeRoutes.get(child)!, `${route}/child:${change.item}`);
+        this.unregisterNode(wrapper); this.setState("nodes", wrapper.key, undefined);
+        children[index] = child;
+      }
+      this.setState("nodes", key, "children", reconcile(children));
+    }
+    this.setState("revision", source.revision);
+    this.topology[1](v => v + 1);
   }
 
   private updateSplit(change: SplitChange): void {

@@ -1,3 +1,4 @@
+import { listWrapChangeFor, type ListWrapChange } from "./list-wrap-plan";
 import { recordOperations } from "./record-batch";
 import {documentTabParentFor} from './document-tab-plan';
 import { batch, createSignal } from "solid-js";
@@ -276,6 +277,7 @@ export interface RepositoryChange {
   childrenOwner?: ContentKey;
   /** Validated empty-leaf membership delta, including undo/redo. */
   emptyParagraph?: EmptyParagraphChange;
+  listWrap?: ListWrapChange;
   /** Fully validated append of fresh subtrees; existing records/edges are unchanged. */
   appendedChildrenOwner?: ContentKey;
 }
@@ -447,6 +449,11 @@ export class CanonicalRepository {
       this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, childrenOwner, placementDelta, emptyParagraph);
       return;
     }
+    const listWrap = bulk ? undefined : listWrapChangeFor(this.readState(), operations, this.references, key => this.locationOf(key));
+    if (listWrap) {
+      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, undefined, placementDelta, undefined, listWrap);
+      return;
+    }
     const current = this.readState();
     for (const subscriber of this.beforeChangeSubscribers) subscriber(label);
     for (const subscriber of this.beforeSubscribers) subscriber(this.snapshot(), label);
@@ -513,7 +520,7 @@ export class CanonicalRepository {
     });
   }
 
-  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta, emptyParagraph?: EmptyParagraphChange): void {
+  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta, emptyParagraph?: EmptyParagraphChange, listWrap?: ListWrapChange): void {
     const current = this.readState();
     // Capture inverse data before changing any reactive records.
     const inverse = operations.map((operation) => inverseFor(current, operation)).reverse();
@@ -522,7 +529,11 @@ export class CanonicalRepository {
     // Unknown fast-route semantics do not trigger a global scan on the input path.
     // They invalidate query eligibility until a later full admitted validation.
     let boundarySafe = true;
-    if (this.boundary) { try { boundarySafe = preservesResourceOwnership(current, prepared); } catch { boundarySafe = false; } }
+    if (this.boundary) { try {
+      // The list proof establishes same-resource ownership for the fresh wrapper;
+      // remaining inline changes still use the usual ownership check.
+      const ownershipOps = listWrap ? prepared.filter(op => !(op.kind === "put-content" && op.record.key === listWrap.wrapperContent || op.kind === "remove-content" && op.key === listWrap.wrapperContent || op.kind === "put-placement" && op.record.key === listWrap.wrapper || op.kind === "remove-placement" && op.key === listWrap.wrapper)) : prepared;
+      boundarySafe = preservesResourceOwnership(current, ownershipOps); } catch { boundarySafe = false; } }
     for (const operation of prepared) {
       if (operation.kind !== "put-content" && operation.kind !== "remove-content") continue;
       const key = operation.kind === "put-content" ? operation.record.key : operation.key;
@@ -581,7 +592,7 @@ export class CanonicalRepository {
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
       const origins = annotationOrigins(operations);
-      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph, annotationOrigins: origins });
+      for (const subscriber of this.changeSubscribers) subscriber({ label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph, listWrap, annotationOrigins: origins });
     });
   }
 

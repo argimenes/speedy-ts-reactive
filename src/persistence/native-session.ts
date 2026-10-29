@@ -85,6 +85,16 @@ export class NativeDocumentSession {
     ownNativeSession(editor.repository, () => { this.disposed = true;this.notifyKnowledge();this.knowledgeListeners.clear(); stop(); window.removeEventListener('beforeunload', warn); });
   }
   private updateMembers(members: Set<string>, id: string, change: RepositoryChange): Set<string> {
+    if (change.listWrap && members.has(change.listWrap.parent)) {
+      const { wrapperContent, wrapped } = change.listWrap;
+      if (wrapped) members.add(wrapperContent); else members.delete(wrapperContent);
+      if (members.has(change.listWrap.child)) for (const [key, before] of change.previousContents) {
+        const after = this.editor.repository.readState().contents[key];
+        if (after?.viewType === 'text-cell') members.add(key);
+        else if (!after && before?.viewType === 'text-cell') members.delete(key);
+      }
+      return members;
+    }
     if (change.emptyParagraph && members.has(change.emptyParagraph.parent)) {
       const { child } = change.emptyParagraph;
       // Retained definitions remain members even without a visible placement.

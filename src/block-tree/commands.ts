@@ -466,6 +466,35 @@ export class TreeCommands {
     return decoded.rootPlacementKey;
   }
 
+  /** Wrap one existing TextBlock without intermediate insert/move transactions.
+   * Its placement, owned subtree and definition owner stay intact in the same
+   * resource. Optional prefix removal uses the ordinary native inline planner. */
+  wrapTextBlockInList(key: NodeKey | PlacementKey, prefixLength = 0): PlacementKey {
+    const state = this.pending?.draft ?? this.repository.readState();
+    const sourceKey = this.placementKey(key, state), source = state.placements[sourceKey];
+    const content = state.contents[source.contentKey];
+    const location = this.pending ? deriveLocations(state).get(sourceKey) : this.repository.locationOf(sourceKey);
+    if (sourceKey === state.rootPlacementKey || !location || location.slot.kind !== "children" ||
+      content.viewType !== "standoff-editor-block" || source.kind === "owned" && (source.externalReference || source.resolvedReference)) {
+      throw new TreeCommandError("List wrapping requires an ordinary TextBlock child");
+    }
+    const parent = state.contents[location.ownerContentKey];
+    const decoded = decodeDetachedSubtree({ id: createBlockId(), type: "indented-list-block", metadata: { htmlList: { ordered: false } }, children: [] });
+    const wrapper = decoded.state.placements[decoded.rootPlacementKey];
+    const children = [...parent.children];
+    children[location.index!] = wrapper.key;
+    const operations = prefixLength ? this.inlineReplacementOperations(state, sourceKey, 0, prefixLength, "") : [];
+    operations.push(
+      { kind: "put-content", record: this.updatedChildren(decoded.state.contents[wrapper.contentKey], [sourceKey]) },
+      { kind: "put-placement", record: wrapper },
+      { kind: "put-content", record: this.updatedChildren(parent, children) },
+    );
+    this.publish(prefixLength ? "Convert list prefix" : "Convert TextBlock to list", operations, {
+      commandId: "tree.wrapTextBlockInList", subjects: [this.subject(state, sourceKey)],
+    });
+    return wrapper.key;
+  }
+
   move(key: NodeKey | PlacementKey, destination: Destination): void {
     const state = this.state();
     const sourceKey = this.placementKey(key, state);
@@ -769,7 +798,15 @@ export class TreeCommands {
     label = "Edit Standoff text",
   ): void {
     const state = this.pending?.draft ?? this.repository.readState();
-    const placement = state.placements[this.placementKey(key, state)];
+    const placement = this.placementKey(key, state);
+    this.publish(label, this.inlineReplacementOperations(state, placement, start, end, text), {
+      commandId: "tree.replaceInlineRange", subjects: [this.subject(state, placement)],
+    });
+  }
+
+  /** Shared native text planner; composed edits retain the same annotation mapping. */
+  private inlineReplacementOperations(state: RepositoryState, key: PlacementKey, start: number, end: number, text: string): RepositoryOperation[] {
+    const placement = state.placements[key];
     const content = state.contents[placement.contentKey];
     if (content.inlineKind !== "standoff") {
       throw new TreeCommandError("Inline text operations require a Standoff content record");
@@ -850,8 +887,7 @@ export class TreeCommands {
       for (const [key, count] of removedReferences) {
         if (this.repository.contentReferenceCount(key) === count) operations.push({ kind: "remove-content", key });
       }
-      this.publish(label, operations, { commandId: "tree.replaceInlineRange", subjects: [this.subject(state, placement.key)] });
-      return;
+      return operations;
     }
     // Structural inline atoms and transaction drafts retain full graph planning.
     const next = clone(state);
@@ -860,7 +896,7 @@ export class TreeCommands {
       if (operation.kind === "put-placement") next.placements[operation.record.key] = operation.record;
     }
     this.pruneUnreachable(next);
-    this.publish(label, this.diff(state, next), { commandId: "tree.replaceInlineRange", subjects: [this.subject(state, placement.key)] });
+    return this.diff(state, next);
   }
 
   transclude(
