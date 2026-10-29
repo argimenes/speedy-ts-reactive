@@ -1,0 +1,173 @@
+{
+  "scenario": "large",
+  "result": {
+    "samples": 8,
+    "warmups": 2,
+    "sync": {
+      "median": 2121.899999976158,
+      "p95": 3828.6999999284744,
+      "max": 3828.6999999284744
+    },
+    "settled": {
+      "median": 2163.2000000476837,
+      "p95": 3957.5,
+      "max": 3957.5
+    },
+    "frame": {
+      "median": 2219.2000000476837,
+      "p95": 4067.5,
+      "max": 4067.5
+    },
+    "metrics": {
+      "clone": {
+        "calls": 9376,
+        "total": 5298.600000500679,
+        "self": 5298.600000500679
+      },
+      "table.prepare": {
+        "calls": 8,
+        "total": 3.1000001430511475,
+        "self": 2.9000000953674316
+      },
+      "snapshot": {
+        "calls": 8,
+        "total": 1715.3999999761581,
+        "self": 0
+      },
+      "deriveLocations": {
+        "calls": 56,
+        "total": 1393.9999996423721,
+        "self": 1393.9999996423721
+      },
+      "validateRepository": {
+        "calls": 24,
+        "total": 4182.099999308586,
+        "self": 3557.9999992847443
+      },
+      "planChangedRecords": {
+        "calls": 24,
+        "total": 4903.199999809265,
+        "self": 713.2999999523163
+      },
+      "planOperations": {
+        "calls": 16,
+        "total": 6919.499999642372,
+        "self": 38.49999988079071
+      },
+      "command.publish": {
+        "calls": 16,
+        "total": 7110.599999785423,
+        "self": 4.600000500679016
+      },
+      "command.insert": {
+        "calls": 8,
+        "total": 3661.0999999046326,
+        "self": 1.6999996900558472
+      },
+      "resourceOwner": {
+        "calls": 16,
+        "total": 412.5,
+        "self": 412.5
+      },
+      "command.move": {
+        "calls": 8,
+        "total": 4258.600000023842,
+        "self": 1.7000001668930054
+      },
+      "placementIdentity.validateCommit": {
+        "calls": 8,
+        "total": 0.10000002384185791,
+        "self": 0.10000002384185791
+      },
+      "table.holdMedia": {
+        "calls": 8,
+        "total": 0.6999996900558472,
+        "self": 0.6999996900558472
+      },
+      "prepareCapture": {
+        "calls": 8,
+        "total": 0.09999990463256836,
+        "self": 0.09999990463256836
+      },
+      "rebuildReferences": {
+        "calls": 8,
+        "total": 347.69999969005585,
+        "self": 154.69999992847443
+      },
+      "placementIdentity.acceptCommit": {
+        "calls": 8,
+        "total": 0.30000007152557373,
+        "self": 0.30000007152557373
+      },
+      "history.store": {
+        "calls": 8,
+        "total": 7.700000047683716,
+        "self": 4
+      },
+      "deliverCapture": {
+        "calls": 8,
+        "total": 0,
+        "self": 0
+      },
+      "projection.build": {
+        "calls": 16,
+        "total": 1805.0000003576279,
+        "self": 1748.3000005483627
+      },
+      "projection.unregister": {
+        "calls": 16,
+        "total": 57.799999952316284,
+        "self": 57.799999952316284
+      },
+      "projection.register": {
+        "calls": 16,
+        "total": 692.3999998569489,
+        "self": 692.3999998569489
+      },
+      "DOM.insertBefore": {
+        "calls": 256,
+        "total": 3.2000001668930054,
+        "self": 3.2000001668930054
+      },
+      "DOM.moveBefore": {
+        "calls": 16,
+        "total": 5.900000095367432,
+        "self": 5.900000095367432
+      },
+      "DOM.appendChild": {
+        "calls": 16,
+        "total": 0.09999990463256836,
+        "self": 0.09999990463256836
+      },
+      "commit": {
+        "calls": 8,
+        "total": 9391.299999833107,
+        "self": 4936.500000119209
+      },
+      "command.transaction": {
+        "calls": 8,
+        "total": 19028.89999985695,
+        "self": 2.200000047683716
+      },
+      "table.restore": {
+        "calls": 8,
+        "total": 0,
+        "self": 0
+      },
+      "table.execute": {
+        "calls": 8,
+        "total": 19031.39999985695,
+        "self": 2.399999976158142
+      },
+      "layout.getBoundingClientRect": {
+        "calls": 16,
+        "total": 0.20000004768371582,
+        "self": 0.20000004768371582
+      }
+    },
+    "records": 41324,
+    "documents": 1,
+    "paragraphs": 541
+  },
+  "errors": []
+}

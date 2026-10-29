@@ -1,3 +1,4 @@
+import { parseTableCommand, tableCommandCandidates, tableCommands } from '../../runtime/table-commands';
 import { taskPrefixOpening, cancelTaskPrefix } from '../../runtime/text-lists';
 import { surfaceCommands } from '../../runtime/block-surfaces';
 import {ProvisionalCells} from './provisional-cells';
@@ -87,19 +88,23 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     const existing=editor.overlays.overlays.find(o=>(o.viewType==='entity-search'||o.viewType==='autocomplete'&&(o.data as any)?.entitySearch)&&editor.node(o.ownerKey)?.viewId===source.viewId&&api.scope(o.ownerKey,'document').rootKey===documentScope.rootKey);
     if(existing){editor.overlays.close(existing.key,false);if(editor.overlays.overlays.some(o=>o.key===existing.key)){editor.focus.request(existing.key,{reason:'entity-tool-pending'});return;}}
    }
-   let service:import("../../feature-api/entities").EntityService|undefined;try{if(kind!=='entity')service=api.entities?.(source.nodeKey);}catch{/* Non-Entity commands remain usable. */}
+   let service:import("../../feature-api/entities").EntityService|undefined;try{if(kind==='document')service=api.entities?.(source.nodeKey);}catch{/* Non-Entity commands remain usable. */}
    const session=new CompletionSession({service,historyScope:()=>service?.historyScope?.()??Promise.resolve(`session:${source.viewId}`),
     canDismiss,
     documentEntities:()=>[], // Entity inventory and search belong to LER.
     documents:async()=>{const pool=await completionDocuments(editor,source.nodeKey).completionTargets();return pool.sources.map(t=>({id:t.documentId,name:t.title,reason:`Document · ${t.location}`,data:t}));},
-    commands:()=>[
+    commands:(query='')=>{
+     const tables=tableCommandCandidates(editor,source.nodeKey,query);
+     // An unavailable exact /c stays literal; do not fall through to /col or container.
+     if(editor.features.tableLayouts&&parseTableCommand(query))return tables;
+     return [...tables, ...[
      ...(editor.features.reversibleBlocks?surfaceCommands:[]),
      {id:'entity',name:'entity',reason:'Resolve an Entity or create explicitly'},
      {id:'link',name:'link',reason:'Reference an available native Document'},
      {id:'entity.list.open',name:'backlinks',reason:'Open the current Document Entity references'},
      {id:'thesis.createProposition',name:'proposition',reason:'Open a Thesis draft'},
      {id:'date',name:'date',reason:'Insert today’s local ISO date'},
-    ].filter(r=>['entity','link','date'].includes(r.id)||editor.commandRegistry.canExecute(r.id,{targetKey:source.nodeKey,args:undefined})),
+    ].filter(r=>['entity','link','date'].includes(r.id)||editor.commandRegistry.canExecute(r.id,{targetKey:source.nodeKey,args:undefined})).filter(r=>!query||r.name.toLowerCase().includes(query.toLowerCase()))];},
     valid,
     commit:(s,e,label)=>{
      if(!valid(s))throw Error('Stale source');
@@ -113,6 +118,10 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     },
     reference:async(s,c,label)=>{const k=completionDocuments(editor,s.nodeKey),token=k.selection(editor.textRanges.snapshot(s.nodeKey,s.start,s.end));await k.createReference(token,c.data as DocumentTarget,label,()=>session.alive&&valid(s));restore(s,s.start+[...label].length);},
     command:(s,id)=>{
+     if(tableCommands.some(c=>c.id===id)){
+      if(!valid(s))throw Error('Stale command source');
+      editor.commandRegistry.execute(id,{targetKey:s.nodeKey,args:{invocation:{nodeKey:s.nodeKey,contentKey:s.contentKey,placementKey:s.placementKey,version:s.version,start:s.start,end:s.end,coordinate:'cell'}}});return;
+     }
      if(surfaceCommands.some(c=>c.id===id)){queueMicrotask(()=>{if(valid(s))editor.surfaces.run(id,s.nodeKey,{nodeKey:s.nodeKey,start:s.start,end:s.end,version:s.version});});return;}
      if(id==='entity'||id==='link') {queueMicrotask(()=>open(s,id==='entity'?'entity':'document',''));return;}
      if(id==='date'){const now=new Date(),label=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;editor.commands.replaceInlineRange(s.nodeKey,s.start,s.end,label);restore(s,s.start+label.length);return;}
@@ -277,6 +286,7 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
    if(!current){const last=editor.node(n.inlineContent[caret-1]);const char=String(last?.payload.text??'');if(['[','('].includes(char)){firstOpen={key,char,cell:n.inlineContent[caret-1]};return;}firstOpen=undefined;}
    const token=invocation(caret,i=>{const c=editor.node(n.inlineContent[i]);return c?.viewType==='text-cell'?String(c.payload.text??''):undefined;});
    if(!token){cancel();return;}
+   if(token.kind==='command'&&(editor.crossText.range()||(editor.selections.sets[key]?.items.length??0)>1)){cancel();return;}
    if(!['@','/'].includes(text(key,token.start,token.start+1)))return;
    // Code/literal annotations are excluded; only this affected Block's metadata is read.
    if((n.payload.standoffProperties as any[]??[]).some(p=>!p.isDeleted&&/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type??'')&&p.start<caret&&p.end>=token.start)){cancel();return;}

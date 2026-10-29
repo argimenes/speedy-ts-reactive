@@ -1,0 +1,33 @@
+{
+  "scenario": "workspace",
+  "instrument": false,
+  "result": {
+    "samples": 8,
+    "warmups": 2,
+    "sync": {
+      "median": 4.799999952316284,
+      "p95": 6.100000023841858,
+      "max": 6.100000023841858
+    },
+    "computationExcludingReactiveFlush": {
+      "median": 4.799999952316284,
+      "p95": 6.100000023841858,
+      "max": 6.100000023841858
+    },
+    "settled": {
+      "median": 11.699999928474426,
+      "p95": 13.799999952316284,
+      "max": 13.799999952316284
+    },
+    "frame": {
+      "median": 167,
+      "p95": 200.5,
+      "max": 200.5
+    },
+    "metrics": {},
+    "records": 79096,
+    "documents": 5,
+    "paragraphs": 205
+  },
+  "errors": []
+}

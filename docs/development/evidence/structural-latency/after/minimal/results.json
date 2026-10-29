@@ -1,0 +1,204 @@
+{
+  "scenario": "minimal",
+  "instrument": true,
+  "result": {
+    "samples": 8,
+    "warmups": 2,
+    "sync": {
+      "median": 4.100000023841858,
+      "p95": 4.899999976158142,
+      "max": 4.899999976158142
+    },
+    "computationExcludingReactiveFlush": {
+      "median": 3.200000047683716,
+      "p95": 4.199999928474426,
+      "max": 4.199999928474426
+    },
+    "settled": {
+      "median": 6.200000047683716,
+      "p95": 7.299999952316284,
+      "max": 7.299999952316284
+    },
+    "frame": {
+      "median": 27,
+      "p95": 33.39999997615814,
+      "max": 33.39999997615814
+    },
+    "metrics": {
+      "clone": {
+        "calls": 344,
+        "total": 3.2999998331069946,
+        "self": 3.2999998331069946
+      },
+      "table.prepare": {
+        "calls": 8,
+        "total": 2.2000001668930054,
+        "self": 1.8000000715255737
+      },
+      "command.publish": {
+        "calls": 16,
+        "total": 1.9000000953674316,
+        "self": 0.9999998807907104
+      },
+      "command.insert": {
+        "calls": 8,
+        "total": 2.5000001192092896,
+        "self": 0.7000001668930054
+      },
+      "command.move": {
+        "calls": 8,
+        "total": 0.6999999284744263,
+        "self": 0.20000004768371582
+      },
+      "placementIdentity.validateCommit": {
+        "calls": 8,
+        "total": 0.10000002384185791,
+        "self": 0.10000002384185791
+      },
+      "structuralChangeFor": {
+        "calls": 8,
+        "total": 0.8999998569488525,
+        "self": 0.8999998569488525
+      },
+      "notify.beforeChangeSubscribers": {
+        "calls": 16,
+        "total": 0,
+        "self": 0
+      },
+      "table.holdMedia": {
+        "calls": 8,
+        "total": 0.20000004768371582,
+        "self": 0.20000004768371582
+      },
+      "prepareCapture": {
+        "calls": 8,
+        "total": 0,
+        "self": 0
+      },
+      "setState": {
+        "calls": 96,
+        "total": 0.6000001430511475,
+        "self": 0.6000001430511475
+      },
+      "placementIdentity.acceptCommit": {
+        "calls": 8,
+        "total": 0.19999992847442627,
+        "self": 0.19999992847442627
+      },
+      "history.store": {
+        "calls": 8,
+        "total": 1.2999998331069946,
+        "self": 0.7999999523162842
+      },
+      "deliverCapture": {
+        "calls": 8,
+        "total": 0,
+        "self": 0
+      },
+      "notify.changeSubscribers": {
+        "calls": 96,
+        "total": 3.600000023841858,
+        "self": 0.20000004768371582
+      },
+      "projection.updateStructural": {
+        "calls": 16,
+        "total": 3.399999976158142,
+        "self": 3.100000023841858
+      },
+      "repository.publish": {
+        "calls": 8,
+        "total": 6.900000095367432,
+        "self": 1.2000001668930054
+      },
+      "retained.captureScroll": {
+        "calls": 8,
+        "total": 0,
+        "self": 0
+      },
+      "DOM.moveBefore": {
+        "calls": 16,
+        "total": 1.399999976158142,
+        "self": 1.399999976158142
+      },
+      "retained.move": {
+        "calls": 16,
+        "total": 1.399999976158142,
+        "self": 0
+      },
+      "DOM.insertBefore": {
+        "calls": 232,
+        "total": 0.7999999523162842,
+        "self": 0.7999999523162842
+      },
+      "retained.attach": {
+        "calls": 48,
+        "total": 9.100000143051147,
+        "self": 8.00000011920929
+      },
+      "DOM.appendChild": {
+        "calls": 16,
+        "total": 0.09999990463256836,
+        "self": 0.09999990463256836
+      },
+      "reactive.batch": {
+        "calls": 8,
+        "total": 23.299999833106995,
+        "self": 6.099999785423279
+      },
+      "commitInline": {
+        "calls": 8,
+        "total": 24.49999988079071,
+        "self": 0.20000004768371582
+      },
+      "commit": {
+        "calls": 8,
+        "total": 25.699999809265137,
+        "self": 0.20000004768371582
+      },
+      "command.structuralTransaction": {
+        "calls": 8,
+        "total": 29.399999856948853,
+        "self": 0.5
+      },
+      "table.restore": {
+        "calls": 8,
+        "total": 0,
+        "self": 0
+      },
+      "table.execute": {
+        "calls": 8,
+        "total": 30.699999809265137,
+        "self": 1.2999999523162842
+      },
+      "microtask": {
+        "calls": 120,
+        "total": 16.90000021457672,
+        "self": 2.5000001192092896
+      },
+      "focus.request": {
+        "calls": 8,
+        "total": 0.6000000238418579,
+        "self": 0.6000000238418579
+      },
+      "caret.restore": {
+        "calls": 8,
+        "total": 13,
+        "self": 13
+      },
+      "selection.publish": {
+        "calls": 16,
+        "total": 1.600000023841858,
+        "self": 1.600000023841858
+      },
+      "layout.getBoundingClientRect": {
+        "calls": 16,
+        "total": 0.10000002384185791,
+        "self": 0.10000002384185791
+      }
+    },
+    "records": 40,
+    "documents": 1,
+    "paragraphs": 1
+  },
+  "errors": []
+}

@@ -1,0 +1,39 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/autocomplete.test.ts (36 tests) 9126ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 8065ms
+ ✓ src/rendering/text-lists.test.tsx (15 tests) 3491ms
+   ✓ converts even the first TextBlock to a list, preserving content, identity, selection and one-step history 453ms
+   ✓ outdents a nested item and preserves reading order and descendants 345ms
+   ✓ typing in a list does not run structural planning or take a document snapshot 925ms
+ ✓ src/features/entity-references/ler-interaction.test.tsx (15 tests) 3345ms
+   ✓ opens in Command mode, cycles operators immediately and hands ordinary typing to the input 1051ms
+ ✓ src/rendering/task-lists.test.tsx (18 tests) 3638ms
+   ✓ converts a fresh task [ ]  with exact literal Undo and identity 572ms
+   ✓ converts a fresh task [x]  with exact literal Undo and identity 368ms
+   ✓ converts a fresh task [X]  with exact literal Undo and identity 373ms
+   ✓ keeps existing list items, pasted candidates, disabled feature and interrupted candidates literal 750ms
+ ✓ src/rendering/tables.test.tsx (28 tests) 4839ms
+   ✓ distributes 1 original Blocks without copying their subtrees 544ms
+   ✓ distributes 5 original Blocks without copying their subtrees 632ms
+   ✓ removes only a mid-paragraph invocation, restores exact history and caret, and replays the durable journal 328ms
+ ✓ src/features/entity-references/document-entity-list.test.tsx (15 tests) 4747ms
+   ✓ document entity listing > loads summaries, sorts every column and previews property ranges without document changes 1034ms
+   ✓ document entity listing > opens from the browser-safe chord and keeps local rows when Vault summaries fail 341ms
+   ✓ fast Entity listing > times out optional totals without losing names and ignores late results 1070ms
+ ✓ src/features/autocomplete/placement.test.ts (9 tests) 16ms
+ ✓ src/features/autocomplete/provisional-cells.test.ts (4 tests) 14ms
+ ✓ src/features/autocomplete/provisional-integration.test.ts (11 tests) 466ms
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 17ms
+ ✓ src/rendering/list-prefix.test.tsx (67 tests) 6583ms
+   ✓ converts -, retains identity and recovers the empty-item caret 407ms
+   ✓ rejects long unmatched paragraphs with a constant number of Cell reads 636ms
+ ✓ src/block-tree/structural-performance.test.ts (8 tests) 2265ms
+   ✓ avoids snapshots, global indexing and unrelated record reads with 300 unrelated paragraphs 1797ms
+
+ Test Files  12 passed (12)
+      Tests  229 passed (229)
+   Start at  21:33:59
+   Duration  23.81s (transform 18.55s, setup 0ms, collect 64.99s, tests 38.55s, environment 31.64s, prepare 2.84s)
+

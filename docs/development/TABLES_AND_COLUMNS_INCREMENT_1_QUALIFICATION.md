@@ -1,5 +1,7 @@
 # Tables and columns — Increment 1 qualification
 
+**29 October follow-up:** the approved structural latency correction and Increment 2 are implemented; see [the structural report](STRUCTURAL_TRANSACTION_LATENCY_QUALIFICATION.md) and [Increment 2 qualification](TABLES_AND_COLUMNS_INCREMENT_2_QUALIFICATION.md). The measurements and limitations below describe the original Increment 1 baseline. Increment 3 has not started.
+
 Date: 29 October 2026.
 
 **Status:** Increment 1 correctness gates pass. Structural latency remains a release-qualification limit.

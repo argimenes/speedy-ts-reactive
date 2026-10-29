@@ -1,0 +1,217 @@
+{
+  "typingBefore": {
+    "samples": 40,
+    "characters": 926,
+    "documentCharacters": 15734,
+    "sync": {
+      "median": 16.899999999906868,
+      "p95": 19.600000000093132,
+      "max": 21.699999999720603
+    },
+    "settled": {
+      "median": 24.5,
+      "p95": 27.200000000186265,
+      "max": 29.299999999813735
+    },
+    "frame": {
+      "median": 28.300000000279397,
+      "p95": 31.40000000037253,
+      "max": 33.10000000009313
+    },
+    "snapshots": 0,
+    "builds": 0,
+    "requests": 0,
+    "statusReads": 0,
+    "restored": true
+  },
+  "core": {
+    "identity": true,
+    "retainedRoot": true,
+    "text": "Alpha  Beta",
+    "caret": {
+      "anchor": 6,
+      "head": 6
+    },
+    "ownedRelation": 1,
+    "annotations": 1,
+    "undo": {
+      "text": "Alpha /c2 Beta",
+      "caret": {
+        "anchor": 9,
+        "head": 9
+      },
+      "ordinary": true
+    },
+    "redoCaret": {
+      "anchor": 6,
+      "head": 6
+    },
+    "counts": [
+      4,
+      2
+    ],
+    "cellWidths": [
+      507,
+      507
+    ],
+    "verticalFlow": [
+      645.296875,
+      671.59375,
+      697.890625
+    ],
+    "moveBefore": true
+  },
+  "continuity": {
+    "swap": true,
+    "undoSwap": true,
+    "redoSwap": true,
+    "transfer": true,
+    "undoTransfer": true,
+    "dissolve": true,
+    "listPreserved": true,
+    "undoDissolve": true,
+    "rowMove": true,
+    "undoRowMove": true,
+    "failureRejected": true,
+    "failureContinuity": true,
+    "failureAtomic": true,
+    "noParking": true,
+    "trace": [
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      },
+      {
+        "dom": true,
+        "window": true,
+        "document": true,
+        "sentinel": true
+      }
+    ]
+  },
+  "typingAfter": {
+    "samples": 40,
+    "characters": 926,
+    "documentCharacters": 15910,
+    "sync": {
+      "median": 16.5,
+      "p95": 19.799999999813735,
+      "max": 30.799999999813735
+    },
+    "settled": {
+      "median": 24.5,
+      "p95": 29.100000000093132,
+      "max": 39.299999999813735
+    },
+    "frame": {
+      "median": 29.399999999906868,
+      "p95": 33.60000000009313,
+      "max": 44.299999999813735
+    },
+    "snapshots": 0,
+    "builds": 0,
+    "requests": 0,
+    "statusReads": 0,
+    "restored": true
+  },
+  "structural": {
+    "samplesPerPath": 12,
+    "warmupsPerPath": 2,
+    "selectedCharacters": 926,
+    "documentCharacters": 16850,
+    "legacy": {
+      "median": 33.299999999813735,
+      "p95": 34.90000000037253,
+      "max": 34.90000000037253
+    },
+    "table": {
+      "median": 9.700000000186265,
+      "p95": 16.799999999813735,
+      "max": 16.799999999813735
+    },
+    "preflight": {
+      "median": 0.2999999998137355,
+      "p95": 0.39999999990686774,
+      "max": 0.39999999990686774
+    },
+    "snapshots": {
+      "legacy": 0,
+      "table": 0
+    }
+  },
+  "typingInside": {
+    "samples": 40,
+    "characters": 926,
+    "documentCharacters": 16850,
+    "sync": {
+      "median": 17.700000000186265,
+      "p95": 19.799999999813735,
+      "max": 20.200000000186265
+    },
+    "settled": {
+      "median": 26.899999999906868,
+      "p95": 29.199999999720603,
+      "max": 29.600000000093132
+    },
+    "frame": {
+      "median": 31.399999999906868,
+      "p95": 34.09999999962747,
+      "max": 34.3000000002794
+    },
+    "snapshots": 0,
+    "builds": 0,
+    "requests": 0,
+    "statusReads": 0,
+    "restored": true
+  }
+}

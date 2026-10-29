@@ -1,0 +1,12 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/block-tree/structural-performance.test.ts (10 tests) 2820ms
+   ✓ avoids snapshots, global indexing and unrelated record reads with 300 unrelated paragraphs 2325ms
+ ✓ src/rendering/tables.test.tsx (28 tests) 1001ms
+
+ Test Files  2 passed (2)
+      Tests  38 passed (38)
+   Start at  21:40:06
+   Duration  7.43s (transform 4.21s, setup 0ms, collect 7.06s, tests 3.82s, environment 1.45s, prepare 189ms)
+

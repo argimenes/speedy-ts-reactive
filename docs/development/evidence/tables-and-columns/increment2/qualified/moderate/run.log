@@ -1,0 +1,58 @@
+waiting for Flint moderate
+{
+  "scenario": "moderate",
+  "dimensions": {
+    "records": 15824,
+    "documents": 1,
+    "openDocumentViews": 1,
+    "documentCharacters": 15766
+  },
+  "summary": {
+    "sync": {
+      "median": 4.300000000279397,
+      "p95": 4.899999999906868,
+      "max": 4.899999999906868
+    },
+    "structuralTransaction": {
+      "median": 4.2000000001862645,
+      "p95": 4.899999999906868,
+      "max": 4.899999999906868
+    },
+    "ready": {
+      "median": 13.100000000093132,
+      "p95": 13.399999999906868,
+      "max": 13.399999999906868
+    },
+    "screenshotUpperBound": {
+      "median": 128.29999999981374,
+      "p95": 160.70000000018626,
+      "max": 160.70000000018626
+    },
+    "eventTiming": {
+      "median": 24,
+      "p95": 32,
+      "max": 32
+    },
+    "menuOpen": {
+      "median": 2.599999999627471,
+      "p95": 2.7999999998137355,
+      "max": 2.7999999998137355
+    },
+    "menuAction": {
+      "median": 9.800000000279397,
+      "p95": 9.900000000372529,
+      "max": 9.900000000372529
+    }
+  },
+  "layout": {
+    "scrollWidth": 392,
+    "clientWidth": 350,
+    "scrollLeft": 42,
+    "columns": [
+      195.5,
+      195.5
+    ],
+    "guidesNoMutation": true
+  },
+  "errors": []
+}

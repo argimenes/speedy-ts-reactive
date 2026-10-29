@@ -1,3 +1,4 @@
+import type { StructuralChange } from "./structural-plan";
 import type { ListWrapChange } from "./list-wrap-plan";
 import { createSignal } from 'solid-js';
 import { createStore, reconcile, unwrap } from "solid-js/store";
@@ -84,6 +85,7 @@ export class BlockTreeProjection {
         }
         return;
       }
+      if (change.structural && this.updateStructural(change.structural)) return;
       const next = this.build();
       this.unregister();
       this.setState(reconcile(next));
@@ -314,6 +316,74 @@ export class BlockTreeProjection {
     }
     this.setState("revision", source.revision);
     this.topology[1](v => v + 1);
+  }
+
+  /** Apply proven local canonical deltas. Existing unique occurrences retain
+   * their keys; only moved routes, new branches and changed owners are visited.
+   * Shared occurrences keep the general projection builder's disambiguation. */
+  private updateStructural(change: StructuralChange): boolean {
+    const mounted = change.contents.flatMap(key => [...this.contentNodes.get(key) ?? []]);
+    if (!mounted.length) return true;
+    if (!this.retainStructuralIdentity || change.contents.some(key => (this.contentNodes.get(key)?.size ?? 0) > 1)) return false;
+    const source = this.repository.readState(), nodes = unwrap(this.state.nodes);
+    // Check before touching indexes. An affected parent can point to an existing
+    // shared occurrence whose route cannot be selected by placement alone.
+    for (const ck of change.contents) {
+      const c = source.contents[ck];
+      if (c && [...c.children, ...c.inlineContent, ...Object.values(c.ownedRelations)].some(pk => (this.placementNodes.get(pk)?.size ?? 0) > 1)) return false;
+    }
+    const changed = new Set(change.contents), refreshed = new Set<string>(), adopted = new Set<string>(), detached = new Set<string>();
+    const reroute = (key: string, route: string) => {
+      const old = this.nodeRoutes.get(key)!;
+      if (old === route) return;
+      if (this.routeKeys.get(old) === key) this.routeKeys.delete(old);
+      this.nodeRoutes.set(key, route); this.routeKeys.set(route, key);
+      const node = nodes[key];
+      for (const child of [...node.children, ...node.inlineContent, ...Object.values(node.ownedRelations)]) {
+        const previous = this.nodeRoutes.get(child)!;
+        // A child may already have moved out of this parent in the same batch.
+        if (previous.startsWith(old + '/') && this.repository.locationOf(nodes[child].placementKey)?.ownerContentKey === node.contentKey)
+          reroute(child, route + previous.slice(old.length));
+      }
+    };
+    const ensure = (pk: string, route: string): string => {
+      const existing = this.placementNodes.get(pk)?.values().next().value;
+      if (existing) { adopted.add(existing); reroute(existing, route); refresh(existing); return existing; }
+      const p = source.placements[pk], c = source.contents[p.contentKey], key = this.nodeKey(route, pk);
+      const node: BlockNode = {key, placementKey:pk, contentKey:c.key, viewId:this.viewId, viewType:c.viewType,
+        payload:clone(c.payload), children:c.children.map(pk=>ensure(pk,`${route}/child:${pk}`)),
+        inlineContent:c.inlineContent.map(pk=>ensure(pk,`${route}/inline:${pk}`)),
+        ownedRelations:Object.fromEntries(Object.entries(c.ownedRelations).map(([name,pk])=>[name,ensure(pk,`${route}/relation:${name}:${pk}`)]))};
+      this.setState('nodes',key,node); this.registerNode(node); adopted.add(key); refreshed.add(key); return key;
+    };
+    const refresh = (key: string) => {
+      if (refreshed.has(key) || !changed.has(nodes[key].contentKey)) return;
+      refreshed.add(key);
+      const node = nodes[key], c = source.contents[node.contentKey];
+      if (!c) { detached.add(key); return; }
+      const route = this.nodeRoutes.get(key)!;
+      const children = c.children.map(pk=>ensure(pk,`${route}/child:${pk}`));
+      const inline = c.inlineContent.map(pk=>ensure(pk,`${route}/inline:${pk}`));
+      const retained = new Set([...children,...inline]);
+      for (const old of [...node.children,...node.inlineContent]) if (!retained.has(old)) detached.add(old);
+      this.setState('nodes',key,'payload',reconcile(clone(c.payload)));
+      this.setState('nodes',key,'children',reconcile(children));
+      this.setState('nodes',key,'inlineContent',reconcile(inline));
+    };
+    for (const key of mounted) refresh(key);
+    const remove = (key: string) => {
+      if (adopted.has(key) || !nodes[key]) return;
+      const node = nodes[key];
+      for (const child of [...node.children,...node.inlineContent,...Object.values(node.ownedRelations)]) remove(child);
+      this.unregisterNode(node);
+      // Keep historical routes, like the general builder/updateChildren paths:
+      // Undo/Redo can restore this same placement at its prior occurrence key.
+      this.setState('nodes',key,undefined);
+    };
+    for (const key of detached) remove(key);
+    this.setState('revision',source.revision);
+    if (change.childrenOwners.length) this.topology[1](v=>v+1);
+    return true;
   }
 
   private updateSplit(change: SplitChange): void {

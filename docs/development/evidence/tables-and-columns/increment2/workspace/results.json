@@ -1,0 +1,1137 @@
+{
+  "scenario": "workspace",
+  "directCells": true,
+  "nativeGPU": true,
+  "dimensions": {
+    "records": 79100,
+    "documents": 5,
+    "openDocumentViews": 5,
+    "documentCharacters": 15766
+  },
+  "samples": [
+    {
+      "sync": 28.600000000093132,
+      "ready": 97.69999999995343,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 1.4999999995343387,
+        "table.prepare": 2.3999999999068677,
+        "structuralChangeFor": 1.5,
+        "repository.publish": 8.900000000139698,
+        "reactive.batch": 18.800000000046566,
+        "structuralTransaction": 27,
+        "focus.request": 0.09999999986030161,
+        "caret.restore": 7.900000000139698
+      },
+      "accept": 16595.800000000047,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 436.0999999998603,
+      "usableInputConfirmed": 463.0999999998603,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 16595.800000000047,
+          "duration": 120,
+          "processingStart": 16598.899999999907,
+          "processingEnd": 16693.899999999907,
+          "interactionId": 7878
+        }
+      ]
+    },
+    {
+      "sync": 15.300000000046566,
+      "ready": 73.19999999995343,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 1.3999999994412065,
+        "table.prepare": 0.30000000004656613,
+        "structuralChangeFor": 0.30000000004656613,
+        "repository.publish": 4.300000000046566,
+        "reactive.batch": 9.100000000093132,
+        "structuralTransaction": 15,
+        "focus.request": 0.10000000009313226,
+        "caret.restore": 9.099999999860302
+      },
+      "accept": 17397.699999999953,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 451.30000000004657,
+      "usableInputConfirmed": 483.60000000009313,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 17397.699999999953,
+          "duration": 112,
+          "processingStart": 17398.199999999953,
+          "processingEnd": 17471.100000000093,
+          "interactionId": 7885
+        }
+      ]
+    },
+    {
+      "sync": 14.300000000046566,
+      "ready": 66.5999999998603,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.6999999992549419,
+        "table.prepare": 0.5999999998603016,
+        "structuralChangeFor": 0.30000000004656613,
+        "repository.publish": 3.5999999998603016,
+        "reactive.batch": 11.399999999906868,
+        "structuralTransaction": 13.899999999906868,
+        "focus.request": 0,
+        "caret.restore": 10.100000000093132
+      },
+      "accept": 18154.300000000047,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 264.5999999998603,
+      "usableInputConfirmed": 288.39999999990687,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 18154.300000000047,
+          "duration": 88,
+          "processingStart": 18154.899999999907,
+          "processingEnd": 18221,
+          "interactionId": 7892
+        }
+      ]
+    },
+    {
+      "sync": 18.600000000093132,
+      "ready": 63.800000000046566,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.9999999997671694,
+        "table.prepare": 0.39999999990686774,
+        "structuralChangeFor": 0.30000000004656613,
+        "repository.publish": 9.5,
+        "reactive.batch": 15.800000000046566,
+        "structuralTransaction": 18.199999999953434,
+        "focus.request": 0,
+        "caret.restore": 7.100000000093132
+      },
+      "accept": 18755.899999999907,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 236.10000000009313,
+      "usableInputConfirmed": 246.10000000009313,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 18755.899999999907,
+          "duration": 88,
+          "processingStart": 18756.199999999953,
+          "processingEnd": 18819.800000000047,
+          "interactionId": 7899
+        }
+      ]
+    },
+    {
+      "sync": 7.800000000046566,
+      "ready": 38.5,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.7000000004190952,
+        "table.prepare": 0.30000000004656613,
+        "structuralChangeFor": 0.30000000004656613,
+        "repository.publish": 2.199999999953434,
+        "reactive.batch": 5.899999999906868,
+        "structuralTransaction": 7.5,
+        "focus.request": 0,
+        "caret.restore": 4.699999999953434
+      },
+      "accept": 19203.100000000093,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 229.29999999981374,
+      "usableInputConfirmed": 243.69999999995343,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 19203.100000000093,
+          "duration": 48,
+          "processingStart": 19203.199999999953,
+          "processingEnd": 19241.699999999953,
+          "interactionId": 7906
+        }
+      ]
+    },
+    {
+      "sync": 17.5,
+      "ready": 70.69999999995343,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 1.3999999999068677,
+        "table.prepare": 0.7000000001862645,
+        "structuralChangeFor": 0.5,
+        "repository.publish": 6,
+        "reactive.batch": 13.799999999813735,
+        "structuralTransaction": 17.199999999953434,
+        "focus.request": 0.19999999995343387,
+        "caret.restore": 8.5
+      },
+      "accept": 20080.600000000093,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 432.5,
+      "usableInputConfirmed": 461.79999999981374,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 20080.600000000093,
+          "duration": 104,
+          "processingStart": 20080.699999999953,
+          "processingEnd": 20151.399999999907,
+          "interactionId": 7913
+        }
+      ]
+    },
+    {
+      "sync": 22,
+      "ready": 73.5,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 1,
+        "table.prepare": 0.6999999999534339,
+        "structuralChangeFor": 0.30000000004656613,
+        "repository.publish": 11.5,
+        "reactive.batch": 18.700000000186265,
+        "structuralTransaction": 21.5,
+        "focus.request": 0.20000000018626451,
+        "caret.restore": 8.899999999906868
+      },
+      "accept": 20836.100000000093,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 302.19999999995343,
+      "usableInputConfirmed": 318.5,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 20836.100000000093,
+          "duration": 104,
+          "processingStart": 20836.399999999907,
+          "processingEnd": 20909.600000000093,
+          "interactionId": 7920
+        }
+      ]
+    },
+    {
+      "sync": 17.199999999953434,
+      "ready": 74.69999999995343,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 1.599999999627471,
+        "table.prepare": 0.4000000001396984,
+        "structuralChangeFor": 0.19999999995343387,
+        "repository.publish": 8.299999999813735,
+        "reactive.batch": 14.299999999813735,
+        "structuralTransaction": 17,
+        "focus.request": 0.10000000009313226,
+        "caret.restore": 12.699999999953434
+      },
+      "accept": 21486.699999999953,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 395.60000000009313,
+      "usableInputConfirmed": 433.19999999995343,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 21486.699999999953,
+          "duration": 104,
+          "processingStart": 21487,
+          "processingEnd": 21561.5,
+          "interactionId": 7927
+        }
+      ]
+    },
+    {
+      "sync": 15.300000000046566,
+      "ready": 66.60000000009313,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 1,
+        "table.prepare": 0.5,
+        "structuralChangeFor": 0.30000000004656613,
+        "repository.publish": 5.600000000093132,
+        "reactive.batch": 12.600000000093132,
+        "structuralTransaction": 15.100000000093132,
+        "focus.request": 0,
+        "caret.restore": 13.300000000046566
+      },
+      "accept": 22200.699999999953,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 666.1999999999534,
+      "usableInputConfirmed": 746.6000000000931,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 22200.699999999953,
+          "duration": 88,
+          "processingStart": 22201.300000000047,
+          "processingEnd": 22267.399999999907,
+          "interactionId": 7934
+        }
+      ]
+    },
+    {
+      "sync": 15.399999999906868,
+      "ready": 63.60000000009313,
+      "table": true,
+      "visible": true,
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      },
+      "retained": true,
+      "active": true,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 62,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.6000000000931323,
+        "table.prepare": 0.5,
+        "structuralChangeFor": 0.19999999995343387,
+        "repository.publish": 8.100000000093132,
+        "reactive.batch": 13.100000000093132,
+        "structuralTransaction": 15.100000000093132,
+        "focus.request": 0,
+        "caret.restore": 7.600000000093132
+      },
+      "accept": 23216.5,
+      "suggestionCounts": {
+        "clone": 36,
+        "reactive.batch": 3,
+        "repository.publish": 3,
+        "caret.restore": 3
+      },
+      "screenshotConfirmed": 287,
+      "usableInputConfirmed": 298.10000000009313,
+      "paintEvents": [
+        {
+          "name": "keydown",
+          "start": 23216.5,
+          "duration": 88,
+          "processingStart": 23216.800000000047,
+          "processingEnd": 23280.300000000047,
+          "interactionId": 7941
+        }
+      ]
+    }
+  ],
+  "menu": [
+    {
+      "open": 45,
+      "action": 48.0999999998603,
+      "sync": 9.399999999906868,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.30000000004656613,
+        "table.prepare": 1,
+        "structuralChangeFor": 0.19999999995343387,
+        "repository.publish": 2.7999999998137355,
+        "reactive.batch": 7.2999999998137355,
+        "structuralTransaction": 9,
+        "focus.request": 10.100000000093132,
+        "caret.restore": 0.09999999986030161
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    },
+    {
+      "open": 10,
+      "action": 27.600000000093132,
+      "sync": 7.199999999953434,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.30000000004656613,
+        "table.prepare": 0.30000000004656613,
+        "structuralChangeFor": 0,
+        "repository.publish": 1.8999999999068677,
+        "reactive.batch": 5.699999999953434,
+        "structuralTransaction": 7,
+        "focus.request": 4.5,
+        "caret.restore": 0
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    },
+    {
+      "open": 9.200000000186265,
+      "action": 25.699999999953434,
+      "sync": 4,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.39999999944120646,
+        "table.prepare": 0.2999999998137355,
+        "structuralChangeFor": 0.10000000009313226,
+        "repository.publish": 0.6999999999534339,
+        "reactive.batch": 3.1000000000931323,
+        "structuralTransaction": 3.6000000000931323,
+        "focus.request": 5.100000000093132,
+        "caret.restore": 0.09999999986030161
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    },
+    {
+      "open": 7.5,
+      "action": 29.699999999953434,
+      "sync": 8.599999999860302,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.4000000001396984,
+        "table.prepare": 0.30000000004656613,
+        "structuralChangeFor": 0.19999999995343387,
+        "repository.publish": 3.4000000001396984,
+        "reactive.batch": 6.600000000093132,
+        "structuralTransaction": 8.300000000046566,
+        "focus.request": 5.099999999860302,
+        "caret.restore": 0
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    },
+    {
+      "open": 7.7000000001862645,
+      "action": 27.5,
+      "sync": 4.600000000093132,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.09999999986030161,
+        "table.prepare": 0.30000000004656613,
+        "structuralChangeFor": 0,
+        "repository.publish": 0.6999999999534339,
+        "reactive.batch": 3.699999999953434,
+        "structuralTransaction": 4.300000000046566,
+        "focus.request": 5.300000000046566,
+        "caret.restore": 0.19999999995343387
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    },
+    {
+      "open": 7.7999999998137355,
+      "action": 27.5,
+      "sync": 6.300000000046566,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.5999999998603016,
+        "table.prepare": 0.4000000001396984,
+        "structuralChangeFor": 0,
+        "repository.publish": 2.1000000000931323,
+        "reactive.batch": 4.600000000093132,
+        "structuralTransaction": 6,
+        "focus.request": 4.5,
+        "caret.restore": 0
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    },
+    {
+      "open": 7.900000000139698,
+      "action": 26.5,
+      "sync": 4.900000000139698,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.30000000004656613,
+        "table.prepare": 0.19999999995343387,
+        "structuralChangeFor": 0.09999999986030161,
+        "repository.publish": 0.8999999999068677,
+        "reactive.batch": 3.3999999999068677,
+        "structuralTransaction": 4.2999999998137355,
+        "focus.request": 5.7999999998137355,
+        "caret.restore": 0.10000000009313226
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    },
+    {
+      "open": 7.599999999860302,
+      "action": 24.600000000093132,
+      "sync": 4.100000000093132,
+      "counts": {
+        "table.prepare": 1,
+        "clone": 23,
+        "structuralTransaction": 1,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      },
+      "timings": {
+        "clone": 0.20000000018626451,
+        "table.prepare": 0.19999999995343387,
+        "structuralChangeFor": 0.10000000009313226,
+        "repository.publish": 0.6000000000931323,
+        "reactive.batch": 3,
+        "structuralTransaction": 3.800000000046566,
+        "focus.request": 5.5,
+        "caret.restore": 0
+      },
+      "caret": {
+        "anchor": 2,
+        "head": 2
+      }
+    }
+  ],
+  "legacyMenu": [
+    {
+      "build": 5.800000000046566,
+      "action": 22,
+      "timings": {
+        "blockMenuItems": 5.7000000001862645,
+        "clone": 0.3999999996740371,
+        "structuralChangeFor": 0.09999999986030161,
+        "repository.publish": 5.399999999906868,
+        "reactive.batch": 13.5,
+        "structuralTransaction": 14.699999999953434,
+        "caret.restore": 6.7000000001862645,
+        "focus.request": 7
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    },
+    {
+      "build": 1,
+      "action": 14.800000000046566,
+      "timings": {
+        "blockMenuItems": 0.8999999999068677,
+        "clone": 0.49999999976716936,
+        "structuralChangeFor": 0.19999999995343387,
+        "repository.publish": 2.800000000046566,
+        "reactive.batch": 7.199999999953434,
+        "structuralTransaction": 8.899999999906868,
+        "caret.restore": 5.5,
+        "focus.request": 5.800000000046566
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    },
+    {
+      "build": 1.1999999999534339,
+      "action": 15.5,
+      "timings": {
+        "blockMenuItems": 1.1999999999534339,
+        "clone": 0.7000000001862645,
+        "structuralChangeFor": 0.10000000009313226,
+        "repository.publish": 3.300000000046566,
+        "reactive.batch": 7.5,
+        "structuralTransaction": 9,
+        "caret.restore": 6.199999999953434,
+        "focus.request": 6.300000000046566
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    },
+    {
+      "build": 0.8999999999068677,
+      "action": 16.100000000093132,
+      "timings": {
+        "blockMenuItems": 0.8999999999068677,
+        "clone": 0.8000000000465661,
+        "structuralChangeFor": 0.10000000009313226,
+        "repository.publish": 4,
+        "reactive.batch": 8.800000000046566,
+        "structuralTransaction": 9.899999999906868,
+        "caret.restore": 5.900000000139698,
+        "focus.request": 6.100000000093132
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    },
+    {
+      "build": 2.5,
+      "action": 16,
+      "timings": {
+        "blockMenuItems": 2.5,
+        "clone": 0.7000000001862645,
+        "structuralChangeFor": 0.19999999995343387,
+        "repository.publish": 2.1000000000931323,
+        "reactive.batch": 8,
+        "structuralTransaction": 9.199999999953434,
+        "caret.restore": 6.5,
+        "focus.request": 6.600000000093132
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    },
+    {
+      "build": 1.0999999998603016,
+      "action": 15,
+      "timings": {
+        "blockMenuItems": 1,
+        "clone": 0.5000000002328306,
+        "structuralChangeFor": 0,
+        "repository.publish": 2.8999999999068677,
+        "reactive.batch": 6.5,
+        "structuralTransaction": 7.699999999953434,
+        "caret.restore": 5.2999999998137355,
+        "focus.request": 5.2999999998137355
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    },
+    {
+      "build": 1.1999999999534339,
+      "action": 15.5,
+      "timings": {
+        "blockMenuItems": 1.1999999999534339,
+        "clone": 0.30000000004656613,
+        "structuralChangeFor": 0.09999999986030161,
+        "repository.publish": 2.3999999999068677,
+        "reactive.batch": 6.399999999906868,
+        "structuralTransaction": 9.299999999813735,
+        "caret.restore": 6,
+        "focus.request": 6.100000000093132
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    },
+    {
+      "build": 0.7000000001862645,
+      "action": 14.199999999953434,
+      "timings": {
+        "blockMenuItems": 0.7000000001862645,
+        "clone": 0.39999999990686774,
+        "structuralChangeFor": 0.09999999986030161,
+        "repository.publish": 2.1000000000931323,
+        "reactive.batch": 6.100000000093132,
+        "structuralTransaction": 7.400000000139698,
+        "caret.restore": 6.5,
+        "focus.request": 6.600000000093132
+      },
+      "counts": {
+        "blockMenuItems": 1,
+        "structuralTransaction": 1,
+        "clone": 40,
+        "structuralChangeFor": 1,
+        "reactive.batch": 1,
+        "repository.publish": 1,
+        "focus.request": 1,
+        "caret.restore": 1
+      }
+    }
+  ],
+  "layout": {
+    "scrollWidth": 392,
+    "clientWidth": 350,
+    "scrollLeft": 42,
+    "columns": [
+      195.5,
+      195.5
+    ],
+    "guidesNoMutation": true
+  },
+  "functional": {
+    "navigation": {
+      "revision": 125,
+      "focusedCell": true,
+      "scrollLeft": 42,
+      "windowPreserved": true,
+      "documentPreserved": true,
+      "revisionAfter": 125
+    },
+    "aliases": [
+      {
+        "alias": "row",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "col",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "mc r",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "move-cell left",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "mr d",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "move-row up",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "unc",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "c3",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "unc",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "c4",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      },
+      {
+        "alias": "unc",
+        "text": "A fixed annotated Block to move.",
+        "caret": {
+          "anchor": 2,
+          "head": 2
+        },
+        "retained": true,
+        "exactUndo": true
+      }
+    ],
+    "unknownAndEscape": true,
+    "imeLiteral": true,
+    "pasteLiteral": true,
+    "selection": {
+      "rows": 2,
+      "columns": 3,
+      "identities": true,
+      "originalText": "A fixed annotated Block to move.",
+      "noLiteral": true
+    },
+    "surface": {
+      "frontRetained": true,
+      "backConnected": true,
+      "face": true,
+      "after": true
+    }
+  },
+  "summary": {
+    "sync": {
+      "median": 17.199999999953434,
+      "p95": 22,
+      "max": 22
+    },
+    "structuralTransaction": {
+      "median": 17,
+      "p95": 21.5,
+      "max": 21.5
+    },
+    "ready": {
+      "median": 66.60000000009313,
+      "p95": 74.69999999995343,
+      "max": 74.69999999995343
+    },
+    "screenshotUpperBound": {
+      "median": 302.19999999995343,
+      "p95": 666.1999999999534,
+      "max": 666.1999999999534
+    },
+    "eventTiming": {
+      "median": 88,
+      "p95": 104,
+      "max": 104
+    },
+    "menuOpen": {
+      "median": 7.7999999998137355,
+      "p95": 9.200000000186265,
+      "max": 9.200000000186265
+    },
+    "menuAction": {
+      "median": 27.5,
+      "p95": 29.699999999953434,
+      "max": 29.699999999953434
+    }
+  },
+  "errors": []
+}

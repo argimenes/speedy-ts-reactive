@@ -1,3 +1,4 @@
+import { StructuralDraft } from "./structural-draft";
 import { isAutomaticListMetadata, type AutomaticListMetadata } from "./list-wrap-plan";
 import { diffRecordBatch } from "./record-batch";
 import { conversionSource } from '../interchange/conversion';
@@ -35,6 +36,7 @@ interface PendingTransaction {
   label: string;
   operations: RepositoryOperation[];
   draft: RepositoryState;
+  local?: StructuralDraft;
   commands: CommandDescriptor[];
 }
 
@@ -89,7 +91,7 @@ export class TreeCommands {
   /** Prepared fragments only: one history entry and validation batch for the entire paste. */
   insertMutableText(edits: Array<{ segments: CrossTextSegment[]; fragment: BlockFragment; slices: MutableFragment['roots'] }>, cut = false, operation: 'paste' | 'import' | 'convert' = 'paste') {
     if (!edits.length) return [];
-    const before = this.pending?.draft ?? this.repository.readState();
+    const before = this.current();
     let state = before;
     const results: Array<{ placementKey: string; caret: number }> = [];
     for (const edit of edits) {
@@ -124,7 +126,7 @@ export class TreeCommands {
 
 
   replaceAcrossBlocks(segments: CrossTextSegment[], text: string) {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current();
     const resolved = segments.map(segment => ({ ...segment, placementKey: this.placementKey(segment.placementKey, state) }));
     const result = planCrossTextEdit(state, resolved, text);
     this.pruneUnreachable(result.state);
@@ -136,7 +138,7 @@ export class TreeCommands {
   }
 
   editStandoffProperty(key: NodeKey | PlacementKey, index: number, expected: Record<string, unknown>, action: AnnotationAction | AnnotationPatch): Record<string, unknown> {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current();
     const content = state.contents[state.placements[this.placementKey(key, state)].contentKey];
     const properties = content.payload.standoffProperties;
     if (content.inlineKind !== "standoff" || !Array.isArray(properties) || !Number.isInteger(index) ||
@@ -167,13 +169,41 @@ export class TreeCommands {
     private readonly resolveOccurrence: (key: NodeKey | PlacementKey) => PlacementKey | undefined,
   ) {}
 
+  private current(local = false): RepositoryState {
+    if (this.pending?.local && !local) {
+      this.pending.draft = this.pending.local.materialize();
+      this.pending.local = undefined;
+    }
+    return this.pending?.draft ?? this.repository.readState();
+  }
   private state(): RepositoryState {
-    return this.pending?.draft ?? this.repository.snapshot();
+    return this.pending ? this.current() : this.repository.snapshot();
+  }
+  private location(key: string, state: RepositoryState) {
+    return this.pending?.local ? this.pending.local.locationOf(key)
+      : state === this.repository.readState() ? this.repository.locationOf(key) : deriveLocations(state).get(key);
+  }
+  /** Same-resource proof using existing incoming/location indexes. A doubtful
+   * ownership context falls back to the original linked-annotation planner. */
+  private localResource(key: string, state: RepositoryState): string | undefined {
+    if (!this.repository.hasValidStructuralEvidence || this.pending && !this.pending.local) return;
+    const seen = new Set<string>();
+    while (!seen.has(key)) {
+      seen.add(key);
+      const c = state.contents[key]; if (!c) return;
+      if (c.viewType === 'document-block' || c.viewType === 'workspace-block') return key;
+      const incoming = [...(this.pending?.local?.ownedKeys(key) ?? this.repository.ownedPlacementKeys(key))];
+      if (!incoming.length) return c.definitionOwnerKey;
+      if (incoming.length !== 1) return;
+      const p = state.placements[incoming[0]], at = this.location(incoming[0], state);
+      if (!p || p.externalReference || p.resolvedReference || p.resourceRegistration || !at) return;
+      key = at.ownerContentKey;
+    }
   }
 
   /** Transaction-aware structural reads, including freshly inserted wrappers. */
   childrenOf(key: NodeKey | PlacementKey): PlacementKey[] {
-    const state = this.state();
+    const state = this.current(true);
     return [...state.contents[state.placements[this.placementKey(key, state)].contentKey].children];
   }
 
@@ -195,9 +225,10 @@ export class TreeCommands {
   private publish(label: string, operations: RepositoryOperation[], descriptor?: CommandDescriptor): void {
     if (!operations.length) return;
     let draftLocations: ReturnType<typeof deriveLocations> | undefined;
-    operations = ownNewDefinitions(this.pending?.draft ?? this.repository.readState(), operations,
-      key => this.pending ? (draftLocations ??= deriveLocations(this.pending.draft)).get(key) : this.repository.locationOf(key));
-    const current = this.pending?.draft ?? this.repository.readState();
+    if (operations.some(op => op.kind === 'record-batch' || op.kind === 'set-root')) this.current();
+    operations = ownNewDefinitions(this.current(true), operations,
+      key => this.pending?.local ? this.pending.local.locationOf(key) : this.pending ? (draftLocations ??= deriveLocations(this.pending.draft)).get(key) : this.repository.locationOf(key));
+    const current = this.current(true);
     if (this.repository.hasSemanticPlacements() || operations.some(op => op.kind === "record-batch" || op.kind === "put-placement" && op.record.placementId !== undefined)) {
       operations = operations.map(op => {
         if (op.kind === "record-batch") {
@@ -214,8 +245,8 @@ export class TreeCommands {
     }
     const description = descriptor ?? { commandId: "tree.command", subjects: [] };
     if (this.pending) {
-      const { next } = planOperations(this.pending.draft, operations);
-      this.pending.draft = next;
+      if (this.pending.local) this.pending.local.apply(operations);
+      else this.pending.draft = planOperations(this.pending.draft, operations).next;
       // Legacy structural commands can still emit many record changes. Never
       // make transaction assembly depend on the engine's argument-count limit.
       for (const operation of operations) this.pending.operations.push(operation);
@@ -235,17 +266,27 @@ export class TreeCommands {
     this.publish(label,operations);return true;
   }
 
+  /** Reusable bounded assembly. Unsupported commands materialize once; final
+   * canonical admission still validates the complete batch before publication. */
+  structuralTransaction(label: string, operation: () => void, descriptor?: CommandDescriptor): void {
+    this.runTransaction(label, operation, descriptor, true);
+  }
   transaction(label: string, operation: () => void, descriptor?: CommandDescriptor): void {
+    this.runTransaction(label, operation, descriptor, false);
+  }
+  private runTransaction(label: string, operation: () => void, descriptor: CommandDescriptor | undefined, local: boolean): void {
     if (this.pending) {
       const index = this.pending.commands.length;
       operation();
       if (descriptor) this.pending.commands.splice(index, 0, clone(descriptor));
       return;
     }
-    this.pending = { label, operations: [], draft: this.repository.snapshot(), commands: descriptor ? [clone(descriptor)] : [] };
+    const writeSet = local ? new StructuralDraft(this.repository.readState(), key => this.repository.locationOf(key),
+      key => this.repository.contentReferenceCount(key), key => this.repository.ownedPlacementKeys(key)) : undefined;
+    this.pending = { label, operations: [], local: writeSet, draft: writeSet?.state ?? this.repository.snapshot(), commands: descriptor ? [clone(descriptor)] : [] };
     try {
       operation();
-      const operations = this.pending.operations;
+      const operations = this.pending.local?.operations() ?? this.pending.operations;
       const commands = this.pending.commands;
       this.pending = undefined;
       this.repository.commit(label, operations, true, { commands });
@@ -363,14 +404,14 @@ export class TreeCommands {
 
     const anchorKey = this.placementKey(destination.anchorKey, state);
     if (sourceKey === anchorKey) {
-      const location = deriveLocations(state).get(anchorKey);
+      const location = this.location(anchorKey, state);
       if (!location || location.slot.kind !== "children") {
         throw new TreeCommandError("The anchor is not in an ordinary child slot");
       }
       const owner = state.contents[location.ownerContentKey];
       return { owner, children: [...owner.children], index: owner.children.indexOf(anchorKey) };
     }
-    const location = deriveLocations(state).get(anchorKey);
+    const location = this.location(anchorKey, state);
     if (!location || location.slot.kind !== "children") {
       throw new TreeCommandError("Before/after requires an ordinary child anchor");
     }
@@ -395,7 +436,7 @@ export class TreeCommands {
    * structural commit. Do not insert then clone/scan the expanded document to
    * remove the old source. Undo retains the exact source and prepared subtree. */
   replaceSourceWithFragment(fragment: BlockFragment, key: NodeKey | PlacementKey): PlacementKey[] {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current();
     const pk = this.placementKey(key, state), p = state.placements[pk], c = state.contents[p.contentKey];
     if (p.kind !== "owned" || p.externalReference || p.resolvedReference || p.resourceRegistration ||
       c.children.length || c.inlineContent.length || Object.keys(c.ownedRelations).length || Object.keys(c.opaqueRelations).length ||
@@ -410,7 +451,7 @@ export class TreeCommands {
   private insertPreparedFragment(fragment: BlockFragment, destination: Destination, descriptor?: CommandDescriptor, replaceKey?: PlacementKey): PlacementKey[] {
     fragment = clone(fragment);
     prepareNewBlockIdentities(Object.values(fragment.state.contents));
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current();
     const target = this.resolveInsertion(destination, undefined, state);
     if (Object.keys(fragment.state.contents).some(key => state.contents[key]) || Object.keys(fragment.state.placements).some(key => state.placements[key])) throw new TreeCommandError("Clipboard keys collide with existing Blocks");
     const children = [...target.children];
@@ -448,7 +489,7 @@ export class TreeCommands {
   }
 
   insert(dto: ExistingBlockDto, destination: Destination): PlacementKey {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current(true);
     const decoded = decodeDetachedSubtree(dto);
     prepareNewBlockIdentities(Object.values(decoded.state.contents));
     const target = this.resolveInsertion(destination, undefined, state);
@@ -472,10 +513,10 @@ export class TreeCommands {
    * resource. Optional prefix removal uses the ordinary native inline planner. */
   wrapTextBlockInList(key: NodeKey | PlacementKey, prefixLength = 0, list: AutomaticListMetadata = { ordered: false }, checked?: boolean): PlacementKey {
     if (!isAutomaticListMetadata(list)) throw new TreeCommandError("Invalid automatic list metadata");
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current(true);
     const sourceKey = this.placementKey(key, state), source = state.placements[sourceKey];
     const content = state.contents[source.contentKey];
-    const location = this.pending ? deriveLocations(state).get(sourceKey) : this.repository.locationOf(sourceKey);
+    const location = this.location(sourceKey, state);
     if (sourceKey === state.rootPlacementKey || !location || location.slot.kind !== "children" ||
       content.viewType !== "standoff-editor-block" || source.kind === "owned" && (source.externalReference || source.resolvedReference)) {
       throw new TreeCommandError("List wrapping requires an ordinary TextBlock child");
@@ -503,7 +544,7 @@ export class TreeCommands {
   }
 
   move(key: NodeKey | PlacementKey, destination: Destination): void {
-    const state = this.state();
+    const state = this.current(true);
     const sourceKey = this.placementKey(key, state);
     const moving = state.placements[sourceKey];
     if (moving.kind === "owned" && (moving.externalReference || moving.resolvedReference)) throw new TreeCommandError("Owned resource transfer requires an explicit ownership operation");
@@ -516,8 +557,7 @@ export class TreeCommands {
     ) {
       return;
     }
-    const locations = deriveLocations(state);
-    const sourceLocation = locations.get(sourceKey);
+    const sourceLocation = this.location(sourceKey, state);
     if (!sourceLocation || sourceLocation.slot.kind !== "children") {
       throw new TreeCommandError("Only ordinary child placements can be moved");
     }
@@ -545,7 +585,10 @@ export class TreeCommands {
         record: this.updatedChildren(target.owner, destinationChildren),
       });
     }
-    operations.push(...linkedSourcesForMove(state, sourceKey, target.owner.key));
+    const sourceResource = this.localResource(moving.contentKey, state);
+    if (!sourceResource || sourceResource !== this.localResource(target.owner.key, state)) {
+      operations.push(...linkedSourcesForMove(this.current(), sourceKey, target.owner.key));
+    }
     this.publish("Move Block", operations, { commandId: "tree.move", subjects: [this.subject(state, sourceKey)] });
   }
 
@@ -571,7 +614,33 @@ export class TreeCommands {
     return true;
   }
 
+  private removeLocal(key: NodeKey | PlacementKey): boolean {
+    const draft = this.pending?.local; if (!draft) return false;
+    const state = draft.state, pk = this.resolveOccurrence(key), p = pk && state.placements[pk];
+    if (!pk || !p) return true;
+    const at = draft.locationOf(pk);
+    if (pk === state.rootPlacementKey || !at || at.slot.kind !== 'children') return false;
+    const operations: RepositoryOperation[] = [], counts = new Map<string, number>(), seen = new Set<string>();
+    const remove = (key: string): boolean => {
+      if (seen.has(key)) return false; seen.add(key);
+      const p = state.placements[key];
+      if (!p || p.kind === 'reference' || p.externalReference || p.resolvedReference || p.resourceRegistration) return false;
+      const c = state.contents[p.contentKey];
+      if (!c || ['document-block', 'workspace-block'].includes(c.viewType)) return false;
+      operations.push({ kind: 'remove-placement', key });
+      const count = (counts.get(c.key) ?? draft.referenceCount(c.key)) - 1; counts.set(c.key, count);
+      if (count || c.definitionOwnerKey) return true;
+      operations.push({ kind: 'remove-content', key: c.key });
+      return [...c.children, ...c.inlineContent, ...Object.values(c.ownedRelations)].every(remove);
+    };
+    if (!remove(pk)) return false;
+    const owner = state.contents[at.ownerContentKey];
+    operations.push({kind:'put-content',record:this.updatedChildren(owner,owner.children.filter(k=>k!==pk))});
+    this.publish('Remove Block',operations,{commandId:'tree.remove',subjects:[this.subject(state,pk)]});
+    return true;
+  }
   remove(key: NodeKey | PlacementKey): void {
+    if (this.removeLocal(key)) return;
     if (this.removeEmptyParagraph(key)) return;
     const state = this.state();
     const resolved = this.resolveOccurrence(key);
@@ -699,7 +768,7 @@ export class TreeCommands {
   }
 
   ensureMargin(ownerKey: NodeKey | PlacementKey, side: "left" | "right"): PlacementKey {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current();
     const owner = state.contents[state.placements[this.placementKey(ownerKey, state)].contentKey];
     if (owner.inlineKind !== "standoff") throw new TreeCommandError("Margins require a Standoff source block");
     const name = side === "left" ? "leftMargin" : "rightMargin";
@@ -725,7 +794,7 @@ export class TreeCommands {
       ],
       children: [text],
     });
-    const next = this.pending?.draft ?? this.repository.readState();
+    const next = this.current();
     return next.contents[next.placements[placement].contentKey].children[0];
   }
 
@@ -780,7 +849,7 @@ export class TreeCommands {
     if (field === "children" || field === "relation") {
       throw new TreeCommandError(`${field} must be changed through structural commands`);
     }
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current(true);
     const placement = state.placements[this.placementKey(key, state)];
     const content = state.contents[placement.contentKey];
     if (Object.is(content.payload[field], value)) return;
@@ -804,7 +873,7 @@ export class TreeCommands {
     text: string,
     label = "Edit Standoff text",
   ): void {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current(true);
     const placement = this.placementKey(key, state);
     this.publish(label, this.inlineReplacementOperations(state, placement, start, end, text), {
       commandId: "tree.replaceInlineRange", subjects: [this.subject(state, placement)],
@@ -823,7 +892,7 @@ export class TreeCommands {
     }
 
     const removed = content.inlineContent.slice(start, end);
-    let incremental = !this.pending && removed.every((key) =>
+    let incremental = (!this.pending || !!this.pending.local) && removed.every((key) =>
       isTextLeaf(state.contents[state.placements[key].contentKey]));
     const operations: RepositoryOperation[] = [];
     const inserted: PlacementKey[] = [];
@@ -892,11 +961,13 @@ export class TreeCommands {
         removedReferences.set(contentKey, (removedReferences.get(contentKey) ?? 0) + 1);
       }
       for (const [key, count] of removedReferences) {
-        if (this.repository.contentReferenceCount(key) === count) operations.push({ kind: "remove-content", key });
+        if ((this.pending?.local?.referenceCount(key) ?? this.repository.contentReferenceCount(key)) === count) operations.push({ kind: "remove-content", key });
       }
       return operations;
     }
-    // Structural inline atoms and transaction drafts retain full graph planning.
+    // Structural inline atoms retain full graph planning. Materialize the private
+    // write set before enumeration; never clone its inherited read-through view.
+    if (this.pending?.local) state = this.current();
     const next = clone(state);
     for (const operation of operations) {
       if (operation.kind === "put-content") next.contents[operation.record.key] = operation.record;
@@ -1039,7 +1110,7 @@ export class TreeCommands {
   }
 
   insertEmptyStandoffSibling(key: NodeKey | PlacementKey, side: "before" | "after", checked?: boolean): PlacementKey {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current();
     const placementKey = this.placementKey(key, state);
     const content = state.contents[state.placements[placementKey].contentKey];
     if (content.inlineKind !== "standoff") throw new TreeCommandError("Expected a Standoff paragraph");
@@ -1061,7 +1132,7 @@ export class TreeCommands {
   }
 
   splitStandoff(key: NodeKey | PlacementKey, index: number, checked?: boolean): PlacementKey {
-    const state = this.pending?.draft ?? this.repository.readState();
+    const state = this.current();
     const placementKey = this.placementKey(key, state);
     const placement = state.placements[placementKey];
     const content = state.contents[placement.contentKey];

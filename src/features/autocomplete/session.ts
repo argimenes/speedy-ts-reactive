@@ -2,6 +2,10 @@ import { createStore, type SetStoreFunction } from 'solid-js/store';
 import type { CanonicalEntity, EntityService } from '../../feature-api/entities';
 import { parseInput, rank, type CompletionCandidate, type CompletionKind, type CompletionScope } from './model';
 import { usage, recordUsage, clearUsage } from './history';
+// Entity query punctuation is not part of the slash-command argument grammar.
+const inputParts = (kind: CompletionKind, input: string) => kind === 'command'
+  ? { mention: input.trim(), query: input.trim(), scope: undefined, createName: undefined }
+  : parseInput(input);
 export interface CompletionSource { nodeKey: string; contentKey: string; placementKey: string; viewId: string; version: number; start: number; end: number; literal: string; inline: boolean; brackets?: 'mention'|'autocomplete' }
 export interface CompletionHost {
   canDismiss?():boolean;
@@ -9,7 +13,7 @@ export interface CompletionHost {
   historyScope(): Promise<string>;
   documentEntities(): CompletionCandidate[];
   documents(): Promise<CompletionCandidate[]>;
-  commands(): CompletionCandidate[];
+  commands(query?: string): CompletionCandidate[];
   valid(source: CompletionSource): boolean;
   commit(source: CompletionSource, entity: CanonicalEntity, text: string): void;
   reference(source: CompletionSource, candidate: CompletionCandidate, text: string): Promise<void>;
@@ -31,14 +35,15 @@ export class CompletionSession {
   private documentPool?: Promise<CompletionCandidate[]>;
   constructor(readonly host: CompletionHost, source: CompletionSource, kind: CompletionKind, input: string) {
     this.source = source;
-    [this.state,this.set] = createStore<State>({ phase:'active', sourceText:source.brackets?source.literal:source.inline?parseInput(input).mention:source.literal, searchQuery:parseInput(input).query, queryMode:input.includes(' : ')?'independent':'following-source', kind, input, scope:'blend' as CompletionScope, rows:[] as CompletionCandidate[], selected:'', busy:false, pending:false, error:'', expanded:!source.inline, revision:0 });
+    const parsed = inputParts(kind, input);
+    [this.state,this.set] = createStore<State>({ phase:'active', sourceText:source.brackets?source.literal:source.inline?parsed.mention:source.literal, searchQuery:parsed.query, queryMode:kind!=='command'&&input.includes(' : ')?'independent':'following-source', kind, input, scope:'blend' as CompletionScope, rows:[] as CompletionCandidate[], selected:'', busy:false, pending:false, error:'', expanded:!source.inline, revision:0 });
     this.local = kind === 'entity' ? host.documentEntities() : [];
     this.refresh();
   }
   get alive() { return !this.disposed; }
-  get parsed() { const parsed=parseInput(this.state.input); return {...parsed,query:this.state.searchQuery,mention:this.state.sourceText}; }
-  update(source: CompletionSource, input: string) { if(this.state.pending)return; this.source=source; const sourceText=source.brackets?source.literal:parseInput(input).mention; this.set({sourceText,...(this.state.queryMode==='following-source'?{input,searchQuery:parseInput(input).query}:{}),revision:this.state.revision+1}); this.refresh(); }
-  input(input: string) { input=input.slice(0,1000);this.set({input,searchQuery:parseInput(input).query,queryMode:'independent'}); this.refresh(); }
+  get parsed() { const parsed=inputParts(this.state.kind,this.state.input); return {...parsed,query:this.state.searchQuery,mention:this.state.sourceText}; }
+  update(source: CompletionSource, input: string) { if(this.state.pending)return; this.source=source; const sourceText=source.brackets?source.literal:inputParts(this.state.kind,input).mention; this.set({sourceText,...(this.state.queryMode==='following-source'?{input,searchQuery:inputParts(this.state.kind,input).query}:{}),revision:this.state.revision+1}); this.refresh(); }
+  input(input: string) { input=input.slice(0,1000);this.set({input,searchQuery:inputParts(this.state.kind,input).query,queryMode:'independent'}); this.refresh(); }
   follow() { this.set({queryMode:'following-source',input:this.state.sourceText,searchQuery:this.state.sourceText});this.refresh(); }
   scope(scope: CompletionScope) { this.set('scope',scope); this.refresh(); }
   expand() { this.set('expanded',true); }
@@ -54,6 +59,7 @@ export class CompletionSession {
   refresh() {
     if(this.suspended||this.disposed)return;
     clearTimeout(this.timer); this.controller?.abort(); const generation=++this.generation;
+    if(this.state.kind==='command'){this.set({busy:false,error:'',selected:''});this.publish(this.host.commands(this.parsed.query));return;}
     this.set({busy:true,error:''}); this.timer=setTimeout(()=>void this.resolve(generation),150);
   }
   private async resolve(generation: number) {
@@ -62,7 +68,7 @@ export class CompletionSession {
     try {
       const {query,scope:override}=this.parsed, scope=override??this.state.scope;
       const matches=(r: CompletionCandidate)=>!query||r.name.toLocaleLowerCase().includes(query.toLocaleLowerCase());
-      if(this.state.kind==='command') { this.publish(this.host.commands().filter(matches)); return; }
+      if(this.state.kind==='command') { this.publish(this.host.commands(query)); return; }
       if(this.state.kind==='block') { this.publish([]); this.set('error','Block drill-down is not yet supported by the native reference picker. Text remains literal.'); return; }
       if(this.state.kind==='document') { const rows=await (this.documentPool??=this.host.documents()); if(current())this.publish(rows.filter(matches)); return; }
       if(['blend','document'].includes(scope))this.publish(this.local.filter(matches));

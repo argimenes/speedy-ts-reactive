@@ -1,6 +1,6 @@
 # Mutable OS Tables and Columns Investigation and Implementation Plan
 
-**Status:** Architecture and three increments approved. Increment 1 is implemented with correctness qualification and an explicit structural-latency limit; command/UI integration remains Increment 2. Existing task-list work is retained. See the [Increment 1 report](TABLES_AND_COLUMNS_INCREMENT_1_QUALIFICATION.md).
+**Status:** Architecture and three increments approved. Increment 1, the approved local canonical structural-latency correction, and Increment 2 are implemented. See the [Increment 2 qualification report](TABLES_AND_COLUMNS_INCREMENT_2_QUALIFICATION.md) for commands, contextual controls, actual browser paint timing, continuity evidence and remaining limits. **Increment 3 has not started.** Existing task-list work is retained. Earlier evidence remains in the [structural qualification](STRUCTURAL_TRANSACTION_LATENCY_QUALIFICATION.md) and [Increment 1 report](TABLES_AND_COLUMNS_INCREMENT_1_QUALIFICATION.md).
 
 **Recommendation:** extend the existing table/grid family and canonical commands. Create new layouts as `table-block → table-row-block → table-cell-block`, retaining existing `grid-*` documents and supporting both families through the same operations. A separate ColumnBlock, layout engine or document migration is unnecessary.
 
@@ -222,6 +222,8 @@ Qualification: see the [Increment 1 report](TABLES_AND_COLUMNS_INCREMENT_1_QUALI
 Gate: deterministic tests for independent multi-Block cell flow with unequal neighbouring counts; future width metadata persistence; one/three/five Blocks; text and non-text subtrees; exact placement and Block identity; shared/reference rejection; atomic rollback; empty cells; first/last boundaries; ragged/span rejection; nested-table preservation; Undo/Redo and native history replay. No production slash/UI exposure until these invariants pass.
 
 ### Increment 2 — Command and document integration
+
+**Completed:** see the [qualification report](TABLES_AND_COLUMNS_INCREMENT_2_QUALIFICATION.md). The gates below describe the approved scope; the report distinguishes tested behavior from remaining release/accessibility and large-active-document latency limits.
 
 Register shared commands, bounded alias/argument parsing and contextual candidates. Support inline invocation anywhere in a Block with atomic cleanup, and an out-of-document command entry for whole-Block selections. Add explicit cell/row controls, horizontal overflow and guide presentation, preserving existing text and Scry input ownership. Reuse retained mounts; make only demonstrated, targeted continuity changes.
 

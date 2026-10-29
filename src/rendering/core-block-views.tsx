@@ -1,3 +1,5 @@
+import { TableControl, CellControls } from './table-controls';
+import { cancelTableReveal, revealTableCell } from '../runtime/table-presentation';
 import { TaskControl, StandaloneTaskDisclosure } from './task-control';
 import { taskState } from '../runtime/tasks';
 import { ReverseInformation } from './reversible-surface';
@@ -163,11 +165,22 @@ function ListItem(props: { nodeKey: NodeKey; marker: string }) {
 }
 
 export function TableView(props: BlockViewProps) {
-  const { projection } = useReactiveView();
+  const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   let root!: HTMLDivElement;
+  let scroll!: HTMLDivElement;
+  onCleanup(() => { if (scroll) cancelTableReveal(scroll); });
   useContainerMount(props.nodeKey, () => root);
-  return <div ref={root} class="abstract-block reactive-table" role="table" tabIndex={-1} {...data(props.nodeKey, node)}><ChildBlocks parentKey={props.nodeKey} /></div>;
+  const columns = () => projection.state.nodes[node()?.children[0]]?.children.length ?? 1;
+  return <div ref={root} class="abstract-block reactive-table-viewport" tabIndex={-1} {...data(props.nodeKey, node)}>
+    <Show when={editor.features.tableLayouts}><div class="table-layout-toolbar" contentEditable={false}>
+      <TableControl nodeKey={props.nodeKey} label="Table controls" />
+      <button type="button" data-table-controls aria-pressed={editor.tables.guides(projection.viewId)} onClick={() => editor.tables.toggleGuides(projection.viewId)}>Show table guides</button>
+    </div></Show>
+    <div ref={scroll} class="reactive-table-scroll" tabIndex={0} role="region" aria-label="Table columns" onFocusIn={event => { if (event.target instanceof HTMLElement) revealTableCell(event.target); }}>
+      <div class="reactive-table" role="table" aria-rowcount={node()?.children.length} aria-colcount={columns()} style={{ 'min-width': `${columns() * 14}em` }}><ChildBlocks parentKey={props.nodeKey} /></div>
+    </div>
+  </div>;
 }
 
 export function TableRowView(props: BlockViewProps) {
@@ -179,11 +192,14 @@ export function TableRowView(props: BlockViewProps) {
 }
 
 export function TableCellView(props: BlockViewProps) {
-  const { projection } = useReactiveView();
+  const { editor, projection } = useReactiveView();
   const node = () => projection.state.nodes[props.nodeKey];
   let root!: HTMLDivElement;
   useContainerMount(props.nodeKey, () => root);
-  return <div ref={root} class="abstract-block reactive-table-cell" role={(node()?.payload.metadata as any)?.htmlTableCell?.header ? 'columnheader' : 'cell'} tabIndex={-1} {...data(props.nodeKey, node)}><ChildBlocks parentKey={props.nodeKey} /></div>;
+  return <div ref={root} class="abstract-block reactive-table-cell" classList={{ 'table-guides-hidden': !editor.tables.guides(projection.viewId), 'table-controls-enabled': editor.features.tableLayouts }} role={(node()?.payload.metadata as any)?.htmlTableCell?.header ? 'columnheader' : 'cell'} tabIndex={-1} {...data(props.nodeKey, node)}>
+    <Show when={editor.features.tableLayouts}><CellControls nodeKey={props.nodeKey} /></Show>
+    <ChildBlocks parentKey={props.nodeKey} />
+  </div>;
 }
 
 export function CheckboxView(props: BlockViewProps) {

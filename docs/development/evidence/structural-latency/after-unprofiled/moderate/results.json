@@ -1,0 +1,33 @@
+{
+  "scenario": "moderate",
+  "instrument": false,
+  "result": {
+    "samples": 8,
+    "warmups": 2,
+    "sync": {
+      "median": 3.399999976158142,
+      "p95": 3.700000047683716,
+      "max": 3.700000047683716
+    },
+    "computationExcludingReactiveFlush": {
+      "median": 3.399999976158142,
+      "p95": 3.700000047683716,
+      "max": 3.700000047683716
+    },
+    "settled": {
+      "median": 8.599999904632568,
+      "p95": 9.100000023841858,
+      "max": 9.100000023841858
+    },
+    "frame": {
+      "median": 31.799999952316284,
+      "p95": 167.60000002384186,
+      "max": 167.60000002384186
+    },
+    "metrics": {},
+    "records": 15824,
+    "documents": 1,
+    "paragraphs": 41
+  },
+  "errors": []
+}

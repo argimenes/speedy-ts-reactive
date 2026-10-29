@@ -82,8 +82,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       // Stage A hosts a Window application, never an application recursively inside a Document.
       if (editor.blockQueries.ancestors(props.nodeKey).some(n => n.viewType === "document-block")) return <p role="status">This application requires a Window outside a Document.</p>;
       const [revision, setRevision] = createSignal(0);
-      // Text fast paths cannot change identity or titles.
-      onCleanup(editor.repository.subscribeChanges(change => { if (!change.inlineOwner && !change.split && !change.childrenOwner && !change.listWrap) setRevision(n => n + 1); }));
+      // Validated local edits cannot change Document identity, titles or root placements.
+      onCleanup(editor.repository.subscribeChanges(change => { if (!change.inlineOwner && !change.split && !change.childrenOwner && !change.listWrap && !change.taskStateOwner && !change.structural) setRevision(n => n + 1); }));
       const all = createMemo(() => { revision(); return catalog(); });
       const documents = all;
       const byId = createMemo(() => {

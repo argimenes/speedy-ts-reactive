@@ -1,0 +1,71 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/autocomplete.test.ts (36 tests) 7457ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 6925ms
+ ✓ src/rendering/text-lists.test.tsx (15 tests) 2938ms
+   ✓ converts even the first TextBlock to a list, preserving content, identity, selection and one-step history 519ms
+   ✓ typing in a list does not run structural planning or take a document snapshot 783ms
+ ✓ src/rendering/task-lists.test.tsx (18 tests) 3133ms
+   ✓ converts a fresh task [ ]  with exact literal Undo and identity 515ms
+   ✓ converts a fresh task [X]  with exact literal Undo and identity 328ms
+   ✓ keeps existing list items, pasted candidates, disabled feature and interrupted candidates literal 717ms
+ ✓ src/rendering/reversible-surface.test.tsx (43 tests) 5002ms
+   ✓ structural containers and recursive reverse surfaces > shows a corner only when a reverse exists, including an empty reverse 443ms
+   ✓ structural containers and recursive reverse surfaces > native packages retain reverse content and Find reveals the hidden face without editing 443ms
+ ✓ src/persistence/native-resource.test.ts (15 tests) 500ms
+ ✓ src/features/autocomplete/provisional-integration.test.ts (11 tests) 696ms
+ ✓ src/rendering/block-context-menu.test.tsx (12 tests) 3767ms
+   ✓ Block context menu > exports full native JSON through the menu, preserving hidden content and unsaved edits without saving 811ms
+   ✓ Block context menu > opens with Grouping enabled for secondary native menu and exposes inline StickyNote insertion 432ms
+   ✓ Block context menu > opens once for Control-click plus native contextmenu, targets the clicked Block, and restores selection on Escape 416ms
+   ✓ Block context menu > converts a Block through transaction-aware wrappers and reverses each conversion in one undo 315ms
+   ✓ Block context menu > preserves grid child order during merge/flatten and can add a row and move a cell vertically 376ms
+ ✓ src/features/autocomplete/placement.test.ts (9 tests) 22ms
+ ✓ src/rendering/tables.test.tsx (49 tests) 12802ms
+   ✓ distributes 1 original Blocks without copying their subtrees 528ms
+   ✓ distributes 5 original Blocks without copying their subtrees 507ms
+   ✓ removes only a mid-paragraph invocation, restores exact history and caret, and replays the durable journal 355ms
+   ✓ accepts /c anywhere, with atomic literal Undo and an unchanged live mount 319ms
+   ✓ accepts /c3 anywhere, with atomic literal Undo and an unchanged live mount 374ms
+   ✓ accepts /c4 anywhere, with atomic literal Undo and an unchanged live mount 393ms
+   ✓ runs contextual /mc r with exact literal Undo 309ms
+   ✓ runs contextual /move-cell right with exact literal Undo 323ms
+   ✓ runs contextual /move-row down with exact literal Undo 314ms
+   ✓ runs contextual /unc with exact literal Undo 413ms
+   ✓ keeps unknown, cancelled, pasted, code and composing invocations literal 377ms
+   ✓ does not build plans, snapshots or read unrelated Blocks while suggesting commands 1554ms
+   ✓ keeps typing local with contextual controls mounted 2586ms
+ ✓ src/features/autocomplete/provisional-cells.test.ts (4 tests) 16ms
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 46ms
+ ✓ src/rendering/task-prefix-comparison.test.tsx (3 tests) 559ms
+   ✓ qualifies native restoration and repeated history for [ ]  399ms
+ ✓ src/block-tree/structural-performance.test.ts (10 tests) 8707ms
+   ✓ matches full validation, fresh projections and durable replay through composed moves, removals and history 1095ms
+   ✓ avoids snapshots, global indexing and unrelated record reads with 300 unrelated paragraphs 7025ms
+   ✓ materializes unsupported commands once without losing borrowed records or earlier staged edits 333ms
+ ✓ src/block-tree/inline-performance.test.ts (14 tests) 19215ms
+   ✓ incremental inline editing (capture=false) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 2924ms
+   ✓ incremental inline editing (capture=false) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 6612ms
+   ✓ incremental inline editing (capture=false) > retains atomic multi-paragraph transactions and subsequent fast undo/redo 350ms
+   ✓ incremental inline editing (capture=true) > matches fully planned edits and annotation mapping over a deterministic Unicode edit sequence 2324ms
+   ✓ incremental inline editing (capture=true) > does no whole-document snapshots or occurrence rebuilds in a 25k document, including undo/redo 5710ms
+ ✓ src/block-tree/split-performance.test.ts (12 tests) 35427ms
+   ✓ incremental paragraph splitting (capture=false) > inserts empty siblings across shared parent views without touching existing paragraphs 1303ms
+   ✓ incremental paragraph splitting (capture=false) > rejects a nonempty or detached paragraph from the empty insertion fast path 1118ms
+   ✓ incremental paragraph splitting (capture=false) > splits and restores annotations and Cell identities without snapshots, including redo and another split 1901ms
+   ✓ incremental paragraph splitting (capture=false) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 6903ms
+   ✓ incremental paragraph splitting (capture=false) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 1354ms
+   ✓ incremental paragraph splitting (capture=false) > falls back safely for inline atoms and maintains indexes for the next plain-text split 2365ms
+   ✓ incremental paragraph splitting (capture=true) > inserts empty siblings across shared parent views without touching existing paragraphs 2279ms
+   ✓ incremental paragraph splitting (capture=true) > rejects a nonempty or detached paragraph from the empty insertion fast path 2209ms
+   ✓ incremental paragraph splitting (capture=true) > splits and restores annotations and Cell identities without snapshots, including redo and another split 5281ms
+   ✓ incremental paragraph splitting (capture=true) > updates transcluded paragraphs in multiple views without rebuilding unrelated occurrences 5444ms
+   ✓ incremental paragraph splitting (capture=true) > rejects Cell theft, duplicate ownership and detached new paragraphs from the fast path 2517ms
+   ✓ incremental paragraph splitting (capture=true) > falls back safely for inline atoms and maintains indexes for the next plain-text split 2748ms
+
+ Test Files  15 passed (15)
+      Tests  254 passed (254)
+   Start at  22:38:53
+   Duration  44.46s (transform 28.72s, setup 0ms, collect 100.24s, tests 100.29s, environment 34.32s, prepare 3.43s)
+

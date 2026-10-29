@@ -14,7 +14,7 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
   const [error, setError] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const [position, setPosition] = createSignal(props.overlay.anchor);
-  const items = () => path().at(-1)?.children ?? blockMenuItems(props.editor, props.overlay.ownerKey);
+  const items = () => path().at(-1)?.children ?? (props.overlay.data as { items?: BlockMenuItem[] } | undefined)?.items ?? blockMenuItems(props.editor, props.overlay.ownerKey);
   const focusFirst = () => queueMicrotask(() => (root.querySelector<HTMLElement>("input") ?? root.querySelector<HTMLElement>("[role=menuitem]:not(:disabled)"))?.focus());
   const clamp = () => {
     const rect = root.getBoundingClientRect();
@@ -38,6 +38,7 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
   const activate = async (item: BlockMenuItem) => {
     if (item.disabled || busy()) return;
     setError("");
+    if (item.loadChildren) { try { setPath([...path(), { ...item, children: item.loadChildren() }]); focusFirst(); } catch (error) { setError(String(error)); } return; }
     if (item.children) { setPath([...path(), item]); focusFirst(); return; }
     if (item.input) { setForm(item); setValue(item.input.value ?? ""); focusFirst(); return; }
     setBusy(true);
@@ -46,7 +47,7 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
       // Synchronous commands can fail without losing the menu/error state.
       const previousFocus = props.editor.focus.state.requestToken;
       const result = item.run?.();
-      props.editor.overlays.close(props.overlay.key, !result && props.editor.focus.state.requestToken === previousFocus);
+      props.editor.overlays.close(props.overlay.key, item.restoreFocus !== false && !result && props.editor.focus.state.requestToken === previousFocus);
       await result;
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { setBusy(false); }
@@ -56,7 +57,7 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
       if (!value().trim()) throw new Error("Enter a value first.");
       const previousFocus = props.editor.focus.state.requestToken;
       form()?.input?.submit(value().trim());
-      props.editor.overlays.close(props.overlay.key, props.editor.focus.state.requestToken === previousFocus);
+      props.editor.overlays.close(props.overlay.key, form()?.restoreFocus !== false && props.editor.focus.state.requestToken === previousFocus);
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
   };
   const runBinding = (id: string, target: EventTarget | null): boolean | void => {
@@ -78,11 +79,12 @@ function Menu(props: { editor: ReactiveEditor; overlay: OverlayDescriptor }) {
   };
   return <div ref={root} class="reactive-block-menu" data-cross-text-controls={(props.overlay.data as {documentTab?:string}|undefined)?.documentTab ? "" : undefined} role={form() ? "dialog" : "menu"} aria-label="Block menu" tabIndex={-1}
     data-session-overlay={props.overlay.key} data-native-context-menu style={{ left: `${position().x}px`, top: `${position().y}px` }} onKeyDown={keys} onClick={keys} onDblClick={keys} onContextMenu={keys}>
-    <header><span>{form()?.label ?? path().at(-1)?.label ?? "Block menu"}</span><button type="button" aria-label="Close block menu" onClick={() => props.editor.overlays.close(props.overlay.key)}>×</button></header>
+    <header><span>{form()?.label ?? path().at(-1)?.label ?? props.overlay.title ?? "Block menu"}</span><button type="button" aria-label="Close block menu" onClick={() => props.editor.overlays.close(props.overlay.key)}>×</button></header>
     <Show when={path().length || form()}><button role="menuitem" type="button" onClick={back}>‹ Back</button></Show>
-    <Show when={form()} fallback={<For each={items()}>{item => <button type="button" role="menuitem" aria-haspopup={item.children ? "menu" : item.input ? "dialog" : undefined} disabled={item.disabled || busy()} title={item.reason} onClick={() => void activate(item)}><span>{item.label}</span><Show when={item.children || item.input}><span aria-hidden="true">›</span></Show></button>}</For>}>
+    <Show when={form()} fallback={<For each={items()}>{item => <button type="button" role="menuitem" aria-haspopup={(item.children || item.loadChildren) ? "menu" : item.input ? "dialog" : undefined} disabled={item.disabled || busy()} title={item.reason} onClick={() => void activate(item)}><span>{item.label}</span><Show when={item.children || item.loadChildren || item.input}><span aria-hidden="true">›</span></Show></button>}</For>}>
       <form onSubmit={event => { event.preventDefault(); submit(); }}>
         <label>{form()!.input!.label}<input autofocus value={value()} onInput={event => setValue(event.currentTarget.value)} /></label>
+        <Show when={form()?.input?.suggestions}><div class="table-command-suggestions"><For each={form()?.input?.suggestions?.(value())}>{suggestion => <button type="button" onClick={() => setValue(suggestion.value)}>{suggestion.label}</button>}</For></div></Show>
         <button type="submit">Apply</button>
       </form>
     </Show>

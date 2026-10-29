@@ -1,3 +1,4 @@
+import { onCleanup, Show } from 'solid-js';
 import type { BlockTreeProjection } from "../block-tree/projection";
 import type { ReactiveEditor } from "../reactive-editor/editor";
 import type { NodeKey } from "../block-tree/types";
@@ -17,7 +18,9 @@ import "./concertina.css";
 
 /** Once per projection, outside any transformed content surface. */
 export function ReactiveViewLayers(props: { editor: ReactiveEditor; projection: BlockTreeProjection }) {
+  onCleanup(() => props.editor.tables.releaseView(props.projection.viewId));
   return <>
+    <Show when={props.editor.features.tableLayouts}><span class="table-operation-status" role="status" aria-live="polite">{props.editor.tables.notice(props.projection.viewId)}</span></Show>
     <BlockContextMenuLayer editor={props.editor} viewId={props.projection.viewId} />
     <BlockHistoryLayer editor={props.editor} viewId={props.projection.viewId} />
     <AnnotationMonitorLayer editor={props.editor} viewId={props.projection.viewId} />

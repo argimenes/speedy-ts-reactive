@@ -1,0 +1,28 @@
+{
+  "scenario": "moderate",
+  "instrument": false,
+  "result": {
+    "samples": 8,
+    "warmups": 2,
+    "sync": {
+      "median": 915,
+      "p95": 1318.1000000238419,
+      "max": 1318.1000000238419
+    },
+    "settled": {
+      "median": 927,
+      "p95": 1330.7000000476837,
+      "max": 1330.7000000476837
+    },
+    "frame": {
+      "median": 948.3999999761581,
+      "p95": 1340.8999999761581,
+      "max": 1340.8999999761581
+    },
+    "metrics": {},
+    "records": 15824,
+    "documents": 1,
+    "paragraphs": 41
+  },
+  "errors": []
+}

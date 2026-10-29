@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { render } from 'solid-js/web';
 import { ReactiveEditor } from '../reactive-editor/editor';
 import { registerCoreViews } from './register-core-views';
@@ -10,6 +10,8 @@ import { applyHistoryChanges } from '../history/replay';
 import { captureNative, nativeText, admitNative } from '../persistence/native-resource';
 
 const cleanup: (() => void)[] = [];
+// jsdom has no layout; browser qualification supplies real paint/geometry evidence.
+beforeEach(() => { Range.prototype.getBoundingClientRect = () => new DOMRect(30, 30, 1, 20); Range.prototype.getClientRects = () => [new DOMRect(30, 30, 1, 20)] as unknown as DOMRectList; });
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); document.body.replaceChildren(); vi.restoreAllMocks(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 const p = (id: string, text = id, extra: Record<string, unknown> = {}): ExistingBlockDto => ({ id, type: 'standoff-editor-block', text, ...extra });
@@ -40,7 +42,7 @@ it.each([1, 3, 5])('distributes %s original Blocks without copying their subtree
   const snapshots = vi.spyOn(f.editor.repository, 'snapshot');
   const plan = f.editor.tables.prepare({ kind: 'create', targets: children.map(n => f.key(n.id!)), columns: 3 });
   expect(snapshots).not.toHaveBeenCalled(); f.editor.tables.execute(plan); await tick();
-  expect(snapshots).toHaveBeenCalledTimes(1);
+  expect(snapshots).not.toHaveBeenCalled();
   const layout = f.tree().children![1]; expect(layout.type).toBe('table-block'); expect(layout.children).toHaveLength(Math.ceil(count / 3));
   const contents = layout.children!.flatMap(r => r.children!.map(c => c.children![0]));
   expect(contents.slice(0, count)).toEqual(children.map(n => before.children!.find(c => c.id === n.id)));
@@ -229,4 +231,169 @@ it('rejects partial text and multiple carets, and rechecks selection before publ
   f.editor.selections.addCaret(n.key, n.contentKey, n.viewId, 1);
   expect(() => f.run({ ...request, targets: [...request.targets] })).toThrow(/single caret/);
   expect(f.editor.repository.canUndo()).toBe(false);
+});
+
+// Increment 2: the same semantic operations through actual completion and controls.
+import { createAutocompleteFeature } from '../features/autocomplete';
+import { parseTableCommand, tableCommandCandidates } from '../runtime/table-commands';
+import { tableMenuItems } from '../runtime/table-menu';
+import type { CompletionSession } from '../features/autocomplete/session';
+function completion(f: ReturnType<typeof setup>) { return (f.editor.overlays.overlays.find(o => o.viewType === 'autocomplete')?.data as { session: CompletionSession } | undefined)?.session; }
+async function type(f: ReturnType<typeof setup>, value: string, inputType = 'insertText') {
+  for (const data of value) { document.activeElement!.dispatchEvent(new InputEvent('beforeinput', { inputType, data, bubbles: true, cancelable: true })); await tick(); }
+}
+it.each(['c', 'c2', 'c3', 'c4'])('accepts /%s anywhere, with atomic literal Undo and an unchanged live mount', async alias => {
+  const f = setup([p('a', 'Alpha  Beta')]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a', 6);
+  const root = f.editor.mounts.get(f.key('a'))!.root, id = f.node('a').placementKey;
+  await type(f, '/'+alias); const literal = f.tree(), session = completion(f)!;
+  expect(session.state.rows.find(r => r.id === session.state.selected)?.exact).toBe(true);
+  const snapshots = vi.spyOn(f.editor.repository, 'snapshot'), build = vi.spyOn(f.view as any, 'build');
+  await session.choose(); await tick();
+  expect(snapshots).not.toHaveBeenCalled(); expect(build).not.toHaveBeenCalled();
+  expect(f.tree().children![0].children![0].children).toHaveLength(alias === 'c' ? 2 : Number(alias[1]));
+  expect(f.editor.mounts.get(f.key('a'))!.root).toBe(root); expect(f.node('a').placementKey).toBe(id);
+  expect(f.node('a').inlineContent.map(k => f.editor.node(k)!.payload.text).join('')).toBe('Alpha  Beta');
+  expect(f.editor.mounts.get(f.key('a'))!.captureInlineSelection!()).toEqual({ anchor: 6, head: 6 });
+  f.editor.repository.undo(); await tick(); expect(f.tree()).toEqual(literal);
+  f.editor.repository.redo(); await tick(); expect(f.tree().children![0].type).toBe('table-block');
+});
+it.each(['row', 'col', 'mc r', 'mr d', 'move-cell right', 'move-row down', 'unc'])('runs contextual /%s with exact literal Undo', async alias => {
+  const f = setup([table()]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a', 1);
+  await type(f, ' /'+alias); const literal = f.tree(), session = completion(f)!;
+  expect(session.state.selected).toBe(parseTableCommand(alias)!.id);
+  await session.choose(); await tick(); expect(session.state.error).toBe(''); expect(f.tree()).not.toEqual(literal);
+  f.editor.repository.undo(); await tick(); expect(f.tree()).toEqual(literal);
+});
+it('keeps unknown, cancelled, pasted, code and composing invocations literal', async () => {
+  const f = setup([p('a', '')]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a');
+  await type(f, '/c99'); expect(completion(f)!.state.rows).toHaveLength(0); const before = f.tree(); await completion(f)!.choose(); expect(f.tree()).toEqual(before);
+  document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); expect(completion(f)).toBeUndefined(); expect(f.tree()).toEqual(before);
+  await type(f, ' /c2', 'insertFromPaste'); expect(completion(f)).toBeUndefined(); expect(f.tree().children![0].type).toBe('standoff-editor-block');
+  const m = f.editor.mounts.get(f.key('a'))!; m.composing = true; f.editor.completionInput!.edited(f.key('a'), f.node('a').inlineContent.length, 'insertText'); expect(completion(f)).toBeUndefined(); m.composing = false;
+  f.editor.commands.setPayloadField(f.key('a'), 'standoffProperties', [{ type: 'style/code', start: 0, end: 100 }]);
+  await type(f, ' /c2'); expect(completion(f)).toBeUndefined();
+});
+it('does not interpret Entity query punctuation as table arguments', async () => {
+  const f = setup([p('a', '')]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a');
+  await type(f, '/c2 : c3');
+  expect(completion(f)!.state.rows).toEqual([]);
+  const before = f.tree(); await completion(f)!.choose(); expect(f.tree()).toEqual(before);
+});
+it('keeps an unavailable exact /c literal instead of selecting /col or container', async () => {
+  const f = setup([table()]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a', 1);
+  await type(f, ' /c'); const session = completion(f)!;
+  expect(session.state.selected).toBe(''); expect(session.state.rows.every(r => r.disabled)).toBe(true);
+  const before = f.tree(); await session.choose(); expect(f.tree()).toEqual(before);
+});
+it('does not build plans, snapshots or read unrelated Blocks while suggesting commands', () => {
+  const f = setup([p('a', ''), ...Array.from({ length: 100 }, (_, i) => p('unrelated'+i))]);
+  const prepare = vi.spyOn(f.editor.tables, 'prepare'), snapshot = vi.spyOn(f.editor.repository, 'snapshot'), node = vi.spyOn(f.editor, 'node'), build = vi.spyOn(f.view as any, 'build');
+  for (const query of ['', 'c', 'c2', 'col', 'mc ', 'mc x', 'unknown']) tableCommandCandidates(f.editor, f.key('a'), query);
+  expect(prepare).not.toHaveBeenCalled(); expect(snapshot).not.toHaveBeenCalled(); expect(build).not.toHaveBeenCalled();
+  expect(node.mock.calls.every(([key]) => !String(f.view.state.nodes[key]?.payload.id).startsWith('unrelated'))).toBe(true);
+  expect(parseTableCommand('mc 2')).toBeUndefined(); expect(parseTableCommand('c2 extra')).toBeUndefined(); expect(parseTableCommand('col')?.id).toBe('table.insert-column');
+});
+it('refuses a stale source without removing its literal invocation', async () => {
+  const f = setup([p('a', '')]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a'); await type(f, '/c2');
+  const session = completion(f)!; f.editor.commands.replaceInlineRange(f.key('a'), 0, 0, 'Changed '); const before = f.tree();
+  await session.choose(); await tick(); expect(f.tree()).toEqual(before);
+});
+it('rejects multiple selections without opening table commands', async () => {
+  const f = setup([p('a', '/c2')]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a', 3);
+  f.editor.selections.setPrimary(f.key('a'), f.node('a').contentKey, f.node('a').viewId, 1, 1);
+  f.editor.selections.addCaret(f.key('a'), f.node('a').contentKey, f.node('a').viewId, 2);
+  f.editor.completionInput!.edited(f.key('a'), 3, 'insertText'); expect(completion(f)).toBeUndefined();
+});
+it('provides out-of-document commands for selected whole Blocks, preserving source contents', async () => {
+  const f = setup(); f.editor.blockSelection.select(f.key('a')); f.editor.blockSelection.select(f.key('b'), 'toggle');
+  const menu = tableMenuItems(f.editor, f.key('a')), before = f.tree();
+  expect(menu[0].input!.suggestions!('/c2')[0].value).toBe('/c');
+  menu[0].input!.submit('/c2'); await tick(); expect(f.tree().children![0].children![0].children!.map(c => c.children![0].id)).toEqual(['a', 'b']);
+  f.editor.repository.undo(); await tick(); expect(f.tree()).toEqual(before);
+});
+it('uses explicit cell controls for transfer, previews extraction and preserves caret without legacy menu focus', async () => {
+  const f = setup([table()]); f.focus('a', 1); f.editor.blockSelection.select(f.key('a'));
+  const button = f.host.querySelector<HTMLButtonElement>('[aria-label="Row 1, column 1 controls"]')!; button.click(); await tick();
+  const menuButton = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')].find(b => b.textContent?.replace(/[›‹]/g, '').trim() === label)!;
+  menuButton('Move selected Blocks to cell…').click(); await tick();
+  const focus = vi.spyOn(f.editor.focus, 'request'); menuButton('Row 1, column 2 (append)').click(); await tick();
+  expect(document.querySelector('.reactive-block-menu [role=alert]')?.textContent).toBeUndefined();
+  expect(f.node('cell01').children.map(k => f.editor.node(k)!.payload.id)).toEqual(['b', 'a']);
+  expect(focus.mock.calls.filter(([, options]) => options?.reason === 'closed-panel')).toHaveLength(0);
+  expect(f.editor.mounts.get(f.key('a'))!.captureInlineSelection!()).toEqual({ anchor: 1, head: 1 });
+  const items = tableMenuItems(f.editor, f.key('a')), before = f.tree();
+  const preview = items.find(i => i.label === 'Remove column…')!.loadChildren!(); expect(f.tree()).toEqual(before);
+  expect(preview[0].label).toMatch(/Extract 3 Blocks/); preview[0].run!(); await tick(); expect(f.tree().children!.slice(1).map(n => n.id)).toEqual(['b', 'a', 'd']);
+  f.editor.repository.undo(); await tick(); expect(f.tree()).toEqual(before);
+});
+it('rejects stale control selection and keeps guides per view without canonical changes', async () => {
+  const f = setup([table()]), other = f.editor.createView('other-view'), before = f.editor.repository.state.revision;
+  f.editor.tables.toggleGuides(f.view.viewId); expect(f.editor.tables.guides(f.view.viewId)).toBe(false); expect(f.editor.tables.guides(other.viewId)).toBe(true); expect(f.editor.repository.state.revision).toBe(before);
+  const items = tableMenuItems(f.editor, f.key('a')); f.editor.blockSelection.select(f.key('b'));
+  expect(() => items.find(i => i.label === 'Insert column right')!.run!()).toThrow(/selection changed/);
+  expect(f.cellIds()).toEqual([['cell00', 'cell01'], ['cell10', 'cell11']]);
+});
+
+it('focuses a chosen cell without a transaction or new keyboard binding', async () => {
+  const f = setup([table()]), before = f.editor.repository.state.revision;
+  const transaction = vi.spyOn(f.editor.commands, 'structuralTransaction'), prepare = vi.spyOn(f.editor.tables, 'prepare');
+  tableMenuItems(f.editor, f.key('cell00')).find(i => i.label === 'Go to cell…')!.loadChildren!()[3].run!();
+  await tick();
+  expect(document.activeElement).toBe(f.editor.mounts.get(f.key('d'))!.focusElement);
+  expect(f.editor.repository.state.revision).toBe(before); expect(transaction).not.toHaveBeenCalled(); expect(prepare).not.toHaveBeenCalled();
+  const button = f.host.querySelector<HTMLButtonElement>('[aria-label="Row 1, column 1 controls"]')!;
+  button.focus();
+  for (const key of ['Enter', ' ', 'Tab', 'ArrowDown']) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }); button.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  }
+  expect(f.editor.repository.state.revision).toBe(before);
+});
+
+it('hides commands and controls when the flag is off while rendering existing tables', () => {
+  const f = setup([table()], { tableLayouts: false });
+  expect(f.host.querySelector('[role=table]')).not.toBeNull();
+  expect(f.host.querySelector('[data-table-controls]')).toBeNull();
+  expect(tableCommandCandidates(f.editor, f.key('a'), '')).toEqual([]);
+  expect(tableMenuItems(f.editor, f.key('a'))).toEqual([]);
+});
+
+it('keeps typing local with contextual controls mounted', async () => {
+  const f = setup([table(), ...Array.from({ length: 80 }, (_, i) => p('unrelated-'+i, 'Annotated prose', { standoffProperties: [{ type: 'style/bold', start: 0, end: 4 }] }))]);
+  f.editor.featureHost.activate(createAutocompleteFeature(f.editor)); f.focus('a', 1);
+  await new Promise(resolve => setTimeout(resolve, 40)); // flush the focus-only reveal
+  const snapshot = vi.spyOn(f.editor.repository, 'snapshot'), build = vi.spyOn(f.view as any, 'build');
+  const prepare = vi.spyOn(f.editor.tables, 'prepare'), transaction = vi.spyOn(f.editor.commands, 'structuralTransaction');
+  const cellReads = [...f.host.querySelectorAll('.reactive-table-cell, .reactive-table-scroll')].map(element => vi.spyOn(element, 'getBoundingClientRect'));
+  const unrelated = f.editor.repository.readState().contents[f.node('unrelated-79').contentKey];
+  const payload = vi.spyOn(unrelated, 'payload', 'get');
+  const controls = f.host.querySelector('.table-cell-controls')!, mutations: MutationRecord[] = [];
+  const observer = new MutationObserver(records => mutations.push(...records)); observer.observe(controls, { subtree: true, attributes: true, childList: true, characterData: true });
+  await type(f, ' ordinary typing'); await new Promise(resolve => setTimeout(resolve, 40)); observer.disconnect();
+  expect(snapshot).not.toHaveBeenCalled(); expect(build).not.toHaveBeenCalled(); expect(prepare).not.toHaveBeenCalled(); expect(transaction).not.toHaveBeenCalled();
+  expect(payload).not.toHaveBeenCalled(); expect(mutations).toEqual([]); cellReads.forEach(read => expect(read).not.toHaveBeenCalled());
+});
+
+it('keeps every eligible contextual mutation and its Undo off repository-wide work', async () => {
+  const f = setup([table(), ...Array.from({ length: 50 }, (_, i) => p('unrelated-'+i))]);
+  const snapshots = vi.spyOn(f.editor.repository, 'snapshot'), builds = vi.spyOn(f.view as any, 'build');
+  const indexes = vi.spyOn(f.editor.repository as any, 'rebuildReferences');
+  const payload = vi.spyOn(f.editor.repository.readState().contents[f.node('unrelated-49').contentKey], 'payload', 'get');
+  const requests: TableRequest[] = [
+    { kind: 'swap-cell', target: f.key('a'), direction: 'right' },
+    { kind: 'move-row', target: f.key('a'), direction: 'down' },
+    { kind: 'insert-row', target: f.key('a') }, { kind: 'insert-column', target: f.key('a') },
+    { kind: 'transfer', targets: [f.key('a')], destination: f.key('cell01') },
+    { kind: 'remove-row', target: f.key('a'), extract: true },
+    { kind: 'remove-column', target: f.key('a'), extract: true }, { kind: 'dissolve', target: f.key('a') },
+  ];
+  for (const request of requests) {
+    const removal = request.kind === 'remove-row' || request.kind === 'remove-column' || request.kind === 'dissolve';
+    // Removal deliberately checks loaded standoff references before deleting
+    // shells. That conservative preflight is separate from local publication.
+    if (removal) payload.mockRestore();
+    f.run(request); await tick(); f.editor.repository.undo(); await tick();
+    expect(snapshots, request.kind).not.toHaveBeenCalled(); expect(builds, request.kind).not.toHaveBeenCalled();
+    expect(indexes, request.kind).not.toHaveBeenCalled(); if (!removal) expect(payload, request.kind).not.toHaveBeenCalled();
+  }
 });

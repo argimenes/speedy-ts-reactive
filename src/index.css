@@ -743,3 +743,23 @@ textarea {
 .reactive-task-row.block-selectable > .block-selection-handle:focus-visible { opacity: 1; }
 .reactive-task-row.block-selectable > .block-selection-handle { left: -43px; }
 .reactive-task-disclosure { position: absolute; left: -22px; top: 1px; width: 20px; border: 0; background: transparent; cursor: pointer; padding: 0; }
+
+/* Each table owns one horizontal overflow region; cells flow vertically together. */
+.reactive-table-viewport { min-width: 0; max-width: 100%; }
+.reactive-table-scroll { overflow-x: auto; max-width: 100%; }
+.reactive-table-scroll > .reactive-table { table-layout: fixed; width: 100%; }
+.reactive-table-cell { position: relative; overflow-wrap: anywhere; }
+.reactive-table-cell.table-controls-enabled { padding-top: 1.8rem; }
+.table-layout-toolbar { display: flex; align-items: center; gap: .5rem; font-size: .8rem; }
+.table-layout-toolbar button, .table-control { font: inherit; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 3px; cursor: pointer; }
+.table-layout-toolbar button:hover, .table-control:hover { border-color: #9ba99f; }
+.table-cell-controls { position: absolute; top: 0; right: 2px; display: flex; gap: 4px; opacity: 0; }
+.reactive-table-row:hover > [data-block-slot] .table-cell-controls,
+.reactive-table-cell:hover > .table-cell-controls,
+.reactive-table-cell:focus-within > .table-cell-controls { opacity: 1; }
+.reactive-table-cell.table-guides-hidden { border-color: transparent; }
+.reactive-table-cell:focus-within { outline: 1px solid #729e89; outline-offset: -1px; }
+.table-control:focus-visible, .reactive-table-scroll:focus-visible { outline: 2px solid #387e63; }
+.table-control[aria-expanded="true"] { outline: 2px solid #387e63; }
+.table-command-suggestions { display: flex; flex-direction: column; max-height: 12rem; overflow-y: auto; }
+.table-operation-status { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

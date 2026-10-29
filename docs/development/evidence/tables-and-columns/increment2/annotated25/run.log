@@ -1,0 +1,58 @@
+waiting for Flint annotated25
+{
+  "scenario": "annotated25",
+  "dimensions": {
+    "records": 26024,
+    "documents": 1,
+    "openDocumentViews": 1,
+    "documentCharacters": 25766
+  },
+  "summary": {
+    "sync": {
+      "median": 9.200000000186265,
+      "p95": 18.9000000001397,
+      "max": 18.9000000001397
+    },
+    "structuralTransaction": {
+      "median": 9.100000000093132,
+      "p95": 18.699999999953434,
+      "max": 18.699999999953434
+    },
+    "ready": {
+      "median": 64,
+      "p95": 139,
+      "max": 139
+    },
+    "screenshotUpperBound": {
+      "median": 222.69999999995343,
+      "p95": 304.10000000009313,
+      "max": 304.10000000009313
+    },
+    "eventTiming": {
+      "median": 112,
+      "p95": 208,
+      "max": 208
+    },
+    "menuOpen": {
+      "median": 9,
+      "p95": 9.200000000186265,
+      "max": 9.200000000186265
+    },
+    "menuAction": {
+      "median": 29.300000000046566,
+      "p95": 29.699999999953434,
+      "max": 29.699999999953434
+    }
+  },
+  "layout": {
+    "scrollWidth": 392,
+    "clientWidth": 350,
+    "scrollLeft": 42,
+    "columns": [
+      195.5,
+      195.5
+    ],
+    "guidesNoMutation": true
+  },
+  "errors": []
+}

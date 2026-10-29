@@ -1,0 +1,33 @@
+{
+  "scenario": "minimal",
+  "instrument": false,
+  "result": {
+    "samples": 8,
+    "warmups": 2,
+    "sync": {
+      "median": 3.899999976158142,
+      "p95": 4.399999976158142,
+      "max": 4.399999976158142
+    },
+    "computationExcludingReactiveFlush": {
+      "median": 3.899999976158142,
+      "p95": 4.399999976158142,
+      "max": 4.399999976158142
+    },
+    "settled": {
+      "median": 6,
+      "p95": 7,
+      "max": 7
+    },
+    "frame": {
+      "median": 31.09999990463257,
+      "p95": 81.60000002384186,
+      "max": 81.60000002384186
+    },
+    "metrics": {},
+    "records": 40,
+    "documents": 1,
+    "paragraphs": 1
+  },
+  "errors": []
+}

@@ -1,3 +1,4 @@
+import { registerTableCommands } from '../runtime/table-commands';
 import { ReversibleSurfaceView, ResourceInformationView } from './reversible-surface';
 import { surfaceCommands } from '../runtime/block-surfaces';
 import {WebResourceView} from './web-resource-view';
@@ -62,6 +63,7 @@ export function registerCoreViews(editor: ReactiveEditor, documentView = Contain
   many(editor, ['resource-information-block'], ResourceInformationView, ['container','selectable']);
   if(editor.features.reversibleBlocks)for(const action of surfaceCommands)editor.commandRegistry.register({id:action.id,label:action.name,canExecute:({targetKey})=>editor.surfaces.can(action.id,targetKey),execute:({targetKey,args})=>editor.surfaces.run(action.id,targetKey,(args as any)?.invocation)});
   registerTextSuperpositionCommands(editor);
+  registerTableCommands(editor);
   editor.registry.register({ type: "workspace-object-bank-block", view: WorkspaceObjectBankView, capabilities: ["container"] });
   editor.registry.register({ type: "document-block", aliases: ["main-list-block", "membrane-block"], view: documentView, capabilities: ["container", "selectable"] });
   if (editor.features.documentInterchange) many(editor, [...sourceTypes], SourceBlockView, ["native-text", "container", "selectable"]);

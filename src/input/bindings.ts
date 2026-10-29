@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, type Signal } from "solid-js";
 
 export type Modifier = "Ctrl" | "Meta" | "Alt" | "Shift";
 export type KeyboardTrigger = { kind: "keyboard"; key: string; modifiers: Modifier[] };
@@ -70,6 +70,7 @@ export class BindingRegistry {
   private pending?: { candidates: Array<{ action: BindingAction; trigger: Extract<Trigger, { kind: "chord" }> }>; step: number };
   private chordTimer?: ReturnType<typeof setTimeout>;
   private revision = createSignal(0);
+  private labels = new Map<string, Signal<string>>();
   private problem = createSignal("");
   private chordStatus = createSignal("");
   private paused = 0;
@@ -93,7 +94,14 @@ export class BindingRegistry {
     return () => { if (!active) return; active = false; this.actions.delete(action.id); this.owners.delete(action.id); this.rebuild(); };
   }
   effective(id: string): Trigger[] { this.revision[0](); return this.overrides[id] ?? this.actions.get(id)?.defaults ?? []; }
-  label(id: string) { return this.effective(id).map(triggerLabel).join(" / ") || "Unassigned"; }
+  private labelValue(id: string) { return (this.overrides[id] ?? this.actions.get(id)?.defaults ?? []).map(triggerLabel).join(" / ") || "Unassigned"; }
+  label(id: string) {
+    // Occurrence-scoped completion leases must not refresh every Block handle.
+    // Share the derivation and notify only when this action's visible label changes.
+    let label = this.labels.get(id);
+    if (!label) { label = createSignal(this.labelValue(id)); this.labels.set(id, label); }
+    return label[0]();
+  }
   modified(id: string) { this.revision[0](); return Object.hasOwn(this.overrides, id); }
   suspend() { this.cancelChord(); this.paused++; return () => { this.paused = Math.max(0, this.paused - 1); }; }
   matches(id: string, event: KeyboardEvent | MouseEvent) { return !this.paused && this.effective(id).some(t => t.kind !== "chord" && triggerKey(t) === triggerKey(captureTrigger(event))); }
@@ -228,5 +236,6 @@ export class BindingRegistry {
       }
     }
     this.revision[1](n => n + 1);
+    for (const [id, label] of this.labels) label[1](this.labelValue(id));
   }
 }

@@ -1,3 +1,4 @@
+import { tableMenuItems } from './table-menu';
 import { sourcePayload, sourceType } from '../interchange/source-block';
 import type { BlockNode, ExistingBlockDto, NodeKey } from "../block-tree/types";
 import type { ReactiveEditor } from "../reactive-editor/editor";
@@ -63,7 +64,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   });
   const grid = (rows: number, columns: number, emptyFirst = false) => dto("grid-block", Array.from({ length: rows }, (_, row) => dto("grid-row-block", Array.from({ length: columns }, (_, column) => dto("grid-cell-block", emptyFirst && !row && !column ? [] : [text()])))));
   const convert = (value: ExistingBlockDto, depth: number) => {
-    editor.commands.transaction("Convert Block", () => {
+    editor.commands.structuralTransaction("Convert Block", () => {
     let target = editor.commands.insert(value, { kind: "before", anchorKey: key });
     for (let i = 0; i < depth; i++) target = editor.commands.childrenOf(target)[0];
     editor.commands.move(key, { kind: "at", parentKey: target, index: 0 });
@@ -99,6 +100,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   }
 
   const items: BlockMenuItem[] = [...(editor.mounts.get(key)?.contextActions?.() ?? []), historyEntry];
+  if (editor.features.tableLayouts) items.push({ label: 'Tables and columns', loadChildren: () => tableMenuItems(editor, key) });
   if (editor.features.thesis) items.push(command("thesis.createProposition", "Create Proposition…"));
   if (node.viewType === 'standoff-editor-block' && editor.features.mutableClipboard && editor.features.markdownClipboard) {
     items.push({ label: 'Paste as Markdown', run: () => editor.clipboard.pasteMarkdown(key) });

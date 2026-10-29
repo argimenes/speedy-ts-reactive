@@ -1,3 +1,4 @@
+import { structuralChangeFor, type StructuralChange } from "./structural-plan";
 import { taskStateChangeFor } from './task-state-plan';
 import { listWrapChangeFor, type ListWrapChange } from "./list-wrap-plan";
 import { recordOperations } from "./record-batch";
@@ -283,6 +284,7 @@ export interface RepositoryChange {
   emptyParagraph?: EmptyParagraphChange;
   listWrap?: ListWrapChange;
   taskStateOwner?: ContentKey;
+  structural?: StructuralChange;
   /** Fully validated append of fresh subtrees; existing records/edges are unchanged. */
   appendedChildrenOwner?: ContentKey;
 }
@@ -325,6 +327,9 @@ export class CanonicalRepository {
   /** Internal read-only access. Never mutate these records; use commit. */
   readState(): RepositoryState { return unwrap(this.state); }
   hasSemanticPlacements(): boolean { return this.placementIdentity.enabled; }
+
+  get hasValidStructuralEvidence(): boolean { return !!this.boundary && !this.boundary.validation.error; }
+  ownedPlacementKeys(key: string): Iterable<string> { return this.references.ownedKeys(key); }
 
   contentReferenceCount(key: ContentKey): number { return this.references.get(key) ?? 0; }
 
@@ -464,6 +469,13 @@ export class CanonicalRepository {
       this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, undefined, placementDelta, undefined, listWrap);
       return;
     }
+    const structural = !bulk && this.hasValidStructuralEvidence && structuralChangeFor(this.readState(), operations, {
+      locationOf: key => this.locationOf(key), referenceCount: key => this.contentReferenceCount(key), ownedKeys: key => this.ownedPlacementKeys(key),
+    });
+    if (structural) {
+      this.commitInline(label, operations, undefined, recordHistory, metadata, undefined, undefined, placementDelta, undefined, undefined, undefined, structural);
+      return;
+    }
     const current = this.readState();
     for (const subscriber of this.beforeChangeSubscribers) subscriber(label, metadata.cause);
     for (const subscriber of this.beforeSubscribers) subscriber(this.snapshot(), label);
@@ -530,7 +542,7 @@ export class CanonicalRepository {
     });
   }
 
-  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta, emptyParagraph?: EmptyParagraphChange, listWrap?: ListWrapChange, taskStateOwner?: ContentKey): void {
+  private commitInline(label: string, operations: RepositoryOperation[], inlineOwner: ContentKey | undefined, recordHistory: boolean, metadata: CommitMetadata, split?: SplitChange, childrenOwner?: ContentKey, placementDelta?: PlacementIdentityDelta, emptyParagraph?: EmptyParagraphChange, listWrap?: ListWrapChange, taskStateOwner?: ContentKey, structural?: StructuralChange): void {
     const current = this.readState();
     // Capture inverse data before changing any reactive records.
     const inverse = operations.map((operation) => inverseFor(current, operation)).reverse();
@@ -539,7 +551,7 @@ export class CanonicalRepository {
     // Unknown fast-route semantics do not trigger a global scan on the input path.
     // They invalidate query eligibility until a later full admitted validation.
     let boundarySafe = true;
-    if (this.boundary) { try {
+    if (this.boundary && !structural) { try {
       // The list proof establishes same-resource ownership for the fresh wrapper;
       // remaining inline changes still use the usual ownership check.
       const ownershipOps = listWrap ? prepared.filter(op => !(op.kind === "put-content" && op.record.key === listWrap.wrapperContent || op.kind === "remove-content" && op.key === listWrap.wrapperContent || op.kind === "put-placement" && op.record.key === listWrap.wrapper || op.kind === "remove-placement" && op.key === listWrap.wrapper)) : prepared;
@@ -572,6 +584,7 @@ export class CanonicalRepository {
           case "put-content": this.setState("contents", operation.record.key, reconcile(operation.record)); break;
           case "remove-content": this.setState("contents", operation.key, undefined); break;
           case "put-placement": {
+            if (current.placements[operation.record.key]) this.references.remove(current.placements[operation.record.key]);
             this.references.add(operation.record);
             this.setState("placements", operation.record.key, operation.record);
             break;
@@ -602,7 +615,7 @@ export class CanonicalRepository {
       this.deliverCapture(capture, commitId, label, recordHistory);
       for (const subscriber of this.subscribers) subscriber(this.snapshot(), label);
       const origins = annotationOrigins(operations);
-      for (const subscriber of this.changeSubscribers) subscriber({ commit: { id: commitId, cause: metadata.cause }, label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph, listWrap, taskStateOwner, annotationOrigins: origins });
+      for (const subscriber of this.changeSubscribers) subscriber({ commit: { id: commitId, cause: metadata.cause }, label, previousContents, inlineOwner, split, childrenOwner, emptyParagraph, listWrap, taskStateOwner, structural, annotationOrigins: origins });
     });
   }
 

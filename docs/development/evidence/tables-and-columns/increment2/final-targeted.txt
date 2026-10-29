@@ -1,0 +1,26 @@
+
+ RUN  v2.1.9 /Users/iianneill/Documents/GitHub/speedy-ts-reactive
+
+ ✓ src/features/autocomplete/placement.test.ts (9 tests) 12ms
+ ✓ src/input/bindings.test.ts (7 tests) 42ms
+ ✓ src/features/autocomplete/provisional-cells.test.ts (4 tests) 14ms
+ ✓ src/features/autocomplete/authorities.test.ts (3 tests) 22ms
+ ✓ src/features/autocomplete/provisional-integration.test.ts (11 tests) 371ms
+ ✓ src/features/autocomplete/autocomplete.test.ts (36 tests) 5277ms
+   ✓ ordinary completed input reads at most the affected Block and one cell, with no snapshots or discovery 4780ms
+ ✓ src/block-tree/structural-performance.test.ts (10 tests) 3272ms
+   ✓ avoids snapshots, global indexing and unrelated record reads with 300 unrelated paragraphs 2662ms
+ ✓ src/rendering/block-context-menu.test.tsx (12 tests) 3870ms
+   ✓ Block context menu > exports full native JSON through the menu, preserving hidden content and unsaved edits without saving 2209ms
+ ✓ src/rendering/tables.test.tsx (52 tests) 9396ms
+   ✓ runs contextual /move-row down with exact literal Undo 933ms
+   ✓ runs contextual /unc with exact literal Undo 1133ms
+   ✓ does not build plans, snapshots or read unrelated Blocks while suggesting commands 903ms
+   ✓ keeps typing local with contextual controls mounted 1451ms
+   ✓ keeps every eligible contextual mutation and its Undo off repository-wide work 711ms
+
+ Test Files  9 passed (9)
+      Tests  144 passed (144)
+   Start at  23:06:54
+   Duration  18.83s (transform 12.08s, setup 0ms, collect 28.74s, tests 22.28s, environment 10.38s, prepare 1.40s)
+

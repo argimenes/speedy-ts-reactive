@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BindingRegistry, chord, keyboard } from "./bindings";
 import { registerInputActions } from './binding-catalog';
+import { createEffect, createRoot } from 'solid-js';
 
 afterEach(() => { vi.useRealTimers(); localStorage.clear(); });
 
@@ -10,6 +11,22 @@ function action(registry: BindingRegistry, id: string, defaults: any[]) {
 }
 
 describe("chord bindings", () => {
+  it('updates observed labels only for changed actions, including assignment, reset and lease removal', async () => {
+    const registry = new BindingRegistry(); action(registry, 'ordinary', [keyboard('a')]);
+    const ordinary = vi.fn(), transient = vi.fn();
+    const dispose = createRoot(dispose => {
+      createEffect(() => ordinary(registry.label('ordinary')));
+      createEffect(() => transient(registry.label('temporary')));
+      return dispose;
+    });
+    await Promise.resolve(); ordinary.mockClear(); transient.mockClear();
+    const release = registry.register({ id: 'temporary', name: 'Temporary', description: '', category: 'Test', tags: [], scope: 'autocomplete', defaults: [keyboard('Enter')], handler: () => {} });
+    expect(ordinary).not.toHaveBeenCalled(); expect(transient).toHaveBeenLastCalledWith('Enter');
+    release(); expect(ordinary).not.toHaveBeenCalled(); expect(transient).toHaveBeenLastCalledWith('Unassigned');
+    registry.assign('ordinary', [keyboard('b')]); expect(ordinary).toHaveBeenLastCalledWith('b');
+    ordinary.mockClear(); registry.assign('ordinary', [keyboard('b')]); expect(ordinary).not.toHaveBeenCalled();
+    registry.reset('ordinary'); expect(ordinary).toHaveBeenLastCalledWith('a'); dispose(); registry.dispose();
+  });
   it.each([['MacIntel', 'metaKey'], ['Win32', 'ctrlKey']])('registers resource processing on %s', (platform, modifier) => {
     const registry = new BindingRegistry(); registerInputActions(registry, platform);
     const run = vi.fn();

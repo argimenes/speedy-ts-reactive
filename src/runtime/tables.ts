@@ -1,9 +1,11 @@
+import { createStore } from 'solid-js/store';
 import { clone } from '../block-tree/clone';
 import type { BlockNode, ExistingBlockDto } from '../block-tree/types';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { NativeTextSelection } from './mounts';
 import type { TextRangeSnapshot } from './text-ranges';
 import { taskOwner } from './tasks';
+import { revealTableCell } from './table-presentation';
 
 export type TableDirection = 'left' | 'right' | 'up' | 'down';
 export type TableRequest =
@@ -49,6 +51,12 @@ function fail(message: string): never { throw new Error(message); }
  * Preparation never changes the document; execution uses one native transaction.
  * There are no typing handlers or general-purpose history/capture subscriptions. */
 export class TableOperations {
+  private readonly notices = createStore<Record<string, string>>({});
+  notice(view: string) { return this.notices[0][view] ?? ''; }
+  releaseView(view: string) { this.guideStore[1](view, undefined!); this.notices[1](view, undefined!); }
+  private readonly guideStore = createStore<Record<string, boolean>>({});
+  guides(view: string) { return this.guideStore[0][view] !== false; }
+  toggleGuides(view: string) { this.guideStore[1](view, !this.guides(view)); }
   private plans = new WeakMap<PreparedTableOperation, Plan>();
   private bookmarks = new Map<string, { before?: Bookmark; after?: Bookmark; occurrences: Bookmark[] }>();
   private stop?: () => void;
@@ -312,6 +320,7 @@ export class TableOperations {
     if (e.commandRegistry.permit?.(target.key, `table.${request.kind}`) === false) fail('Table editing is not permitted here.');
     this.continuity(moving);
     if (invocation) {
+      this.validateTextSelection([invocation.nodeKey]);
       e.textRanges.validate([invocation], 'cell');
       const source = 'target' in request ? request.target : request.targets[0];
       if (invocation.nodeKey !== source || this.node(invocation.nodeKey).viewType !== 'standoff-editor-block') fail('The command invocation belongs to a different Block.');
@@ -323,10 +332,16 @@ export class TableOperations {
 
   private bookmark(target: BlockNode): Bookmark | undefined {
     const active = typeof document !== 'undefined' ? this.editor.mounts.resolveElement(document.activeElement) : undefined;
-    const node = active && this.editor.node(active.nodeKey) || this.editor.node(this.editor.focus.state.focusedKey!) || target;
+    const overlay = active && this.editor.overlays.overlays.find(o => o.key === active.nodeKey);
+    const node = active && this.editor.node(active.nodeKey) || (overlay?.returnFocusKey && this.editor.node(overlay.returnFocusKey)) || this.editor.node(this.editor.focus.state.focusedKey!) || target;
     if (node.viewId !== target.viewId) return;
     const mount = this.editor.mounts.get(node.key);
-    return { view: node.viewId, placement: node.placementKey, content: node.contentKey, inline: mount?.captureInlineSelection?.(), native: mount?.captureSelection?.() };
+    const inline = overlay?.returnInlineSelection ?? mount?.captureInlineSelection?.();
+    const native = overlay?.returnSelection ?? mount?.captureSelection?.();
+    // Overlay values are Solid store proxies; session history keeps plain bookmarks.
+    return { view: node.viewId, placement: node.placementKey, content: node.contentKey,
+      inline: inline && { anchor: inline.anchor, head: inline.head },
+      native: native && { start: native.start, end: native.end, direction: native.direction } };
   }
   private restore(bookmark?: Bookmark, revision = this.editor.repository.state.revision) {
     if (!bookmark) return;
@@ -352,6 +367,7 @@ export class TableOperations {
         e.setCaret(n.key, bookmark.inline.anchor === bookmark.inline.head ? bookmark.inline.head : undefined);
       }
       if (bookmark.native) m.restoreSelection?.(bookmark.native);
+      revealTableCell(m.root);
     });
   }
   execute(receipt: PreparedTableOperation): void {
@@ -388,7 +404,7 @@ export class TableOperations {
     const recording: { id?: string; occurrences: Bookmark[] } = this.recording = { occurrences };
     let survivors: string[] = [];
     try {
-      e.commands.transaction(`Table ${receipt.kind}`, () => {
+      e.commands.structuralTransaction(`Table ${receipt.kind}`, () => {
         if (plan.invocation) e.commands.replaceInlineRange(plan.invocation.nodeKey, plan.invocation.start, plan.invocation.end, '');
         survivors = plan.apply();
       }, { commandId: `table.${receipt.kind}`, subjects: [{ contentKey: plan.target.contentKey, placementKey: plan.target.placementKey }] });
@@ -401,6 +417,7 @@ export class TableOperations {
     }
     if (recording.id) this.bookmarks.set(recording.id, { before, after: focus, occurrences });
     e.blockSelection.clear(); this.restore(focus);
+    this.notices[1](plan.target.viewId, `Table ${receipt.kind.replaceAll('-', ' ')} completed.`);
   }
   run(request: TableRequest, invocation?: TextRangeSnapshot) { this.execute(this.prepare(request, invocation)); }
   dispose() { this.alive = false; this.stop?.(); this.stopBefore?.(); this.bookmarks.clear(); this.plans = new WeakMap(); }

@@ -1,0 +1,28 @@
+{
+  "scenario": "workspace",
+  "instrument": false,
+  "result": {
+    "samples": 8,
+    "warmups": 2,
+    "sync": {
+      "median": 4278.399999976158,
+      "p95": 4636.700000047684,
+      "max": 4636.700000047684
+    },
+    "settled": {
+      "median": 4286.100000023842,
+      "p95": 4648.400000095367,
+      "max": 4648.400000095367
+    },
+    "frame": {
+      "median": 4336.5,
+      "p95": 4675.300000071526,
+      "max": 4675.300000071526
+    },
+    "metrics": {},
+    "records": 79096,
+    "documents": 5,
+    "paragraphs": 205
+  },
+  "errors": []
+}

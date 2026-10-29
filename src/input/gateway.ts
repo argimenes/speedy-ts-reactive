@@ -120,7 +120,7 @@ export class InputGateway {
   }
 
   private scopes(event: Event) {
-    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector], [data-candidate-exclusion]')) return [];
+    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector], [data-candidate-exclusion], [data-table-controls]')) return [];
     const resolved = this.mounts.resolveEvent(event);
     if (!resolved || resolved.handle.composing || resolved.handle.inputPolicy === "opaque-widget" || (event.target instanceof Element && event.target.closest('[data-bindings-window], [role="dialog"]'))) return [];
     return resolved.handle.inputPolicy === "standoff" ? ["editor/standoff", "editor"] : ["editor"];
@@ -289,7 +289,7 @@ export class InputGateway {
 
   private onFocusIn = (event: FocusEvent) => {
     if (this.bindings.pendingHint()) this.bindings.cancelChord();
-    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
+    if (event.target instanceof Element && event.target.closest('[data-block-selection-handle], [data-block-selection-inspector], [data-table-controls]')) return;
     const resolved = this.mounts.resolveEvent(event);
     if (resolved) this.focus.adopt(resolved.nodeKey);
     this.refreshCaret();
@@ -361,7 +361,7 @@ export class InputGateway {
     this.listInput.cancelTask?.();
     if (this.bindings.pendingHint()) this.bindings.cancelChord();
     const element = event.target instanceof Element ? event.target : undefined;
-    if (element?.closest('[data-block-selection-handle], [data-block-selection-inspector]')) return;
+    if (element?.closest('[data-block-selection-handle], [data-block-selection-inspector], [data-table-controls]')) return;
     if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey &&
       !element?.closest('button, input, textarea, select, [role="dialog"], [role="menu"], .document-style-bar, [data-cross-text-controls]')) {
       const resolved = this.mounts.resolveEvent(event);
