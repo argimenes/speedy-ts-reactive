@@ -103,12 +103,13 @@ export function ListView(props: BlockViewProps) {
   // Markers depend on structure/metadata, never paragraph text or caret updates.
   const markers = createMemo(() => {
     const list = (node()?.payload.metadata as any)?.htmlList ?? {};
-    let ordinal = Number.isSafeInteger(list.start) ? list.start : 1;
+    // Keep subsequent markers exact even when a valid start approaches MAX_SAFE_INTEGER.
+    let ordinal = BigInt(Number.isSafeInteger(list.start) ? list.start : 1);
     return new Map((node()?.children ?? []).map(key => {
       if (projection.state.nodes[key]?.viewType === 'indented-list-block') return [key, ''];
       const item = (projection.state.nodes[key]?.payload.metadata as any)?.htmlListItem;
-      if (Number.isSafeInteger(item?.value)) ordinal = item.value;
-      const marker = list.ordered ? `${ordinal}.` : '•'; ordinal += list.reversed ? -1 : 1;
+      if (Number.isSafeInteger(item?.value)) ordinal = BigInt(item.value);
+      const marker = list.ordered ? `${ordinal}.` : '•'; ordinal += list.reversed ? -1n : 1n;
       return [key, marker];
     }));
   });

@@ -4,12 +4,15 @@ import { ReactiveEditor } from '../reactive-editor/editor';
 import { registerCoreViews } from './register-core-views';
 import { ReactiveTreeView } from './reactive-tree-view';
 import { createAutocompleteFeature } from '../features/autocomplete';
+import { convertTypedListPrefix } from '../runtime/text-lists';
 import type { ExistingBlockDto } from '../block-tree/types';
 
 const cleanup: (() => void)[] = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); document.body.replaceChildren(); localStorage.clear(); vi.restoreAllMocks(); });
 const tick = async () => { await Promise.resolve(); await Promise.resolve(); };
 const paragraph = (id = 'source', text = '-'): ExistingBlockDto => ({ id, type: 'standoff-editor-block', text });
+const prefixes = ['-', '*', '1.', '3.', '123456789.', '9007199254740991.', '0003.'];
+const metadataFor = (prefix: string) => prefix.endsWith('.') ? { ordered: true, start: Number(prefix.slice(0, -1)) } : { ordered: false };
 const list = (children: ExistingBlockDto[]): ExistingBlockDto => ({ type: 'indented-list-block', children });
 function setup(children = [paragraph(), paragraph('other', 'untouched')]) {
   const editor = new ReactiveEditor({ type: 'document-block', children }); registerCoreViews(editor);
@@ -28,30 +31,31 @@ function setup(children = [paragraph(), paragraph('other', 'untouched')]) {
   focus(); return { editor, projection, host, node, mount, focus, input, enter, blocks, text };
 }
 
-it('converts the typed space, retains Block/placement identity and recovers the empty-item caret', async () => {
-  const f = setup(); const identity = { content: f.node().contentKey, placement: f.node().placementKey };
+it.each(prefixes)('converts %s, retains identity and recovers the empty-item caret', async prefix => {
+  const f = setup([paragraph('source', prefix), paragraph('other', 'untouched')]); const identity = { content: f.node().contentKey, placement: f.node().placementKey };
   await f.input(' ');
-  expect(f.blocks()[0]).toMatchObject({ type: 'indented-list-block', metadata: { htmlList: { ordered: false } }, children: [{ id: 'source', text: '' }] });
+  expect(f.blocks()[0]).toMatchObject({ type: 'indented-list-block', metadata: { htmlList: metadataFor(prefix) }, children: [{ id: 'source', text: '' }] });
   expect(f.node().contentKey).toBe(identity.content); expect(f.node().placementKey).toBe(identity.placement);
   expect(document.activeElement).toBe(f.mount().focusElement); expect(f.mount().captureInlineSelection!()).toEqual({ anchor: 0, head: 0 });
+  expect(f.host.querySelector('.reactive-imported-list-marker')?.textContent).toBe(prefix.endsWith('.') ? `${Number(prefix.slice(0, -1))}.` : '•');
   await f.input('item'); expect(f.text()).toBe('item');
 });
 
-it('one Undo restores the complete literal marker and Redo restores the same list', async () => {
-  const f = setup(); await f.input(' '); const converted = f.blocks();
-  f.editor.repository.undo(); await tick(); expect(f.blocks()[0]).toMatchObject({ id: 'source', type: 'standoff-editor-block', text: '- ' });
+it.each(prefixes)('one Undo restores literal %s and Redo restores the same list', async prefix => {
+  const f = setup([paragraph('source', prefix), paragraph('other', 'untouched')]); await f.input(' '); const converted = f.blocks();
+  f.editor.repository.undo(); await tick(); expect(f.blocks()[0]).toMatchObject({ id: 'source', type: 'standoff-editor-block', text: prefix + ' ' });
   expect(f.blocks()).toHaveLength(2);
   f.editor.repository.redo(); await tick(); expect(f.blocks()).toEqual(converted);
   f.focus(0); expect(document.activeElement).toBe(f.mount().focusElement);
-  f.editor.repository.undo(); f.editor.repository.undo(); expect(f.text()).toBe('-');
+  f.editor.repository.undo(); f.editor.repository.undo(); expect(f.text()).toBe(prefix);
 });
 
-it('uses native annotation remapping and preserves owned relations and child content', async () => {
-  const source = { ...paragraph(), standoffProperties: [{ id: 'range', type: 'style/bold', start: 0, end: 0 }, { id: 'point', type: 'note', start: 0, end: 0, isZeroWidth: true, affinity: 'before' }], relation: { leftMargin: { type: 'left-margin-block', children: [paragraph('note', 'note')] } }, children: [paragraph('attachment', 'attached')] };
+it.each(['-', '*', '3.', '123456789.'])('uses native annotation remapping and preserves relations for %s', async prefix => {
+  const source = { ...paragraph('source', prefix), standoffProperties: [{ id: 'range', type: 'style/bold', start: 0, end: 0 }, { id: 'point', type: 'note', start: 0, end: 0, isZeroWidth: true, affinity: 'before' }], relation: { leftMargin: { type: 'left-margin-block', children: [paragraph('note', 'note')] } }, children: [paragraph('attachment', 'attached')] };
   const f = setup([source]); const baseline = new ReactiveEditor({ type: 'document-block', children: [source] }); cleanup.push(() => baseline.dispose());
   const view = baseline.createView(), original = Object.values(view.state.nodes).find(n => n.payload.id === 'source')!;
-  baseline.commands.replaceInlineRange(original.key, 1, 1, ' '); const literal = baseline.encodeDocument().children![0];
-  baseline.commands.replaceInlineRange(original.key, 0, 2, '');
+  baseline.commands.replaceInlineRange(original.key, prefix.length, prefix.length, ' '); const literal = baseline.encodeDocument().children![0];
+  baseline.commands.replaceInlineRange(original.key, 0, prefix.length + 1, '');
   await f.input(' '); expect(f.node().payload.standoffProperties).toEqual(original.payload.standoffProperties);
   expect(f.blocks()[0].children![0].relation).toEqual(literal.relation); expect(f.blocks()[0].children![0].children).toEqual(literal.children);
   f.editor.repository.undo(); expect(f.blocks()[0]).toEqual(literal);
@@ -72,10 +76,10 @@ it('beforeinput Enter on a sole empty item removes the empty list wrapper', asyn
   expect(f.mount().captureInlineSelection!()).toEqual({ anchor: 0, head: 0 });
 });
 
-it('empty nested items exit one level, while prefix text already inside lists stays literal', async () => {
-  const f = setup([list([{ ...paragraph('parent', 'parent'), children: [list([paragraph()])] }])]);
-  await f.input(' '); expect(f.text()).toBe('- '); expect(f.projection.parentOf(f.node().key)?.viewType).toBe('indented-list-block');
-  f.editor.commands.replaceInlineRange(f.node().key, 0, 2, ''); f.focus(0); await f.enter();
+it.each(prefixes)('keeps %s literal inside existing nested lists and exits empty items', async prefix => {
+  const f = setup([list([{ ...paragraph('parent', 'parent'), children: [list([paragraph('source', prefix)])] }])]);
+  await f.input(' '); expect(f.text()).toBe(prefix + ' '); expect(f.projection.parentOf(f.node().key)?.viewType).toBe('indented-list-block');
+  f.editor.commands.replaceInlineRange(f.node().key, 0, prefix.length + 1, ''); f.focus(0); await f.enter();
   expect(f.blocks()[0].children!.map(b => b.id)).toEqual(['parent', 'source']);
   expect(f.blocks()[0].children![0].children).toEqual([]);
 });
@@ -87,10 +91,10 @@ it('keeps imported compound-item prefix and empty-paragraph Enter behaviour unch
   expect(f.blocks()[0].children![0].type).toBe('container-block'); expect(f.blocks()[0].children![0].children).toHaveLength(2);
 });
 
-it.each(['', 'text', '--', '*', '1.', '- suffix'])('does not convert unmatched text %j or start structural work', async text => {
+it.each(['', 'text', '--', '**', '0.', '00.', '-1.', '+1.', '1.5.', '1e2.', '1..', 'a.', ' 1.', '1. suffix', '9007199254740992.', '- [ ]', '- [x]', '- suffix'])('does not convert unmatched text %j or start structural work', async text => {
   const f = setup([paragraph('source', text)]);
-  const transaction = vi.spyOn(f.editor.commands, 'transaction'), snapshot = vi.spyOn(f.editor.repository, 'snapshot');
-  await f.input(' '); expect(transaction).not.toHaveBeenCalled(); expect(snapshot).not.toHaveBeenCalled();
+  const wrap = vi.spyOn(f.editor.commands, 'wrapTextBlockInList'), transaction = vi.spyOn(f.editor.commands, 'transaction'), snapshot = vi.spyOn(f.editor.repository, 'snapshot');
+  await f.input(' '); expect(wrap).not.toHaveBeenCalled(); expect(transaction).not.toHaveBeenCalled(); expect(snapshot).not.toHaveBeenCalled();
   expect(f.text()).toBe(text + ' ');
 });
 
@@ -118,11 +122,53 @@ it('does not convert multiple carets or cross-Block replacement', async () => {
   await g.input(' '); expect(g.blocks().every(b => b.type !== 'indented-list-block')).toBe(true);
 });
 
-it('lets Scry own provisional source edits and does not convert the phrase on cancellation', async () => {
+it.each(['-', '*', '1.', '3.', '123456789.'])('lets Scry own %s source input without converting on cancellation', async prefix => {
   Object.defineProperty(Range.prototype, 'getBoundingClientRect', { configurable: true, value: () => new DOMRect(0, 0, 10, 20) });
   cleanup.push(() => { delete (Range.prototype as any).getBoundingClientRect; });
   const f = setup([paragraph('source', '')]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor));
-  await f.input('(('); await f.input('-'); await f.input(' ');
+  await f.input('(('); await f.input(prefix); await f.input(' ');
   expect(f.text()).toBe(''); expect(f.blocks()[0].type).toBe('standoff-editor-block');
-  f.editor.completionInput!.cancel(); await tick(); expect(f.text()).toBe('- '); expect(f.blocks()[0].type).toBe('standoff-editor-block');
+  f.editor.completionInput!.cancel(); await tick(); expect(f.text()).toBe(prefix + ' '); expect(f.blocks()[0].type).toBe('standoff-editor-block');
+});
+
+it.each(['*', '3.'])('preserves the input exclusions for %s', async prefix => {
+  for (const options of [{ inputType: 'insertFromPaste' }, { inputType: 'insertCompositionText' }, { isComposing: true }]) {
+    const f = setup([paragraph('source', prefix)]); await f.input(' ', options);
+    expect(f.blocks()[0].type).toBe('standoff-editor-block');
+  }
+  for (const type of ['code', 'text/literal', 'text/superposition']) {
+    const f = setup([{ ...paragraph('source', prefix), standoffProperties: [{ type, start: 0, end: prefix.length - 1 }] }]);
+    await f.input(' '); expect(f.text()).toBe(prefix + ' '); expect(f.blocks()[0].type).toBe('standoff-editor-block');
+  }
+  const code = setup([{ ...paragraph('source', prefix), metadata: { htmlPreformatted: true } }]);
+  await code.input(' '); expect(code.text()).toBe(prefix + ' ');
+  const range = setup([paragraph('source', prefix)]); range.focus(0, prefix.length); await range.input(' ');
+  expect(range.blocks()[0].type).toBe('standoff-editor-block');
+  const multiple = setup([paragraph('source', prefix)]), source = multiple.node();
+  multiple.editor.selections.setPrimary(source.key, source.contentKey, source.viewId, prefix.length);
+  multiple.editor.selections.addCaret(source.key, source.contentKey, source.viewId, 0); await multiple.input(' ');
+  expect(multiple.blocks()[0].type).toBe('standoff-editor-block');
+});
+
+it.each(['1.', '3.', '123456789.', '9007199254740991.'])('keeps numbering and start through Enter, indentation and exit for %s', async prefix => {
+  const f = setup([paragraph('source', prefix)]), start = BigInt(prefix.slice(0, -1));
+  const markers = () => [...f.host.querySelectorAll('.reactive-imported-list-marker')].map(n => n.textContent);
+  const tab = async (shiftKey = false) => { document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true })); await tick(); };
+  await f.input(' '); await f.input('first'); await f.enter(); await f.input('second');
+  expect(markers()).toEqual([`${start}.`, `${start + 1n}.`]);
+  await tab(); expect(f.blocks()[0].children![0].children![0].metadata).toMatchObject({ htmlList: metadataFor(prefix) });
+  await tab(true); expect(markers()).toEqual([`${start}.`, `${start + 1n}.`]);
+  await f.enter(); expect(markers()).toEqual([`${start}.`, `${start + 1n}.`, `${start + 2n}.`]);
+  await f.enter(); expect(f.blocks()).toHaveLength(2); expect(markers()).toEqual([`${start}.`, `${start + 1n}.`]);
+  expect(f.blocks()[0].metadata).toMatchObject({ htmlList: metadataFor(prefix) });
+});
+
+
+it('rejects long unmatched paragraphs with a constant number of Cell reads', () => {
+  const editor = new ReactiveEditor({ type: 'document-block', children: [paragraph('source', 'x'.repeat(10000))] });
+  cleanup.push(() => editor.dispose());
+  const view = editor.createView(), key = view.state.nodes[view.state.rootKey].children[0];
+  const read = vi.spyOn(editor, 'node'), wrap = vi.spyOn(editor.commands, 'wrapTextBlockInList');
+  expect(convertTypedListPrefix(editor, key, 10000)).toBe(false);
+  expect(read).toHaveBeenCalledTimes(2); expect(wrap).not.toHaveBeenCalled();
 });

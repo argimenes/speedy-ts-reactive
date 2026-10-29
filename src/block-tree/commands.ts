@@ -1,3 +1,4 @@
+import { isAutomaticListMetadata, type AutomaticListMetadata } from "./list-wrap-plan";
 import { diffRecordBatch } from "./record-batch";
 import { conversionSource } from '../interchange/conversion';
 import { mapStandoffPropertiesForReplacement, pointAffinity } from '../interchange/ranges';
@@ -469,7 +470,8 @@ export class TreeCommands {
   /** Wrap one existing TextBlock without intermediate insert/move transactions.
    * Its placement, owned subtree and definition owner stay intact in the same
    * resource. Optional prefix removal uses the ordinary native inline planner. */
-  wrapTextBlockInList(key: NodeKey | PlacementKey, prefixLength = 0): PlacementKey {
+  wrapTextBlockInList(key: NodeKey | PlacementKey, prefixLength = 0, list: AutomaticListMetadata = { ordered: false }): PlacementKey {
+    if (!isAutomaticListMetadata(list)) throw new TreeCommandError("Invalid automatic list metadata");
     const state = this.pending?.draft ?? this.repository.readState();
     const sourceKey = this.placementKey(key, state), source = state.placements[sourceKey];
     const content = state.contents[source.contentKey];
@@ -479,7 +481,7 @@ export class TreeCommands {
       throw new TreeCommandError("List wrapping requires an ordinary TextBlock child");
     }
     const parent = state.contents[location.ownerContentKey];
-    const decoded = decodeDetachedSubtree({ id: createBlockId(), type: "indented-list-block", metadata: { htmlList: { ordered: false } }, children: [] });
+    const decoded = decodeDetachedSubtree({ id: createBlockId(), type: "indented-list-block", metadata: { htmlList: list }, children: [] });
     const wrapper = decoded.state.placements[decoded.rootPlacementKey];
     const children = [...parent.children];
     children[location.index!] = wrapper.key;

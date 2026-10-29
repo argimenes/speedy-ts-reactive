@@ -133,13 +133,13 @@ it.each([false,true])('tracks empty paragraph removal and undo incrementally (re
  expect(nativeText(captureNative(fresh.editor.repository.readState(),id))).toBe(nativeText(captureNative(editor.repository.readState(),id)));
 });
 
-it('tracks list wrapping without snapshots and saves the list and literal Undo states',async()=>{
+it.each([false,true])('tracks list wrapping without snapshots and saves list/Undo states (ordered=%s)',async ordered=>{
  const f=await host(),{editor,service}=f.make(),location={folder:'.',filename:'rich.mutable.json'},id=await service.open(location);
  const state=editor.repository.readState(),content=Object.values(state.contents).find(c=>c.viewType==='standoff-editor-block')!;
  const placement=Object.values(state.placements).find(p=>p.contentKey===content.key)!;
  editor.commands.replaceInlineRange(placement.key,0,content.inlineContent.length,'- ');
  const snapshot=vi.spyOn(editor.repository,'snapshot');
- const wrapper=editor.commands.wrapTextBlockInList(placement.key,2);editor.repository.undo();editor.repository.redo();
+ const wrapper=editor.commands.wrapTextBlockInList(placement.key,2,ordered?{ordered:true,start:123456789}:{ordered:false});editor.repository.undo();editor.repository.redo();
  expect(snapshot).not.toHaveBeenCalled();expect(service.isDirty(id)).toBe(true);snapshot.mockRestore();
  expect(await service.save(id)).toMatchObject({phase:'saved',dirty:false});
  const fresh=f.make();await fresh.service.open(location);

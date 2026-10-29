@@ -124,13 +124,26 @@ try{
  await evaluate('proof.prefixMount().focus();proof.prefixMount().restoreInlineSelection({anchor:0,head:0})');await send('Input.insertText',{text:'First automatic item'},sessionId);await key('Enter');
  check('Enter creates the next direct list item',await evaluate('proof.parent(proof.prefix()).children.length===2'));
  await key('Enter');check('Enter on the empty item exits the list',await evaluate("proof.parent(proof.editor.node(proof.editor.focus.state.focusedKey)).viewType!=='indented-list-block'&&proof.parent(proof.prefix()).children.length===1"));
+ for(const token of ['*','1.','3.','123456789.']){
+  await evaluate(`proof.extraPlacement=proof.editor.commands.insert({id:crypto.randomUUID(),type:'standoff-editor-block',text:''},{kind:'after',anchorKey:proof.parent(proof.prefix()).key});proof.extra=()=>proof.editor.nodeForPlacementInView(proof.extraPlacement,proof.view.viewId);proof.extraMount=()=>proof.editor.mounts.get(proof.extra().key);proof.extraText=()=>proof.extra().inlineContent.map(k=>proof.editor.node(k).payload.text).join('');proof.extraMount().focus();proof.extraMount().restoreInlineSelection({anchor:0,head:0});`);
+  for(const text of token+' ')await send('Input.insertText',{text},sessionId);
+  const ordered=token.endsWith('.'),start=ordered?Number(token.slice(0,-1)):undefined;
+  check(`Typed ${token} creates the appropriate list and caret`,await evaluate(`proof.parent(proof.extra()).payload.metadata.htmlList.ordered===${ordered}&&${ordered?`proof.parent(proof.extra()).payload.metadata.htmlList.start===${start}&&`:''}proof.extraText()===''&&proof.extraMount().captureInlineSelection().anchor===0&&proof.extraMount().root.closest('[data-list-item]').querySelector('.reactive-imported-list-marker').textContent===${JSON.stringify(ordered?start+'.':'•')}`));
+  await key('z',4);check(`Undo restores literal ${token}`,await evaluate(`proof.extraText()===${JSON.stringify(token+' ')}&&proof.parent(proof.extra()).viewType!=='indented-list-block'`));
+  await key('z',12);check(`Redo restores ${token} list`,await evaluate("proof.extraText()===''&&proof.parent(proof.extra()).viewType==='indented-list-block'"));
+  await evaluate('proof.extraMount().focus();proof.extraMount().restoreInlineSelection({anchor:0,head:0})');
+  await send('Input.insertText',{text:'First'},sessionId);await key('Enter');await send('Input.insertText',{text:'Second'},sessionId);
+  check(`${token} Enter continues numbering`,await evaluate(`proof.editor.mounts.get(proof.editor.focus.state.focusedKey).root.closest('[data-list-item]').querySelector('.reactive-imported-list-marker').textContent===${JSON.stringify(ordered?(start+1)+'.':'•')}`));
+ }
+ for(const token of ['-','*','3.']){
  await evaluate("proof.scryPlacement=proof.editor.commands.insert({id:crypto.randomUUID(),type:'standoff-editor-block',text:''},{kind:'after',anchorKey:proof.parent(proof.prefix()).key});proof.scryNode=()=>proof.editor.nodeForPlacementInView(proof.scryPlacement,proof.view.viewId);proof.editor.focus.request(proof.scryNode().key,{caret:'start'})");
- for(const text of ['(','(','-',' '])await send('Input.insertText',{text},sessionId);
- check('Scry owns hyphen-space source input without automatic conversion',await evaluate("proof.scryNode().inlineContent.length===0&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'&&!!document.querySelector('.ler-instrument')"));
- await evaluate("const input=document.querySelector('[aria-label=\"Search entities\"]');input.focus();input.select()");await send('Input.insertText',{text:'- '},sessionId);
- check('Scry query hyphen-space remains query text',await evaluate("document.querySelector('[aria-label=\"Search entities\"]').value==='- '&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'"));
+ for(const text of ['(','(',...token,' '])await send('Input.insertText',{text},sessionId);
+ check(`Scry owns ${token} source input without conversion`,await evaluate("proof.scryNode().inlineContent.length===0&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'&&!!document.querySelector('.ler-instrument')"));
+ await evaluate("{ const input=document.querySelector('[aria-label=\"Search entities\"]');input.focus();input.select(); }");await send('Input.insertText',{text:token+' '},sessionId);
+ check(`Scry query ${token} remains query text`,await evaluate(`document.querySelector('[aria-label=\"Search entities\"]').value===${JSON.stringify(token+' ')}&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'`));
  await evaluate('proof.editor.completionInput.cancel()');
- check('Cancelling Scry keeps the literal phrase without converting it',await evaluate("proof.scryNode().inlineContent.map(k=>proof.editor.node(k).payload.text).join('')==='- '&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'"));
+ check(`Cancelling Scry keeps literal ${token}`,await evaluate(`proof.scryNode().inlineContent.map(k=>proof.editor.node(k).payload.text).join('')===${JSON.stringify(token+' ')}&&proof.parent(proof.scryNode()).viewType!=='indented-list-block'`));
+ }
  check('No browser exceptions',errors.length===0);
  await send('Page.captureScreenshot',{format:'png'},sessionId).then(r=>writeFile(path.join(artifacts,'text-lists.png'),Buffer.from(r.data,'base64')));
  await writeFile(path.join(artifacts,'results.json'),JSON.stringify({checks,errors,realFlintComponents:true},null,2));

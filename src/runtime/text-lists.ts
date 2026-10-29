@@ -1,3 +1,4 @@
+import type { AutomaticListMetadata } from "../block-tree/list-wrap-plan";
 import type { BlockNode, ExistingBlockDto, NodeKey } from '../block-tree/types';
 import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { BlockTreeProjection } from '../block-tree/projection';
@@ -46,20 +47,35 @@ const listDto = (source?: BlockNode): ExistingBlockDto => ({
 });
 
 /** Shared structural primitive. The caller decides eligibility and caret policy. */
-export function wrapTextBlockInList(editor: ReactiveEditor, key: NodeKey, prefixLength = 0): string {
-  return editor.commands.wrapTextBlockInList(key, prefixLength);
+export function wrapTextBlockInList(editor: ReactiveEditor, key: NodeKey, prefixLength = 0, list: AutomaticListMetadata = { ordered: false }): string {
+  return editor.commands.wrapTextBlockInList(key, prefixLength, list);
 }
 
-// Recognition rules are separate from conversion; further prefixes can be added
-// without putting structural work on unmatched keystrokes.
-const listPrefixes = [{ text: '-', kind: 'unordered' }] as const;
+// Inspect only candidate prefix Cells. Most spaces reject from the last Cell;
+// unrelated text, annotations and document structure are never scanned here.
+function listPrefix(editor: ReactiveEditor, source: BlockNode, caret: number): AutomaticListMetadata | undefined {
+  const textAt = (index: number) => {
+    const cell = editor.node(source.inlineContent[index]);
+    return cell?.viewType === 'text-cell' ? cell.payload.text : undefined;
+  };
+  if (caret === 1) {
+    const text = textAt(0);
+    return text === '-' || text === '*' ? { ordered: false } : undefined;
+  }
+  if (caret < 2 || textAt(caret - 1) !== '.') return;
+  let start = 0;
+  for (let i = 0; i < caret - 1; i++) {
+    const digit = textAt(i);
+    if (typeof digit !== 'string' || !/^[0-9]$/.test(digit)) return;
+    start = start * 10 + Number(digit);
+    if (!Number.isSafeInteger(start)) return; // Never silently round a starting value.
+  }
+  if (start > 0) return { ordered: true, start };
+}
 export function convertTypedListPrefix(editor: ReactiveEditor, key: NodeKey, caret: number): boolean {
   const source = editor.node(key);
   if (source?.viewType !== 'standoff-editor-block' || source.inlineContent.length !== caret) return false;
-  const rule = listPrefixes.find(rule => rule.text.length === caret && [...rule.text].every((char, i) => {
-    const cell = editor.node(source.inlineContent[i]);
-    return cell?.viewType === 'text-cell' && cell.payload.text === char;
-  }));
+  const rule = listPrefix(editor, source, caret);
   if (!rule || editor.crossText.range() || (editor.selections.sets[key]?.items.length ?? 0) > 1) return false;
   const projection = editor.projections.get(source.viewId)!;
   const parent = projection.parentOf(key);
@@ -76,7 +92,7 @@ export function convertTypedListPrefix(editor: ReactiveEditor, key: NodeKey, car
   // is its own atomic history entry: Undo restores the complete literal marker.
   editor.commands.replaceInlineRange(key, caret, caret, ' ');
   editor.selections.mapContentEdit(contentKey, caret, caret, 1);
-  wrapTextBlockInList(editor, key, caret + 1);
+  wrapTextBlockInList(editor, key, caret + 1, rule);
   editor.selections.mapContentEdit(contentKey, 0, caret + 1, 0);
   const target = editor.nodeForPlacementInView(placement, viewId);
   if (target) editor.selections.setPrimary(target.key, contentKey, viewId, 0);

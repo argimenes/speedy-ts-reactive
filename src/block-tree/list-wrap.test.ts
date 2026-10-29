@@ -12,9 +12,10 @@ import type { RepositoryOperation } from './types';
 afterEach(() => vi.restoreAllMocks());
 const paragraph = (id: string, text = '- ') => ({ id, type: 'standoff-editor-block', text });
 
-it.each([false, true])('wrap/undo/redo preserve routes and do no global scans or projection rebuilds (prefix=%s)', prefix => {
+it.each([[false, false], [true, false], [true, true]])('wrap/undo/redo do no global scans or rebuilds (prefix=%s, ordered=%s)', (prefix, ordered) => {
+  const literal = ordered ? '123456789. ' : '- ';
   const editor = new ReactiveEditor({ type: 'document-block', children: [
-    { ...paragraph('p'), children: [paragraph('child', 'nested')], relation: { leftMargin: { type: 'left-margin-block', children: [paragraph('note', 'note')] } } },
+    { ...paragraph('p', literal), children: [paragraph('child', 'nested')], relation: { leftMargin: { type: 'left-margin-block', children: [paragraph('note', 'note')] } } },
     ...Array.from({ length: 50 }, (_, i) => paragraph(`other${i}`, 'x'.repeat(100))),
   ] });
   try {
@@ -28,7 +29,7 @@ it.each([false, true])('wrap/undo/redo preserve routes and do no global scans or
       contents: new Proxy(state.contents, { ownKeys() { throw Error('Global content scan'); } }),
       placements: new Proxy(state.placements, { ownKeys() { throw Error('Global placement scan'); } }),
     });
-    const wrapper = editor.commands.wrapTextBlockInList(key, prefix ? 2 : 0);
+    const wrapper = editor.commands.wrapTextBlockInList(key, prefix ? literal.length : 0, ordered ? { ordered: true, start: 123456789 } : { ordered: false });
     for (const view of views) {
       const source = view.nodeForPlacement(item)!;
       expect(view.parentOf(source.key)?.placementKey).toBe(wrapper);
@@ -45,13 +46,13 @@ it.each([false, true])('wrap/undo/redo preserve routes and do no global scans or
   } finally { editor.dispose(); }
 });
 
-it('keeps admitted ownership and native capture valid through prefix conversion and history', () => {
+it.each([false, true])('keeps admitted ownership and native capture valid (ordered=%s)', ordered => {
   const raw = decodeDocument({ id: 'doc', type: 'document-block', children: [paragraph('p')] }).state;
   const root = raw.placements[raw.rootPlacementKey].contentKey;
   const state = normalizeDefinitionOwnership(raw, new Map(Object.keys(raw.contents).map(key => [key, root])));
   const repository = new CanonicalRepository(state, { enforceBlockIdentity: true, resourceBoundaryEvidence: true });
   const commands = new TreeCommands(repository, key => key), item = state.contents[root].children[0];
-  const wrapper = commands.wrapTextBlockInList(item, 2), wrapperContent = repository.readState().placements[wrapper].contentKey;
+  const wrapper = commands.wrapTextBlockInList(item, 2, ordered ? { ordered: true, start: 3 } : { ordered: false }), wrapperContent = repository.readState().placements[wrapper].contentKey;
   for (const action of [() => {}, () => repository.undo(), () => repository.redo()]) {
     action(); validateRepository(repository.readState());
     expect(repository.readCanonicalResourceBoundary('doc').status).toBe('ready');
@@ -77,5 +78,15 @@ it('rejects unrelated structural changes and invalid wrapper edges from the loca
     expect(() => editor.repository.commit('Invalid wrap', invalid)).toThrow();
     const other = state.contents[state.placements[state.contents[state.placements[state.rootPlacementKey].contentKey].children[1]].contentKey];
     expect(check([...operations, { kind: 'put-content', record: { ...other, children: ['missing'] } }])).toBeUndefined();
+  } finally { editor.dispose(); }
+});
+
+it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, Infinity, NaN])('rejects invalid automatic ordered starts (%s) before editing', start => {
+  const editor = new ReactiveEditor({ type: 'document-block', children: [paragraph('p')] });
+  try {
+    const view = editor.createView(), key = view.state.nodes[view.state.rootKey].children[0];
+    const before = editor.encodeDocument(), revision = editor.repository.state.revision;
+    expect(() => editor.commands.wrapTextBlockInList(key, 2, { ordered: true, start })).toThrow('Invalid automatic list metadata');
+    expect(editor.repository.state.revision).toBe(revision); expect(editor.encodeDocument()).toEqual(before);
   } finally { editor.dispose(); }
 });

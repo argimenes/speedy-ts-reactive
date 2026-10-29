@@ -1,6 +1,18 @@
 import { inlineOwnerFor } from './inline-plan';
 import type { ContentRecord, Location, RepositoryOperation, RepositoryState } from './types';
 
+export type AutomaticListMetadata = { ordered: false } | { ordered: true; start: number };
+
+/** Only the metadata emitted by automatic prefixes; imported list variants
+ * continue through their existing validation path. */
+export function isAutomaticListMetadata(value: unknown): value is AutomaticListMetadata {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const list = value as Record<string, unknown>;
+  return list.ordered === false ? Object.keys(list).length === 1 :
+    list.ordered === true && Object.keys(list).length === 2 &&
+    typeof list.start === 'number' && Number.isSafeInteger(list.start) && list.start > 0;
+}
+
 export interface ListWrapChange {
   parent: string;
   child: string;
@@ -35,10 +47,11 @@ export function listWrapChangeFor(
   const wrapperOp = wrapperOps[0];
   if (wrapped ? wrapperOp.kind !== 'put-content' || !!state.contents[wrapper.contentKey] : wrapperOp.kind !== 'remove-content') return;
   const list = wrapperOp.kind === 'put-content' ? wrapperOp.record : state.contents[wrapper.contentKey];
+  const htmlList = (list?.payload.metadata as Record<string, unknown> | undefined)?.htmlList;
   if (!list || list.viewType !== 'indented-list-block' || list.inlineKind || list.inlineContent.length || list.children.length !== 1 ||
     Object.keys(list.ownedRelations).length || Object.keys(list.opaqueRelations).length ||
     Object.keys(list.payload).some(key => key !== 'id' && key !== 'type' && key !== 'metadata') ||
-    list.payload.type !== 'indented-list-block' || !same(list.payload.metadata, { htmlList: { ordered: false } })) return;
+    list.payload.type !== 'indented-list-block' || (!isAutomaticListMetadata(htmlList) || !same(list.payload.metadata, { htmlList }))) return;
   const item = list.children[0], placement = state.placements[item], child = placement && state.contents[placement.contentKey];
   if (!child || child.viewType !== 'standoff-editor-block' || child.inlineKind !== 'standoff') return;
   const parents = operations.filter(op => op.kind === 'put-content' && op.record.key !== child.key && op.record.key !== list.key && !!state.contents[op.record.key]);
