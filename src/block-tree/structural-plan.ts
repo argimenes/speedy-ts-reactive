@@ -1,6 +1,8 @@
+import { tabOrientationRecordChange, tabMetadataRecordChange } from './tab-orientation';
+import { inlineOwnerFor } from './inline-plan';
 import type { ContentRecord, Location, PlacementRecord, RepositoryOperation, RepositoryState } from './types';
 
-export interface StructuralChange { contents: string[]; childrenOwners: string[]; inlineOwners: string[] }
+export interface StructuralChange { tabOrientationOwner?: string; tabMetadata?: { owners: string[]; inlineOwner?: string }; membership?: { key:string; before?:string; after?:string }[]; contents: string[]; childrenOwners: string[]; inlineOwners: string[] }
 export interface StructuralEvidence {
   locationOf(key: string): Location | undefined;
   referenceCount(key: string): number;
@@ -112,7 +114,31 @@ export function structuralChangeFor(state: RepositoryState, operations: Reposito
       if (!resource(key, true)) return;
     }
   } catch { return; }
+  // Reuse the same indexed ownership proof for native membership maintenance.
+  // Character leaves are tracked through their inline owner, as during typing.
+  let membership: StructuralChange['membership'] = [];
+  try {
+    for (const [key,next] of contents) {
+      const before=state.contents[key];
+      if ((next??before)?.viewType === 'text-cell') continue;
+      const oldOwner=before && resource(key,false), newOwner=next && resource(key,true);
+      if (before && !oldOwner || next && !newOwner) throw Error('Unknown resource membership');
+      membership.push({key,before:oldOwner,after:newOwner});
+    }
+  } catch { membership=undefined; }
+  const metadata = operations.filter(op => op.kind === 'put-content' && tabMetadataRecordChange(state.contents[op.record.key],op.record));
+  const other = operations.filter(op => !metadata.includes(op));
+  const inlineOwner = metadata.length && other.filter(op => op.kind === 'put-content' && state.contents[op.record.key]?.inlineKind === 'standoff').length === 1
+    ? inlineOwnerFor(state,other,{get:key=>evidence.referenceCount(key)}) : undefined;
   return {
+    membership,
+    tabMetadata: metadata.length && (!other.length || inlineOwner) ? {
+      owners: metadata.map(op => (op as Extract<RepositoryOperation,{kind:'put-content'}>).record.key),
+      ...(inlineOwner ? { inlineOwner } : {}),
+    } : undefined,
+    // This hint is derived from the exact operation batch, never a command name.
+    tabOrientationOwner: operations.length === 1 && operations[0].kind === 'put-content' &&
+      tabOrientationRecordChange(state.contents[operations[0].record.key], operations[0].record) ? operations[0].record.key : undefined,
     contents: [...contents.keys()],
     childrenOwners: [...contents].filter(([key, next]) => !same(state.contents[key]?.children ?? [], next?.children ?? [])).map(([key]) => key),
     inlineOwners: [...contents].filter(([key, next]) => !same(state.contents[key]?.inlineContent ?? [], next?.inlineContent ?? [])).map(([key]) => key),

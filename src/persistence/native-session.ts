@@ -39,6 +39,7 @@ export class NativeDocumentSession {
   private bindings = new Map<string, Binding>();
   private compatibleSources = new Map<string,{location:DocumentLocation;byteHash:string;format:string;vault:string;canSave:boolean;message:string;dirty:boolean;busy:boolean;members:Set<string>;pending?:any}>();
   private changed = createSignal(0);
+  private localStatusChanges = createStore<Record<string, number>>({});
   private dirtyState = createStore<Record<string, boolean>>({});
   /** Per-resource flags: reading a tab indicator must never capture a Document. */
   isDirty(id: string) { return this.dirtyState[0][id] ?? true; }
@@ -73,6 +74,40 @@ export class NativeDocumentSession {
     const warn = (event: BeforeUnloadEvent) => { if (this.candidates.size || this.relocations.size || [...this.compatibleSources.values()].some(s=>s.dirty||s.pending) || [...this.bindings].some(([id,b]) => b.pending || b.relocation || this.isDirty(id))) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', warn);
     const stop = editor.repository.subscribeChanges(change => {
+      const oriented = change.structural?.tabOrientationOwner;
+      const tabMetadata = change.structural?.tabMetadata;
+      const membership = change.structural?.membership;
+      const affected = oriented ? [oriented] : tabMetadata ? [...tabMetadata.owners,...(tabMetadata.inlineOwner?[tabMetadata.inlineOwner]:[])] : membership ? [...change.previousContents.keys()] : undefined;
+      if (affected) {
+        // Publish only each owning Document's
+        // dirty flag and status, without recapture or the workspace-wide signal.
+        const update = (members:Set<string>) => {
+          for (const entry of membership ?? []) {
+            if (entry.after && members.has(entry.after)) members.add(entry.key);
+            else if (entry.before && members.has(entry.before)) members.delete(entry.key);
+          }
+        };
+        batch(() => {
+          for (const [id, b] of this.bindings) if (affected.some(key=>b.members.has(key))) {
+            update(b.members);
+            if (!b.pending && !b.busy && b.message !== 'Document changed — Save required') {
+              b.message = 'Document changed — Save required';
+              this.localStatusChanges[1](id, version => (version ?? 0) + 1);
+            }
+            this.markDirty(id, true);
+          }
+          for (const [id, s] of this.compatibleSources) if (affected.some(key=>s.members.has(key))) {
+            update(s.members);
+            s.dirty = true;
+            if (!s.busy && !s.pending && s.message !== 'Document changed — Save required') {
+              s.message = 'Document changed — Save required';
+              this.localStatusChanges[1](id, version => (version ?? 0) + 1);
+            }
+            this.markDirty(id, true);
+          }
+        });
+        return;
+      }
       for (const [id,b] of this.bindings) {
         if (![...change.previousContents.keys(), ...(change.inlineOwner ? [change.inlineOwner] : [])].some(k => b.members.has(k))) continue;
         this.markDirty(id, true);
@@ -106,7 +141,7 @@ export class NativeDocumentSession {
   }
   private touch() { this.changed[1](v => v + 1); }
   private touchStorage() { this.storageChanged[1](v => v + 1);this.notifyKnowledge(); }
-  status(id?: string) { this.changed[0](); const b = id && this.bindings.get(id); return b ? b.message : id&&this.compatibleSources.has(id) ? this.compatibleSources.get(id)!.message : this.notice || 'Save this Document to a native file before using canonical Entities.'; }
+  status(id?: string) { this.changed[0](); if (id) this.localStatusChanges[0][id]; const b = id && this.bindings.get(id); return b ? b.message : id&&this.compatibleSources.has(id) ? this.compatibleSources.get(id)!.message : this.notice || 'Save this Document to a native file before using canonical Entities.'; }
   location(id?: string) { this.storageChanged[0](); const b = id && (this.bindings.get(id)??this.compatibleSources.get(id)); return b ? { ...b.location } : undefined; }
   compatibleSource(id:string){const source=this.compatibleSources.get(id);return source?Object.freeze({...source,location:Object.freeze({...source.location})}):undefined;}
   trackCandidate(id: string) {

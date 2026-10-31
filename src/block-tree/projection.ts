@@ -85,6 +85,27 @@ export class BlockTreeProjection {
         }
         return;
       }
+      const oriented = change.structural?.tabOrientationOwner;
+      if (oriented) {
+        const content = repository.readState().contents[oriented];
+        // All mounted occurrences share this authored setting. Their child trees,
+        // occurrence indexes and topology remain untouched (including live viewers).
+        for (const key of this.contentNodes.get(oriented) ?? [])
+          if (this.state.nodes[key].viewType === content.viewType)
+            this.setState('nodes', key, 'payload', reconcile(clone(content.payload)));
+        return;
+      }
+      if (change.structural?.tabMetadata) {
+        const { owners, inlineOwner } = change.structural.tabMetadata;
+        if (inlineOwner && this.contentNodes.has(inlineOwner)) this.updateInline(inlineOwner);
+        for (const owner of owners) {
+          const content = repository.readState().contents[owner];
+          for (const key of this.contentNodes.get(owner) ?? [])
+            if (this.state.nodes[key].viewType === content.viewType)
+              this.setState('nodes',key,'payload',reconcile(clone(content.payload)));
+        }
+        return;
+      }
       if (change.structural && this.updateStructural(change.structural)) return;
       const next = this.build();
       this.unregister();

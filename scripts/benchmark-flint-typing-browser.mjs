@@ -18,6 +18,7 @@
 // BENCHMARK_LIST_PREFIX_TEXT selects the marker (default "-"); BENCHMARK_LIST_PREFIX_RICH=1 adds annotations and nested Blocks.
 // BENCHMARK_AUTOCOMPLETE=false disables completion for paired input-cost checks.
 // BENCHMARK_LER=live|review opens LER with an isolated resolver. BENCHMARK_LER_INSIDE=1 types inside a linked span.
+// BENCHMARK_TAB_ORIENTATION=horizontal|vertical sets existing TabRows before measurement.
 // Native binding/listing responses are local stubs: no user vault is opened.
 // Reports handler and queued-caret costs separately; headless animation-frame
 // timings are diagnostic, not an input-to-display latency guarantee.
@@ -58,6 +59,7 @@ const vite=await createServer({plugins:[{
  editor.commands.setPayloadField(win.key,'metadata',{...JSON.parse(JSON.stringify(win.payload.metadata)),size:{w:1450,h:920},position:{x:25,y:25}});
  const host=document.getElementById('root');host.className='workspace-demo workspace-demo--canonical';
  const dispose=render(()=>createComponent(WorkspacePresentationView,{session}),host);editor.installGateway(document);
+ if(${!!process.env.BENCHMARK_TAB_ORIENTATION})for(const row of Object.values(session.projection.state.nodes).filter(n=>n.viewType==='tab-row-block'))editor.commandRegistry.execute('tabs.orientation.'+${JSON.stringify(process.env.BENCHMARK_TAB_ORIENTATION??'horizontal')},{targetKey:row.key,args:undefined});
  window.proof={editor,session,dispose,host,native};
  `;},
  configureServer(server){server.middlewares.use(async(req,res,next)=>{if(req.url==='/__letter'){res.setHeader('Content-Type','application/json');res.end(fixture);return;}if(req.url!=='/__flint-integration')return next();res.setHeader('Content-Type','text/html');res.end(await server.transformIndexHtml(req.url,'<html><body><div id="root"></div><script type="module" src="/__flint-proof.js"></script></body></html>'));});}

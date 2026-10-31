@@ -1,3 +1,4 @@
+import { TabOperations } from '../runtime/tab-commands';
 import { enterTask, toggleTask } from '../runtime/tasks';
 import { upgradeLegacySurfaces } from '../interchange/legacy-surfaces';
 import { BlockSurfaces } from '../runtime/block-surfaces';
@@ -75,6 +76,7 @@ import { ShowHideProjection } from "../runtime/show-hide-projection";
 export class ReactiveEditor {
   readonly surfaces = new BlockSurfaces(this);
   readonly tables = new TableOperations(this);
+  readonly tabs = new TabOperations(this);
   completionInput?: import("../input/gateway").CompletionInput;
   /** WorkspaceSession owns this runtime-only store; absent in legacy/isolated editors. */
   documentSessions?: import("../application/document-sessions").DocumentSessionStore;
@@ -509,6 +511,7 @@ export class ReactiveEditor {
 
   dispose(): void {
     this.tables.dispose();
+    this.tabs.dispose();
     this.viewCloseGuards.clear();
     this.interchange.dispose(); this.disposeInterchangeStatus?.();
     this.clipboard.dispose(); this.assets.dispose(); this.disposeClipboardStatus?.();

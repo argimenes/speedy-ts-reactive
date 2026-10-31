@@ -1,3 +1,5 @@
+import { tabOrientation } from '../block-tree/tab-orientation';
+import { tabOrientationMenu } from '../runtime/tab-orientation';
 import {registerCompletionDocuments} from './completion-documents';
 import { exportDocument } from '../runtime/export-document';
 import { CollectionDialog } from '../rendering/collection-dialog';
@@ -121,7 +123,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
             const key = (menu?.data as { documentTab?: string } | undefined)?.documentTab ?? activeTab();
             const session=key&&tabSession(key), detached=key&&detachedTab(key);
             const reason=detachment && !detached ? detachment.reason(session||undefined) : undefined;
-            return [{ label: 'Export Document', disabled: !key || !tabId(key), run: () => {
+            return [...tabOrientationMenu(editor, row()?.key), { label: 'Export Document', disabled: !key || !tabId(key), run: () => {
               guard(); const id = key && tabId(key);
               if (!id) throw new Error('The Document is no longer available.');
               return exportDocument(editor, id, {vault: selectedVault()?.root, viewId: editor.node(key!)?.viewId, current: () => mounted && !!key && tabId(key) === id});
@@ -228,7 +230,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         editor.overlays.open({ ownerKey: props.nodeKey, viewType: "context-menu", data: { documentTab: key },
           anchor: event instanceof MouseEvent ? { x: event.clientX, y: event.clientY } : { x: rect.left, y: rect.bottom } });
       };
-      const tabs = () => <div class="reactive-tabs"><Show when={tabCloseError()}><p role="alert">{tabCloseError()}</p></Show><div class="reactive-tabs__labels" role="tablist" data-cross-text-controls={retainedSessions ? "" : undefined}><For each={tabKeys()}>{key => {
+      const tabs = () => <div class="reactive-tabs" data-tab-orientation={tabOrientation(row()?.payload.metadata, editor.features.verticalTabs)}><Show when={tabCloseError()}><p role="alert">{tabCloseError()}</p></Show><div class="reactive-tabs__labels" role="tablist" aria-orientation={tabOrientation(row()?.payload.metadata, editor.features.verticalTabs)} data-cross-text-controls={retainedSessions ? "" : undefined}><For each={tabKeys()}>{key => {
         const title = () => resolve(tabId(key) ?? '')?.title ?? String((editor.node(key)?.payload.metadata as any)?.name ?? 'Unavailable Document');
         onCleanup(() => tabButtons.delete(key));
         return <div class="flint-document-tab" role="presentation" data-active={activeTab() === key} data-native-context-menu

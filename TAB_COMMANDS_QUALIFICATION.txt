@@ -1,0 +1,75 @@
+TAB SLASH COMMANDS — QUALIFICATION
+31 October 2026
+
+Implemented behind the existing default-enabled verticalTabs flag:
+/tabs create vertical
+/tabs create horizontal
+/tabs orientation vertical
+/tabs orientation horizontal
+/tab add
+/tab rename <name>
+/tab move before
+/tab move after
+/tab delete
+
+Creation wraps the current Block (or explicitly supplied contiguous sibling Blocks)
+in a new TabRow. Inside existing Tabs it creates a nested row. Other commands target
+the nearest authoring TabRow/current Tab; direct registry targets may be explicit
+rows. Names preserve case, Unicode and internal spaces. Before/after is independent
+of orientation. Deleting the last Tab leaves an editable paragraph. Existing menu,
+keyboard and table-command entry points remain available; no shortcuts were added.
+
+The typed invocation and edit form one canonical Undo step. Stale, incomplete,
+unavailable and rejected invocations remain literal. Renaming/reorienting shared
+rows updates existing payloads and inline cells without rebuilding child trees.
+Structural edits use structuralTransaction and its existing admission fallback.
+Native membership changes reuse indexed ownership evidence instead of recapturing
+Documents. Unsupported ownership still uses the existing recapture fallback.
+Reordering no longer treats label order as a change to authored active flags.
+Live media movement reuses the existing connected-DOM retention procedure.
+
+VALIDATION
+159 tests passed across 9 suites, including the new command tests, native persistence,
+orientation, table operations/aliases, autocomplete, existing text tabs/context menus,
+and structural performance. Client/server typechecking and git diff checks passed.
+65 real Chrome browser assertions passed using trusted typing and Enter.
+
+Browser coverage: all nine commands, exact literal Undo/Redo, nested and shared Tabs,
+15 native Documents (one with 80 annotated paragraphs), and iframe browsing-context
+continuity through creation/reordering and history. Every measured command/history
+recorded zero repository snapshots, projection rebuilds, unrelated projection/status
+updates and network requests. Unit checks include discovery/creation with 40 unrelated
+Documents, save/reopen, and dirty tracking after editing a newly created Tab.
+
+Sampled Enter-to-next-paint times (Chrome Event Timing, milliseconds):
+  tabs create vertical: 88
+  tabs orientation horizontal: 56
+  tabs orientation vertical: 48
+  tab rename Research : α: 48
+  tab add: 56
+  tab rename Second: 32
+  tab move before: 24
+  tab move after: 32
+  tab delete: 40
+  tabs create horizontal: 48
+  tabs orientation vertical [shared]: 40
+  tab rename Shared [shared]: 24
+These are small headless-browser samples, quantised to 8ms with a 16ms reporting
+threshold. Verified layout is checked at the first successful animation callback;
+neither metric guarantees physical-display latency. Browser native-open responses
+are isolated fixtures; save/reopen tests use an actual temporary native store.
+
+LIMITS
+Document-level commands stop at the Document boundary. Flint Document session
+open/close/rename controls retain their existing authority. Ambiguous structural
+movement with multiple occurrences of a moved Block in one view is rejected with
+its invocation intact; shared orientation/rename remain supported. Live media
+movement requires the browser's state-preserving move primitive. These guards
+preserve editing/session continuity rather than guessing an occurrence mapping.
+
+REPRODUCTION / EVIDENCE
+QUALIFY_TAB_COMMANDS=1 node scripts/qualify-tab-orientation.mjs
+artifacts/tab-commands/qualification.json
+artifacts/tab-commands/{command-bar,nested-tabs,shared-tabs}.png
+artifacts/tab-commands/tests.log
+artifacts/tab-commands/typecheck.log

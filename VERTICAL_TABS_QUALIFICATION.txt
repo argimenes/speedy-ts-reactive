@@ -1,0 +1,90 @@
+VERTICAL TABS — QUALIFICATION
+31 October 2026
+
+Implemented and qualified, including the requested 50% narrower label column.
+TabRow.metadata.orientation accepts horizontal/vertical; missing or unknown values
+render horizontally. The default-enabled verticalTabs flag controls rendering and
+commands without discarding stored metadata. Existing context menus offer
+Horizontal / Vertical. No new Block types, migrations, toolbar controls or shortcuts.
+
+Labels remain horizontally readable and wrap/scroll on the left. Preferred and
+maximum widths are halved (28% -> 14%, 14rem -> 7rem; 224 -> 112px at 16px/rem).
+Flint retains an 80px minimum for its existing menu and close buttons. In authored
+vertical panels, margin annotations use the existing compact, in-flow presentation
+so they cannot cover labels; their Blocks and relationships remain unchanged.
+
+Canonical work is narrowly scoped: an admitted single-record orientation-only
+change reconciles that payload in each occurrence and updates owning native
+Document dirty/status signals. Undo/Redo uses the same proof. Other changes retain
+the existing fallback. Native binding membership checks remain shallow per-binding
+lookups; they do not scan Document contents. Manual saving remains unchanged.
+Flint's application TabRow is workspace layout; authored TabRows belong to their
+Document. Flint session retention is unchanged.
+
+VALIDATION
+88 tests passed across 9 suites; 110 browser assertions passed. Client/server
+production builds, client/server typechecking, and git diff whitespace checks pass.
+Coverage includes defaults/flag-off behavior, both TabRow types, metadata preservation,
+active selection, mounted editors, caret/ranges, annotations/margins, history replay,
+shared projections, nested Tables/Containers, mixed orientations, native dirty state,
+manual save/reopen, Undo/Redo saves, and status refresh after a failed manual Save.
+Retained Document session and detachment regression suites also pass.
+Chrome checks exercise trusted context-menu clicks, retained Flint Document switches,
+IME composition across orientation changes, subsequent typing, narrow viewports,
+long labels, overflow scrolling and selecting the last Tab.
+
+PERFORMANCE (milliseconds; 20 orientation changes per case)
+Case                                Canonical median/p95  Verified layout median/p95
+Ordinary row                         0.4 /  0.5         16.6 /  17.7
+Flint Document host                  0.4 /  0.8         16.6 /  17.7
+Four shared mounted occurrences      0.6 /  1.0         30.9 /  47.0
+Shared + 13 unrelated Documents      0.5 /  0.7         28.5 /  47.4
+
+Every case recorded zero repository snapshots, child-tree rebuilds, unrelated
+projection/status updates and network requests. Unit checks additionally cover
+40 unrelated Documents with no unrelated payload reads or reference-index rebuilds.
+The browser had 15 native Documents, including one with 80 annotated paragraphs,
+and four mounted occurrences of the shared row.
+
+Six trusted menu choices reached verified layout in 6.5–24.7ms. Browser Event Timing
+reported next paint in 16–24ms for ordinary/Flint rows and 40ms for the shared row
+with 15 Documents. These are small samples, with 8ms quantisation and a 16ms event
+reporting threshold. Verified-layout timing ends at the first callback with correct
+geometry; it is not an arbitrary two-frame settling measurement.
+
+The real Flint typing benchmark used a 340-character paragraph, 40 alternating
+insert/delete operations, and trusted Chrome input/Undo checks:
+                         Horizontal        Vertical
+Handler median/p95       4.2 / 6.5ms       3.9 / 6.2ms
+Frame median/p95         16.7 / 126.1ms    87.0 / 106.0ms
+Both restored the original text, with zero snapshots, service requests, worker
+starts or status reads. These samples do not establish a statistically significant
+speed difference. Frame waits varied considerably; the vertical CPU profile records
+about 2.96s idle time. Frame measurements are diagnostic, not physical-display or
+input-to-paint guarantees. No long typing stress run was needed.
+
+LIMITS AND DEFERRED WORK
+Browser verification used isolated headless Chrome and synthetic native-open
+responses; real on-disk persistence was tested separately against a temporary native
+store. The deliberately unavailable vault sidebar in screenshots is a fixture limit.
+Shared visible occurrences incur real layout cost even though canonical work stays
+local. Labels wrap more in the narrower column. Resizable columns, explicit nested
+Tab creation commands and additional keyboard navigation remain deferred.
+
+EVIDENCE / REPRODUCTION
+artifacts/vertical-tabs/qualification.json — per-case counters and click measurements
+artifacts/vertical-tabs/flint-vertical.png — narrowed Flint host
+artifacts/vertical-tabs/shared-vertical.png — shared/nested authored rows
+artifacts/vertical-tabs/vertical-overflow.png — scrolling labels
+artifacts/vertical-tabs/typing-{horizontal,vertical}/ — results and CPU profiles
+artifacts/vertical-tabs/tests.log, typecheck.log, build.log
+
+node scripts/qualify-tab-orientation.mjs
+BENCHMARK_DOCUMENT_PATH=artifacts/vertical-tabs/typing-fixture.mutable.json \
+BENCHMARK_TAB_ORIENTATION=vertical \
+BENCHMARK_OUTPUT=artifacts/vertical-tabs/typing-vertical \
+node scripts/benchmark-flint-typing-browser.mjs
+Use horizontal for the comparison run. Run timing tools sequentially.
+
+FOLLOW-UP: The approved slash commands, including explicit nested creation, are
+now implemented. See TAB_COMMANDS_QUALIFICATION.txt for their qualification.

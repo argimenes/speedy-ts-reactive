@@ -1,3 +1,5 @@
+import { tabOrientationMenu } from './tab-orientation';
+import { tabOrientation } from '../block-tree/tab-orientation';
 import { tableMenuItems } from './table-menu';
 import { sourcePayload, sourceType } from '../interchange/source-block';
 import type { BlockNode, ExistingBlockDto, NodeKey } from "../block-tree/types";
@@ -100,6 +102,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
   }
 
   const items: BlockMenuItem[] = [...(editor.mounts.get(key)?.contextActions?.() ?? []), historyEntry];
+  items.push(...tabOrientationMenu(editor, ancestor("tab-row-block", "document-tab-row-block")?.key));
   if (editor.features.tableLayouts) items.push({ label: 'Tables and columns', loadChildren: () => tableMenuItems(editor, key) });
   if (editor.features.thesis) items.push(command("thesis.createProposition", "Create Proposition…"));
   if (node.viewType === 'standoff-editor-block' && editor.features.mutableClipboard && editor.features.markdownClipboard) {
@@ -182,7 +185,7 @@ export function blockMenuItems(editor: ReactiveEditor, key: NodeKey): BlockMenuI
       };
       const children: BlockMenuItem[] = [{ label: label === "Pages" ? "Add page" : label === "Tags" ? "Add tag" : "Add tab", run: addTab }];
       if (tab) children.push(input("Rename…", value => editMetadata(tab.key, { name: value, ...(label === "Tags" ? { text: value } : {}) }, `Rename ${label}`), String(metadata(tab).name ?? metadata(tab).text ?? "")),
-        moveItem(tab, -1, "Move left"), moveItem(tab, 1, "Move right"),
+        moveItem(tab, -1, label !== "Tags" && tabOrientation(row?.payload.metadata, editor.features.verticalTabs) === "vertical" ? "Move up" : "Move left"), moveItem(tab, 1, label !== "Tags" && tabOrientation(row?.payload.metadata, editor.features.verticalTabs) === "vertical" ? "Move down" : "Move right"),
         unavailable("Extract", "Extracting a copy into an independent document window awaits multi-window sessions."),
         { label: "Delete", run: () => editor.commands.transaction(`Delete ${label}`, () => {
           const siblings = [...editor.node(row!.key)!.children].filter(key => key !== tab.key);

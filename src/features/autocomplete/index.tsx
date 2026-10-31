@@ -1,3 +1,4 @@
+import { isTabCommandQuery, parseTabCommand, tabCommandCandidates, tabCommands } from '../../runtime/tab-commands';
 import { parseTableCommand, tableCommandCandidates, tableCommands } from '../../runtime/table-commands';
 import { taskPrefixOpening, cancelTaskPrefix } from '../../runtime/text-lists';
 import { surfaceCommands } from '../../runtime/block-surfaces';
@@ -95,9 +96,11 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     documents:async()=>{const pool=await completionDocuments(editor,source.nodeKey).completionTargets();return pool.sources.map(t=>({id:t.documentId,name:t.title,reason:`Document · ${t.location}`,data:t}));},
     commands:(query='')=>{
      const tables=tableCommandCandidates(editor,source.nodeKey,query);
+     const tabs=tabCommandCandidates(editor,source.nodeKey,query);
+     if(editor.features.verticalTabs&&isTabCommandQuery(query))return tabs;
      // An unavailable exact /c stays literal; do not fall through to /col or container.
      if(editor.features.tableLayouts&&parseTableCommand(query))return tables;
-     return [...tables, ...[
+     return [...tables, ...tabs, ...[
      ...(editor.features.reversibleBlocks?surfaceCommands:[]),
      {id:'entity',name:'entity',reason:'Resolve an Entity or create explicitly'},
      {id:'link',name:'link',reason:'Reference an available native Document'},
@@ -118,6 +121,11 @@ export function createAutocompleteFeature(editor: ReactiveEditor): CodexFeature 
     },
     reference:async(s,c,label)=>{const k=completionDocuments(editor,s.nodeKey),token=k.selection(editor.textRanges.snapshot(s.nodeKey,s.start,s.end));await k.createReference(token,c.data as DocumentTarget,label,()=>session.alive&&valid(s));restore(s,s.start+[...label].length);},
     command:(s,id)=>{
+     if(tabCommands.some(c=>c.id===id)){
+      if(!valid(s))throw Error('Stale command source');
+      const parsed=parseTabCommand(session.state.input);
+      editor.commandRegistry.execute(id,{targetKey:s.nodeKey,args:{...(parsed?.id===id?parsed.args:{}),invocation:{nodeKey:s.nodeKey,contentKey:s.contentKey,placementKey:s.placementKey,version:s.version,start:s.start,end:s.end,coordinate:'cell'}}});return;
+     }
      if(tableCommands.some(c=>c.id===id)){
       if(!valid(s))throw Error('Stale command source');
       editor.commandRegistry.execute(id,{targetKey:s.nodeKey,args:{invocation:{nodeKey:s.nodeKey,contentKey:s.contentKey,placementKey:s.placementKey,version:s.version,start:s.start,end:s.end,coordinate:'cell'}}});return;

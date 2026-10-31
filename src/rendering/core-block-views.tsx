@@ -1,3 +1,5 @@
+import { tabOrientation } from '../block-tree/tab-orientation';
+import './tab-orientation.css';
 import { TableControl, CellControls } from './table-controls';
 import { cancelTableReveal, revealTableCell } from '../runtime/table-presentation';
 import { TaskControl, StandaloneTaskDisclosure } from './task-control';
@@ -226,7 +228,8 @@ export function TabRowView(props: BlockViewProps) {
   useContainerMount(props.nodeKey, () => root);
   createEffect(() => {
     const children = node()?.children ?? [];
-    const flags = JSON.stringify(children.map(key => [key, (projection.state.nodes[key]?.payload.metadata as any)?.active]));
+    // Reordering labels is not a change to authored active flags.
+    const flags = JSON.stringify([...children].sort().map(key => [key, (projection.state.nodes[key]?.payload.metadata as any)?.active]));
     if (flags !== previousFlags) {
       const revealed = !previousFlags ? untrack(() => editor.viewChildren[props.nodeKey]) : undefined;
       previousFlags = flags;
@@ -235,8 +238,8 @@ export function TabRowView(props: BlockViewProps) {
     }
   });
   return (
-    <div ref={root} class="abstract-block reactive-tabs" tabIndex={-1} {...data(props.nodeKey, node)}>
-      <div class="reactive-tabs__labels" role="tablist">
+    <div ref={root} class="abstract-block reactive-tabs" data-tab-orientation={tabOrientation(node()?.payload.metadata, editor.features.verticalTabs)} tabIndex={-1} {...data(props.nodeKey, node)}>
+      <div class="reactive-tabs__labels" role="tablist" aria-orientation={tabOrientation(node()?.payload.metadata, editor.features.verticalTabs)}>
         <For each={node()?.children ?? []}>
           {(key, index) => {
             const child = () => projection.state.nodes[key];
@@ -261,7 +264,8 @@ export function StickyTabRowView(props: BlockViewProps) {
   useContainerMount(props.nodeKey, () => root);
   createEffect(() => {
     const children = node()?.children ?? [];
-    const flags = JSON.stringify(children.map(key => [key, (projection.state.nodes[key]?.payload.metadata as any)?.active]));
+    // Reordering labels is not a change to authored active flags.
+    const flags = JSON.stringify([...children].sort().map(key => [key, (projection.state.nodes[key]?.payload.metadata as any)?.active]));
     if (flags !== previousFlags) {
       const revealed = !previousFlags ? untrack(() => editor.viewChildren[props.nodeKey]) : undefined;
       previousFlags = flags;

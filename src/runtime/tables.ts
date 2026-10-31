@@ -1,3 +1,4 @@
+import { holdStructuralMedia } from './structural-media';
 import { createStore } from 'solid-js/store';
 import { clone } from '../block-tree/clone';
 import type { BlockNode, ExistingBlockDto } from '../block-tree/types';
@@ -169,37 +170,7 @@ export class TableOperations {
     roots.forEach(visit);
     return occurrences;
   }
-  /** Solid's same-parent slot reorder disconnects iframe browsing contexts even
-   * when the retained Block root is reused. Keep only affected media roots
-   * connected outside those slots until the synchronous publication settles.
-   * The same lease covers Undo/Redo; ordinary typing never enters this path. */
-  private holdMedia(occurrences: Bookmark[]) {
-    const roots = new Set<Element>();
-    for (const b of occurrences) {
-      const n = this.editor.nodeForPlacementInView(b.placement, b.view);
-      if (!n || n.contentKey !== b.content) continue;
-      const m = this.editor.mounts.get(n.key);
-      if (m?.root.isConnected && m.root.querySelector('iframe,video,audio')) roots.add(m.root);
-    }
-    // Move the innermost registered media view, not its table/list ancestors.
-    const leaves = [...roots].filter(root => ![...roots].some(other => other !== root && root.contains(other)));
-    if (!leaves.length) return;
-    const doc = leaves[0].ownerDocument;
-    if (typeof (doc.body as any).moveBefore !== 'function') fail('This browser cannot preserve a live media viewer during table history.');
-    const parking = doc.createElement('div');
-    parking.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;left:0;top:0';
-    parking.dataset.tableMediaParking = ''; doc.body.append(parking);
-    const held = leaves.map(root => ({ root, parent: root.parentElement!, next: root.nextSibling }));
-    // Schedule recovery before moving anything, including for failed commits.
-    queueMicrotask(() => {
-      for (const { root, parent, next } of held) {
-        if (parent.isConnected) (parent as any).moveBefore(root, next?.parentNode === parent ? next : null);
-        else parent.insertBefore(root, next?.parentNode === parent ? next : null);
-      }
-      parking.remove();
-    });
-    for (const { root } of held) (parking as any).moveBefore(root, null);
-  }
+  private holdMedia(occurrences: Bookmark[]) { holdStructuralMedia(this.editor,occurrences,'tableMediaParking'); }
   private removable(shells: BlockNode[], discardedEmptyText: BlockNode[] = []) {
     const ids = new Set([...shells, ...discardedEmptyText].map(n => n.payload.id));
     for (const n of shells) {
