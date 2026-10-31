@@ -47,7 +47,7 @@ export function formatSystemDateTime(date: Date, locales?: Intl.LocalesArgument)
   }).format(date);
 }
 
-export function CodexSystemBar(props: { children: JSX.Element; manager?: WorkspaceWindowManager }) {
+export function CodexSystemBar(props: { children: JSX.Element; manager?: WorkspaceWindowManager; workspaceLauncher?: (open: (() => void) | undefined) => void }) {
   const [open, setOpen] = createSignal<MenuName>();
   const [now, setNow] = createSignal(new Date());
   const [battery, setBattery] = createSignal<{ level: number; charging: boolean }>();
@@ -70,6 +70,10 @@ export function CodexSystemBar(props: { children: JSX.Element; manager?: Workspa
     setOpen(next);
     if (next) queueMicrotask(() => { const menu = root.querySelector<HTMLElement>(`[data-system-menu="${next}"]`); if (menu) menuItems(menu)[0]?.focus(); });
   };
+  onMount(() => {
+    props.workspaceLauncher?.(() => { if (open() !== "workspace") toggle("workspace"); });
+    onCleanup(() => props.workspaceLauncher?.(undefined));
+  });
   const menuKeyDown = (event: KeyboardEvent) => {
     const menu = (event.target as Element).closest<HTMLElement>('[role="menu"]') ?? event.currentTarget as HTMLElement;
     if (event.key === "Escape") { event.preventDefault(); close(true); return; }

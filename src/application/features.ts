@@ -1,4 +1,5 @@
 import {createAutocompleteFeature} from '../features/autocomplete';
+import { createDesktopPlaceholderFeature } from './desktop-applications';
 import { createThesisFeature } from './thesis';
 import { createPhosphorFeature } from "./phosphor";
 import { FormattedDocumentView } from "../features/document-formats/view";
@@ -22,6 +23,8 @@ import { blockFeatureCapabilities } from "./feature-capabilities";
 export function registerApplicationViews(editor: ReactiveEditor): void {
   // Temporary legacy assembly: unmigrated views/commands retain their existing path.
   registerCoreViews(editor, editor.features.documentFormats ? FormattedDocumentView : undefined);
+  // Retain readability of saved placeholder windows even when shortcuts are off.
+  editor.featureHost.activate(createDesktopPlaceholderFeature(editor));
   if (editor.features.thesis) editor.featureHost.activate(createThesisFeature(editor));
   if (editor.features.phosphor) editor.featureHost.activate(createPhosphorFeature(editor));
   if (editor.features.flint) editor.featureHost.activate(createFlintFeature(scope => documentApplicationCapabilities(editor, scope), editor.features.flintMaterialChrome, editor.features.flintProbe, editor.features.flintSpatialGraph, editor.features.flintLogo, editor.features.flintCompactShell));

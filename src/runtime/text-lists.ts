@@ -225,7 +225,7 @@ export function checkTaskPrefixSelection(editor: ReactiveEditor, key?: string, c
 }
 export function continueTaskPrefix(editor: ReactiveEditor, key: string, start: number, end: number, text: string): boolean {
   const candidate = taskCandidates.get(editor);
-  if (!candidate) return false;
+  if (!candidate) return convertExistingTaskPrefix(editor, key, start, end, text);
   taskCandidates.delete(editor);
   const source = editor.node(key);
   if (!editor.features.taskLists || !source || source.placementKey !== candidate.placement || source.viewId !== candidate.viewId ||
@@ -257,6 +257,49 @@ export function continueTaskPrefix(editor: ReactiveEditor, key: string, start: n
     if (!node) return;
     editor.focus.request(node.key, { reason: 'task-prefix', caret: { start: caret, end: caret, direction: 'none' } });
     editor.mounts.get(node.key)?.restoreInlineSelection?.({anchor:caret,head:caret});
+  });
+  return true;
+}
+
+/** Existing items keep their list and placement. Only the authored prefix and
+ * the item's task state change, in one locally assembled canonical entry. */
+function convertExistingTaskPrefix(editor: ReactiveEditor, key: string, start: number, end: number, text: string): boolean {
+  if (!editor.features.taskLists || text !== ' ' || start !== end || (start !== 3 && start !== 5)) return false;
+  const source = editor.node(key);
+  if (source?.viewType !== 'standoff-editor-block' || editor.crossText.range() ||
+      (editor.selections.sets[key]?.items.length ?? 0) > 1) return false;
+  let prefix = '';
+  for (let i = 0; i < start; i++) {
+    const cell = editor.node(source.inlineContent[i]);
+    if (cell?.viewType !== 'text-cell') return false;
+    prefix += cell.payload.text;
+  }
+  const match = /^(?:- )?\[([ xX])\]$/.exec(prefix);
+  if (!match) return false;
+  const projection = editor.projections.get(source.viewId)!;
+  const parent = projection.parentOf(key);
+  const item = isList(parent) ? source : parent?.viewType === 'container-block' &&
+    (parent.payload.metadata as any)?.htmlListItem && parent.children[0] === key &&
+    isList(projection.parentOf(parent.key)) ? parent : undefined;
+  if (!item || taskState(item) !== undefined || taskState(source) !== undefined) return false;
+  for (let ancestor: BlockNode | undefined = source; ancestor; ancestor = projection.parentOf(ancestor.key)) {
+    const meta = ancestor.payload.metadata as any;
+    if (meta?.htmlPreformatted || meta?.markdownCode) return false;
+    if (ancestor.viewType === 'document-block') break;
+  }
+  const properties = source.payload.standoffProperties as Record<string, any>[] | undefined;
+  if (properties?.some(p => !p.isDeleted && (/(?:^|[/:-])(?:code|literal)(?:$|[/:-])/.test(p.type ?? '') || p.type === 'text/superposition') && p.start <= start && p.end >= 0)) return false;
+  editor.commands.replaceInlineRange(key, start, start, ' ');
+  editor.selections.mapContentEdit(source.contentKey, start, start, 1);
+  editor.commands.structuralTransaction('Convert list item to task', () => {
+    editor.commands.replaceInlineRange(key, 0, start + 1, '');
+    editor.commands.setPayloadField(item.key, 'checked', match[1] !== ' ');
+  });
+  editor.selections.mapContentEdit(source.contentKey, 0, start + 1, 0);
+  editor.selections.setPrimary(key, source.contentKey, source.viewId, 0);
+  queueMicrotask(() => {
+    const target = editor.nodeForPlacementInView(source.placementKey, source.viewId);
+    if (target) editor.focus.request(target.key, { reason: 'task-prefix', caret: 'start' });
   });
   return true;
 }

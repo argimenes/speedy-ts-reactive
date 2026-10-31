@@ -6,6 +6,7 @@ import { ReactiveTreeView } from './reactive-tree-view';
 import { taskOwner, toggleTask } from '../runtime/tasks';
 import { DocumentCounts } from '../runtime/document-counts';
 import { createAutocompleteFeature } from '../features/autocomplete';
+import { continueTaskPrefix } from '../runtime/text-lists';
 import type { ExistingBlockDto } from '../block-tree/types';
 const cleanup: (() => void)[] = [];
 afterEach(() => { cleanup.splice(0).reverse().forEach(f => f()); document.body.replaceChildren(); localStorage.clear(); vi.restoreAllMocks(); });
@@ -42,14 +43,14 @@ it.each(['[ ] ', '[x] ', '[X] '])('converts a fresh task %s with exact literal U
   const saved = f.editor.encodeDocument(), reloaded = new ReactiveEditor(saved); cleanup.push(() => reloaded.dispose()); expect(reloaded.encodeDocument()).toEqual(saved);
 });
 
-it('keeps existing list items, pasted candidates, disabled feature and interrupted candidates literal', async () => {
-  for (const make of [() => setup([list([p('source')])]), () => setup([p('source', '-')], false)]) {
+it('keeps disabled feature and interrupted candidates literal', async () => {
+  for (const make of [() => setup([list([p('source')])], false), () => setup([p('source', '-')], false)]) {
     const f = make(); if (f.blocks()[0].type !== 'indented-list-block') await f.input(' ');
     for (const c of '[x] ') await f.input(c);
     expect(f.node().payload.checked).toBeUndefined();
   }
   for (const interrupt of ['ArrowLeft', 'pointer', 'mutation', 'composition', 'paste']) {
-    const f = setup(); await f.input(' ');
+    const f = setup(); await f.input(' '); await f.input('[');
     if (interrupt === 'pointer') f.mount().root.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     else if (interrupt === 'mutation') f.editor.commands.setPayloadField(f.node().key, 'metadata', { other: true });
     else if (interrupt === 'composition') await f.input('[', { isComposing: true });
@@ -58,6 +59,92 @@ it('keeps existing list items, pasted candidates, disabled feature and interrupt
     for (const c of '[x] ') await f.input(c);
     expect(f.node().payload.checked).toBeUndefined();
   }
+});
+
+it.each(['[ ] ', '[x] ', '[X] ', '- [ ] '].flatMap(prefix => ['bullet', 'ordered', 'compound', 'table'].map(context => ({ prefix, context }))))
+('converts $prefix in an existing $context item without wrapping or rebuilding', async ({ prefix, context }) => {
+  const source = { ...p('source', 'Task'), standoffProperties: [{ id: 'bold', type: 'style/bold', start: 0, end: 3 }],
+    relation: { leftMargin: { type: 'left-margin-block', children: [p('note', 'Note')] } } };
+  const item = context === 'compound' ? { type: 'container-block', metadata: { htmlListItem: {} }, children: [source, p('extra', 'More')] } : source;
+  const wrapper = { ...list([item, p('neighbour', 'Unchanged')]), metadata: { htmlList: { ordered: context === 'ordered', start: 3 } } };
+  const f = setup([context === 'table' ? { type: 'table-block', children: [{ type: 'table-row-block', children: [{ type: 'table-cell-block', children: [wrapper] }] }] } : wrapper]);
+  f.editor.featureHost.activate(createAutocompleteFeature(f.editor));
+  f.focus(0);
+  const node = f.node(), mount = f.mount(), parent = f.projection.parentOf(node.key)!, original = f.blocks();
+  const other = f.editor.createView('second');
+  const snapshots = vi.spyOn(f.editor.repository, 'snapshot'), indexes = vi.spyOn(f.editor.repository as any, 'rebuildReferences');
+  const builds = [f.projection, other].map(v => vi.spyOn(v as any, 'build'));
+  const wrap = vi.spyOn(f.editor.commands, 'wrapTextBlockInList');
+  for (const ch of prefix) await f.input(ch);
+  const owner = context === 'compound' ? parent : f.node();
+  expect(owner.payload.checked).toBe(prefix.includes('x') || prefix.includes('X'));
+  expect(f.projection.parentOf(node.key)?.key).toBe(parent.key);
+  expect(f.node().placementKey).toBe(node.placementKey); expect(f.mount().root).toBe(mount.root);
+  expect(f.mount().captureText!()).toBe('Task');
+  expect(f.node().payload.standoffProperties).toEqual(source.standoffProperties);
+  expect(f.mount().captureInlineSelection!()).toEqual({ anchor: 0, head: 0 });
+  expect(f.host.querySelector('.reactive-task-checkbox')).not.toBeNull();
+  f.editor.repository.undo(); await tick();
+  expect(f.mount().captureText!()).toBe(prefix + 'Task'); expect(owner.payload.checked).toBeUndefined();
+  f.editor.repository.redo(); await tick(); expect(f.mount().captureText!()).toBe('Task');
+  expect(owner.payload.checked).toBe(prefix.includes('x') || prefix.includes('X'));
+  expect(snapshots).not.toHaveBeenCalled(); expect(indexes).not.toHaveBeenCalled(); expect(wrap).not.toHaveBeenCalled();
+  builds.forEach(build => expect(build).not.toHaveBeenCalled());
+  const saved = f.blocks();
+  const beforeItem = context === 'table' ? original[0].children![0].children![0].children![0] : original[0];
+  const afterItem = context === 'table' ? saved[0].children![0].children![0].children![0] : saved[0];
+  expect(afterItem.metadata).toEqual(beforeItem.metadata);
+  expect(afterItem.children![1]).toEqual(beforeItem.children![1]);
+  const savedSource = context === 'compound' ? afterItem.children![0].children![0] : afterItem.children![0];
+  expect(savedSource.relation).toEqual(source.relation);
+});
+
+it.each(['[ ] ', '[x] '])('converts an empty nested item with %s and continues it with Enter', async prefix => {
+  const f = setup([list([{ ...p('parent', 'Parent'), children: [list([p('source')])] }])]);
+  f.editor.featureHost.activate(createAutocompleteFeature(f.editor));
+  const parent = f.projection.parentOf(f.node().key)!;
+  for (const ch of prefix) await f.input(ch);
+  expect(f.node().payload.checked).toBe(prefix[1] === 'x');
+  expect(f.projection.parentOf(f.node().key)?.key).toBe(parent.key);
+  await f.input('Task'); await f.key('Enter');
+  expect(parent.children).toHaveLength(2);
+  expect(f.editor.node(parent.children[1])?.payload.checked).toBe(false);
+});
+
+it('preserves code, composition, paste, existing tasks and compound continuation paragraphs', async () => {
+  const sources = [
+    { ...p('source', '[ ]'), metadata: { htmlPreformatted: true } },
+    { ...p('source', '[ ]'), standoffProperties: [{ type: 'code', start: 0, end: 2 }] },
+    p('source', '[ ]', false),
+  ];
+  for (const source of sources) {
+    const f = setup([list([source])]); await f.input(' ');
+    expect(f.mount().captureText!()).toBe('[ ] '); expect(f.node().payload.checked).toBe(source.checked);
+  }
+  for (const options of [{ isComposing: true }, { inputType: 'insertFromPaste' }, { inputType: 'insertCompositionText' }]) {
+    const f = setup([list([p('source', '[ ]')])]); await f.input(' ', options);
+    expect(f.node().payload.checked).toBeUndefined();
+  }
+  const f = setup([list([{ type: 'container-block', metadata: { htmlListItem: {} }, children: [p('first', 'First'), p('source', '[ ]')] }])]);
+  await f.input(' '); expect(f.mount().captureText!()).toBe('[ ] ');
+  expect(f.projection.parentOf(f.node().key)?.payload.checked).toBeUndefined();
+});
+
+it('keeps ordinary spaces outside candidate offsets free of prefix reads and structural work', () => {
+  const f = setup([list([p('source', 'Ordinary text')])]), key = f.node().key;
+  const read = vi.spyOn(f.editor, 'node'), transaction = vi.spyOn(f.editor.commands, 'structuralTransaction');
+  expect(continueTaskPrefix(f.editor, key, 13, 13, ' ')).toBe(false);
+  expect(read).not.toHaveBeenCalled(); expect(transaction).not.toHaveBeenCalled();
+});
+
+it('keeps double-bracket Scry available in existing list items', async () => {
+  Object.defineProperty(Range.prototype, 'getBoundingClientRect', { configurable: true, value: () => new DOMRect(0, 0, 10, 20) });
+  cleanup.push(() => { delete (Range.prototype as any).getBoundingClientRect; });
+  const f = setup([list([p('source')])]); f.editor.featureHost.activate(createAutocompleteFeature(f.editor));
+  await f.input('['); await f.input('[');
+  expect(f.editor.overlays.overlays.length).toBeGreaterThan(0);
+  expect(f.node().payload.checked).toBeUndefined();
+  f.editor.completionInput!.cancel();
 });
 
 it.each(['standoff-editor-block', 'container-block', 'checkbox-block'])('toggles %s locally and isolates text, caret and history', async type => {

@@ -14,7 +14,7 @@ import { createFlintLayout, FlintPaneSplitter } from './compact-layout';
 const DocumentGraph = lazy(() => import('./graph/document-graph').then(module => ({default:module.DocumentGraph})));
 // Original artwork remains the static logo fallback and welcome illustration.
 const identity = new URL('../../../docs/assets/flint/flint-app-icon-master.png', import.meta.url).href;
-export function FlintView(props:{application:DocumentApplicationInstance; materialChrome?:boolean; probe?:boolean; spatialGraph?:boolean; logo?:boolean; compactShell?:boolean}) {
+export function FlintView(props:{application:DocumentApplicationInstance; initialView?:'document'|'graph'; materialChrome?:boolean; probe?:boolean; spatialGraph?:boolean; logo?:boolean; compactShell?:boolean}) {
   const cavern = useCurrentCavern();
   const app=props.application;
   // Explorer selection depends on the file location, not its typing/save status.
@@ -30,7 +30,7 @@ export function FlintView(props:{application:DocumentApplicationInstance; materi
   const narrow = (panel: 'library' | 'context') => compact() ? shellWidth() < (panel === 'library' ? 620 : 760) : shell.clientWidth < 940;
   const visible = (panel: 'library' | 'context') => narrow(panel) ? narrowPanel() === panel : panel === 'library' ? library() : context();
   const [browse,setBrowse]=createSignal<'browse'|'search'|'recent'>('browse');
-  const [view,setView]=createSignal<'document'|'graph'>('document');
+  const [view,setView]=createSignal<'document'|'graph'>(props.initialView === 'graph' && props.spatialGraph !== false ? 'graph' : 'document');
   const [lens,setLens]=createSignal<'Backlinks'|'References'|'Properties'>('Backlinks');
   const [narrowPanel,setNarrowPanel]=createSignal<'library'|'context'|''>('');
   const [menu,setMenu]=createSignal(false),[storage,setStorage]=createSignal(false);

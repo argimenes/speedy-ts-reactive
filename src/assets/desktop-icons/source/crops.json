@@ -1,0 +1,128 @@
+[
+  {
+    "id": "flint",
+    "left": 25,
+    "top": 57,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "cavern",
+    "left": 275,
+    "top": 57,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "workbench",
+    "left": 529,
+    "top": 57,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "search",
+    "left": 783,
+    "top": 57,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "library",
+    "left": 1037,
+    "top": 57,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "browse",
+    "left": 1287,
+    "top": 57,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "annotate",
+    "left": 25,
+    "top": 363,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "phosphor",
+    "left": 275,
+    "top": 363,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "view",
+    "left": 529,
+    "top": 363,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "graph",
+    "left": 783,
+    "top": 363,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "calendar",
+    "left": 1037,
+    "top": 363,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "tasks",
+    "left": 1287,
+    "top": 363,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "acetate",
+    "left": 25,
+    "top": 667,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "thesis",
+    "left": 275,
+    "top": 667,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "dialectic",
+    "left": 529,
+    "top": 667,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "osmosis",
+    "left": 783,
+    "top": 667,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "settings",
+    "left": 1037,
+    "top": 667,
+    "width": 224,
+    "height": 224
+  },
+  {
+    "id": "trash",
+    "left": 1287,
+    "top": 667,
+    "width": 224,
+    "height": 224
+  }
+]

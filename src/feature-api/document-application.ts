@@ -56,7 +56,7 @@ export interface DocumentApplicationCapabilities {
   register(definition: {
     type: string;
     create(documents: readonly ApplicationDocument[]): ExistingBlockDto;
-    view: Component<{ application: DocumentApplicationInstance }>;
+    view: Component<{ application: DocumentApplicationInstance; initialView?: "document" | "graph" }>;
   }): void;
 }
 

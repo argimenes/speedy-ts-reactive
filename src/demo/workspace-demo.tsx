@@ -397,6 +397,8 @@ function DemoSession(props: { configuration: ReactiveEditorConfiguration; onEdit
 
 function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration: ReactiveEditorConfiguration; loaded: LoadedWorkspace; filename: string; onWorkspaceOpen: () => void; onWorkspaceSave: () => void; onLocalWorkspaceOpen: () => void; onLocalWorkspaceSave: () => void; onLocalWorkspaceSaveAs: () => void; onUpgradeServer: () => void; onUpgradeLocal: () => void; workspaceBusy: boolean; onEditor: (editor: ReactiveEditor) => () => void }) {
   const cavern = useCurrentCavern();
+  let workspaceLauncher: (() => void) | undefined;
+  let workspaceToolbar: HTMLElement | undefined;
   const session = new WorkspaceSession(props.loaded, props.configuration);
   const { editor, projection } = session;
   editor.clipboard.setContext(() => ({ cavernId: cavern?.current()?.cavernGuid, session: cavern?.current()?.session }));
@@ -420,7 +422,7 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
   const canUndo = () => { editor.repository.state.revision; return editor.repository.canUndo(); };
   const canRedo = () => { editor.repository.state.revision; return editor.repository.canRedo(); };
   return <main data-window-work-area class="workspace-demo workspace-demo--canonical" classList={{ [editor.windowPresentation.workspaceClass()]: true, "workspace-demo--system-bar": editor.features.codexSystemBar }}>
-    <Show when={editor.features.codexSystemBar} fallback={<nav class="workspace-demo__toolbar" aria-label="Workspace controls">
+    <Show when={editor.features.codexSystemBar} fallback={<nav ref={workspaceToolbar} class="workspace-demo__toolbar" aria-label="Workspace controls">
       <CavernControl />
       <opening.Buttons />
       <Show when={editor.features.flint}><button type="button" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>
@@ -439,7 +441,7 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
       <a href={`${import.meta.env.BASE_URL}?demo=1`} target="_blank" rel="noopener">Sample document demo</a>
       <span>{props.filename} · revision {editor.repository.state.revision}{session.dirty() ? " · Unsaved changes" : ""}</span>
     </nav>}>
-      <CodexSystemBar manager={editor.windowManager}>
+      <CodexSystemBar manager={editor.windowManager} workspaceLauncher={open => { workspaceLauncher = open; }}>
         <Show when={session.presentation.enabled}><WorkspacePresentations session={session} menu busy={props.workspaceBusy} /></Show>
         <opening.Buttons menu />
         <Show when={editor.features.flint}><button type="button" role="menuitem" disabled={props.workspaceBusy || session.presentation.active() !== "desktop"} title="Open Flint on Desktop" onClick={() => editor.commandRegistry.execute("flint.open", { targetKey: projection.state.rootKey, args: undefined })}>Open Flint</button></Show>
@@ -477,7 +479,13 @@ function CanonicalWorkspaceSession(props: { launchFlint?: boolean; configuration
     <Show when={session.presentation.issue()}>{issue => <aside class="workspace-demo__workspace-notice" role="status">{issue()}</aside>}</Show>
     <Show when={session.notice()}>{notice => <aside class="workspace-demo__workspace-notice" role="status">{notice()}</aside>}</Show>
     <Show when={session.presentation.enabled || session.windowManager} fallback={<ReactiveTreeView editor={editor} projection={projection} />}>
-      <WorkspacePresentationView session={session} />
+      <WorkspacePresentationView session={session} desktopAvailable={() => !props.workspaceBusy} desktopActions={{
+        workbench: () => {
+          if (workspaceLauncher) workspaceLauncher();
+          else workspaceToolbar?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+        },
+        cavern: cavern ? () => cavern.choose("open") : undefined,
+      }} />
     </Show>
     <opening.Dialogs />
   </main>;

@@ -11,11 +11,12 @@ import { canvasActions } from "./canvas-actions";
 import "./workspace-presentation.css";
 import { DetachedDocumentWindows } from "./document-detachment";
 import { WindowManagerPlane } from "../rendering/window-manager";
+import { DesktopApplicationIcons, type DesktopActions } from "./desktop-applications";
 
 const SpatialView = lazy(() => import("../features/spatial/view"));
 
 /** One provider and one overlay set survive switches; only active roots mount. */
-export function WorkspacePresentationView(props: { session: WorkspaceSession }) {
+export function WorkspacePresentationView(props: { session: WorkspaceSession; desktopActions?: DesktopActions; desktopAvailable?: () => boolean }) {
   const { editor, projection, presentation } = props.session;
   createEffect(()=>props.session.windowManager?.layout.setEnabled(presentation.active()==="desktop"));
   const canvas = createMemo(() => presentation.read()?.presentations.canvas);
@@ -60,6 +61,9 @@ export function WorkspacePresentationView(props: { session: WorkspaceSession }) 
   return <WindowManagerPlane manager={props.session.windowManager}><ReactiveViewProvider editor={editor} projection={projection}
     coordinates={{ scale: () => presentation.active() === "canvas" ? input.camera().zoom : 1 }}
     windowGeometry={key => presentation.active() === "canvas" ? geometry(key) : presentation.active() === "spatial" ? spatialGeometry(key) : undefined}>
+    <Show when={editor.features.desktopApplicationIcons && presentation.active() === "desktop"}>
+      <DesktopApplicationIcons session={props.session} actions={props.desktopActions} available={props.desktopAvailable} />
+    </Show>
     <Show when={presentation.active() === "canvas"} fallback={<Show when={presentation.active() === "spatial" && props.session.spatial} fallback={<BlockOutlet nodeKey={projection.state.rootKey} />}>
       <ErrorBoundary fallback={(error, reset) => <div role="alert">Spatial could not load: {String(error)} <button onClick={reset}>Retry</button><button onClick={() => props.session.selectPresentation("desktop")}>Return to Desktop</button></div>}>
         <Suspense fallback={<p role="status">Opening the study…</p>}><SpatialHost /></Suspense>

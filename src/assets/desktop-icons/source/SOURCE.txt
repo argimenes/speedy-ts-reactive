@@ -1,0 +1,7 @@
+Source: user-supplied Luxury Archaeological App Atlas.png, 1536 × 1024.
+SHA-256: e3a62ef2572718a7eff3002d44154468ef5fb157ce898ff4d5cc7bcdbcbf6698
+
+All 18 icons are exact 224 × 224 pixel crops; no resizing, regeneration or colour changes.
+Coordinates are recorded in crops.json. Captions and subtitles are excluded.
+Reproduce from the repository root with: node scripts/extract-desktop-icons.mjs
+The original atlas is retained here for provenance and is not imported by the application.

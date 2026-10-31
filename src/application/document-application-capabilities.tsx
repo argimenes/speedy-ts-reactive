@@ -54,6 +54,8 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
   };
   return { register(definition) {
     requireActive();
+    // One launch may request an existing presentation. Never persist that UI mode.
+    const launchViews = new Map<string, "graph">();
     const recents = definition.type === 'flint-application-block' && editor.features.flintRecentDocuments ? createRecentDocuments() : undefined;
     const native = editor.features.nativeDocumentPersistence ? nativeDocumentSession(editor) : undefined;
     const factsHost = native && editor.features.nativeKnowledge ? createNativeKnowledgeHost(editor.repository, native, {
@@ -77,6 +79,9 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
     }));
     const entityAnnotations = annotationCapabilities(editor, scope);
     const Instance = (props: { nodeKey: string }) => {
+      const applicationId = String(editor.node(props.nodeKey)?.payload.id);
+      const initialView = launchViews.get(applicationId);
+      launchViews.delete(applicationId);
       const cavern = useCurrentCavern();
       const retainedSessions = useManagedWindowOwner() ? editor.documentSessions : undefined;
       // Stage A hosts a Window application, never an application recursively inside a Document.
@@ -516,7 +521,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
         },
       } : undefined;
       return <>{documentSaver && <documentSaver.Dialogs/>}<Show when={publication()}>{p=><PublicationDialog editor={editor} initial={p().initial} close={()=>setPublication(undefined)}/>}</Show><Show when={collectionMode()}>{mode=><CollectionDialog editor={editor} vault={selectedVault()?.root??'.'} current={()=>mounted&&scope.active()} mode={mode()} close={()=>setCollectionMode(undefined)}/>}</Show><Show when={choosingVault()}><DocumentBrowser mode="directory" initialLocation={{folder:selectedVault()?.root??'.',filename:''}} busy={chooserBusy()} error={chooserError()} onClose={()=>setChoosingVault(false)} onChoose={async location=>{setChooserBusy(true);setChooserError('');try{await vault!.open(location.folder);if(mounted)setChoosingVault(false);return true;}catch(e){if(mounted)setChooserError(String(e));return false;}finally{if(mounted)setChooserBusy(false);}}}/></Show><div ref={root} tabIndex={-1} data-block-type={definition.type} data-runtime-key={props.nodeKey}>
-        <Dynamic component={definition.view} application={{
+        <Dynamic component={definition.view} initialView={initialView} application={{
           documents: () => documents().map(({ id, title }) => ({ id, title })), tabs, files, vault, properties, knowledge, interchange, entityBacklinks: EntityBacklinks,
           recentDocuments: recents ? {
             items: () => recents.items(recentVaultId()).map(d => ({ ...d, title: resolve(d.id)?.title ?? d.title, location: native?.location(d.id) ?? d.location })),
@@ -558,7 +563,7 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       </div></>;
     };
     scope.own(editor.registry.register({ type: definition.type, capabilities: ["container"], view: props => <Show when={scope.active()}><Instance nodeKey={props.nodeKey} /></Show> }, scope.owner));
-    scope.own(editor.commandRegistry.register({ id: "flint.open", label: "Open Flint", canExecute: () => editor.repository.state.contents[editor.repository.state.placements[editor.repository.state.rootPlacementKey].contentKey].viewType === "workspace-block", execute() {
+    scope.own(editor.commandRegistry.register({ id: "flint.open", label: "Open Flint", canExecute: () => editor.repository.state.contents[editor.repository.state.placements[editor.repository.state.rootPlacementKey].contentKey].viewType === "workspace-block", execute({ args }) {
       requireActive();
       const root = editor.repository.state.rootPlacementKey;
       const existing = catalog();
@@ -569,12 +574,14 @@ export function documentApplicationCapabilities(editor: ReactiveEditor, scope: F
       if (banks.length > 1) throw new Error("Ambiguous workspace object bank.");
       const desktopParent = rootContent.children.find(key => ["image-background-block", "video-background-block", "youtube-video-background-block", "canvas-background-block"].includes(state.contents[state.placements[key].contentKey].viewType)) ?? root;
       const zIndex = editor.windowManager?.launchMetadata().zIndex ?? Math.max(0, ...Object.values(state.contents).filter(c => ["window-block", "document-window-block"].includes(c.viewType)).map(c => Number((c.payload.metadata as any)?.zIndex) || 0)) + 1;
-      editor.commands.transaction("Open Flint", () => {
+      const application = definition.create(initialTabs.slice(0, 2));
+      if ((args as { view?: string } | undefined)?.view === 'graph' && editor.features.flintSpatialGraph) launchViews.set(String(application.id), 'graph');
+      try { editor.commands.transaction("Open Flint", () => {
         const bank = banks[0] ?? editor.commands.insert({ id: crypto.randomUUID(), type: "workspace-object-bank-block", children: [] }, { kind: "at", parentKey: root, index: editor.commands.childrenOf(root).length });
         for (const document of examples) editor.commands.insert(document, { kind: "at", parentKey: bank, index: editor.commands.childrenOf(bank).length });
-        const placement = editor.commands.insert({ id: crypto.randomUUID(), type: "window-block", metadata: { title: "Flint", position: { x: 35 + (zIndex - 1) * 24, y: 35 + (zIndex - 1) * 24 }, size: { w: Math.min(1380, Math.max(840, window.innerWidth - 90)), h: Math.min(900, Math.max(620, window.innerHeight - 120)) }, zIndex }, children: [definition.create(initialTabs.slice(0, 2))] }, { kind: "at", parentKey: desktopParent, index: 0 });
+        const placement = editor.commands.insert({ id: crypto.randomUUID(), type: "window-block", metadata: { title: "Flint", position: { x: 35 + (zIndex - 1) * 24, y: 35 + (zIndex - 1) * 24 }, size: { w: Math.min(1380, Math.max(840, window.innerWidth - 90)), h: Math.min(900, Math.max(620, window.innerHeight - 120)) }, zIndex }, children: [application] }, { kind: "at", parentKey: desktopParent, index: 0 });
         editor.windowManager?.activatePlacement(placement);
-      });
+      }); } finally { launchViews.delete(String(application.id)); }
     } }, scope.owner));
   } };
 }

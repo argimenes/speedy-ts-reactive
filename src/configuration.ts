@@ -15,6 +15,8 @@
  * disabled unless a host or dedicated demo explicitly enables it.
  */
 export type FeatureFlags = Readonly<{
+  /** Atlas artwork and application shortcuts on the workspace Desktop. */
+  desktopApplicationIcons: boolean;
   /** Structural containers and retained front/back surfaces. */
   reversibleBlocks: boolean;
   /** Native task items and automatic task prefixes. Legacy data remains readable. */
@@ -144,6 +146,7 @@ export type FeatureFlags = Readonly<{
 }>;
 
 export const featureFlags: FeatureFlags = Object.freeze({
+  desktopApplicationIcons: true,
   reversibleBlocks: true,
   taskLists: true,
   tableLayouts: true,
