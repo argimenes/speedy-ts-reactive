@@ -58,11 +58,11 @@
 .flint-application.flint-compact .flint-application__editor { position:relative; container:flint-document / inline-size; display:flex; flex-direction:column; flex:1; min-width:280px; border:0; border-radius:0; overflow:hidden; background:#faf8f3; }
 .flint-compact .flint-application__editor > .reactive-tabs { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
 .flint-application.flint-compact .reactive-tabs > .reactive-tabs__labels { height:33px; min-height:33px; flex:none; gap:1px; padding:0 112px 0 0; background:var(--flint-coal); border-bottom:1px solid var(--flint-line); overflow-x:auto; scrollbar-width:thin; }
-.flint-application.flint-compact .reactive-tabs > .reactive-tabs__labels button { height:32px; border:0; border-radius:0; padding:0 12px; background:transparent; color:#716a60; box-shadow:none; font:12px system-ui; }
+.flint-application.flint-compact .reactive-tabs > .reactive-tabs__labels button { height:32px; border:0; border-radius:0; padding:0 12px; background:#faf8f3; color:#716a60; box-shadow:none; font:12px system-ui; }
 .flint-compact .flint-document-tab { border-right:1px solid var(--flint-line); }
 .flint-application.flint-compact .reactive-tabs__labels .flint-document-tab > .flint-document-tab__close { padding:0 7px; font-size:16px; color:#aaa399; }
 .flint-application.flint-compact .reactive-tabs > .reactive-tabs__labels button[aria-selected=true],
-.flint-application.flint-compact .reactive-tabs__labels .flint-document-tab[data-active=true] > .flint-document-tab__close { border:0; background:#faf8f3; color:#332f29; box-shadow:none; }
+.flint-application.flint-compact .reactive-tabs__labels .flint-document-tab[data-active=true] > button { border:0; background:var(--flint-coal); color:#332f29; box-shadow:none; }
 .flint-view-tools { position:absolute; right:0; top:0; z-index:5; height:33px; display:flex; align-items:stretch; background:var(--flint-coal); border-left:1px solid var(--flint-line); border-bottom:1px solid var(--flint-line); }
 .flint-view-tools button { border-radius:0!important; padding:0 10px; font-size:12px!important; }
 .flint-view-tools button:last-child { width:37px; padding:0; color:var(--flint-muted); }

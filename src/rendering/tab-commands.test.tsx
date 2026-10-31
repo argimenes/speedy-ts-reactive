@@ -93,3 +93,40 @@ it('moves before in horizontal and vertical layouts using the same command',asyn
 it('rejects ambiguous live reparenting without consuming the invocation',async()=>{
  const f=setup([row()]);f.editor.commands.transclude(f.node('row').key,{kind:'at',parentKey:f.node('doc').key,index:1});f.focus('a');await f.type('/tab move after');const before=f.tree(),s=f.session()!;await s.choose();expect(s.state.error).toContain('multiple occurrences');expect(f.tree()).toEqual(before);
 });
+
+function nestedRows(outerOrientation='vertical',innerOrientation='horizontal',after=false):ExistingBlockDto {
+ const inner=row('inner',innerOrientation);
+ const v1:ExistingBlockDto={id:'v1',type:'tab-block',metadata:{name:'v1',active:true},children:[inner]};
+ const peer:ExistingBlockDto={id:'v2',type:'tab-block',metadata:{name:'v2'},children:[p('peer')]};
+ return {id:'outer',type:'tab-row-block',metadata:{orientation:outerOrientation},children:after?[peer,v1]:[v1,peer]};
+}
+it.each(['tab add','tab rename Renamed v1','tab delete','tab move after','tab move before'])('targets the containing vertical Tab from h1: /%s --in vertical',async command=>{
+ const f=setup([nestedRows('vertical','horizontal',command==='tab move before')]);f.focus('a');await f.type('/'+command+' --in vertical');const literal=f.tree(),s=f.session()!,innerPlacement=f.node('inner').placementKey;
+ expect(parseTabCommand(command+' --in vertical')?.args?.in).toBe('vertical');expect(s.state.selected).toBe(parseTabCommand(command)!.id);
+ const snapshots=vi.spyOn(f.editor.repository,'snapshot'),build=vi.spyOn(f.view as any,'build');await s.choose();await tick();expect(s.state.error).toBe('');expect(snapshots).not.toHaveBeenCalled();expect(build).not.toHaveBeenCalled();snapshots.mockRestore();
+ const applied=f.tree(),outer=applied.children![0];
+ if(command==='tab add'){expect(outer.children).toHaveLength(3);expect(f.node('inner').children).toHaveLength(2);}
+ if(command.startsWith('tab rename')){expect((f.node('v1').payload.metadata as any).name).toBe('Renamed v1');expect((f.node('inner-a').payload.metadata as any).name).toBe('First');}
+ if(command==='tab delete')expect(outer.children!.map(n=>n.id)).toEqual(['v2']);
+ if(command==='tab move after')expect(outer.children!.map(n=>n.id)).toEqual(['v2','v1']);
+ if(command==='tab move before')expect(outer.children!.map(n=>n.id)).toEqual(['v1','v2']);
+ if(command!=='tab delete')expect(f.node('inner').placementKey).toBe(innerPlacement);
+ f.editor.repository.undo();await tick();expect(f.tree()).toEqual(literal);f.editor.repository.redo();await tick();expect(f.tree()).toEqual(applied);
+});
+it('supports horizontal ancestor targeting and preserves unqualified nearest-row behavior',async()=>{
+ const f=setup([nestedRows('horizontal','vertical')]);f.focus('a');await f.type('/tab add --in horizontal');await f.session()!.choose();await tick();expect(f.node('outer').children).toHaveLength(3);expect(f.node('inner').children).toHaveLength(2);
+ f.editor.repository.undo();await tick();f.session()?.close();f.editor.commandRegistry.execute('tab.add',{targetKey:f.node('a').key,args:undefined});expect(f.node('outer').children).toHaveLength(2);expect(f.node('inner').children).toHaveLength(3);
+});
+it.each(['tab rename Name --in','tab rename Name --in v','tab rename Name --in sideways','tab add --in vertical --in horizontal'])('never executes an incomplete or invalid target as a nearest-row command: %s',query=>{
+ const f=setup([nestedRows()]);expect(parseTabCommand(query)).toBeUndefined();expect(tabCommandCandidates(f.editor,f.node('a').key,query).every(c=>c.disabled)).toBe(true);
+});
+it('rejects a missing matching ancestor without consuming the command',async()=>{
+ const f=setup([row()]);f.focus('a');await f.type('/tab delete --in vertical');const literal=f.tree(),s=f.session()!;expect(s.state.rows[0].disabled).toBe(true);await s.choose();expect(f.tree()).toEqual(literal);
+});
+it('resolves ancestor targets without snapshots, unrelated payload reads or workspace enumeration',()=>{
+ const f=setup([nestedRows()],40),snapshot=vi.spyOn(f.editor.repository,'snapshot'),read=vi.spyOn(f.editor.repository.readState().contents[f.node('other-text-0').contentKey],'payload','get');
+ const key=f.node('a').key,values=vi.spyOn(Object,'values');
+ for(let i=0;i<10;i++)tabCommandCandidates(f.editor,key,'tab rename Outer --in vertical');
+ const enumerations=values.mock.calls.length;values.mockRestore();
+ expect(snapshot).not.toHaveBeenCalled();expect(read).not.toHaveBeenCalled();expect(enumerations).toBe(0);
+});

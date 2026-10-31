@@ -73,3 +73,42 @@ artifacts/tab-commands/qualification.json
 artifacts/tab-commands/{command-bar,nested-tabs,shared-tabs}.png
 artifacts/tab-commands/tests.log
 artifacts/tab-commands/typecheck.log
+
+FOLLOW-UP — ANCESTOR TARGETING AND TAB COLOURS
+31 October 2026
+
+/tab add --in vertical
+/tab rename <name> --in vertical
+/tab move before --in vertical
+/tab move after --in vertical
+/tab delete --in vertical
+
+The optional trailing --in horizontal/vertical selector walks containing TabRows
+within the current Document. From h1 inside v1, --in vertical targets v1's row;
+add creates its sibling v2. Rename/move/delete act on the containing v1. The same
+selector also works with /tabs orientation. Creation still uses its existing
+explicit orientation. Unqualified commands retain nearest-row behaviour.
+Incomplete, invalid or unmatched selectors cannot silently target another row.
+The existing verticalTabs flag and structural admission/fallback remain in place.
+
+Flint's active/inactive tab fills are reversed in compact and spatial styling,
+including the Document tab's actions/close buttons. Material chrome has an active
+fill override. Browser colour assertions and screenshots cover compact Flint.
+
+Follow-up validation: 39 tests passed across the command, orientation and native
+persistence suites; 98 Chrome assertions passed with trusted input. Client
+TypeScript checking and git diff --check passed. Nested scoped add/rename/move/
+delete preserve exact Undo/Redo, with zero measured repository snapshots,
+projection rebuilds, unrelated updates or requests. Discovery checks cover 40
+unrelated Documents without payload reads or workspace enumeration; browser
+coverage retains 15 native Documents and the large annotated fixture.
+
+Single-run scoped-command Enter-to-next-paint samples: rename 32 ms, move after
+32 ms, move before 32 ms, add 32 ms, delete 160 ms (removes the nested subtree).
+These are headless Chrome Event Timing samples, not guaranteed display latency.
+See artifacts/tab-commands/qualification.json and ancestor-targeting.png.
+
+Existing limitation observed while extending the fixture: repeating the already
+current orientation on a shared row failed the zero-work assertion. The retained
+shared-orientation qualification measures an actual orientation change. This
+follow-up does not alter that existing no-op transaction path.

@@ -22,9 +22,9 @@
 .flint-application[data-view=graph] .reactive-tabs__panel { display:none; }
 .flint-application[data-view=graph] .flint-document-graph { flex:1; }
 .flint-application .reactive-tabs > .reactive-tabs__labels { background:transparent; border-bottom:1px solid #aa9b7d44; padding:10px 10px 0; }
-.flint-application .reactive-tabs > .reactive-tabs__labels button { background:#e4ded166; color:#696456; border-color:#fff9; }
+.flint-application .reactive-tabs > .reactive-tabs__labels button { background:#fffdf5aa; color:#696456; border-color:#fff9; }
 .flint-application .reactive-tabs > .reactive-tabs__labels button[aria-selected=true],
-.flint-application .reactive-tabs__labels .flint-document-tab[data-active=true] > .flint-document-tab__close { background:#fffdf5aa; color:#34332e; border-color:#fff9; box-shadow:none; }
+.flint-application .reactive-tabs__labels .flint-document-tab[data-active=true] > button { background:#e4ded166; color:#34332e; border-color:#fff9; box-shadow:none; }
 .flint-application :is(.flint-application__header,.flint-workspace-tools,.flint-rail,.flint-status,.flint-sheet,.flint-welcome,.flint-attention,.flint-document-graph) button {
   background:#f4f0e799; color:#34332e; border:1px solid #fff9; border-radius:6px; padding:7px 10px; font-family:system-ui,sans-serif; cursor:pointer;
   box-shadow:calc(var(--flint-shadow-x,-.8px) * 2) calc(var(--flint-shadow-y,.8px) * 2) 4px #51462e18;
@@ -69,3 +69,7 @@
 .flint-application .document-style-bar { background:#f3efe4d9; border-color:#b8ad9844; }
 .flint-application .document-style-bar :is(button,select) { color:#34332e; background-color:transparent; border-color:#b8ad9866; }
 @media (forced-colors:active) { .flint-document-graph canvas { display:none; } }
+
+/* Active Tabs keep a contrasting fill even when material relief draws the chrome. */
+.flint-application[data-material-ready=true] .reactive-tabs > .reactive-tabs__labels button[aria-selected=true],
+.flint-application[data-material-ready=true] .reactive-tabs__labels .flint-document-tab[data-active=true] > button { background:#e4ded1!important; }

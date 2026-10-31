@@ -4,7 +4,7 @@ import type { ReactiveEditor } from '../reactive-editor/editor';
 import type { BlockNode, ExistingBlockDto } from '../block-tree/types';
 import type { TextRangeSnapshot } from './text-ranges';
 import type { CompletionCandidate } from '../features/autocomplete/model';
-import { isTabRow } from '../block-tree/tab-orientation';
+import { isTabRow, tabOrientation, type TabOrientation } from '../block-tree/tab-orientation';
 import { tabDocumentTarget } from '../rendering/document-tab-context';
 
 export const tabCommands = [
@@ -19,21 +19,33 @@ export const tabCommands = [
   { id: 'tab.delete', syntax: 'tab delete', label: 'Delete Tab' },
 ] as const;
 type TabCommand = typeof tabCommands[number]['id'];
-export interface TabCommandArgs { name?: string; targets?: string[]; invocation?: TextRangeSnapshot }
+export interface TabCommandArgs { in?: TabOrientation; name?: string; targets?: string[]; invocation?: TextRangeSnapshot }
 const queryText = (query: string) => query.length > 256 ? '\0' : query.trim().replace(/^\//, '');
 export function isTabCommandQuery(query: string) { return /^tabs?(?:\s|$)/i.test(queryText(query)); }
+/** A trailing selector is explicit: malformed/incomplete selectors never fall
+ * back to the nearest row or become part of a renamed Tab's title. */
+function tabQuery(query:string) {
+  const text=queryText(query),match=/\s+--in(?:\s+(\S+))?$/iu.exec(text);
+  const body=match?text.slice(0,match.index):text;
+  const scope=match?.[1]?.toLowerCase();
+  const valid=scope==='vertical'||scope==='horizontal';
+  return {body,selector:!!match,scope:valid?scope as TabOrientation:undefined,
+    invalid: /(?:^|\s)--in(?:\s|$)/iu.test(body) || !!match&&!valid};
+}
 export function parseTabCommand(query: string): { id: TabCommand; args?: TabCommandArgs } | undefined {
-  const text = queryText(query), rename = /^tab\s+rename(?:\s+(.+))?$/iu.exec(text);
-  if (rename) return { id: 'tab.rename', args: { name: rename[1]?.trim() } };
-  const spec = tabCommands.find(c => c.syntax === text.toLowerCase().replace(/\s+/g, ' '));
-  return spec && { id: spec.id };
+  const {body,scope,selector,invalid}=tabQuery(query);if(invalid)return;
+  const rename = /^tab\s+rename(?:\s+(.+))?$/iu.exec(body);
+  if (rename) return { id: 'tab.rename', args: { name: rename[1]?.trim(),...(scope?{in:scope}:{}) } };
+  const spec = tabCommands.find(c => c.syntax === body.toLowerCase().replace(/\s+/g, ' '));
+  if(!spec || selector&&spec.id.startsWith('tabs.create.'))return;
+  return {id:spec.id,...(scope?{args:{in:scope}}:{})};
 }
 const parent = (e: ReactiveEditor, n: BlockNode) => e.projections.get(n.viewId)?.parentOf(n.key);
 /** Nearest occurrence, stopping at the Document boundary (never its Flint host). */
-export function tabLocation(e: ReactiveEditor, key: string, resolveTab = true) {
+export function tabLocation(e: ReactiveEditor, key: string, resolveTab = true, orientation?: TabOrientation) {
   let node = e.node(key), tab: BlockNode | undefined;
   while (node && node.viewType !== 'document-block') {
-    if (isTabRow(node.viewType)) {
+    if (isTabRow(node.viewType) && (!orientation || tabOrientation(node.payload.metadata) === orientation)) {
       if (resolveTab && !tab) tab = e.node(e.viewChildren[node.key] ?? '') ?? node.children.map(k => e.node(k)!).find(n => (n.payload.metadata as any)?.active) ?? e.node(node.children[0]);
       return { row: node, tab, hosted: resolveTab && (parent(e, node)?.viewType === 'flint-application-block' || node.children.some(k => !!tabDocumentTarget(e.node(k)?.payload.metadata))) };
     }
@@ -56,8 +68,9 @@ function creationTargets(e: ReactiveEditor, key: string, args?: TabCommandArgs) 
 }
 export function tabCommandAvailable(e: ReactiveEditor, id: string, key: string, args?: TabCommandArgs): boolean {
   if (!e.features.verticalTabs || !e.node(key) || e.crossText.range() || e.mounts.get(key)?.composing || (e.selections.sets[key]?.items.length ?? 0) > 1) return false;
-  if (id.startsWith('tabs.create.')) return !!creationTargets(e, key, args);
-  const at = tabLocation(e, key, !id.startsWith('tabs.orientation.')); if (!at) return false;
+  if(args?.in !== undefined && args.in !== 'vertical' && args.in !== 'horizontal')return false;
+  if (id.startsWith('tabs.create.')) return !args?.in && !!creationTargets(e, key, args);
+  const at = tabLocation(e, key, !id.startsWith('tabs.orientation.'), args?.in); if (!at) return false;
   if (id.startsWith('tabs.orientation.')) return true;
   if (at.hosted) return false; // Document session open/close belongs to Flint's existing controls.
   if (id === 'tab.add') return true;
@@ -69,11 +82,12 @@ export function tabCommandAvailable(e: ReactiveEditor, id: string, key: string, 
 }
 export function tabCommandCandidates(e: ReactiveEditor, key: string, query: string): CompletionCandidate[] {
   if (!e.features.verticalTabs) return [];
-  const parsed = parseTabCommand(query), q = queryText(query).toLowerCase().replace(/\s+/g, ' ');
-  return tabCommands.filter(c => parsed ? c.id === parsed.id : c.syntax.startsWith(q)).map(c => {
-    const args = parsed?.args, available = e.commandRegistry.canExecute(c.id, { targetKey: key, args });
-    return { id: c.id, name: `/${c.syntax}${c.id === 'tab.rename' ? ' '+(args?.name ?? '<name>') : ''}`, exact: !!parsed,
-      reason: available ? c.label : c.id === 'tab.rename' && !args?.name ? 'Enter a Tab name' : 'Unavailable at this Tab or Document boundary', disabled: !available };
+  const parts=tabQuery(query),parsed = parseTabCommand(query), q = parts.body.toLowerCase().replace(/\s+/g, ' ');
+  const base = parseTabCommand(parts.body);
+  return tabCommands.filter(c => parsed ? c.id === parsed.id : parts.selector && base ? c.id === base.id : c.syntax.startsWith(q)).map(c => {
+    const args = parsed?.args, available = !parts.invalid && !(parts.selector&&!parsed) && e.commandRegistry.canExecute(c.id, { targetKey: key, args });
+    return { id: c.id, name: `/${c.syntax}${c.id === 'tab.rename' ? ' '+(args?.name ?? base?.args?.name ?? '<name>') : ''}${parts.selector?' --in '+(parts.scope??'<horizontal|vertical>'):''}`, exact: !!parsed,
+      reason: parts.invalid ? 'Complete --in horizontal or --in vertical' : available ? c.label+' · '+(args?.in?'nearest '+args.in+' TabRow':'nearest TabRow') : c.id === 'tab.rename' && !args?.name ? 'Enter a Tab name' : 'Unavailable at this Tab or Document boundary', disabled: !available };
   });
 }
 const block = (type: string, children: ExistingBlockDto[] = [], metadata?: Record<string, unknown>): ExistingBlockDto => ({ id: crypto.randomUUID(), type, children, ...(metadata ? { metadata } : {}) });
@@ -114,7 +128,7 @@ export class TabOperations {
   run(id: TabCommand, key: string, args?: TabCommandArgs) {
     const e = this.editor;
     if (!this.alive || !tabCommandAvailable(e,id,key,args)) throw Error('Tab command is unavailable at this target');
-    const source = e.node(key)!, at = tabLocation(e,key,!id.startsWith('tabs.orientation.')), targets = id.startsWith('tabs.create.') ? creationTargets(e,key,args)! : undefined;
+    const source = e.node(key)!, at = tabLocation(e,key,!id.startsWith('tabs.orientation.'),args?.in), targets = id.startsWith('tabs.create.') ? creationTargets(e,key,args)! : undefined;
     if (args?.invocation) {
       if (args.invocation.nodeKey !== key || source.viewType !== 'standoff-editor-block') throw Error('Command invocation belongs to another Block');
       e.textRanges.validate([args.invocation], 'cell');

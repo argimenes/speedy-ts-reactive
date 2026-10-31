@@ -49,7 +49,7 @@ export async function qualifyTabCommands(){
    timings.push({command:text,shared});const timing=timings.at(-1);pending=start=>{const inspect=()=>{if(verify()){verified=true;timing.enterToVerifiedLayoutMs=performance.now()-start;timing.start=start;}else requestAnimationFrame(inspect);};inspect();};
    await trusted({type:'key',key:'Enter'});await until(()=>!completion(),'Command closes '+text);await until(()=>verified,'Rendered command '+text);
    timings.at(-1).roundTripMs=performance.now()-start;
-   check(Object.values(counters).every(n=>n===0)&&requests===calls,text+' has no snapshots, projection rebuilds, unrelated updates or requests'+(shared?' (shared)':''));
+   check(Object.values(counters).every(n=>n===0)&&requests===calls,text+' has no snapshots, projection rebuilds, unrelated updates or requests'+(shared?' (shared)':'')+' '+JSON.stringify(counters));
    check(!flow().textContent?.includes('/'+text),text+' consumes its literal invocation');
    const result=saved();e.repository.undo();await frame();check(saved()===literal,text+' Undo restores literal and structure');e.repository.redo();await frame();check(saved()===result,text+' Redo restores result');
    check(Object.values(counters).every(n=>n===0),text+' history remains bounded');
@@ -65,6 +65,23 @@ export async function qualifyTabCommands(){
   await command('tab delete',()=>host.querySelectorAll('.abstract-block.reactive-tabs > .reactive-tabs__labels > [role=tab]').length===1);
   await command('tabs create horizontal',()=>host.querySelectorAll('.abstract-block.reactive-tabs').length===2);
   await trusted({type:'screenshot',name:'nested-tabs'});
+  const nestedSource=current(),innerScope=tabLocation(e,nestedSource.key)!.row,outerScope=tabLocation(e,nestedSource.key,true,'vertical')!.row,outerTab=tabLocation(e,nestedSource.key,true,'vertical')!.tab!;
+  e.commands.structuralTransaction('Targeting fixture peer',()=>e.commands.insert({id:'target-peer',type:'tab-block',metadata:{name:'Peer'},children:[{id:'target-peer-text',type:'standoff-editor-block',text:''}]},{kind:'at',parentKey:outerScope.key,index:outerScope.children.length}));await frame();
+  await command('tab rename Outer --in vertical',()=>(e.node(outerTab.key)?.payload.metadata as any)?.name==='Outer');
+  check(e.node(innerScope.key)!.children.length===1,'Outer rename leaves the nested horizontal row unchanged');
+  const labels=host.querySelector<HTMLElement>('.flint-application__editor > .reactive-tabs > .reactive-tabs__labels')!;
+  const selected=labels.querySelector<HTMLElement>('[aria-selected=true]')!,inactive=labels.querySelector<HTMLElement>('[aria-selected=false]')!;
+  check(getComputedStyle(selected).backgroundColor==='rgb(246, 243, 236)'&&getComputedStyle(inactive).backgroundColor==='rgb(250, 248, 243)','Flint active and inactive Tab fills are reversed');
+  await command('tab move after --in vertical',()=>e.node(outerScope.key)!.children.at(-1)===outerTab.key);
+  await command('tab move before --in vertical',()=>e.node(outerScope.key)!.children[0]===outerTab.key);
+  await command('tab add --in vertical',()=>e.node(outerScope.key)!.children.length===3);
+  check(e.node(innerScope.key)!.children.length===1,'Outer add creates a sibling vertical Tab without adding a horizontal Tab');
+  await click([...host.querySelectorAll<HTMLElement>('[role=tab]')].find(label=>label.textContent==='Outer')!);await frame();
+  await trusted({type:'screenshot',name:'ancestor-targeting'});
+  await command('tab delete --in vertical',()=>e.node(outerScope.key)!.children.length===2&&!e.node(outerTab.key));
+
+  // Restore a horizontal inner row so shared qualification measures a real orientation change.
+  await command('tabs create horizontal',()=>host.querySelectorAll('.abstract-block.reactive-tabs').length===2);
   for(let i=0;i<13;i++){const id='tab-extra-'+i;resources.set(id,resource(id,i===12?Array.from({length:80},(_,j)=>paragraph('extra-'+i+'-'+j)): [paragraph('extra-'+i)]));await native.open({folder:'.',filename:id+'.mutable.json'});}
   const source=current(),at=tabLocation(e,source.key)!,owner=e.projections.get(at.row.viewId)!.parentOf(at.row.key)!;
   e.commands.transclude(at.row.key,{kind:'at',parentKey:owner.key,index:owner.children.length});await frame();

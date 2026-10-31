@@ -47,13 +47,13 @@
 .flint-application .reactive-document-occurrence { color:#242424; background:#fffdf8; }
 .flint-application .reactive-document-occurrence__content { padding:18px 30px; min-height:340px; }
 .flint-application .reactive-tabs__labels { display:flex; gap:4px; padding:9px 10px; background:#212626; border-bottom:1px solid #626960; overflow-x:auto; }
-.flint-application .reactive-tabs__labels button { padding:8px 13px; background:#2d3331; color:#cdd2c8; border:1px solid #525b53; border-radius:6px 6px 0 0; font:13px system-ui,sans-serif; white-space:nowrap; }
-.flint-application .reactive-tabs__labels button[aria-selected=true] { background:#eee9dd; color:#282c28; border-color:#b8ab92; box-shadow:inset 0 2px #b99662; }
+.flint-application .reactive-tabs__labels button { padding:8px 13px; background:#eee9dd; color:#282c28; border:1px solid #525b53; border-radius:6px 6px 0 0; font:13px system-ui,sans-serif; white-space:nowrap; }
+.flint-application .reactive-tabs__labels button[aria-selected=true] { background:#2d3331; color:#cdd2c8; border-color:#b8ab92; box-shadow:inset 0 2px #b99662; }
 .flint-application .reactive-tabs__labels button:focus-visible { outline:2px solid var(--flint-mineral); outline-offset:2px; }
 .flint-document-tab { display:inline-flex; flex:none; }
 .flint-application .reactive-tabs__labels .flint-document-tab > [role=tab] { border-radius:6px 0 0 0; }
 .flint-application .reactive-tabs__labels .flint-document-tab__close { padding:4px 9px; border-left:0; border-radius:0 6px 0 0; font-size:18px; }
-.flint-application .reactive-tabs__labels .flint-document-tab[data-active=true] > .flint-document-tab__close { background:#eee9dd; color:#282c28; border-color:#b8ab92; }
+.flint-application .reactive-tabs__labels .flint-document-tab[data-active=true] > button { background:#2d3331; color:#cdd2c8; border-color:#b8ab92; }
 .flint-application .reactive-tabs__labels .flint-document-tab__close:hover { color:#a33327; }
 .flint-application .flint-tree-folder { margin:8px 0; }
 .flint-application .flint-tree-folder .flint-tree-folder { margin-left:8px; padding-left:8px; border-left:1px solid #555e56; }
